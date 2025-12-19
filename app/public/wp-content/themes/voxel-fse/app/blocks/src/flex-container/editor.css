@@ -1,0 +1,15 @@
+/**
+ * Flex Container Editor Styles
+ * Fix input field dimensions to match WordPress standards
+ */
+
+/* Input field height and font size */
+.ef--c-f-bbfb-jedafn.ef--c-f-bbfb-jedafn.ef--c-f-bbfb-jedafn {
+    font-size: 16px;
+    height: 27px;
+}
+
+/* Input field width */
+.ef--c-f-bbfb-114nwjg {
+    width: calc(62px);
+}

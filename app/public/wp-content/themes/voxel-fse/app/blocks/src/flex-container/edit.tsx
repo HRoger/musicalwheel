@@ -24,6 +24,9 @@ import {
 // Import style generation utility
 import { generateContainerStyles, type FlexContainerAttributes } from './styles';
 
+// Import editor styles
+import './editor.css';
+
 // Define Main Tabs
 const TABS = {
     GENERAL: 'general',
