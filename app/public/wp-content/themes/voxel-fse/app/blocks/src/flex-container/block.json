@@ -1,0 +1,170 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "voxel-fse/flex-container",
+    "version": "1.0.0",
+    "title": "Flex Container (VX)",
+    "category": "design",
+    "icon": "columns",
+    "description": "Create flexible layouts with CSS Flexbox properties for responsive design.",
+    "supports": {
+        "html": false,
+        "anchor": true
+    },
+    "attributes": {
+        "containerWidth": {
+            "type": "string",
+            "default": "none"
+        },
+        "contentWidthType": {
+            "type": "string",
+            "default": "boxed"
+        },
+        "contentWidth": {
+            "type": "number"
+        },
+        "contentWidth_tablet": {
+            "type": "number"
+        },
+        "contentWidth_mobile": {
+            "type": "number"
+        },
+        "contentWidthUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "minHeight": {
+            "type": "number"
+        },
+        "minHeight_tablet": {
+            "type": "number"
+        },
+        "minHeight_mobile": {
+            "type": "number"
+        },
+        "minHeightUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "htmlTag": {
+            "type": "string",
+            "default": "div"
+        },
+        "overflow": {
+            "type": "string",
+            "default": "visible"
+        },
+        "flexDirection": {
+            "type": "string",
+            "default": "row"
+        },
+        "flexDirection_tablet": {
+            "type": "string"
+        },
+        "flexDirection_mobile": {
+            "type": "string"
+        },
+        "justifyContent": {
+            "type": "string",
+            "default": "flex-start"
+        },
+        "justifyContent_tablet": {
+            "type": "string"
+        },
+        "justifyContent_mobile": {
+            "type": "string"
+        },
+        "alignItems": {
+            "type": "string",
+            "default": "stretch"
+        },
+        "alignItems_tablet": {
+            "type": "string"
+        },
+        "alignItems_mobile": {
+            "type": "string"
+        },
+        "flexWrap": {
+            "type": "string",
+            "default": "nowrap"
+        },
+        "flexWrap_tablet": {
+            "type": "string"
+        },
+        "flexWrap_mobile": {
+            "type": "string"
+        },
+        "alignContent": {
+            "type": "string"
+        },
+        "columnGap": {
+            "type": "number",
+            "default": 10
+        },
+        "columnGap_tablet": {
+            "type": "number"
+        },
+        "columnGap_mobile": {
+            "type": "number"
+        },
+        "columnGapUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "rowGap": {
+            "type": "number",
+            "default": 10
+        },
+        "rowGap_tablet": {
+            "type": "number"
+        },
+        "rowGap_mobile": {
+            "type": "number"
+        },
+        "rowGapUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "padding": {
+            "type": "object"
+        },
+        "margin": {
+            "type": "object"
+        },
+        "backgroundColor": {
+            "type": "string"
+        },
+        "backgroundImage": {
+            "type": "object"
+        },
+        "border": {
+            "type": "object"
+        },
+        "borderRadius": {
+            "type": "number"
+        },
+        "borderRadius_tablet": {
+            "type": "number"
+        },
+        "borderRadius_mobile": {
+            "type": "number"
+        },
+        "borderRadiusUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "boxShadow": {
+            "type": "object"
+        },
+        "zIndex": {
+            "type": "number"
+        },
+        "customCSS": {
+            "type": "string"
+        },
+        "customClasses": {
+            "type": "string"
+        }
+    },
+    "editorScript": "file:./index.js"
+}
