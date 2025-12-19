@@ -27,8 +27,19 @@ import { generateContainerStyles, type FlexContainerAttributes } from './styles'
 // Define Main Tabs
 const TABS = {
     GENERAL: 'general',
-    STYLE: 'style',
     ADVANCED: 'advanced',
+};
+
+// Essential Blocks Color Palette
+const EB_COLORS = {
+    primary: '#6C40F7',
+    primaryHover: '#5835d4',
+    primaryLight: 'rgba(108, 64, 247, 0.1)',
+    secondary: '#f3f4f5',
+    secondaryHover: '#e8eaed',
+    border: '#e0e5eb',
+    text: '#1e1e1e',
+    textLight: '#757575',
 };
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
@@ -277,11 +288,10 @@ function ResponsiveIconButtonGroup({
             </div>
 
             {/* Icon Buttons */}
-            <ButtonGroup style={{ display: 'flex', width: '100%' }}>
+            <ButtonGroup style={{ display: 'flex', width: '100%', gap: '4px' }}>
                 {options.map((opt) => (
                     <Button
                         key={opt.value}
-                        variant={currentValue === opt.value ? 'primary' : 'secondary'}
                         onClick={() => setValue(opt.value)}
                         style={{
                             flex: 1,
@@ -289,6 +299,10 @@ function ResponsiveIconButtonGroup({
                             minWidth: '36px',
                             height: '36px',
                             padding: '0',
+                            backgroundColor: currentValue === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
+                            color: currentValue === opt.value ? '#ffffff' : EB_COLORS.text,
+                            borderColor: currentValue === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                            transition: 'all 0.2s ease',
                         }}
                         label={opt.label}
                         showTooltip
@@ -316,6 +330,14 @@ function ResponsiveIconButtonGroup({
 
 export default function Edit({ attributes, setAttributes }: EditProps) {
     const [activeTab, setActiveTab] = useState(TABS.GENERAL);
+
+    // Generate stable block ID once
+    useEffect(() => {
+        if (!attributes.blockId) {
+            const newBlockId = Math.random().toString(36).substring(2, 10);
+            setAttributes({ blockId: newBlockId });
+        }
+    }, []);
 
     // Generate container styles from attributes
     const containerStyles = useMemo(
@@ -384,28 +406,34 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
             <InspectorControls>
                 {/* Main Tab Switcher */}
                 <div className="voxel-section-header" style={{ marginBottom: 15, padding: '10px 10px 0' }}>
-                    <ButtonGroup style={{ width: '100%', display: 'flex' }}>
+                    <ButtonGroup style={{ width: '100%', display: 'flex', gap: '4px' }}>
                         <Button
                             isPressed={activeTab === TABS.GENERAL}
                             onClick={() => setActiveTab(TABS.GENERAL)}
-                            variant={activeTab === TABS.GENERAL ? 'primary' : 'secondary'}
-                            style={{ flex: 1, justifyContent: 'center' }}
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                backgroundColor: activeTab === TABS.GENERAL ? EB_COLORS.primary : EB_COLORS.secondary,
+                                color: activeTab === TABS.GENERAL ? '#ffffff' : EB_COLORS.text,
+                                borderColor: activeTab === TABS.GENERAL ? EB_COLORS.primary : EB_COLORS.border,
+                                fontWeight: activeTab === TABS.GENERAL ? 600 : 400,
+                                transition: 'all 0.2s ease',
+                            }}
                         >
                             {__('General', 'voxel-fse')}
                         </Button>
                         <Button
-                            isPressed={activeTab === TABS.STYLE}
-                            onClick={() => setActiveTab(TABS.STYLE)}
-                            variant={activeTab === TABS.STYLE ? 'primary' : 'secondary'}
-                            style={{ flex: 1, justifyContent: 'center' }}
-                        >
-                            {__('Style', 'voxel-fse')}
-                        </Button>
-                        <Button
                             isPressed={activeTab === TABS.ADVANCED}
                             onClick={() => setActiveTab(TABS.ADVANCED)}
-                            variant={activeTab === TABS.ADVANCED ? 'primary' : 'secondary'}
-                            style={{ flex: 1, justifyContent: 'center' }}
+                            style={{
+                                flex: 1,
+                                justifyContent: 'center',
+                                backgroundColor: activeTab === TABS.ADVANCED ? EB_COLORS.primary : EB_COLORS.secondary,
+                                color: activeTab === TABS.ADVANCED ? '#ffffff' : EB_COLORS.text,
+                                borderColor: activeTab === TABS.ADVANCED ? EB_COLORS.primary : EB_COLORS.border,
+                                fontWeight: activeTab === TABS.ADVANCED ? 600 : 400,
+                                transition: 'all 0.2s ease',
+                            }}
                         >
                             {__('Advanced', 'voxel-fse')}
                         </Button>
@@ -421,13 +449,20 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                                 label={__('Container Width', 'voxel-fse')}
                                 __nextHasNoMarginBottom
                             >
-                                <ButtonGroup style={{ display: 'flex', width: '100%', marginTop: '8px' }}>
+                                <ButtonGroup style={{ display: 'flex', width: '100%', marginTop: '8px', gap: '4px' }}>
                                     {containerWidthOptions.map((opt) => (
                                         <Button
                                             key={opt.value}
-                                            variant={attributes.containerWidth === opt.value ? 'primary' : 'secondary'}
                                             onClick={() => setAttributes({ containerWidth: opt.value })}
-                                            style={{ flex: 1, justifyContent: 'center' }}
+                                            style={{
+                                                flex: 1,
+                                                justifyContent: 'center',
+                                                backgroundColor: attributes.containerWidth === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
+                                                color: attributes.containerWidth === opt.value ? '#ffffff' : EB_COLORS.text,
+                                                borderColor: attributes.containerWidth === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                                                fontWeight: attributes.containerWidth === opt.value ? 600 : 400,
+                                                transition: 'all 0.2s ease',
+                                            }}
                                         >
                                             {opt.label}
                                         </Button>
@@ -435,19 +470,43 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                                 </ButtonGroup>
                             </BaseControl>
 
+                            {/* Custom Container Width - Show responsive controls when "custom" is selected */}
+                            {attributes.containerWidth === 'custom' && (
+                                <div style={{ marginTop: '16px' }}>
+                                    <ResponsiveRangeControlWithDropdown
+                                        label={__('Container Width', 'voxel-fse')}
+                                        attributes={attributes}
+                                        setAttributes={setAttributes}
+                                        attributeBaseName="customContainerWidth"
+                                        min={0}
+                                        max={2000}
+                                        availableUnits={['px', '%', 'vw']}
+                                        unitAttributeName="customContainerWidthUnit"
+                                        showResetButton={true}
+                                    />
+                                </div>
+                            )}
+
                             {/* Content Width - Toggle + Slider */}
                             <div style={{ marginTop: '16px' }}>
                                 <BaseControl
                                     label={__('Content Width', 'voxel-fse')}
                                     __nextHasNoMarginBottom
                                 >
-                                    <ButtonGroup style={{ display: 'flex', width: '100%', marginTop: '8px', marginBottom: '12px' }}>
+                                    <ButtonGroup style={{ display: 'flex', width: '100%', marginTop: '8px', marginBottom: '12px', gap: '4px' }}>
                                         {contentWidthOptions.map((opt) => (
                                             <Button
                                                 key={opt.value}
-                                                variant={attributes.contentWidthType === opt.value ? 'primary' : 'secondary'}
                                                 onClick={() => setAttributes({ contentWidthType: opt.value })}
-                                                style={{ flex: 1, justifyContent: 'center' }}
+                                                style={{
+                                                    flex: 1,
+                                                    justifyContent: 'center',
+                                                    backgroundColor: attributes.contentWidthType === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
+                                                    color: attributes.contentWidthType === opt.value ? '#ffffff' : EB_COLORS.text,
+                                                    borderColor: attributes.contentWidthType === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                                                    fontWeight: attributes.contentWidthType === opt.value ? 600 : 400,
+                                                    transition: 'all 0.2s ease',
+                                                }}
                                             >
                                                 {opt.label}
                                             </Button>
@@ -580,8 +639,8 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                     </>
                 )}
 
-                {/* STYLE TAB */}
-                {activeTab === TABS.STYLE && (
+                {/* ADVANCED TAB */}
+                {activeTab === TABS.ADVANCED && (
                     <>
                         <PanelColorSettings
                             title={__('Background', 'voxel-fse')}
@@ -655,15 +714,12 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                             value={attributes.boxShadow}
                             onChange={(val: BoxShadowValue) => setAttributes({ boxShadow: val })}
                         />
-                    </>
-                )}
 
-                {/* ADVANCED TAB */}
-                {activeTab === TABS.ADVANCED && (
-                    <AdvancedTab
-                        attributes={attributes}
-                        setAttributes={setAttributes}
-                    />
+                        <AdvancedTab
+                            attributes={attributes}
+                            setAttributes={setAttributes}
+                        />
+                    </>
                 )}
 
             </InspectorControls>

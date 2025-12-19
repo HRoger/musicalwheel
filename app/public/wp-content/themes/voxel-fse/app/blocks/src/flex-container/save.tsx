@@ -6,8 +6,8 @@ interface SaveProps {
 }
 
 export default function Save({ attributes }: SaveProps) {
-    // Generate unique block ID from className or fallback
-    const blockId = attributes.anchor || Math.random().toString(36).substring(2, 10);
+    // Use stable block ID from attributes (generated once in edit)
+    const blockId = attributes.blockId || attributes.anchor || 'flex-container';
 
     // Generate styles
     const containerStyles = generateContainerStyles(attributes as FlexContainerAttributes);
@@ -20,6 +20,14 @@ export default function Save({ attributes }: SaveProps) {
 
     const innerBlocksProps = useInnerBlocksProps.save(blockProps);
 
+    // Sort attributes keys to ensure consistent JSON output
+    const sortedAttributes = Object.keys(attributes)
+        .sort()
+        .reduce((acc, key) => {
+            acc[key] = attributes[key];
+            return acc;
+        }, {} as Record<string, any>);
+
     return (
         <div {...innerBlocksProps}>
             {/* Responsive CSS styles */}
@@ -31,7 +39,7 @@ export default function Save({ attributes }: SaveProps) {
                 className="vxconfig"
                 type="application/json"
                 dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(attributes),
+                    __html: JSON.stringify(sortedAttributes),
                 }}
             />
             {innerBlocksProps.children}

@@ -8,6 +8,10 @@ import type { CSSProperties } from 'react';
 
 export interface FlexContainerAttributes {
     containerWidth?: string;
+    customContainerWidth?: number;
+    customContainerWidth_tablet?: number;
+    customContainerWidth_mobile?: number;
+    customContainerWidthUnit?: string;
     contentWidthType?: string;
     contentWidth?: number;
     contentWidth_tablet?: number;
@@ -90,6 +94,10 @@ export function generateContainerStyles(attributes: FlexContainerAttributes): CS
     } else if (attributes.containerWidth === 'wide') {
         styles.width = '100%';
         styles.maxWidth = '1200px';
+        styles.marginLeft = 'auto';
+        styles.marginRight = 'auto';
+    } else if (attributes.containerWidth === 'custom' && attributes.customContainerWidth) {
+        styles.width = `${attributes.customContainerWidth}${attributes.customContainerWidthUnit || 'px'}`;
         styles.marginLeft = 'auto';
         styles.marginRight = 'auto';
     }
@@ -216,6 +224,10 @@ export function generateResponsiveCSS(attributes: FlexContainerAttributes, block
         desktopStyles.push('max-width: 1200px');
         desktopStyles.push('margin-left: auto');
         desktopStyles.push('margin-right: auto');
+    } else if (attributes.containerWidth === 'custom' && attributes.customContainerWidth) {
+        desktopStyles.push(`width: ${attributes.customContainerWidth}${attributes.customContainerWidthUnit || 'px'}`);
+        desktopStyles.push('margin-left: auto');
+        desktopStyles.push('margin-right: auto');
     }
 
     // Content Width
@@ -316,6 +328,9 @@ export function generateResponsiveCSS(attributes: FlexContainerAttributes, block
     cssRules.push(`${selector} { ${desktopStyles.join('; ')}; }`);
 
     // Tablet styles (max-width: 1024px)
+    if (attributes.containerWidth === 'custom' && attributes.customContainerWidth_tablet) {
+        tabletRules.push(`width: ${attributes.customContainerWidth_tablet}${attributes.customContainerWidthUnit || 'px'}`);
+    }
     if (attributes.contentWidth_tablet) {
         tabletRules.push(`max-width: ${attributes.contentWidth_tablet}${attributes.contentWidthUnit || 'px'}`);
     }
@@ -349,6 +364,9 @@ export function generateResponsiveCSS(attributes: FlexContainerAttributes, block
     }
 
     // Mobile styles (max-width: 767px)
+    if (attributes.containerWidth === 'custom' && attributes.customContainerWidth_mobile) {
+        mobileRules.push(`width: ${attributes.customContainerWidth_mobile}${attributes.customContainerWidthUnit || 'px'}`);
+    }
     if (attributes.contentWidth_mobile) {
         mobileRules.push(`max-width: ${attributes.contentWidth_mobile}${attributes.contentWidthUnit || 'px'}`);
     }

@@ -164,6 +164,22 @@
         },
         "customClasses": {
             "type": "string"
+        },
+        "blockId": {
+            "type": "string"
+        },
+        "customContainerWidth": {
+            "type": "number"
+        },
+        "customContainerWidth_tablet": {
+            "type": "number"
+        },
+        "customContainerWidth_mobile": {
+            "type": "number"
+        },
+        "customContainerWidthUnit": {
+            "type": "string",
+            "default": "px"
         }
     },
     "editorScript": "file:./index.js"
