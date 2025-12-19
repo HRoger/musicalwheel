@@ -24,25 +24,10 @@ import {
 // Import style generation utility
 import { generateContainerStyles, type FlexContainerAttributes } from './styles';
 
-// Import editor styles
-import './editor.css';
-
 // Define Main Tabs
 const TABS = {
     GENERAL: 'general',
     ADVANCED: 'advanced',
-};
-
-// Essential Blocks Color Palette
-const EB_COLORS = {
-    primary: '#6C40F7',
-    primaryHover: '#5835d4',
-    primaryLight: 'rgba(108, 64, 247, 0.1)',
-    secondary: '#f3f4f5',
-    secondaryHover: '#e8eaed',
-    border: '#e0e5eb',
-    text: '#1e1e1e',
-    textLight: '#757575',
 };
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
@@ -299,9 +284,9 @@ function ResponsiveIconButtonGroup({
                             minWidth: '36px',
                             height: '36px',
                             padding: '0',
-                            backgroundColor: currentValue === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
-                            color: currentValue === opt.value ? '#ffffff' : EB_COLORS.text,
-                            borderColor: currentValue === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                            backgroundColor: currentValue === opt.value ? '#2271b1' : '#f0f0f1',
+                            color: currentValue === opt.value ? '#ffffff' : '#1e1e1e',
+                            borderColor: currentValue === opt.value ? '#2271b1' : '#dcdcde',
                             transition: 'all 0.2s ease',
                         }}
                         label={opt.label}
@@ -404,9 +389,8 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
     return (
         <div {...innerBlocksProps}>
             <InspectorControls>
-                <div className="voxel-fse-flex-container">
-                    {/* Main Tab Switcher */}
-                    <div className="voxel-section-header" style={{ marginBottom: 15, padding: '10px 10px 0' }}>
+                {/* Main Tab Switcher */}
+                <div className="voxel-section-header" style={{ marginBottom: 15, padding: '10px 10px 0' }}>
                     <ButtonGroup style={{ width: '100%', display: 'flex', gap: '4px' }}>
                         <Button
                             isPressed={activeTab === TABS.GENERAL}
@@ -414,9 +398,9 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                             style={{
                                 flex: 1,
                                 justifyContent: 'center',
-                                backgroundColor: activeTab === TABS.GENERAL ? EB_COLORS.primary : EB_COLORS.secondary,
-                                color: activeTab === TABS.GENERAL ? '#ffffff' : EB_COLORS.text,
-                                borderColor: activeTab === TABS.GENERAL ? EB_COLORS.primary : EB_COLORS.border,
+                                backgroundColor: activeTab === TABS.GENERAL ? '#2271b1' : '#f0f0f1',
+                                color: activeTab === TABS.GENERAL ? '#ffffff' : '#1e1e1e',
+                                borderColor: activeTab === TABS.GENERAL ? '#2271b1' : '#dcdcde',
                                 fontWeight: activeTab === TABS.GENERAL ? 600 : 400,
                                 transition: 'all 0.2s ease',
                             }}
@@ -429,9 +413,9 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                             style={{
                                 flex: 1,
                                 justifyContent: 'center',
-                                backgroundColor: activeTab === TABS.ADVANCED ? EB_COLORS.primary : EB_COLORS.secondary,
-                                color: activeTab === TABS.ADVANCED ? '#ffffff' : EB_COLORS.text,
-                                borderColor: activeTab === TABS.ADVANCED ? EB_COLORS.primary : EB_COLORS.border,
+                                backgroundColor: activeTab === TABS.ADVANCED ? '#2271b1' : '#f0f0f1',
+                                color: activeTab === TABS.ADVANCED ? '#ffffff' : '#1e1e1e',
+                                borderColor: activeTab === TABS.ADVANCED ? '#2271b1' : '#dcdcde',
                                 fontWeight: activeTab === TABS.ADVANCED ? 600 : 400,
                                 transition: 'all 0.2s ease',
                             }}
@@ -458,9 +442,9 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                                             style={{
                                                 flex: 1,
                                                 justifyContent: 'center',
-                                                backgroundColor: attributes.containerWidth === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
-                                                color: attributes.containerWidth === opt.value ? '#ffffff' : EB_COLORS.text,
-                                                borderColor: attributes.containerWidth === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                                                backgroundColor: attributes.containerWidth === opt.value ? '#2271b1' : '#f0f0f1',
+                                                color: attributes.containerWidth === opt.value ? '#ffffff' : '#1e1e1e',
+                                                borderColor: attributes.containerWidth === opt.value ? '#2271b1' : '#dcdcde',
                                                 fontWeight: attributes.containerWidth === opt.value ? 600 : 400,
                                                 transition: 'all 0.2s ease',
                                             }}
@@ -502,9 +486,9 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                                                 style={{
                                                     flex: 1,
                                                     justifyContent: 'center',
-                                                    backgroundColor: attributes.contentWidthType === opt.value ? EB_COLORS.primary : EB_COLORS.secondary,
-                                                    color: attributes.contentWidthType === opt.value ? '#ffffff' : EB_COLORS.text,
-                                                    borderColor: attributes.contentWidthType === opt.value ? EB_COLORS.primary : EB_COLORS.border,
+                                                    backgroundColor: attributes.contentWidthType === opt.value ? '#2271b1' : '#f0f0f1',
+                                                    color: attributes.contentWidthType === opt.value ? '#ffffff' : '#1e1e1e',
+                                                    borderColor: attributes.contentWidthType === opt.value ? '#2271b1' : '#dcdcde',
                                                     fontWeight: attributes.contentWidthType === opt.value ? 600 : 400,
                                                     transition: 'all 0.2s ease',
                                                 }}
@@ -722,7 +706,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                         />
                     </>
                 )}
-                </div> {/* .voxel-fse-flex-container */}
+
             </InspectorControls>
 
             {/* Inner blocks render as children */}

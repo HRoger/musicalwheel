@@ -4,7 +4,7 @@
     "name": "voxel-fse/flex-container",
     "version": "1.0.0",
     "title": "Flex Container (VX)",
-    "category": "design",
+    "category": "voxel-fse",
     "icon": "columns",
     "description": "Create flexible layouts with CSS Flexbox properties for responsive design.",
     "supports": {

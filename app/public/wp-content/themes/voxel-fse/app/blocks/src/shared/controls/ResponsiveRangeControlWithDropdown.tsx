@@ -9,17 +9,14 @@ import { RangeControl, Button } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useState, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
-import DashiconResponsiveButtons from './DashiconResponsiveButtons';
+import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton from './UnitDropdownButton';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
-// Undo icon SVG (red circular arrow pointing left/counter-clockwise)
+// Reset icon - Dashicon
 const UndoIcon = () => (
-	<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<circle cx="12" cy="12" r="10" fill="#dc3232" />
-		<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="#fff" />
-	</svg>
+	<span className="dashicons dashicons-image-rotate" style={{ fontSize: '16px', width: '16px', height: '16px' }} />
 );
 
 interface ResponsiveRangeControlWithDropdownProps {
@@ -161,7 +158,7 @@ export default function ResponsiveRangeControlWithDropdown({
 				{/* Left side: Label and Responsive Button - inline */}
 				<div className="elementor-control-content" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 					<span className="elementor-control-title" style={{ fontWeight: 500, fontSize: '13px' }}>{label}</span>
-					<DashiconResponsiveButtons
+					<ResponsiveDropdownButton
 						currentDevice={currentDevice}
 						onDeviceChange={setCurrentDevice}
 					/>
@@ -179,7 +176,7 @@ export default function ResponsiveRangeControlWithDropdown({
 
 			{/* Range Control - Full width below */}
 			<div className="elementor-control-input-wrapper" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-				<div style={{ flex: 1 }} className="eb-range-control-wrapper">
+				<div style={{ flex: 1 }}>
 					<RangeControl
 						value={getValue()}
 						onChange={setValue}
