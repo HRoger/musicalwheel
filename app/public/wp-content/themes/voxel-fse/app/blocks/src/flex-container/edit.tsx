@@ -24,6 +24,9 @@ import {
 // Import style generation utility
 import { generateContainerStyles, type FlexContainerAttributes } from './styles';
 
+// Import editor styles
+import './editor.css';
+
 // Define Main Tabs
 const TABS = {
     GENERAL: 'general',
@@ -174,12 +177,9 @@ const FlexWrapIcons = {
     ),
 };
 
-// Reset Icon SVG
+// Reset Icon - Dashicon
 const ResetIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-        <path d="M3 3v5h5"/>
-    </svg>
+    <span className="dashicons dashicons-image-rotate" style={{ fontSize: '14px', width: '14px', height: '14px' }} />
 );
 
 interface EditProps {
@@ -404,8 +404,9 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
     return (
         <div {...innerBlocksProps}>
             <InspectorControls>
-                {/* Main Tab Switcher */}
-                <div className="voxel-section-header" style={{ marginBottom: 15, padding: '10px 10px 0' }}>
+                <div className="voxel-fse-flex-container">
+                    {/* Main Tab Switcher */}
+                    <div className="voxel-section-header" style={{ marginBottom: 15, padding: '10px 10px 0' }}>
                     <ButtonGroup style={{ width: '100%', display: 'flex', gap: '4px' }}>
                         <Button
                             isPressed={activeTab === TABS.GENERAL}
@@ -721,7 +722,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
                         />
                     </>
                 )}
-
+                </div> {/* .voxel-fse-flex-container */}
             </InspectorControls>
 
             {/* Inner blocks render as children */}

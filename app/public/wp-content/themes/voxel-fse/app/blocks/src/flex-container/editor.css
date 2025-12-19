@@ -1,0 +1,48 @@
+/**
+ * Essential Blocks UI Styles for Flex Container
+ * Matches Essential Blocks control dimensions and styling
+ */
+
+/* Input field sizing - match Essential Blocks 78×48px */
+.eb-range-control-wrapper .components-input-control__container input[type="number"] {
+    width: 78px !important;
+    min-width: 78px !important;
+    height: 48px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+}
+
+/* Adjust range slider to balance with larger input */
+.eb-range-control-wrapper .components-range-control__slider {
+    margin-right: 16px;
+}
+
+/* Reset button - use Dashicon */
+.eb-range-control-wrapper button[aria-label*="Reset"] .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+/* Ensure reset button is sized properly */
+.eb-range-control-wrapper button[aria-label*="Reset"] {
+    min-width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tighter control spacing like Essential Blocks */
+.voxel-fse-flex-container .elementor-control {
+    margin-bottom: 16px;
+}
+
+/* Unit dropdown button styling - match EB */
+.eb-range-control-wrapper .e-units-wrapper button {
+    min-height: 24px !important;
+    padding: 2px 8px 4px !important;
+    font-size: 12px !important;
+}
