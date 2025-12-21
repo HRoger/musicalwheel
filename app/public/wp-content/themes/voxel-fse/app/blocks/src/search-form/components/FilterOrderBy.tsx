@@ -26,7 +26,6 @@ interface OrderByOption {
 	key: string;
 	label: string;
 	placeholder?: string;
-	icon?: string;
 }
 
 export default function FilterOrderBy( {
@@ -54,7 +53,6 @@ export default function FilterOrderBy( {
 			key,
 			label: choice.label || choice,
 			placeholder: choice.placeholder || choice.label || choice,
-			icon: choice.icon || VoxelIcons.orderBy,
 		} ) );
 	}, [ props.choices ] );
 
@@ -109,11 +107,9 @@ export default function FilterOrderBy( {
 									</label>
 								</div>
 								<span>{ option.label }</span>
-								{ option.icon && (
-									<div className="ts-term-icon">
-										<span dangerouslySetInnerHTML={ { __html: option.icon } } />
-									</div>
-								) }
+								<div className="ts-term-icon">
+									<span>{ VoxelIcons.orderBy }</span>
+								</div>
 							</a>
 						</li>
 					);
@@ -162,7 +158,7 @@ export default function FilterOrderBy( {
 								className={ `ts-filter${ isSelected ? ' ts-filled' : '' }` }
 								onClick={ () => handleSelect( option.key ) }
 							>
-								{ option.icon && <span dangerouslySetInnerHTML={ { __html: option.icon } } /> }
+								<span>{ VoxelIcons.orderBy }</span>
 								<div className="ts-filter-text">
 									<span>{ option.placeholder || option.label }</span>
 								</div>
