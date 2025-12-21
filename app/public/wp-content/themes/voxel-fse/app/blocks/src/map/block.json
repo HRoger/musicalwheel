@@ -1,0 +1,436 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/map",
+	"version": "1.0.0",
+	"title": "Map (VX)",
+	"category": "voxel-fse",
+	"description": "Interactive map displaying markers from search results or current post location.",
+	"keywords": ["map", "location", "markers", "google maps", "mapbox", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"source": {
+			"type": "string",
+			"default": "search-form",
+			"enum": ["search-form", "current-post"]
+		},
+		"searchFormId": {
+			"type": "string",
+			"default": ""
+		},
+		"dragSearch": {
+			"type": "boolean",
+			"default": true
+		},
+		"dragSearchMode": {
+			"type": "string",
+			"default": "manual",
+			"enum": ["automatic", "manual"]
+		},
+		"dragSearchDefault": {
+			"type": "string",
+			"default": "unchecked",
+			"enum": ["checked", "unchecked"]
+		},
+		"height": {
+			"type": "number",
+			"default": 400
+		},
+		"height_tablet": {
+			"type": "number"
+		},
+		"height_mobile": {
+			"type": "number"
+		},
+		"heightUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"enableCalcHeight": {
+			"type": "boolean",
+			"default": false
+		},
+		"enableCalcHeight_tablet": {
+			"type": "boolean"
+		},
+		"enableCalcHeight_mobile": {
+			"type": "boolean"
+		},
+		"calcHeight": {
+			"type": "string",
+			"default": ""
+		},
+		"calcHeight_tablet": {
+			"type": "string"
+		},
+		"calcHeight_mobile": {
+			"type": "string"
+		},
+		"borderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"borderRadius_tablet": {
+			"type": "number"
+		},
+		"borderRadius_mobile": {
+			"type": "number"
+		},
+		"defaultLat": {
+			"type": "number",
+			"default": 51.492
+		},
+		"defaultLng": {
+			"type": "number",
+			"default": -0.13
+		},
+		"defaultZoom": {
+			"type": "number",
+			"default": 11
+		},
+		"minZoom": {
+			"type": "number",
+			"default": 2
+		},
+		"maxZoom": {
+			"type": "number",
+			"default": 18
+		},
+		"clusterSize": {
+			"type": "number"
+		},
+		"clusterSize_tablet": {
+			"type": "number"
+		},
+		"clusterSize_mobile": {
+			"type": "number"
+		},
+		"clusterBgColor": {
+			"type": "string"
+		},
+		"clusterBgColor_tablet": {
+			"type": "string"
+		},
+		"clusterBgColor_mobile": {
+			"type": "string"
+		},
+		"clusterShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"clusterRadius": {
+			"type": "number"
+		},
+		"clusterRadius_tablet": {
+			"type": "number"
+		},
+		"clusterRadius_mobile": {
+			"type": "number"
+		},
+		"clusterTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"clusterTextColor": {
+			"type": "string"
+		},
+		"clusterTextColor_tablet": {
+			"type": "string"
+		},
+		"clusterTextColor_mobile": {
+			"type": "string"
+		},
+		"iconMarkerSize": {
+			"type": "number"
+		},
+		"iconMarkerSize_tablet": {
+			"type": "number"
+		},
+		"iconMarkerSize_mobile": {
+			"type": "number"
+		},
+		"iconMarkerIconSize": {
+			"type": "number"
+		},
+		"iconMarkerIconSize_tablet": {
+			"type": "number"
+		},
+		"iconMarkerIconSize_mobile": {
+			"type": "number"
+		},
+		"iconMarkerRadius": {
+			"type": "number"
+		},
+		"iconMarkerRadius_tablet": {
+			"type": "number"
+		},
+		"iconMarkerRadius_mobile": {
+			"type": "number"
+		},
+		"iconMarkerShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"iconMarkerStaticBg": {
+			"type": "string"
+		},
+		"iconMarkerStaticBg_tablet": {
+			"type": "string"
+		},
+		"iconMarkerStaticBg_mobile": {
+			"type": "string"
+		},
+		"iconMarkerStaticBgActive": {
+			"type": "string"
+		},
+		"iconMarkerStaticBgActive_tablet": {
+			"type": "string"
+		},
+		"iconMarkerStaticBgActive_mobile": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColor": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColor_tablet": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColor_mobile": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColorActive": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColorActive_tablet": {
+			"type": "string"
+		},
+		"iconMarkerStaticIconColorActive_mobile": {
+			"type": "string"
+		},
+		"textMarkerBgColor": {
+			"type": "string"
+		},
+		"textMarkerBgColor_tablet": {
+			"type": "string"
+		},
+		"textMarkerBgColor_mobile": {
+			"type": "string"
+		},
+		"textMarkerBgColorActive": {
+			"type": "string"
+		},
+		"textMarkerBgColorActive_tablet": {
+			"type": "string"
+		},
+		"textMarkerBgColorActive_mobile": {
+			"type": "string"
+		},
+		"textMarkerTextColor": {
+			"type": "string"
+		},
+		"textMarkerTextColor_tablet": {
+			"type": "string"
+		},
+		"textMarkerTextColor_mobile": {
+			"type": "string"
+		},
+		"textMarkerTextColorActive": {
+			"type": "string"
+		},
+		"textMarkerTextColorActive_tablet": {
+			"type": "string"
+		},
+		"textMarkerTextColorActive_mobile": {
+			"type": "string"
+		},
+		"textMarkerRadius": {
+			"type": "number"
+		},
+		"textMarkerRadius_tablet": {
+			"type": "number"
+		},
+		"textMarkerRadius_mobile": {
+			"type": "number"
+		},
+		"textMarkerTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"textMarkerPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"textMarkerPadding_tablet": {
+			"type": "object"
+		},
+		"textMarkerPadding_mobile": {
+			"type": "object"
+		},
+		"textMarkerShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"imageMarkerSize": {
+			"type": "number"
+		},
+		"imageMarkerSize_tablet": {
+			"type": "number"
+		},
+		"imageMarkerSize_mobile": {
+			"type": "number"
+		},
+		"imageMarkerRadius": {
+			"type": "number"
+		},
+		"imageMarkerRadius_tablet": {
+			"type": "number"
+		},
+		"imageMarkerRadius_mobile": {
+			"type": "number"
+		},
+		"imageMarkerShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"popupCardWidth": {
+			"type": "number",
+			"default": 270
+		},
+		"popupCardWidth_tablet": {
+			"type": "number"
+		},
+		"popupCardWidth_mobile": {
+			"type": "number"
+		},
+		"popupLoaderColor1": {
+			"type": "string"
+		},
+		"popupLoaderColor2": {
+			"type": "string"
+		},
+		"searchBtnTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"searchBtnTextColor": {
+			"type": "string"
+		},
+		"searchBtnTextColor_tablet": {
+			"type": "string"
+		},
+		"searchBtnTextColor_mobile": {
+			"type": "string"
+		},
+		"searchBtnBgColor": {
+			"type": "string"
+		},
+		"searchBtnBgColor_tablet": {
+			"type": "string"
+		},
+		"searchBtnBgColor_mobile": {
+			"type": "string"
+		},
+		"searchBtnIconColor": {
+			"type": "string"
+		},
+		"searchBtnIconColor_tablet": {
+			"type": "string"
+		},
+		"searchBtnIconColor_mobile": {
+			"type": "string"
+		},
+		"searchBtnIconColorActive": {
+			"type": "string"
+		},
+		"searchBtnIconColorActive_tablet": {
+			"type": "string"
+		},
+		"searchBtnIconColorActive_mobile": {
+			"type": "string"
+		},
+		"searchBtnRadius": {
+			"type": "number"
+		},
+		"searchBtnRadius_tablet": {
+			"type": "number"
+		},
+		"searchBtnRadius_mobile": {
+			"type": "number"
+		},
+		"checkmarkIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"navBtnIconColor": {
+			"type": "string"
+		},
+		"navBtnIconSize": {
+			"type": "number"
+		},
+		"navBtnIconSize_tablet": {
+			"type": "number"
+		},
+		"navBtnIconSize_mobile": {
+			"type": "number"
+		},
+		"navBtnBgColor": {
+			"type": "string"
+		},
+		"navBtnBorderType": {
+			"type": "string",
+			"default": "none"
+		},
+		"navBtnBorderWidth": {
+			"type": "number"
+		},
+		"navBtnBorderColor": {
+			"type": "string"
+		},
+		"navBtnRadius": {
+			"type": "number",
+			"default": 50
+		},
+		"navBtnRadius_tablet": {
+			"type": "number"
+		},
+		"navBtnRadius_mobile": {
+			"type": "number"
+		},
+		"navBtnShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"navBtnSize": {
+			"type": "number"
+		},
+		"navBtnSize_tablet": {
+			"type": "number"
+		},
+		"navBtnSize_mobile": {
+			"type": "number"
+		},
+		"navBtnIconColorHover": {
+			"type": "string"
+		},
+		"navBtnBgColorHover": {
+			"type": "string"
+		},
+		"navBtnBorderColorHover": {
+			"type": "string"
+		}
+	}
+}
