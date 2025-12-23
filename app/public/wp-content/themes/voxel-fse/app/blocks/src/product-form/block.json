@@ -1,0 +1,534 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/product-form",
+	"version": "1.0.0",
+	"title": "Product Form (VX)",
+	"category": "voxel-fse",
+	"description": "A product purchase form with dynamic fields, cart integration, and price calculator. Must be placed on a single post template with a product field.",
+	"keywords": ["product", "form", "cart", "checkout", "purchase", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"showPriceCalculator": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"showPriceCalculatorTablet": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"showPriceCalculatorMobile": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"showSubtotalOnly": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideCardSubheading": {
+			"type": "boolean",
+			"default": false
+		},
+		"cardSelectOnClick": {
+			"type": "boolean",
+			"default": true
+		},
+		"icons": {
+			"type": "object",
+			"default": {
+				"addToCart": { "library": "line-awesome", "value": "la-shopping-cart" },
+				"outOfStock": { "library": "line-awesome", "value": "la-exclamation-circle" },
+				"checkout": { "library": "line-awesome", "value": "la-arrow-right" },
+				"calendar": { "library": "line-awesome", "value": "la-calendar" },
+				"clock": { "library": "line-awesome", "value": "la-clock" }
+			}
+		},
+		"fieldSpacing": {
+			"type": "number",
+			"default": 20
+		},
+		"fieldSpacingTablet": {
+			"type": "number"
+		},
+		"fieldSpacingMobile": {
+			"type": "number"
+		},
+		"fieldLabelTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"fieldLabelColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryButtonBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"primaryButtonBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"primaryButtonBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryButtonTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonIconSize": {
+			"type": "number",
+			"default": 24
+		},
+		"primaryButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonIconTextSpacing": {
+			"type": "number",
+			"default": 8
+		},
+		"primaryButtonTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryButtonBoxShadowHover": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryButtonIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"priceCalculatorListSpacing": {
+			"type": "number",
+			"default": 10
+		},
+		"priceCalculatorTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"priceCalculatorTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"priceCalculatorTotalTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"priceCalculatorTotalTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"loadingColor1": {
+			"type": "string",
+			"default": ""
+		},
+		"loadingColor2": {
+			"type": "string",
+			"default": ""
+		},
+		"outOfStockContentGap": {
+			"type": "number",
+			"default": 15
+		},
+		"outOfStockIconSize": {
+			"type": "number",
+			"default": 40
+		},
+		"outOfStockIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"outOfStockTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"outOfStockTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"stepperInputSize": {
+			"type": "number",
+			"default": 16
+		},
+		"stepperButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"stepperButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"stepperButtonBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"stepperButtonBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"stepperButtonIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"stepperButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"stepperButtonBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsGap": {
+			"type": "number",
+			"default": 10
+		},
+		"cardsBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"cardsBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"cardsPrimaryTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"cardsPrimaryColor": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsSecondaryTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"cardsSecondaryColor": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsPriceTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"cardsPriceColor": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsImageBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"cardsImageSize": {
+			"type": "number",
+			"default": 60
+		},
+		"cardsSelectedBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsSelectedBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"cardsSelectedBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"cardsSelectedPrimaryTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"buttonsGap": {
+			"type": "number",
+			"default": 10
+		},
+		"buttonsBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonsBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"buttonsBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"buttonsTextTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"buttonsTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonsSelectedBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonsSelectedBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"buttonsSelectedBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"dropdownTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"dropdownBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"dropdownBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"dropdownBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"dropdownIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownIconSize": {
+			"type": "number",
+			"default": 24
+		},
+		"dropdownIconTextSpacing": {
+			"type": "number",
+			"default": 10
+		},
+		"dropdownHideChevron": {
+			"type": "boolean",
+			"default": false
+		},
+		"dropdownChevronColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownBoxShadowHover": {
+			"type": "object",
+			"default": {}
+		},
+		"dropdownFilledTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"dropdownFilledBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownFilledTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownFilledIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownFilledBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dropdownFilledBorderWidth": {
+			"type": "number",
+			"default": 0
+		},
+		"dropdownFilledBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"radioCheckboxBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"radioCheckboxTextTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"radioCheckboxTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"radioCheckboxSelectedBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"radioCheckboxSelectedTextTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"radioCheckboxSelectedTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"radioCheckboxSelectedBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"switcherBackgroundInactive": {
+			"type": "string",
+			"default": ""
+		},
+		"switcherBackgroundActive": {
+			"type": "string",
+			"default": ""
+		},
+		"switcherHandleBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"imagesGap": {
+			"type": "number",
+			"default": 10
+		},
+		"imagesBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"imagesSelectedBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"colorsGap": {
+			"type": "number",
+			"default": 10
+		},
+		"colorsSize": {
+			"type": "number",
+			"default": 30
+		},
+		"colorsBorderRadius": {
+			"type": "number",
+			"default": 50
+		},
+		"colorsInsetColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inputPlaceholderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inputPlaceholderTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inputValueColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inputValueTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inputBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"inputBorder": {
+			"type": "object",
+			"default": { "type": "default", "width": 0, "color": "" }
+		},
+		"inputBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"inputBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"inputBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"inputPlaceholderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"inputTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"inputBackgroundActive": {
+			"type": "string",
+			"default": ""
+		},
+		"inputBorderColorActive": {
+			"type": "string",
+			"default": ""
+		},
+		"inputTextColorActive": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}
