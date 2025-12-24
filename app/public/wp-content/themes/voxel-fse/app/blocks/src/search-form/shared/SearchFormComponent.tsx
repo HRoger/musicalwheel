@@ -194,6 +194,30 @@ export default function SearchFormComponent( {
 		};
 	}, [ state.portalActive, togglePortal ] );
 
+	// Listen for external reset events (from Post Feed's "Reset filters?" link)
+	// Evidence: voxel search-form.js - ts-feed-reset calls clearAll()
+	useEffect( () => {
+		if ( context !== 'frontend' ) return;
+
+		const handleExternalClear = ( event: Event ) => {
+			const customEvent = event as CustomEvent< {
+				postType?: string;
+				searchFormId?: string;
+			} >;
+
+			// If searchFormId is specified, only respond if it matches this form
+			if ( customEvent.detail?.searchFormId && customEvent.detail.searchFormId !== attributes.blockId ) {
+				return;
+			}
+
+			// Call clearAll to reset all filters and update URL
+			clearAll();
+		};
+
+		window.addEventListener( 'voxel-search-clear', handleExternalClear );
+		return () => window.removeEventListener( 'voxel-search-clear', handleExternalClear );
+	}, [ context, attributes.blockId, clearAll ] );
+
 	// Get current post type config
 	const currentPostTypeConfig = postTypes.find(
 		( pt ) => pt.key === state.currentPostType

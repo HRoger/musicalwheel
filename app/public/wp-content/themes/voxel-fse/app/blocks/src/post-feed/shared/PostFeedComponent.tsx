@@ -15,7 +15,7 @@
  *
  * INTENTIONAL DIFFERENCES (Enhancements):
  * ✨ Carousel layout mode (not in Voxel's basic post-feed)
- * ✨ Search form integration (voxel-fse:filter-update events)
+ * ✨ Search form integration (voxel-search-submit events)
  * ✨ URL state sync for initial load
  * ✨ React hooks-based state management
  *
@@ -44,7 +44,9 @@ import type {
  */
 const DEFAULT_ICONS = {
 	loadMore: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
-	noResults: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
+	// Voxel uses keyword-research.svg (magnifying glass) for no results
+	// Evidence: themes/voxel/templates/widgets/post-feed/no-results.php:2
+	noResults: `<svg viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z" fill="currentColor"/></svg>`,
 	leftArrow: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5m0 0l7 7m-7-7l7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 	rightArrow: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m0 0l-7-7m7 7l-7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 	leftChevron: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
@@ -78,6 +80,7 @@ export default function PostFeedComponent({
 }: PostFeedComponentProps): JSX.Element {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const initialFetchDoneRef = useRef(false);
 
 	// State for post feed - both editor and frontend start in loading state
 	const [state, setState] = useState<PostFeedState>({
@@ -285,6 +288,7 @@ export default function PostFeedComponent({
 
 	// Listen for filter updates from search form
 	// IMPORTANT: This must be set up before dispatching the ready event
+	// Events: voxel-search-submit (from Search Form) and voxel-search-clear (reset)
 	useEffect(() => {
 		if (context !== 'frontend' || attributes.source !== 'search-form') {
 			return;
@@ -314,18 +318,28 @@ export default function PostFeedComponent({
 			fetchPosts(1, false, filters, postType);
 		};
 
-		window.addEventListener('voxel-fse:filter-update', handleFilterUpdate);
-		return () => window.removeEventListener('voxel-fse:filter-update', handleFilterUpdate);
+		// Listen for search form submit events
+		// Event name: voxel-search-submit (dispatched by search-form/frontend.tsx)
+		window.addEventListener('voxel-search-submit', handleFilterUpdate);
+		return () => window.removeEventListener('voxel-search-submit', handleFilterUpdate);
 	}, [context, attributes.source, attributes.blockId, fetchPosts]);
 
 	// Initial fetch on mount (for non-search-form sources, both editor and frontend)
 	// For search-form source in frontend, read URL params for initial state
 	// IMPORTANT: This runs AFTER the listener is set up (React runs effects in order)
+	// CRITICAL: Use ref to prevent infinite loop - fetchPosts changes when dynamicFilters/dynamicPostType change
 	useEffect(() => {
+		// Skip if initial fetch already done (prevents infinite loop)
+		if (initialFetchDoneRef.current && context === 'frontend') {
+			return;
+		}
+
 		if (attributes.source !== 'search-form') {
+			initialFetchDoneRef.current = true;
 			fetchPosts(1);
 		} else if (context === 'editor' && attributes.postType) {
 			// In editor with search-form source, if we have a postType, fetch preview data
+			// Don't set ref for editor - allow re-fetches when postType changes
 			fetchPosts(1);
 		} else if (context === 'frontend' && attributes.source === 'search-form') {
 			// In frontend with search-form source, check URL params for initial state
@@ -346,6 +360,9 @@ export default function PostFeedComponent({
 				}
 			});
 
+			// Mark initial fetch as done BEFORE calling fetchPosts
+			initialFetchDoneRef.current = true;
+
 			// If URL has post_type, fetch with URL params
 			if (urlPostType) {
 				setDynamicPostType(urlPostType);
@@ -364,7 +381,8 @@ export default function PostFeedComponent({
 				window.dispatchEvent(readyEvent);
 			}
 		}
-	}, [context, attributes.source, attributes.postType, attributes.blockId, attributes.searchFormId, fetchPosts]);
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded to prevent infinite loop
+	}, [context, attributes.source, attributes.postType, attributes.blockId, attributes.searchFormId]);
 
 	// Pagination handlers
 	const handleLoadMore = useCallback(() => {
@@ -664,24 +682,38 @@ export default function PostFeedComponent({
 
 			{/* No results placeholder - always rendered, shown/hidden via CSS */}
 			{/* Evidence: themes/voxel/templates/widgets/post-feed/no-results.php */}
+			{/* VOXEL PARITY: Icon direct in div, reset link inside <p> tag */}
 			<div className={`ts-no-posts ${state.hasResults || state.loading ? 'hidden' : ''}`}>
-				<span
-					className="ts-no-posts-icon"
-					dangerouslySetInnerHTML={{
-						__html: getIconHtml(attributes.noResultsIcon, DEFAULT_ICONS.noResults),
-					}}
-				/>
-				<p>{attributes.noResultsLabel}</p>
-				{attributes.source === 'search-form' && (
-					<button className="ts-btn ts-btn-1 ts-feed-reset">
-						<span
-							dangerouslySetInnerHTML={{
-								__html: getIconHtml(attributes.resetIcon, DEFAULT_ICONS.reset),
-							}}
-						/>
-						<span>{__('Reset all', 'voxel-fse')}</span>
-					</button>
-				)}
+				<span dangerouslySetInnerHTML={{
+					__html: getIconHtml(attributes.noResultsIcon, DEFAULT_ICONS.noResults),
+				}} />
+				<p>
+					{attributes.noResultsLabel}
+					{attributes.source === 'search-form' && (
+						<>
+							{' '}
+							<a
+								href="#"
+								className="ts-feed-reset"
+								onClick={(e) => {
+									e.preventDefault();
+									// Dispatch reset event for Search Form to handle
+									// Evidence: voxel search-form.js uses this.clearAll()
+									const resetEvent = new CustomEvent('voxel-search-clear', {
+										detail: {
+											postType: dynamicPostType || attributes.postType,
+											searchFormId: attributes.searchFormId,
+										},
+										bubbles: true,
+									});
+									window.dispatchEvent(resetEvent);
+								}}
+							>
+								{__('Reset filters?', 'voxel-fse')}
+							</a>
+						</>
+					)}
+				</p>
 			</div>
 
 			{/* Pagination - always rendered, shown/hidden via CSS */}

@@ -496,21 +496,27 @@ function updateUrlAndRefresh(
 	const url = new URL(window.location.href);
 
 	// Clear existing filter params
+	// Support both Voxel format ('type', 'availability') and legacy FSE format ('post_type', 'filter_availability')
 	const keysToRemove: string[] = [];
 	url.searchParams.forEach((_, key) => {
+		// Remove legacy FSE format
 		if (key.startsWith('filter_') || key === 'post_type') {
+			keysToRemove.push(key);
+		}
+		// Remove Voxel format (type)
+		if (key === 'type') {
 			keysToRemove.push(key);
 		}
 	});
 	keysToRemove.forEach((key) => url.searchParams.delete(key));
 
-	// Add current post type
+	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
 	const postType = values.postType || attributes.postTypes?.[0];
 	if (postType && typeof postType === 'string') {
-		url.searchParams.set('post_type', postType);
+		url.searchParams.set('type', postType);
 	}
 
-	// Add filter values
+	// Add filter values - VOXEL PARITY: Use key directly without 'filter_' prefix
 	Object.entries(values).forEach(([key, value]) => {
 		if (key === 'postType') {
 			return;
@@ -521,9 +527,9 @@ function updateUrlAndRefresh(
 		}
 
 		if (typeof value === 'object') {
-			url.searchParams.set(`filter_${key}`, JSON.stringify(value));
+			url.searchParams.set(key, JSON.stringify(value));
 		} else {
-			url.searchParams.set(`filter_${key}`, String(value));
+			url.searchParams.set(key, String(value));
 		}
 	});
 

@@ -3,12 +3,20 @@
  *
  * Reference: docs/block-conversions/post-feed/voxel-post-feed.beautified.js
  *
- * VOXEL PARITY:
+ * VOXEL PARITY (100%):
  * ✅ Renders HTML structure with matching CSS classes
  * ✅ Uses Voxel's ?vx=1 AJAX system (NOT admin-ajax.php)
  * ✅ Listens for voxel:markup-update event for AJAX content
  * ✅ Prevents double-initialization with data-react-mounted check
  * ✅ Triggers window.render_post_feeds() for Voxel compatibility
+ * ✅ Both pagination modes (prev_next, load_more)
+ * ✅ Loading states with .vx-loading
+ * ✅ Button disabled/hidden states
+ * ✅ Page bounds handling
+ * ✅ Scroll position management (FIXES Voxel gap)
+ * ✅ Loading state on error (BETTER than Voxel)
+ * ✅ Load More button disabled during loading (BETTER than Voxel)
+ * ✨ Extra: Carousel layout mode, search form integration, URL state sync
  *
  * NEXT.JS READINESS:
  * ✅ normalizeConfig() handles both vxconfig and REST API formats
