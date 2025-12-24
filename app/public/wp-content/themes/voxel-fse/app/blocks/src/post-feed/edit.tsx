@@ -174,8 +174,8 @@ export default function Edit({
 	);
 
 	// Step 2: Use getBlock(clientId) to get the linked form's attributes
-	// getBlock subscribes to changes in that specific block, ensuring re-renders
-	// when selectedPostType changes
+	// IMPORTANT: No dependency array - this ensures selector re-runs on every store change
+	// so we catch when selectedPostType attribute changes on the linked Search Form
 	const linkedPostType = useSelect(
 		(select) => {
 			if (!linkedSearchFormClientId) {
@@ -195,8 +195,7 @@ export default function Edit({
 
 			// Return selectedPostType (current selection) or fallback to first configured postType
 			return linkedForm.attributes.selectedPostType || linkedForm.attributes.postTypes?.[0] || '';
-		},
-		[linkedSearchFormClientId]
+		}
 	);
 
 	// Build relation items for RelationControl

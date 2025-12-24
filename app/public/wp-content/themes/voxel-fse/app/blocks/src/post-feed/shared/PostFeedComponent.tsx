@@ -95,6 +95,16 @@ export default function PostFeedComponent({
 	const [dynamicFilters, setDynamicFilters] = useState<Record<string, unknown>>({});
 	const [dynamicPostType, setDynamicPostType] = useState<string>(attributes.postType || '');
 
+	// CRITICAL: Sync dynamicPostType with attributes.postType in editor context
+	// In editor, postType changes come through props (from linkedPostType in edit.tsx)
+	// In frontend, postType changes come through events (setDynamicPostType called directly)
+	// Without this sync, the editor preview doesn't update when user changes post type in Search Form
+	useEffect(() => {
+		if (context === 'editor' && attributes.postType && attributes.postType !== dynamicPostType) {
+			setDynamicPostType(attributes.postType);
+		}
+	}, [context, attributes.postType, dynamicPostType]);
+
 	// Build CSS classes
 	const layoutClass = attributes.layoutMode === 'carousel' ? 'ts-feed-nowrap' : 'ts-feed-grid-default';
 	const loadingClass = state.loading ? `vx-${attributes.loadingStyle}` : '';
