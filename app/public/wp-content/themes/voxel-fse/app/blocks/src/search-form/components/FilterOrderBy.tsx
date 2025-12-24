@@ -20,12 +20,15 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { FilterComponentProps } from '../types';
 // Import shared components (Voxel's commons.js pattern)
-import { VoxelIcons, getFilterWrapperStyles, FieldPopup } from '@shared';
+import { getFilterWrapperStyles, FieldPopup } from '@shared';
 
 interface OrderByOption {
 	key: string;
 	label: string;
 	placeholder?: string;
+	// Icon HTML markup from Voxel's get_icon_markup()
+	// Evidence: themes/voxel/app/post-types/filters/order-by-filter.php:89
+	icon?: string;
 }
 
 export default function FilterOrderBy( {
@@ -53,8 +56,15 @@ export default function FilterOrderBy( {
 			key,
 			label: choice.label || choice,
 			placeholder: choice.placeholder || choice.label || choice,
+			// Icon HTML markup from Voxel's get_icon_markup()
+			// Evidence: themes/voxel/app/post-types/filters/order-by-filter.php:89
+			icon: choice.icon || '',
 		} ) );
 	}, [ props.choices ] );
+
+	// Get filter icon - from API data (HTML markup) or fallback
+	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
+	const filterIcon = filterData.icon || '';
 
 	const openPopup = useCallback( () => {
 		setIsOpen( true );
@@ -107,9 +117,12 @@ export default function FilterOrderBy( {
 									</label>
 								</div>
 								<span>{ option.label }</span>
-								<div className="ts-term-icon">
-									<span>{ VoxelIcons.orderBy }</span>
-								</div>
+								{ /* Icon from API (HTML markup) - matches Voxel v-html pattern */ }
+								{ option.icon && (
+									<div className="ts-term-icon">
+										<span dangerouslySetInnerHTML={ { __html: option.icon } } />
+									</div>
+								) }
 							</a>
 						</li>
 					);
@@ -158,7 +171,10 @@ export default function FilterOrderBy( {
 								className={ `ts-filter${ isSelected ? ' ts-filled' : '' }` }
 								onClick={ () => handleSelect( option.key ) }
 							>
-								<span>{ VoxelIcons.orderBy }</span>
+								{ /* Icon from API (HTML markup) - matches Voxel v-html pattern */ }
+								{ option.icon && (
+									<span dangerouslySetInnerHTML={ { __html: option.icon } } />
+								) }
 								<div className="ts-filter-text">
 									<span>{ option.placeholder || option.label }</span>
 								</div>
@@ -193,7 +209,10 @@ export default function FilterOrderBy( {
 				role="button"
 				tabIndex={ 0 }
 			>
-				<span>{ VoxelIcons.orderBy }</span>
+				{ /* Icon from API (HTML markup) - matches Voxel v-html="filter.icon" pattern */ }
+				{ filterIcon && (
+					<span dangerouslySetInnerHTML={ { __html: filterIcon } } />
+				) }
 				<div className="ts-filter-text">{ displayValue }</div>
 				<div className="ts-down-icon"></div>
 			</div>
@@ -203,7 +222,7 @@ export default function FilterOrderBy( {
 				isOpen={ isOpen }
 				target={ triggerRef }
 				title=""
-				icon={ VoxelIcons.orderBy }
+				icon={ filterIcon }
 				saveLabel="Save"
 				clearLabel="Clear"
 				showClear={ hasValue }
