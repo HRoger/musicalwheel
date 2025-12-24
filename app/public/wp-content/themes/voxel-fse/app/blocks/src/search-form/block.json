@@ -1,0 +1,342 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/search-form",
+	"version": "1.0.0",
+	"title": "Search Form (VX)",
+	"category": "voxel-fse",
+	"description": "A fully interactive search form for filtering Voxel post types with 16 filter types.",
+	"keywords": ["search", "filter", "form", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css",
+	"viewScript": "file:./frontend.js",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"postTypes": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "string"
+			}
+		},
+		"selectedPostType": {
+			"type": "string",
+			"default": ""
+		},
+		"showPostTypeFilter": {
+			"type": "boolean",
+			"default": false
+		},
+		"filterLists": {
+			"type": "object",
+			"default": {}
+		},
+		"onSubmit": {
+			"type": "string",
+			"default": "refresh",
+			"enum": ["refresh", "feed", "map"]
+		},
+		"postToFeedId": {
+			"type": "string",
+			"default": ""
+		},
+		"postToMapId": {
+			"type": "string",
+			"default": ""
+		},
+		"searchOn": {
+			"type": "string",
+			"default": "submit",
+			"enum": ["change", "submit"]
+		},
+		"showSearchButton": {
+			"type": "boolean",
+			"default": true
+		},
+		"searchButtonText": {
+			"type": "string",
+			"default": "Search"
+		},
+		"searchButtonIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"searchButtonWidth": {
+			"type": "number"
+		},
+		"searchButtonWidth_tablet": {
+			"type": "number"
+		},
+		"searchButtonWidth_mobile": {
+			"type": "number"
+		},
+		"searchButtonWidthUnit": {
+			"type": "string",
+			"default": "%"
+		},
+		"showResetButton": {
+			"type": "boolean",
+			"default": false
+		},
+		"resetButtonText": {
+			"type": "string",
+			"default": "Reset"
+		},
+		"resetButtonIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"resetButtonWidth": {
+			"type": "number"
+		},
+		"resetButtonWidth_tablet": {
+			"type": "number"
+		},
+		"resetButtonWidth_mobile": {
+			"type": "number"
+		},
+		"resetButtonWidthUnit": {
+			"type": "string",
+			"default": "%"
+		},
+		"filterBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"filterBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"filterTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"filterTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"filterTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"filterPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"filterPadding_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"filterPadding_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"filterMargin": {
+			"type": "object",
+			"default": {}
+		},
+		"filterMargin_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"filterMargin_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"filterBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"filterBorderWidth": {
+			"type": "number",
+			"default": 0
+		},
+		"filterBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"filterGap": {
+			"type": "number",
+			"default": 10
+		},
+		"filterGap_tablet": {
+			"type": "number"
+		},
+		"filterGap_mobile": {
+			"type": "number"
+		},
+		"toggleBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"toggleBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"toggleTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"toggleTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"toggleIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"toggleText": {
+			"type": "string",
+			"default": "Filter results"
+		},
+		"portalBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"portalWidth": {
+			"type": "object",
+			"default": {
+				"desktop": 400,
+				"tablet": 350,
+				"mobile": 300
+			}
+		},
+		"portalMaxHeight": {
+			"type": "number"
+		},
+		"portalMaxHeight_tablet": {
+			"type": "number"
+		},
+		"portalMaxHeight_mobile": {
+			"type": "number"
+		},
+		"blockMargin": {
+			"type": "object",
+			"default": {}
+		},
+		"blockMargin_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"blockMargin_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"customClasses": {
+			"type": "string",
+			"default": ""
+		},
+		"customCSS": {
+			"type": "string",
+			"default": ""
+		},
+		"voxelIntegration": {
+			"type": "boolean",
+			"default": true
+		},
+		"formToggleDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"formToggleTablet": {
+			"type": "boolean",
+			"default": true
+		},
+		"formToggleMobile": {
+			"type": "boolean",
+			"default": true
+		},
+		"portalMode": {
+			"type": "object",
+			"default": {
+				"desktop": false,
+				"tablet": true,
+				"mobile": true
+			}
+		},
+		"adaptiveFiltering": {
+			"type": "boolean",
+			"default": false
+		},
+		"searchButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"searchButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"searchButtonTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"searchButtonTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"searchButtonTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"searchButtonPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"searchButtonBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"resetButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"resetButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"resetButtonTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"resetButtonTextColorHover": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

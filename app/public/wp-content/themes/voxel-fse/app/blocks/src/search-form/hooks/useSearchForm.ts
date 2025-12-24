@@ -23,6 +23,11 @@ interface UseSearchFormProps {
 	postTypes: PostTypeConfig[];
 	context: 'editor' | 'frontend';
 	onSubmit?: ( values: Record<string, unknown> ) => void;
+	/**
+	 * Callback when post type changes in editor context
+	 * Used to sync selectedPostType attribute for Post Feed preview
+	 */
+	onPostTypeChange?: ( postTypeKey: string ) => void;
 }
 
 interface UseSearchFormReturn {
@@ -49,6 +54,7 @@ export function useSearchForm( {
 	postTypes,
 	context,
 	onSubmit,
+	onPostTypeChange,
 }: UseSearchFormProps ): UseSearchFormReturn {
 	// Initialize state
 	const [ state, setState ] = useState<SearchFormState>( () => ( {
@@ -117,6 +123,12 @@ export function useSearchForm( {
 			};
 		} );
 
+		// In editor context: notify parent to update selectedPostType attribute
+		// This syncs the Post Feed preview to show posts of the selected type
+		if ( context === 'editor' && onPostTypeChange ) {
+			onPostTypeChange( postTypeKey );
+		}
+
 		// Auto-submit on post type change in frontend context
 		// This ensures Post Feed updates when user switches post type
 		// Note: URL updates are NOT done here to prevent loops - they happen via handleSubmitInternal
@@ -127,7 +139,7 @@ export function useSearchForm( {
 				} );
 			}, 50 );
 		}
-	}, [ context, onSubmit ] );
+	}, [ context, onSubmit, onPostTypeChange ] );
 
 	// Set individual filter value
 	const setFilterValue = useCallback(
