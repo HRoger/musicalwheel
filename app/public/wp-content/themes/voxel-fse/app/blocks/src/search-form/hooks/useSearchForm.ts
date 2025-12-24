@@ -105,27 +105,29 @@ export function useSearchForm( {
 
 	// Set current post type
 	const setCurrentPostType = useCallback( ( postTypeKey: string ) => {
-		setState( ( prev ) => ( {
-			...prev,
-			currentPostType: postTypeKey,
-			filterValues: {}, // Clear filter values when switching post type
-		} ) );
+		setState( ( prev ) => {
+			// Skip if already the current post type (prevent loops)
+			if ( prev.currentPostType === postTypeKey ) {
+				return prev;
+			}
+			return {
+				...prev,
+				currentPostType: postTypeKey,
+				filterValues: {}, // Clear filter values when switching post type
+			};
+		} );
 
 		// Auto-submit on post type change in frontend context
 		// This ensures Post Feed updates when user switches post type
-		if ( context === 'frontend' ) {
+		// Note: URL updates are NOT done here to prevent loops - they happen via handleSubmitInternal
+		if ( context === 'frontend' && onSubmit ) {
 			setTimeout( () => {
-				// Call onSubmit directly with the new post type
-				if ( onSubmit ) {
-					onSubmit( {
-						postType: postTypeKey,
-					} );
-				}
-				// Also update URL params
-				updateUrlParams( {}, postTypeKey );
+				onSubmit( {
+					postType: postTypeKey,
+				} );
 			}, 50 );
 		}
-	}, [ context, attributes.searchOn, onSubmit ] );
+	}, [ context, onSubmit ] );
 
 	// Set individual filter value
 	const setFilterValue = useCallback(
