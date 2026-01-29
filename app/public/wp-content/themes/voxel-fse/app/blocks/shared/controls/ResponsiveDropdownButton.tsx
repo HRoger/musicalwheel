@@ -24,8 +24,7 @@ import { useRef, useEffect } from 'react';
 import { dispatch, useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { usePersistentPopupState, notifyDeviceChange } from './usePersistentPopupState';
-
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, setDeviceType as setDeviceTypeUtil, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveDropdownButtonProps {
 	/**
@@ -67,22 +66,7 @@ export default function ResponsiveDropdownButton({
 
 	// ALWAYS read from WordPress device store - this ensures all dropdowns stay in sync
 	const currentDevice = useSelect((select: (store: string) => any) => {
-		// Try core/editor first (for FSE templates)
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		// Fallback to core/edit-post (for post editor)
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		return 'desktop' as DeviceType;
+		return getCurrentDeviceType(select);
 	});
 
 	// Handle device change - ALWAYS dispatch to WordPress store
@@ -96,20 +80,8 @@ export default function ResponsiveDropdownButton({
 		// This allows parent components to set flags before viewport transition starts
 		onDeviceChange?.(device);
 
-		const deviceTypeCapitalized = device.charAt(0).toUpperCase() + device.slice(1);
-
-		// Try core/editor first (for FSE templates)
-		const { setDeviceType } = (dispatch('core/editor') as any) || {};
-		if (typeof setDeviceType === 'function') {
-			setDeviceType(deviceTypeCapitalized);
-		} else {
-			// Fallback to core/edit-post (for post editor)
-			const { __experimentalSetPreviewDeviceType: experimentalSetPreviewDeviceType } =
-				(dispatch('core/edit-post') as any) || {};
-			if (typeof experimentalSetPreviewDeviceType === 'function') {
-				experimentalSetPreviewDeviceType(deviceTypeCapitalized);
-			}
-		}
+		// Use centralized utility to set device type
+		setDeviceTypeUtil(device);
 	};
 
 	// Position and click-outside handling

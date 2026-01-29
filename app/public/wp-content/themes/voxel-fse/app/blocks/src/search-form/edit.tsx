@@ -28,6 +28,7 @@ import {
 	generateVoxelStyles,
 	generateVoxelResponsiveCSS,
 } from '../../shared/utils/generateVoxelStyles';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 import { generateBlockStyles, generateInlineTabResponsiveCSS } from './styles';
 import type { SearchFormAttributes } from './types';
 
@@ -141,22 +142,7 @@ export default function Edit({
 
 	// Get Gutenberg's responsive preview device type
 	// Evidence: popup-kit/edit.tsx uses same pattern
-	const editorDeviceType = useSelect((select: any) => {
-		const editPostStore = select('core/edit-post');
-		if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-			return editPostStore.getPreviewDeviceType();
-		}
-		// Fallback to experimental API
-		if (editPostStore && typeof editPostStore.__experimentalGetPreviewDeviceType === 'function') {
-			return editPostStore.__experimentalGetPreviewDeviceType();
-		}
-		return 'Desktop';
-	}, []);
-
-	// Normalize device type to lowercase
-	const normalizedDeviceType = editorDeviceType
-		? (editorDeviceType.toLowerCase() as 'desktop' | 'tablet' | 'mobile')
-		: 'desktop';
+	const normalizedDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// CRITICAL: useMemo must be called BEFORE any early returns to satisfy React's rules of hooks
 	// All hooks must run on every render in the same order - early returns would skip this hook

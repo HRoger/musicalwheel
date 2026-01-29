@@ -32,7 +32,7 @@ import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import ResponsiveRangeControl from './ResponsiveRangeControl';
 import CssFiltersPopup, { CssFiltersValue } from './CssFiltersPopup';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 export interface BackgroundOverlayControlAttributes {
 	// Tab state
@@ -274,18 +274,7 @@ export default function BackgroundOverlayControl({
 	setAttributes,
 }: BackgroundOverlayControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => {
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			return getDeviceType();
-		}
-		const { __experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof __experimentalGetPreviewDeviceType === 'function') {
-			return __experimentalGetPreviewDeviceType();
-		}
-		return 'Desktop';
-	}, []);
+	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	const wpDevice = wpDeviceType
 		? (wpDeviceType.toLowerCase() as DeviceType)

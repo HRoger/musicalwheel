@@ -76,7 +76,7 @@ export interface ImageUploadControlProps {
 	renderPreview?: (value: ImageUploadValue) => React.ReactNode;
 }
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 /**
  * ImageUploadControl - WordPress Media Library image picker
@@ -134,17 +134,7 @@ export default function ImageUploadControl({
 	renderPreview,
 }: ImageUploadControlProps) {
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect((select) => {
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			return getDeviceType();
-		}
-		const { __experimentalGetPreviewDeviceType } = (select('core/edit-post') as any) || {};
-		if (typeof __experimentalGetPreviewDeviceType === 'function') {
-			return __experimentalGetPreviewDeviceType();
-		}
-		return 'Desktop';
-	}, []);
+	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	const wpDevice = wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);

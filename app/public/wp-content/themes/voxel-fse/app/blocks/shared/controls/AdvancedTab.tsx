@@ -300,39 +300,13 @@ interface AdvancedTabProps {
 	setAttributes: (attrs: Partial<AdvancedTabProps['attributes']>) => void;
 }
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 /**
  * Hook to sync with WordPress's responsive preview state
  */
 function useWordPressDevice(): DeviceType {
-	const wpDeviceType = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			// Standard way: use core/edit-post store (for post editor)
-			const editPostStore = select('core/edit-post') as {
-				getPreviewDeviceType?: () => string;
-				__experimentalGetPreviewDeviceType?: () => string;
-			};
-			if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-				return editPostStore.getPreviewDeviceType();
-			}
-
-			// Fallback to experimental method
-			if (editPostStore && typeof editPostStore.__experimentalGetPreviewDeviceType === 'function') {
-				return editPostStore.__experimentalGetPreviewDeviceType();
-			}
-
-			// Try core/editor (for FSE templates)
-			const editorStore = select('core/editor') as { getDeviceType?: () => string };
-			if (editorStore && typeof editorStore.getDeviceType === 'function') {
-				return editorStore.getDeviceType();
-			}
-
-			return 'Desktop';
-		}
-	);
-
-	return wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
+	return useSelect((select) => getCurrentDeviceType(select), []);
 }
 
 /**
@@ -633,26 +607,7 @@ const MASK_REPEAT_OPTIONS = [
 
 export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabProps) {
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			const editPostStore = select('core/edit-post') as any;
-			if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-				return editPostStore.getPreviewDeviceType();
-			}
-			if (
-				editPostStore &&
-				typeof editPostStore.__experimentalGetPreviewDeviceType === 'function'
-			) {
-				return editPostStore.__experimentalGetPreviewDeviceType();
-			}
-			const editorStore = select('core/editor') as any;
-			if (editorStore && typeof editorStore.getDeviceType === 'function') {
-				return editorStore.getDeviceType();
-			}
-			return 'Desktop';
-		},
-		[]
-	);
+	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Convert WordPress device type to our format (Desktop -> desktop)
 	const wpDevice = wpDeviceType ? wpDeviceType.toLowerCase() as 'desktop' | 'tablet' | 'mobile' : 'desktop';

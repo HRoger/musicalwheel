@@ -20,7 +20,7 @@ import { useSelect } from '@wordpress/data';
 import { useState, useEffect } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveSelectControlProps {
     /** Control label */
@@ -49,33 +49,7 @@ interface ResponsiveSelectControlProps {
  * Hook to sync with WordPress's responsive preview state
  */
 function useWordPressDevice(): DeviceType {
-    const wpDeviceType = useSelect(
-        (select: (store: string) => Record<string, unknown>) => {
-            // Standard way: use core/edit-post store (for post editor)
-            const editPostStore = select('core/edit-post') as {
-                getPreviewDeviceType?: () => string;
-                __experimentalGetPreviewDeviceType?: () => string;
-            };
-            if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-                return editPostStore.getPreviewDeviceType();
-            }
-
-            // Fallback to experimental method
-            if (editPostStore && typeof editPostStore.__experimentalGetPreviewDeviceType === 'function') {
-                return editPostStore.__experimentalGetPreviewDeviceType();
-            }
-
-            // Try core/editor (for FSE templates)
-            const editorStore = select('core/editor') as { getDeviceType?: () => string };
-            if (editorStore && typeof editorStore.getDeviceType === 'function') {
-                return editorStore.getDeviceType();
-            }
-
-            return 'Desktop';
-        }
-    );
-
-    return wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
+    return useSelect((select) => getCurrentDeviceType(select), []);
 }
 
 export default function ResponsiveSelectControl({

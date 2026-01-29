@@ -37,7 +37,7 @@ import ResponsiveRangeControl from './ResponsiveRangeControl';
 import GalleryUploadControl from './GalleryUploadControl';
 import { getImageSizeOptions } from './image-options';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 export interface BackgroundControlAttributes {
 	// Tab state
@@ -398,21 +398,7 @@ export default function BackgroundControl({
 	showSlideshowBackground = false,
 }: BackgroundControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			const { getDeviceType } = (select('core/editor') as any) || {};
-			if (typeof getDeviceType === 'function') {
-				return getDeviceType();
-			}
-			const { __experimentalGetPreviewDeviceType } =
-				(select('core/edit-post') as any) || {};
-			if (typeof __experimentalGetPreviewDeviceType === 'function') {
-				return __experimentalGetPreviewDeviceType();
-			}
-			return 'Desktop';
-		},
-		[]
-	);
+	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	const wpDevice = wpDeviceType
 		? (wpDeviceType.toLowerCase() as DeviceType)

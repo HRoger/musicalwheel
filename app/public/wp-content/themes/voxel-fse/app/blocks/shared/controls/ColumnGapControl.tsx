@@ -14,6 +14,7 @@ import { __ } from '@wordpress/i18n';
 import { useState } from 'react';
 import { useSelect } from '@wordpress/data';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 
 export interface ColumnGapControlProps {
 	label?: string;
@@ -52,14 +53,10 @@ export default function ColumnGapControl({
 	units = DEFAULT_UNITS,
 }: ColumnGapControlProps) {
 	// Get the current device preview from WordPress
-	const deviceType = useSelect((select: any) => {
-		return select('core/edit-post')?.__experimentalGetPreviewDeviceType() || 'Desktop';
-	}, []);
+	const deviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Local state for device (synced with WordPress)
-	const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>(
-		deviceType === 'Tablet' ? 'tablet' : deviceType === 'Mobile' ? 'mobile' : 'desktop'
-	);
+	const [currentDevice, setCurrentDevice] = useState<'desktop' | 'tablet' | 'mobile'>(deviceType);
 
 	// Calculate current value and onChange based on device
 	const currentValue = currentDevice === 'mobile' ? valueMobile : currentDevice === 'tablet' ? valueTablet : value;

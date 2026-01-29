@@ -28,6 +28,7 @@ import {
 	ResponsiveDropdownButton,
 } from '@shared/controls';
 import { useSelect } from '@wordpress/data';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 import type { ImageBlockAttributes } from '../types';
 
 interface StyleTabProps {
@@ -40,24 +41,7 @@ export function StyleTab({
 	attributes,
 	setAttributes,
 }: StyleTabProps): JSX.Element {
-	const currentDevice = useSelect((select) => {
-		// Try core/editor first (for FSE templates)
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase();
-		}
-
-		// Fallback to core/edit-post (for post editor)
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase();
-		}
-
-		return 'desktop';
-	}, []);
+	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
 	return (
 		<AccordionPanelGroup
 			attributes={attributes as Record<string, any>}

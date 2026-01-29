@@ -15,7 +15,7 @@ import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveToggleProps {
 	/** Control label */
@@ -49,22 +49,7 @@ export default function ResponsiveToggle({
 	showResponsiveButton = true,
 }: ResponsiveToggleProps) {
 	// Get WordPress's current device type from the store - this is the source of truth
-	const activeDevice = useSelect((select) => {
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		return 'desktop' as DeviceType;
-	}, []);
+	const activeDevice = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Get attribute name for current device
 	const attributeName = showResponsiveButton

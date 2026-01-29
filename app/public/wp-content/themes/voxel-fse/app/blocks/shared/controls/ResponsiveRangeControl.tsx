@@ -24,8 +24,7 @@ import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
 import UndoIcon from '../icons/UndoIcon';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
-
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlProps {
 	label: string;
@@ -71,24 +70,7 @@ export default function ResponsiveRangeControl({
 	const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => {
-		// Try core/editor first (for FSE templates)
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		// Fallback to core/edit-post (for post editor)
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		return 'desktop' as DeviceType;
-	}, []);
+	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Get attribute name for current device
 	const getAttributeName = () => {

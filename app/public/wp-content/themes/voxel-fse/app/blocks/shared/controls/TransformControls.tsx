@@ -27,7 +27,7 @@ const ElementorIcon = ({ icon }: { icon: string }) => (
 	<span className={`eicon ${icon}`} style={{ fontSize: '16px', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
 );
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 // Global state for device changes - survives component remounts
 // This is needed because WordPress may remount the inspector panel during desktop transitions
@@ -40,26 +40,7 @@ declare global {
 
 // Hook to sync with WordPress device type
 function useWordPressDevice(): DeviceType {
-	const wpDeviceType = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			const editPostStore = select('core/edit-post') as {
-				getPreviewDeviceType?: () => string;
-				__experimentalGetPreviewDeviceType?: () => string;
-			};
-			if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-				return editPostStore.getPreviewDeviceType();
-			}
-			if (editPostStore && typeof editPostStore.__experimentalGetPreviewDeviceType === 'function') {
-				return editPostStore.__experimentalGetPreviewDeviceType();
-			}
-			const editorStore = select('core/editor') as { getDeviceType?: () => string };
-			if (editorStore && typeof editorStore.getDeviceType === 'function') {
-				return editorStore.getDeviceType();
-			}
-			return 'Desktop';
-		}
-	);
-	return wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
+	return useSelect((select) => getCurrentDeviceType(select), []);
 }
 
 // Shared Popover wrapper component

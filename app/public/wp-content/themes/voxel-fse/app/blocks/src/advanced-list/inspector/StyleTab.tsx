@@ -27,13 +27,12 @@ import {
 	AccordionPanelGroup,
 	AccordionPanel,
 } from '@shared/controls';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface StyleTabProps {
 	attributes: AdvancedListAttributes;
 	setAttributes: (attrs: Partial<AdvancedListAttributes>) => void;
 }
-
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
 export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 	const {
@@ -44,22 +43,7 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 	} = attributes;
 
 	// Get current device for conditional logic
-	const currentDevice = useSelect((select: any) => {
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		return 'desktop' as DeviceType;
-	});
+	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Helper to get responsive attribute value
 	const getResponsiveAttr = (baseName: string) => {

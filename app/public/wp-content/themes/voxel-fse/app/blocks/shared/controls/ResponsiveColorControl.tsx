@@ -11,7 +11,7 @@ import { useSelect } from '@wordpress/data';
 import { ColorPalette } from '@wordpress/components';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveColorControlProps {
 	label: string;
@@ -50,23 +50,7 @@ export default function ResponsiveColorControl({
 	const popupRef = useRef<HTMLDivElement>(null);
 
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect((select) => {
-		const editPostStore = select('core/edit-post');
-		if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-			return editPostStore.getPreviewDeviceType();
-		}
-
-		if (editPostStore && typeof editPostStore.__experimentalGetPreviewDeviceType === 'function') {
-			return editPostStore.__experimentalGetPreviewDeviceType();
-		}
-
-		const editorStore = select('core/editor');
-		if (editorStore && typeof editorStore.getDeviceType === 'function') {
-			return editorStore.getDeviceType();
-		}
-
-		return 'Desktop';
-	}, []);
+	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	const wpDevice = wpDeviceType ? wpDeviceType.toLowerCase() as DeviceType : 'desktop';
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);

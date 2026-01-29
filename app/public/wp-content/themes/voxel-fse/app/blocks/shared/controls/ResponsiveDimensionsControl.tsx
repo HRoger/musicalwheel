@@ -14,7 +14,7 @@ import DimensionsControl from './DimensionsControl';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import type { UnitType } from './UnitDropdownButton';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface BoxValues {
     top?: string | number;
@@ -39,25 +39,7 @@ export default function ResponsiveDimensionsControl({
     availableUnits,
 }: ResponsiveDimensionsControlProps) {
     // Get WordPress's current device type from the store
-    // @ts-ignore
-    const currentDevice = useSelect((select: any) => {
-        // Try core/editor first (for FSE templates)
-        const { getDeviceType } = (select('core/editor') as any) || {};
-        if (typeof getDeviceType === 'function') {
-            const device = getDeviceType();
-            if (device) return device.toLowerCase() as DeviceType;
-        }
-
-        // Fallback to core/edit-post (for post editor)
-        const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-            (select('core/edit-post') as any) || {};
-        if (typeof experimentalGetPreviewDeviceType === 'function') {
-            const device = experimentalGetPreviewDeviceType();
-            if (device) return device.toLowerCase() as DeviceType;
-        }
-
-        return 'desktop' as DeviceType;
-    }, []);
+    const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
 
     // Get attribute name for current device
     const getAttributeName = () => {

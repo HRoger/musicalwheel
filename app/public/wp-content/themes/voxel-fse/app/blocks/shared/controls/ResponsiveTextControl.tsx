@@ -23,7 +23,7 @@ import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
 
-type DeviceType = 'desktop' | 'tablet' | 'mobile';
+import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveTextControlProps {
 	/** Control label */
@@ -68,22 +68,7 @@ export default function ResponsiveTextControl({
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const activeDevice = useSelect((select) => {
-		const { getDeviceType } = (select('core/editor') as any) || {};
-		if (typeof getDeviceType === 'function') {
-			const device = getDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		const { __experimentalGetPreviewDeviceType: experimentalGetPreviewDeviceType } =
-			(select('core/edit-post') as any) || {};
-		if (typeof experimentalGetPreviewDeviceType === 'function') {
-			const device = experimentalGetPreviewDeviceType();
-			if (device) return device.toLowerCase() as DeviceType;
-		}
-
-		return 'desktop' as DeviceType;
-	}, []);
+	const activeDevice = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Get attribute name for current device
 	const attributeName = getAttributeName(attributeBaseName, activeDevice);
