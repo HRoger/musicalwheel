@@ -132,14 +132,14 @@ export default function PostSelectControl({
 				continue;
 			}
 			try {
-				const post = await apiFetch<{
+				const post = (await apiFetch({
+					path: `${endpoint}/${numericId}`,
+				})) as {
 					id: number;
 					title: { rendered: string };
 					type: string;
 					template?: string;
-				}>({
-					path: `${endpoint}/${numericId}`,
-				});
+				};
 
 				if (post && post.id) {
 					// Build display title matching Voxel format
@@ -181,21 +181,27 @@ export default function PostSelectControl({
 			if (!endpoint) return [];
 
 			try {
-				const posts = await apiFetch<Array<{
+				const posts = (await apiFetch({
+					path: `${endpoint}?search=${encodeURIComponent(search)}&per_page=10&status=publish,draft,private`,
+				})) as Array<{
 					id: number;
 					title: { rendered: string };
 					type: string;
 					template?: string;
 					meta?: Record<string, any>;
-				}>>({
-					path: `${endpoint}?search=${encodeURIComponent(search)}&per_page=10&status=publish,draft,private`,
-				});
+				}>;
 
-				return posts.map((post) => {
+				return posts.map((post: {
+					id: number;
+					title: { rendered: string };
+					type: string;
+					template?: string;
+					meta?: Record<string, any>;
+				}) => {
 					// Build display title matching Voxel format
 					let displayTitle = `#${post.id}`;
 					const postType = post.type || type;
-					const template = post.template || post.meta?.template || '';
+					const template = post.template || post.meta?.['template'] || '';
 
 					if (post.title?.rendered) {
 						displayTitle = `#${post.id}: ${post.title.rendered}`;

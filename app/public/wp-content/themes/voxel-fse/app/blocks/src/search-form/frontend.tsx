@@ -66,7 +66,8 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import SearchFormComponent from './shared/SearchFormComponent';
-import type { SearchFormAttributes, PostTypeConfig } from './types';
+import type { SearchFormAttributes, PostTypeConfig, IconConfig, FilterConfig } from './types';
+import type { SearchFormDataset, SearchFormRawConfig } from './types/dataset';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
 /**
@@ -106,6 +107,9 @@ function parseBool(value: string | null | undefined): boolean {
  * Parse data attributes from save.tsx output into SearchFormAttributes
  */
 function parseDataAttributes(container: HTMLElement): SearchFormAttributes {
+	// Cast dataset to our custom typed interface
+	const dataset = container.dataset as SearchFormDataset;
+
 	// Helper to parse number or undefined
 	const parseNumber = (value: string | undefined): number | undefined => {
 		if (!value || value === '') return undefined;
@@ -115,38 +119,43 @@ function parseDataAttributes(container: HTMLElement): SearchFormAttributes {
 
 	return {
 		blockId: container.id || '',
-		postTypes: parseJson(container.dataset.postTypes, []) as string[],
-		showPostTypeFilter: parseBool(container.dataset.showPostTypeFilter),
-		postTypeFilterWidth: parseNumber(container.dataset.postTypeFilterWidth),
-		postTypeFilterWidth_tablet: parseNumber(container.dataset.postTypeFilterWidthTablet),
-		postTypeFilterWidth_mobile: parseNumber(container.dataset.postTypeFilterWidthMobile),
-		filterLists: parseJson(container.dataset.filterLists, {}) as Record<string, unknown>,
-		onSubmit: (container.dataset.onSubmit as 'feed' | 'archive' | 'page') || 'feed',
-		postToFeedId: container.dataset.postToFeedId || '',
-		postToMapId: container.dataset.postToMapId || '',
-		searchOn: (container.dataset.searchOn as 'change' | 'submit') || 'submit',
-		showSearchButton: parseBool(container.dataset.showSearchButton),
-		searchButtonText: container.dataset.searchButtonText ?? '',
-		searchButtonIcon: parseJson(container.dataset.searchButtonIcon, {}) as Record<string, unknown>,
-		searchButtonWidth: parseNumber(container.dataset.searchButtonWidth),
-		searchButtonWidth_tablet: parseNumber(container.dataset.searchButtonWidthTablet),
-		searchButtonWidth_mobile: parseNumber(container.dataset.searchButtonWidthMobile),
-		searchButtonWidthUnit: container.dataset.searchButtonWidthUnit || '%',
-		showResetButton: parseBool(container.dataset.showResetButton),
-		resetButtonText: container.dataset.resetButtonText ?? '',
-		resetButtonIcon: parseJson(container.dataset.resetButtonIcon, {}) as Record<string, unknown>,
-		resetButtonWidth: parseNumber(container.dataset.resetButtonWidth),
-		resetButtonWidth_tablet: parseNumber(container.dataset.resetButtonWidthTablet),
-		resetButtonWidth_mobile: parseNumber(container.dataset.resetButtonWidthMobile),
-		resetButtonWidthUnit: container.dataset.resetButtonWidthUnit || '%',
-		voxelIntegration: parseBool(container.dataset.voxelIntegration),
-		adaptiveFiltering: parseBool(container.dataset.adaptiveFiltering),
-		portalMode: parseJson(container.dataset.portalMode, { desktop: false, tablet: true, mobile: true }) as { desktop: boolean; tablet: boolean; mobile: boolean },
-		formToggleDesktop: parseBool(container.dataset.formToggleDesktop),
-		formToggleTablet: parseBool(container.dataset.formToggleTablet),
-		formToggleMobile: parseBool(container.dataset.formToggleMobile),
-		toggleText: container.dataset.toggleText || 'Filter results',
-		toggleIcon: parseJson(container.dataset.toggleIcon, {}) as Record<string, unknown>,
+		postTypes: parseJson(dataset.postTypes, []) as string[],
+		selectedPostType: '', // Default for frontend hydration
+		showPostTypeFilter: parseBool(dataset.showPostTypeFilter),
+		postTypeFilterWidth: parseNumber(dataset.postTypeFilterWidth),
+		postTypeFilterWidth_tablet: parseNumber(dataset.postTypeFilterWidthTablet),
+		postTypeFilterWidth_mobile: parseNumber(dataset.postTypeFilterWidthMobile),
+		filterLists: parseJson(dataset.filterLists, {}) as Record<string, FilterConfig[]>,
+		onSubmit: (dataset.onSubmit as 'feed' | 'archive' | 'page') || 'feed',
+		postToFeedId: dataset.postToFeedId || '',
+		postToMapId: dataset.postToMapId || '',
+		searchOn: (dataset.searchOn as 'change' | 'submit') || 'submit',
+		showSearchButton: parseBool(dataset.showSearchButton),
+		searchButtonText: dataset.searchButtonText ?? '',
+		searchButtonIcon: parseJson(dataset.searchButtonIcon, { library: '', value: '' }) as IconConfig,
+		searchButtonWidth: parseNumber(dataset.searchButtonWidth),
+		searchButtonWidth_tablet: parseNumber(dataset.searchButtonWidthTablet),
+		searchButtonWidth_mobile: parseNumber(dataset.searchButtonWidthMobile),
+		searchButtonWidthUnit: dataset.searchButtonWidthUnit || '%',
+		showResetButton: parseBool(dataset.showResetButton),
+		resetButtonText: dataset.resetButtonText ?? '',
+		resetButtonIcon: parseJson(dataset.resetButtonIcon, { library: '', value: '' }) as IconConfig,
+		resetButtonWidth: parseNumber(dataset.resetButtonWidth),
+		resetButtonWidth_tablet: parseNumber(dataset.resetButtonWidthTablet),
+		resetButtonWidth_mobile: parseNumber(dataset.resetButtonWidthMobile),
+		resetButtonWidthUnit: dataset.resetButtonWidthUnit || '%',
+		voxelIntegration: parseBool(dataset.voxelIntegration),
+		adaptiveFiltering: parseBool(dataset.adaptiveFiltering),
+		portalMode: parseJson(dataset.portalMode, { desktop: false, tablet: true, mobile: true }) as {
+			desktop: boolean;
+			tablet: boolean;
+			mobile: boolean;
+		},
+		formToggleDesktop: parseBool(dataset.formToggleDesktop),
+		formToggleTablet: parseBool(dataset.formToggleTablet),
+		formToggleMobile: parseBool(dataset.formToggleMobile),
+		toggleText: dataset.toggleText || 'Filter results',
+		toggleIcon: parseJson(dataset.toggleIcon, { library: '', value: '' }) as IconConfig,
 	};
 }
 
@@ -175,25 +184,38 @@ async function fetchPostTypes(
 	try {
 		// Build filter_configs object for the API
 		// Transform FilterConfig[] to the format expected by PHP controller
-		const apiFilterConfigs: Record<string, Record<string, {
-			defaultValueEnabled?: boolean;
-			defaultValue?: unknown;
-			resetValue?: string;
-		}>> = {};
+		const apiFilterConfigs: Record<
+			string,
+			Record<
+				string,
+				{
+					defaultValueEnabled?: boolean;
+					defaultValue?: unknown;
+					resetValue?: string;
+				}
+			>
+		> = {};
 
 		if (filterLists) {
 			Object.entries(filterLists).forEach(([postTypeKey, configs]) => {
 				if (Array.isArray(configs)) {
 					apiFilterConfigs[postTypeKey] = {};
-					configs.forEach((config: { filterKey?: string; defaultValueEnabled?: boolean; defaultValue?: unknown; resetValue?: string }) => {
-						if (config.filterKey) {
-							apiFilterConfigs[postTypeKey][config.filterKey] = {
-								defaultValueEnabled: config.defaultValueEnabled,
-								defaultValue: config.defaultValue,
-								resetValue: config.resetValue,
-							};
+					configs.forEach(
+						(config: {
+							filterKey?: string;
+							defaultValueEnabled?: boolean;
+							defaultValue?: unknown;
+							resetValue?: string;
+						}) => {
+							if (config.filterKey) {
+								apiFilterConfigs[postTypeKey][config.filterKey] = {
+									defaultValueEnabled: config.defaultValueEnabled,
+									defaultValue: config.defaultValue,
+									resetValue: config.resetValue,
+								};
+							}
 						}
-					});
+					);
 				}
 			});
 		}
@@ -230,7 +252,9 @@ async function fetchPostTypes(
  * @param raw - Raw config from vxconfig script or REST API
  * @returns Normalized SearchFormAttributes
  */
-function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
+function normalizeConfig(rawInput: Record<string, unknown>): SearchFormAttributes {
+	// Cast to typed interface for proper type checking
+	const raw = rawInput as SearchFormRawConfig;
 	// Helper for boolean normalization
 	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
@@ -240,9 +264,11 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 	};
 
 	// Helper for portal mode normalization
-	const normalizePortalMode = (val: unknown): { desktop: boolean; tablet: boolean; mobile: boolean } => {
+	const normalizePortalMode = (
+		val: unknown
+	): { desktop: boolean; tablet: boolean; mobile: boolean } => {
 		if (val && typeof val === 'object') {
-			const v = val as Record<string, unknown>;
+			const v = val as { desktop?: unknown; tablet?: unknown; mobile?: unknown };
 			return {
 				desktop: normalizeBool(v.desktop, false),
 				tablet: normalizeBool(v.tablet, true),
@@ -253,24 +279,28 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 	};
 
 	// Helper for icon normalization
-	const normalizeIcon = (val: unknown): Record<string, unknown> => {
-		if (val && typeof val === 'object') return val as Record<string, unknown>;
-		return {};
+	const normalizeIcon = (val: unknown): IconConfig => {
+		if (val && typeof val === 'object') return val as IconConfig;
+		return { library: '', value: '' };
 	};
 
 	// Extract post types - handle both array of strings and array of objects
 	const rawPostTypes = (raw.postTypes ?? raw.post_types ?? []) as unknown[];
-	const postTypes = rawPostTypes.map((pt) => {
-		if (typeof pt === 'string') return pt;
-		if (pt && typeof pt === 'object' && 'key' in pt) return (pt as Record<string, unknown>).key as string;
-		return '';
-	}).filter(Boolean);
+	const postTypes = rawPostTypes
+		.map((pt) => {
+			if (typeof pt === 'string') return pt;
+			if (pt && typeof pt === 'object' && 'key' in pt)
+				return (pt as { key?: string }).key || '';
+			return '';
+		})
+		.filter(Boolean);
 
 	return {
 		blockId: (raw.blockId ?? raw.block_id ?? '') as string,
 		postTypes,
+		selectedPostType: postTypes[0] || '', // Default to first post type
 		showPostTypeFilter: normalizeBool(raw.showPostTypeFilter ?? raw.show_post_type_filter, true),
-		filterLists: (raw.filterLists ?? raw.filter_lists ?? {}) as Record<string, unknown>,
+		filterLists: (raw.filterLists ?? raw.filter_lists ?? {}) as Record<string, FilterConfig[]>,
 		onSubmit: (raw.onSubmit ?? raw.on_submit ?? 'feed') as 'feed' | 'archive' | 'page',
 		postToFeedId: (raw.postToFeedId ?? raw.post_to_feed_id ?? '') as string,
 		postToMapId: (raw.postToMapId ?? raw.post_to_map_id ?? '') as string,
@@ -285,16 +315,28 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 		searchButtonText: (raw.searchButtonText ?? raw.search_button_text ?? '') as string,
 		searchButtonIcon: normalizeIcon(raw.searchButtonIcon ?? raw.search_button_icon),
 		searchButtonWidth: raw.searchButtonWidth as number | undefined,
-		searchButtonWidth_tablet: (raw.searchButtonWidth_tablet ?? raw.search_button_width_tablet) as number | undefined,
-		searchButtonWidth_mobile: (raw.searchButtonWidth_mobile ?? raw.search_button_width_mobile) as number | undefined,
-		searchButtonWidthUnit: (raw.searchButtonWidthUnit ?? raw.search_button_width_unit ?? '%') as string,
+		searchButtonWidth_tablet: (raw.searchButtonWidth_tablet ?? raw.search_button_width_tablet) as
+			| number
+			| undefined,
+		searchButtonWidth_mobile: (raw.searchButtonWidth_mobile ?? raw.search_button_width_mobile) as
+			| number
+			| undefined,
+		searchButtonWidthUnit: (raw.searchButtonWidthUnit ??
+			raw.search_button_width_unit ??
+			'%') as string,
 		showResetButton: normalizeBool(raw.showResetButton ?? raw.show_reset_button, false),
 		resetButtonText: (raw.resetButtonText ?? raw.reset_button_text ?? '') as string,
 		resetButtonIcon: normalizeIcon(raw.resetButtonIcon ?? raw.reset_button_icon),
 		resetButtonWidth: raw.resetButtonWidth as number | undefined,
-		resetButtonWidth_tablet: (raw.resetButtonWidth_tablet ?? raw.reset_button_width_tablet) as number | undefined,
-		resetButtonWidth_mobile: (raw.resetButtonWidth_mobile ?? raw.reset_button_width_mobile) as number | undefined,
-		resetButtonWidthUnit: (raw.resetButtonWidthUnit ?? raw.reset_button_width_unit ?? '%') as string,
+		resetButtonWidth_tablet: (raw.resetButtonWidth_tablet ?? raw.reset_button_width_tablet) as
+			| number
+			| undefined,
+		resetButtonWidth_mobile: (raw.resetButtonWidth_mobile ?? raw.reset_button_width_mobile) as
+			| number
+			| undefined,
+		resetButtonWidthUnit: (raw.resetButtonWidthUnit ??
+			raw.reset_button_width_unit ??
+			'%') as string,
 		voxelIntegration: normalizeBool(raw.voxelIntegration ?? raw.voxel_integration, true),
 		adaptiveFiltering: normalizeBool(raw.adaptiveFiltering ?? raw.adaptive_filtering, false),
 		portalMode: normalizePortalMode(raw.portalMode ?? raw.portal_mode),
@@ -305,8 +347,10 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 		toggleIcon: normalizeIcon(raw.toggleIcon ?? raw.toggle_icon),
 		// Post type filter width
 		postTypeFilterWidth: raw.postTypeFilterWidth as number | undefined,
-		postTypeFilterWidth_tablet: (raw.postTypeFilterWidth_tablet ?? raw.post_type_filter_width_tablet) as number | undefined,
-		postTypeFilterWidth_mobile: (raw.postTypeFilterWidth_mobile ?? raw.post_type_filter_width_mobile) as number | undefined,
+		postTypeFilterWidth_tablet: (raw.postTypeFilterWidth_tablet ??
+			raw.post_type_filter_width_tablet) as number | undefined,
+		postTypeFilterWidth_mobile: (raw.postTypeFilterWidth_mobile ??
+			raw.post_type_filter_width_mobile) as number | undefined,
 	};
 }
 
@@ -320,16 +364,17 @@ function parseVxConfig(container: HTMLElement): SearchFormAttributes {
 
 	if (vxconfigScript && vxconfigScript.textContent) {
 		try {
-			const rawConfig = JSON.parse(vxconfigScript.textContent);
+			const rawConfig = JSON.parse(vxconfigScript.textContent) as SearchFormRawConfig;
+			const dataset = container.dataset as SearchFormDataset;
 
 			// Merge with data attributes for submission handling
 			// (onSubmit, postToFeedId, postToMapId are set via data attributes)
-			const mergedConfig = {
+			const mergedConfig: SearchFormRawConfig = {
 				...rawConfig,
 				blockId: rawConfig.blockId || container.id || '',
-				onSubmit: container.dataset.onSubmit || rawConfig.onSubmit || 'refresh',
-				postToFeedId: container.dataset.postToFeedId || rawConfig.postToFeedId || '',
-				postToMapId: container.dataset.postToMapId || rawConfig.postToMapId || '',
+				onSubmit: dataset.onSubmit || rawConfig.onSubmit || 'refresh',
+				postToFeedId: dataset.postToFeedId || rawConfig.postToFeedId || '',
+				postToMapId: dataset.postToMapId || rawConfig.postToMapId || '',
 			};
 
 			// Use normalizeConfig for consistent format handling
@@ -382,10 +427,7 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 			try {
 				// Pass filterLists to enable proper value/resets_to from PHP
 				// Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
-				const data = await fetchPostTypes(
-					attributes.postTypes || [],
-					attributes.filterLists
-				);
+				const data = await fetchPostTypes(attributes.postTypes || [], attributes.filterLists);
 				if (!cancelled) {
 					setPostTypes(data);
 				}
@@ -452,9 +494,7 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 	}
 
 	// Filter to only selected post types
-	const selectedPostTypes = postTypes.filter((pt) =>
-		attributes.postTypes?.includes(pt.key)
-	);
+	const selectedPostTypes = postTypes.filter((pt) => attributes.postTypes?.includes(pt.key));
 
 	return (
 		<SearchFormComponent
@@ -472,13 +512,13 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 function initSearchForms() {
 	// Find all search form blocks by the voxel-fse class
 	// After hydration, React will render the actual .ts-search-widget inside this wrapper
-	const searchForms = document.querySelectorAll<HTMLElement>(
-		'.voxel-fse-search-form'
-	);
+	const searchForms = document.querySelectorAll<HTMLElement>('.voxel-fse-search-form');
 
 	searchForms.forEach((container) => {
+		const dataset = container.dataset as { hydrated?: string };
+
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (dataset.hydrated === 'true') {
 			return;
 		}
 
@@ -487,8 +527,9 @@ function initSearchForms() {
 
 		// Handle form submission
 		const handleSubmit = (values: Record<string, unknown>) => {
+			const valuesTyped = values as { postType?: string };
 			// Extract postType from values (set by useSearchForm hook)
-			const postType = (values.postType as string) || attributes.postTypes?.[0] || '';
+			const postType = valuesTyped.postType || attributes.postTypes?.[0] || '';
 
 			// Remove postType from filters (it's not a filter, it's a top-level param)
 			const { postType: _, ...filters } = values;
@@ -547,25 +588,18 @@ function initSearchForms() {
 
 		// Clear placeholder and create React root
 		container.innerHTML = '';
-		container.dataset.hydrated = 'true';
+		dataset.hydrated = 'true';
 
 		const root = createRoot(container);
-		root.render(
-			<SearchFormWrapper
-				attributes={attributes}
-				onSubmit={handleSubmit}
-			/>
-		);
+		root.render(<SearchFormWrapper attributes={attributes} onSubmit={handleSubmit} />);
 	});
 }
 
 /**
  * Update URL with filter values and refresh the page
  */
-function updateUrlAndRefresh(
-	values: Record<string, unknown>,
-	attributes: SearchFormAttributes
-) {
+function updateUrlAndRefresh(values: Record<string, unknown>, attributes: SearchFormAttributes) {
+	const valuesTyped = values as { postType?: string };
 	const url = new URL(window.location.href);
 
 	// Clear existing filter params
@@ -584,7 +618,7 @@ function updateUrlAndRefresh(
 	keysToRemove.forEach((key) => url.searchParams.delete(key));
 
 	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
-	const postType = values.postType || attributes.postTypes?.[0];
+	const postType = valuesTyped.postType || attributes.postTypes?.[0];
 	if (postType && typeof postType === 'string') {
 		url.searchParams.set('type', postType);
 	}
@@ -614,10 +648,8 @@ function updateUrlAndRefresh(
  * Redirect to a specific page with filter values
  * Used when onSubmit='page' and submitToPageId is set
  */
-function redirectToPage(
-	values: Record<string, unknown>,
-	attributes: SearchFormAttributes
-) {
+function redirectToPage(values: Record<string, unknown>, attributes: SearchFormAttributes) {
+	const valuesTyped = values as { postType?: string };
 	// Get the site URL from WordPress or fallback to origin
 	const siteUrl = (window as any).voxelFseSiteUrl || window.location.origin;
 
@@ -627,7 +659,7 @@ function redirectToPage(
 	url.searchParams.set('p', String(attributes.submitToPageId));
 
 	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
-	const postType = values.postType || attributes.postTypes?.[0];
+	const postType = valuesTyped.postType || attributes.postTypes?.[0];
 	if (postType && typeof postType === 'string') {
 		url.searchParams.set('type', postType);
 	}

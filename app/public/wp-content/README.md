@@ -190,7 +190,7 @@ musicalwheel/
    ```bash
    npm run type-check          # Check TypeScript types
    ```
-   Note: Type errors don't prevent builds. The codebase has ~4700 type warnings from WordPress package definitions but builds successfully.
+   Note: Type errors don't prevent builds. The codebase has ~4606 type warnings from WordPress package definitions but builds successfully.
 
 7. **Commit changes:**
    ```bash

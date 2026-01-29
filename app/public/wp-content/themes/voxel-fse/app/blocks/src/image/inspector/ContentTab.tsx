@@ -61,7 +61,7 @@ export function ContentTab({
 	// Fetch media details to get available sizes
 	const media = useSelect((select: any) => {
 		return attributes.image.id ? select('core').getMedia(attributes.image.id) : null;
-	}, [attributes.image.id]);
+	});
 
 	console.log('Image Debug:', {
 		id: attributes.image.id,
@@ -82,7 +82,7 @@ export function ContentTab({
 				<ImageUploadControl
 					label={__('Choose Image', 'voxel-fse')}
 					value={attributes.image}
-					onChange={(media) => {
+					onChange={(media: any) => {
 						if (!media) {
 							setAttributes({
 								image: {
@@ -97,7 +97,7 @@ export function ContentTab({
 						}
 
 						// Get the URL for the selected size
-						let url = media.url;
+						let url = media.url || '';
 						if (media.sizes && attributes.imageSize && media.sizes[attributes.imageSize]) {
 							url = media.sizes[attributes.imageSize].url;
 						}
@@ -107,12 +107,11 @@ export function ContentTab({
 								id: media.id || 0,
 								url: url,
 								alt: media.alt || '',
-								width: media.width || 0,
-								height: media.height || 0,
+								width: (media.width as number) || 0,
+								height: (media.height as number) || 0,
 							},
 						});
 					}}
-					buttonText={attributes.image.url ? __('Replace Image', 'voxel-fse') : __('Upload Image', 'voxel-fse')}
 					enableDynamicTags={true}
 					dynamicTagValue={attributes.imageDynamicTag}
 					onDynamicTagChange={(value) => setAttributes({ imageDynamicTag: value })}
@@ -163,7 +162,7 @@ export function ContentTab({
 					label={__('Caption', 'voxel-fse')}
 					value={attributes.captionSource}
 					options={CAPTION_OPTIONS}
-					onChange={(value) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
+					onChange={(value: any) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
 				/>
 
 				{attributes.captionSource === 'custom' && (
@@ -181,7 +180,7 @@ export function ContentTab({
 					label={__('Link', 'voxel-fse')}
 					value={attributes.linkTo}
 					options={LINK_OPTIONS}
-					onChange={(value) => setAttributes({ linkTo: value as 'none' | 'file' | 'custom' })}
+					onChange={(value: any) => setAttributes({ linkTo: value as 'none' | 'file' | 'custom' })}
 				/>
 
 				{attributes.linkTo === 'custom' && (
@@ -199,7 +198,7 @@ export function ContentTab({
 						label={__('Lightbox', 'voxel-fse')}
 						value={attributes.openLightbox}
 						options={LIGHTBOX_OPTIONS}
-						onChange={(value) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
+						onChange={(value: any) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
 						help={__("Manage your site's lightbox settings in the Lightbox panel.", 'voxel-fse')}
 					/>
 				)}
