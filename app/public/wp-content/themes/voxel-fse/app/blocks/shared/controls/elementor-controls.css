@@ -1,0 +1,1290 @@
+/**
+ * Elementor-Style Controls CSS
+ *
+ * Styles for the shared Elementor-style control components.
+ * These styles match Elementor's admin interface patterns.
+ *
+ * @package VoxelFSE
+ */
+
+/* ============================================
+   Hide Gutenberg Default Inspector Tabs
+   When InspectorTabs component is present,
+   hide the native Gutenberg "Settings/Styles" tabs
+   ============================================ */
+.block-editor-block-inspector:has(.voxel-fse-inspector-tabs) .block-editor-block-inspector__tabs {
+	display: none !important;
+}
+
+/* ============================================
+   Gutenberg-Compatible Variables
+   Uses WordPress admin theme colors
+   MUST be defined here to ensure availability
+   for all controls (StyleTabPanel, StateTabPanel,
+   ChooseControl inline variant, etc.)
+   ============================================ */
+:root {
+	/* Gutenberg accent color (falls back to WordPress admin theme color) */
+	--vxfse-accent-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+	--vxfse-accent-color-darker: var(--wp-components-color-accent-darker, var(--wp-admin-theme-color-darker, #2145e6));
+
+	/* Text colors */
+	--vxfse-color-txt: #1e1e1e;
+	--vxfse-color-txt-muted: #757575;
+
+	/* Backgrounds */
+	--vxfse-bg-hover: rgba(0, 0, 0, 0.05);
+
+	/* Borders */
+	--vxfse-border-color: #c3c4c7;
+	--vxfse-border-radius: 3px;
+
+	/* Transitions */
+	--vxfse-transition: all 0.12s ease-out;
+
+	/* Control font size */
+	--control-title-size: 12px;
+}
+
+
+
+
+/* ============================================
+   Responsive Control
+   ============================================ */
+.voxel-fse-responsive-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-responsive-control__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.voxel-fse-responsive-control__devices {
+	display: flex;
+	gap: 4px;
+}
+
+.voxel-fse-device-button {
+	min-width: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid #ddd;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.voxel-fse-device-button svg {
+	fill: #555;
+}
+
+.voxel-fse-device-button.is-pressed,
+.voxel-fse-device-button:hover {
+	background: #2271b1;
+	border-color: #2271b1;
+}
+
+.voxel-fse-device-button.is-pressed svg,
+.voxel-fse-device-button:hover svg {
+	fill: #fff;
+}
+
+/* ============================================
+   Color Control
+   ============================================ */
+.voxel-fse-color-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-color-control__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.voxel-fse-color-control__button {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 50px;
+	height: 28px;
+	padding: 2px 8px;
+	border: 1px solid #ddd;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.voxel-fse-color-control__button:hover {
+	border-color: #999;
+}
+
+.voxel-fse-color-control__preview {
+	width: 20px;
+	height: 20px;
+	border: 1px solid #ddd;
+	border-radius: 2px;
+	background-image:
+		linear-gradient(45deg, #ccc 25%, transparent 25%),
+		linear-gradient(-45deg, #ccc 25%, transparent 25%),
+		linear-gradient(45deg, transparent 75%, #ccc 75%),
+		linear-gradient(-45deg, transparent 75%, #ccc 75%);
+	background-size: 8px 8px;
+	background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+.voxel-fse-color-control__dots {
+	font-size: 18px;
+	line-height: 1;
+	color: #555;
+}
+
+.voxel-fse-color-control__palette {
+	padding: 16px;
+	min-width: 280px;
+	background: #fff;
+}
+
+/* Popup container - ensure solid background */
+.voxel-fse-color-control__popup {
+	background: #fff !important;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   Typography Control
+   ============================================ */
+.voxel-fse-typography-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-typography-control__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.voxel-fse-typography-control__button {
+	min-width: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid #ddd;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.voxel-fse-typography-control__button svg {
+	fill: #555;
+}
+
+.voxel-fse-typography-control__button:hover {
+	background: #f0f0f0;
+	border-color: #999;
+}
+
+.voxel-fse-typography-control__panel {
+	padding: 16px;
+	min-width: 300px;
+	max-width: 320px;
+}
+
+.voxel-fse-control-group {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-control-group:last-child {
+	margin-bottom: 0;
+}
+
+.voxel-fse-control-with-unit {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 8px;
+	align-items: start;
+}
+
+.voxel-fse-control-with-unit .components-range-control {
+	margin-bottom: 0;
+}
+
+.voxel-fse-control-with-unit .components-select-control {
+	margin-bottom: 0;
+	max-width: 60px;
+}
+
+.voxel-fse-control-with-unit .components-select-control__input {
+	min-height: 36px;
+}
+
+/* ============================================
+   Box Shadow Control
+   ============================================ */
+.voxel-fse-box-shadow-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-box-shadow-control__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.voxel-fse-box-shadow-control__button {
+	min-width: 28px;
+	height: 28px;
+	padding: 4px;
+	border: 1px solid #ddd;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: all 0.2s;
+}
+
+.voxel-fse-box-shadow-control__button svg {
+	fill: #555;
+}
+
+.voxel-fse-box-shadow-control__button:hover {
+	background: #f0f0f0;
+	border-color: #999;
+}
+
+.voxel-fse-box-shadow-control__panel {
+	padding: 16px;
+	min-width: 300px;
+	max-width: 320px;
+}
+
+/* ============================================
+   Select2 Multi-Select (Elementor-style)
+   Scoped with .vxfse-select2-wrap to avoid
+   conflicts with WordPress admin Select2 styles
+   ============================================ */
+.vxfse-select2-wrap.select2-container {
+	display: block;
+	margin-bottom: 16px;
+}
+
+.vxfse-select2-wrap .components-base-control__label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: capitalize;
+	color: rgb(30, 30, 30);
+}
+
+.vxfse-select2-wrap .select2-selection--multiple {
+	display: block;
+	min-height: 32px;
+	padding: 2px 5px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+	cursor: text;
+	box-sizing: border-box;
+}
+
+.vxfse-select2-wrap .select2-selection--multiple:hover {
+	border-color: #2271b1;
+}
+
+.vxfse-select2-wrap .select2-selection--focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: none;
+}
+
+.vxfse-select2-wrap .select2-selection__rendered {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	align-items: center;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	width: 100%;
+}
+
+.vxfse-select2-wrap .select2-selection__choice {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px 2px 4px;
+	margin: 0;
+	background: #6d7882;
+	border: 1px solid #6d7882;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #ffffff;
+	max-width: 100%;
+}
+
+.vxfse-select2-wrap .select2-selection__choice__remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	margin: 0;
+	background: transparent;
+	border: none;
+	border-radius: 2px;
+	cursor: pointer;
+	color: #ffffff;
+	font-size: 14px;
+	font-weight: normal;
+	line-height: 1;
+	transition: all 0.15s ease;
+	opacity: 0.8;
+}
+
+.vxfse-select2-wrap .select2-selection__choice__remove:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.1);
+	color: #fff;
+}
+
+.vxfse-select2-wrap .select2-selection__choice__display {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.vxfse-select2-wrap .select2-search--inline {
+	display: none !important;
+}
+
+.vxfse-select2-wrap .select2-search__field {
+	width: 100%;
+	min-width: 100px;
+	padding: 4px 0;
+	margin: 0;
+	border: none;
+	background: transparent;
+	outline: none;
+	font-size: 13px;
+	font-family: inherit;
+	line-height: 1.4;
+	color: #1e1e1e;
+}
+
+.vxfse-select2-wrap .select2-search__field::placeholder {
+	color: #757575;
+}
+
+.vxfse-select2-wrap .select2-search__field::-webkit-search-cancel-button {
+	display: none;
+}
+
+/* Dropdown - rendered in portal so needs global selector with high specificity */
+.vxfse-select2-dropdown.select2-dropdown {
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	margin-top: 2px;
+}
+
+.vxfse-select2-dropdown .select2-results {
+	display: block;
+}
+
+.vxfse-select2-dropdown .select2-results__options {
+	margin: 0;
+	padding: 4px 0;
+	list-style: none;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.vxfse-select2-dropdown .select2-results__option {
+	padding: 8px 12px;
+	font-size: 13px;
+	color: #1e1e1e;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.vxfse-select2-dropdown .select2-results__option:hover {
+	background: #f0f0f0;
+}
+
+.vxfse-select2-dropdown .select2-results__option--selected {
+	background: #2271b1;
+	color: #fff;
+}
+
+.vxfse-select2-dropdown .select2-results__option--selected:hover {
+	background: #135e96;
+}
+
+.vxfse-select2-dropdown .select2-results__message {
+	padding: 8px 12px;
+	font-size: 13px;
+	color: #757575;
+	font-style: italic;
+	cursor: default;
+}
+
+.vxfse-select2-dropdown .select2-results__message:hover {
+	background: transparent;
+}
+
+/* ============================================
+   Popup Styles (Typography and Box Shadow)
+   ============================================ */
+.voxel-fse-typography-control__popup,
+.voxel-fse-box-shadow-control__popup {
+	background: #fff !important;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   Section Heading (Elementor-style divider)
+   Light gray background bar like Elementor sections
+   ============================================ */
+.voxel-fse-section-heading {
+	display: flex;
+	align-items: center;
+	margin: 20px 0 16px;
+	padding: 8px 0;
+	border-top: 1px solid #e6e9ec;
+}
+
+.voxel-fse-section-heading span {
+	font-size: 13px;
+	font-weight: 700;
+	color: #495157;
+	/*color: #1e1e1e;*/
+	text-transform: capitalize;
+	white-space: nowrap;
+
+}
+
+/* ============================================
+   Slider Control
+   ============================================ */
+.voxel-fse-slider-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-slider-header {
+	margin-bottom: 4px;
+}
+
+.voxel-fse-slider-header label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: capitalize;
+	color: rgb(30, 30, 30);
+}
+
+.voxel-fse-control-description {
+	margin: 4px 0 8px;
+	font-size: 12px;
+	color: #757575;
+	font-style: normal;
+}
+
+.voxel-fse-slider-control .components-range-control {
+	margin-bottom: 0;
+}
+
+/* ============================================
+   Choose Control (Icon Button Group)
+   ============================================ */
+.voxel-fse-choose-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-choose-control>label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: capitalize;
+	color: rgb(30, 30, 30);
+}
+
+.voxel-fse-choose-buttons {
+	display: flex;
+	gap: 4px;
+}
+
+.voxel-fse-choose-button {
+	min-width: 36px;
+	height: 36px;
+	padding: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.voxel-fse-choose-button i {
+	font-size: 16px;
+	line-height: 1;
+}
+
+/* ============================================
+   ChooseControl Inline Variant
+   Compact button group for Background Type, etc.
+   ============================================ */
+.vxfse-inline-choose-group .vxfse-inline-choose-btn.components-button {
+	min-width: 28px;
+	height: 28px;
+	padding: 4px 6px;
+	border-radius: 0 !important;
+	margin-left: -1px;
+	background-color: transparent;
+	color: #757575;
+	box-shadow: inset 0 0 0 1px var(--vxfse-accent-color) !important;
+}
+
+.vxfse-inline-choose-group .vxfse-inline-choose-btn--first.components-button {
+	border-top-left-radius: 3px !important;
+	border-bottom-left-radius: 3px !important;
+	margin-left: 0;
+}
+
+.vxfse-inline-choose-group .vxfse-inline-choose-btn--last.components-button {
+	border-top-right-radius: 3px !important;
+	border-bottom-right-radius: 3px !important;
+}
+
+.vxfse-inline-choose-group .vxfse-inline-choose-btn--active.components-button {
+	background-color: var(--vxfse-accent-color) !important;
+	border-color: var(--vxfse-accent-color) !important;
+	color: #fff !important;
+}
+
+/* ============================================
+   Box Control (4-sided input)
+   ============================================ */
+.voxel-fse-box-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-box-control>.components-base-control__label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: capitalize;
+	color: rgb(30, 30, 30);
+}
+
+.voxel-fse-box-control__grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+
+.voxel-fse-box-control__grid .components-base-control {
+	margin-bottom: 0;
+}
+
+.voxel-fse-box-control__grid .components-base-control__label {
+	font-size: 10px;
+	text-transform: uppercase;
+	color: #757575;
+}
+
+.voxel-fse-box-control__grid .components-text-control__input {
+	min-height: 32px;
+}
+
+/* ============================================
+   Responsive Utilities
+   ============================================ */
+@media (max-width: 782px) {
+	.voxel-fse-responsive-control__devices {
+		gap: 2px;
+	}
+
+	.voxel-fse-device-button {
+		min-width: 24px;
+		height: 24px;
+	}
+
+	.voxel-fse-color-control__button,
+	.voxel-fse-typography-control__button,
+	.voxel-fse-box-shadow-control__button {
+		min-width: 24px;
+		height: 24px;
+	}
+
+	.voxel-fse-choose-button {
+		min-width: 32px;
+		height: 32px;
+	}
+}
+
+/* ============================================
+   RelationControl (Widget Linking)
+   Matches Voxel's Elementor voxel-relation control
+   ============================================ */
+
+.vxfse-relation-control {
+	margin-bottom: 16px;
+}
+
+.vxfse-relation-label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	color: rgb(30, 30, 30);
+	margin-bottom: 8px;
+	text-transform: none;
+}
+
+.vx-relation-list {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-bottom: 10px;
+}
+
+.relation-item {
+	padding: 12px 15px;
+	padding-right: 40px;
+	border-radius: 5px;
+	color: rgba(0, 0, 0, 0.7);
+	position: relative;
+	cursor: pointer;
+	background: #e4e8ec;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	min-height: 44px;
+}
+
+.relation-item:hover {
+	background: #d8dee4;
+}
+
+.relation-item--empty {
+	cursor: default;
+	color: rgba(0, 0, 0, 0.5);
+	font-style: italic;
+	padding-right: 15px;
+}
+
+.relation-item--empty:hover {
+	background: #e4e8ec;
+}
+
+.relation-item__label {
+	flex: 1;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.relation-item__label code {
+	background: rgba(0, 0, 0, 0.08);
+	padding: 2px 5px;
+	border-radius: 3px;
+	font-family: monospace;
+	font-size: 11px;
+}
+
+/* Icons */
+.relation-item .view-icon,
+.relation-item .check-icon {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	transition: all 0.2s ease;
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+	line-height: 1;
+}
+
+.relation-item .view-icon {
+	color: #000;
+	opacity: 0.3;
+	cursor: pointer;
+}
+
+.relation-item .view-icon:hover {
+	opacity: 0.6;
+}
+
+.relation-item .check-icon {
+	color: #fff;
+	display: none;
+}
+
+/* Selected State */
+.relation-item.selected {
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+	border-color: transparent;
+}
+
+.relation-item.selected:hover {
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.70 0.13 227.09) -30%, oklch(0.58 0.13 250.54) 30%, oklch(0.66 0.23 6.03) 55%, oklch(0.81 0.11 56.4) 110%);
+}
+
+.relation-item.selected .relation-item__label {
+	color: #fff;
+}
+
+.relation-item.selected .relation-item__label code {
+	background: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+.relation-item.selected .view-icon {
+	display: none !important;
+}
+
+.relation-item.selected .check-icon {
+	display: inline-flex !important;
+}
+
+/* Apply Button */
+.vxfse-relation-apply-btn {
+	margin-top: 10px;
+	font-size: 13px;
+}
+
+.vxfse-relation-apply-btn:disabled {
+	background: #28a745 !important;
+	border-color: #28a745 !important;
+	opacity: 1 !important;
+}
+
+/* Description */
+.vxfse-relation-description {
+	font-size: 12px;
+	color: #757575;
+	margin-top: 8px;
+	margin-bottom: 0;
+	line-height: 1.4;
+}
+
+/* Block Highlight Effect */
+.voxel-highlight-element {
+	outline: 3px solid #667eea !important;
+	outline-offset: 2px;
+	box-shadow: 0 0 20px rgba(102, 126, 234, 0.4) !important;
+	animation: voxel-highlight-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes voxel-highlight-pulse {
+
+	0%,
+	100% {
+		outline-color: #667eea;
+		box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+	}
+
+	50% {
+		outline-color: #764ba2;
+		box-shadow: 0 0 25px rgba(118, 75, 162, 0.5);
+	}
+}
+
+/* ============================================
+   Range Slider Control (Dual-Handle)
+   For Motion Effects Viewport ranges
+   ============================================ */
+.voxel-fse-range-slider-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-range-slider-header {
+	margin-bottom: 8px;
+}
+
+.voxel-fse-range-slider-header label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	text-transform: capitalize;
+	color: rgb(30, 30, 30);
+}
+
+.voxel-fse-range-slider-unit {
+	font-weight: 400;
+	text-transform: none;
+	color: #757575;
+}
+
+/* Slider Track */
+.voxel-fse-range-slider-track {
+	position: relative;
+	height: 24px;
+	margin: 8px 0;
+	cursor: pointer;
+}
+
+.voxel-fse-range-slider-track-bg {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	right: 0;
+	height: 4px;
+	margin-top: -2px;
+	background: #ddd;
+	border-radius: 2px;
+}
+
+.voxel-fse-range-slider-track-fill {
+	position: absolute;
+	top: 50%;
+	height: 4px;
+	margin-top: -2px;
+	background: #2271b1;
+	border-radius: 2px;
+}
+
+/* Handle */
+.voxel-fse-range-slider-handle {
+	position: absolute;
+	top: 50%;
+	width: 16px;
+	height: 16px;
+	margin-top: -8px;
+	margin-left: -8px;
+	background: #fff;
+	border: 2px solid #2271b1;
+	border-radius: 50%;
+	cursor: grab;
+	transition: transform 0.1s ease, box-shadow 0.1s ease;
+	z-index: 1;
+}
+
+.voxel-fse-range-slider-handle:hover {
+	transform: scale(1.1);
+	box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.15);
+}
+
+.voxel-fse-range-slider-handle.is-dragging {
+	cursor: grabbing;
+	transform: scale(1.15);
+	box-shadow: 0 0 0 6px rgba(34, 113, 177, 0.2);
+}
+
+.voxel-fse-range-slider-handle:focus {
+	outline: none;
+	box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.3);
+}
+
+/* Input fields */
+.voxel-fse-range-slider-inputs {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.voxel-fse-range-slider-input-item {
+	flex: 1;
+}
+
+.voxel-fse-range-slider-divider-wrapper {
+	display: flex;
+	align-items: center;
+	padding-top: 20px;
+}
+
+.voxel-fse-range-slider-input-group {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.voxel-fse-range-slider-input-label {
+	font-size: 10px;
+	text-transform: uppercase;
+	color: #757575;
+}
+
+.voxel-fse-range-slider-input-group .components-text-control__input {
+	min-height: 32px;
+	width: 100%;
+	text-align: center;
+}
+
+.voxel-fse-range-slider-divider {
+	width: 20px;
+	height: 1px;
+	background: #ddd;
+}
+
+/* ============================================
+   Animation Select Control
+   For Motion Effects Entrance Animation
+   ============================================ */
+.voxel-fse-animation-select-control {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-animation-select-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+}
+
+.voxel-fse-animation-select-dropdown {
+	flex: 1;
+}
+
+.voxel-fse-animation-preview-wrapper {
+	flex-shrink: 0;
+}
+
+.voxel-fse-animation-select-control .components-select-control__input {
+	min-height: 32px;
+}
+
+.voxel-fse-animation-preview-btn {
+	min-height: 32px;
+	margin-bottom: 0;
+}
+
+.voxel-fse-animation-preview-btn:hover {
+	background: #f0f0f0;
+}
+
+.voxel-fse-animation-preview-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ============================================
+   Background Image Upload Control
+   Elementor-style image picker
+   ============================================ */
+.voxel-fse-image-upload-empty {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	padding: 24px 16px !important;
+	background-color: #e6e9ec !important;
+	border-radius: 3px !important;
+	cursor: pointer !important;
+	transition: all 0.2s ease !important;
+	min-height: 100px !important;
+	position: relative !important;
+	overflow: hidden !important;
+	color: #69727d;
+}
+
+.voxel-fse-image-upload-empty:hover {
+	background-color: #d5d8dc !important;
+	border-color: #a4afb7 !important;
+	color: #69727d;
+}
+
+.voxel-fse-image-upload-empty__icon {
+	color: #69727d;
+	transition: color 0.2s ease;
+}
+
+.voxel-fse-image-upload-empty:hover .voxel-fse-image-upload-empty__icon {
+	color: #495157;
+}
+
+.voxel-fse-image-upload-empty__label {
+	font-size: 13px;
+	color: #69727d;
+	transition: color 0.2s ease;
+}
+
+.voxel-fse-image-upload-empty:hover .voxel-fse-image-upload-empty__label {
+	color: #495157;
+}
+
+/* Focus state for accessibility */
+.voxel-fse-image-upload-empty:focus {
+	outline: none;
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* Hover overlay - hidden by default, shown on hover */
+.voxel-fse-image-upload-empty__overlay {
+	position: absolute;
+	top: auto;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 27px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: transparent;
+	opacity: 0;
+	visibility: hidden;
+	transition: all 0.2s ease-in-out;
+	z-index: 10;
+}
+
+.voxel-fse-image-upload-empty:hover .voxel-fse-image-upload-empty__overlay {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* Wrapper for upload buttons container */
+.voxel-fse-image-upload-buttons-wrapper {
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+
+.voxel-fse-image-upload-button-wrapper {
+	flex-grow: 1;
+	display: flex;
+	height: 100%;
+}
+
+/* "Choose Image" button styling - matches Elementor tool buttons */
+.voxel-fse-image-upload-empty__button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	background-color: rgba(0, 0, 0, 0.9);
+	color: #fff;
+	font-size: 11px;
+	font-weight: normal;
+	text-transform: none;
+	border-radius: 0;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.voxel-fse-image-upload-empty__button:hover {
+	background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Divider between buttons */
+.voxel-fse-image-upload-button-wrapper:not(:last-child) .voxel-fse-image-upload-empty__button {
+	border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   Visual Choice Control (Elementor pattern)
+   Used for Shape Divider type selection
+   ============================================ */
+
+/* Screen reader only utility */
+.elementor-screen-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Container - grid layout */
+.elementor-visual-choice-container {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+/* Shape divider specific - 2 column grid */
+.elementor-visual-choice-container-shape-divider {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+/* Each visual choice element */
+.elementor-visual-choice-element {
+	position: relative;
+	grid-column: span var(--elementor-visual-choice-span, 1);
+}
+
+.elementor-visual-choice-element-image {
+	aspect-ratio: 2 / 1;
+}
+
+/* Hide the actual radio input */
+.elementor-visual-choice-element input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Label is the clickable visual element */
+.elementor-visual-choice-label {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 4px;
+	border: 1px solid #d5dadf;
+	border-radius: 3px;
+	background: #fff;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+
+.elementor-visual-choice-label:hover {
+	border-color: #a4afb7;
+	background-color: #f9fafa;
+}
+
+/* Focus state - accessible keyboard navigation */
+.elementor-visual-choice-element input[type="radio"]:focus+.elementor-visual-choice-label {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* Selected state */
+.elementor-visual-choice-element-selected .elementor-visual-choice-label,
+.elementor-visual-choice-element input[type="radio"]:checked+.elementor-visual-choice-label {
+	border-color: #2271b1;
+	border-width: 2px;
+	background-color: #f0f7fc;
+}
+
+/* Image inside label */
+.elementor-visual-choice-label img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+	display: block;
+}
+
+/* Bottom position - align image to top for rotated shapes */
+.elementor-visual-choice-container[data-position="bottom"] .elementor-visual-choice-label {
+	align-items: flex-start;
+}
+
+/* Tooltip styles (basic - WordPress handles actual tooltips) */
+.elementor-visual-choice-label[data-tooltip] {
+	position: relative;
+}
+
+/* Shape Divider Control wrapper */
+.voxel-fse-shape-divider-control {
+	/* Container styling if needed */
+}
+
+.voxel-fse-shape-divider-controls {
+	/* Controls section styling if needed */
+}
+
+/* ============================================
+   Percent Placeholder for Range Controls
+   Shows grayed-out default value (100) when
+   unit is % and no value is set - matches Elementor
+   ============================================ */
+.percent-placeholder-overlay {
+	/* Position over the RangeControl's number input */
+	position: absolute !important;
+	top: 0 !important;
+	right: 0 !important;
+	width: 54px !important;
+	height: 40px !important;
+	/* Match __next40pxDefaultSize */
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	pointer-events: none !important;
+	color: #949494 !important;
+	font-size: 13px !important;
+	z-index: 1 !important;
+	background: transparent !important;
+}
+
+/* When the input has focus, hide the placeholder */
+.has-percent-placeholder .components-input-control__input:focus~.percent-placeholder-overlay {
+	display: none !important;
+}
+
+/* ============================================
+   Toggle Control - Switcher on Right (Elementor-style)
+   Global styles for all WordPress toggle controls
+   to match Elementor's label-left, switcher-right pattern
+   ============================================ */
+.components-toggle-control .components-h-stack {
+	flex-direction: row-reverse;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.components-toggle-control .components-form-toggle {
+	margin-right: 0;
+	flex-shrink: 0;
+}
+
+.components-toggle-control .components-toggle-control__label {
+	flex-grow: 1;
+	white-space: wrap;
+}
+
+/* Help text - remove left margin for proper alignment */
+body .components-toggle-control .components-base-control__help,
+body .components-toggle-control__help {
+	display: inline-block;
+	margin-inline-start: 0 !important;
+}
+
+/* NOTE: Voxel Dynamic Tag Enable Button styles are in enable-tags-button.css
+   which is imported directly by controls that use it (ImageUploadControl,
+   GalleryUploadControl, etc.) to avoid duplication and CSS bundling issues. */
+
+/* ============================================
+   PanelBody Height Fix for Dynamic Content
+
+   WordPress PanelBody uses CSS animation that
+   can cause content clipping when children
+   change dynamically while panel is open.
+
+   Fix: Remove height constraints on opened panels.
+   ============================================ */
+.components-panel__body.is-opened {
+	max-height: none !important;
+	height: auto !important;
+	overflow: visible !important;
+}
+
+/* Also target the AdvancedIconControl wrapper specifically */
+.voxel-advanced-icon-control {
+	display: block;
+	width: 100%;
+}
+
+.voxel-advanced-icon-control .voxel-fse-image-upload-control {
+	display: block;
+	width: 100%;
+}
+
+.voxel-advanced-icon-control .voxel-fse-image-upload-empty {
+	min-height: 100px !important;
+	height: auto !important;
+}

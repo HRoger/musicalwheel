@@ -1,0 +1,26 @@
+/**
+ * Current Plan Block - Editor Styles
+ *
+ * Editor-only styles for the Current Plan block.
+ * Uses scoped .voxel-fse-* classes to avoid conflicts.
+ *
+ * Note: NO style.css is created - we inherit from Voxel parent theme.
+ *
+ * @package VoxelFSE
+ */
+
+/* Editor wrapper placeholder */
+.voxel-fse-current-plan .voxel-fse-block-placeholder {
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+}
+
+/* Loading/error states in editor */
+.voxel-fse-current-plan .ac-body p {
+	margin: 0;
+}
+
+/* Ensure buttons don't navigate in editor */
+.voxel-fse-current-plan a.ts-btn {
+	cursor: default;
+}

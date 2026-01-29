@@ -1,0 +1,958 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/listing-plans",
+	"version": "1.0.0",
+	"title": "Listing plans (VX)",
+	"category": "voxel-fse",
+	"description": "Display listing plans with pricing tabs and checkout integration. FSE equivalent of Voxel's Listing plans widget.",
+	"keywords": [
+		"listing",
+		"plans",
+		"pricing",
+		"submission",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"priceGroups": {
+			"type": "array",
+			"default": []
+		},
+		"planConfigs": {
+			"type": "object",
+			"default": {}
+		},
+		"plansColumns": {
+			"type": "number",
+			"default": 3
+		},
+		"plansColumns_tablet": {
+			"type": "number"
+		},
+		"plansColumns_mobile": {
+			"type": "number"
+		},
+		"plansGap": {
+			"type": "number",
+			"default": 20
+		},
+		"plansGap_tablet": {
+			"type": "number"
+		},
+		"plansGap_mobile": {
+			"type": "number"
+		},
+		"plansBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"plansBorderRadius_tablet": {
+			"type": "number"
+		},
+		"plansBorderRadius_mobile": {
+			"type": "number"
+		},
+		"plansBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"plansBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"plansBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"plansBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"plansBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"bodyPadding": {
+			"type": "number",
+			"default": 20
+		},
+		"bodyPadding_tablet": {
+			"type": "number"
+		},
+		"bodyPadding_mobile": {
+			"type": "number"
+		},
+		"bodyContentGap": {
+			"type": "number",
+			"default": 15
+		},
+		"bodyContentGap_tablet": {
+			"type": "number"
+		},
+		"bodyContentGap_mobile": {
+			"type": "number"
+		},
+		"imagePadding": {
+			"type": "object",
+			"default": {
+				"top": "0",
+				"right": "0",
+				"bottom": "0",
+				"left": "0"
+			}
+		},
+		"imagePadding_tablet": {
+			"type": "object"
+		},
+		"imagePadding_mobile": {
+			"type": "object"
+		},
+		"imageHeight": {
+			"type": "number",
+			"default": 0
+		},
+		"imageHeight_tablet": {
+			"type": "number"
+		},
+		"imageHeight_mobile": {
+			"type": "number"
+		},
+		"pricingAlign": {
+			"type": "string",
+			"default": "flex-start"
+		},
+		"priceTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"priceColor": {
+			"type": "string",
+			"default": ""
+		},
+		"periodTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"periodColor": {
+			"type": "string",
+			"default": ""
+		},
+		"contentAlign": {
+			"type": "string",
+			"default": "flex-start"
+		},
+		"nameTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"nameColor": {
+			"type": "string",
+			"default": ""
+		},
+		"descAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"descTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"descColor": {
+			"type": "string",
+			"default": ""
+		},
+		"listAlign": {
+			"type": "string",
+			"default": "flex-start"
+		},
+		"listGap": {
+			"type": "number",
+			"default": 10
+		},
+		"listGap_tablet": {
+			"type": "number"
+		},
+		"listGap_mobile": {
+			"type": "number"
+		},
+		"listIconSize": {
+			"type": "number",
+			"default": 18
+		},
+		"listIconSize_tablet": {
+			"type": "number"
+		},
+		"listIconSize_mobile": {
+			"type": "number"
+		},
+		"listIconRightPad": {
+			"type": "number",
+			"default": 8
+		},
+		"listIconRightPad_tablet": {
+			"type": "number"
+		},
+		"listIconRightPad_mobile": {
+			"type": "number"
+		},
+		"listTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"listColor": {
+			"type": "string",
+			"default": ""
+		},
+		"listIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"featuredBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"featuredBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"featuredBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"featuredBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"featuredBadgeBg": {
+			"type": "string",
+			"default": ""
+		},
+		"featuredBadgeColor": {
+			"type": "string",
+			"default": ""
+		},
+		"featuredBadgeTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tabsDisabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"tabsJustify": {
+			"type": "string",
+			"default": "flex-start"
+		},
+		"tabsPadding": {
+			"type": "object",
+			"default": {
+				"top": "0",
+				"right": "0",
+				"bottom": "0",
+				"left": "0"
+			}
+		},
+		"tabsPadding_tablet": {
+			"type": "object"
+		},
+		"tabsPadding_mobile": {
+			"type": "object"
+		},
+		"tabsMargin": {
+			"type": "object",
+			"default": {
+				"top": "0",
+				"right": "15",
+				"bottom": "15",
+				"left": "0"
+			}
+		},
+		"tabsMargin_tablet": {
+			"type": "object"
+		},
+		"tabsMargin_mobile": {
+			"type": "object"
+		},
+		"tabsBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"tabsBorderRadius_tablet": {
+			"type": "number"
+		},
+		"tabsBorderRadius_mobile": {
+			"type": "number"
+		},
+		"tabTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tabActiveTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tabColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabActiveColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabActiveBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tabActiveBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsTextColorHover": {
+			"type": "string"
+		},
+		"tabsActiveTextColorHover": {
+			"type": "string"
+		},
+		"tabsBorderColorHover": {
+			"type": "string"
+		},
+		"tabsActiveBorderColorHover": {
+			"type": "string"
+		},
+		"tabsBgColorHover": {
+			"type": "string"
+		},
+		"tabsActiveBgColorHover": {
+			"type": "string"
+		},
+		"tabBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"primaryBtnRadius": {
+			"type": "number",
+			"default": 5
+		},
+		"primaryBtnRadius_tablet": {
+			"type": "number"
+		},
+		"primaryBtnRadius_mobile": {
+			"type": "number"
+		},
+		"primaryBtnHeight": {
+			"type": "number",
+			"default": 0
+		},
+		"primaryBtnHeight_tablet": {
+			"type": "number"
+		},
+		"primaryBtnHeight_mobile": {
+			"type": "number"
+		},
+		"primaryBtnIconSize": {
+			"type": "number",
+			"default": 18
+		},
+		"primaryBtnIconSize_tablet": {
+			"type": "number"
+		},
+		"primaryBtnIconSize_mobile": {
+			"type": "number"
+		},
+		"primaryBtnPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryBtnPadding_tablet": {
+			"type": "object"
+		},
+		"primaryBtnPadding_mobile": {
+			"type": "object"
+		},
+		"primaryBtnIconPad": {
+			"type": "number",
+			"default": 8
+		},
+		"primaryBtnIconPad_tablet": {
+			"type": "number"
+		},
+		"primaryBtnIconPad_mobile": {
+			"type": "number"
+		},
+		"primaryBtnTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryBtnColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBg": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryBtnBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"primaryBtnIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBgHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"primaryBtnBoxShadowHover": {
+			"type": "object",
+			"default": {}
+		},
+		"secondaryBtnRadius": {
+			"type": "number",
+			"default": 5
+		},
+		"secondaryBtnRadius_tablet": {
+			"type": "number"
+		},
+		"secondaryBtnRadius_mobile": {
+			"type": "number"
+		},
+		"secondaryBtnHeight": {
+			"type": "number",
+			"default": 0
+		},
+		"secondaryBtnHeight_tablet": {
+			"type": "number"
+		},
+		"secondaryBtnHeight_mobile": {
+			"type": "number"
+		},
+		"secondaryBtnIconSize": {
+			"type": "number",
+			"default": 18
+		},
+		"secondaryBtnIconSize_tablet": {
+			"type": "number"
+		},
+		"secondaryBtnIconSize_mobile": {
+			"type": "number"
+		},
+		"secondaryBtnPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"secondaryBtnPadding_tablet": {
+			"type": "object"
+		},
+		"secondaryBtnPadding_mobile": {
+			"type": "object"
+		},
+		"secondaryBtnIconPad": {
+			"type": "number",
+			"default": 8
+		},
+		"secondaryBtnIconPad_tablet": {
+			"type": "number"
+		},
+		"secondaryBtnIconPad_mobile": {
+			"type": "number"
+		},
+		"secondaryBtnTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"secondaryBtnColor": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBg": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"secondaryBtnBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"secondaryBtnIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBgHover": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"secondaryBtnBoxShadowHover": {
+			"type": "object",
+			"default": {}
+		},
+		"dialogTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"dialogColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dialogBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"dialogBorderRadius": {
+			"type": "number",
+			"default": 10
+		},
+		"dialogBorderRadius_tablet": {
+			"type": "number"
+		},
+		"dialogBorderRadius_mobile": {
+			"type": "number"
+		},
+		"dialogBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"dialogBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"dialogBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"dialogBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"arrowIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"directPurchaseRedirect": {
+			"type": "string",
+			"default": "order_page"
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "price_groups"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "general"
+		},
+		"elementId": {
+			"type": "string",
+			"default": ""
+		},
+		"customClasses": {
+			"type": "string",
+			"default": ""
+		},
+		"zIndex": {
+			"type": "string",
+			"default": ""
+		},
+		"zIndex_tablet": {
+			"type": "string",
+			"default": ""
+		},
+		"zIndex_mobile": {
+			"type": "string",
+			"default": ""
+		},
+		"blockMargin": {
+			"type": "object",
+			"default": {}
+		},
+		"blockMargin_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"blockMargin_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"blockPadding_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"borderRadius": {
+			"type": "object",
+			"default": {}
+		},
+		"borderRadius_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"borderRadius_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"backgroundType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"backgroundColor": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundImage": {
+			"type": "object",
+			"default": {}
+		},
+		"backgroundPosition": {
+			"type": "string",
+			"default": "center center"
+		},
+		"backgroundAttachment": {
+			"type": "string",
+			"default": "scroll"
+		},
+		"backgroundRepeat": {
+			"type": "string",
+			"default": "no-repeat"
+		},
+		"backgroundSize": {
+			"type": "string",
+			"default": "cover"
+		},
+		"backgroundGradientType": {
+			"type": "string",
+			"default": "linear"
+		},
+		"backgroundGradientAngle": {
+			"type": "number",
+			"default": 180
+		},
+		"backgroundGradientPosition": {
+			"type": "string",
+			"default": "center center"
+		},
+		"backgroundColorStart": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundColorEnd": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundColorStartPosition": {
+			"type": "number",
+			"default": 0
+		},
+		"backgroundColorEndPosition": {
+			"type": "number",
+			"default": 100
+		},
+		"backgroundVideoLink": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundVideoFallback": {
+			"type": "object",
+			"default": {}
+		},
+		"backgroundSlideshowGallery": {
+			"type": "array",
+			"default": []
+		},
+		"backgroundSlideshowSlideDuration": {
+			"type": "number",
+			"default": 5000
+		},
+		"backgroundSlideshowSlideTransition": {
+			"type": "string",
+			"default": "fade"
+		},
+		"backgroundSlideshowTransitionDuration": {
+			"type": "number",
+			"default": 500
+		},
+		"backgroundSlideshowKenBurns": {
+			"type": "boolean",
+			"default": false
+		},
+		"backgroundSlideshowKenBurnsZoomDirection": {
+			"type": "string",
+			"default": "in"
+		},
+		"backgroundOverlayType": {
+			"type": "string",
+			"default": "none"
+		},
+		"backgroundOverlayColor": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundOverlayGradientType": {
+			"type": "string",
+			"default": "linear"
+		},
+		"backgroundOverlayGradientAngle": {
+			"type": "number",
+			"default": 180
+		},
+		"backgroundOverlayGradientPosition": {
+			"type": "string",
+			"default": "center center"
+		},
+		"backgroundOverlayColorStart": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundOverlayColorEnd": {
+			"type": "string",
+			"default": ""
+		},
+		"backgroundOverlayColorStartPosition": {
+			"type": "number",
+			"default": 0
+		},
+		"backgroundOverlayColorEndPosition": {
+			"type": "number",
+			"default": 100
+		},
+		"backgroundOverlayOpacity": {
+			"type": "number",
+			"default": 0.5
+		},
+		"backgroundOverlayOpacity_tablet": {
+			"type": "number"
+		},
+		"backgroundOverlayOpacity_mobile": {
+			"type": "number"
+		},
+		"borderType": {
+			"type": "string",
+			"default": ""
+		},
+		"borderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"borderWidth_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"borderWidth_mobile": {
+			"type": "object",
+			"default": {}
+		},
+		"borderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"boxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"shapeDividerTop": {
+			"type": "string",
+			"default": ""
+		},
+		"shapeDividerTopColor": {
+			"type": "string",
+			"default": ""
+		},
+		"shapeDividerTopHeight": {
+			"type": "number"
+		},
+		"shapeDividerTopHeight_tablet": {
+			"type": "number"
+		},
+		"shapeDividerTopHeight_mobile": {
+			"type": "number"
+		},
+		"shapeDividerTopFlip": {
+			"type": "boolean",
+			"default": false
+		},
+		"shapeDividerTopNegative": {
+			"type": "boolean",
+			"default": false
+		},
+		"shapeDividerBottom": {
+			"type": "string",
+			"default": ""
+		},
+		"shapeDividerBottomColor": {
+			"type": "string",
+			"default": ""
+		},
+		"shapeDividerBottomHeight": {
+			"type": "number"
+		},
+		"shapeDividerBottomHeight_tablet": {
+			"type": "number"
+		},
+		"shapeDividerBottomHeight_mobile": {
+			"type": "number"
+		},
+		"shapeDividerBottomFlip": {
+			"type": "boolean",
+			"default": false
+		},
+		"shapeDividerBottomNegative": {
+			"type": "boolean",
+			"default": false
+		},
+		"cssFiltersBlur": {
+			"type": "number",
+			"default": 0
+		},
+		"cssFiltersBrightness": {
+			"type": "number",
+			"default": 100
+		},
+		"cssFiltersContrast": {
+			"type": "number",
+			"default": 100
+		},
+		"cssFiltersSaturate": {
+			"type": "number",
+			"default": 100
+		},
+		"cssFiltersHue": {
+			"type": "number",
+			"default": 0
+		},
+		"transitionDuration": {
+			"type": "number",
+			"default": 0.3
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"customCss": {
+			"type": "string",
+			"default": ""
+		},
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "number"
+		},
+		"loopOffset": {
+			"type": "number"
+		}
+	}
+}

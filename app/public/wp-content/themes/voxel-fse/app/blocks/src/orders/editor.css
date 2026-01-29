@@ -1,0 +1,176 @@
+/**
+ * Orders Block - Editor Styles
+ *
+ * Editor-only styles for the Orders block.
+ * Does NOT duplicate Voxel parent theme styles.
+ *
+ * @package VoxelFSE
+ */
+
+/* Editor wrapper */
+.voxel-fse-orders-editor {
+	min-height: 200px;
+}
+
+/* Loading state */
+.voxel-fse-orders-editor .voxel-fse-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 40px 20px;
+	background: #f8f9fa;
+	border-radius: 4px;
+	color: #666;
+}
+
+.voxel-fse-orders-editor .voxel-fse-loading .components-spinner {
+	margin: 0;
+}
+
+/* Error state */
+.voxel-fse-orders-editor .voxel-fse-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	background: #fff5f5;
+	border: 1px solid #fed7d7;
+	border-radius: 4px;
+	color: #c53030;
+}
+
+/* Preview container */
+.voxel-fse-orders-preview {
+	background: #fff;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+/* Widget head preview */
+.voxel-fse-orders-preview .widget-head {
+	padding: 20px;
+	border-bottom: 1px solid #eee;
+}
+
+.voxel-fse-orders-preview .widget-head h2 {
+	margin: 0 0 8px 0;
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--vx-orders-title-color, #1a1a1a);
+}
+
+.voxel-fse-orders-preview .widget-head p {
+	margin: 0;
+	color: var(--vx-orders-subtitle-color, #666);
+	font-size: 14px;
+}
+
+/* Filters preview */
+.voxel-fse-orders-preview .vx-order-filters {
+	padding: 16px 20px;
+	border-bottom: 1px solid #eee;
+}
+
+.voxel-fse-orders-preview .ts-filter-wrapper {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.voxel-fse-orders-preview .ts-inline-filter {
+	flex-shrink: 0;
+}
+
+.voxel-fse-orders-preview .ts-input-icon {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	background: #f5f5f5;
+	border-radius: 6px;
+	min-width: 200px;
+}
+
+.voxel-fse-orders-preview .ts-input-icon input {
+	border: none;
+	background: transparent;
+	outline: none;
+	flex: 1;
+	font-size: 14px;
+}
+
+.voxel-fse-orders-preview .ts-filter {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	background: #f5f5f5;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	color: #666;
+}
+
+.voxel-fse-orders-preview .ts-filter:hover {
+	background: #eee;
+}
+
+.voxel-fse-orders-preview .ts-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	background: #f5f5f5;
+	border-radius: 6px;
+	color: #666;
+	text-decoration: none;
+}
+
+.voxel-fse-orders-preview .ts-icon-btn:hover {
+	background: #eee;
+}
+
+/* Empty state preview */
+.voxel-fse-orders-preview .ts-no-posts {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 60px 20px;
+	color: #999;
+}
+
+.voxel-fse-orders-preview .ts-no-posts i {
+	font-size: 48px;
+	opacity: 0.5;
+}
+
+.voxel-fse-orders-preview .ts-no-posts p {
+	margin: 0;
+	font-size: 16px;
+}
+
+/* Block placeholder */
+.voxel-fse-block-placeholder {
+	opacity: 0.8;
+	transition: opacity 0.2s;
+}
+
+.voxel-fse-orders-frontend:hover .voxel-fse-block-placeholder {
+	opacity: 1;
+}
+
+/* Icon styling in editor */
+.voxel-fse-orders-preview i {
+	line-height: 1;
+}
+
+.voxel-fse-orders-preview .ts-search-icon,
+.voxel-fse-orders-preview .ts-down-icon {
+	font-size: 16px;
+	color: #999;
+}

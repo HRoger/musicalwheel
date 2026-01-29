@@ -4,36 +4,20 @@
  * @package VoxelFSE
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import {
-	PanelBody,
-	SelectControl,
-	TextControl,
-	ToggleControl,
-	Spinner,
-	RangeControl,
-} from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
-import {
-	ResponsiveRangeControl,
-	IconPickerControl,
-	TypographyControl,
-	ColorControl,
-	ChooseControl,
-	SectionHeading,
-	SliderControl,
-	AdvancedTab,
-	StyleTabPanel,
-	RelationControl,
-} from '@shared/controls';
+import { InspectorTabs } from '@shared/controls';
+import { getAdvancedVoxelTabProps } from '../../shared/utils';
 
 import PostFeedComponent from './shared/PostFeedComponent';
 import { usePostFeedConfig } from './hooks/usePostFeedConfig';
 import { useCardTemplates } from './hooks/useCardTemplates';
-import type { PostFeedEditProps, PostFeedAttributes } from './types';
+import { ContentTab, StyleTab } from './inspector';
+import type { PostFeedEditProps } from './types';
 
 /**
  * Generate unique block ID
@@ -50,8 +34,19 @@ export default function Edit({
 	setAttributes,
 	clientId,
 }: PostFeedEditProps): JSX.Element {
+	// Get blockId for AdvancedTab/VoxelTab wiring
+	const blockId = attributes.blockId || 'post-feed';
+
+	// Use shared utility for AdvancedTab + VoxelTab wiring
+	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+		blockId,
+		baseClass: 'voxel-fse-post-feed-editor',
+		selectorPrefix: 'voxel-fse-post-feed',
+	});
+
 	const blockProps = useBlockProps({
-		className: 'voxel-fse-post-feed-editor',
+		className: advancedProps.className,
+		style: advancedProps.styles,
 	});
 
 	// Fetch configuration from REST API
@@ -198,6 +193,29 @@ export default function Edit({
 		}
 	);
 
+	// Step 3: Watch linked Search Form's editorFilterValues for editor preview sync
+	// This enables filter values (price, keywords, etc.) to update the Post Feed preview
+	const linkedFilters = useSelect(
+		(select) => {
+			if (!linkedSearchFormClientId) {
+				return {};
+			}
+
+			const { getBlock } = select('core/block-editor') as {
+				getBlock: (clientId: string) => {
+					attributes: { editorFilterValues?: Record<string, unknown> };
+				} | null;
+			};
+
+			const linkedForm = getBlock(linkedSearchFormClientId);
+			if (!linkedForm) {
+				return {};
+			}
+
+			return linkedForm.attributes.editorFilterValues || {};
+		}
+	);
+
 	// Build relation items for RelationControl
 	const searchFormItems = searchFormBlocks.map(
 		(block: { clientId: string; attributes: { blockId?: string } }) => ({
@@ -207,751 +225,45 @@ export default function Edit({
 		})
 	);
 
-	// Build post type options from config
-	const postTypeOptions = [
-		{ label: __('Select post type...', 'voxel-fse'), value: '' },
-		...(config?.postTypes || []).map((pt) => ({
-			label: pt.label,
-			value: pt.key,
-		})),
-	];
-
 	return (
 		<>
+			{/* Inspector Controls with proper tab navigation */}
 			<InspectorControls>
-				{/* CONTENT TAB */}
-				<PanelBody
-					title={__('Post Feed Settings', 'voxel-fse')}
-					initialOpen={true}
-				>
-					{/* 1. Data Source - Always shown */}
-					<SelectControl
-						label={__('Data source', 'voxel-fse')}
-						value={attributes.source}
-						options={[
-							{ label: __('Search Form widget', 'voxel-fse'), value: 'search-form' },
-							{ label: __('Filters', 'voxel-fse'), value: 'search-filters' },
-							{ label: __('Manual selection', 'voxel-fse'), value: 'manual' },
-							{ label: __('WP default archive', 'voxel-fse'), value: 'archive' },
-						]}
-						onChange={(value) =>
-							setAttributes({ source: value as PostFeedAttributes['source'] })
-						}
-					/>
-
-					{/* SEARCH FORM MODE */}
-					{attributes.source === 'search-form' && (
-						<>
-							<RelationControl
-								label={__('Link to search form', 'voxel-fse')}
-								items={searchFormItems}
-								selectedId={attributes.searchFormId}
-								onSelect={(id) => setAttributes({ searchFormId: id ?? '' })}
-								widgetType="SearchForm"
-								description={__('Select a Search Form block on this page to link with.', 'voxel-fse')}
-							/>
-							<SelectControl
-								label={__('Pagination', 'voxel-fse')}
-								value={attributes.pagination}
-								options={[
-									{ label: __('Load more button', 'voxel-fse'), value: 'load_more' },
-									{ label: __('Prev/Next buttons', 'voxel-fse'), value: 'prev_next' },
-									{ label: __('None', 'voxel-fse'), value: 'none' },
-								]}
-								onChange={(value) =>
-									setAttributes({ pagination: value as PostFeedAttributes['pagination'] })
-								}
-							/>
-							<RangeControl
-								label={__('Posts per page', 'voxel-fse')}
-								value={attributes.postsPerPage}
-								onChange={(value) => setAttributes({ postsPerPage: value ?? 10 })}
-								min={1}
-								max={100}
-							/>
-							<ToggleControl
-								label={__('Display details', 'voxel-fse')}
-								help={__('Display results count and order by (if enabled) on top', 'voxel-fse')}
-								checked={attributes.displayDetails}
-								onChange={(value) => setAttributes({ displayDetails: value })}
-							/>
-						</>
-					)}
-
-					{/* FILTERS MODE */}
-					{attributes.source === 'search-filters' && (
-						<>
-							<SelectControl
-								label={__('Choose post type', 'voxel-fse')}
-								value={attributes.postType}
-								options={postTypeOptions}
-								onChange={(value) => setAttributes({ postType: value })}
-							/>
-							<RangeControl
-								label={__('Number of posts to load', 'voxel-fse')}
-								value={attributes.postsPerPage}
-								onChange={(value) => setAttributes({ postsPerPage: value ?? 10 })}
-								min={0}
-								max={500}
-							/>
-							<SelectControl
-								label={__('Pagination', 'voxel-fse')}
-								value={attributes.pagination}
-								options={[
-									{ label: __('Load more button', 'voxel-fse'), value: 'load_more' },
-									{ label: __('Prev/Next buttons', 'voxel-fse'), value: 'prev_next' },
-									{ label: __('None', 'voxel-fse'), value: 'none' },
-								]}
-								onChange={(value) =>
-									setAttributes({ pagination: value as PostFeedAttributes['pagination'] })
-								}
-							/>
-							<TextControl
-								label={__('Exclude posts', 'voxel-fse')}
-								value={attributes.excludePosts}
-								onChange={(value) => setAttributes({ excludePosts: value })}
-								help={__('Comma-separated post IDs to exclude', 'voxel-fse')}
-							/>
-							<ToggleControl
-								label={__('Filter posts by priority', 'voxel-fse')}
-								checked={attributes.priorityFilter}
-								onChange={(value) => setAttributes({ priorityFilter: value })}
-							/>
-							{attributes.priorityFilter && (
-								<div className="voxel-fse-half-width-controls">
-									<RangeControl
-										label={__('Priority min', 'voxel-fse')}
-										value={attributes.priorityMin}
-										onChange={(value) => setAttributes({ priorityMin: value ?? 0 })}
-										min={0}
-										max={100}
-									/>
-									<RangeControl
-										label={__('Priority max', 'voxel-fse')}
-										value={attributes.priorityMax}
-										onChange={(value) => setAttributes({ priorityMax: value ?? 0 })}
-										min={0}
-										max={100}
-									/>
-								</div>
-							)}
-							<RangeControl
-								label={__('Offset', 'voxel-fse')}
-								value={attributes.offset}
-								onChange={(value) => setAttributes({ offset: value ?? 0 })}
-								min={0}
-								max={100}
-							/>
-							<SelectControl
-								label={__('Preview card template', 'voxel-fse')}
-								value={attributes.cardTemplate}
-								options={cardTemplates.map((t) => ({
-									label: t.label,
-									value: t.id,
-								}))}
-								onChange={(value) => setAttributes({ cardTemplate: value })}
-								disabled={isLoadingTemplates || !attributes.postType}
-								help={
-									isLoadingTemplates
-										? __('Loading templates...', 'voxel-fse')
-										: __('Select post type first to see available templates', 'voxel-fse')
-								}
-							/>
-						</>
-					)}
-
-					{/* MANUAL / ARCHIVE MODE - No results label comes FIRST per Voxel */}
-					{(attributes.source === 'manual' || attributes.source === 'archive') && (
-						<TextControl
-							label={__('No results label', 'voxel-fse')}
-							value={attributes.noResultsLabel}
-							onChange={(value) => setAttributes({ noResultsLabel: value })}
-						/>
-					)}
-
-					{/* MANUAL / ARCHIVE MODE - Choose post type */}
-					{(attributes.source === 'manual' || attributes.source === 'archive') && (
-						<SelectControl
-							label={__('Choose post type', 'voxel-fse')}
-							value={attributes.postType}
-							options={postTypeOptions}
-							onChange={(value) => setAttributes({ postType: value })}
-						/>
-					)}
-
-					{/* MANUAL MODE - Choose posts */}
-					{attributes.source === 'manual' && (
-						<TextControl
-							label={__('Choose posts', 'voxel-fse')}
-							value={attributes.manualPostIds.join(', ')}
-							onChange={(value) => {
-								const ids = value
-									.split(',')
-									.map((id) => parseInt(id.trim(), 10))
-									.filter((id) => !isNaN(id) && id > 0);
-								setAttributes({ manualPostIds: ids });
-							}}
-							help={__('Enter post IDs separated by commas. A proper post selector will be added in future updates.', 'voxel-fse')}
-						/>
-					)}
-
-					{/* MANUAL / ARCHIVE MODE - Preview card template (only when post type selected) */}
-					{(attributes.source === 'manual' || attributes.source === 'archive') && attributes.postType && (
-						<SelectControl
-							label={__('Preview card template', 'voxel-fse')}
-							value={attributes.cardTemplate}
-							options={cardTemplates.map((t) => ({
-								label: t.label,
-								value: t.id,
-							}))}
-							onChange={(value) => setAttributes({ cardTemplate: value })}
-							disabled={isLoadingTemplates}
-						/>
-					)}
-
-					{/* NO RESULTS LABEL - Only for Search Form and Filters modes */}
-					{(attributes.source === 'search-form' || attributes.source === 'search-filters') && (
-						<TextControl
-							label={__('No results label', 'voxel-fse')}
-							value={attributes.noResultsLabel}
-							onChange={(value) => setAttributes({ noResultsLabel: value })}
-						/>
-					)}
-				</PanelBody>
-
-				{/* LAYOUT TAB */}
-				<PanelBody title={__('Layout', 'voxel-fse')} initialOpen={false}>
-					<SelectControl
-						label={__('Mode', 'voxel-fse')}
-						value={attributes.layoutMode}
-						options={[
-							{ label: __('Grid', 'voxel-fse'), value: 'grid' },
-							{ label: __('Carousel', 'voxel-fse'), value: 'carousel' },
-						]}
-						onChange={(value) =>
-							setAttributes({ layoutMode: value as PostFeedAttributes['layoutMode'] })
-						}
-					/>
-
-					{attributes.layoutMode === 'grid' && (
-						<>
-							<ResponsiveRangeControl
-								label={__('Number of columns', 'voxel-fse')}
-								attributes={attributes}
-								setAttributes={setAttributes}
-								attributeBaseName="columns"
-								min={1}
-								max={6}
-							/>
-						</>
-					)}
-
-					{attributes.layoutMode === 'carousel' && (
-						<>
-							<ResponsiveRangeControl
-								label={__('Item width', 'voxel-fse')}
-								attributes={attributes}
-								setAttributes={setAttributes}
-								attributeBaseName="carouselItemWidth"
-								min={100}
-								max={800}
-							/>
-
-							<ToggleControl
-								label={__('Auto slide?', 'voxel-fse')}
-								checked={attributes.carouselAutoSlide}
-								onChange={(value) => setAttributes({ carouselAutoSlide: value })}
-							/>
-						</>
-					)}
-
-					<ResponsiveRangeControl
-						label={__('Item gap', 'voxel-fse')}
-						attributes={attributes}
-						setAttributes={setAttributes}
-						attributeBaseName="itemGap"
-						min={0}
-						max={100}
-						help={__('Adds gap between the items', 'voxel-fse')}
-					/>
-
-					{attributes.layoutMode === 'carousel' && (
-						<>
-							<ResponsiveRangeControl
-								label={__('Scroll padding', 'voxel-fse')}
-								attributes={attributes}
-								setAttributes={setAttributes}
-								attributeBaseName="scrollPadding"
-								min={0}
-								max={100}
-								help={__(
-									'Adds padding to the scrollable area, useful in full width layouts or in responsive mode',
-									'voxel-fse'
-								)}
-							/>
-
-							<ResponsiveRangeControl
-								label={__('Item padding', 'voxel-fse')}
-								attributes={attributes}
-								setAttributes={setAttributes}
-								attributeBaseName="itemPadding"
-								min={0}
-								max={100}
-								help={__('Adds padding to an individual item', 'voxel-fse')}
-							/>
-						</>
-					)}
-				</PanelBody>
-
-				{/* ICONS TAB */}
-				<PanelBody title={__('Icons', 'voxel-fse')} initialOpen={false}>
-					<IconPickerControl
-						label={__('Load more icon', 'voxel-fse')}
-						value={attributes.loadMoreIcon}
-						onChange={(value) => setAttributes({ loadMoreIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('No results icon', 'voxel-fse')}
-						value={attributes.noResultsIcon}
-						onChange={(value) => setAttributes({ noResultsIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('Right arrow', 'voxel-fse')}
-						value={attributes.rightArrowIcon}
-						onChange={(value) => setAttributes({ rightArrowIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('Left arrow', 'voxel-fse')}
-						value={attributes.leftArrowIcon}
-						onChange={(value) => setAttributes({ leftArrowIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('Right chevron', 'voxel-fse')}
-						value={attributes.rightChevronIcon}
-						onChange={(value) => setAttributes({ rightChevronIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('Left chevron', 'voxel-fse')}
-						value={attributes.leftChevronIcon}
-						onChange={(value) => setAttributes({ leftChevronIcon: value })}
-					/>
-
-					<IconPickerControl
-						label={__('Reset icon', 'voxel-fse')}
-						value={attributes.resetIcon}
-						onChange={(value) => setAttributes({ resetIcon: value })}
-					/>
-				</PanelBody>
-			</InspectorControls>
-
-			{/* STYLE TAB */}
-			<InspectorControls group="styles">
-				<PanelBody title={__('Counter', 'voxel-fse')} initialOpen={false}>
-					<TypographyControl
-						label={__('Typography', 'voxel-fse')}
-						value={attributes.counterTypography}
-						onChange={(value) => setAttributes({ counterTypography: value })}
-					/>
-					<ColorControl
-						label={__('Text color', 'voxel-fse')}
-						value={attributes.counterTextColor}
-						onChange={(value) => setAttributes({ counterTextColor: value })}
-					/>
-					<ResponsiveRangeControl
-						label={__('Bottom spacing', 'voxel-fse')}
-						attributes={attributes}
-						setAttributes={setAttributes}
-						attributeBaseName="counterBottomSpacing"
-						min={0}
-						max={100}
-					/>
-				</PanelBody>
-
-				<PanelBody title={__('Order by', 'voxel-fse')} initialOpen={false}>
-					<TypographyControl
-						label={__('Typography', 'voxel-fse')}
-						value={attributes.orderByTypography}
-						onChange={(value) => setAttributes({ orderByTypography: value })}
-					/>
-					<ColorControl
-						label={__('Text color', 'voxel-fse')}
-						value={attributes.orderByTextColor}
-						onChange={(value) => setAttributes({ orderByTextColor: value })}
-					/>
-					<ColorControl
-						label={__('Text color (Hover)', 'voxel-fse')}
-						value={attributes.orderByTextColorHover}
-						onChange={(value) => setAttributes({ orderByTextColorHover: value })}
-					/>
-				</PanelBody>
-
-				<PanelBody title={__('Loading results', 'voxel-fse')} initialOpen={false}>
-					<SelectControl
-						label={__('Loading style', 'voxel-fse')}
-						value={attributes.loadingStyle}
-						options={[
-							{ label: __('Opacity', 'voxel-fse'), value: 'opacity' },
-							{ label: __('Skeleton', 'voxel-fse'), value: 'skeleton' },
-							{ label: __('None', 'voxel-fse'), value: 'none' },
-						]}
-						onChange={(value) =>
-							setAttributes({ loadingStyle: value as PostFeedAttributes['loadingStyle'] })
-						}
-					/>
-
-					{attributes.loadingStyle === 'opacity' && (
-						<SliderControl
-							label={__('Opacity', 'voxel-fse')}
-							value={attributes.loadingOpacity}
-							onChange={(value) => setAttributes({ loadingOpacity: value })}
-							min={0}
-							max={1}
-							step={0.1}
-						/>
-					)}
-				</PanelBody>
-
-				<PanelBody title={__('No results', 'voxel-fse')} initialOpen={false}>
-					<ToggleControl
-						label={__('Hide screen', 'voxel-fse')}
-						checked={attributes.noResultsHideScreen}
-						onChange={(value) => setAttributes({ noResultsHideScreen: value })}
-					/>
-
-					<ResponsiveRangeControl
-						label={__('Content gap', 'voxel-fse')}
-						attributes={attributes}
-						setAttributes={setAttributes}
-						attributeBaseName="noResultsContentGap"
-						min={0}
-						max={100}
-					/>
-
-					<ResponsiveRangeControl
-						label={__('Icon size', 'voxel-fse')}
-						attributes={attributes}
-						setAttributes={setAttributes}
-						attributeBaseName="noResultsIconSize"
-						min={16}
-						max={128}
-					/>
-
-					<ColorControl
-						label={__('Icon color', 'voxel-fse')}
-						value={attributes.noResultsIconColor}
-						onChange={(value) => setAttributes({ noResultsIconColor: value })}
-					/>
-
-					<TypographyControl
-						label={__('Typography', 'voxel-fse')}
-						value={attributes.noResultsTypography}
-						onChange={(value) => setAttributes({ noResultsTypography: value })}
-					/>
-
-					<ColorControl
-						label={__('Text color', 'voxel-fse')}
-						value={attributes.noResultsTextColor}
-						onChange={(value) => setAttributes({ noResultsTextColor: value })}
-					/>
-
-					<ColorControl
-						label={__('Link color', 'voxel-fse')}
-						value={attributes.noResultsLinkColor}
-						onChange={(value) => setAttributes({ noResultsLinkColor: value })}
-					/>
-				</PanelBody>
-
-				<PanelBody title={__('Load more / Next / Prev', 'voxel-fse')} initialOpen={false}>
-					<StyleTabPanel
-						tabs={[
-							{ name: 'normal', title: __('Normal', 'voxel-fse') },
-							{ name: 'hover', title: __('Hover', 'voxel-fse') },
-						]}
-					>
-						{(tabName) =>
-							tabName === 'normal' ? (
-								<>
-									<ResponsiveRangeControl
-										label={__('Top margin', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="paginationTopMargin"
-										min={0}
-										max={100}
-									/>
-
-									<TypographyControl
-										label={__('Button typography', 'voxel-fse')}
-										value={attributes.paginationTypography}
-										onChange={(value) =>
-											setAttributes({ paginationTypography: value })
-										}
-									/>
-
-									<SelectControl
-										label={__('Justify', 'voxel-fse')}
-										value={attributes.paginationJustify}
-										options={[
-											{ label: __('Start', 'voxel-fse'), value: 'flex-start' },
-											{ label: __('Center', 'voxel-fse'), value: 'center' },
-											{ label: __('End', 'voxel-fse'), value: 'flex-end' },
-										]}
-										onChange={(value) =>
-											setAttributes({ paginationJustify: value })
-										}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Spacing between buttons', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="paginationSpacing"
-										min={0}
-										max={50}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Border radius', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="paginationBorderRadius"
-										min={0}
-										max={50}
-									/>
-
-									<ColorControl
-										label={__('Text color', 'voxel-fse')}
-										value={attributes.paginationTextColor}
-										onChange={(value) =>
-											setAttributes({ paginationTextColor: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Background color', 'voxel-fse')}
-										value={attributes.paginationBackgroundColor}
-										onChange={(value) =>
-											setAttributes({ paginationBackgroundColor: value })
-										}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Icon size', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="paginationIconSize"
-										min={12}
-										max={48}
-									/>
-
-									<ColorControl
-										label={__('Icon color', 'voxel-fse')}
-										value={attributes.paginationIconColor}
-										onChange={(value) =>
-											setAttributes({ paginationIconColor: value })
-										}
-									/>
-								</>
-							) : (
-								<>
-									<ColorControl
-										label={__('Text color', 'voxel-fse')}
-										value={attributes.paginationTextColorHover}
-										onChange={(value) =>
-											setAttributes({ paginationTextColorHover: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Background color', 'voxel-fse')}
-										value={attributes.paginationBackgroundColorHover}
-										onChange={(value) =>
-											setAttributes({ paginationBackgroundColorHover: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Border color', 'voxel-fse')}
-										value={attributes.paginationBorderColorHover}
-										onChange={(value) =>
-											setAttributes({ paginationBorderColorHover: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Icon color', 'voxel-fse')}
-										value={attributes.paginationIconColorHover}
-										onChange={(value) =>
-											setAttributes({ paginationIconColorHover: value })
-										}
-									/>
-								</>
-							)
-						}
-					</StyleTabPanel>
-				</PanelBody>
-
-				<PanelBody title={__('Carousel navigation', 'voxel-fse')} initialOpen={false}>
-					<StyleTabPanel
-						tabs={[
-							{ name: 'normal', title: __('Normal', 'voxel-fse') },
-							{ name: 'hover', title: __('Hover', 'voxel-fse') },
-						]}
-					>
-						{(tabName) =>
-							tabName === 'normal' ? (
-								<>
-									<ResponsiveRangeControl
-										label={__('Horizontal position', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="carouselNavHorizontalPosition"
-										min={-100}
-										max={100}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Vertical position', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="carouselNavVerticalPosition"
-										min={-100}
-										max={100}
-									/>
-
-									<ColorControl
-										label={__('Button icon color', 'voxel-fse')}
-										value={attributes.carouselNavIconColor}
-										onChange={(value) =>
-											setAttributes({ carouselNavIconColor: value })
-										}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Button size', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="carouselNavButtonSize"
-										min={20}
-										max={80}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Button icon size', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="carouselNavIconSize"
-										min={12}
-										max={48}
-									/>
-
-									<ColorControl
-										label={__('Button background', 'voxel-fse')}
-										value={attributes.carouselNavBackground}
-										onChange={(value) =>
-											setAttributes({ carouselNavBackground: value })
-										}
-									/>
-
-									<SliderControl
-										label={__('Backdrop blur', 'voxel-fse')}
-										value={attributes.carouselNavBackdropBlur}
-										onChange={(value) =>
-											setAttributes({ carouselNavBackdropBlur: value })
-										}
-										min={0}
-										max={20}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Button border radius', 'voxel-fse')}
-										attributes={attributes}
-										setAttributes={setAttributes}
-										attributeBaseName="carouselNavBorderRadius"
-										min={0}
-										max={50}
-									/>
-								</>
-							) : (
-								<>
-									<ResponsiveRangeControl
-										label={__('Button size', 'voxel-fse')}
-										value={attributes.carouselNavButtonSizeHover}
-										valueTablet={attributes.carouselNavButtonSizeHover_tablet}
-										valueMobile={attributes.carouselNavButtonSizeHover_mobile}
-										onChange={(value) =>
-											setAttributes({ carouselNavButtonSizeHover: value })
-										}
-										onChangeTablet={(value) =>
-											setAttributes({
-												carouselNavButtonSizeHover_tablet: value,
-											})
-										}
-										onChangeMobile={(value) =>
-											setAttributes({
-												carouselNavButtonSizeHover_mobile: value,
-											})
-										}
-										min={20}
-										max={80}
-									/>
-
-									<ResponsiveRangeControl
-										label={__('Button icon size', 'voxel-fse')}
-										value={attributes.carouselNavIconSizeHover}
-										valueTablet={attributes.carouselNavIconSizeHover_tablet}
-										valueMobile={attributes.carouselNavIconSizeHover_mobile}
-										onChange={(value) =>
-											setAttributes({ carouselNavIconSizeHover: value })
-										}
-										onChangeTablet={(value) =>
-											setAttributes({ carouselNavIconSizeHover_tablet: value })
-										}
-										onChangeMobile={(value) =>
-											setAttributes({ carouselNavIconSizeHover_mobile: value })
-										}
-										min={12}
-										max={48}
-									/>
-
-									<ColorControl
-										label={__('Button icon color', 'voxel-fse')}
-										value={attributes.carouselNavIconColorHover}
-										onChange={(value) =>
-											setAttributes({ carouselNavIconColorHover: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Button background color', 'voxel-fse')}
-										value={attributes.carouselNavBackgroundHover}
-										onChange={(value) =>
-											setAttributes({ carouselNavBackgroundHover: value })
-										}
-									/>
-
-									<ColorControl
-										label={__('Button border color', 'voxel-fse')}
-										value={attributes.carouselNavBorderColorHover}
-										onChange={(value) =>
-											setAttributes({ carouselNavBorderColorHover: value })
-										}
-									/>
-								</>
-							)
-						}
-					</StyleTabPanel>
-				</PanelBody>
-			</InspectorControls>
-
-			{/* ADVANCED TAB */}
-			<InspectorControls group="advanced">
-				<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
+				<InspectorTabs
+					tabs={[
+						{
+							id: 'content',
+							label: __('Content', 'voxel-fse'),
+							icon: '\ue92c',
+							render: () => (
+								<ContentTab
+									attributes={attributes}
+									setAttributes={setAttributes}
+									config={config}
+									searchFormItems={searchFormItems}
+									cardTemplates={cardTemplates}
+									isLoadingTemplates={isLoadingTemplates}
+								/>
+							),
+						},
+						{
+							id: 'style',
+							label: __('Style', 'voxel-fse'),
+							icon: '\ue921',
+							render: () => (
+								<StyleTab
+									attributes={attributes}
+									setAttributes={setAttributes}
+								/>
+							),
+						},
+					]}
+					includeAdvancedTab={true}
+					includeVoxelTab={true}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					activeTabAttribute="postFeedActiveTab"
+				/>
 			</InspectorControls>
 
 			{/* BLOCK PREVIEW */}
@@ -977,6 +289,7 @@ export default function Edit({
 						}}
 						config={config}
 						context="editor"
+						editorFilters={attributes.source === 'search-form' ? linkedFilters : undefined}
 					/>
 				)}
 			</div>

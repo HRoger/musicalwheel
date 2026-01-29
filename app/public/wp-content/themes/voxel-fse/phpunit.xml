@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         failOnWarning="true"
+         failOnRisky="true"
+         cacheDirectory=".phpunit.cache">
+
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <include>
+            <directory suffix=".php">app</directory>
+        </include>
+        <exclude>
+            <directory>app/blocks/build</directory>
+            <directory>app/blocks/src</directory>
+            <directory>vendor</directory>
+            <directory>node_modules</directory>
+        </exclude>
+    </coverage>
+
+    <php>
+        <const name="ABSPATH" value="C:/Users/herle/Local Sites/musicalwheel/app/public/"/>
+        <const name="WP_CONTENT_DIR" value="C:/Users/herle/Local Sites/musicalwheel/app/public/wp-content"/>
+    </php>
+</phpunit>

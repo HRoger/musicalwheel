@@ -1,0 +1,283 @@
+/**
+ * Nested Accordion Block - Frontend Styles
+ *
+ * CSS Variables match Elementor's nested-accordion widget for 1:1 compatibility.
+ * Uses native <details>/<summary> for progressive enhancement.
+ *
+ * @package VoxelFSE
+ */
+
+/* ============================================
+   CSS Custom Properties (defaults)
+   ============================================ */
+.vxfse-nested-accordion {
+	/* Spacing */
+	--n-accordion-item-title-space-between: 0px;
+	--n-accordion-item-title-distance-from-content: 0px;
+
+	/* Padding */
+	--n-accordion-padding: 10px 10px 10px 10px;
+
+	/* Border Radius */
+	--n-accordion-border-radius: 0px 0px 0px 0px;
+
+	/* Title */
+	--n-accordion-title-normal-color: #1f2124;
+	--n-accordion-title-hover-color: inherit;
+	--n-accordion-title-active-color: inherit;
+	--n-accordion-title-font-size: 16px;
+	--n-accordion-title-font-weight: 500;
+	--n-accordion-title-line-height: 1.4;
+	--n-accordion-title-justify-content: initial;
+	--n-accordion-title-flex-grow: initial;
+	--n-accordion-title-icon-order: initial;
+
+	/* Icon */
+	--n-accordion-icon-size: 15px;
+	--n-accordion-icon-gap: 0 10px;
+	--n-accordion-icon-normal-color: inherit;
+	--n-accordion-icon-hover-color: inherit;
+	--n-accordion-icon-active-color: inherit;
+
+	/* Background */
+	--n-accordion-bg-normal: transparent;
+	--n-accordion-bg-hover: transparent;
+	--n-accordion-bg-active: transparent;
+
+	/* Border */
+	--n-accordion-border-normal: none;
+	--n-accordion-border-hover: none;
+	--n-accordion-border-active: none;
+
+	/* Content */
+	--n-accordion-content-bg: transparent;
+	--n-accordion-content-padding: 0;
+}
+
+/* ============================================
+   Main Container
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion {
+	display: flex;
+	flex-direction: column;
+	gap: var(--n-accordion-item-title-space-between);
+}
+
+/* ============================================
+   Accordion Item (details element)
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion-item {
+	background: var(--n-accordion-bg-normal);
+	border: var(--n-accordion-border-normal);
+	border-radius: var(--n-accordion-border-radius);
+	overflow: hidden;
+}
+
+.vxfse-nested-accordion .e-n-accordion-item:hover {
+	background: var(--n-accordion-bg-hover);
+	border: var(--n-accordion-border-hover);
+}
+
+.vxfse-nested-accordion .e-n-accordion-item[open] {
+	background: var(--n-accordion-bg-active);
+	border: var(--n-accordion-border-active);
+}
+
+/* ============================================
+   Summary (accordion header/trigger)
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion-item-title {
+	display: flex;
+	align-items: center;
+	justify-content: var(--n-accordion-title-justify-content);
+	padding: var(--n-accordion-padding);
+	cursor: pointer;
+	user-select: none;
+	list-style: none;
+	gap: var(--n-accordion-icon-gap);
+}
+
+/* Remove default marker */
+.vxfse-nested-accordion .e-n-accordion-item-title::-webkit-details-marker,
+.vxfse-nested-accordion .e-n-accordion-item-title::marker {
+	display: none;
+	content: '';
+}
+
+/* Focus styles for accessibility */
+.vxfse-nested-accordion .e-n-accordion-item-title:focus {
+	outline: 2px solid currentColor;
+	outline-offset: -2px;
+}
+
+.vxfse-nested-accordion .e-n-accordion-item-title:focus-visible {
+	outline: 2px solid #007cba;
+	outline-offset: -2px;
+}
+
+/* ============================================
+   Title Header (contains the title tag)
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion-item-title-header {
+	display: flex;
+	align-items: center;
+	flex-grow: var(--n-accordion-title-flex-grow);
+}
+
+.vxfse-nested-accordion .e-n-accordion-item-title-text {
+	margin: 0;
+	font-size: var(--n-accordion-title-font-size);
+	font-weight: var(--n-accordion-title-font-weight);
+	line-height: var(--n-accordion-title-line-height);
+	color: var(--n-accordion-title-normal-color);
+}
+
+/* Title hover state */
+.vxfse-nested-accordion .e-n-accordion-item:hover .e-n-accordion-item-title-text {
+	color: var(--n-accordion-title-hover-color);
+}
+
+/* Title active/open state */
+.vxfse-nested-accordion .e-n-accordion-item[open] .e-n-accordion-item-title-text {
+	color: var(--n-accordion-title-active-color);
+}
+
+/* ============================================
+   Icon Container
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion-item-title-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	order: var(--n-accordion-title-icon-order);
+	font-size: var(--n-accordion-icon-size);
+	line-height: 1;
+	color: var(--n-accordion-icon-normal-color);
+}
+
+/* Icon hover state */
+.vxfse-nested-accordion .e-n-accordion-item:hover .e-n-accordion-item-title-icon {
+	color: var(--n-accordion-icon-hover-color);
+}
+
+/* Icon active state */
+.vxfse-nested-accordion .e-n-accordion-item[open] .e-n-accordion-item-title-icon {
+	color: var(--n-accordion-icon-active-color);
+}
+
+/* Open/Close icon visibility */
+.vxfse-nested-accordion .e-n-accordion-item-title-icon .e-opened,
+.vxfse-nested-accordion .e-n-accordion-item-title-icon .e-closed {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Show close icon when closed, hide open icon */
+.vxfse-nested-accordion .e-n-accordion-item:not([open]) .e-opened {
+	display: none;
+}
+
+.vxfse-nested-accordion .e-n-accordion-item:not([open]) .e-closed {
+	display: flex;
+}
+
+/* Show open icon when open, hide close icon */
+.vxfse-nested-accordion .e-n-accordion-item[open] .e-opened {
+	display: flex;
+}
+
+.vxfse-nested-accordion .e-n-accordion-item[open] .e-closed {
+	display: none;
+}
+
+/* Icon element styling */
+.vxfse-nested-accordion .e-n-accordion-item-title-icon i,
+.vxfse-nested-accordion .e-n-accordion-item-title-icon svg {
+	width: var(--n-accordion-icon-size);
+	height: var(--n-accordion-icon-size);
+	font-size: var(--n-accordion-icon-size);
+}
+
+/* ============================================
+   Content Container
+   ============================================ */
+.vxfse-nested-accordion .e-n-accordion-item-content {
+	padding-top: var(--n-accordion-item-title-distance-from-content);
+	background: var(--n-accordion-content-bg);
+	overflow: hidden;
+}
+
+/* Content padding (from Elementor's e-con class) */
+.vxfse-nested-accordion .e-n-accordion-item-content.e-con {
+	padding: var(--n-accordion-content-padding, 0);
+}
+
+/* ============================================
+   Responsive Visibility Classes
+   ============================================ */
+@media (min-width: 1025px) {
+	.vxfse-nested-accordion.vxfse-hide-desktop {
+		display: none !important;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	.vxfse-nested-accordion.vxfse-hide-tablet {
+		display: none !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.vxfse-nested-accordion.vxfse-hide-mobile {
+		display: none !important;
+	}
+}
+
+/* ============================================
+   Animation States
+   When JS is enabled, content animates.
+   These classes are managed by frontend.tsx
+   ============================================ */
+
+/* Initial state for animated content */
+.vxfse-nested-accordion[data-initialized] .e-n-accordion-item:not([open]) .e-n-accordion-item-content {
+	height: 0;
+	padding-top: 0;
+}
+
+/* Ensure smooth transitions */
+.vxfse-nested-accordion[data-initialized] .e-n-accordion-item-content {
+	will-change: height;
+}
+
+/* ============================================
+   No-JS Fallback
+   Native <details> behavior works without JS
+   ============================================ */
+.vxfse-nested-accordion:not([data-initialized]) .e-n-accordion-item[open] .e-n-accordion-item-content {
+	display: block;
+}
+
+.vxfse-nested-accordion:not([data-initialized]) .e-n-accordion-item:not([open]) .e-n-accordion-item-content {
+	display: none;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+	.vxfse-nested-accordion .e-n-accordion-item {
+		break-inside: avoid;
+	}
+
+	/* Expand all items for print */
+	.vxfse-nested-accordion .e-n-accordion-item-content {
+		display: block !important;
+		height: auto !important;
+	}
+
+	.vxfse-nested-accordion .e-n-accordion-item-title-icon {
+		display: none;
+	}
+}

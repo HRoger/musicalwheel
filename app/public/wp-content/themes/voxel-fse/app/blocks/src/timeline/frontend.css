@@ -1,0 +1,97 @@
+/**
+ * Timeline Block Frontend Styles
+ *
+ * This file ensures the Timeline block has frontend styles.
+ * Voxel's social-feed.css is enqueued via Block_Loader.php,
+ * but we need a frontend.css registered in block.json
+ * so WordPress knows to load styles when the block is rendered.
+ *
+ * @package VoxelFSE
+ */
+
+/* Base container ensures width */
+.voxel-fse-timeline-frontend {
+	width: 100%;
+}
+
+/* Loading placeholder - shown before React hydrates */
+.voxel-fse-timeline-placeholder {
+	min-height: 100px;
+}
+
+/* No posts state */
+.voxel-fse-timeline-frontend .ts-no-posts {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 20px;
+	text-align: center;
+	color: var(--ts-shade-600, #666);
+}
+
+.voxel-fse-timeline-frontend .ts-no-posts svg {
+	opacity: 0.5;
+	margin-bottom: 12px;
+}
+
+/* Feed container */
+.voxel-fse-timeline-frontend .vxfeed {
+	width: 100%;
+}
+
+/* Filter section - inherits from Voxel's social-feed.css .vxf-filters */
+/* Only add additional styles, don't override justify-content: space-between */
+
+/* Ensure posts list renders properly */
+.voxel-fse-timeline-frontend .vxf-posts {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+
+/* Loading state spinner */
+.voxel-fse-timeline-frontend .vxf-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 20px;
+}
+
+/* Load more button */
+.voxel-fse-timeline-frontend .vxf-load-more {
+	display: flex;
+	justify-content: center;
+	margin-top: 20px;
+}
+
+/* Textarea text color - matches Voxel's timeline-kit.php line 9-11 */
+.vxf-content__textarea {
+	color: var(--main-text) !important;
+}
+
+/* Footer icon vertical alignment - ensures like, repost, reply icons are centered */
+.vxf-footer .vxf-actions {
+	align-items: center;
+}
+
+.vxf-footer .vxf-actions .vxf-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.vxf-footer .vxf-actions .vxf-icon svg {
+	display: block;
+}
+
+/* Edit mode styling */
+.vxf-edit-mode {
+	width: 100%;
+}
+
+.vxf-edit-mode .vxf-create-post {
+	margin: 0;
+	padding: 0;
+}
+

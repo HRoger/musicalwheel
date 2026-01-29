@@ -6,11 +6,21 @@
 	"title": "Map (VX)",
 	"category": "voxel-fse",
 	"description": "Interactive map displaying markers from search results or current post location.",
-	"keywords": ["map", "location", "markers", "google maps", "mapbox", "voxel"],
+	"keywords": [
+		"map",
+		"location",
+		"markers",
+		"google maps",
+		"mapbox",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
@@ -18,6 +28,7 @@
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
 	"attributes": {
 		"blockId": {
 			"type": "string",
@@ -26,7 +37,10 @@
 		"source": {
 			"type": "string",
 			"default": "search-form",
-			"enum": ["search-form", "current-post"]
+			"enum": [
+				"search-form",
+				"current-post"
+			]
 		},
 		"searchFormId": {
 			"type": "string",
@@ -39,12 +53,18 @@
 		"dragSearchMode": {
 			"type": "string",
 			"default": "manual",
-			"enum": ["automatic", "manual"]
+			"enum": [
+				"automatic",
+				"manual"
+			]
 		},
 		"dragSearchDefault": {
 			"type": "string",
 			"default": "unchecked",
-			"enum": ["checked", "unchecked"]
+			"enum": [
+				"checked",
+				"unchecked"
+			]
 		},
 		"height": {
 			"type": "number",
@@ -80,14 +100,14 @@
 		"calcHeight_mobile": {
 			"type": "string"
 		},
-		"borderRadius": {
+		"mapBorderRadius": {
 			"type": "number",
 			"default": 0
 		},
-		"borderRadius_tablet": {
+		"mapBorderRadius_tablet": {
 			"type": "number"
 		},
-		"borderRadius_mobile": {
+		"mapBorderRadius_mobile": {
 			"type": "number"
 		},
 		"defaultLat": {
@@ -390,15 +410,13 @@
 		"navBtnBgColor": {
 			"type": "string"
 		},
-		"navBtnBorderType": {
-			"type": "string",
-			"default": "none"
-		},
-		"navBtnBorderWidth": {
-			"type": "number"
-		},
-		"navBtnBorderColor": {
-			"type": "string"
+		"navBtnBorder": {
+			"type": "object",
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"navBtnRadius": {
 			"type": "number",
@@ -431,6 +449,47 @@
 		},
 		"navBtnBorderColorHover": {
 			"type": "string"
+		},
+		"mapContentAccordion": {
+			"type": "string",
+			"default": "map-settings"
+		},
+		"mapStyleAccordion": {
+			"type": "string",
+			"default": "clusters"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
 		}
 	}
 }

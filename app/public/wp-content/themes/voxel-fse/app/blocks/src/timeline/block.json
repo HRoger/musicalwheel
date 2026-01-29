@@ -1,0 +1,140 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/timeline",
+	"version": "1.0.0",
+	"title": "Timeline (VX)",
+	"category": "voxel-fse",
+	"description": "Social timeline feed with posts, comments, likes, and reposts. Converted from Voxel Timeline widget.",
+	"keywords": ["timeline", "feed", "social", "posts", "voxel", "newsfeed", "activity"],
+	"textdomain": "voxel-fse",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"style": "file:./frontend.css",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"className": true
+	},
+	"attributes": {
+		"mode": {
+			"type": "string",
+			"default": "user_feed"
+		},
+		"orderingOptions": {
+			"type": "array",
+			"default": []
+		},
+		"noStatusText": {
+			"type": "string",
+			"default": "No posts available"
+		},
+		"searchEnabled": {
+			"type": "boolean",
+			"default": true
+		},
+		"searchValue": {
+			"type": "string",
+			"default": "@tags()@site().query_var(q)@endtags()"
+		},
+		"verifiedIcon": {
+			"type": "object",
+			"default": null
+		},
+		"repostIcon": {
+			"type": "object",
+			"default": null
+		},
+		"moreIcon": {
+			"type": "object",
+			"default": null
+		},
+		"likeIcon": {
+			"type": "object",
+			"default": null
+		},
+		"likedIcon": {
+			"type": "object",
+			"default": null
+		},
+		"commentIcon": {
+			"type": "object",
+			"default": null
+		},
+		"replyIcon": {
+			"type": "object",
+			"default": null
+		},
+		"galleryIcon": {
+			"type": "object",
+			"default": null
+		},
+		"uploadIcon": {
+			"type": "object",
+			"default": null
+		},
+		"emojiIcon": {
+			"type": "object",
+			"default": null
+		},
+		"searchIcon": {
+			"type": "object",
+			"default": null
+		},
+		"trashIcon": {
+			"type": "object",
+			"default": null
+		},
+		"externalIcon": {
+			"type": "object",
+			"default": null
+		},
+		"loadMoreIcon": {
+			"type": "object",
+			"default": null
+		},
+		"noPostsIcon": {
+			"type": "object",
+			"default": null
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "timeline-settings"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

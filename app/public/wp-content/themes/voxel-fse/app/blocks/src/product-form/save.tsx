@@ -12,16 +12,53 @@
  */
 
 import { useBlockProps } from '@wordpress/block-editor';
+import { getAdvancedVoxelTabProps, renderBackgroundElements } from '@shared/utils';
 import type { ProductFormAttributes, ProductFormVxConfig } from './types';
 import { DEFAULT_PRODUCT_FORM_ICONS } from './types';
+import { generateProductFormResponsiveCSS } from './styles';
 
 interface SaveProps {
 	attributes: ProductFormAttributes;
 }
 
 export default function save({ attributes }: SaveProps) {
+	const blockId = attributes.blockId || 'product-form';
+
+	// Use shared utility for AdvancedTab + VoxelTab wiring
+	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+		blockId,
+		baseClass: 'ts-form ts-product-form voxel-fse-product-form',
+	});
+
+	// Generate product-form-specific responsive CSS
+	const productFormResponsiveCSS = generateProductFormResponsiveCSS(
+		attributes,
+		blockId
+	);
+
+	// Combine all responsive CSS
+	// Layer 1 (AdvancedTab + VoxelTab) + Layer 2 (Block-specific)
+	const combinedResponsiveCSS = [
+		advancedProps.responsiveCSS,
+		productFormResponsiveCSS,
+	]
+		.filter(Boolean)
+		.join('\n');
+
 	const blockProps = useBlockProps.save({
-		className: 'ts-form ts-product-form voxel-fse-product-form',
+		id: advancedProps.elementId,
+		className: advancedProps.className,
+		style: advancedProps.styles,
+		// Headless-ready: Visibility rules configuration
+		'data-visibility-behavior': attributes.visibilityBehavior || undefined,
+		'data-visibility-rules': attributes.visibilityRules?.length
+			? JSON.stringify(attributes.visibilityRules)
+			: undefined,
+		// Headless-ready: Loop element configuration
+		'data-loop-source': attributes.loopSource || undefined,
+		'data-loop-limit': attributes.loopLimit || undefined,
+		'data-loop-offset': attributes.loopOffset || undefined,
+		...advancedProps.customAttrs,
 	});
 
 	// Build vxconfig JSON (matching Voxel pattern)
@@ -42,6 +79,20 @@ export default function save({ attributes }: SaveProps) {
 
 	return (
 		<div {...blockProps}>
+			{/* Responsive CSS from AdvancedTab + VoxelTab + Style Tab */}
+			{combinedResponsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
+			)}
+
+			{/* Background elements: video, slideshow, overlay, shape dividers */}
+			{renderBackgroundElements(
+				attributes,
+				false,
+				undefined,
+				undefined,
+				advancedProps.uniqueSelector
+			)}
+
 			{/* Voxel vxconfig pattern - configuration stored in JSON script */}
 			<script
 				type="text/json"

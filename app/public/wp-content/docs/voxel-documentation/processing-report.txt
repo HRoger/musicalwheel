@@ -1,0 +1,11 @@
+Processing Report
+=====================
+Date: 2025-10-31T18:03:29.894Z
+
+Total Files Processed: 160 (159 user, 1 generated)
+Total Images Embedded: 0
+Total Links Converted: 1259
+Original Total Size: 28.18 MB
+Processed Total Size: 28.21 MB
+
+No warnings or errors.

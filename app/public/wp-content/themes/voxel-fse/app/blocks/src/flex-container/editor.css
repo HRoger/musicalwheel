@@ -1,15 +1,203 @@
 /**
  * Flex Container Editor Styles
- * Fix input field dimensions to match WordPress standards
+ *
+ * Full Width support uses the `editor.BlockListBlock` filter (filters.tsx)
+ * to add `data-content-width="full"` directly to the WordPress wrapper element.
+ *
+ * WordPress applies: .is-root-container > :where(:not(.alignfull)...) { max-width: 800px }
+ * The :where() has zero specificity, so any selector can override it.
+ *
+ * IMPORTANT: useInnerBlocksProps renders child blocks directly as children of .e-con-inner
+ * There are NO intermediate .block-editor-inner-blocks or .block-editor-block-list__layout wrappers.
  */
 
-/* Input field height and font size */
-.ef--c-f-bbfb-jedafn.ef--c-f-bbfb-jedafn.ef--c-f-bbfb-jedafn {
-    font-size: 16px;
-    height: 27px;
+/* ALWAYS override WordPress editor's 800px constraint for ALL flex containers */
+/* The outer container should ALWAYS be full width - inner wrapper handles boxed constraint */
+/* This matches Elementor's container behavior where container is always 100% width */
+.block-editor-block-list__layout.is-root-container > [data-type="voxel-fse/flex-container"] {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 
-/* Input field width */
-.ef--c-f-bbfb-114nwjg {
-    width: calc(62px);
+/* Ensure OUTER container fills parent AND grows in flex contexts */
+/* NOTE: position is intentionally NOT set here to allow sticky children to work.
+   The WordPress wrapper gets position: sticky from editorWrapperFilters.tsx.
+   Setting position: relative here would create a containing block that breaks sticky. */
+.voxel-fse-flex-container {
+    width: 100%;
+    flex: 1 1 0%; /* Allows growing/shrinking when inside flex parent */
+    min-width: 0; /* Prevents overflow in flex contexts */
+}
+
+/* INNER wrapper (.e-con-inner) - contains flex/grid layout */
+/* This matches Elementor's two-element container structure */
+.voxel-fse-flex-container > .e-con-inner {
+    width: 100%;
+}
+
+/* ==========================================================================
+   NESTED FLEX CONTAINER STRETCHING
+   When a Flex Container (VX) block is inside another Flex Container's row direction,
+   the child container should stretch to fill available space (flex-grow: 1).
+   ========================================================================== */
+
+/* Child blocks inside row-direction flex container should stretch */
+/* Use flex-flow since that's what the inline styles use */
+.voxel-fse-flex-container > .e-con-inner[style*="flex-flow: row"] > .wp-block {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+/* Also match flex-direction: row (alternative syntax) */
+.voxel-fse-flex-container > .e-con-inner[style*="flex-direction: row"] > .wp-block {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+/* Nested flex containers specifically - ensure they grow */
+.voxel-fse-flex-container > .e-con-inner > [data-type="voxel-fse/flex-container"] {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+/* Column direction (default) - children stack vertically
+   NOTE: We do NOT set width: 100% here because that would override align-items.
+   Instead, we rely on flexbox's natural behavior:
+   - align-items: stretch (default) makes children fill the width
+   - align-items: center/start/end allows children to shrink to natural width
+*/
+
+/* ==========================================================================
+   CONTAINER OUTLINE - Editor Only (Elementor-style subtle outlines)
+   Only visible on EMPTY containers to help visualize structure
+   Disappears once content is added
+   ========================================================================== */
+
+/* Subtle outline on EMPTY flex container inner wrappers only */
+/* :has() checks if there are no .wp-block children (only appender) */
+/* min-height ensures empty containers are visible (don't collapse to 0) */
+/* 55px matches the WordPress block wrapper height to prevent gap with selection outline */
+.voxel-fse-flex-container > .e-con-inner:not(:has(> .wp-block)) {
+    outline: 1px dashed rgba(0, 0, 0, 0.2);
+    outline-offset: 0;
+    min-height: 55px;
+    position: relative;
+}
+
+/* Override outer container min-height to match inner when empty */
+/* This ensures WordPress highlight outline matches the inner container exactly */
+.voxel-fse-flex-container:has(> .e-con-inner:not(:has(> .wp-block))) {
+    min-height: 55px !important;
+}
+
+/* Centered plus icon for empty containers (Elementor-style) */
+.voxel-fse-flex-container > .e-con-inner:not(:has(> .wp-block))::before {
+    content: "+";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    font-weight: 300;
+    color: rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    line-height: 1;
+}
+
+/* Slightly stronger outline on selected empty container */
+.voxel-fse-flex-container.is-selected > .e-con-inner:not(:has(> .wp-block)),
+[data-type="voxel-fse/flex-container"].is-selected .voxel-fse-flex-container > .e-con-inner:not(:has(> .wp-block)) {
+    outline-color: rgba(0, 0, 0, 0.35);
+}
+
+/* Stronger plus icon on selected */
+.voxel-fse-flex-container.is-selected > .e-con-inner:not(:has(> .wp-block))::before,
+[data-type="voxel-fse/flex-container"].is-selected .voxel-fse-flex-container > .e-con-inner:not(:has(> .wp-block))::before {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+/* Highlight on hover for empty containers */
+.voxel-fse-flex-container:hover > .e-con-inner:not(:has(> .wp-block)) {
+    outline-color: rgba(0, 0, 0, 0.3);
+}
+
+.voxel-fse-flex-container:hover > .e-con-inner:not(:has(> .wp-block))::before {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+/* Hide dashed outline on child empty containers when parent is selected */
+/* This prevents the visual gap between parent's selection outline and children's empty outline */
+[data-type="voxel-fse/flex-container"].is-selected [data-type="voxel-fse/flex-container"] .e-con-inner:not(:has(> .wp-block)) {
+    outline: none;
+}
+
+/* Also hide the plus icon on children when parent is selected */
+[data-type="voxel-fse/flex-container"].is-selected [data-type="voxel-fse/flex-container"] .e-con-inner:not(:has(> .wp-block))::before {
+    display: none;
+}
+
+/* ==========================================================================
+   WORDPRESS SELECTION OUTLINE - Fit to inner container
+   Make the blue selection outline match the inner content area
+   ========================================================================== */
+
+/* Remove WordPress's default outline on the block wrapper */
+[data-type="voxel-fse/flex-container"].is-selected > .voxel-fse-flex-container {
+    outline: none !important;
+}
+
+[data-type="voxel-fse/flex-container"]:focus > .voxel-fse-flex-container {
+    outline: none !important;
+}
+
+/* Apply selection outline to inner container instead */
+[data-type="voxel-fse/flex-container"].is-selected > .voxel-fse-flex-container > .e-con-inner {
+    box-shadow: 0 0 0 1px var(--wp-admin-theme-color, #007cba);
+}
+
+/* Also handle focus state */
+[data-type="voxel-fse/flex-container"]:focus-within > .voxel-fse-flex-container > .e-con-inner {
+    box-shadow: 0 0 0 1px var(--wp-admin-theme-color, #007cba);
+}
+
+/* ==========================================================================
+   GRID OUTLINE - Editor Only (matches Elementor's grid outline feature)
+   Optional stronger outline for grid layouts via inspector toggle
+   ========================================================================== */
+
+/* Outline on outer container */
+.voxel-fse-flex-container[data-grid-outline="true"] {
+    outline: 1px dashed #93003F;
+}
+
+/* Outline on inner wrapper children (the actual grid items) */
+.voxel-fse-flex-container[data-grid-outline="true"] > .e-con-inner > .wp-block {
+    outline: 1px dashed #93003F;
+}
+
+/* ==========================================================================
+   STICKY POSITIONING FIX
+   WordPress adds position: relative to .block-editor-block-list__layout.
+   This creates a containing block that breaks sticky positioning for nested children.
+   Override to position: static so sticky elements can stick to the scroll container.
+   ========================================================================== */
+
+/* Reset position on .e-con-inner to allow child sticky elements to work */
+/* The .block-editor-block-list__layout class has position: relative from WP core */
+.voxel-fse-flex-container > .e-con-inner.block-editor-block-list__layout {
+    position: static !important;
+}
+
+/* Also reset position on WordPress wrapper for flex-containers to allow nested sticky */
+/* WordPress sets position: relative on .block-editor-block-list__block for toolbar positioning */
+/* This creates a containing block that prevents nested sticky children from working */
+[data-type="voxel-fse/flex-container"].block-editor-block-list__block {
+    position: static !important;
+}
+
+/* Re-apply position: sticky for containers that have it enabled */
+/* This overrides the static reset above when the container itself should be sticky */
+[data-type="voxel-fse/flex-container"].block-editor-block-list__block[style*="position: sticky"] {
+    position: sticky !important;
 }

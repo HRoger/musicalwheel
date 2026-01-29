@@ -28,6 +28,11 @@ interface UseSearchFormProps {
 	 * Used to sync selectedPostType attribute for Post Feed preview
 	 */
 	onPostTypeChange?: (postTypeKey: string) => void;
+	/**
+	 * Callback when filter values change in editor context
+	 * Used to sync editorFilterValues attribute for Post Feed preview
+	 */
+	onFilterChange?: (filterValues: Record<string, unknown>) => void;
 }
 
 interface UseSearchFormReturn {
@@ -55,6 +60,7 @@ export function useSearchForm({
 	context,
 	onSubmit,
 	onPostTypeChange,
+	onFilterChange,
 }: UseSearchFormProps): UseSearchFormReturn {
 	// Initialize state
 	const [state, setState] = useState<SearchFormState>(() => ({
@@ -66,6 +72,7 @@ export function useSearchForm({
 		resetting: false,
 		narrowedValues: null,
 		narrowingFilters: false,
+		lastModifiedFilter: null, // Voxel optimization for adaptive filtering
 	}));
 
 	// Ref to track if we should skip the next adaptive filtering call
@@ -98,6 +105,83 @@ export function useSearchForm({
 		}
 	}, [attributes.postTypes, state.currentPostType]);
 
+	// Initialize filter values from filterData.value (REST API response)
+	// CRITICAL: The PHP controller now properly sets filter values via set_value()
+	// before returning frontend_config, so filterData.value is the source of truth
+	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:101
+	// 'value' => $is_valid_value ? $this->get_value() : null
+	useEffect(() => {
+		if (!currentPostTypeConfig?.filters) return;
+
+		const defaultValues: Record<string, unknown> = {};
+		let hasDefaults = false;
+
+		currentPostTypeConfig.filters.forEach((filterData: FilterData) => {
+			// Skip if we already have a value (or explicitly null) for this filter
+			// null means "explicitly set to empty" (e.g., after clearAll with resetValue: 'empty')
+			// undefined means "not yet initialized"
+			if (filterData.key in state.filterValues) {
+				return;
+			}
+
+			// Use filterData.value from REST API (1:1 Voxel parity)
+			// The PHP controller sets this based on defaultValueEnabled + defaultValue config
+			if (filterData.value !== null && filterData.value !== undefined) {
+				defaultValues[filterData.key] = filterData.value;
+				hasDefaults = true;
+			}
+		});
+
+		if (hasDefaults) {
+			setState((prev) => ({
+				...prev,
+				filterValues: { ...prev.filterValues, ...defaultValues },
+			}));
+		}
+	}, [currentPostTypeConfig?.filters, state.currentPostType]);
+
+	// EDITOR CONTEXT: Sync state with config.defaultValue changes
+	// When the user changes the Default Value in the inspector, we need to update the state
+	// This ensures the preview reflects the new value immediately
+	// Note: This should NOT run after clearAll (when resetting is true)
+	useEffect(() => {
+		if (context !== 'editor' || state.resetting) return;
+		if (!currentPostTypeConfig?.filters) return;
+
+		const currentFilterConfigs = attributes.filterLists?.[state.currentPostType] || [];
+
+		currentFilterConfigs.forEach((filterConfig: { filterKey: string; defaultValue?: unknown; defaultValueEnabled?: boolean }) => {
+			const currentStateValue = state.filterValues[filterConfig.filterKey];
+
+			// If defaultValueEnabled is ON and has a valid value
+			if (filterConfig.defaultValueEnabled && filterConfig.defaultValue !== undefined && filterConfig.defaultValue !== '' && filterConfig.defaultValue !== null) {
+				// Only update if the state value differs from config default
+				// AND the state value wasn't explicitly set to null (from clearAll)
+				if (currentStateValue !== filterConfig.defaultValue && currentStateValue !== null) {
+					setState((prev) => ({
+						...prev,
+						filterValues: {
+							...prev.filterValues,
+							[filterConfig.filterKey]: filterConfig.defaultValue,
+						},
+					}));
+				}
+			} else {
+				// defaultValueEnabled is OFF or defaultValue is empty
+				// If we have a non-null state value, clear it (but not if it's already null from clearAll)
+				if (currentStateValue !== undefined && currentStateValue !== null) {
+					setState((prev) => ({
+						...prev,
+						filterValues: {
+							...prev.filterValues,
+							[filterConfig.filterKey]: undefined,
+						},
+					}));
+				}
+			}
+		});
+	}, [context, state.currentPostType, attributes.filterLists, state.resetting, currentPostTypeConfig?.filters]);
+
 	// Calculate active filter count
 	useEffect(() => {
 		const count = Object.values(state.filterValues).filter(
@@ -129,41 +213,93 @@ export function useSearchForm({
 			onPostTypeChange(postTypeKey);
 		}
 
+		// In editor context: also clear filter values attribute
+		if (context === 'editor' && onFilterChange) {
+			onFilterChange({});
+		}
+
 		// Auto-submit on post type change in frontend context
 		// This ensures Post Feed updates when user switches post type
-		// Note: URL updates are NOT done here to prevent loops - they happen via handleSubmitInternal
 		if (context === 'frontend' && onSubmit) {
+			// Update URL with new post type and empty filters (only if updateUrl is enabled)
+			if (attributes.updateUrl !== false) {
+				updateUrlParams({}, postTypeKey);
+			}
 			setTimeout(() => {
 				onSubmit({
 					postType: postTypeKey,
 				});
 			}, 50);
 		}
-	}, [context, onSubmit, onPostTypeChange]);
+	}, [context, onSubmit, onPostTypeChange, onFilterChange, attributes.updateUrl]);
 
 	// Set individual filter value
 	const setFilterValue = useCallback(
 		(filterKey: string, value: unknown) => {
-			setState((prev) => ({
-				...prev,
-				filterValues: {
+			setState((prev) => {
+				const newFilterValues = {
 					...prev.filterValues,
 					[filterKey]: value,
-				},
-			}));
+				};
+
+				// In editor context: notify parent to sync filter values to attributes
+				// This enables Post Feed preview to update when filters change
+				if (context === 'editor' && onFilterChange) {
+					// Use setTimeout to ensure state is updated before callback
+					setTimeout(() => onFilterChange(newFilterValues), 0);
+				}
+
+				return {
+					...prev,
+					filterValues: newFilterValues,
+					// Track which filter was modified (Voxel optimization)
+					// This allows backend to only recalculate affected adaptive filters
+					// Reference: voxel-search-form.beautified.js lines 1510-1522
+					lastModifiedFilter: filterKey,
+				};
+			});
 			// Note: Auto-submit on change is handled by useEffect watching filterValues
 		},
-		[]
+		[context, onFilterChange]
 	);
 
 	// Clear all filters
+	// CRITICAL: Uses filterData.resets_to from API response (1:1 Voxel parity)
+	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:103
+	// The PHP controller now sets resets_to based on resetValue config
 	const clearAll = useCallback((closePortal = false) => {
+		// Calculate reset values using filterData.resets_to from the API
+		// IMPORTANT: We must set ALL filters to a value (either resets_to or null)
+		// so the initialization useEffect doesn't re-add defaults after reset
+		const resetValues: Record<string, unknown> = {};
+
+		// Use filterData.resets_to from the API response (set by PHP controller)
+		// This is the 1:1 Voxel parity approach - PHP decides what filters reset to
+		currentPostTypeConfig?.filters?.forEach((filterData: FilterData) => {
+			// If resets_to is set (not null/undefined), use it
+			// This means the PHP controller determined this filter resets to a default value
+			if (filterData.resets_to !== null && filterData.resets_to !== undefined) {
+				resetValues[filterData.key] = filterData.resets_to;
+			} else {
+				// Set to null explicitly to prevent re-initialization from adding defaults back
+				// This ensures the filter is considered "set" (to empty) rather than "unset"
+				resetValues[filterData.key] = null;
+			}
+		});
+
+		// Count only non-null values for active filter count
+		const activeCount = Object.values(resetValues).filter(
+			(v) => v !== null && v !== undefined && v !== ''
+		).length;
+
 		setState((prev) => ({
 			...prev,
-			filterValues: {},
-			activeFilterCount: 0,
+			filterValues: resetValues,
+			activeFilterCount: activeCount,
 			resetting: true,
 			portalActive: closePortal ? false : prev.portalActive,
+			narrowedValues: null, // Clear adaptive filtering state
+			lastModifiedFilter: null, // Reset tracking
 		}));
 
 		// Reset the resetting flag after a short delay
@@ -171,10 +307,18 @@ export function useSearchForm({
 			setState((prev) => ({ ...prev, resetting: false }));
 		}, 100);
 
+		// In editor context: notify parent to sync filter values (may not be empty if resetValue='default_value')
+		if (context === 'editor' && onFilterChange) {
+			onFilterChange(resetValues);
+		}
+
 		// Clear URL parameters and emit clear event (frontend context only)
 		if (context === 'frontend') {
-			// Clear all filter params from URL, keeping only the post type
-			clearUrlParams(state.currentPostType);
+			// Clear all filter params from URL, keeping only the post type (only if updateUrl is enabled)
+			// Note: We don't add reset values to URL since they're default state
+			if (attributes.updateUrl !== false) {
+				clearUrlParams(state.currentPostType);
+			}
 
 			// Emit clear event for Post Feed/Map integration
 			const event = new CustomEvent('voxel-search-clear', {
@@ -184,7 +328,7 @@ export function useSearchForm({
 			});
 			window.dispatchEvent(event);
 		}
-	}, [context, state.currentPostType]);
+	}, [context, state.currentPostType, onFilterChange, attributes.updateUrl, currentPostTypeConfig?.filters]);
 
 	// Toggle portal
 	const togglePortal = useCallback(() => {
@@ -228,6 +372,13 @@ export function useSearchForm({
 		// VOXEL PARITY: Use 'type' instead of 'post_type' (line 1202 of beautified.js)
 		const queryParams = new URLSearchParams();
 		queryParams.set('type', state.currentPostType);
+
+		// Include _last_modified for backend optimization (Voxel pattern)
+		// Backend uses this to skip recalculating unaffected adaptive filters
+		// Reference: voxel-search-form.beautified.js lines 1220-1225
+		if (state.lastModifiedFilter) {
+			queryParams.set('_last_modified', state.lastModifiedFilter);
+		}
 
 		Object.entries(state.filterValues).forEach(([key, value]) => {
 			if (value !== null && value !== undefined && value !== '') {
@@ -344,59 +495,59 @@ export function useSearchForm({
 		};
 	}, [state.filterValues, attributes.adaptiveFiltering, context, fetchNarrowedValues]);
 
-	// Handle form submission
-	// CRITICAL: Must be defined BEFORE the auto-submit useEffect that uses it
-	const handleSubmitInternal = useCallback(() => {
-		setState((prev) => ({ ...prev, loading: true }));
+	/**
+	 * Handle form submission
+	 * CRITICAL: Takes explicit parameters to avoid stale closure/ref issues
+	 * The caller passes in current values, so we don't need state in deps
+	 * This prevents infinite loops: useEffect depends on state → calls this → no state dep → stable function
+	 */
+	const handleSubmitInternal = useCallback(
+		(filterValues: Record<string, unknown>, postType: string) => {
+			setState((prev) => ({ ...prev, loading: true }));
 
-		// Call the onSubmit callback if provided
-		// CRITICAL: Include postType in the callback data so frontend.tsx can use it
-		if (onSubmit) {
-			onSubmit({
-				postType: state.currentPostType,
-				...state.filterValues,
-			});
-		}
+			// Call the onSubmit callback if provided
+			// CRITICAL: Include postType in the callback data so frontend.tsx can use it
+			if (onSubmit) {
+				onSubmit({
+					postType: postType,
+					...filterValues,
+				});
+			}
 
-		// Update URL with filter parameters (only in frontend context)
-		// NOTE: Event dispatch is handled by the onSubmit callback in frontend.tsx
-		// to ensure targetId is included for Post Feed connection
-		if (context === 'frontend') {
-			updateUrlParams(state.filterValues, state.currentPostType);
-		}
+			// Update URL with filter parameters (only in frontend context, and only if updateUrl is enabled)
+			// NOTE: Event dispatch is handled by the onSubmit callback in frontend.tsx
+			// to ensure targetId is included for Post Feed connection
+			if (context === 'frontend' && attributes.updateUrl !== false) {
+				updateUrlParams(filterValues, postType);
+			}
 
-		setState((prev) => ({ ...prev, loading: false }));
-	}, [context, onSubmit, state.currentPostType, state.filterValues]);
+			setState((prev) => ({ ...prev, loading: false }));
+		},
+		[context, onSubmit, attributes.updateUrl]
+	);
 
 	// Auto-submit when filter values change (Voxel's $watch pattern)
 	// Reference: voxel-search-form.beautified.js lines 1185-1192
-	// CRITICAL: This must be separate from setFilterValue to avoid stale closures
+	// CRITICAL: Pass current values to handleSubmitInternal to avoid stale closures
+	// handleSubmitInternal is stable (no state deps), so this won't cause infinite loops
 	useEffect(() => {
-		console.log('[useSearchForm] Auto-submit useEffect triggered', {
-			searchOn: attributes.searchOn,
-			context,
-			filterValues: state.filterValues,
-			shouldTrigger: attributes.searchOn === 'change' && context === 'frontend'
-		});
-
 		if (attributes.searchOn === 'change' && context === 'frontend') {
-			console.log('[useSearchForm] Scheduling auto-submit in 300ms...');
 			// Debounce the submit to avoid excessive requests
 			const timer = setTimeout(() => {
-				console.log('[useSearchForm] Executing handleSubmitInternal');
-				handleSubmitInternal();
+				// Pass current values explicitly - useEffect has them in deps so they're fresh
+				handleSubmitInternal(state.filterValues, state.currentPostType);
 			}, 300);
 
 			return () => {
-				console.log('[useSearchForm] Clearing auto-submit timer');
 				clearTimeout(timer);
 			};
 		}
-	}, [state.filterValues, attributes.searchOn, context, handleSubmitInternal]);
+	}, [state.filterValues, state.currentPostType, attributes.searchOn, context, handleSubmitInternal]);
 
+	// Wrapper for manual submit that reads current state
 	const handleSubmit = useCallback(() => {
-		handleSubmitInternal();
-	}, [handleSubmitInternal]);
+		handleSubmitInternal(state.filterValues, state.currentPostType);
+	}, [handleSubmitInternal, state.filterValues, state.currentPostType]);
 
 	return {
 		state,

@@ -20,7 +20,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import type { FilterComponentProps } from '../types';
 // Import shared components (Voxel's commons.js pattern)
-import { getFilterWrapperStyles, FieldPopup } from '@shared';
+import { getFilterWrapperStyles, getPopupStyles, FieldPopup } from '@shared';
 
 interface OrderByOption {
 	key: string;
@@ -36,7 +36,10 @@ export default function FilterOrderBy( {
 	filterData,
 	value,
 	onChange,
+	blockId,
 }: FilterComponentProps ) {
+	// Generate popup className for styling portal elements (renders at document.body)
+	const popupClassName = blockId ? `voxel-popup-${blockId}` : '';
 	const triggerRef = useRef< HTMLDivElement >( null );
 	const [ isOpen, setIsOpen ] = useState( false );
 
@@ -195,6 +198,7 @@ export default function FilterOrderBy( {
 	// MODE 4: Popup mode (default) - Dropdown with radio list
 	// Evidence: themes/voxel/templates/widgets/search-form/order-by-filter.php line 64-97
 	const { style, className } = getFilterWrapperStyles( config, 'ts-form-group' );
+	const popupStyles = getPopupStyles( config );
 
 	return (
 		<div className={ className } style={ style }>
@@ -230,7 +234,8 @@ export default function FilterOrderBy( {
 				onSave={ () => setIsOpen( false ) }
 				onClear={ handleClear }
 				onClose={ () => setIsOpen( false ) }
-				className="hide-head"
+				className={ `hide-head ${popupClassName}${config.popupCenterPosition ? ' ts-popup-centered' : ''}`.trim() }
+				popupStyle={ popupStyles.style }
 			>
 				{ renderRadioList() }
 			</FieldPopup>

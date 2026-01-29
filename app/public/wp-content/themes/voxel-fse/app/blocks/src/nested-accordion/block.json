@@ -1,0 +1,341 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/nested-accordion",
+	"version": "1.0.0",
+	"title": "Accordion (VX)",
+	"category": "voxel-fse",
+	"description": "Collapsible accordion with nested content. FSE equivalent of Voxel's Nested Accordion widget.",
+	"keywords": ["accordion", "collapse", "toggle", "faq", "nested", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true,
+		"color": {
+			"text": false,
+			"background": false
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"style": "file:./style.css",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "layout"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "accordion-style"
+		},
+		"accordionState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"titleColorState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"iconColorState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"items": {
+			"type": "array",
+			"default": [
+				{ "id": "item-1", "title": "Item #1", "cssId": "" },
+				{ "id": "item-2", "title": "Item #2", "cssId": "" },
+				{ "id": "item-3", "title": "Item #3", "cssId": "" }
+			]
+		},
+		"itemPosition": {
+			"type": "object",
+			"default": { "desktop": "start" }
+		},
+		"titleTag": {
+			"type": "string",
+			"default": "div",
+			"enum": ["h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "p"]
+		},
+		"faqSchema": {
+			"type": "boolean",
+			"default": false
+		},
+		"iconPosition": {
+			"type": "object",
+			"default": { "desktop": "end" }
+		},
+		"expandIcon": {
+			"type": "object",
+			"default": { "library": "icon", "value": "las la-plus" }
+		},
+		"collapseIcon": {
+			"type": "object",
+			"default": { "library": "icon", "value": "las la-minus" }
+		},
+		"defaultState": {
+			"type": "string",
+			"default": "expanded",
+			"enum": ["expanded", "all_collapsed"]
+		},
+		"maxItemsExpanded": {
+			"type": "string",
+			"default": "one",
+			"enum": ["one", "multiple"]
+		},
+		"animationDuration": {
+			"type": "object",
+			"default": { "size": 400, "unit": "ms" }
+		},
+		"itemSpacing": {
+			"type": "number",
+			"default": 0
+		},
+		"itemSpacing_tablet": {
+			"type": "number"
+		},
+		"itemSpacing_mobile": {
+			"type": "number"
+		},
+		"itemSpacingUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"contentDistance": {
+			"type": "number",
+			"default": 0
+		},
+		"contentDistance_tablet": {
+			"type": "number"
+		},
+		"contentDistance_mobile": {
+			"type": "number"
+		},
+		"contentDistanceUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"accordionBorderRadius": {
+			"type": "object",
+			"default": {}
+		},
+		"accordionPadding": {
+			"type": "object",
+			"default": { "desktop": { "top": "10px", "right": "10px", "bottom": "10px", "left": "10px" } }
+		},
+		"accordionNormalBgType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"accordionNormalBg": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionNormalBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionNormalBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"accordionNormalBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionHoverBgType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"accordionHoverBg": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionHoverBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionHoverBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"accordionHoverBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionActiveBgType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"accordionActiveBg": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionActiveBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"accordionActiveBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"accordionActiveBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"titleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"titleNormalColor": {
+			"type": "string",
+			"default": "#1f2124"
+		},
+		"titleHoverColor": {
+			"type": "string",
+			"default": ""
+		},
+		"titleActiveColor": {
+			"type": "string",
+			"default": ""
+		},
+		"titleNormalTextShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"titleHoverTextShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"titleActiveTextShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"titleNormalTextStroke": {
+			"type": "object",
+			"default": {}
+		},
+		"titleHoverTextStroke": {
+			"type": "object",
+			"default": {}
+		},
+		"titleActiveTextStroke": {
+			"type": "object",
+			"default": {}
+		},
+		"iconSize": {
+			"type": "number",
+			"default": 15
+		},
+		"iconSize_tablet": {
+			"type": "number"
+		},
+		"iconSize_mobile": {
+			"type": "number"
+		},
+		"iconSpacing": {
+			"type": "number",
+			"default": 10
+		},
+		"iconSpacing_tablet": {
+			"type": "number"
+		},
+		"iconSpacing_mobile": {
+			"type": "number"
+		},
+		"iconNormalColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconHoverColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconActiveColor": {
+			"type": "string",
+			"default": ""
+		},
+		"contentBgType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"contentBg": {
+			"type": "string",
+			"default": ""
+		},
+		"contentBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"contentBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"contentBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"contentBorderRadius": {
+			"type": "object",
+			"default": {}
+		},
+		"contentPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

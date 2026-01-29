@@ -11,6 +11,7 @@ import metadata from './block.json';
 import Edit from './edit';
 import save from './save';
 import type { MapAttributes } from './types';
+import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
 
 /**
  * Map icon SVG
@@ -29,9 +30,15 @@ const MapIcon = () => (
 
 /**
  * Register the Map block
+ * Merge voxelTabAttributes and advancedTabAttributes for visibility/loop support
  */
 registerBlockType<MapAttributes>(metadata.name, {
 	...metadata,
+	attributes: {
+		...metadata.attributes,
+		...advancedTabAttributes,
+		...voxelTabAttributes,
+	},
 	icon: MapIcon,
 	edit: Edit,
 	save,

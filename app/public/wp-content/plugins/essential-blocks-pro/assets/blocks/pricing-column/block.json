@@ -1,0 +1,29 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "title": "Pricing Column",
+  "name": "essential-blocks/pro-pricing-column",
+  "category": "essential-blocks",
+  "description": "Pricing Column",
+  "apiVersion": 2,
+  "textdomain": "essential-blocks-pro",
+  "supports": {
+    "inserter": false,
+    "reusable": false,
+    "lock": false
+  },
+  "parent": [
+    "essential-blocks/pro-multicolumn-pricing-table"
+  ],
+  "usesContext": [
+    "eb/parentColumnDetails",
+    "eb/parentRowCount",
+    "eb/parentHasFeatureColumn",
+    "eb/parentHasCollapse",
+    "eb/parentCollapseRowNumber"
+  ],
+  "providesContext": {
+    "eb/parentSellDetailsCell": "sellDetails",
+    "eb/parentSellColumn": "sellColumn",
+    "eb/parentColumnNumber": "columnNumber"
+  }
+}

@@ -42,6 +42,7 @@ import { usePricingSummary } from '../pricing';
 import { useCart } from '../cart';
 import { useExternalAddons } from '../hooks';
 import { ExternalChoicePopup } from '../components';
+import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
 interface ProductFormComponentProps {
 	attributes: ProductFormAttributes;
@@ -76,9 +77,7 @@ function renderIcon(icon: { library?: string; value?: string } | undefined, clas
 function LoadingState(): React.ReactElement {
 	return (
 		<div className="ts-product-main vx-loading-screen">
-			<div className="ts-no-posts">
-				<span className="ts-loader"></span>
-			</div>
+			<EmptyPlaceholder />
 		</div>
 	);
 }

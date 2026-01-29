@@ -1,0 +1,374 @@
+{
+  "apiVersion": 3,
+  "name": "voxel-fse/work-hours",
+  "title": "Work Hours (VX)",
+  "category": "voxel-fse",
+  "description": "Display work hours for a business",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./editor.css",
+  "viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+  "attributes": {
+    "blockId": {
+      "type": "string",
+      "default": ""
+    },
+    "sourceField": {
+      "type": "string",
+      "default": ""
+    },
+    "collapse": {
+      "type": "string",
+      "default": "wh-default"
+    },
+    "topBg": {
+      "type": "string",
+      "default": ""
+    },
+    "topBgTablet": {
+      "type": "string",
+      "default": ""
+    },
+    "topBgMobile": {
+      "type": "string",
+      "default": ""
+    },
+    "topIconSize": {
+      "type": "number",
+      "default": 24
+    },
+    "topIconSizeTablet": {
+      "type": "number",
+      "default": 24
+    },
+    "topIconSizeMobile": {
+      "type": "number",
+      "default": 24
+    },
+    "topIconSizeUnit": {
+      "type": "string",
+      "default": "px"
+    },
+    "labelTypography": {
+      "type": "object",
+      "default": {}
+    },
+    "labelColor": {
+      "type": "string",
+      "default": ""
+    },
+    "currentHoursTypography": {
+      "type": "object",
+      "default": {}
+    },
+    "currentHoursColor": {
+      "type": "string",
+      "default": ""
+    },
+    "topPaddingTop": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingRight": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingBottom": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingLeft": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingTopTablet": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingRightTablet": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingBottomTablet": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingLeftTablet": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingTopMobile": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingRightMobile": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingBottomMobile": {
+      "type": "number",
+      "default": 15
+    },
+    "topPaddingLeftMobile": {
+      "type": "number",
+      "default": 15
+    },
+    "bodyBg": {
+      "type": "string",
+      "default": ""
+    },
+    "bodySeparatorColor": {
+      "type": "string",
+      "default": ""
+    },
+    "dayTypography": {
+      "type": "object",
+      "default": {}
+    },
+    "dayColor": {
+      "type": "string",
+      "default": ""
+    },
+    "hoursTypography": {
+      "type": "object",
+      "default": {}
+    },
+    "hoursColor": {
+      "type": "string",
+      "default": ""
+    },
+    "bodyPaddingTop": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingRight": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingBottom": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingLeft": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingTopTablet": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingRightTablet": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingBottomTablet": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingLeftTablet": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingTopMobile": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingRightMobile": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingBottomMobile": {
+      "type": "number",
+      "default": 10
+    },
+    "bodyPaddingLeftMobile": {
+      "type": "number",
+      "default": 10
+    },
+    "openIcon": {
+      "type": "object",
+      "default": {}
+    },
+    "openText": {
+      "type": "string",
+      "default": "Open now"
+    },
+    "openIconColor": {
+      "type": "string",
+      "default": ""
+    },
+    "openTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "closedIcon": {
+      "type": "object",
+      "default": {}
+    },
+    "closedText": {
+      "type": "string",
+      "default": "Closed"
+    },
+    "closedIconColor": {
+      "type": "string",
+      "default": ""
+    },
+    "closedTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "appointmentIcon": {
+      "type": "object",
+      "default": {}
+    },
+    "appointmentText": {
+      "type": "string",
+      "default": "Appointment only"
+    },
+    "appointmentIconColor": {
+      "type": "string",
+      "default": ""
+    },
+    "appointmentTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "notAvailableIcon": {
+      "type": "object",
+      "default": {}
+    },
+    "notAvailableText": {
+      "type": "string",
+      "default": "Not available"
+    },
+    "notAvailableIconColor": {
+      "type": "string",
+      "default": ""
+    },
+    "notAvailableTextColor": {
+      "type": "string",
+      "default": ""
+    },
+    "downIcon": {
+      "type": "object",
+      "default": {}
+    },
+    "borderType": {
+      "type": "string",
+      "default": ""
+    },
+    "borderWidth": {
+      "type": "object",
+      "default": {}
+    },
+    "borderColor": {
+      "type": "string",
+      "default": ""
+    },
+    "borderRadius": {
+      "type": "number",
+      "default": 5
+    },
+    "borderRadiusTablet": {
+      "type": "number",
+      "default": 5
+    },
+    "borderRadiusMobile": {
+      "type": "number",
+      "default": 5
+    },
+    "boxShadow": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonSize": {
+      "type": "number",
+      "default": 24
+    },
+    "accordionButtonIconSize": {
+      "type": "number",
+      "default": 16
+    },
+    "accordionButtonColor": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBg": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBorderType": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBorderWidth": {
+      "type": "object",
+      "default": {}
+    },
+    "accordionButtonBorderColor": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBorderRadius": {
+      "type": "number",
+      "default": 0
+    },
+    "accordionButtonColorHover": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBgHover": {
+      "type": "string",
+      "default": ""
+    },
+    "accordionButtonBorderColorHover": {
+      "type": "string",
+      "default": ""
+    },
+    "workHoursActiveTab": {
+      "type": "string",
+      "default": "content"
+    },
+    "contentTabOpenPanel": {
+      "type": "string",
+      "default": "general"
+    },
+    "accordionButtonState": {
+      "type": "string",
+      "default": "normal"
+    },
+    "_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+    "visibilityBehavior": {
+      "type": "string",
+      "default": "show",
+      "enum": ["show", "hide"]
+    },
+    "visibilityRules": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object"
+      }
+    },
+    "loopEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "loopSource": {
+      "type": "string",
+      "default": ""
+    },
+    "loopProperty": {
+      "type": "string",
+      "default": ""
+    },
+    "loopLimit": {
+      "type": "string",
+      "default": ""
+    },
+    "loopOffset": {
+      "type": "string",
+      "default": ""
+    }
+  }
+}

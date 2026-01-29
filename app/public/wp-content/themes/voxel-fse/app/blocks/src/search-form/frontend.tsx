@@ -117,20 +117,23 @@ function parseDataAttributes(container: HTMLElement): SearchFormAttributes {
 		blockId: container.id || '',
 		postTypes: parseJson(container.dataset.postTypes, []) as string[],
 		showPostTypeFilter: parseBool(container.dataset.showPostTypeFilter),
+		postTypeFilterWidth: parseNumber(container.dataset.postTypeFilterWidth),
+		postTypeFilterWidth_tablet: parseNumber(container.dataset.postTypeFilterWidthTablet),
+		postTypeFilterWidth_mobile: parseNumber(container.dataset.postTypeFilterWidthMobile),
 		filterLists: parseJson(container.dataset.filterLists, {}) as Record<string, unknown>,
-		onSubmit: (container.dataset.onSubmit as 'refresh' | 'feed' | 'map') || 'refresh',
+		onSubmit: (container.dataset.onSubmit as 'feed' | 'archive' | 'page') || 'feed',
 		postToFeedId: container.dataset.postToFeedId || '',
 		postToMapId: container.dataset.postToMapId || '',
 		searchOn: (container.dataset.searchOn as 'change' | 'submit') || 'submit',
 		showSearchButton: parseBool(container.dataset.showSearchButton),
-		searchButtonText: container.dataset.searchButtonText || 'Search',
+		searchButtonText: container.dataset.searchButtonText ?? '',
 		searchButtonIcon: parseJson(container.dataset.searchButtonIcon, {}) as Record<string, unknown>,
 		searchButtonWidth: parseNumber(container.dataset.searchButtonWidth),
 		searchButtonWidth_tablet: parseNumber(container.dataset.searchButtonWidthTablet),
 		searchButtonWidth_mobile: parseNumber(container.dataset.searchButtonWidthMobile),
 		searchButtonWidthUnit: container.dataset.searchButtonWidthUnit || '%',
 		showResetButton: parseBool(container.dataset.showResetButton),
-		resetButtonText: container.dataset.resetButtonText || 'Reset',
+		resetButtonText: container.dataset.resetButtonText ?? '',
 		resetButtonIcon: parseJson(container.dataset.resetButtonIcon, {}) as Record<string, unknown>,
 		resetButtonWidth: parseNumber(container.dataset.resetButtonWidth),
 		resetButtonWidth_tablet: parseNumber(container.dataset.resetButtonWidthTablet),
@@ -149,8 +152,19 @@ function parseDataAttributes(container: HTMLElement): SearchFormAttributes {
 
 /**
  * Fetch post types configuration from REST API
+ *
+ * CRITICAL: For proper 1:1 Voxel parity, this function now sends filter configs
+ * via POST, allowing the PHP controller to:
+ * 1. Call $filter->set_value() before frontend_props()
+ * 2. Call $filter->resets_to() based on resetValue config
+ * 3. Return proper `value` and `resets_to` in the response
+ *
+ * Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
  */
-async function fetchPostTypes(postTypeKeys: string[]): Promise<PostTypeConfig[]> {
+async function fetchPostTypes(
+	postTypeKeys: string[],
+	filterLists?: Record<string, unknown>
+): Promise<PostTypeConfig[]> {
 	if (!postTypeKeys || postTypeKeys.length === 0) {
 		return [];
 	}
@@ -159,7 +173,40 @@ async function fetchPostTypes(postTypeKeys: string[]): Promise<PostTypeConfig[]>
 	const endpoint = `${restUrl}voxel-fse/v1/search-form/frontend-config?post_types=${encodeURIComponent(postTypeKeys.join(','))}`;
 
 	try {
-		const response = await fetch(endpoint);
+		// Build filter_configs object for the API
+		// Transform FilterConfig[] to the format expected by PHP controller
+		const apiFilterConfigs: Record<string, Record<string, {
+			defaultValueEnabled?: boolean;
+			defaultValue?: unknown;
+			resetValue?: string;
+		}>> = {};
+
+		if (filterLists) {
+			Object.entries(filterLists).forEach(([postTypeKey, configs]) => {
+				if (Array.isArray(configs)) {
+					apiFilterConfigs[postTypeKey] = {};
+					configs.forEach((config: { filterKey?: string; defaultValueEnabled?: boolean; defaultValue?: unknown; resetValue?: string }) => {
+						if (config.filterKey) {
+							apiFilterConfigs[postTypeKey][config.filterKey] = {
+								defaultValueEnabled: config.defaultValueEnabled,
+								defaultValue: config.defaultValue,
+								resetValue: config.resetValue,
+							};
+						}
+					});
+				}
+			});
+		}
+
+		// Use POST if we have filter configs for proper value/resets_to handling
+		const hasFilterConfigs = Object.keys(apiFilterConfigs).length > 0;
+
+		const response = await fetch(endpoint, {
+			method: hasFilterConfigs ? 'POST' : 'GET',
+			headers: hasFilterConfigs ? { 'Content-Type': 'application/json' } : undefined,
+			body: hasFilterConfigs ? JSON.stringify({ filter_configs: apiFilterConfigs }) : undefined,
+		});
+
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -224,19 +271,25 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 		postTypes,
 		showPostTypeFilter: normalizeBool(raw.showPostTypeFilter ?? raw.show_post_type_filter, true),
 		filterLists: (raw.filterLists ?? raw.filter_lists ?? {}) as Record<string, unknown>,
-		onSubmit: (raw.onSubmit ?? raw.on_submit ?? 'refresh') as 'refresh' | 'feed' | 'map',
+		onSubmit: (raw.onSubmit ?? raw.on_submit ?? 'feed') as 'feed' | 'archive' | 'page',
 		postToFeedId: (raw.postToFeedId ?? raw.post_to_feed_id ?? '') as string,
 		postToMapId: (raw.postToMapId ?? raw.post_to_map_id ?? '') as string,
 		searchOn: (raw.searchOn ?? raw.search_on ?? 'submit') as 'change' | 'submit',
+		// URL and map integration settings
+		updateUrl: normalizeBool(raw.updateUrl ?? raw.update_url, true),
+		submitToPageId: (raw.submitToPageId ?? raw.submit_to_page_id) as number | undefined,
+		mapAdditionalMarkers: (raw.mapAdditionalMarkers ?? raw.map_additional_markers ?? 0) as number,
+		mapEnableClusters: normalizeBool(raw.mapEnableClusters ?? raw.map_enable_clusters, true),
+		// Search button settings
 		showSearchButton: normalizeBool(raw.showSearchButton ?? raw.show_search_button, true),
-		searchButtonText: (raw.searchButtonText ?? raw.search_button_text ?? 'Search') as string,
+		searchButtonText: (raw.searchButtonText ?? raw.search_button_text ?? '') as string,
 		searchButtonIcon: normalizeIcon(raw.searchButtonIcon ?? raw.search_button_icon),
 		searchButtonWidth: raw.searchButtonWidth as number | undefined,
 		searchButtonWidth_tablet: (raw.searchButtonWidth_tablet ?? raw.search_button_width_tablet) as number | undefined,
 		searchButtonWidth_mobile: (raw.searchButtonWidth_mobile ?? raw.search_button_width_mobile) as number | undefined,
 		searchButtonWidthUnit: (raw.searchButtonWidthUnit ?? raw.search_button_width_unit ?? '%') as string,
 		showResetButton: normalizeBool(raw.showResetButton ?? raw.show_reset_button, false),
-		resetButtonText: (raw.resetButtonText ?? raw.reset_button_text ?? 'Reset') as string,
+		resetButtonText: (raw.resetButtonText ?? raw.reset_button_text ?? '') as string,
 		resetButtonIcon: normalizeIcon(raw.resetButtonIcon ?? raw.reset_button_icon),
 		resetButtonWidth: raw.resetButtonWidth as number | undefined,
 		resetButtonWidth_tablet: (raw.resetButtonWidth_tablet ?? raw.reset_button_width_tablet) as number | undefined,
@@ -250,6 +303,10 @@ function normalizeConfig(raw: Record<string, unknown>): SearchFormAttributes {
 		formToggleMobile: normalizeBool(raw.formToggleMobile ?? raw.form_toggle_mobile, true),
 		toggleText: (raw.toggleText ?? raw.toggle_text ?? 'Filter results') as string,
 		toggleIcon: normalizeIcon(raw.toggleIcon ?? raw.toggle_icon),
+		// Post type filter width
+		postTypeFilterWidth: raw.postTypeFilterWidth as number | undefined,
+		postTypeFilterWidth_tablet: (raw.postTypeFilterWidth_tablet ?? raw.post_type_filter_width_tablet) as number | undefined,
+		postTypeFilterWidth_mobile: (raw.postTypeFilterWidth_mobile ?? raw.post_type_filter_width_mobile) as number | undefined,
 	};
 }
 
@@ -323,7 +380,12 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 			setError(null);
 
 			try {
-				const data = await fetchPostTypes(attributes.postTypes || []);
+				// Pass filterLists to enable proper value/resets_to from PHP
+				// Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
+				const data = await fetchPostTypes(
+					attributes.postTypes || [],
+					attributes.filterLists
+				);
 				if (!cancelled) {
 					setPostTypes(data);
 				}
@@ -343,7 +405,7 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [attributes.postTypes]);
+	}, [attributes.postTypes, attributes.filterLists]);
 
 	// Register this Search Form in the global registry for Post Feed connection
 	useEffect(() => {
@@ -435,7 +497,7 @@ function initSearchForms() {
 				case 'feed':
 					// Dispatch event for Post Feed block
 					if (attributes.postToFeedId) {
-						const event = new CustomEvent('voxel-search-submit', {
+						const feedEvent = new CustomEvent('voxel-search-submit', {
 							detail: {
 								targetId: attributes.postToFeedId,
 								postType,
@@ -443,30 +505,41 @@ function initSearchForms() {
 							},
 							bubbles: true,
 						});
-						window.dispatchEvent(event);
+						window.dispatchEvent(feedEvent);
+
+						// Also dispatch to Map block if connected
+						if (attributes.postToMapId) {
+							const mapEvent = new CustomEvent('voxel-search-submit', {
+								detail: {
+									targetId: attributes.postToMapId,
+									postType,
+									filters,
+									// Map integration settings
+									mapAdditionalMarkers: attributes.mapAdditionalMarkers ?? 0,
+									mapEnableClusters: attributes.mapEnableClusters ?? true,
+								},
+								bubbles: true,
+							});
+							window.dispatchEvent(mapEvent);
+						}
 					} else {
 						console.warn('[search-form] No postToFeedId set, cannot dispatch to Post Feed');
 					}
 					break;
 
-				case 'map':
-					// Dispatch event for Map block
-					if (attributes.postToMapId) {
-						const event = new CustomEvent('voxel-search-submit', {
-							detail: {
-								targetId: attributes.postToMapId,
-								postType,
-								filters,
-							},
-							bubbles: true,
-						});
-						window.dispatchEvent(event);
+				case 'page':
+					// Redirect to a specific page with filter parameters
+					if (attributes.submitToPageId) {
+						redirectToPage(values, attributes);
+					} else {
+						// Fallback to archive if no page ID set
+						updateUrlAndRefresh(values, attributes);
 					}
 					break;
 
-				case 'refresh':
+				case 'archive':
 				default:
-					// Update URL and reload page
+					// Update URL and reload page (archive mode)
 					updateUrlAndRefresh(values, attributes);
 					break;
 			}
@@ -534,6 +607,49 @@ function updateUrlAndRefresh(
 	});
 
 	// Navigate to new URL
+	window.location.href = url.toString();
+}
+
+/**
+ * Redirect to a specific page with filter values
+ * Used when onSubmit='page' and submitToPageId is set
+ */
+function redirectToPage(
+	values: Record<string, unknown>,
+	attributes: SearchFormAttributes
+) {
+	// Get the site URL from WordPress or fallback to origin
+	const siteUrl = (window as any).voxelFseSiteUrl || window.location.origin;
+
+	// Build URL using WordPress ?p={id} format
+	// WordPress will automatically redirect to the proper permalink
+	const url = new URL(siteUrl);
+	url.searchParams.set('p', String(attributes.submitToPageId));
+
+	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
+	const postType = values.postType || attributes.postTypes?.[0];
+	if (postType && typeof postType === 'string') {
+		url.searchParams.set('type', postType);
+	}
+
+	// Add filter values - VOXEL PARITY: Use key directly without 'filter_' prefix
+	Object.entries(values).forEach(([key, value]) => {
+		if (key === 'postType') {
+			return;
+		}
+
+		if (value === null || value === undefined || value === '') {
+			return;
+		}
+
+		if (typeof value === 'object') {
+			url.searchParams.set(key, JSON.stringify(value));
+		} else {
+			url.searchParams.set(key, String(value));
+		}
+	});
+
+	// Navigate to target page
 	window.location.href = url.toString();
 }
 

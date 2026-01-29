@@ -1,0 +1,188 @@
+/**
+ * RepeaterControl - Elementor-style Repeater Styles
+ *
+ * Matches Voxel/Elementor repeater field styling.
+ *
+ * @package VoxelFSE
+ */
+
+/* ============================================
+   Repeater Control Container
+   ============================================ */
+
+.voxel-fse-repeater-control {
+	margin-bottom: 16px;
+}
+
+/* Repeater label */
+.voxel-fse-repeater-label {
+	font-size: 11px;
+	font-weight: 400;
+	color: #6c7781;
+	margin-bottom: 8px;
+	display: block;
+}
+
+/* Items container */
+.voxel-fse-repeater-items {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	position: relative; /* Contain positioned/transformed children */
+}
+
+/* ============================================
+   Repeater Item - Elementor 1:1 Matching
+   ============================================ */
+
+.voxel-fse-repeater-item {
+	background: #fff;
+	border: 1px solid #d5d5d5;
+	overflow: hidden;
+	margin-top: -1px;
+}
+
+.voxel-fse-repeater-item:first-child {
+	margin-top: 0;
+	border-radius: 3px 3px 0 0;
+}
+
+.voxel-fse-repeater-item:last-child {
+	border-radius: 0 0 3px 3px;
+}
+
+.voxel-fse-repeater-item:only-child {
+	border-radius: 3px;
+}
+
+.voxel-fse-repeater-item.is-expanded {
+	box-shadow: none;
+}
+
+/* ============================================
+   Item Header - Elementor Style (Draggable)
+   ============================================ */
+
+.voxel-fse-repeater-item-header {
+	display: flex;
+	align-items: center;
+	padding: 0;
+	cursor: grab;
+	background: #fff;
+	border-bottom: 1px solid transparent;
+	transition: background 0.15s ease;
+	min-height: 40px;
+}
+
+.voxel-fse-repeater-item-header:active {
+	cursor: grabbing;
+}
+
+.voxel-fse-repeater-item.is-expanded .voxel-fse-repeater-item-header {
+	border-bottom-color: #d5d5d5;
+	background: #fff;
+}
+
+.voxel-fse-repeater-item-header:hover {
+	background: #f9f9f9;
+}
+
+/* ============================================
+   Item Label
+   ============================================ */
+
+.voxel-fse-repeater-item-label {
+	flex: 1;
+	font-weight: 400;
+	font-size: 13px;
+	color: #2c3338;
+	padding: 0 12px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ============================================
+   Item Actions (Clone & Delete)
+   ============================================ */
+
+.voxel-fse-repeater-item-actions {
+	display: flex;
+	margin-left: auto;
+}
+
+.voxel-fse-repeater-action-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	background: transparent;
+	border: none;
+	border-left: 1px solid #d5d8dc;
+	color: #a4afb7;
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
+
+.voxel-fse-repeater-action-btn:hover {
+	color: #495157;
+}
+
+/* Elementor eicon icons */
+.voxel-fse-repeater-action-btn i {
+	font-size: 12px;
+	line-height: 1;
+}
+
+.voxel-fse-repeater-delete:hover {
+	color: #dc2626 !important;
+}
+
+/* ============================================
+   Item Content (Expanded)
+   ============================================ */
+
+.voxel-fse-repeater-item-content {
+	padding: 16px;
+	background: #fff;
+}
+
+.voxel-fse-repeater-item-content .components-base-control {
+	margin-bottom: 12px;
+}
+
+.voxel-fse-repeater-item-content .components-base-control:last-child {
+	margin-bottom: 0;
+}
+
+/* ============================================
+   Add Item Button
+   ============================================ */
+
+.voxel-fse-repeater-add-btn {
+	width: 100%;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.voxel-fse-repeater-add-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* ============================================
+   Drag and Drop States
+   ============================================ */
+
+.voxel-fse-repeater-item.is-dragging {
+	background: #fff;
+	border-color: #d5d5d5;
+}
+
+/* Drop placeholder style */
+.voxel-fse-repeater-item[data-dnd-placeholder="true"] {
+	opacity: 0.4;
+}

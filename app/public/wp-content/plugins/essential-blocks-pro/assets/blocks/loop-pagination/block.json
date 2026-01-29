@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "title": "Loop Pagination",
+  "name": "essential-blocks/pro-loop-pagination",
+  "category": "essential-blocks",
+  "description": "Display pagination controls for Loop Builder to navigate through multiple pages of posts.",
+  "apiVersion": 2,
+  "textdomain": "essential-blocks-pro",
+  "ancestor": [
+    "essential-blocks/pro-loop-builder"
+  ],
+  "usesContext": [
+    "essential-blocks/queryId",
+    "essential-blocks/isLoopBuilder",
+    "essential-blocks/query"
+  ],
+  "providesContext": {
+    "paginationArrow": "paginationArrow",
+    "showLabel": "showLabel"
+  },
+  "supports": {
+    "align": true
+  },
+  "editorScript": "essential-blocks-editor-script"
+}

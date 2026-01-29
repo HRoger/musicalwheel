@@ -7,6 +7,8 @@
 import type { BlockEditProps, BlockSaveProps } from '@wordpress/blocks';
 
 import type { IconValue } from '@shared/types';
+import type { AdvancedStyleAttributes } from '@shared/utils/generateAdvancedStyles';
+import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 
 /**
  * Box shadow value structure
@@ -66,7 +68,7 @@ export type DragSearchDefault = 'checked' | 'unchecked';
 /**
  * Map block attributes interface
  */
-export interface MapAttributes {
+export interface MapAttributes extends AdvancedStyleAttributes {
 	// Block identification
 	blockId: string;
 
@@ -88,9 +90,11 @@ export interface MapAttributes {
 	calcHeight: string;
 	calcHeight_tablet?: string;
 	calcHeight_mobile?: string;
-	borderRadius: number;
-	borderRadius_tablet?: number;
-	borderRadius_mobile?: number;
+
+	// Renamed to avoid conflict with AdvancedStyleAttributes.borderRadius
+	mapBorderRadius: number;
+	mapBorderRadius_tablet?: number;
+	mapBorderRadius_mobile?: number;
 
 	// Content - Default Map Location
 	defaultLat: number;
@@ -202,11 +206,7 @@ export interface MapAttributes {
 	navBtnIconSize_tablet?: number;
 	navBtnIconSize_mobile?: number;
 	navBtnBgColor?: string;
-	navBtnBorderType: string;
-	navBtnBorderWidth?: number;
-	navBtnBorderWidth_tablet?: number;
-	navBtnBorderWidth_mobile?: number;
-	navBtnBorderColor?: string;
+	navBtnBorder?: BorderGroupValue;
 	navBtnRadius: number;
 	navBtnRadius_tablet?: number;
 	navBtnRadius_mobile?: number;
@@ -217,6 +217,9 @@ export interface MapAttributes {
 	navBtnIconColorHover?: string;
 	navBtnBgColorHover?: string;
 	navBtnBorderColorHover?: string;
+
+	// Allow for loose typing if needed
+	[key: string]: unknown;
 }
 
 /**
@@ -364,9 +367,7 @@ export interface NavBtnStyleConfig {
 	iconSize: ResponsiveValue<number>;
 	bgColor?: string;
 	bgColorHover?: string;
-	borderType: string;
-	borderWidth?: number;
-	borderColor?: string;
+	border?: BorderGroupValue;
 	borderColorHover?: string;
 	radius: ResponsiveValue<number>;
 	shadow: BoxShadowValue;

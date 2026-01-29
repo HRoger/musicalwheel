@@ -1,0 +1,234 @@
+/*! For license information please see admin.js.LICENSE.txt */
+(() => { "use strict"; var e, t = { 923: (e, t, n) => { var r = n(4467),
+          o = n(1609),
+          a = n.n(o); const l = window.wp.i18n,
+          i = window.wp.hooks; var c = n(2901),
+          s = n(3029),
+          u = n(45),
+          p = n(467); const d = window.wp.apiFetch; var m = n.n(d),
+          v = ["endpoint"];
+
+        function f() { var e, t, n = "function" == typeof Symbol ? Symbol : {},
+            r = n.iterator || "@@iterator",
+            o = n.toStringTag || "@@toStringTag";
+
+          function a(n, r, o, a) { var c = r && r.prototype instanceof i ? r : i,
+              s = Object.create(c.prototype); return g(s, "_invoke", function(n, r, o) { var a, i, c, s = 0,
+                u = o || [],
+                p = !1,
+                d = { p: 0, n: 0, v: e, a: m, f: m.bind(e, 4), d: function(t, n) { return a = t, i = 0, c = e, d.n = n, l } };
+
+              function m(n, r) { for (i = n, c = r, t = 0; !p && s && !o && t < u.length; t++) { var o, a = u[t],
+                    m = d.p,
+                    v = a[2];
+                  n > 3 ? (o = v === r) && (c = a[(i = a[4]) ? 5 : (i = 3, 3)], a[4] = a[5] = e) : a[0] <= m && ((o = n < 2 && m < a[1]) ? (i = 0, d.v = r, d.n = a[1]) : m < v && (o = n < 3 || a[0] > r || r > v) && (a[4] = n, a[5] = r, d.n = v, i = 0)) } if (o || n > 1) return l; throw p = !0, r } return function(o, u, v) { if (s > 1) throw TypeError("Generator is already running"); for (p && 1 === u && m(u, v), i = u, c = v;
+                  (t = i < 2 ? e : c) || !p;) { a || (i ? i < 3 ? (i > 1 && (d.n = -1), m(i, c)) : d.n = c : d.v = c); try { if (s = 2, a) { if (i || (o = "next"), t = a[o]) { if (!(t = t.call(a, c))) throw TypeError("iterator result is not an object"); if (!t.done) return t;
+                        c = t.value, i < 2 && (i = 0) } else 1 === i && (t = a.return) && t.call(a), i < 2 && (c = TypeError("The iterator does not provide a '" + o + "' method"), i = 1);
+                      a = e } else if ((t = (p = d.n < 0) ? c : n.call(r, d)) !== l) break } catch (t) { a = e, i = 1, c = t } finally { s = 1 } } return { value: t, done: p } } }(n, o, a), !0), s } var l = {};
+
+          function i() {}
+
+          function c() {}
+
+          function s() {} t = Object.getPrototypeOf; var u = [][r] ? t(t([][r]())) : (g(t = {}, r, function() { return this }), t),
+            p = s.prototype = i.prototype = Object.create(u);
+
+          function d(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, s) : (e.__proto__ = s, g(e, o, "GeneratorFunction")), e.prototype = Object.create(p), e } return c.prototype = s, g(p, "constructor", s), g(s, "constructor", c), c.displayName = "GeneratorFunction", g(s, o, "GeneratorFunction"), g(p), g(p, o, "Generator"), g(p, r, function() { return this }), g(p, "toString", function() { return "[object Generator]" }), (f = function() { return { w: a, m: d } })() }
+
+        function g(e, t, n, r) { var o = Object.defineProperty; try { o({}, "", {}) } catch (e) { o = 0 } g = function(e, t, n, r) { if (t) o ? o(e, t, { value: n, enumerable: !r, configurable: !r, writable: !r }) : e[t] = n;
+            else { var a = function(t, n) { g(e, t, function(e) { return this._invoke(t, n, e) }) };
+              a("next", 0), a("throw", 1), a("return", 2) } }, g(e, t, n, r) }
+
+        function h(e, t) { var n = Object.keys(e); if (Object.getOwnPropertySymbols) { var r = Object.getOwnPropertySymbols(e);
+            t && (r = r.filter(function(t) { return Object.getOwnPropertyDescriptor(e, t).enumerable })), n.push.apply(n, r) } return n }
+
+        function b(e) { for (var t = 1; t < arguments.length; t++) { var n = null != arguments[t] ? arguments[t] : {};
+            t % 2 ? h(Object(n), !0).forEach(function(t) {
+              (0, r.A)(e, t, n[t]) }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : h(Object(n)).forEach(function(t) { Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t)) }) } return e } const y = (0, c.A)(function e() { var t, n = this;
+          (0, s.A)(this, e), (0, r.A)(this, "post", function() { var e = (0, p.A)(f().m(function e(t) { var r, o = arguments; return f().w(function(e) { for (;;) switch (e.n) {
+                  case 0:
+                    return r = o.length > 1 && void 0 !== o[1] ? o[1] : {}, e.n = 1, n.request(b({ endpoint: t, method: "POST" }, r));
+                  case 1:
+                    return e.a(2, e.v) } }, e) })); return function(t) { return e.apply(this, arguments) } }()), (0, r.A)(this, "delete", function() { var e = (0, p.A)(f().m(function e(t) { var r, o = arguments; return f().w(function(e) { for (;;) switch (e.n) {
+                  case 0:
+                    return r = o.length > 1 && void 0 !== o[1] ? o[1] : {}, e.n = 1, n.request(b({ endpoint: t, method: "DELETE" }, r));
+                  case 1:
+                    return e.a(2, e.v) } }, e) })); return function(t) { return e.apply(this, arguments) } }()), (0, r.A)(this, "get", function() { var e = (0, p.A)(f().m(function e(t) { var r, o = arguments; return f().w(function(e) { for (;;) switch (e.n) {
+                  case 0:
+                    return r = o.length > 1 && void 0 !== o[1] ? o[1] : {}, e.n = 1, n.request(b({ endpoint: t, method: "GET" }, r));
+                  case 1:
+                    return e.a(2, e.v) } }, e) })); return function(t) { return e.apply(this, arguments) } }()), (0, r.A)(this, "getPath", function(e) { var t, r, o; return "ajax" === n.config.apiType ? "".concat(null === (r = n.config) || void 0 === r ? void 0 : r.api_url, "?action=").concat(null == n || null === (o = n.config) || void 0 === o ? void 0 : o.action, "/").concat(e) : "".concat(null === (t = n.config) || void 0 === t ? void 0 : t.api_url).concat(e) }), (0, r.A)(this, "request", function() { var e = (0, p.A)(f().m(function e(t) { var r, o, a, l, i, c, s; return f().w(function(e) { for (;;) switch (e.n) {
+                  case 0:
+                    if (r = t.endpoint, (o = (0, u.A)(t, v)).url = n.getPath(r, null == o ? void 0 : o.method), "ajax" === n.config.apiType && "GET" !== (null == o ? void 0 : o.method)) { for (s in i = null != (null == o ? void 0 : o.data) ? b({}, null == o ? void 0 : o.data) : {}, i = b(b({}, i), {}, { action: "".concat(null == n || null === (a = n.config) || void 0 === a ? void 0 : a.action, "/").concat(r), _nonce: null == n || null === (l = n.config) || void 0 === l ? void 0 : l.nonce }), o.headers = {}, c = new FormData, i) c.append(s, i[s]);
+                      o.body = c, delete o.data } return e.n = 1, m()(o).catch(function(e) { return e });
+                  case 1:
+                    return e.a(2, e.v) } }, e) })); return function(t) { return e.apply(this, arguments) } }()), (0, r.A)(this, "useQuery", function(e) { return new URLSearchParams(e) }), (0, r.A)(this, "getParam", function(e) { var t, r = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : null; return n.useQuery(null === (t = location) || void 0 === t ? void 0 : t.search).get(e) || r }), this.config = null === (t = window) || void 0 === t ? void 0 : t.wpdeveloperLicenseManagerConfig }); var w = n(3453),
+          E = ["className", "title", "description"]; const _ = function(e) { var t = e.className,
+              n = void 0 === t ? "" : t,
+              r = e.title,
+              o = e.description; return (0, u.A)(e, E), a().createElement("div", { className: "".concat(n, " wpdeveloper-licensing-header-wrapper") }, a().createElement("div", { className: "wpdeveloper-licensing-header-icon" }, a().createElement("svg", { width: "32", height: "32", viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("path", { d: "M8 10.6667V9.33334C8 4.91506 11.5817 1.33334 16 1.33334C20.4183 1.33334 24 4.91506 24 9.33334V10.6667H26.6667C27.4031 10.6667 28 11.2636 28 12V28C28 28.7364 27.4031 29.3333 26.6667 29.3333H5.33333C4.59696 29.3333 4 28.7364 4 28V12C4 11.2636 4.59696 10.6667 5.33333 10.6667H8ZM25.3333 13.3333H6.66667V26.6667H25.3333V13.3333ZM14.6667 20.9765C13.8696 20.5155 13.3333 19.6537 13.3333 18.6667C13.3333 17.1939 14.5272 16 16 16C17.4728 16 18.6667 17.1939 18.6667 18.6667C18.6667 19.6537 18.1304 20.5155 17.3333 20.9765V24H14.6667V20.9765ZM10.6667 10.6667H21.3333V9.33334C21.3333 6.38782 18.9455 4 16 4C13.0545 4 10.6667 6.38782 10.6667 9.33334V10.6667Z", fill: "#C01048" }))), a().createElement("div", { className: "wpdeveloper-licensing-content" }, a().createElement("h2", { className: "wpdeveloper-licensing-header-title" }, r), a().createElement("p", { className: "wpdeveloper-licensing-header-description" }, o))) },
+          k = function(e) { var t = e.className,
+              n = void 0 === t ? "" : t,
+              r = e.textdomain,
+              o = void 0 === r ? "" : r; return a().createElement("div", { className: "".concat(n, " wpdeveloper-licensing-instructions") }, a().createElement("p", null, (0, l.__)("Enter your license key here, to activate Essential blocks, and get automatic updates and premium support.", o)), a().createElement("ol", null, a().createElement("li", null, "Log in to", " ", a().createElement("a", { rel: "nofollow", href: "https://store.wpdeveloper.com/", target: "_blank" }, "your account"), " ", "to get your license key."), a().createElement("li", null, "If you don't yet have a license key, get", " ", a().createElement("a", { rel: "nofollow", href: "https://essential-blocks.com/upgrade", target: "_blank" }, "Essential Blocks Pro now"), "."), a().createElement("li", null, "Copy the license key from your account and paste it below."), a().createElement("li", null, "Click on ", a().createElement("strong", null, '"Activate License"'), " button."))) },
+          O = function(e) { var t, n = e.apiFetch,
+              r = e.setIsLicenseActive,
+              i = e.licenseData,
+              c = e.textdomain,
+              s = e.className,
+              u = void 0 === s ? "" : s,
+              p = (0, o.useState)("valid" === (null == i ? void 0 : i.license_status)),
+              d = (0, w.A)(p, 2),
+              m = d[0],
+              v = d[1],
+              f = (0, o.useState)(null),
+              g = (0, w.A)(f, 2),
+              h = g[0],
+              b = g[1],
+              y = (0, o.useState)(!0),
+              E = (0, w.A)(y, 2),
+              _ = E[0],
+              k = E[1],
+              O = (0, o.useState)(null !== (t = null == i ? void 0 : i.license_key) && void 0 !== t ? t : ""),
+              C = (0, w.A)(O, 2),
+              A = C[0],
+              P = C[1],
+              j = (0, o.useState)(""),
+              S = (0, w.A)(j, 2),
+              N = S[0],
+              x = S[1],
+              L = (0, o.useState)(null),
+              R = (0, w.A)(L, 2),
+              T = R[0],
+              D = R[1],
+              F = (0, o.useState)(null),
+              H = (0, w.A)(F, 2),
+              M = H[0],
+              V = H[1],
+              B = (0, o.useState)(!1),
+              K = (0, w.A)(B, 2),
+              G = K[0],
+              I = K[1],
+              Z = (0, o.useState)(!1),
+              q = (0, w.A)(Z, 2),
+              U = q[0],
+              J = q[1],
+              Y = (0, o.useState)(""),
+              $ = (0, w.A)(Y, 2),
+              Q = $[0],
+              W = $[1],
+              z = (0, o.useState)(""),
+              X = (0, w.A)(z, 2),
+              ee = X[0],
+              te = X[1],
+              ne = (0, o.useState)(null),
+              re = (0, w.A)(ne, 2),
+              oe = re[0],
+              ae = re[1],
+              le = (0, o.useState)(null),
+              ie = (0, w.A)(le, 2),
+              ce = ie[0],
+              se = ie[1],
+              ue = (0, o.useState)(!1),
+              pe = (0, w.A)(ue, 2),
+              de = pe[0],
+              me = pe[1],
+              ve = (0, o.useState)(""),
+              fe = (0, w.A)(ve, 2),
+              ge = fe[0],
+              he = fe[1]; return (0, o.useEffect)(function() { k("" === A) }, [A]), (0, o.useEffect)(function() { null !== h && (D(!0), n.post(h ? "license/activate" : "license/deactivate", { data: { license_key: A } }).then(function(e) { null != e && e.license ? "valid" === (null == e ? void 0 : e.license) ? (P(null == e ? void 0 : e.license_key), v(!0), r(!0), I(!1), J(!1), ae(""), document.querySelector(".essential-blocks-pro-notice.notice-error").style.display = "none") : "required_otp" === (null == e ? void 0 : e.license) ? (P(null == e ? void 0 : e.license_key), v(!1), r(!1), I(!1), J(!1), me(!0), he(null == e ? void 0 : e.customer_email)) : (P(""), v(!1), r(!1), ae(""), I(!1), J(!1)) : null != e && e.code ? (P(""), ae(""), v(!1), r(!1), I(!0), J(!1), W((null == e ? void 0 : e.message) || "Invalid License")) : (P(""), ae(""), v(!1), r(!1), I(!0), W("Undefined Error! Please contact with our Support.")), D(!1) }), b(null)) }, [h]), (0, o.useEffect)(function() { null !== ce && (D(!0), n.post("license/submit-otp", { data: { otp: oe, license_key: N } }).then(function(e) { null != e && e.license ? "valid" === (null == e ? void 0 : e.license) ? (P(null == e ? void 0 : e.license_key), v(!0), r(!0), I(!1), J(!1), me(!1), ae("")) : (P(""), v(!1), r(!1), I(!1), J(!1)) : null != e && e.code ? (P(A), v(!1), r(!1), I(!0), J(!1), W((null == e ? void 0 : e.message) || "Invalid License")) : (P(""), v(!1), r(!1), I(!0), J(!1), W("Undefined Error! Please contact with our Support.")), D(!1) })) }, [ce]), a().createElement(a().Fragment, null, a().createElement("div", { className: "".concat(u, " ").concat(m ? "activated" : "", " wpdeveloper-licensing-form-wrapper") }, a().createElement("div", { className: "wpdeveloper-licensing-activation-wrapper" }, a().createElement("svg", { width: "24", height: "24", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("path", { d: "M10.313 11.5655L18.253 3.62549L20.3744 5.74681L18.9602 7.16102L21.0815 9.28234L17.5459 12.8179L15.4246 10.6966L12.4343 13.6868C13.4182 15.5718 13.1186 17.9523 11.5355 19.5354C9.58291 21.488 6.41709 21.488 4.46447 19.5354C2.51184 17.5828 2.51184 14.4169 4.46447 12.4643C6.04755 10.8812 8.42809 10.5816 10.313 11.5655ZM9.41421 17.4141C10.1953 16.633 10.1953 15.3667 9.41421 14.5856C8.63316 13.8046 7.36684 13.8046 6.58579 14.5856C5.80474 15.3667 5.80474 16.633 6.58579 17.4141C7.36684 18.1951 8.63316 18.1951 9.41421 17.4141Z", fill: "#039855" })), a().createElement("div", { className: "wpdeveloper-licensing-form-input-wrapper" }, a().createElement("input", { type: "text", className: "wpdeveloper-licensing-form-input", value: A, disabled: m, placeholder: (0, l.__)("Place Your License Key and Activate", c), onChange: function(e) { var t = e.target;
+                P(null == t ? void 0 : t.value), x(null == t ? void 0 : t.value) } })), a().createElement("div", { className: "wpdeveloper-licensing-form-button-wrapper" }, a().createElement("button", { name: "activate", className: "wpdeveloper-licensing-form-button eb-btn-license-".concat(de ? "verification" : "activation", " ").concat(_ || de ? " disabled" : ""), disabled: _ || T || de, onClick: function() { return b(!m) } }, !m && T && (0, l.__)("Activating...", c), !m && !de && !T && (0, l.__)("Activate", c), de && A && !T && (0, l.__)("Verification Required", c), m && T && (0, l.__)("Deactivating...", c), m && !T && (0, l.__)("Deactivate", c))))), de && a().createElement("div", { className: "wpdeveloper-licensing-verification-wrapper" }, a().createElement("p", null, "License Verification code has been sent to this ", a().createElement("strong", null, ge), ". Please check your email for the code & insert it below 👇"), a().createElement("div", { class: "eb-verification-short-description" }, a().createElement("strong", null, "Note: "), " Check out this  ", a().createElement("a", { href: "https://essential-blocks.com/docs/verify-essential-blocks-pro-license-key", target: "_blank" }, "guide"), "  to verify your license key. If you need any assistance with retrieving your License Verification Key, please  ", a().createElement("a", { href: "https://wpdeveloper.com/support/", target: "_blank" }, "contact support"), "."), a().createElement("div", { className: "wpdeveloper-licensing-verification-input-container" }, a().createElement("div", { className: "wpdeveloper-licensing-form-input-wrapper" }, a().createElement("input", { type: "text", className: "wpdeveloper-licensing-form-input", value: oe, placeholder: (0, l.__)("Enter Your Verification Code", c), onChange: function(e) { var t = e.target; return ae(null == t ? void 0 : t.value) } }), a().createElement("button", { name: "otpActivate", className: "wpdeveloper-licensing-form-button", disabled: _ || T, onClick: function() { return se(!ce) } }, T && (0, l.__)("Verifying...", c), !T && (0, l.__)("Verify", c))), a().createElement("p", null, "Haven’t received an email? Retry clicking on ", a().createElement("a", { onClick: function() { V(!0), n.post("license/resend-otp", { data: { otp: oe, license_key: N } }).then(function(e) { null != e && e.success ? (J(!0), I(!1), te((0, l.__)("License Verification Code has been sent to your email address. Please check your email to find the code.", c))) : (J(!1), I(!1), te("")), V(!1) }) }, className: "wpdeveloper-licensing-resend-otp" }, M ? "Resending..." : "Resend"), " button. Please note that this verification code will expire after 15 minutes."))), G && a().createElement("div", { className: "eb-message eb_license_error" }, Q), U && a().createElement("div", { className: "eb-message eb_license_message" }, ee)) },
+          C = function(e) { var t = e.logoURL,
+              n = e.titleText,
+              r = e.buttonText; return a().createElement("div", { className: "eb-admin-block manage-license-wrap" }, a().createElement("div", { className: "manage-license-title" }, a().createElement("img", { src: t, alt: r }), a().createElement("h5", null, n)), a().createElement("a", { href: "https://store.wpdeveloper.com", target: "_blank", rel: "nofollow", className: "eb-btn eb-btn-primary eb-btn-md" }, r)) }; var A = ["title", "description"]; const P = function(e) { var t = e.title,
+            n = e.description; return (0, u.A)(e, A), a().createElement("div", { className: "wpdeveloper-licensing-header-area activated" }, a().createElement("div", { className: "wpdeveloper-licensing-header-wrapper" }, a().createElement("div", { className: "wpdeveloper-licensing-header-icon" }, a().createElement("svg", { width: "32", height: "32", viewBox: "0 0 32 32", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("path", { d: "M9.33333 13.3333H26.6667C27.4031 13.3333 28 13.9303 28 14.6667V28C28 28.7364 27.4031 29.3333 26.6667 29.3333H5.33333C4.59696 29.3333 4 28.7364 4 28V14.6667C4 13.9303 4.59696 13.3333 5.33333 13.3333H6.66667V12C6.66667 6.84534 10.8453 2.66666 16 2.66666C19.654 2.66666 22.8175 4.7664 24.3499 7.82509L21.9641 9.01792C20.8696 6.83314 18.61 5.33333 16 5.33333C12.3181 5.33333 9.33333 8.3181 9.33333 12V13.3333ZM6.66667 16V26.6667H25.3333V16H6.66667ZM13.3333 20H18.6667V22.6667H13.3333V20Z", fill: "#039855" }))), a().createElement("div", { className: "wpdeveloper-licensing-content" }, a().createElement("h2", { className: "wpdeveloper-licensing-header-title" }, t), a().createElement("p", { className: "wpdeveloper-licensing-header-description" }, n)), a().createElement("div", { className: "label" }, a().createElement("svg", { width: "16", height: "16", viewBox: "0 0 16 16", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("path", { d: "M6.66746 10.1139L12.7957 3.98568L13.7385 4.92849L6.66746 11.9995L2.4248 7.75693L3.36761 6.81413L6.66746 10.1139Z", fill: "#039855" })), " ", "Activated"))) }; var j = ["apiFetch", "licenseData", "config"]; const S = function(e) { var t, n, r = e.apiFetch,
+            i = e.licenseData,
+            c = e.config,
+            s = (0, u.A)(e, j),
+            p = (0, o.useState)("valid" === (null == i ? void 0 : i.license_status)),
+            d = (0, w.A)(p, 2),
+            m = d[0],
+            v = d[1],
+            f = (0, o.useState)(!1),
+            g = (0, w.A)(f, 2),
+            h = g[0],
+            b = g[1]; return a().createElement(a().Fragment, null, a().createElement("div", { className: "eb-admin-block mb30 wpdeveloper-licensing-wrapper ".concat(null !== (t = null == s ? void 0 : s.className) && void 0 !== t ? t : "") }, void 0 !== (null == c ? void 0 : c.renderHeading) && (null == c ? void 0 : c.renderHeading({ isActive: m })), void 0 === (null == c ? void 0 : c.renderHeading) && !m && a().createElement(a().Fragment, null, a().createElement("div", { className: "wpdeveloper-licensing-header-area" }, a().createElement(_, { title: (0, l.__)("Unlock With Your License Key", c.textdomain), description: (0, l.__)("Enter your license key in the input field below to activate Essential Blocks PRO to unlock all the premium features.", c.textdomain) }), a().createElement("p", { className: "wpdeveloper-licensing-toggle", onClick: function() { return b(!h) } }, (0, l.__)("How to get license key?", c.textdomain), h && a().createElement("svg", { width: "24", height: "25", viewBox: "0 0 24 25", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("circle", { cx: "12", cy: "13", r: "12", transform: "rotate(-180 12 13)", fill: "#EFF4FC" }), a().createElement("g", { opacity: "0.7" }, a().createElement("path", { d: "M12.0005 8.9994L16.2432 13.242L14.8289 14.6562L12.0005 11.8278L9.17208 14.6562L7.75789 13.242L12.0005 8.9994Z", fill: "#344054" }))), !h && a().createElement("svg", { width: "24", height: "25", viewBox: "0 0 24 25", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, a().createElement("circle", { cx: "12", cy: "12", r: "12", fill: "#EFF4FC" }), a().createElement("g", { opacity: "0.7" }, a().createElement("path", { d: "M12 15.0006L7.75732 10.758L9.17154 9.34375L12 12.1722L14.8284 9.34375L16.2426 10.758L12 15.0006Z", fill: "#344054" }))))), h && a().createElement(a().Fragment, null, null !== (n = null == c ? void 0 : c.instructions) && void 0 !== n ? n : a().createElement(k, { textdomain: c.textdomain }))), m && (null != (null == c ? void 0 : c.renderHeadingOnActive) ? null == c ? void 0 : c.renderHeadingOnActive() : a().createElement(P, { title: (0, l.__)("You Have Activated Essential Blocks PRO", c.textdomain), description: (0, l.__)("Congratulations! 🥳 Enjoy premium features, and get automatic updates & priority support!", c.textdomain) })), a().createElement(O, { apiFetch: r, licenseData: i, textdomain: c.textdomain, setIsLicenseActive: v }))) };
+
+        function N(e, t) { var n = Object.keys(e); if (Object.getOwnPropertySymbols) { var r = Object.getOwnPropertySymbols(e);
+            t && (r = r.filter(function(t) { return Object.getOwnPropertyDescriptor(e, t).enumerable })), n.push.apply(n, r) } return n }
+
+        function x(e) { for (var t = 1; t < arguments.length; t++) { var n = null != arguments[t] ? arguments[t] : {};
+            t % 2 ? N(Object(n), !0).forEach(function(t) {
+              (0, r.A)(e, t, n[t]) }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : N(Object(n)).forEach(function(t) { Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t)) }) } return e } var L = (0, c.A)(function e(t) { var n, o, a, l = this;
+          (0, s.A)(this, e), (0, r.A)(this, "render", function() { var e, t; return React.createElement(S, { className: null !== (e = null === (t = l.config) || void 0 === t || null === (t = t.classes) || void 0 === t ? void 0 : t.wrapper) && void 0 !== e ? e : "", licenseData: l.licenseData, config: l.config, apiFetch: l.api }) }), this.config = x(x({}, null === (n = window) || void 0 === n ? void 0 : n.wpdeveloperLicenseManagerConfig), t), this.licenseData = null !== (o = null === (a = window) || void 0 === a ? void 0 : a.wpdeveloperLicenseData) && void 0 !== o ? o : {}, this.api = new y }); const R = function(e) { var t, n = e.className,
+              r = void 0 === n ? "" : n; return e.textdomain, a().createElement("div", { className: "".concat(r, " wpdeveloper-licensing-instructions") }, a().createElement("ol", null, a().createElement("li", null, "Log in to", " ", a().createElement("a", { rel: "nofollow", href: "https://store.wpdeveloper.com/", target: "_blank" }, "your account"), " ", "to retrieve your license key for Essential Blocks."), a().createElement("li", null, "If you don't yet have a license key, get", " ", a().createElement("a", { rel: "nofollow", href: null === (t = EssentialBlocksLocalize) || void 0 === t ? void 0 : t.upgrade_pro_url, target: "_blank" }, "Essential Blocks"), " ", "now."), a().createElement("li", null, "Copy the license key from your account and paste it into the input field below."), a().createElement("li", null, "Click on the ", a().createElement("strong", null, '"Activate"'), " button to get started."))) },
+          T = n.p + "images/recaptcha.png",
+          D = n.p + "images/mailchimp.png"; var F = n(2284); const H = window.wp.components,
+          M = window.wp.element,
+          V = EBControls;
+
+        function B(e, t) { var n = Object.keys(e); if (Object.getOwnPropertySymbols) { var r = Object.getOwnPropertySymbols(e);
+            t && (r = r.filter(function(t) { return Object.getOwnPropertyDescriptor(e, t).enumerable })), n.push.apply(n, r) } return n }
+
+        function K(e) { for (var t = 1; t < arguments.length; t++) { var n = null != arguments[t] ? arguments[t] : {};
+            t % 2 ? B(Object(n), !0).forEach(function(t) {
+              (0, r.A)(e, t, n[t]) }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : B(Object(n)).forEach(function(t) { Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t)) }) } return e } const G = function(e) { var t = e.setTrigger,
+            n = e.settingsKey,
+            o = e.settingsData,
+            a = e.setSettingsData,
+            i = (0, M.useState)({}),
+            c = (0, w.A)(i, 2),
+            s = c[0],
+            u = c[1],
+            p = (0, M.useState)((0, l.__)("Save Changes", "essential-blocks-pro")),
+            d = (0, w.A)(p, 2),
+            m = d[0],
+            v = d[1],
+            f = (0, M.useState)(""),
+            g = (0, w.A)(f, 2),
+            h = g[0],
+            b = g[1]; return (0, M.useEffect)(function() { if ((0, V.ebJsonStringCheck)(o[n])) { var e = JSON.parse(o[n]); "object" === (0, F.A)(e) && Object.keys(e).length > 0 && u(e) } }, []), React.createElement(React.Fragment, null, React.createElement("div", { className: "option-modal-content" }, React.createElement("h3", { className: "option-modal__title" }, (0, l.__)("Google reCAPTCHA", "essential-blocks-pro")), React.createElement("p", { className: "option-modal__content" }, (0, l.__)("To configure reCAPTCHA & find its API Keys, check out ", "essential-blocks-pro "), React.createElement(H.ExternalLink, { href: "https://developers.google.com/recaptcha/intro" }, (0, l.__)("this doc", "essential-blocks-pro"))), React.createElement("div", { className: "eb-form-control", onChange: function(e) { return u(K(K({}, s), {}, { recaptchaType: e.target.value })) } }, React.createElement("label", { htmlFor: "input-radio" }, (0, l.__)("Google reCAPTCHA Type", "essential-blocks-pro")), React.createElement("div", { className: "eb-form-radio-wrapper" }, React.createElement("div", { className: "eb-form-radio" }, React.createElement("input", { type: "radio", name: "input-radio", className: "eb-radio-control", value: "v3", checked: "v3" === (null == s ? void 0 : s.recaptchaType) }), "reCAPTCHA v3"), React.createElement("div", { className: "eb-form-radio" }, React.createElement("input", { type: "radio", name: "input-radio", className: "eb-radio-control", value: "v2-checkbox", checked: "v2-checkbox" === (null == s ? void 0 : s.recaptchaType) }), "reCAPTCHA v2 (Checkbox)"))), React.createElement("div", { className: "eb-form-control" }, React.createElement("label", { htmlFor: "input-text" }, (0, l.__)("Site Key", "essential-blocks-pro")), React.createElement("input", { type: "text", id: "input-text", className: "eb-input-control", placeholder: (0, l.__)("Place your Google reCAPTCHA Site key here", "essential-blocks-pro"), value: null == s ? void 0 : s.siteKey, onChange: function(e) { return u(K(K({}, s), {}, { siteKey: e.target.value })) } })), React.createElement("div", { className: "eb-form-control" }, React.createElement("label", { htmlFor: "input-text" }, (0, l.__)("Secret Key", "essential-blocks-pro")), React.createElement("input", { type: "text", id: "input-text", className: "eb-input-control", placeholder: (0, l.__)("Place your Google reCAPTCHA Secret key here", "essential-blocks-pro"), value: null == s ? void 0 : s.secretKey, onChange: function(e) { return u(K(K({}, s), {}, { secretKey: e.target.value })) } })), React.createElement("button", { className: "eb-btn eb-btn-border eb-btn-sm", onClick: function() { return v((0, l.__)("Saving...", "essential-blocks-pro")), void(0, V.saveEBSettingsData)(n, JSON.stringify(s)).then(function(e) { var i = JSON.parse(e);
+                i.success ? (v((0, l.__)("Saved", "essential-blocks-pro")), a(K(K({}, o), {}, (0, r.A)({}, n, JSON.stringify(s)))), setTimeout(function() { t(!1) }, 300)) : (v((0, l.__)("Save Changes", "essential-blocks-pro")), b("string" == typeof i.data ? i.data : (0, l.__)("Something went wrong! Please try again.", "essential-blocks-pro"))) }) } }, m), h && React.createElement("div", null, React.createElement("span", { className: "error" }, h)))) };
+
+        function I(e, t) { var n = Object.keys(e); if (Object.getOwnPropertySymbols) { var r = Object.getOwnPropertySymbols(e);
+            t && (r = r.filter(function(t) { return Object.getOwnPropertyDescriptor(e, t).enumerable })), n.push.apply(n, r) } return n }
+
+        function Z(e) { for (var t = 1; t < arguments.length; t++) { var n = null != arguments[t] ? arguments[t] : {};
+            t % 2 ? I(Object(n), !0).forEach(function(t) {
+              (0, r.A)(e, t, n[t]) }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : I(Object(n)).forEach(function(t) { Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t)) }) } return e } const q = function(e) { var t = e.setTrigger,
+            n = e.settingsKey,
+            o = e.settingsData,
+            a = e.setSettingsData,
+            i = (0, M.useState)(o[n]),
+            c = (0, w.A)(i, 2),
+            s = c[0],
+            u = c[1],
+            p = (0, M.useState)((0, l.__)("Save Changes", "essential-blocks-pro")),
+            d = (0, w.A)(p, 2),
+            m = d[0],
+            v = d[1],
+            f = (0, M.useState)(""),
+            g = (0, w.A)(f, 2),
+            h = g[0],
+            b = g[1]; return React.createElement(React.Fragment, null, React.createElement("div", { className: "option-modal-content" }, React.createElement("h3", { className: "option-modal__title" }, (0, l.__)("MailChimp API Key", "essential-blocks-pro")), React.createElement("p", { className: "option-modal__content" }, (0, l.__)("Please insert your MailChimp API Key here to get users in your MailChimp Subscription Form. You can follow this ", "essential-blocks-pro"), React.createElement(H.ExternalLink, { href: "https://mailchimp.com/help/about-api-keys/#Generate_an_API_key" }, (0, l.__)("documentation", "essential-blocks-pro"), " "), (0, l.__)(" to retrieve or generate your MailChimp API Key.", "essential-blocks-pro")), React.createElement("div", { className: "eb-form-control" }, React.createElement("label", { htmlFor: "input-text" }, (0, l.__)("Place your MailChimp API key here", "essential-blocks-pro")), React.createElement("input", { type: "text", id: "input-text", className: "eb-input-control", placeholder: (0, l.__)("Place your MailChimp api key", "essential-blocks-pro"), value: s && "undefined" !== s ? s : "", onChange: function(e) { return u(e.target.value || "") } })), React.createElement("button", { className: "eb-btn eb-btn-border eb-btn-sm", onClick: function() { return v((0, l.__)("Saving...", "essential-blocks-pro")), void(0, V.saveEBSettingsData)(n, s).then(function(e) { var i = JSON.parse(e);
+                i.success ? (v((0, l.__)("Saved", "essential-blocks-pro")), a(Z(Z({}, o), {}, (0, r.A)({}, n, s))), setTimeout(function() { t(!1) }, 300)) : (v((0, l.__)("Save Changes", "essential-blocks-pro")), b("string" == typeof i.data ? i.data : (0, l.__)("Something went wrong! Please try again.", "essential-blocks-pro"))) }) } }, m), h && React.createElement("div", null, React.createElement("span", { className: "error" }, h)))) };
+
+        function U(e, t) { var n = Object.keys(e); if (Object.getOwnPropertySymbols) { var r = Object.getOwnPropertySymbols(e);
+            t && (r = r.filter(function(t) { return Object.getOwnPropertyDescriptor(e, t).enumerable })), n.push.apply(n, r) } return n }
+
+        function J(e) { for (var t = 1; t < arguments.length; t++) { var n = null != arguments[t] ? arguments[t] : {};
+            t % 2 ? U(Object(n), !0).forEach(function(t) {
+              (0, r.A)(e, t, n[t]) }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(n)) : U(Object(n)).forEach(function(t) { Object.defineProperty(e, t, Object.getOwnPropertyDescriptor(n, t)) }) } return e }(0, i.addFilter)("eb_manage_license", "Essential-blocks/pro", function() { var e, t = new L({ logo: null === (e = ebProAdminConfig) || void 0 === e ? void 0 : e.logo, instructions: a().createElement(R, null) }); return a().createElement("div", null, t.render()) }, 1), (0, i.addFilter)("eb_bottom_manage_license", "Essential-blocks/pro", function(e, t) { return a().createElement(C, { logoURL: t, titleText: (0, l.__)("Manage your License for your sites from your WPDeveloper account", "essential-blocks-pro"), buttonText: (0, l.__)("Manage License", "essential-blocks-pro") }) }, 1), (0, i.addFilter)("eb_admin_general_changelog", "Essential-blocks/pro", function(e) { return a().createElement("div", { className: "changelog-wrapper" }, a().createElement("div", { className: "changelog-title" }, (0, l.__)("Pro Version: 2.6.1", "essential-blocks-pro"), a().createElement("span", { className: "changelog-date" }, (0, l.__)("17/11/2025", "essential-blocks-pro"))), a().createElement("ul", { className: "changelog-content" }, a().createElement("li", null, (0, l.__)("Added: Block Defaults for all missing blocks", "essential-blocks-pro")), a().createElement("li", null, (0, l.__)("Fixed: Mega Menu | Dropdown items link not redirecting in Mobile", "essential-blocks-pro")), a().createElement("li", null, (0, l.__)("Few minor bug fixes & improvements", "essential-blocks-pro")))) }, 1), (0, i.addFilter)("eb_admin_option_integrations", "Essential-blocks/pro", function(e) { return J(J({}, e), {}, { reCaptcha: { logo: T, title: (0, l.__)("Google reCAPTCHA", "essential-blocks-pro"), description: (0, l.__)((0, l.__)("To use reCAPTCHA on your form block, collect Google reCAPTCHA site key and secret key.", "essential-blocks-pro"), "essential-blocks-pro"), doc: "https://essential-blocks.com/docs/how-to-get-google-recaptcha-api-key/", component: G }, mailchimp: { logo: D, title: (0, l.__)("MailChimp", "essential-blocks-pro"), description: (0, l.__)((0, l.__)("To collect user list from MailChimp form, please insert your MailChimp API Key here.", "essential-blocks-pro"), "essential-blocks-pro"), doc: "https://essential-blocks.com/docs/how-to-generate-mailchimp-api-key/", component: q } }) }, 10) }, 1609: e => { e.exports = window.React } },
+    n = {};
+
+  function r(e) { var o = n[e]; if (void 0 !== o) return o.exports; var a = n[e] = { id: e, loaded: !1, exports: {} }; return t[e].call(a.exports, a, a.exports, r), a.loaded = !0, a.exports } r.m = t, e = [], r.O = (t, n, o, a) => { if (!n) { var l = 1 / 0; for (u = 0; u < e.length; u++) { for (var [n, o, a] = e[u], i = !0, c = 0; c < n.length; c++)(!1 & a || l >= a) && Object.keys(r.O).every(e => r.O[e](n[c])) ? n.splice(c--, 1) : (i = !1, a < l && (l = a)); if (i) { e.splice(u--, 1); var s = o();
+          void 0 !== s && (t = s) } } return t } a = a || 0; for (var u = e.length; u > 0 && e[u - 1][2] > a; u--) e[u] = e[u - 1];
+    e[u] = [n, o, a] }, r.n = e => { var t = e && e.__esModule ? () => e.default : () => e; return r.d(t, { a: t }), t }, r.d = (e, t) => { for (var n in t) r.o(t, n) && !r.o(e, n) && Object.defineProperty(e, n, { enumerable: !0, get: t[n] }) }, r.g = function() { if ("object" == typeof globalThis) return globalThis; try { return this || new Function("return this")() } catch (e) { if ("object" == typeof window) return window } }(), r.o = (e, t) => Object.prototype.hasOwnProperty.call(e, t), r.r = e => { "undefined" != typeof Symbol && Symbol.toStringTag && Object.defineProperty(e, Symbol.toStringTag, { value: "Module" }), Object.defineProperty(e, "__esModule", { value: !0 }) }, r.nmd = e => (e.paths = [], e.children || (e.children = []), e), r.j = 750, (() => { var e;
+    r.g.importScripts && (e = r.g.location + ""); var t = r.g.document; if (!e && t && (t.currentScript && "SCRIPT" === t.currentScript.tagName.toUpperCase() && (e = t.currentScript.src), !e)) { var n = t.getElementsByTagName("script"); if (n.length)
+        for (var o = n.length - 1; o > -1 && (!e || !/^http(s?):/.test(e));) e = n[o--].src } if (!e) throw new Error("Automatic publicPath is not supported in this browser");
+    e = e.replace(/^blob:/, "").replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/"), r.p = e + "../../" })(), (() => { var e = { 750: 0 };
+    r.O.j = t => 0 === e[t]; var t = (t, n) => { var o, a, [l, i, c] = n,
+          s = 0; if (l.some(t => 0 !== e[t])) { for (o in i) r.o(i, o) && (r.m[o] = i[o]); if (c) var u = c(r) } for (t && t(n); s < l.length; s++) a = l[s], r.o(e, a) && e[a] && e[a][0](), e[a] = 0; return r.O(u) },
+      n = globalThis.webpackChunkessential_blocks_pro = globalThis.webpackChunkessential_blocks_pro || [];
+    n.forEach(t.bind(null, 0)), n.push = t.bind(null, n.push.bind(n)) })(), r.nc = void 0; var o = r.O(void 0, [7916], () => r(923));
+  o = r.O(o) })();

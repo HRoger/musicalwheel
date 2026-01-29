@@ -1,0 +1,191 @@
+/**
+ * RelationControl CSS
+ *
+ * Matches Voxel's Elementor `voxel-relation` control styling exactly.
+ * Reference: Voxel theme elementor.css
+ *
+ * @package VoxelFSE
+ */
+
+/* ===== Container ===== */
+.vxfse-relation-control {
+	margin-bottom: 16px;
+}
+
+.vxfse-relation-label {
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	color: #1e1e1e;
+	margin-bottom: 8px;
+	text-transform: none;
+}
+
+/* ===== Relation List ===== */
+.vx-relation-list {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-bottom: 0;
+}
+
+.vx-relation-list.vx-disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+/* ===== Individual Relation Item ===== */
+.relation-item {
+	padding: 12px 15px;
+	border-radius: 5px;
+	color: rgba(0, 0, 0, 0.7);
+	position: relative;
+	cursor: pointer;
+	background: #e4e8ec;
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	min-height: 44px;
+}
+
+.relation-item:hover {
+	background: #d8dee4;
+}
+
+.relation-item--empty {
+	cursor: default;
+	color: rgba(0, 0, 0, 0.5);
+	font-style: italic;
+}
+
+.relation-item--empty:hover {
+	background: #e4e8ec;
+}
+
+/* ===== Item Label ===== */
+.relation-item__label {
+	flex: 1;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.relation-item__label code {
+	background: rgba(0, 0, 0, 0.08);
+	padding: 2px 5px;
+	border-radius: 3px;
+	font-family: monospace;
+	font-size: 11px;
+}
+
+/* ===== Icons ===== */
+.relation-item .view-icon,
+.relation-item .check-icon {
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	transition: all 0.2s ease;
+	width: 20px;
+	height: 20px;
+	font-size: 20px;
+	line-height: 1;
+}
+
+/* Eye icon (view/preview) */
+.relation-item .view-icon {
+	color: #000;
+	opacity: 0.3;
+	cursor: pointer;
+}
+
+.relation-item .view-icon:hover {
+	opacity: 0.6;
+}
+
+/* Check icon (selected indicator) */
+.relation-item .check-icon {
+	color: #fff;
+	display: none;
+}
+
+/* Dashicons-specific reset (WP adds extra styles) */
+.relation-item .dashicons {
+	box-sizing: content-box;
+}
+
+/* ===== Selected State ===== */
+.relation-item.selected {
+	/* Voxel's accent radial gradient */
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+	border-color: transparent;
+}
+
+.relation-item.selected:hover {
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.70 0.13 227.09) -30%, oklch(0.58 0.13 250.54) 30%, oklch(0.66 0.23 6.03) 55%, oklch(0.81 0.11 56.4) 110%);
+}
+
+/* Selected item label */
+.relation-item.selected .relation-item__label {
+	color: #fff;
+}
+
+.relation-item.selected .relation-item__label code {
+	background: rgba(255, 255, 255, 0.2);
+	color: #fff;
+}
+
+/* Hide eye icon, show check icon when selected */
+.relation-item.selected .view-icon {
+	display: none;
+}
+
+.relation-item.selected .check-icon {
+	display: inline-flex;
+}
+
+/* ===== Apply Button ===== */
+.vxfse-relation-apply-btn {
+	margin-top: 10px;
+	font-size: 13px;
+	margin-bottom: 10px;
+}
+
+.vxfse-relation-apply-btn:disabled {
+	background: #28a745 !important;
+	border-color: #28a745 !important;
+	opacity: 1 !important;
+}
+
+/* ===== Description ===== */
+.vxfse-relation-description {
+	font-size: 12px;
+	color: #757575;
+	margin-top: 8px;
+	margin-bottom: 0;
+	line-height: 1.4;
+}
+
+/* ===== Block Highlight Effect ===== */
+/* Applied to target blocks in the editor when hovering on relation items */
+.voxel-highlight-element {
+	outline: 3px solid #667eea !important;
+	outline-offset: 2px;
+	box-shadow: 0 0 20px rgba(102, 126, 234, 0.4) !important;
+	transition: all 0.2s ease;
+}
+
+/* Animation for highlight effect */
+@keyframes voxel-highlight-pulse {
+	0%, 100% {
+		outline-color: #667eea;
+		box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+	}
+	50% {
+		outline-color: #764ba2;
+		box-shadow: 0 0 25px rgba(118, 75, 162, 0.5);
+	}
+}
+
+.voxel-highlight-element {
+	animation: voxel-highlight-pulse 1.5s ease-in-out infinite;
+}

@@ -1,0 +1,160 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/product-price",
+	"version": "1.0.0",
+	"title": "Product Price (VX)",
+	"category": "voxel-fse",
+	"description": "Display product pricing with discount support - converted from Voxel Elementor widget following Plan C+ architecture",
+	"keywords": [
+		"product",
+		"price",
+		"ecommerce",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": [
+			"left",
+			"center",
+			"right"
+		],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"priceColor": {
+			"type": "string",
+			"default": ""
+		},
+		"priceColor_tablet": {
+			"type": "string",
+			"default": ""
+		},
+		"priceColor_mobile": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughTextColor_tablet": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughTextColor_mobile": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughLineColor": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughLineColor_tablet": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughLineColor_mobile": {
+			"type": "string",
+			"default": ""
+		},
+		"strikethroughWidth": {
+			"type": "number",
+			"default": 1
+		},
+		"strikethroughWidth_tablet": {
+			"type": "number"
+		},
+		"strikethroughWidth_mobile": {
+			"type": "number"
+		},
+		"strikethroughWidthUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"outOfStockColor": {
+			"type": "string",
+			"default": ""
+		},
+		"outOfStockColor_tablet": {
+			"type": "string",
+			"default": ""
+		},
+		"outOfStockColor_mobile": {
+			"type": "string",
+			"default": ""
+		},
+		"typography": {
+			"type": "object",
+			"default": {}
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"customClasses": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "chart"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php"
+}

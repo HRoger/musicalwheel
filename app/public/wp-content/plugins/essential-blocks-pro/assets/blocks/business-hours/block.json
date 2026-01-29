@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "title": "Business Hours",
+  "name": "essential-blocks/pro-business-hours",
+  "description": "Display your business hours with customizable styling and responsive design",
+  "category": "essential-blocks",
+  "apiVersion": 2,
+  "textdomain": "essential-blocks-pro",
+  "supports": {
+    "align": [
+      "wide",
+      "full"
+    ],
+    "anchor": true
+  },
+  "editorScript": "essential-blocks-editor-script"
+}

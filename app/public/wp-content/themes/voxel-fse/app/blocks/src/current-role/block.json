@@ -1,0 +1,193 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/current-role",
+	"version": "1.0.0",
+	"title": "Current role (VX)",
+	"category": "voxel-fse",
+	"description": "Display current user role with role switching functionality. FSE equivalent of Voxel's Current role widget.",
+	"keywords": ["role", "user", "switch", "membership", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"roleIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"switchIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"inspectorActiveTab": {
+			"type": "string",
+			"default": "content"
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "icons"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "panel"
+		},
+		"buttonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"panelBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"panelRadius": {
+			"type": "number"
+		},
+		"panelBg": {
+			"type": "string"
+		},
+		"panelShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"headPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"headIcoSize": {
+			"type": "number"
+		},
+		"headIcoMargin": {
+			"type": "number"
+		},
+		"headIcoCol": {
+			"type": "string"
+		},
+		"headTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"headTypoCol": {
+			"type": "string"
+		},
+		"headBorderCol": {
+			"type": "string"
+		},
+		"panelSpacing": {
+			"type": "number"
+		},
+		"panelGap": {
+			"type": "number"
+		},
+		"textAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"bodyTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"bodyTypoCol": {
+			"type": "string"
+		},
+		"panelButtonsGap": {
+			"type": "number"
+		},
+		"scndBtnTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnRadius": {
+			"type": "number"
+		},
+		"scndBtnC": {
+			"type": "string"
+		},
+		"scndBtnPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnHeight": {
+			"type": "number"
+		},
+		"scndBtnBg": {
+			"type": "string"
+		},
+		"scndBtnBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnIconSize": {
+			"type": "number"
+		},
+		"scndBtnIconPad": {
+			"type": "number"
+		},
+		"scndBtnIconColor": {
+			"type": "string"
+		},
+		"scndBtnCH": {
+			"type": "string"
+		},
+		"scndBtnBgH": {
+			"type": "string"
+		},
+		"scndBtnBorderH": {
+			"type": "string"
+		},
+		"scndBtnIconColorH": {
+			"type": "string"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

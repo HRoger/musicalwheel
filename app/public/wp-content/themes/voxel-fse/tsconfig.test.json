@@ -1,0 +1,27 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": [
+			"vite/client",
+			"node",
+			"vitest/globals",
+			"@testing-library/jest-dom"
+		]
+	},
+	"include": [
+		"assets/**/*",
+		"app/blocks/src/**/*",
+		"app/blocks/shared/**/*",
+		"vite.config.ts",
+		"vite.blocks.config.js",
+		"vite.frontend.config.js",
+		"vitest.config.ts",
+		"vitest.setup.tsx",
+		"vitest-env.d.ts",
+		"templates/backend/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}

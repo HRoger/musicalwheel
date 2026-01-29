@@ -1,0 +1,348 @@
+/**
+ * Stripe Account Block - Editor Styles
+ *
+ * Editor-only styles for the Stripe Account block.
+ * Frontend styles are inherited from Voxel parent theme.
+ *
+ * @package VoxelFSE
+ */
+
+/* Editor wrapper */
+.voxel-fse-stripe-account-editor {
+	min-height: 200px;
+}
+
+/* Loading state */
+.voxel-fse-stripe-account-editor .voxel-fse-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	gap: 12px;
+	color: #666;
+}
+
+/* Error state */
+.voxel-fse-stripe-account-editor .voxel-fse-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px;
+	color: #d32f2f;
+	text-align: center;
+}
+
+/* Placeholder in saved content */
+.voxel-fse-block-placeholder {
+	border: 2px dashed #ccc;
+	border-radius: 4px;
+}
+
+/* Editor preview of Voxel styles */
+.voxel-fse-stripe-account-editor .ts-panel {
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+}
+
+.voxel-fse-stripe-account-editor .ac-body {
+	padding: 20px;
+}
+
+.voxel-fse-stripe-account-editor .ac-body p {
+	margin: 0 0 16px;
+	color: #666;
+}
+
+.voxel-fse-stripe-account-editor .ac-bottom {
+	margin-top: 16px;
+}
+
+.voxel-fse-stripe-account-editor .current-plan-btn {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.voxel-fse-stripe-account-editor .current-plan-btn li {
+	flex: 1;
+	min-width: 200px;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 20px;
+	border-radius: 6px;
+	text-decoration: none;
+	font-weight: 500;
+	transition: all 0.2s ease;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn-1 {
+	background: #f5f5f5;
+	color: #333;
+	border: 1px solid #ddd;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn-1:hover {
+	background: #eee;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn-2 {
+	background: var(--voxel-primary-color, #6366f1);
+	color: #fff;
+	border: none;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn-2:hover {
+	opacity: 0.9;
+}
+
+.voxel-fse-stripe-account-editor .ts-btn i {
+	font-size: 18px;
+}
+
+/* Shipping screen styles */
+.voxel-fse-stripe-account-editor .ts-vendor-shipping-zones {
+	margin-top: 20px;
+}
+
+.voxel-fse-stripe-account-editor .ts-form {
+	background: #fff;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.voxel-fse-stripe-account-editor .form-field-grid {
+	display: grid;
+	gap: 16px;
+}
+
+.voxel-fse-stripe-account-editor .ts-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.voxel-fse-stripe-account-editor .ts-form-group label {
+	font-weight: 500;
+	color: #333;
+	display: flex;
+	align-items: center;
+}
+
+.voxel-fse-stripe-account-editor .ts-filter {
+	padding: 10px 14px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 14px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.voxel-fse-stripe-account-editor .ts-filter:focus {
+	outline: none;
+	border-color: var(--voxel-primary-color, #6366f1);
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-container {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.voxel-fse-stripe-account-editor .ts-field-repeater {
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	background: #f9f9f9;
+	cursor: pointer;
+	user-select: none;
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-head label {
+	flex: 1;
+	cursor: pointer;
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-head i {
+	color: #666;
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-controller {
+	display: flex;
+	gap: 8px;
+}
+
+.voxel-fse-stripe-account-editor .ts-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 4px;
+	background: transparent;
+	color: #666;
+	text-decoration: none;
+}
+
+.voxel-fse-stripe-account-editor .ts-icon-btn:hover {
+	background: #e0e0e0;
+}
+
+.voxel-fse-stripe-account-editor .ts-field-repeater.collapsed > div:not(.ts-repeater-head) {
+	display: none;
+}
+
+.voxel-fse-stripe-account-editor .ts-field-repeater > .medium {
+	padding: 16px;
+	background: #fff;
+}
+
+.voxel-fse-stripe-account-editor .ts-repeater-add {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* Input with suffix */
+.voxel-fse-stripe-account-editor .input-container {
+	position: relative;
+	display: flex;
+}
+
+.voxel-fse-stripe-account-editor .input-container input {
+	flex: 1;
+	padding-right: 50px;
+}
+
+.voxel-fse-stripe-account-editor .input-suffix {
+	position: absolute;
+	right: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: #999;
+	font-size: 14px;
+}
+
+/* Grid columns */
+.voxel-fse-stripe-account-editor .vx-1-1 {
+	grid-column: span 1;
+}
+
+.voxel-fse-stripe-account-editor .vx-1-2 {
+	grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+	.voxel-fse-stripe-account-editor .form-field-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.voxel-fse-stripe-account-editor .vx-1-1 {
+		grid-column: span 2;
+	}
+
+	.voxel-fse-stripe-account-editor .vx-1-2 {
+		grid-column: span 1;
+	}
+}
+
+/* Attribute pills */
+.voxel-fse-stripe-account-editor .attribute-select {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.voxel-fse-stripe-account-editor .attribute-select a {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: #f0f0f0;
+	border-radius: 20px;
+	font-size: 13px;
+	color: #333;
+	text-decoration: none;
+}
+
+.voxel-fse-stripe-account-editor .attribute-select a span {
+	cursor: pointer;
+	opacity: 0.6;
+}
+
+.voxel-fse-stripe-account-editor .attribute-select a span:hover {
+	opacity: 1;
+}
+
+/* Select dropdown icon */
+.voxel-fse-stripe-account-editor .ts-filter select {
+	appearance: none;
+	padding-right: 36px;
+}
+
+.voxel-fse-stripe-account-editor .ts-down-icon {
+	position: absolute;
+	right: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: none;
+}
+
+.voxel-fse-stripe-account-editor .ts-down-icon::after {
+	content: '\f107';
+	font-family: 'Line Awesome Free';
+	font-weight: 900;
+	color: #666;
+}
+
+/* Filter container with select */
+.voxel-fse-stripe-account-editor div.ts-filter {
+	position: relative;
+	padding: 0;
+}
+
+.voxel-fse-stripe-account-editor div.ts-filter select {
+	width: 100%;
+	padding: 10px 36px 10px 14px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 14px;
+	background: #fff;
+}
+
+/* Heading field */
+.voxel-fse-stripe-account-editor .ui-heading-field label {
+	font-size: 18px;
+	font-weight: 600;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #eee;
+}
+
+/* Disabled state */
+.voxel-fse-stripe-account-editor .vx-disabled {
+	opacity: 0.6;
+	pointer-events: none;
+}

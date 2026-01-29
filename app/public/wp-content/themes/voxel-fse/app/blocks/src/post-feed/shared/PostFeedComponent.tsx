@@ -38,6 +38,8 @@ import type {
 	PostFeedVxConfig,
 	SearchResultsResponse,
 } from '../types';
+import { generatePostFeedStyles } from '../styles';
+import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
 /**
  * Default icons (matches Voxel defaults)
@@ -71,12 +73,161 @@ function getIconHtml(icon: { library?: string; value?: string } | undefined, def
 }
 
 /**
+ * Generate responsive CSS for layout controls
+ * Handles columns, itemGap, carouselItemWidth, scrollPadding, itemPadding
+ * with tablet (max-width: 1024px) and mobile (max-width: 767px) breakpoints
+ *
+ * Evidence: themes/voxel/app/widgets/post-feed.php uses Elementor's add_responsive_control
+ * which generates media queries for tablet/mobile breakpoints
+ */
+function generateResponsiveLayoutCSS(attributes: PostFeedAttributes, blockId: string): string {
+	const rules: string[] = [];
+	const selector = `[data-block-id="${blockId}"]`;
+	const tabletRules: string[] = [];
+	const mobileRules: string[] = [];
+
+	// Grid mode - columns
+	// Evidence: post-feed.php:298-311 - grid-template-columns selector
+	if (attributes.layoutMode === 'grid') {
+		if (attributes.columns) {
+			rules.push(`${selector} .post-feed-grid { grid-template-columns: repeat(${attributes.columns}, minmax(0, 1fr)); }`);
+		}
+		if (attributes.columns_tablet) {
+			tabletRules.push(`${selector} .post-feed-grid { grid-template-columns: repeat(${attributes.columns_tablet}, minmax(0, 1fr)); }`);
+		}
+		if (attributes.columns_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid { grid-template-columns: repeat(${attributes.columns_mobile}, minmax(0, 1fr)); }`);
+		}
+	}
+
+	// Item gap - responsive (both grid and carousel)
+	// Evidence: post-feed.php:317-341 - grid-gap selector
+	if (attributes.itemGap !== undefined) {
+		rules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap}px; }`);
+	}
+	if (attributes.itemGap_tablet !== undefined) {
+		tabletRules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap_tablet}px; }`);
+	}
+	if (attributes.itemGap_mobile !== undefined) {
+		mobileRules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap_mobile}px; }`);
+	}
+
+	// Carousel mode specific
+	if (attributes.layoutMode === 'carousel') {
+		const unit = attributes.carouselItemWidthUnit || 'px';
+
+		// Item width - responsive
+		// Evidence: post-feed.php:253-271 - width and min-width selector
+		if (attributes.carouselItemWidth) {
+			rules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth}${unit}; min-width: ${attributes.carouselItemWidth}${unit}; flex: 0 0 ${attributes.carouselItemWidth}${unit}; scroll-snap-align: start; }`);
+		}
+		if (attributes.carouselItemWidth_tablet) {
+			tabletRules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth_tablet}${unit}; min-width: ${attributes.carouselItemWidth_tablet}${unit}; flex: 0 0 ${attributes.carouselItemWidth_tablet}${unit}; }`);
+		}
+		if (attributes.carouselItemWidth_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth_mobile}${unit}; min-width: ${attributes.carouselItemWidth_mobile}${unit}; flex: 0 0 ${attributes.carouselItemWidth_mobile}${unit}; }`);
+		}
+
+		// Scroll padding - responsive
+		// Evidence: post-feed.php:346-365 - padding and scroll-padding selector
+		if (attributes.scrollPadding) {
+			rules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding}px; scroll-padding: ${attributes.scrollPadding}px; }`);
+		}
+		if (attributes.scrollPadding_tablet) {
+			tabletRules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding_tablet}px; scroll-padding: ${attributes.scrollPadding_tablet}px; }`);
+		}
+		if (attributes.scrollPadding_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding_mobile}px; scroll-padding: ${attributes.scrollPadding_mobile}px; }`);
+		}
+
+		// Item padding - responsive
+		// Evidence: post-feed.php:367-386 - padding on .ts-preview selector
+		if (attributes.itemPadding) {
+			rules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding}px; }`);
+		}
+		if (attributes.itemPadding_tablet) {
+			tabletRules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding_tablet}px; }`);
+		}
+		if (attributes.itemPadding_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding_mobile}px; }`);
+		}
+	}
+
+	// Combine all rules with media queries
+	let css = rules.join('\n');
+
+	if (tabletRules.length > 0) {
+		css += `\n@media (max-width: 1024px) {\n${tabletRules.join('\n')}\n}`;
+	}
+
+	if (mobileRules.length > 0) {
+		css += `\n@media (max-width: 767px) {\n${mobileRules.join('\n')}\n}`;
+	}
+
+	return css;
+}
+
+/**
+ * Generate typography CSS from typography object
+ * Helper function matching pattern from popup-kit/shared/generateCSS.ts
+ *
+ * @param typo Typography object from attributes
+ * @returns CSS string (semicolon-separated rules)
+ */
+function generateTypographyCSS(typo: Record<string, unknown>): string {
+	const rules: string[] = [];
+
+	if (typo.fontFamily) {
+		rules.push(`font-family: ${typo.fontFamily}`);
+	}
+
+	if (typo.fontSize) {
+		const unit = (typo.fontSizeUnit as string) || 'px';
+		rules.push(`font-size: ${typo.fontSize}${unit}`);
+	}
+
+	if (typo.fontWeight) {
+		rules.push(`font-weight: ${typo.fontWeight}`);
+	}
+
+	if (typo.lineHeight) {
+		const unit = (typo.lineHeightUnit as string) || '';
+		rules.push(`line-height: ${typo.lineHeight}${unit}`);
+	}
+
+	if (typo.textTransform && typo.textTransform !== 'none') {
+		rules.push(`text-transform: ${typo.textTransform}`);
+	}
+
+	if (typo.fontStyle) {
+		rules.push(`font-style: ${typo.fontStyle}`);
+	}
+
+	if (typo.textDecoration) {
+		rules.push(`text-decoration: ${typo.textDecoration}`);
+	}
+
+	if (typo.letterSpacing) {
+		const unit = (typo.letterSpacingUnit as string) || 'px';
+		rules.push(`letter-spacing: ${typo.letterSpacing}${unit}`);
+	}
+
+	if (typo.wordSpacing) {
+		const unit = (typo.wordSpacingUnit as string) || 'px';
+		rules.push(`word-spacing: ${typo.wordSpacing}${unit}`);
+	}
+
+	return rules.join('; ');
+}
+
+/**
  * Post Feed Shared Component
  */
 export default function PostFeedComponent({
 	attributes,
 	config,
 	context,
+	editorFilters,
 }: PostFeedComponentProps): JSX.Element {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -108,6 +259,118 @@ export default function PostFeedComponent({
 		}
 	}, [context, attributes.postType, dynamicPostType]);
 
+	// Track previous editorFilters to detect actual changes
+	const prevEditorFiltersRef = useRef<Record<string, unknown> | undefined>(undefined);
+
+	// CRITICAL: Sync editorFilters with dynamicFilters in editor context
+	// In editor, filter changes come through props (from editorFilters via useSelect in edit.tsx)
+	// In frontend, filter changes come through events (setDynamicFilters called directly)
+	// This enables the Post Feed editor preview to update when Search Form filters change
+	// NOTE: fetchPosts is intentionally excluded from deps - it's called with explicit args
+	// and including it causes TDZ error (fetchPosts defined after this useEffect)
+	useEffect(() => {
+		if (context !== 'editor' || !editorFilters) {
+			return;
+		}
+
+		// Compare with previous filters to detect actual changes
+		const prevFilters = prevEditorFiltersRef.current;
+		const filtersChanged = JSON.stringify(prevFilters) !== JSON.stringify(editorFilters);
+
+		if (filtersChanged) {
+			prevEditorFiltersRef.current = editorFilters;
+			setDynamicFilters(editorFilters);
+
+			// Trigger refetch with new filters (only if we have a post type)
+			if (attributes.postType) {
+				// Use dynamic import pattern to avoid TDZ - fetchPosts defined below
+				// We pass all args explicitly so we don't need it in deps
+				const doFetch = async () => {
+					// Build filter params for Voxel's search_posts action
+					const params = new URLSearchParams({
+						type: attributes.postType,
+						pg: '1',
+						limit: String(attributes.postsPerPage),
+					});
+
+					// Add total count param if displaying details
+					if (attributes.displayDetails) {
+						params.set('__get_total_count', 'yes');
+					}
+
+					// Add filters
+					if (editorFilters && typeof editorFilters === 'object') {
+						Object.entries(editorFilters).forEach(([key, value]) => {
+							if (key === 'postType') return;
+							if (value !== null && value !== undefined && value !== '') {
+								params.set(key, String(value));
+							}
+						});
+					}
+
+					// Get home URL
+					let homeUrl = (window as any).Voxel_Config?.home_url;
+					if (!homeUrl) {
+						const wpApiRoot = (window as any).wpApiSettings?.root;
+						if (wpApiRoot) {
+							homeUrl = wpApiRoot.replace(/\/wp-json\/?$/, '');
+						} else {
+							const pathname = window.location.pathname;
+							const wpAdminIndex = pathname.indexOf('/wp-admin');
+							const sitePath = wpAdminIndex > 0 ? pathname.substring(0, wpAdminIndex) : '';
+							homeUrl = window.location.origin + sitePath;
+						}
+					}
+
+					params.set('action', 'search_posts');
+					const fetchUrl = `${homeUrl}/?vx=1&${params.toString()}`;
+
+					try {
+						setState(prev => ({ ...prev, loading: true }));
+						const response = await fetch(fetchUrl, {
+							method: 'GET',
+							credentials: 'same-origin',
+							headers: { 'Accept': 'text/html' },
+						});
+
+						if (!response.ok) {
+							throw new Error(`HTTP error: ${response.status}`);
+						}
+
+						const html = await response.text();
+						const parser = new DOMParser();
+						const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+						const infoScript = doc.querySelector('script.info');
+
+						const hasPrev = infoScript?.getAttribute('data-has-prev') === 'true';
+						const hasNext = infoScript?.getAttribute('data-has-next') === 'true';
+						const hasResults = infoScript?.getAttribute('data-has-results') === 'true';
+						const totalCount = parseInt(infoScript?.getAttribute('data-total-count') || '0', 10);
+						const displayCount = infoScript?.getAttribute('data-display-count') || '0';
+						const cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
+
+						setState(prev => ({
+							...prev,
+							loading: false,
+							page: 1,
+							results: cleanHtml,
+							totalCount,
+							displayCount,
+							hasPrev,
+							hasNext,
+							hasResults,
+						}));
+					} catch (error) {
+						console.error('[PostFeedComponent] Editor filter sync fetch failed:', error);
+						setState(prev => ({ ...prev, loading: false, hasResults: false }));
+					}
+				};
+				doFetch();
+			}
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [context, editorFilters, attributes.postType, attributes.postsPerPage, attributes.displayDetails]);
+
 	// Build CSS classes
 	const layoutClass = attributes.layoutMode === 'carousel' ? 'ts-feed-nowrap' : 'ts-feed-grid-default';
 	const loadingClass = state.loading ? `vx-${attributes.loadingStyle}` : '';
@@ -117,37 +380,32 @@ export default function PostFeedComponent({
 	// sf-post-feed when connected to search form, vx-event-scroll for scroll tracking
 	const gridClasses = `post-feed-grid ${layoutClass} ${loadingClass} vx-opacity ${attributes.source === 'search-form' ? 'sf-post-feed vx-event-scroll' : ''}`.trim();
 
-	// Build inline styles for grid layout
-	// Note: Using direct CSS properties instead of CSS variables because
-	// Voxel/Elementor generates inline CSS via selectors, not CSS variables
+	// Build inline styles for grid layout (minimal - responsive values handled by CSS)
+	// Note: Display mode and scroll properties are inline, responsive values (columns, gap, etc.) handled by generateResponsiveLayoutCSS
 	// Evidence: themes/voxel/app/widgets/post-feed.php:308 - uses selectors for grid-template-columns
 	const gridStyle: React.CSSProperties = attributes.layoutMode === 'carousel'
 		? {
 			// Carousel mode: flex layout with horizontal scroll
 			display: 'flex',
 			flexWrap: 'nowrap',
-			gap: `${attributes.itemGap || 25}px`,
 			overflowX: 'auto',
 			scrollSnapType: 'x mandatory',
 			WebkitOverflowScrolling: 'touch',
-			padding: attributes.scrollPadding ? `0 ${attributes.scrollPadding}px` : undefined,
-			scrollPadding: attributes.scrollPadding ? `${attributes.scrollPadding}px` : undefined,
+			// Note: gap, padding, scrollPadding handled by generateResponsiveLayoutCSS for responsive support
 		}
 		: {
 			// Grid mode: CSS grid layout
 			display: 'grid',
-			gridTemplateColumns: `repeat(${attributes.columns || 3}, minmax(0, 1fr))`,
-			gap: `${attributes.itemGap || 25}px`,
+			// Note: gridTemplateColumns, gap handled by generateResponsiveLayoutCSS for responsive support
 		};
 
-	// Carousel item styles (for children)
-	const carouselItemStyle: React.CSSProperties | undefined = attributes.layoutMode === 'carousel' && attributes.carouselItemWidth
-		? {
-			flex: `0 0 ${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`,
-			minWidth: `${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`,
-			scrollSnapAlign: 'start',
-		}
-		: undefined;
+	// Generate responsive layout CSS
+	const responsiveLayoutCSS = generateResponsiveLayoutCSS(attributes, attributes.blockId);
+
+	// Generate style CSS (Counter, Order By, No Results, Pagination, Carousel Nav, Loading)
+	// Uses comprehensive styles from styles.ts for full Style Tab support
+	// Note: loadingOpacity CSS is included in generatePostFeedStyles() - see styles.ts:429-432
+	const styleCSS = generatePostFeedStyles(attributes, attributes.blockId);
 
 	// Fetch posts from API (both editor and frontend)
 	const fetchPosts = useCallback(async (
@@ -187,6 +445,27 @@ export default function PostFeedComponent({
 			// Add manual post IDs if in manual mode
 			if (attributes.source === 'manual' && attributes.manualPostIds.length > 0) {
 				params.set('post__in', attributes.manualPostIds.join(','));
+			}
+
+			// Add exclude posts (Filters mode)
+			if (attributes.excludePosts) {
+				params.set('exclude', attributes.excludePosts);
+			}
+
+			// Add priority filter (Filters mode)
+			if (attributes.priorityFilter) {
+				params.set('priority_min', String(attributes.priorityMin || 0));
+				params.set('priority_max', String(attributes.priorityMax || 0));
+			}
+
+			// Add offset (Filters mode)
+			if (attributes.offset && attributes.offset > 0) {
+				params.set('offset', String(attributes.offset));
+			}
+
+			// Add card template (for server-side rendering)
+			if (attributes.cardTemplate && attributes.cardTemplate !== 'main') {
+				params.set('template', attributes.cardTemplate);
 			}
 
 			// Use override filters if provided, otherwise merge dynamic and static filters
@@ -441,6 +720,13 @@ export default function PostFeedComponent({
 		postType: attributes.postType,
 		manualPostIds: attributes.manualPostIds,
 		filters: attributes.filters,
+		// Filters mode settings
+		excludePosts: attributes.excludePosts || '',
+		priorityFilter: attributes.priorityFilter || false,
+		priorityMin: attributes.priorityMin || 0,
+		priorityMax: attributes.priorityMax || 0,
+		offset: attributes.offset || 0,
+		cardTemplate: attributes.cardTemplate || 'main',
 		pagination: attributes.pagination,
 		postsPerPage: attributes.postsPerPage,
 		displayDetails: attributes.displayDetails,
@@ -478,25 +764,15 @@ export default function PostFeedComponent({
 
 	// Editor preview - shows actual data or placeholder while loading
 	if (context === 'editor') {
-		// Determine if we should show placeholder cards
-		// Show placeholders when: loading OR (search-form source without postType selected)
-		const showPlaceholders = state.loading || (attributes.source === 'search-form' && !attributes.postType && !state.results);
+		// Determine if we should show empty placeholder (NO data source configured)
+		// Show EmptyPlaceholder when: no postType AND not loading AND no results (unconfigured state)
+		const isUnconfigured = !attributes.postType && !state.loading && !state.results;
 
-		// Generate scoped styles for editor carousel
-		const editorScopedStyles = attributes.layoutMode === 'carousel' && attributes.carouselItemWidth
-			? `
-				.ts-post-feed .post-feed-grid > .ts-preview,
-				.ts-post-feed .post-feed-grid > div,
-				.ts-post-feed .post-feed-grid > .placeholder-card {
-					flex: 0 0 ${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'};
-					min-width: ${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'};
-					scroll-snap-align: start;
-				}
-			`
-			: '';
+		// Show skeleton cards when: loading with a configured data source
+		const showSkeletonCards = state.loading && attributes.postType;
 
 		return (
-			<div ref={containerRef} className={`ts-post-feed ${loadingClass}`}>
+			<div ref={containerRef} className={`ts-post-feed ${loadingClass}`} data-block-id={attributes.blockId}>
 				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
@@ -504,9 +780,14 @@ export default function PostFeedComponent({
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 
-				{/* Scoped styles for carousel */}
-				{editorScopedStyles && (
-					<style dangerouslySetInnerHTML={{ __html: editorScopedStyles }} />
+				{/* Responsive layout CSS (columns, gap, carousel widths, etc.) */}
+				{responsiveLayoutCSS && (
+					<style dangerouslySetInnerHTML={{ __html: responsiveLayoutCSS }} />
+				)}
+
+				{/* Style CSS (Counter, Order By, No Results, Pagination, Carousel Nav, Loading) */}
+				{styleCSS && (
+					<style dangerouslySetInnerHTML={{ __html: styleCSS }} />
 				)}
 
 				{/* Header with result count */}
@@ -523,17 +804,22 @@ export default function PostFeedComponent({
 					className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
 					style={gridStyle}
 				>
-					{showPlaceholders ? (
-						/* Placeholder cards while loading */
-						Array.from({ length: Math.min(attributes.postsPerPage, 6) }).map((_, index) => (
-							<div key={index} className="ts-preview-card placeholder-card">
-								<div className="ts-card-image placeholder-image"></div>
-								<div className="ts-card-content">
-									<div className="placeholder-title"></div>
-									<div className="placeholder-text"></div>
+					{isUnconfigured ? (
+						/* Empty placeholder when NO data source configured */
+						<EmptyPlaceholder />
+					) : showSkeletonCards ? (
+						/* Skeleton cards while loading with configured data source */
+						<>
+							{Array.from({ length: 6 }).map((_, i) => (
+								<div key={i} className="placeholder-card" style={{ background: '#f5f5f5', borderRadius: '8px', overflow: 'hidden' }}>
+									<div className="placeholder-image" style={{ height: '200px', background: '#e0e0e0' }} />
+									<div style={{ padding: '16px' }}>
+										<div className="placeholder-title" style={{ height: '20px', background: '#e0e0e0', marginBottom: '8px', borderRadius: '4px' }} />
+										<div className="placeholder-text" style={{ height: '14px', background: '#e0e0e0', width: '60%', borderRadius: '4px' }} />
+									</div>
 								</div>
-							</div>
-						))
+							))}
+						</>
 					) : state.results ? (
 						/* Actual post cards from Voxel */
 						<div dangerouslySetInnerHTML={{ __html: state.results }} />
@@ -626,28 +912,10 @@ export default function PostFeedComponent({
 	// Evidence: themes/voxel/templates/widgets/post-feed.php
 	// Voxel renders direct children without a wrapper div (header, grid, no-results, pagination)
 	// The container .voxel-fse-post-feed-frontend already has the necessary wrapper classes
-
-	// Generate scoped styles for carousel item widths
-	// Evidence: themes/voxel/app/widgets/post-feed.php:268 - uses selectors for item width
-	const scopedStyles = attributes.layoutMode === 'carousel' && attributes.carouselItemWidth
-		? `
-			[data-block-id="${attributes.blockId}"] .post-feed-grid > .ts-preview,
-			[data-block-id="${attributes.blockId}"] .post-feed-grid > div {
-				flex: 0 0 ${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'};
-				min-width: ${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'};
-				scroll-snap-align: start;
-			}
-			${attributes.itemPadding ? `
-			[data-block-id="${attributes.blockId}"] .post-feed-grid > .ts-preview,
-			[data-block-id="${attributes.blockId}"] .post-feed-grid > div {
-				padding: ${attributes.itemPadding}px;
-			}
-			` : ''}
-		`
-		: '';
+	// Note: responsiveLayoutCSS is generated above (line 348) and handles all responsive styles
 
 	return (
-		<div ref={containerRef} className="ts-post-feed-content">
+		<div ref={containerRef} className="ts-post-feed-content" data-block-id={attributes.blockId}>
 			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
@@ -655,9 +923,14 @@ export default function PostFeedComponent({
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
 
-			{/* Scoped styles for carousel item widths */}
-			{scopedStyles && (
-				<style dangerouslySetInnerHTML={{ __html: scopedStyles }} />
+			{/* Responsive layout CSS (columns, gap, carousel widths, etc.) */}
+			{responsiveLayoutCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveLayoutCSS }} />
+			)}
+
+			{/* Style CSS (Counter, Order By, No Results, Pagination, Carousel Nav, Loading) */}
+			{styleCSS && (
+				<style dangerouslySetInnerHTML={{ __html: styleCSS }} />
 			)}
 
 			{/* Header with result count */}

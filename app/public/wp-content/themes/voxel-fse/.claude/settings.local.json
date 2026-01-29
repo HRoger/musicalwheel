@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "Bash(php:*)",
+      "WebFetch(domain:developer.wordpress.org)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

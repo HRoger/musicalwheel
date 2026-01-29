@@ -1,0 +1,75 @@
+/**
+ * Image Block - Frontend Styles
+ *
+ * 1:1 match with Elementor Widget_Image styles:
+ * - Default center alignment
+ * - Inline-block display for images
+ * - SVG width handling
+ * - Link display
+ *
+ * Evidence: plugins/elementor/assets/css/widget-image.min.css
+ * Evidence: themes/voxel/assets/dist/commons.css
+ *
+ * @package VoxelFSE
+ */
+
+/* Voxel customization - make link wrapper transparent in box model */
+/* Evidence: themes/voxel/assets/dist/commons.css */
+div.wp-block-voxel-fse-image a {
+	display: contents;
+}
+
+/* Base widget container - matches .elementor-widget-image */
+.wp-block-voxel-fse-image {
+	text-align: center;
+}
+
+/* SVG width handling - matches .elementor-widget-image a img[src$=".svg"] */
+.wp-block-voxel-fse-image a img[src$=".svg"] {
+	width: 48px;
+}
+
+/* Image element - matches .elementor-widget-image img */
+.wp-block-voxel-fse-image img {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+/* Wrapper for alignment control */
+.voxel-fse-image-wrapper {
+	width: 100%;
+}
+
+/* Figure for captions - matches .wp-caption */
+.voxel-fse-image-wrapper figure.wp-caption {
+	margin: 0;
+	display: inline-block;
+	max-width: 100%;
+}
+
+/* Caption text - matches .widget-image-caption */
+.widget-image-caption,
+.wp-caption-text {
+	font-size: 13px;
+	margin-top: 10px;
+	color: #666;
+}
+
+/* Responsive visibility */
+@media (min-width: 1025px) {
+	.vx-hidden-desktop {
+		display: none !important;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	.vx-hidden-tablet {
+		display: none !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.vx-hidden-mobile {
+		display: none !important;
+	}
+}

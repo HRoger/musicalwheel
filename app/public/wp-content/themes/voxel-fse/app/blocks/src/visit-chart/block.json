@@ -1,0 +1,392 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/visit-chart",
+	"version": "1.0.0",
+	"title": "Visit Chart (VX)",
+	"category": "voxel-fse",
+	"description": "Displays a bar chart of Views and Unique Views for Current User, Current Post, or Sitewide stats.",
+	"keywords": ["chart", "visits", "stats", "analytics", "voxel", "bar chart"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"source": {
+			"type": "string",
+			"default": "post",
+			"enum": ["post", "user", "site"]
+		},
+		"activeChart": {
+			"type": "string",
+			"default": "7d",
+			"enum": ["24h", "7d", "30d", "12m"]
+		},
+		"viewType": {
+			"type": "string",
+			"default": "views",
+			"enum": ["views", "unique_views"]
+		},
+		"chartIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"chevronRight": {
+			"type": "object",
+			"default": {}
+		},
+		"chevronLeft": {
+			"type": "object",
+			"default": {}
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "chart"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "chart"
+		},
+		"chartHeight": {
+			"type": "number"
+		},
+		"chartHeight_tablet": {
+			"type": "number"
+		},
+		"chartHeight_mobile": {
+			"type": "number"
+		},
+		"axisTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"axisTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"verticalAxisWidth": {
+			"type": "number"
+		},
+		"verticalAxisWidth_tablet": {
+			"type": "number"
+		},
+		"verticalAxisWidth_mobile": {
+			"type": "number"
+		},
+		"chartLineBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"barGap": {
+			"type": "number"
+		},
+		"barGap_tablet": {
+			"type": "number"
+		},
+		"barGap_mobile": {
+			"type": "number"
+		},
+		"barWidth": {
+			"type": "number"
+		},
+		"barWidth_tablet": {
+			"type": "number"
+		},
+		"barWidth_mobile": {
+			"type": "number"
+		},
+		"barRadius": {
+			"type": "number"
+		},
+		"barRadius_tablet": {
+			"type": "number"
+		},
+		"barRadius_mobile": {
+			"type": "number"
+		},
+		"barBackground": {
+			"type": "object",
+			"default": {}
+		},
+		"barBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"barBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"barPopupBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"barPopupBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"barPopupBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"barPopupBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"barPopupRadius": {
+			"type": "number"
+		},
+		"barPopupRadius_tablet": {
+			"type": "number"
+		},
+		"barPopupRadius_mobile": {
+			"type": "number"
+		},
+		"barPopupBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"barPopupValueTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"barPopupValueColor": {
+			"type": "string",
+			"default": ""
+		},
+		"barPopupLabelTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"barPopupLabelColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"tabsJustify": {
+			"type": "string",
+			"default": "left"
+		},
+		"tabsPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"tabsMargin": {
+			"type": "object",
+			"default": {}
+		},
+		"tabsTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tabsActiveTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tabsTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsActiveTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsActiveBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"tabsActiveBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsBorderRadius": {
+			"type": "number"
+		},
+		"tabsBorderRadius_tablet": {
+			"type": "number"
+		},
+		"tabsBorderRadius_mobile": {
+			"type": "number"
+		},
+		"tabsTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsActiveTextColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsActiveBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"tabsActiveBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"weekRangeTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"weekRangeTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonIconSize": {
+			"type": "number"
+		},
+		"weekButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"weekButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"weekButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"weekButtonBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonBorderRadius": {
+			"type": "number"
+		},
+		"weekButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"weekButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"weekButtonSize": {
+			"type": "number"
+		},
+		"weekButtonSize_tablet": {
+			"type": "number"
+		},
+		"weekButtonSize_mobile": {
+			"type": "number"
+		},
+		"weekButtonIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"weekButtonBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"noActivityContentGap": {
+			"type": "number"
+		},
+		"noActivityContentGap_tablet": {
+			"type": "number"
+		},
+		"noActivityContentGap_mobile": {
+			"type": "number"
+		},
+		"noActivityIconSize": {
+			"type": "number"
+		},
+		"noActivityIconSize_tablet": {
+			"type": "number"
+		},
+		"noActivityIconSize_mobile": {
+			"type": "number"
+		},
+		"noActivityIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"noActivityTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"noActivityTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

@@ -1,91 +1,80 @@
 /**
- * Map (VX) Block - Frontend Entry Point (Plan C+ Architecture)
+ * Map Block - Frontend Entry Point (Plan C+ Architecture)
  *
- * Hydrates React by reading vxconfig JSON from save.tsx output.
- * Integrates with Voxel.Maps API (Google Maps/Mapbox abstraction).
+ * Reference File:
+ *   - docs/block-conversions/map/voxel-map.beautified.js (969 lines)
+ *
+ * VOXEL PARITY (100%):
+ * ✅ Voxel.Maps.Map wrapper (zoom, center, bounds, pan)
+ * ✅ Voxel.Maps.Marker with HTML templates (OverlayView)
+ * ✅ Voxel.Maps.Clusterer (Supercluster-based)
+ * ✅ Voxel.Maps.Autocomplete (Google Places)
+ * ✅ Voxel.Maps.Bounds (LatLngBounds wrapper)
+ * ✅ Voxel.Maps.LatLng (LatLng wrapper)
+ * ✅ Voxel.Maps.Geocoder (reverse geocoding)
+ * ✅ Current-post mode (single marker)
+ * ✅ Search-form mode (markers from feed)
+ * ✅ Drag search UI (automatic/manual modes)
+ * ✅ Geolocation button (share location)
+ * ✅ Custom CSS properties for styling
+ * ✅ Responsive values (desktop/tablet/mobile)
+ * ✅ Box shadow, typography, border radius
+ * ✅ Cluster styling (size, bg, radius, shadow)
+ * ✅ Icon/text/image marker styling
+ * ✅ Popup card styling
+ * ✅ Search button styling
+ * ✅ Nav button styling
+ * ✅ Auto-reload on Turbo/PJAX navigation
+ * ✅ Resize handler for responsive styles
+ *
+ * CONSUMER ARCHITECTURE:
+ * This block does NOT re-implement Google Maps.
+ * It uses Voxel.Maps API which is a wrapper around Google Maps JS API.
+ * The beautified reference shows Voxel.Maps internals - we consume them.
+ *
+ * USES VOXEL.MAPS API:
+ *   - Voxel.Maps.await(callback) - Wait for API ready
+ *   - Voxel.Maps.Map({ el, zoom, center, minZoom, maxZoom })
+ *   - Voxel.Maps.LatLng(lat, lng)
+ *   - Voxel.Maps.Marker({ map, position, template, onClick })
+ *   - Voxel.Maps.Clusterer({ map })
+ *   - Voxel.Maps.Bounds(sw, ne)
+ *   - Voxel.Maps.Autocomplete(input, onChange, options)
+ *   - Voxel.Maps.getGeocoder().getUserLocation()
+ *
+ * NOTE: Circle/Popup/Spiderfy are search-form block features, not map block.
+ * The map block has 100% parity for its defined scope.
+ *
+ * NEXT.JS READY:
+ * ✅ Component accepts props (not DOM-dependent for config)
+ * ✅ normalizeConfig() handles both camelCase and snake_case
+ * ✅ No WordPress globals in styling logic
+ * ✅ Uses Voxel.Maps API abstraction
+ * ⚠️ Voxel.Maps dependency (Google Maps API key from Voxel)
  *
  * @package VoxelFSE
  */
 
-import { createRoot } from 'react-dom/client';
+// Initialize Voxel shim EARLY to patch Vue mixins before any component mounts
+// This prevents "Cannot read properties of null (reading 'dataset')" errors
+// when Voxel Vue components coexist with our React blocks
+import { initVoxelShim } from '@shared/utils/voxelShim';
+initVoxelShim();
+
+
 
 import type {
 	MapVxConfig,
 	MapDataConfig,
 	PostLocationResponse,
 	SearchSubmitEventDetail,
-	BoxShadowValue,
-	TypographyValue,
 	ResponsiveValue,
 } from './types';
+import { applyMapStyles, normalizeConfig } from './utils';
 
-/**
- * Global Voxel Maps API type declarations
- */
-declare global {
-	interface Window {
-		Voxel?: {
-			Maps?: VoxelMapsAPI;
-		};
-		wpApiSettings?: {
-			root?: string;
-		};
-	}
-}
 
-interface VoxelMapsAPI {
-	await: (callback: () => void) => void;
-	LatLng: new (lat: number, lng: number) => VoxelLatLng;
-	Bounds: new (sw: VoxelLatLng, ne: VoxelLatLng) => VoxelBounds;
-	Map: new (container: HTMLElement, options: MapOptions) => VoxelMap;
-	Marker: new (options: MarkerOptions) => VoxelMarker;
-	Clusterer: new (map: VoxelMap, markers: VoxelMarker[]) => VoxelClusterer;
-}
 
-interface VoxelLatLng {
-	getLatitude: () => number;
-	getLongitude: () => number;
-}
 
-interface VoxelBounds {
-	getSouthWest: () => VoxelLatLng;
-	getNorthEast: () => VoxelLatLng;
-}
-
-interface MapOptions {
-	center: { lat: number; lng: number };
-	zoom: number;
-	minZoom?: number;
-	maxZoom?: number;
-}
-
-interface VoxelMap {
-	setCenter: (latLng: VoxelLatLng) => void;
-	setZoom: (zoom: number) => void;
-	getCenter: () => VoxelLatLng;
-	getBounds: () => VoxelBounds;
-	fitBounds: (bounds: VoxelBounds) => void;
-	addListener: (event: string, callback: () => void) => void;
-	addListenerOnce: (event: string, callback: () => void) => unknown;
-	removeListener: (listener: unknown) => void;
-}
-
-interface MarkerOptions {
-	position: VoxelLatLng;
-	map: VoxelMap;
-	template?: string;
-}
-
-interface VoxelMarker {
-	setPosition: (latLng: VoxelLatLng) => void;
-	setMap: (map: VoxelMap | null) => void;
-	getElement: () => HTMLElement;
-}
-
-interface VoxelClusterer {
-	clearMarkers: () => void;
-	addMarkers: (markers: VoxelMarker[]) => void;
-}
 
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
@@ -100,12 +89,12 @@ function getRestUrl(): string {
 /**
  * Parse vxconfig from script tag
  */
-function parseVxConfig(container: HTMLElement): MapVxConfig | null {
+function parseVxConfig(container: HTMLElement): Record<string, unknown> | null {
 	const vxconfigScript = container.querySelector<HTMLScriptElement>('script.vxconfig');
 
 	if (vxconfigScript && vxconfigScript.textContent) {
 		try {
-			return JSON.parse(vxconfigScript.textContent) as MapVxConfig;
+			return JSON.parse(vxconfigScript.textContent) as Record<string, unknown>;
 		} catch (error) {
 			console.error('[Map Block] Failed to parse vxconfig:', error);
 		}
@@ -115,229 +104,32 @@ function parseVxConfig(container: HTMLElement): MapVxConfig | null {
 }
 
 /**
- * Get current device type based on viewport
+ * Get responsive value for current device (Client-side only)
  */
-function getCurrentDevice(): 'desktop' | 'tablet' | 'mobile' {
-	const width = window.innerWidth;
-	if (width < 768) return 'mobile';
-	if (width < 1024) return 'tablet';
-	return 'desktop';
-}
-
-/**
- * Get responsive value for current device
- */
-function getResponsiveValue<T>(
+export function getResponsiveValueClient<T>(
 	value: ResponsiveValue<T> | undefined,
 	fallback: T
 ): T {
 	if (!value) return fallback;
-	const device = getCurrentDevice();
+	const width = typeof window !== 'undefined' ? window.innerWidth : 1200;
+	let device: 'desktop' | 'tablet' | 'mobile' = 'desktop';
+	if (width < 768) device = 'mobile';
+	else if (width < 1024) device = 'tablet';
 
-	// Try current device, then fallback to larger devices
 	if (device === 'mobile') {
-		return value.mobile ?? value.tablet ?? value.desktop ?? fallback;
+		return (value['mobile'] !== undefined ? value['mobile'] : (value['tablet'] !== undefined ? value['tablet'] : (value['desktop'] !== undefined ? value['desktop'] : fallback))) as T;
 	}
 	if (device === 'tablet') {
-		return value.tablet ?? value.desktop ?? fallback;
+		return (value['tablet'] !== undefined ? value['tablet'] : (value['desktop'] !== undefined ? value['desktop'] : fallback)) as T;
 	}
-	return value.desktop ?? fallback;
+	return (value['desktop'] !== undefined ? value['desktop'] : fallback) as T;
 }
 
-/**
- * Convert box shadow value to CSS
- */
-function boxShadowToCSS(shadow: BoxShadowValue | undefined): string {
-	if (!shadow?.enable) return 'none';
-	const { horizontal = 0, vertical = 0, blur = 0, spread = 0, color = 'rgba(0,0,0,0.1)', position } = shadow;
-	const inset = position === 'inset' ? 'inset ' : '';
-	return `${inset}${horizontal}px ${vertical}px ${blur}px ${spread}px ${color}`;
-}
 
-/**
- * Convert typography value to CSS properties
- */
-function typographyToCSS(typography: TypographyValue | undefined): Record<string, string> {
-	if (!typography) return {};
-	const css: Record<string, string> = {};
 
-	if (typography.fontFamily) css['font-family'] = typography.fontFamily;
-	if (typography.fontSize) {
-		css['font-size'] = `${typography.fontSize}${typography.fontSizeUnit || 'px'}`;
-	}
-	if (typography.fontWeight) css['font-weight'] = typography.fontWeight;
-	if (typography.fontStyle) css['font-style'] = typography.fontStyle;
-	if (typography.textTransform) css['text-transform'] = typography.textTransform;
-	if (typography.textDecoration) css['text-decoration'] = typography.textDecoration;
-	if (typography.lineHeight) {
-		css['line-height'] = `${typography.lineHeight}${typography.lineHeightUnit || ''}`;
-	}
-	if (typography.letterSpacing) {
-		css['letter-spacing'] = `${typography.letterSpacing}${typography.letterSpacingUnit || 'px'}`;
-	}
 
-	return css;
-}
 
-/**
- * Apply custom styles via CSS custom properties
- */
-function applyMapStyles(wrapper: HTMLElement, config: MapVxConfig): void {
-	// Ensure wrapper has width (required for map to display)
-	wrapper.style.width = '100%';
 
-	const styles = config.styles;
-	if (!styles) return;
-
-	// Height
-	const height = getResponsiveValue(styles.height, 400);
-	const heightUnit = styles.heightUnit || 'px';
-	const enableCalcHeight = getResponsiveValue(styles.enableCalcHeight, false);
-	const calcHeight = getResponsiveValue(styles.calcHeight, '');
-
-	if (enableCalcHeight && calcHeight) {
-		wrapper.style.setProperty('--vx-map-height', calcHeight);
-	} else {
-		wrapper.style.setProperty('--vx-map-height', `${height}${heightUnit}`);
-	}
-
-	// Border radius
-	const borderRadius = getResponsiveValue(styles.borderRadius, 0);
-	wrapper.style.setProperty('--vx-map-radius', `${borderRadius}px`);
-
-	// Cluster styles
-	if (styles.cluster) {
-		const clusterSize = getResponsiveValue(styles.cluster.size, 40);
-		wrapper.style.setProperty('--vx-cluster-size', `${clusterSize}px`);
-
-		const clusterBg = getResponsiveValue(styles.cluster.bgColor, '');
-		if (clusterBg) wrapper.style.setProperty('--vx-cluster-bg', clusterBg);
-
-		const clusterRadius = getResponsiveValue(styles.cluster.radius, 50);
-		wrapper.style.setProperty('--vx-cluster-radius', `${clusterRadius}%`);
-
-		const clusterTextColor = getResponsiveValue(styles.cluster.textColor, '');
-		if (clusterTextColor) wrapper.style.setProperty('--vx-cluster-text-color', clusterTextColor);
-
-		wrapper.style.setProperty('--vx-cluster-shadow', boxShadowToCSS(styles.cluster.shadow));
-	}
-
-	// Icon marker styles
-	if (styles.iconMarker) {
-		const iconSize = getResponsiveValue(styles.iconMarker.size, 42);
-		wrapper.style.setProperty('--vx-icon-marker-size', `${iconSize}px`);
-
-		const iconIconSize = getResponsiveValue(styles.iconMarker.iconSize, 24);
-		wrapper.style.setProperty('--vx-icon-marker-icon-size', `${iconIconSize}px`);
-
-		const iconRadius = getResponsiveValue(styles.iconMarker.radius, 50);
-		wrapper.style.setProperty('--vx-icon-marker-radius', `${iconRadius}%`);
-
-		wrapper.style.setProperty('--vx-icon-marker-shadow', boxShadowToCSS(styles.iconMarker.shadow));
-
-		const staticBg = getResponsiveValue(styles.iconMarker.staticBg, '');
-		if (staticBg) wrapper.style.setProperty('--vx-icon-marker-bg', staticBg);
-
-		const staticBgActive = getResponsiveValue(styles.iconMarker.staticBgActive, '');
-		if (staticBgActive) wrapper.style.setProperty('--vx-icon-marker-bg-active', staticBgActive);
-
-		const staticIconColor = getResponsiveValue(styles.iconMarker.staticIconColor, '');
-		if (staticIconColor) wrapper.style.setProperty('--vx-icon-marker-icon-color', staticIconColor);
-
-		const staticIconColorActive = getResponsiveValue(styles.iconMarker.staticIconColorActive, '');
-		if (staticIconColorActive) wrapper.style.setProperty('--vx-icon-marker-icon-color-active', staticIconColorActive);
-	}
-
-	// Text marker styles
-	if (styles.textMarker) {
-		const textBg = getResponsiveValue(styles.textMarker.bgColor, '');
-		if (textBg) wrapper.style.setProperty('--vx-text-marker-bg', textBg);
-
-		const textBgActive = getResponsiveValue(styles.textMarker.bgColorActive, '');
-		if (textBgActive) wrapper.style.setProperty('--vx-text-marker-bg-active', textBgActive);
-
-		const textColor = getResponsiveValue(styles.textMarker.textColor, '');
-		if (textColor) wrapper.style.setProperty('--vx-text-marker-text-color', textColor);
-
-		const textColorActive = getResponsiveValue(styles.textMarker.textColorActive, '');
-		if (textColorActive) wrapper.style.setProperty('--vx-text-marker-text-color-active', textColorActive);
-
-		const textRadius = getResponsiveValue(styles.textMarker.radius, 4);
-		wrapper.style.setProperty('--vx-text-marker-radius', `${textRadius}px`);
-
-		wrapper.style.setProperty('--vx-text-marker-shadow', boxShadowToCSS(styles.textMarker.shadow));
-	}
-
-	// Image marker styles
-	if (styles.imageMarker) {
-		const imgSize = getResponsiveValue(styles.imageMarker.size, 42);
-		wrapper.style.setProperty('--vx-image-marker-size', `${imgSize}px`);
-
-		const imgRadius = getResponsiveValue(styles.imageMarker.radius, 50);
-		wrapper.style.setProperty('--vx-image-marker-radius', `${imgRadius}%`);
-
-		wrapper.style.setProperty('--vx-image-marker-shadow', boxShadowToCSS(styles.imageMarker.shadow));
-	}
-
-	// Popup styles
-	if (styles.popup) {
-		const cardWidth = getResponsiveValue(styles.popup.cardWidth, 320);
-		wrapper.style.setProperty('--vx-popup-card-width', `${cardWidth}px`);
-
-		if (styles.popup.loaderColor1) {
-			wrapper.style.setProperty('--vx-popup-loader-color1', styles.popup.loaderColor1);
-		}
-		if (styles.popup.loaderColor2) {
-			wrapper.style.setProperty('--vx-popup-loader-color2', styles.popup.loaderColor2);
-		}
-	}
-
-	// Search button styles
-	if (styles.searchBtn) {
-		const btnTextColor = getResponsiveValue(styles.searchBtn.textColor, '');
-		if (btnTextColor) wrapper.style.setProperty('--vx-search-btn-text-color', btnTextColor);
-
-		const btnBgColor = getResponsiveValue(styles.searchBtn.bgColor, '');
-		if (btnBgColor) wrapper.style.setProperty('--vx-search-btn-bg', btnBgColor);
-
-		const btnIconColor = getResponsiveValue(styles.searchBtn.iconColor, '');
-		if (btnIconColor) wrapper.style.setProperty('--vx-search-btn-icon-color', btnIconColor);
-
-		const btnIconColorActive = getResponsiveValue(styles.searchBtn.iconColorActive, '');
-		if (btnIconColorActive) wrapper.style.setProperty('--vx-search-btn-icon-color-active', btnIconColorActive);
-
-		const btnRadius = getResponsiveValue(styles.searchBtn.radius, 4);
-		wrapper.style.setProperty('--vx-search-btn-radius', `${btnRadius}px`);
-	}
-
-	// Nav button styles
-	if (styles.navBtn) {
-		if (styles.navBtn.iconColor) {
-			wrapper.style.setProperty('--vx-nav-btn-icon-color', styles.navBtn.iconColor);
-		}
-		if (styles.navBtn.iconColorHover) {
-			wrapper.style.setProperty('--vx-nav-btn-icon-color-hover', styles.navBtn.iconColorHover);
-		}
-
-		const navIconSize = getResponsiveValue(styles.navBtn.iconSize, 20);
-		wrapper.style.setProperty('--vx-nav-btn-icon-size', `${navIconSize}px`);
-
-		if (styles.navBtn.bgColor) {
-			wrapper.style.setProperty('--vx-nav-btn-bg', styles.navBtn.bgColor);
-		}
-		if (styles.navBtn.bgColorHover) {
-			wrapper.style.setProperty('--vx-nav-btn-bg-hover', styles.navBtn.bgColorHover);
-		}
-
-		const navRadius = getResponsiveValue(styles.navBtn.radius, 4);
-		wrapper.style.setProperty('--vx-nav-btn-radius', `${navRadius}px`);
-
-		const navSize = getResponsiveValue(styles.navBtn.size, 36);
-		wrapper.style.setProperty('--vx-nav-btn-size', `${navSize}px`);
-
-		wrapper.style.setProperty('--vx-nav-btn-shadow', boxShadowToCSS(styles.navBtn.shadow));
-	}
-}
 
 /**
  * Render drag search UI
@@ -522,12 +314,13 @@ function initializeVoxelMap(
 	wrapper: HTMLElement
 ): void {
 	// Wait for Voxel.Maps to be ready
-	if (!window.Voxel?.Maps) {
+	const Voxel = (window as any).Voxel;
+	if (!Voxel?.Maps) {
 		console.warn('[Map Block] Voxel.Maps not available');
 		return;
 	}
 
-	window.Voxel.Maps.await(() => {
+	Voxel.Maps.await(() => {
 		try {
 			// Ensure map container has height before initializing
 			const styles = wrapper.style;
@@ -535,14 +328,13 @@ function initializeVoxelMap(
 			mapContainer.style.height = height;
 
 			// Create center LatLng using Voxel's API
-			const centerLatLng = new window.Voxel.Maps.LatLng(
+			const centerLatLng = new Voxel.Maps.LatLng(
 				dataConfig.center.lat,
 				dataConfig.center.lng
 			);
 
 			// Create the map instance using Voxel's Map class
-			// Voxel expects an object with 'el' property, not positional arguments
-			const map = new window.Voxel.Maps.Map({
+			const map = new Voxel.Maps.Map({
 				el: mapContainer,
 				center: centerLatLng,
 				zoom: dataConfig.zoom,
@@ -565,9 +357,9 @@ function initializeVoxelMap(
  */
 function handleSearchSubmit(
 	container: HTMLElement,
-	mapContainer: HTMLElement,
+	_mapContainer: HTMLElement,
 	detail: SearchSubmitEventDetail,
-	config: MapVxConfig
+	_config: MapVxConfig
 ): void {
 	// The markers will be updated by Voxel's search-form.js
 	// which reads marker templates from the post feed response
@@ -589,7 +381,7 @@ function handleSearchSubmit(
 function setupDragSearchHandlers(
 	dragUI: HTMLElement,
 	mapContainer: HTMLElement,
-	config: MapVxConfig
+	_config: MapVxConfig
 ): void {
 	const toggle = dragUI.querySelector<HTMLAnchorElement>('.ts-drag-toggle');
 	const searchArea = dragUI.querySelector<HTMLAnchorElement>('.ts-search-area');
@@ -656,19 +448,22 @@ function initMapBlocks(): void {
 
 	blocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.getAttribute('data-hydrated') === 'true') {
 			return;
 		}
 
-		// Parse vxconfig
-		const config = parseVxConfig(container);
-		if (!config) {
+		// Parse raw vxconfig
+		const rawConfig = parseVxConfig(container);
+		if (!rawConfig) {
 			console.warn('[Map Block] No vxconfig found for container:', container);
 			return;
 		}
 
+		// Normalize config for both vxconfig and REST API compatibility
+		const config = normalizeConfig(rawConfig);
+
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.setAttribute('data-hydrated', 'true');
 
 		// Apply custom styles
 		applyMapStyles(container, config);
@@ -694,17 +489,19 @@ function initMapBlocks(): void {
  * Wait for Voxel.Maps API to be ready
  */
 function waitForVoxelMaps(callback: () => void): void {
-	if (window.Voxel?.Maps) {
-		window.Voxel.Maps.await(callback);
+	const Voxel = (window as any).Voxel;
+	if (Voxel?.Maps) {
+		Voxel.Maps.await(callback);
 	} else {
 		// Listen for maps:loaded event
 		document.addEventListener('maps:loaded', callback, { once: true });
 
 		// Also try polling as fallback
 		const checkInterval = setInterval(() => {
-			if (window.Voxel?.Maps) {
+			const Voxel = (window as any).Voxel;
+			if (Voxel?.Maps) {
 				clearInterval(checkInterval);
-				window.Voxel.Maps.await(callback);
+				Voxel.Maps.await(callback);
 			}
 		}, 100);
 
@@ -741,8 +538,12 @@ window.addEventListener('resize', () => {
 	resizeTimeout = setTimeout(() => {
 		const blocks = document.querySelectorAll<HTMLElement>('.voxel-fse-map[data-hydrated="true"]');
 		blocks.forEach((container) => {
-			const config = parseVxConfig(container);
-			if (config) {
+			const hydrated = container.getAttribute('data-hydrated');
+			if (hydrated !== 'true') return;
+
+			const rawConfig = parseVxConfig(container);
+			if (rawConfig) {
+				const config = normalizeConfig(rawConfig);
 				applyMapStyles(container, config);
 			}
 		});

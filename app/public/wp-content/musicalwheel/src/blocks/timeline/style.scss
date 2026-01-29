@@ -1,0 +1,201 @@
+/**
+ * Timeline Block Frontend Styles
+ */
+
+.mw-timeline {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 1rem;
+
+	&__composer {
+		margin-bottom: 2rem;
+	}
+
+	&__feed {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	&__empty {
+		text-align: center;
+		padding: 3rem;
+		color: #666;
+	}
+
+	&__pagination {
+		margin-top: 2rem;
+		text-align: center;
+	}
+
+	&__load-more {
+		padding: 0.75rem 2rem;
+		background: #5B47FB;
+		color: white;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 1rem;
+
+		&:hover {
+			background: #4a38e0;
+		}
+	}
+}
+
+.mw-timeline-composer {
+	display: flex;
+	gap: 1rem;
+	padding: 1.5rem;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+	&__avatar {
+		flex-shrink: 0;
+
+		img {
+			width: 48px;
+			height: 48px;
+			border-radius: 50%;
+		}
+	}
+
+	&__form {
+		flex: 1;
+	}
+
+	&__input {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid #ddd;
+		border-radius: 8px;
+		resize: vertical;
+		font-family: inherit;
+		font-size: 1rem;
+
+		&:focus {
+			outline: none;
+			border-color: #5B47FB;
+		}
+	}
+
+	&__actions {
+		display: flex;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+	}
+
+	&__btn {
+		padding: 0.5rem 1rem;
+		border: 1px solid #ddd;
+		border-radius: 6px;
+		background: white;
+		cursor: pointer;
+		font-size: 0.9rem;
+
+		&--submit {
+			background: #5B47FB;
+			color: white;
+			border-color: #5B47FB;
+			margin-left: auto;
+
+			&:hover {
+				background: #4a38e0;
+			}
+		}
+
+		&:hover {
+			background: #f5f5f5;
+		}
+	}
+}
+
+.mw-timeline-status {
+	display: flex;
+	gap: 1rem;
+	padding: 1.5rem;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+	&__avatar {
+		flex-shrink: 0;
+
+		img {
+			width: 48px;
+			height: 48px;
+			border-radius: 50%;
+		}
+	}
+
+	&__content {
+		flex: 1;
+		min-width: 0;
+	}
+
+	&__header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	&__author {
+		font-weight: 600;
+		color: #333;
+	}
+
+	&__time {
+		color: #666;
+		font-size: 0.9rem;
+	}
+
+	&__text {
+		color: #333;
+		line-height: 1.6;
+		margin-bottom: 1rem;
+	}
+
+	&__actions {
+		display: flex;
+		gap: 1rem;
+	}
+
+	&__action {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.5rem 1rem;
+		background: transparent;
+		border: 1px solid #ddd;
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		transition: all 0.2s;
+
+		&:hover {
+			background: #f5f5f5;
+		}
+
+		&--like.is-liked {
+			background: #ffe0e0;
+			border-color: #ff4d4d;
+			color: #ff4d4d;
+		}
+	}
+
+	&__action-icon {
+		font-size: 1.2rem;
+	}
+
+	&__action-count {
+		font-weight: 600;
+	}
+
+	&__replies {
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid #eee;
+	}
+}

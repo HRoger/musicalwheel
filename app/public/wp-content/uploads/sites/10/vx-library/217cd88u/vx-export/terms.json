@@ -1,0 +1,257 @@
+[
+    {
+        "id": 2,
+        "slug": "general",
+        "name": "General",
+        "description": "",
+        "taxonomy": "<<#taxonomy:category:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 1,
+        "slug": "uncategorized",
+        "name": "Uncategorized",
+        "description": "",
+        "taxonomy": "<<#taxonomy:category:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 3,
+        "slug": "entire-place",
+        "name": "Entire place",
+        "description": "",
+        "taxonomy": "<<#taxonomy:place_type_of_place:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 4,
+        "slug": "private-room",
+        "name": "Private room",
+        "description": "",
+        "taxonomy": "<<#taxonomy:place_type_of_place:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 5,
+        "slug": "shared-room",
+        "name": "Shared room",
+        "description": "",
+        "taxonomy": "<<#taxonomy:place_type_of_place:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 6,
+        "slug": "bathtub",
+        "name": "Bathtub",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:c63d393.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 7,
+        "slug": "heating",
+        "name": "Heating",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:6651578.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 8,
+        "slug": "kitchen",
+        "name": "Kitchen",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:b0adacb.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 9,
+        "slug": "parking",
+        "name": "Parking",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:4d69a3a.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 10,
+        "slug": "pets-allowed",
+        "name": "Pets allowed",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:fa90147.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 11,
+        "slug": "tv",
+        "name": "TV",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:22bb684.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 12,
+        "slug": "washer",
+        "name": "Washer",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:ada8d41.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 13,
+        "slug": "wifi",
+        "name": "Wifi",
+        "description": "",
+        "taxonomy": "<<#taxonomy:amenities:key#>>",
+        "icon": "svg:<<#fileid:f199248.svg#>>",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 14,
+        "slug": "apartment",
+        "name": "Apartment",
+        "description": "",
+        "taxonomy": "<<#taxonomy:property-type:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 15,
+        "slug": "hotel",
+        "name": "Hotel",
+        "description": "",
+        "taxonomy": "<<#taxonomy:property-type:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 16,
+        "slug": "house",
+        "name": "House",
+        "description": "",
+        "taxonomy": "<<#taxonomy:property-type:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 17,
+        "slug": "unique-space",
+        "name": "Unique space",
+        "description": "",
+        "taxonomy": "<<#taxonomy:property-type:key#>>",
+        "icon": "",
+        "image": null,
+        "area": null,
+        "children": []
+    },
+    {
+        "id": 20,
+        "slug": "rome",
+        "name": "Rome",
+        "description": "Rome is the capital city of Italy. It is also the capital of the Lazio region, the centre of the Metropolitan City of Rome, and a special comune named Comune di Roma Capitale.",
+        "taxonomy": "<<#taxonomy:area:key#>>",
+        "icon": "svg:<<#fileid:8cd7d54.svg#>>",
+        "image": "99feef4.jpg",
+        "area": {
+            "address": "Rome, Rome, Italy",
+            "swlat": 41.63539,
+            "swlng": 12.22365,
+            "nelat": 42.14096,
+            "nelng": 12.85583
+        },
+        "children": []
+    },
+    {
+        "id": 21,
+        "slug": "berlin",
+        "name": "Berlin",
+        "description": "Berlin, Germany\u2019s capital, dates to the 13th century. Reminders of the city's turbulent 20th-century history include its Holocaust memorial and the Berlin Wall's graffitied remains. Divided during the Cold War, its 18th-century Brandenburg Gate has become a symbol of reunification. The city's also known for its art scene and modern landmarks like the gold-colored, swoop-roofed Berliner Philharmonie, built in 1963.",
+        "taxonomy": "<<#taxonomy:area:key#>>",
+        "icon": "",
+        "image": "cc28381.webp",
+        "area": {
+            "address": "Berlin, Germany",
+            "swlat": 52.33826,
+            "swlng": 13.08836,
+            "nelat": 52.6755,
+            "nelng": 13.76113
+        },
+        "children": []
+    },
+    {
+        "id": 18,
+        "slug": "paris",
+        "name": "Paris",
+        "description": "Also known as the Latin Quarter, the 5th arrondissement is home to the Sorbonne university and student-filled cafes. It's also known for its bookshops, including the famed Shakespeare &amp; Company. Family-friendly attractions include the Jardin des Plantes botanical gardens and the National Museum of Natural History. The stately Panth\u00e9on building holds the remains of notables like Voltaire and Marie Curie",
+        "taxonomy": "<<#taxonomy:area:key#>>",
+        "icon": "svg:<<#fileid:8cd7d54.svg#>>",
+        "image": "ffc1b4c.jpg",
+        "area": {
+            "address": "Paris, France",
+            "swlat": 48.8156,
+            "swlng": 2.224225,
+            "nelat": 48.90201,
+            "nelng": 2.469709
+        },
+        "children": []
+    },
+    {
+        "id": 19,
+        "slug": "amsterdam",
+        "name": "Amsterdam",
+        "description": "Amsterdam is the Netherlands\u2019 capital, known for its artistic heritage, elaborate canal system and narrow houses with gabled facades, legacies of the city\u2019s 17th-century Golden Age. Its Museum District houses the Van Gogh Museum, works by Rembrandt and Vermeer at the Rijksmuseum, and modern art at the Stedelijk. Cycling is key to the city\u2019s character, and there are numerous bike paths.",
+        "taxonomy": "<<#taxonomy:area:key#>>",
+        "icon": "svg:<<#fileid:8cd7d54.svg#>>",
+        "image": "b84aa20.jpg",
+        "area": {
+            "address": "Amsterdam, North Holland, Netherlands",
+            "swlat": 52.31824,
+            "swlng": 4.728759,
+            "nelat": 52.43122,
+            "nelng": 5.093288
+        },
+        "children": []
+    }
+]

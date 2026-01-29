@@ -9,9 +9,18 @@
     "description": "Create flexible layouts with CSS Flexbox properties for responsive design.",
     "supports": {
         "html": false,
-        "anchor": true
+        "anchor": true,
+        "align": ["full", "wide"]
     },
     "attributes": {
+        "align": {
+            "type": "string",
+            "default": "full"
+        },
+        "containerLayout": {
+            "type": "string",
+            "default": "flexbox"
+        },
         "containerWidth": {
             "type": "string",
             "default": "none"
@@ -21,7 +30,8 @@
             "default": "boxed"
         },
         "contentWidth": {
-            "type": "number"
+            "type": "number",
+            "default": 1140
         },
         "contentWidth_tablet": {
             "type": "number"
@@ -32,6 +42,10 @@
         "contentWidthUnit": {
             "type": "string",
             "default": "px"
+        },
+        "contentWidthCustom": {
+            "type": "string",
+            "default": ""
         },
         "minHeight": {
             "type": "number"
@@ -45,6 +59,10 @@
         "minHeightUnit": {
             "type": "string",
             "default": "px"
+        },
+        "minHeightCustom": {
+            "type": "string",
+            "default": ""
         },
         "htmlTag": {
             "type": "string",
@@ -97,6 +115,49 @@
         "alignContent": {
             "type": "string"
         },
+        "alignContent_tablet": {
+            "type": "string"
+        },
+        "alignContent_mobile": {
+            "type": "string"
+        },
+        "_comment_grid": "CSS Grid layout attributes",
+        "gridColumns": {
+            "type": "number",
+            "default": 2
+        },
+        "gridColumns_tablet": {
+            "type": "number"
+        },
+        "gridColumns_mobile": {
+            "type": "number"
+        },
+        "gridColumnsUnit": {
+            "type": "string",
+            "default": "fr"
+        },
+        "gridRows": {
+            "type": "number",
+            "default": 1
+        },
+        "gridRows_tablet": {
+            "type": "number"
+        },
+        "gridRows_mobile": {
+            "type": "number"
+        },
+        "gridRowsUnit": {
+            "type": "string",
+            "default": "fr"
+        },
+        "gridAutoFlow": {
+            "type": "string",
+            "default": "row"
+        },
+        "gridOutline": {
+            "type": "boolean",
+            "default": false
+        },
         "columnGap": {
             "type": "number",
             "default": 10
@@ -125,16 +186,374 @@
             "type": "string",
             "default": "px"
         },
+        "gapUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "gapsLinked": {
+            "type": "boolean",
+            "default": true
+        },
         "padding": {
             "type": "object"
         },
         "margin": {
             "type": "object"
         },
+        "_comment_background": "BackgroundControl attributes",
+        "backgroundActiveTab": {
+            "type": "string",
+            "default": "normal"
+        },
+        "backgroundType": {
+            "type": "string",
+            "default": "classic"
+        },
+        "backgroundTypeHover": {
+            "type": "string",
+            "default": "classic"
+        },
         "backgroundColor": {
             "type": "string"
         },
+        "backgroundColorHover": {
+            "type": "string"
+        },
         "backgroundImage": {
+            "type": "object"
+        },
+        "backgroundImage_tablet": {
+            "type": "object"
+        },
+        "backgroundImage_mobile": {
+            "type": "object"
+        },
+        "backgroundImageHover": {
+            "type": "object"
+        },
+        "backgroundImageHover_tablet": {
+            "type": "object"
+        },
+        "backgroundImageHover_mobile": {
+            "type": "object"
+        },
+        "bgImageResolution": {
+            "type": "string",
+            "default": "full"
+        },
+        "bgImageResolutionHover": {
+            "type": "string",
+            "default": "full"
+        },
+        "bgImagePosition": {
+            "type": "string"
+        },
+        "bgImagePosition_tablet": {
+            "type": "string"
+        },
+        "bgImagePosition_mobile": {
+            "type": "string"
+        },
+        "bgImagePositionHover": {
+            "type": "string"
+        },
+        "bgImagePositionHover_tablet": {
+            "type": "string"
+        },
+        "bgImagePositionHover_mobile": {
+            "type": "string"
+        },
+        "bgImageAttachment": {
+            "type": "string"
+        },
+        "bgImageAttachmentHover": {
+            "type": "string"
+        },
+        "bgImageRepeat": {
+            "type": "string"
+        },
+        "bgImageRepeat_tablet": {
+            "type": "string"
+        },
+        "bgImageRepeat_mobile": {
+            "type": "string"
+        },
+        "bgImageRepeatHover": {
+            "type": "string"
+        },
+        "bgImageRepeatHover_tablet": {
+            "type": "string"
+        },
+        "bgImageRepeatHover_mobile": {
+            "type": "string"
+        },
+        "bgImageSize": {
+            "type": "string"
+        },
+        "bgImageSize_tablet": {
+            "type": "string"
+        },
+        "bgImageSize_mobile": {
+            "type": "string"
+        },
+        "bgImageSizeHover": {
+            "type": "string"
+        },
+        "bgImageSizeHover_tablet": {
+            "type": "string"
+        },
+        "bgImageSizeHover_mobile": {
+            "type": "string"
+        },
+        "bgImageCustomWidth": {
+            "type": "number"
+        },
+        "bgImageCustomWidth_tablet": {
+            "type": "number"
+        },
+        "bgImageCustomWidth_mobile": {
+            "type": "number"
+        },
+        "bgImageCustomWidthUnit": {
+            "type": "string",
+            "default": "%"
+        },
+        "bgImageCustomWidthHover": {
+            "type": "number"
+        },
+        "bgImageCustomWidthHover_tablet": {
+            "type": "number"
+        },
+        "bgImageCustomWidthHover_mobile": {
+            "type": "number"
+        },
+        "bgImageCustomWidthHoverUnit": {
+            "type": "string",
+            "default": "%"
+        },
+        "gradientColor": {
+            "type": "string"
+        },
+        "gradientColorHover": {
+            "type": "string"
+        },
+        "gradientLocation": {
+            "type": "number",
+            "default": 0
+        },
+        "gradientLocation_tablet": {
+            "type": "number"
+        },
+        "gradientLocation_mobile": {
+            "type": "number"
+        },
+        "gradientLocationHover": {
+            "type": "number",
+            "default": 0
+        },
+        "gradientLocationHover_tablet": {
+            "type": "number"
+        },
+        "gradientLocationHover_mobile": {
+            "type": "number"
+        },
+        "gradientSecondColor": {
+            "type": "string"
+        },
+        "gradientSecondColorHover": {
+            "type": "string"
+        },
+        "gradientSecondLocation": {
+            "type": "number",
+            "default": 100
+        },
+        "gradientSecondLocation_tablet": {
+            "type": "number"
+        },
+        "gradientSecondLocation_mobile": {
+            "type": "number"
+        },
+        "gradientSecondLocationHover": {
+            "type": "number",
+            "default": 100
+        },
+        "gradientSecondLocationHover_tablet": {
+            "type": "number"
+        },
+        "gradientSecondLocationHover_mobile": {
+            "type": "number"
+        },
+        "gradientType": {
+            "type": "string",
+            "default": "linear"
+        },
+        "gradientTypeHover": {
+            "type": "string",
+            "default": "linear"
+        },
+        "gradientAngle": {
+            "type": "number",
+            "default": 180
+        },
+        "gradientAngle_tablet": {
+            "type": "number"
+        },
+        "gradientAngle_mobile": {
+            "type": "number"
+        },
+        "gradientAngleHover": {
+            "type": "number",
+            "default": 180
+        },
+        "gradientAngleHover_tablet": {
+            "type": "number"
+        },
+        "gradientAngleHover_mobile": {
+            "type": "number"
+        },
+        "gradientPosition": {
+            "type": "string",
+            "default": "center center"
+        },
+        "gradientPosition_tablet": {
+            "type": "string"
+        },
+        "gradientPosition_mobile": {
+            "type": "string"
+        },
+        "gradientPositionHover": {
+            "type": "string",
+            "default": "center center"
+        },
+        "gradientPositionHover_tablet": {
+            "type": "string"
+        },
+        "gradientPositionHover_mobile": {
+            "type": "string"
+        },
+        "bgTransitionDuration": {
+            "type": "number",
+            "default": 0.3
+        },
+
+        "_comment_extended_background": "Extended Background attributes (Video + Slideshow)",
+        "bgVideoLink": { "type": "string" },
+        "bgVideoStartTime": { "type": "number" },
+        "bgVideoEndTime": { "type": "number" },
+        "bgVideoPlayOnce": { "type": "boolean", "default": false },
+        "bgVideoPlayOnMobile": { "type": "boolean", "default": false },
+        "bgVideoPrivacyMode": { "type": "boolean", "default": false },
+        "bgVideoFallback": { "type": "object" },
+        "bgSlideshowGallery": { "type": "array", "default": [] },
+        "bgSlideshowInfiniteLoop": { "type": "boolean", "default": true },
+        "bgSlideshowDuration": { "type": "number", "default": 5000 },
+        "bgSlideshowTransition": { "type": "string", "default": "fade" },
+        "bgSlideshowTransitionDuration": { "type": "number", "default": 500 },
+        "bgSlideshowSize": { "type": "string" },
+        "bgSlideshowSize_tablet": { "type": "string" },
+        "bgSlideshowSize_mobile": { "type": "string" },
+        "bgSlideshowPosition": { "type": "string" },
+        "bgSlideshowPosition_tablet": { "type": "string" },
+        "bgSlideshowPosition_mobile": { "type": "string" },
+        "bgSlideshowLazyload": { "type": "boolean", "default": false },
+        "bgSlideshowKenBurns": { "type": "boolean", "default": false },
+
+        "_comment_background_overlay": "BackgroundOverlayControl attributes",
+        "bgOverlayActiveTab": { "type": "string", "default": "normal" },
+        "bgOverlayType": { "type": "string", "default": "classic" },
+        "bgOverlayTypeHover": { "type": "string", "default": "classic" },
+        "bgOverlayColor": { "type": "string" },
+        "bgOverlayColorHover": { "type": "string" },
+        "bgOverlayImage": { "type": "object" },
+        "bgOverlayImage_tablet": { "type": "object" },
+        "bgOverlayImage_mobile": { "type": "object" },
+        "bgOverlayImageHover": { "type": "object" },
+        "bgOverlayImageHover_tablet": { "type": "object" },
+        "bgOverlayImageHover_mobile": { "type": "object" },
+        "bgOverlayImagePosition": { "type": "string" },
+        "bgOverlayImagePosition_tablet": { "type": "string" },
+        "bgOverlayImagePosition_mobile": { "type": "string" },
+        "bgOverlayImagePositionHover": { "type": "string" },
+        "bgOverlayImagePositionHover_tablet": { "type": "string" },
+        "bgOverlayImagePositionHover_mobile": { "type": "string" },
+        "bgOverlayImageAttachment": { "type": "string" },
+        "bgOverlayImageAttachmentHover": { "type": "string" },
+        "bgOverlayImageRepeat": { "type": "string" },
+        "bgOverlayImageRepeat_tablet": { "type": "string" },
+        "bgOverlayImageRepeat_mobile": { "type": "string" },
+        "bgOverlayImageRepeatHover": { "type": "string" },
+        "bgOverlayImageRepeatHover_tablet": { "type": "string" },
+        "bgOverlayImageRepeatHover_mobile": { "type": "string" },
+        "bgOverlayImageSize": { "type": "string" },
+        "bgOverlayImageSize_tablet": { "type": "string" },
+        "bgOverlayImageSize_mobile": { "type": "string" },
+        "bgOverlayImageSizeHover": { "type": "string" },
+        "bgOverlayImageSizeHover_tablet": { "type": "string" },
+        "bgOverlayImageSizeHover_mobile": { "type": "string" },
+        "bgOverlayOpacity": { "type": "number", "default": 0.5 },
+        "bgOverlayOpacityHover": { "type": "number" },
+        "bgOverlayGradientColor": { "type": "string" },
+        "bgOverlayGradientColorHover": { "type": "string" },
+        "bgOverlayGradientLocation": { "type": "number", "default": 0 },
+        "bgOverlayGradientLocation_tablet": { "type": "number" },
+        "bgOverlayGradientLocation_mobile": { "type": "number" },
+        "bgOverlayGradientLocationHover": { "type": "number", "default": 0 },
+        "bgOverlayGradientLocationHover_tablet": { "type": "number" },
+        "bgOverlayGradientLocationHover_mobile": { "type": "number" },
+        "bgOverlayGradientSecondColor": { "type": "string" },
+        "bgOverlayGradientSecondColorHover": { "type": "string" },
+        "bgOverlayGradientSecondLocation": { "type": "number", "default": 100 },
+        "bgOverlayGradientSecondLocation_tablet": { "type": "number" },
+        "bgOverlayGradientSecondLocation_mobile": { "type": "number" },
+        "bgOverlayGradientSecondLocationHover": { "type": "number", "default": 100 },
+        "bgOverlayGradientSecondLocationHover_tablet": { "type": "number" },
+        "bgOverlayGradientSecondLocationHover_mobile": { "type": "number" },
+        "bgOverlayGradientType": { "type": "string", "default": "linear" },
+        "bgOverlayGradientTypeHover": { "type": "string", "default": "linear" },
+        "bgOverlayGradientAngle": { "type": "number", "default": 180 },
+        "bgOverlayGradientAngle_tablet": { "type": "number" },
+        "bgOverlayGradientAngle_mobile": { "type": "number" },
+        "bgOverlayGradientAngleHover": { "type": "number", "default": 180 },
+        "bgOverlayGradientAngleHover_tablet": { "type": "number" },
+        "bgOverlayGradientAngleHover_mobile": { "type": "number" },
+        "bgOverlayGradientPosition": { "type": "string", "default": "center center" },
+        "bgOverlayGradientPosition_tablet": { "type": "string" },
+        "bgOverlayGradientPosition_mobile": { "type": "string" },
+        "bgOverlayGradientPositionHover": { "type": "string", "default": "center center" },
+        "bgOverlayGradientPositionHover_tablet": { "type": "string" },
+        "bgOverlayGradientPositionHover_mobile": { "type": "string" },
+        "bgOverlayCssFilters": { "type": "object", "default": {} },
+        "bgOverlayCssFiltersHover": { "type": "object", "default": {} },
+        "bgOverlayTransitionDuration": { "type": "number", "default": 0.3 },
+
+        "_comment_border": "Border control attributes with Normal/Hover states",
+        "borderActiveTab": {
+            "type": "string",
+            "default": "normal"
+        },
+        "borderType": {
+            "type": "string",
+            "default": "none"
+        },
+        "borderTypeHover": {
+            "type": "string"
+        },
+        "borderWidth": {
+            "type": "object"
+        },
+        "borderWidthHover": {
+            "type": "object"
+        },
+        "borderColor": {
+            "type": "string"
+        },
+        "borderColorHover": {
+            "type": "string"
+        },
+        "borderRadiusDimensions": {
+            "type": "object"
+        },
+        "borderRadiusHover": {
             "type": "object"
         },
         "border": {
@@ -180,7 +599,575 @@
         "customContainerWidthUnit": {
             "type": "string",
             "default": "px"
+        },
+
+        "_comment_voxel_tab": "VoxelTab attributes for sticky, visibility, and loop features",
+
+        "stickyEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "stickyDesktop": {
+            "type": "string",
+            "default": "sticky"
+        },
+        "stickyTablet": {
+            "type": "string",
+            "default": "sticky"
+        },
+        "stickyMobile": {
+            "type": "string",
+            "default": "sticky"
+        },
+        "stickyTop": {
+            "type": "number"
+        },
+        "stickyTop_tablet": {
+            "type": "number"
+        },
+        "stickyTop_mobile": {
+            "type": "number"
+        },
+        "stickyTopUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "stickyLeft": {
+            "type": "number"
+        },
+        "stickyLeft_tablet": {
+            "type": "number"
+        },
+        "stickyLeft_mobile": {
+            "type": "number"
+        },
+        "stickyLeftUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "stickyRight": {
+            "type": "number"
+        },
+        "stickyRight_tablet": {
+            "type": "number"
+        },
+        "stickyRight_mobile": {
+            "type": "number"
+        },
+        "stickyRightUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "stickyBottom": {
+            "type": "number"
+        },
+        "stickyBottom_tablet": {
+            "type": "number"
+        },
+        "stickyBottom_mobile": {
+            "type": "number"
+        },
+        "stickyBottomUnit": {
+            "type": "string",
+            "default": "px"
+        },
+
+        "visibilityBehavior": {
+            "type": "string",
+            "default": "show"
+        },
+        "visibilityRules": {
+            "type": "array",
+            "default": []
+        },
+
+        "loopEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "loopSource": {
+            "type": "string",
+            "default": ""
+        },
+        "loopProperty": {
+            "type": "string",
+            "default": ""
+        },
+        "loopLimit": {
+            "type": "string",
+            "default": ""
+        },
+        "loopOffset": {
+            "type": "string",
+            "default": ""
+        },
+
+        "_comment_container_options": "Container Options - Inline Flex, Calc Height, Backdrop Blur (matches container-controller.php)",
+        "enableInlineFlex": {
+            "type": "boolean",
+            "default": false
+        },
+        "enableInlineFlex_tablet": {
+            "type": "boolean"
+        },
+        "enableInlineFlex_mobile": {
+            "type": "boolean"
+        },
+        "enableCalcMinHeight": {
+            "type": "boolean",
+            "default": false
+        },
+        "calcMinHeight": {
+            "type": "string",
+            "default": ""
+        },
+        "calcMinHeight_tablet": {
+            "type": "string"
+        },
+        "calcMinHeight_mobile": {
+            "type": "string"
+        },
+        "enableCalcMaxHeight": {
+            "type": "boolean",
+            "default": false
+        },
+        "calcMaxHeight": {
+            "type": "string",
+            "default": ""
+        },
+        "calcMaxHeight_tablet": {
+            "type": "string"
+        },
+        "calcMaxHeight_mobile": {
+            "type": "string"
+        },
+        "scrollbarColor": {
+            "type": "string"
+        },
+        "enableBackdropBlur": {
+            "type": "boolean",
+            "default": false
+        },
+        "backdropBlurStrength": {
+            "type": "number",
+            "default": 5
+        },
+        "backdropBlurStrength_tablet": {
+            "type": "number"
+        },
+        "backdropBlurStrength_mobile": {
+            "type": "number"
+        },
+
+        "_comment_shape_divider": "ShapeDividerControl attributes for section dividers",
+        "shapeDividerActiveTab": {
+            "type": "string",
+            "default": "top"
+        },
+        "shapeDividerTop": {
+            "type": "object",
+            "default": {}
+        },
+        "shapeDividerBottom": {
+            "type": "object",
+            "default": {}
+        },
+
+        "_comment_advanced_tab": "AdvancedTab attributes for margin, padding, visibility, position, etc.",
+        "blockMargin": {
+            "type": "object",
+            "default": {}
+        },
+        "blockMargin_tablet": {
+            "type": "object",
+            "default": {}
+        },
+        "blockMargin_mobile": {
+            "type": "object",
+            "default": {}
+        },
+        "blockPadding": {
+            "type": "object",
+            "default": {}
+        },
+        "blockPadding_tablet": {
+            "type": "object",
+            "default": {}
+        },
+        "blockPadding_mobile": {
+            "type": "object",
+            "default": {}
+        },
+        "hideDesktop": {
+            "type": "boolean",
+            "default": false
+        },
+        "hideTablet": {
+            "type": "boolean",
+            "default": false
+        },
+        "hideMobile": {
+            "type": "boolean",
+            "default": false
+        },
+        "elementId": {
+            "type": "string",
+            "default": ""
+        },
+        "customAttributes": {
+            "type": "string",
+            "default": ""
+        },
+        "elementWidth": {
+            "type": "string",
+            "default": ""
+        },
+        "elementWidth_tablet": {
+            "type": "string"
+        },
+        "elementWidth_mobile": {
+            "type": "string"
+        },
+        "elementCustomWidth": {
+            "type": "number"
+        },
+        "elementCustomWidth_tablet": {
+            "type": "number"
+        },
+        "elementCustomWidth_mobile": {
+            "type": "number"
+        },
+        "elementCustomWidthUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "position": {
+            "type": "string",
+            "default": ""
+        },
+        "offsetOrientationH": {
+            "type": "string",
+            "default": "start"
+        },
+        "offsetX": {
+            "type": "number"
+        },
+        "offsetX_tablet": {
+            "type": "number"
+        },
+        "offsetX_mobile": {
+            "type": "number"
+        },
+        "offsetXUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "offsetXEnd": {
+            "type": "number"
+        },
+        "offsetXEndUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "offsetOrientationV": {
+            "type": "string",
+            "default": "start"
+        },
+        "offsetY": {
+            "type": "number"
+        },
+        "offsetY_tablet": {
+            "type": "number"
+        },
+        "offsetY_mobile": {
+            "type": "number"
+        },
+        "offsetYUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "offsetYEnd": {
+            "type": "number"
+        },
+        "offsetYEndUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "zIndex_tablet": {
+            "type": "number"
+        },
+        "zIndex_mobile": {
+            "type": "number"
+        },
+        "opacity": {
+            "type": "number"
+        },
+        "boxShadowHover": {
+            "type": "object",
+            "default": {}
+        },
+        "transitionDuration": {
+            "type": "number",
+            "default": 0.3
+        },
+
+        "_comment_transform": "Transform attributes for rotate, translate, scale, skew",
+        "transformRotateZ": {
+            "type": "number"
+        },
+        "transformRotateZ_tablet": {
+            "type": "number"
+        },
+        "transformRotateZ_mobile": {
+            "type": "number"
+        },
+        "transformRotateX": {
+            "type": "number"
+        },
+        "transformRotateX_tablet": {
+            "type": "number"
+        },
+        "transformRotateX_mobile": {
+            "type": "number"
+        },
+        "transformRotateY": {
+            "type": "number"
+        },
+        "transformRotateY_tablet": {
+            "type": "number"
+        },
+        "transformRotateY_mobile": {
+            "type": "number"
+        },
+        "transformOffsetX": {
+            "type": "number"
+        },
+        "transformOffsetX_tablet": {
+            "type": "number"
+        },
+        "transformOffsetX_mobile": {
+            "type": "number"
+        },
+        "transformOffsetXUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "transformOffsetY": {
+            "type": "number"
+        },
+        "transformOffsetY_tablet": {
+            "type": "number"
+        },
+        "transformOffsetY_mobile": {
+            "type": "number"
+        },
+        "transformOffsetYUnit": {
+            "type": "string",
+            "default": "px"
+        },
+        "transformScaleX": {
+            "type": "number"
+        },
+        "transformScaleX_tablet": {
+            "type": "number"
+        },
+        "transformScaleX_mobile": {
+            "type": "number"
+        },
+        "transformScaleY": {
+            "type": "number"
+        },
+        "transformScaleY_tablet": {
+            "type": "number"
+        },
+        "transformScaleY_mobile": {
+            "type": "number"
+        },
+        "transformSkewX": {
+            "type": "number"
+        },
+        "transformSkewX_tablet": {
+            "type": "number"
+        },
+        "transformSkewX_mobile": {
+            "type": "number"
+        },
+        "transformSkewY": {
+            "type": "number"
+        },
+        "transformSkewY_tablet": {
+            "type": "number"
+        },
+        "transformSkewY_mobile": {
+            "type": "number"
+        },
+        "transformFlipH": {
+            "type": "boolean",
+            "default": false
+        },
+        "transformFlipV": {
+            "type": "boolean",
+            "default": false
+        },
+
+        "_comment_mask": "CSS Mask attributes",
+        "maskSwitch": {
+            "type": "boolean",
+            "default": false
+        },
+        "maskShape": {
+            "type": "string",
+            "default": ""
+        },
+        "maskImage": {
+            "type": "object",
+            "default": {}
+        },
+        "maskImage_tablet": {
+            "type": "object",
+            "default": {}
+        },
+        "maskImage_mobile": {
+            "type": "object",
+            "default": {}
+        },
+        "maskSize": {
+            "type": "string",
+            "default": "contain"
+        },
+        "maskSize_tablet": {
+            "type": "string"
+        },
+        "maskSize_mobile": {
+            "type": "string"
+        },
+        "maskSizeScale": {
+            "type": "number"
+        },
+        "maskSizeScale_tablet": {
+            "type": "number"
+        },
+        "maskSizeScale_mobile": {
+            "type": "number"
+        },
+        "maskSizeScaleUnit": {
+            "type": "string",
+            "default": "%"
+        },
+        "maskPosition": {
+            "type": "string",
+            "default": "center center"
+        },
+        "maskPosition_tablet": {
+            "type": "string"
+        },
+        "maskPosition_mobile": {
+            "type": "string"
+        },
+        "maskPositionX": {
+            "type": "number"
+        },
+        "maskPositionX_tablet": {
+            "type": "number"
+        },
+        "maskPositionX_mobile": {
+            "type": "number"
+        },
+        "maskPositionXUnit": {
+            "type": "string",
+            "default": "%"
+        },
+        "maskPositionY": {
+            "type": "number"
+        },
+        "maskPositionY_tablet": {
+            "type": "number"
+        },
+        "maskPositionY_mobile": {
+            "type": "number"
+        },
+        "maskPositionYUnit": {
+            "type": "string",
+            "default": "%"
+        },
+        "maskRepeat": {
+            "type": "string",
+            "default": "no-repeat"
+        },
+        "maskRepeat_tablet": {
+            "type": "string"
+        },
+        "maskRepeat_mobile": {
+            "type": "string"
+        },
+
+        "_comment_motion": "Motion effects attributes",
+        "motionFxScrollingEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "motionFxScrollingEffect": {
+            "type": "string",
+            "default": ""
+        },
+        "motionFxScrollingSpeed": {
+            "type": "number",
+            "default": 1
+        },
+        "motionFxMouseEnabled": {
+            "type": "boolean",
+            "default": false
+        },
+        "motionFxMouseEffect": {
+            "type": "string",
+            "default": ""
+        },
+        "motionFxMouseSpeed": {
+            "type": "number",
+            "default": 1
+        },
+
+        "_comment_ken_burns": "Ken Burns slideshow direction",
+        "bgSlideshowKenBurnsDir": {
+            "type": "string",
+            "default": "in"
+        },
+
+        "_comment_video_color": "Video Color attribute (applies color filter to video background)",
+        "bgVideoColor": {
+            "type": "string"
+        },
+
+        "_comment_layout_preset": "Layout preset selection state",
+        "layoutPreset": {
+            "type": "string",
+            "default": ""
+        },
+
+        "_comment_inspector_state": "Inspector panel state persistence",
+        "inspectorActiveTab": {
+            "type": "string",
+            "default": "layout"
+        },
+        "openPanels": {
+            "type": "object",
+            "default": {}
+        },
+        "layoutOpenPanel": {
+            "type": "string",
+            "default": "container"
+        },
+        "styleOpenPanel": {
+            "type": "string",
+            "default": "background"
+        },
+        "advancedOpenPanel": {
+            "type": "string",
+            "default": "layout"
         }
     },
-    "editorScript": "file:./index.js"
+    "editorScript": "file:./index.js",
+    "editorStyle": "file:./editor.css",
+    "viewScript": "file:./frontend.js",
+    "render": "file:./render.php"
 }

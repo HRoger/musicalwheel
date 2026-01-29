@@ -91,6 +91,13 @@ function normalizeConfig(raw: any): PostFeedVxConfig {
 				? raw.manual_post_ids
 				: [],
 		filters,
+		// Filters mode settings
+		excludePosts: raw.excludePosts ?? raw.exclude_posts ?? '',
+		priorityFilter: raw.priorityFilter ?? raw.priority_filter ?? false,
+		priorityMin: raw.priorityMin ?? raw.priority_min ?? 0,
+		priorityMax: raw.priorityMax ?? raw.priority_max ?? 0,
+		offset: raw.offset ?? 0,
+		cardTemplate: raw.cardTemplate ?? raw.card_template ?? 'main',
 		pagination: raw.pagination ?? 'none',
 		postsPerPage: raw.postsPerPage ?? raw.posts_per_page ?? 12,
 		displayDetails: raw.displayDetails ?? raw.display_details ?? false,
@@ -130,6 +137,13 @@ function buildAttributes(vxConfig: PostFeedVxConfig): PostFeedAttributes {
 		postType: vxConfig.postType,
 		manualPostIds: vxConfig.manualPostIds,
 		filters: vxConfig.filters,
+		// Filters mode settings
+		excludePosts: vxConfig.excludePosts,
+		priorityFilter: vxConfig.priorityFilter,
+		priorityMin: vxConfig.priorityMin,
+		priorityMax: vxConfig.priorityMax,
+		offset: vxConfig.offset,
+		cardTemplate: vxConfig.cardTemplate,
 		pagination: vxConfig.pagination,
 		postsPerPage: vxConfig.postsPerPage,
 		displayDetails: vxConfig.displayDetails,

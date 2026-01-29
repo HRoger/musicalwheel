@@ -1,0 +1,48 @@
+/*
+Theme Name: Voxel FSE
+Theme URI: https://github.com/your-repo/voxel-fse
+Description: Full Site Editing child theme for Voxel with custom FSE blocks, DynamicTagBuilder system, and dual REST API support. Reusable theme for directory and marketplace platforms.
+Author: Your Name
+Author URI: https://your-site.com
+Template: voxel
+Version: 1.0.1
+Requires PHP: 8.1
+Text Domain: voxel-fse
+License: GPL v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+This is a child theme of Voxel. Voxel is required.
+Supports project-specific branding via PROJECT_NAMESPACE constant.
+*/
+
+/*
+ * Child theme styles
+ * Main styles are loaded via theme.json and FSE blocks
+ */
+
+/* Admin Styles - Courses Addon Panel */
+.panel-image.addon-courses {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.panel-image.addon-courses svg {
+	fill: #ffffff;
+	width: 40px;
+	height: 40px;
+}
+
+/*
+ * FSE Templates Admin Bar Fix
+ *
+ * Voxel sets #wpadminbar { position: static !important } in commons.css,
+ * which breaks WordPress's default admin bar behavior.
+ *
+ * Solution: Override Voxel's static positioning back to fixed.
+ * This restores WordPress's default admin bar behavior where the bar
+ * is fixed at the top and content flows below it.
+ */
+
+/* Override Voxel's static admin bar - restore WordPress default fixed positioning */
+#wpadminbar {
+	position: fixed !important;
+}

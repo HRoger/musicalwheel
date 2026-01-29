@@ -1,0 +1,171 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "voxel-fse/countdown",
+	"title": "Countdown (VX)",
+	"category": "voxel-fse",
+	"description": "Display a countdown timer to a specific date and time",
+	"keywords": [
+		"countdown",
+		"timer",
+		"clock",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"dueDate": {
+			"type": "string",
+			"default": ""
+		},
+		"countdownEndedText": {
+			"type": "string",
+			"default": "The countdown has ended."
+		},
+		"hideSeconds": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMinutes": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideHours": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideDays": {
+			"type": "boolean",
+			"default": false
+		},
+		"disableAnimation": {
+			"type": "boolean",
+			"default": false
+		},
+		"horizontalOrientation": {
+			"type": "boolean",
+			"default": false
+		},
+		"itemSpacing": {
+			"type": "number",
+			"default": 15
+		},
+		"itemSpacing_tablet": {
+			"type": "number",
+			"default": 10
+		},
+		"itemSpacing_mobile": {
+			"type": "number",
+			"default": 5
+		},
+		"itemSpacingUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"contentSpacing": {
+			"type": "number",
+			"default": 10
+		},
+		"contentSpacing_tablet": {
+			"type": "number",
+			"default": 8
+		},
+		"contentSpacing_mobile": {
+			"type": "number",
+			"default": 5
+		},
+		"contentSpacingUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"textColor": {
+			"type": "string",
+			"default": ""
+		},
+		"numberColor": {
+			"type": "string",
+			"default": ""
+		},
+		"endedColor": {
+			"type": "string",
+			"default": ""
+		},
+		"textTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"textTypographyFontFamily": {
+			"type": "string",
+			"default": ""
+		},
+		"numberTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"numberTypographyFontFamily": {
+			"type": "string",
+			"default": ""
+		},
+		"endedTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"endedTypographyFontFamily": {
+			"type": "string",
+			"default": ""
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "style"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "number"
+		},
+		"loopOffset": {
+			"type": "number"
+		}
+	},
+	"editorScript": "file:./index.tsx",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php"
+}

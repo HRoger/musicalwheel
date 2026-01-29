@@ -1,0 +1,381 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/slider",
+	"version": "1.0.0",
+	"title": "Slider (VX)",
+	"category": "voxel-fse",
+	"description": "Display product images in a slider with thumbnails and lightbox support. Syncs with product variations.",
+	"keywords": [
+		"slider",
+		"carousel",
+		"gallery",
+		"images",
+		"product",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"images": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"imageSource": {
+			"type": "string",
+			"default": "manual",
+			"enum": [
+				"manual",
+				"dynamic"
+			]
+		},
+		"dynamicSource": {
+			"type": "string",
+			"default": ""
+		},
+		"visibleCount": {
+			"type": "number",
+			"default": 3
+		},
+		"displaySize": {
+			"type": "string",
+			"default": "medium"
+		},
+		"displaySize_tablet": {
+			"type": "string"
+		},
+		"displaySize_mobile": {
+			"type": "string"
+		},
+		"lightboxSize": {
+			"type": "string",
+			"default": "large"
+		},
+		"lightboxSize_tablet": {
+			"type": "string"
+		},
+		"lightboxSize_mobile": {
+			"type": "string"
+		},
+		"linkType": {
+			"type": "string",
+			"default": "lightbox",
+			"enum": [
+				"none",
+				"custom_link",
+				"lightbox"
+			]
+		},
+		"customLinkUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"customLinkTarget": {
+			"type": "string",
+			"default": ""
+		},
+		"showThumbnails": {
+			"type": "boolean",
+			"default": true
+		},
+		"autoSlide": {
+			"type": "boolean",
+			"default": false
+		},
+		"autoSlideInterval": {
+			"type": "number",
+			"default": 3000
+		},
+		"autoSlideInterval_tablet": {
+			"type": "number"
+		},
+		"autoSlideInterval_mobile": {
+			"type": "number"
+		},
+		"rightChevronIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"leftChevronIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"imageAspectRatio": {
+			"type": "string",
+			"default": ""
+		},
+		"imageAspectRatio_tablet": {
+			"type": "string"
+		},
+		"imageAspectRatio_mobile": {
+			"type": "string"
+		},
+		"imageBorderRadius": {
+			"type": "number"
+		},
+		"imageBorderRadius_tablet": {
+			"type": "number"
+		},
+		"imageBorderRadius_mobile": {
+			"type": "number"
+		},
+		"imageOpacity": {
+			"type": "number"
+		},
+		"imageOpacity_tablet": {
+			"type": "number"
+		},
+		"imageOpacity_mobile": {
+			"type": "number"
+		},
+		"imageOpacityHover": {
+			"type": "number"
+		},
+		"imageOpacityHover_tablet": {
+			"type": "number"
+		},
+		"imageOpacityHover_mobile": {
+			"type": "number"
+		},
+		"thumbnailSize": {
+			"type": "number"
+		},
+		"thumbnailSize_tablet": {
+			"type": "number"
+		},
+		"thumbnailSize_mobile": {
+			"type": "number"
+		},
+		"thumbnailBorderRadius": {
+			"type": "number"
+		},
+		"thumbnailBorderRadius_tablet": {
+			"type": "number"
+		},
+		"thumbnailBorderRadius_mobile": {
+			"type": "number"
+		},
+		"thumbnailOpacity": {
+			"type": "number"
+		},
+		"thumbnailOpacity_tablet": {
+			"type": "number"
+		},
+		"thumbnailOpacity_mobile": {
+			"type": "number"
+		},
+		"thumbnailOpacityHover": {
+			"type": "number"
+		},
+		"thumbnailOpacityHover_tablet": {
+			"type": "number"
+		},
+		"thumbnailOpacityHover_mobile": {
+			"type": "number"
+		},
+		"navHorizontalPosition": {
+			"type": "number"
+		},
+		"navHorizontalPosition_tablet": {
+			"type": "number"
+		},
+		"navHorizontalPosition_mobile": {
+			"type": "number"
+		},
+		"navVerticalPosition": {
+			"type": "number"
+		},
+		"navVerticalPosition_tablet": {
+			"type": "number"
+		},
+		"navVerticalPosition_mobile": {
+			"type": "number"
+		},
+		"navButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonSize": {
+			"type": "number"
+		},
+		"navButtonSize_tablet": {
+			"type": "number"
+		},
+		"navButtonSize_mobile": {
+			"type": "number"
+		},
+		"navButtonIconSize": {
+			"type": "number"
+		},
+		"navButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"navButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"navButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"navBackdropBlur": {
+			"type": "number"
+		},
+		"navBackdropBlur_tablet": {
+			"type": "number"
+		},
+		"navBackdropBlur_mobile": {
+			"type": "number"
+		},
+		"navBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"navBorderWidth": {
+			"type": "number"
+		},
+		"navBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonBorderRadius": {
+			"type": "number"
+		},
+		"navButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"navButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"navButtonSizeHover": {
+			"type": "number"
+		},
+		"navButtonSizeHover_tablet": {
+			"type": "number"
+		},
+		"navButtonSizeHover_mobile": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover_tablet": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover_mobile": {
+			"type": "number"
+		},
+		"navButtonIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"navBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"customClasses": {
+			"type": "string",
+			"default": ""
+		},
+		"sliderAccordion": {
+			"type": "string"
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "images"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "style-general"
+		},
+		"generalImageState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"thumbnailState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"navState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"imagesDynamicTag": {
+			"type": "string"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

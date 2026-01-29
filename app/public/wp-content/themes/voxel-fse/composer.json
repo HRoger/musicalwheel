@@ -1,0 +1,33 @@
+{
+	"name": "voxel-fse/voxel-fse",
+	"description": "FSE Child Theme for Voxel",
+	"type": "wordpress-theme",
+	"license": "GPL-2.0-or-later",
+	"minimum-stability": "stable",
+	"prefer-stable": true,
+	"autoload": {
+		"psr-4": {
+			"VoxelFSE\\": "app/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"VoxelFSE\\Tests\\": "tests/"
+		}
+	},
+	"require-dev": {
+		"phpunit/phpunit": "^10.5",
+		"brain/monkey": "^2.6",
+		"mockery/mockery": "^1.6"
+	},
+	"scripts": {
+		"test": "phpunit",
+		"test:unit": "phpunit --testsuite=unit",
+		"test:integration": "phpunit --testsuite=integration"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}

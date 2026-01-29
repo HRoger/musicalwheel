@@ -1,0 +1,774 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/stripe-account",
+	"version": "1.0.0",
+	"title": "Stripe Account (VX)",
+	"category": "voxel-fse",
+	"description": "Stripe Connect vendor account management widget for onboarding, dashboard access, and shipping configuration.",
+	"keywords": [
+		"stripe",
+		"connect",
+		"vendor",
+		"payment",
+		"shipping",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "general-settings"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "panel"
+		},
+		"genImage": {
+			"type": "object",
+			"default": {
+				"id": 0,
+				"url": ""
+			}
+		},
+		"genImageDynamicTag": {
+			"type": "string",
+			"default": ""
+		},
+		"previewAsUser": {
+			"type": "number",
+			"default": null
+		},
+		"previewAsUserDynamicTag": {
+			"type": "string",
+			"default": ""
+		},
+		"tsSetupIco": {
+			"type": "object",
+			"default": null
+		},
+		"tsSubmitIco": {
+			"type": "object",
+			"default": null
+		},
+		"tsUpdateIco": {
+			"type": "object",
+			"default": null
+		},
+		"tsStripeIco": {
+			"type": "object",
+			"default": null
+		},
+		"tsShippingIco": {
+			"type": "object",
+			"default": null
+		},
+		"tsChevronLeft": {
+			"type": "object",
+			"default": null
+		},
+		"saveIcon": {
+			"type": "object",
+			"default": null
+		},
+		"handleIcon": {
+			"type": "object",
+			"default": null
+		},
+		"tsZoneIco": {
+			"type": "object",
+			"default": null
+		},
+		"trashIcon": {
+			"type": "object",
+			"default": null
+		},
+		"downIcon": {
+			"type": "object",
+			"default": null
+		},
+		"tsSearchIcon": {
+			"type": "object",
+			"default": null
+		},
+		"tsAddIcon": {
+			"type": "object",
+			"default": null
+		},
+		"panelBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"panelBorderWidth": {
+			"type": "object"
+		},
+		"panelBorderColor": {
+			"type": "string"
+		},
+		"panelBorderRadius": {
+			"type": "number"
+		},
+		"panelBorderRadius_tablet": {
+			"type": "number"
+		},
+		"panelBorderRadius_mobile": {
+			"type": "number"
+		},
+		"panelBackground": {
+			"type": "string"
+		},
+		"panelBoxShadow": {
+			"type": "object"
+		},
+		"panelBodySpacing": {
+			"type": "number"
+		},
+		"panelBodySpacing_tablet": {
+			"type": "number"
+		},
+		"panelBodySpacing_mobile": {
+			"type": "number"
+		},
+		"panelBodyContentGap": {
+			"type": "number"
+		},
+		"panelBodyContentGap_tablet": {
+			"type": "number"
+		},
+		"panelBodyContentGap_mobile": {
+			"type": "number"
+		},
+		"panelTypography": {
+			"type": "object"
+		},
+		"panelTextColor": {
+			"type": "string"
+		},
+		"fieldLabelTypography": {
+			"type": "object"
+		},
+		"fieldLabelColor": {
+			"type": "string"
+		},
+		"fieldSelectColor": {
+			"type": "string"
+		},
+		"inputTextareaState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"inputPlaceholderColor": {
+			"type": "string"
+		},
+		"inputPlaceholderTypography": {
+			"type": "object"
+		},
+		"inputValueTextColor": {
+			"type": "string"
+		},
+		"inputValueTypography": {
+			"type": "object"
+		},
+		"inputBackgroundColor": {
+			"type": "string"
+		},
+		"inputBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"inputBorderWidth": {
+			"type": "object"
+		},
+		"inputBorderColor": {
+			"type": "string"
+		},
+		"inputBorderRadius": {
+			"type": "number"
+		},
+		"inputBorderRadius_tablet": {
+			"type": "number"
+		},
+		"inputBorderRadius_mobile": {
+			"type": "number"
+		},
+		"inputHeight": {
+			"type": "number"
+		},
+		"inputHeight_tablet": {
+			"type": "number"
+		},
+		"inputHeight_mobile": {
+			"type": "number"
+		},
+		"textareaPadding": {
+			"type": "object"
+		},
+		"textareaHeight": {
+			"type": "number"
+		},
+		"textareaHeight_tablet": {
+			"type": "number"
+		},
+		"textareaHeight_mobile": {
+			"type": "number"
+		},
+		"textareaBorderRadius": {
+			"type": "number"
+		},
+		"textareaBorderRadius_tablet": {
+			"type": "number"
+		},
+		"textareaBorderRadius_mobile": {
+			"type": "number"
+		},
+		"inputBackgroundColorHover": {
+			"type": "string"
+		},
+		"inputBorderColorHover": {
+			"type": "string"
+		},
+		"inputPlaceholderColorHover": {
+			"type": "string"
+		},
+		"inputTextColorHover": {
+			"type": "string"
+		},
+		"inputIconColorHover": {
+			"type": "string"
+		},
+		"inputBackgroundColorActive": {
+			"type": "string"
+		},
+		"inputBorderColorActive": {
+			"type": "string"
+		},
+		"inputPlaceholderColorActive": {
+			"type": "string"
+		},
+		"inputTextColorActive": {
+			"type": "string"
+		},
+		"inputSuffixButtonTypography": {
+			"type": "object"
+		},
+		"inputSuffixTextColor": {
+			"type": "string"
+		},
+		"inputSuffixBackgroundColor": {
+			"type": "string"
+		},
+		"inputSuffixBorderRadius": {
+			"type": "number"
+		},
+		"inputSuffixBorderRadius_tablet": {
+			"type": "number"
+		},
+		"inputSuffixBorderRadius_mobile": {
+			"type": "number"
+		},
+		"inputSuffixBoxShadow": {
+			"type": "object"
+		},
+		"inputSuffixSideMargin": {
+			"type": "number"
+		},
+		"inputSuffixSideMargin_tablet": {
+			"type": "number"
+		},
+		"inputSuffixSideMargin_mobile": {
+			"type": "number"
+		},
+		"inputSuffixIconColor": {
+			"type": "string"
+		},
+		"switcherBackgroundInactive": {
+			"type": "string"
+		},
+		"switcherBackgroundActive": {
+			"type": "string"
+		},
+		"switcherHandleBackground": {
+			"type": "string"
+		},
+		"selectState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"selectBoxShadow": {
+			"type": "object"
+		},
+		"selectBackgroundColor": {
+			"type": "string"
+		},
+		"selectTextColor": {
+			"type": "string"
+		},
+		"selectBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"selectBorderWidth": {
+			"type": "object"
+		},
+		"selectBorderColor": {
+			"type": "string"
+		},
+		"selectBorderRadius": {
+			"type": "number"
+		},
+		"selectBorderRadius_tablet": {
+			"type": "number"
+		},
+		"selectBorderRadius_mobile": {
+			"type": "number"
+		},
+		"selectHideChevron": {
+			"type": "boolean",
+			"default": false
+		},
+		"selectChevronColor": {
+			"type": "string"
+		},
+		"selectBackgroundColorHover": {
+			"type": "string"
+		},
+		"selectTextColorHover": {
+			"type": "string"
+		},
+		"selectBorderColorHover": {
+			"type": "string"
+		},
+		"selectIconColorHover": {
+			"type": "string"
+		},
+		"selectBoxShadowHover": {
+			"type": "object"
+		},
+		"tabsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"tabsGap": {
+			"type": "number"
+		},
+		"tabsGap_tablet": {
+			"type": "number"
+		},
+		"tabsGap_mobile": {
+			"type": "number"
+		},
+		"tabsBackground": {
+			"type": "string"
+		},
+		"tabsBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"tabsBorderWidth": {
+			"type": "object"
+		},
+		"tabsBorderColor": {
+			"type": "string"
+		},
+		"tabsBorderRadius": {
+			"type": "number"
+		},
+		"tabsBorderRadius_tablet": {
+			"type": "number"
+		},
+		"tabsBorderRadius_mobile": {
+			"type": "number"
+		},
+		"tabsTextTypography": {
+			"type": "object"
+		},
+		"tabsTextColor": {
+			"type": "string"
+		},
+		"tabsBackgroundSelected": {
+			"type": "string"
+		},
+		"tabsColorSelected": {
+			"type": "string"
+		},
+		"tabsBorderColorSelected": {
+			"type": "string"
+		},
+		"tabsBoxShadowSelected": {
+			"type": "object"
+		},
+		"headingTypography": {
+			"type": "object"
+		},
+		"headingColor": {
+			"type": "string"
+		},
+		"repeaterBackground": {
+			"type": "string"
+		},
+		"repeaterBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"repeaterBorderWidth": {
+			"type": "object"
+		},
+		"repeaterBorderColor": {
+			"type": "string"
+		},
+		"repeaterBorderRadius": {
+			"type": "number"
+		},
+		"repeaterBorderRadius_tablet": {
+			"type": "number"
+		},
+		"repeaterBorderRadius_mobile": {
+			"type": "number"
+		},
+		"repeaterBoxShadow": {
+			"type": "object"
+		},
+		"repeaterHeadSecondaryColor": {
+			"type": "string"
+		},
+		"repeaterHeadSecondaryTypography": {
+			"type": "object"
+		},
+		"repeaterHeadIconColor": {
+			"type": "string"
+		},
+		"repeaterHeadBorderColor": {
+			"type": "string"
+		},
+		"repeaterHeadBorderWidth": {
+			"type": "number"
+		},
+		"repeaterHeadBorderWidth_tablet": {
+			"type": "number"
+		},
+		"repeaterHeadBorderWidth_mobile": {
+			"type": "number"
+		},
+		"repeaterIconButtonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"repeaterIconButtonColor": {
+			"type": "string"
+		},
+		"repeaterIconButtonBackground": {
+			"type": "string"
+		},
+		"repeaterIconButtonBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"repeaterIconButtonBorderWidth": {
+			"type": "object"
+		},
+		"repeaterIconButtonBorderColor": {
+			"type": "string"
+		},
+		"repeaterIconButtonBorderRadius": {
+			"type": "number"
+		},
+		"repeaterIconButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"repeaterIconButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"repeaterIconButtonColorHover": {
+			"type": "string"
+		},
+		"repeaterIconButtonBackgroundHover": {
+			"type": "string"
+		},
+		"repeaterIconButtonBorderColorHover": {
+			"type": "string"
+		},
+		"pillsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"pillsTypography": {
+			"type": "object"
+		},
+		"pillsBorderRadius": {
+			"type": "number"
+		},
+		"pillsBorderRadius_tablet": {
+			"type": "number"
+		},
+		"pillsBorderRadius_mobile": {
+			"type": "number"
+		},
+		"pillsTextColor": {
+			"type": "string"
+		},
+		"pillsBackgroundColor": {
+			"type": "string"
+		},
+		"pillsTextColorHover": {
+			"type": "string"
+		},
+		"pillsBackgroundColorHover": {
+			"type": "string"
+		},
+		"primaryButtonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"primaryButtonTypography": {
+			"type": "object"
+		},
+		"primaryButtonBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"primaryButtonBorderWidth": {
+			"type": "object"
+		},
+		"primaryButtonBorderRadius": {
+			"type": "number"
+		},
+		"primaryButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"primaryButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"primaryButtonBoxShadow": {
+			"type": "object"
+		},
+		"primaryButtonTextColor": {
+			"type": "string"
+		},
+		"primaryButtonBackgroundColor": {
+			"type": "string"
+		},
+		"primaryButtonBorderColor": {
+			"type": "string"
+		},
+		"primaryButtonIconColor": {
+			"type": "string"
+		},
+		"primaryButtonIconSize": {
+			"type": "number"
+		},
+		"primaryButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"primaryButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"primaryButtonIconTextSpacing": {
+			"type": "number"
+		},
+		"primaryButtonIconTextSpacing_tablet": {
+			"type": "number"
+		},
+		"primaryButtonIconTextSpacing_mobile": {
+			"type": "number"
+		},
+		"primaryButtonTextColorHover": {
+			"type": "string"
+		},
+		"primaryButtonBackgroundColorHover": {
+			"type": "string"
+		},
+		"primaryButtonBorderColorHover": {
+			"type": "string"
+		},
+		"primaryButtonIconColorHover": {
+			"type": "string"
+		},
+		"secondaryButtonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"secondaryButtonTypography": {
+			"type": "object"
+		},
+		"secondaryButtonBorderRadius": {
+			"type": "number"
+		},
+		"secondaryButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"secondaryButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"secondaryButtonTextColor": {
+			"type": "string"
+		},
+		"secondaryButtonPadding": {
+			"type": "object"
+		},
+		"secondaryButtonHeight": {
+			"type": "number"
+		},
+		"secondaryButtonHeight_tablet": {
+			"type": "number"
+		},
+		"secondaryButtonHeight_mobile": {
+			"type": "number"
+		},
+		"secondaryButtonBackgroundColor": {
+			"type": "string"
+		},
+		"secondaryButtonBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"secondaryButtonBorderWidth": {
+			"type": "object"
+		},
+		"secondaryButtonBorderColor": {
+			"type": "string"
+		},
+		"secondaryButtonIconSize": {
+			"type": "number"
+		},
+		"secondaryButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"secondaryButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"secondaryButtonIconRightPadding": {
+			"type": "number"
+		},
+		"secondaryButtonIconRightPadding_tablet": {
+			"type": "number"
+		},
+		"secondaryButtonIconRightPadding_mobile": {
+			"type": "number"
+		},
+		"secondaryButtonIconColor": {
+			"type": "string"
+		},
+		"secondaryButtonTextColorHover": {
+			"type": "string"
+		},
+		"secondaryButtonBackgroundColorHover": {
+			"type": "string"
+		},
+		"secondaryButtonBorderColorHover": {
+			"type": "string"
+		},
+		"secondaryButtonIconColorHover": {
+			"type": "string"
+		},
+		"tertiaryButtonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"tertiaryButtonIconColor": {
+			"type": "string"
+		},
+		"tertiaryButtonIconSize": {
+			"type": "number"
+		},
+		"tertiaryButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"tertiaryButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"tertiaryButtonBackground": {
+			"type": "string"
+		},
+		"tertiaryButtonBorderType": {
+			"type": "string",
+			"default": "Default"
+		},
+		"tertiaryButtonBorderWidth": {
+			"type": "object"
+		},
+		"tertiaryButtonBorderColor": {
+			"type": "string"
+		},
+		"tertiaryButtonBorderRadius": {
+			"type": "number"
+		},
+		"tertiaryButtonBorderRadius_tablet": {
+			"type": "number"
+		},
+		"tertiaryButtonBorderRadius_mobile": {
+			"type": "number"
+		},
+		"tertiaryButtonTypography": {
+			"type": "object"
+		},
+		"tertiaryButtonTextColor": {
+			"type": "string"
+		},
+		"tertiaryButtonIconColorHover": {
+			"type": "string"
+		},
+		"tertiaryButtonBackgroundHover": {
+			"type": "string"
+		},
+		"tertiaryButtonBorderColorHover": {
+			"type": "string"
+		},
+		"tertiaryButtonTextColorHover": {
+			"type": "string"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

@@ -1,0 +1,95 @@
+/**
+ * Gallery Block - Editor Styles
+ *
+ * Editor-only styles for the Gallery block.
+ * Frontend styles inherit from Voxel parent theme (gallery.css).
+ *
+ * @package VoxelFSE
+ */
+
+/* Editor wrapper */
+.voxel-fse-gallery {
+	width: 100%;
+}
+
+/* Gallery preview in editor */
+.voxel-fse-gallery .ts-gallery-grid {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* Gallery control in sidebar */
+.voxel-fse-gallery-control {
+	width: 100%;
+}
+
+.voxel-fse-gallery-preview {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 4px;
+	background: #fafafa;
+}
+
+/* Placeholder state */
+.voxel-fse-block-placeholder {
+	list-style: none;
+}
+
+/* Inspector controls spacing */
+.voxel-fse-gallery .components-panel__body h4 {
+	margin-top: 16px;
+	margin-bottom: 8px;
+	padding-top: 16px;
+	border-top: 1px solid #e0e0e0;
+}
+
+.voxel-fse-gallery .components-panel__body h4:first-child {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: none;
+}
+
+/* Mosaic controls */
+.voxel-fse-mosaic-item {
+	padding-bottom: 16px;
+	margin-bottom: 16px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.voxel-fse-mosaic-item:last-child {
+	border-bottom: none;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+/* Style tab buttons */
+.voxel-fse-style-tabs .components-button-group {
+	display: flex;
+	width: 100%;
+}
+
+.voxel-fse-style-tabs .components-button-group .components-button {
+	flex: 1;
+	justify-content: center;
+}
+
+/* Empty state */
+.voxel-fse-gallery .ts-empty-item {
+	list-style: none;
+}
+
+/* Image overlay in editor */
+.voxel-fse-gallery .ts-image-overlay {
+	pointer-events: none;
+}
+
+/* Last item overlay */
+.voxel-fse-gallery .ts-gallery-last-item .ts-image-overlay {
+	pointer-events: none;
+}
+
+/* Hidden images container */
+.voxel-fse-gallery .hidden {
+	display: none !important;
+}

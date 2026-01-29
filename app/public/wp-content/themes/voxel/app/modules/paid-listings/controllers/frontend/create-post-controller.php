@@ -1,0 +1,191 @@
+<?php
+
+namespace Voxel\Modules\Paid_Listings\Controllers\Frontend;
+
+use \Voxel\Modules\Paid_Listings as Module;
+
+if ( ! defined('ABSPATH') ) {
+	exit;
+}
+
+class Create_Post_Controller extends \Voxel\Controllers\Base_Controller {
+
+	protected function hooks() {
+		$this->filter( 'voxel/create_post/no_permission_screen/content', '@no_permission_screen_content', 100, 3 );
+		$this->on( 'template_redirect', '@maybe_redirect_to_pricing_page' );
+		$this->on( 'voxel/frontend/before_post_update', '@frontend_before_post_update' );
+		$this->on( 'voxel/frontend/post_updated', '@frontend_post_updated' );
+		$this->on( 'voxel/user/can_create_post', '@user_can_create_post', 100, 3 );
+		$this->filter( 'voxel/show_edit_action', '@should_show_edit_action', 100, 2 );
+	}
+
+	protected function no_permission_screen_content( $content, $post_type, $user ) {
+		if ( ! Module\has_plans_for_post_type( $post_type ) ) {
+			return $content;
+		}
+
+		$content['title'] = _x( 'You need a plan to proceed', 'paid listings', 'voxel' );
+		$content['actions'] = [
+			[
+				'text' => _x( 'View plans', 'paid listings', 'voxel' ),
+				'link' => add_query_arg( [
+					'process' => 'new',
+					'item_type' => $post_type->get_key(),
+				], get_permalink( \Voxel\get('paid_listings.settings.templates.pricing') ) ),
+			],
+		];
+
+		return $content;
+	}
+
+	protected function maybe_redirect_to_pricing_page() {
+		foreach ( \Voxel\Post_Type::get_voxel_types() as $post_type ) {
+			$page_id = $post_type->get_templates()['form'] ?? null;
+			if ( is_numeric( $page_id ) && $page_id > 0 && is_page( $page_id ) && ! is_admin() ) {
+				if ( $post_type->get_key() === 'profile' ) {
+					return;
+				}
+
+				if ( ! empty( $_GET['post_id'] ) ) {
+					$post = \Voxel\Post::get( $_GET['post_id'] );
+					if ( $post && $post->is_editable_by_current_user() && $post->post_type->get_key() === $post_type->get_key() ) {
+						return;
+					}
+				}
+
+				if ( ! Module\has_plans_for_post_type( $post_type ) ) {
+					return;
+				}
+
+				if ( \Voxel\is_preview_mode() ) {
+					return;
+				}
+
+				// If a valid package_id is provided, use it directly to create/get a draft
+				if ( ! empty( $_GET['package_id'] ) ) {
+					$customer = \Voxel\get_current_user();
+					if ( $customer ) {
+						$package = Module\Listing_Package::get( absint( $_GET['package_id'] ) );
+						if ( $package && $customer->is_customer_of( $package->order->get_id() ) && $package->can_create_post( $post_type ) ) {
+							$draft = Module\get_or_create_draft( $package, $post_type, $customer );
+							if ( $draft !== null ) {
+								wp_safe_redirect( $draft->get_edit_link() );
+								exit;
+							}
+						}
+					}
+				}
+
+				// Auto-select first available plan if setting is enabled
+				if ( \Voxel\get( 'paid_listings.settings.auto_select_plan' ) ) {
+					$customer = \Voxel\get_current_user();
+					if ( $customer ) {
+						$available_packages = Module\get_available_packages( $customer, $post_type );
+						foreach ( $available_packages as $package ) {
+							// Verify package can actually create posts (live check against current limits)
+							if ( $package->can_create_post( $post_type ) ) {
+								$draft = Module\get_or_create_draft( $package, $post_type, $customer );
+
+								if ( $draft !== null ) {
+									$redirect_url = $draft->get_edit_link();
+
+									// preserve additional query parameters during plan selection
+									if ( ! empty( $_GET ) ) {
+										$redirect_url = add_query_arg( [
+											'post_id' => $draft->get_id(),
+										], \Voxel\get_current_url() );
+									}
+
+									wp_safe_redirect( $redirect_url );
+									exit;
+								}
+							}
+						}
+					}
+				}
+
+				$pricing_page_id = \Voxel\get('paid_listings.settings.templates.pricing');
+				if ( ! ( is_numeric( $pricing_page_id ) && \Voxel\page_exists( $pricing_page_id ) ) ) {
+					return;
+				}
+
+				$submit_to = null;
+
+				// preserve additional query parameters during plan selection
+				if ( ! empty( $_GET ) ) {
+					$submit_to = rawurlencode( \Voxel\get_current_url() );
+				}
+
+				$redirect_to = add_query_arg( [
+					'process' => 'new',
+					'item_type' => $post_type->get_key(),
+					'submit_to' => $submit_to,
+				], get_permalink( $pricing_page_id ) );
+
+				wp_safe_redirect( $redirect_to );
+				exit;
+			}
+		}
+	}
+
+	protected function frontend_before_post_update( array $data ) {
+		$post = $data['post'];
+		$status = $data['status'];
+		$previous_status = $data['previous_status'];
+
+		if ( $previous_status === 'draft' && in_array( $status, [ 'publish', 'pending' ], true ) ) {
+			$details = Module\get_assigned_package( $post );
+			$plan = $details['plan'];
+			$package = $details['package'];
+			$use_slot_on_publish = $details['use_slot_on_publish'];
+
+			if ( $use_slot_on_publish && $package && ! ( $package->can_create_post( $post->post_type ) ) ) {
+				throw new \Exception( _x( 'You do not have permission to create new posts.', 'create post', 'voxel' ), 190 );
+			}
+		}
+
+		if ( in_array( $previous_status, [ 'expired', 'rejected' ], true ) ) {
+			if ( Module\has_plans_for_post_type( $post->post_type ) ) {
+				throw new \Exception( _x( 'You must relist this item to edit details.', 'create post', 'voxel' ), 191 );
+			}
+		}
+	}
+
+	protected function frontend_post_updated( array $data ) {
+		$post = $data['post'];
+		$status = $data['status'];
+		$previous_status = $data['previous_status'];
+
+		delete_post_meta( $post->get_id(), '_is_blank_draft' );
+
+		if ( $previous_status === 'draft' && in_array( $status, [ 'publish', 'pending' ], true ) ) {
+			$details = Module\get_assigned_package( $post );
+			$plan = $details['plan'];
+			$package = $details['package'];
+			$use_slot_on_publish = $details['use_slot_on_publish'];
+
+			if ( $use_slot_on_publish && $package ) {
+				$package->assign_to_post( $post );
+			}
+		}
+	}
+
+	protected function user_can_create_post( bool $can_create_post, \Voxel\User $user, \Voxel\Post_Type $post_type ): bool {
+		if ( Module\has_plans_for_post_type( $post_type ) ) {
+			return false;
+		}
+
+		return $can_create_post;
+	}
+
+	protected function should_show_edit_action( bool $should_show, \Voxel\Post $post ): bool {
+		if ( $post->post_type && in_array( $post->get_status(), [ 'expired', 'rejected' ], true ) ) {
+			if ( Module\has_plans_for_post_type( $post->post_type ) ) {
+				return false;
+			}
+		}
+
+		return $should_show;
+	}
+
+}

@@ -1,0 +1,309 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/timeline-kit",
+	"title": "Timeline Style Kit (VX)",
+	"category": "voxel-fse",
+	"description": "Styling widget for Timeline/Social Feed components",
+	"keywords": [
+		"timeline",
+		"feed",
+		"social",
+		"styling",
+		"kit",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "general"
+		},
+		"buttonsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"vxfText1": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfText2": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfText3": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfBg": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfBorder": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfDetail": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"xlRadius": {
+			"type": "number"
+		},
+		"xlRadius_tablet": {
+			"type": "number"
+		},
+		"xlRadius_mobile": {
+			"type": "number"
+		},
+		"lgRadius": {
+			"type": "number"
+		},
+		"lgRadius_tablet": {
+			"type": "number"
+		},
+		"lgRadius_mobile": {
+			"type": "number"
+		},
+		"mdRadius": {
+			"type": "number"
+		},
+		"mdRadius_tablet": {
+			"type": "number"
+		},
+		"mdRadius_mobile": {
+			"type": "number"
+		},
+		"mainIconSize": {
+			"type": "number"
+		},
+		"mainIconSize_tablet": {
+			"type": "number"
+		},
+		"mainIconSize_mobile": {
+			"type": "number"
+		},
+		"replyIconSize": {
+			"type": "number"
+		},
+		"replyIconSize_tablet": {
+			"type": "number"
+		},
+		"replyIconSize_mobile": {
+			"type": "number"
+		},
+		"vxfAction1": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfAction2": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfAction3": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfAction4": {
+			"type": "string",
+			"default": ""
+		},
+		"vxfAction5": {
+			"type": "string",
+			"default": ""
+		},
+		"revMinWidth": {
+			"type": "number"
+		},
+		"revMinWidth_tablet": {
+			"type": "number"
+		},
+		"revMinWidth_mobile": {
+			"type": "number"
+		},
+		"tsPopupBtnTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"tsPopupBtnRadius": {
+			"type": "number"
+		},
+		"tsPopupBtnRadius_tablet": {
+			"type": "number"
+		},
+		"tsPopupBtnRadius_mobile": {
+			"type": "number"
+		},
+		"tsPopupBtnRadiusUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"tsPopupButton1": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1C": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1Icon": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1BorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1BorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"tsPopupButton1BorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1H": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1CH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1IconH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton1BH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2C": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2Icon": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2BorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2BorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"tsPopupButton2BorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2H": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2CH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2IconH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton2BH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopuptertiary2": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupTertiary2C": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupButton3Icon": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupTertiary2H": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupTertiary2CH": {
+			"type": "string",
+			"default": ""
+		},
+		"tsPopupTertiaryIconH": {
+			"type": "string",
+			"default": ""
+		},
+		"tmColor1": {
+			"type": "string",
+			"default": ""
+		},
+		"tmColor2": {
+			"type": "string",
+			"default": ""
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.tsx",
+	"editorStyle": "file:./editor.css",
+	"render": "file:./render.php"
+}

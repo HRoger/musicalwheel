@@ -12,21 +12,24 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Placeholder, Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SearchFormComponent from './shared/SearchFormComponent';
 import { usePostTypes } from './hooks/usePostTypes';
 import { ContentTab, GeneralTab, InlineTab } from './inspector';
+import InspectorTabs from '@shared/controls/InspectorTabs';
 import AdvancedTab from '@shared/controls/AdvancedTab';
-import VoxelTab from '@shared/controls/VoxelTab';
+import { VoxelTab } from '@shared/controls';
+import {
+	generateAdvancedStyles,
+	generateAdvancedResponsiveCSS,
+	combineBlockClasses,
+} from '../../shared/utils/generateAdvancedStyles';
+import {
+	generateVoxelStyles,
+	generateVoxelResponsiveCSS,
+} from '../../shared/utils/generateVoxelStyles';
+import { generateBlockStyles, generateInlineTabResponsiveCSS } from './styles';
 import type { SearchFormAttributes } from './types';
-
-type TabType = 'content' | 'general' | 'inline' | 'advanced' | 'voxel';
-
-interface TabConfig {
-	id: TabType;
-	label: string;
-	icon: string;
-}
 
 /**
  * Generate unique block ID
@@ -42,12 +45,70 @@ export default function Edit({
 	setAttributes,
 	clientId,
 }: BlockEditProps<SearchFormAttributes>) {
+	// Generate styles from AdvancedTab attributes for editor preview
+	const blockId = attributes.blockId || 'search-form';
+	const uniqueSelector = `.voxel-fse-search-form-${blockId}`;
+	const advancedStyles = generateAdvancedStyles(attributes);
+	const advancedResponsiveCSS = generateAdvancedResponsiveCSS(attributes, uniqueSelector);
+
+	// Generate styles from General Tab attributes (CSS custom properties)
+	const blockStyles = generateBlockStyles(attributes);
+
+	// Generate Inline Tab responsive CSS (scoped to Voxel classes)
+	const inlineTabCSS = generateInlineTabResponsiveCSS(attributes, blockId);
+
+	// Generate styles from VoxelTab attributes (sticky position)
+	const voxelStyles = generateVoxelStyles(attributes);
+	const voxelResponsiveCSS = generateVoxelResponsiveCSS(attributes, uniqueSelector);
+
+	// Merge all styles: AdvancedTab + General Tab + VoxelTab
+	const mergedStyles = { ...advancedStyles, ...blockStyles, ...voxelStyles };
+
+	// Combine all responsive CSS: AdvancedTab + InlineTab + VoxelTab
+	const responsiveCSS = [advancedResponsiveCSS, inlineTabCSS, voxelResponsiveCSS].filter(Boolean).join('\n');
+
+	// DEBUG: Log background attributes and generated styles
+	if (attributes.backgroundColor || attributes.backgroundType) {
+		console.log('[Search Form] Background Debug:', {
+			backgroundColor: attributes.backgroundColor,
+			backgroundType: attributes.backgroundType,
+			backgroundImage: attributes.backgroundImage,
+			generatedStyles: mergedStyles,
+			blockId,
+		});
+	}
+
+	// DEBUG: Log mask attributes
+	if (attributes.maskSwitch || attributes.maskShape || attributes.maskImage?.url) {
+		console.log('[Search Form] Mask Debug:', {
+			maskSwitch: attributes.maskSwitch,
+			maskShape: attributes.maskShape,
+			maskImage: attributes.maskImage,
+			maskSize: attributes.maskSize,
+			maskSizeScale: attributes.maskSizeScale,
+			maskSizeScaleUnit: attributes.maskSizeScaleUnit,
+			maskPosition: attributes.maskPosition,
+			generatedStyles: mergedStyles,
+		});
+	}
+
+	// Combine all classes (base + visibility + custom)
+	const className = combineBlockClasses(
+		`voxel-fse-search-form-editor voxel-fse-search-form-${blockId}`,
+		attributes
+	);
+
 	const blockProps = useBlockProps({
-		className: 'voxel-fse-search-form-editor',
+		className,
+		style: mergedStyles,
 	});
 
-	const [activeTab, setActiveTab] = useState<TabType>('content');
-	const { postTypes, isLoading, error } = usePostTypes();
+	// Pass filterLists to usePostTypes for proper 1:1 Voxel parity
+	// This allows the PHP controller to set filter values and resets_to
+	// Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
+	const { postTypes, isLoading, error } = usePostTypes({
+		filterConfigs: attributes.filterLists,
+	});
 
 	// Generate stable block ID on mount if not set
 	// CRITICAL: This enables block linking (Post Feed → Search Form) to persist across sessions
@@ -72,6 +133,12 @@ export default function Edit({
 		setAttributes({ selectedPostType: postTypeKey });
 	};
 
+	// Callback to sync filter values to block attribute for Post Feed preview
+	// This enables cross-block communication in the editor via useSelect
+	const handleFilterChange = (filterValues: Record<string, unknown>) => {
+		setAttributes({ editorFilterValues: filterValues });
+	};
+
 	// Get Gutenberg's responsive preview device type
 	// Evidence: popup-kit/edit.tsx uses same pattern
 	const editorDeviceType = useSelect((select: any) => {
@@ -91,14 +158,64 @@ export default function Edit({
 		? (editorDeviceType.toLowerCase() as 'desktop' | 'tablet' | 'mobile')
 		: 'desktop';
 
-	// Tab configuration - Advanced tab always shown (uses custom controls, not Stackable)
-	const tabs: TabConfig[] = [
-		{ id: 'content', label: __('Content', 'voxel-fse'), icon: 'las la-edit' },
-		{ id: 'general', label: __('General', 'voxel-fse'), icon: 'las la-circle' },
-		{ id: 'inline', label: __('Inline', 'voxel-fse'), icon: 'las la-paint-brush' },
-		{ id: 'advanced', label: __('Advanced', 'voxel-fse'), icon: 'las la-cog' },
-		{ id: 'voxel', label: __('Voxel', 'voxel-fse'), icon: 'las la-heart' },
-	];
+	// CRITICAL: useMemo must be called BEFORE any early returns to satisfy React's rules of hooks
+	// All hooks must run on every render in the same order - early returns would skip this hook
+	// causing React error #310 "Invalid hook call"
+	const inspectorTabs = useMemo(() => [
+		{
+			id: 'content',
+			label: __('Content', 'voxel-fse'),
+			icon: '\ue92c',
+			render: () => (
+				<ContentTab
+					attributes={attributes}
+					setAttributes={setAttributes}
+					postTypes={postTypes}
+					isLoading={isLoading}
+					clientId={clientId}
+				/>
+			),
+		},
+		{
+			id: 'general',
+			label: __('General', 'voxel-fse'),
+			icon: '\ue921',
+			render: () => (
+				<GeneralTab
+					attributes={attributes}
+					setAttributes={setAttributes}
+					clientId={clientId}
+				/>
+			),
+		},
+		{
+			id: 'inline',
+			label: __('Inline', 'voxel-fse'),
+			icon: '\ue921',
+			render: () => (
+				<InlineTab attributes={attributes} setAttributes={setAttributes} />
+			),
+		},
+		{
+			id: 'advanced',
+			label: __('Advanced', 'voxel-fse'),
+			icon: '\ue916',
+			render: () => (
+				<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
+			),
+		},
+		{
+			id: 'voxel',
+			label: __('Voxel', 'voxel-fse'),
+			icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
+			render: () => (
+				<VoxelTab
+					attributes={attributes}
+					setAttributes={setAttributes}
+				/>
+			),
+		},
+	], [attributes, setAttributes, postTypes, isLoading, clientId]);
 
 	// If loading post types, show spinner
 	if (isLoading) {
@@ -155,80 +272,16 @@ export default function Edit({
 		);
 	}
 
-	// Render tab navigation
-	const renderTabNavigation = () => (
-		<div className="voxel-fse-inspector-tabs">
-			{tabs.map((tab) => (
-				<button
-					key={tab.id}
-					type="button"
-					className={`voxel-fse-tab-btn ${activeTab === tab.id ? 'is-active' : ''}`}
-					onClick={() => setActiveTab(tab.id)}
-					title={tab.label}
-				>
-					<i className={tab.icon}></i>
-					<span className="voxel-fse-tab-label">{tab.label}</span>
-				</button>
-			))}
-		</div>
-	);
-
-	// Render active tab content
-	const renderTabContent = () => {
-		switch (activeTab) {
-			case 'content':
-				return (
-					<ContentTab
-						attributes={attributes}
-						setAttributes={setAttributes}
-						postTypes={postTypes}
-						isLoading={isLoading}
-						clientId={clientId}
-					/>
-				);
-			case 'general':
-				return (
-					<GeneralTab
-						attributes={attributes}
-						setAttributes={setAttributes}
-						clientId={clientId}
-					/>
-				);
-			case 'inline':
-				return (
-					<InlineTab
-						attributes={attributes}
-						setAttributes={setAttributes}
-					/>
-				);
-			case 'advanced':
-				return (
-					<AdvancedTab
-						attributes={attributes}
-						setAttributes={setAttributes}
-					/>
-				);
-			case 'voxel':
-				return (
-					<VoxelTab
-						attributes={attributes}
-						setAttributes={setAttributes}
-						showPortalSettings={true}
-						showAdaptiveFiltering={true}
-					/>
-				);
-			default:
-				return null;
-		}
-	};
-
-	// Inspector controls with tab navigation
+	// Inspector controls with InspectorTabs component
 	const renderInspectorControls = () => (
 		<InspectorControls>
-			{renderTabNavigation()}
-			<div className="voxel-fse-tab-content">
-				{renderTabContent()}
-			</div>
+			<InspectorTabs
+				tabs={inspectorTabs}
+				includeAdvancedTab={false}
+				attributes={attributes}
+				setAttributes={setAttributes}
+				defaultTab="content"
+			/>
 		</InspectorControls>
 	);
 
@@ -255,7 +308,11 @@ export default function Edit({
 	);
 
 	return (
-		<div {...blockProps}>
+		<div {...blockProps} data-voxel-id={blockId}>
+			{/* Responsive CSS from AdvancedTab (tablet/mobile overrides, custom CSS, hover states) */}
+			{responsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
+			)}
 			{renderInspectorControls()}
 
 			{ /* Fully interactive preview - NO ServerSideRender */}
@@ -265,6 +322,7 @@ export default function Edit({
 				context="editor"
 				editorDeviceType={normalizedDeviceType}
 				onPostTypeChange={handlePostTypeChange}
+				onFilterChange={handleFilterChange}
 			/>
 		</div>
 	);

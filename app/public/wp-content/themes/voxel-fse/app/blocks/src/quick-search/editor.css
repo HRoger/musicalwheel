@@ -1,0 +1,305 @@
+/**
+ * Quick Search Block - Editor Styles
+ *
+ * Editor-only styles for the block preview.
+ * Uses Voxel's CSS classes for consistency.
+ *
+ * @package VoxelFSE
+ */
+
+/* Block placeholder styling */
+.voxel-fse-quick-search .voxel-fse-block-placeholder {
+	padding: 16px;
+	background: #f0f0f0;
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 48px;
+}
+
+.voxel-fse-quick-search .voxel-fse-block-placeholder svg {
+	opacity: 0.4;
+}
+
+/* Editor preview wrapper */
+.wp-block-voxel-fse-quick-search {
+	position: relative;
+}
+
+/* Style tabs in inspector */
+.voxel-fse-style-tabs .components-tab-panel__tabs {
+	margin-bottom: 0;
+}
+
+.voxel-fse-style-tabs .components-tab-panel__tabs-item {
+	flex: 1;
+	justify-content: center;
+}
+
+/* Loading state */
+.voxel-fse-quick-search .voxel-fse-loading {
+	opacity: 0.7;
+}
+
+.voxel-fse-quick-search .ts-loader {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: vxfse-spin 0.75s linear infinite;
+}
+
+@keyframes vxfse-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Editor popup preview (inline, not portal) */
+.voxel-fse-quick-search .ts-popup-container {
+	position: relative;
+	margin-top: 8px;
+}
+
+.voxel-fse-quick-search .ts-quicksearch-popup {
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	max-width: 100%;
+}
+
+/* Search button preview */
+.voxel-fse-quick-search .ts-filter.ts-popup-target {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 16px;
+	background: var(--vx-filter-bg, #f5f5f5);
+	border: 1px solid var(--vx-filter-border, #e0e0e0);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	width: 100%;
+}
+
+.voxel-fse-quick-search .ts-filter.ts-popup-target:hover {
+	background: var(--vx-filter-bg-hover, #e8e8e8);
+}
+
+.voxel-fse-quick-search .ts-filter.ts-popup-target svg {
+	width: 20px;
+	height: 20px;
+	flex-shrink: 0;
+}
+
+.voxel-fse-quick-search .ts-filter-text {
+	flex: 1;
+	text-align: left;
+}
+
+.voxel-fse-quick-search .ts-shortcut {
+	font-size: 11px;
+	padding: 2px 6px;
+	background: rgba(0, 0, 0, 0.06);
+	border-radius: 4px;
+	color: #666;
+}
+
+/* Popup header */
+.voxel-fse-quick-search .qs-top {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.voxel-fse-quick-search .ts-input-icon {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+}
+
+.voxel-fse-quick-search .ts-input-icon input {
+	flex: 1;
+	border: none;
+	background: transparent;
+	font-size: 14px;
+	outline: none;
+}
+
+.voxel-fse-quick-search .ts-input-icon svg {
+	width: 18px;
+	height: 18px;
+	opacity: 0.5;
+}
+
+/* Tabs */
+.voxel-fse-quick-search .cpt-tabs {
+	padding: 8px 12px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.voxel-fse-quick-search .quick-cpt-select {
+	display: flex;
+	gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.voxel-fse-quick-search .quick-cpt-select li a {
+	display: block;
+	padding: 6px 12px;
+	border-radius: 4px;
+	text-decoration: none;
+	color: inherit;
+	font-size: 13px;
+}
+
+.voxel-fse-quick-search .quick-cpt-select li.ts-tab-active a {
+	background: var(--vx-primary, #007bff);
+	color: #fff;
+}
+
+/* Results dropdown */
+.voxel-fse-quick-search .ts-term-dropdown {
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.voxel-fse-quick-search .ts-term-dropdown-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.voxel-fse-quick-search .ts-term-dropdown-list li a {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	text-decoration: none;
+	color: inherit;
+	transition: background 0.15s ease;
+}
+
+.voxel-fse-quick-search .ts-term-dropdown-list li a:hover {
+	background: #f5f5f5;
+}
+
+.voxel-fse-quick-search .ts-term-icon,
+.voxel-fse-quick-search .ts-term-image {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0f0;
+	border-radius: 4px;
+	flex-shrink: 0;
+}
+
+.voxel-fse-quick-search .ts-term-icon svg,
+.voxel-fse-quick-search .ts-term-icon i {
+	width: 16px;
+	height: 16px;
+}
+
+/* Empty state */
+.voxel-fse-quick-search .ts-empty-user-tab {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 32px;
+	color: #999;
+}
+
+.voxel-fse-quick-search .ts-empty-user-tab svg {
+	width: 32px;
+	height: 32px;
+	margin-bottom: 8px;
+	opacity: 0.3;
+}
+
+/* Loading state */
+.voxel-fse-quick-search .vx-pending {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+/* View all link */
+.voxel-fse-quick-search .view-all a {
+	background: #f8f9fa;
+}
+
+.voxel-fse-quick-search .view-all a:hover {
+	background: #e9ecef;
+}
+
+/* Close button (mobile) */
+.voxel-fse-quick-search .ts-icon-btn.hide-d {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	.voxel-fse-quick-search .ts-icon-btn.hide-d {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 4px;
+		background: transparent;
+	}
+}
+
+/* Voxel Dynamic Tag Enable Button Styles */
+.voxel-fse-enable-tags {
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	padding: 0;
+	transition: 0.2s ease;
+}
+
+.voxel-fse-enable-tags:hover {
+	transform: scale(1.1);
+}
+
+.voxel-fse-enable-tags__icon {
+	position: relative;
+	z-index: 10;
+	width: 16px;
+	height: 16px;
+	display: block;
+	background-size: contain;
+	background-image: url('/wp-content/themes/voxel/assets/images/post-types/logo.svg');
+	background-repeat: no-repeat;
+	background-position: center;
+	filter: invert(1);
+}
+
+.voxel-fse-enable-tags::after {
+	content: "";
+	width: 28px;
+	height: 28px;
+	position: absolute;
+	/* Voxel brand gradient - oklch color space */
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+	border-radius: 50px;
+	z-index: 1;
+}

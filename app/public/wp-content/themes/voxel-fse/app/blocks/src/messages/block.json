@@ -1,0 +1,479 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/messages",
+	"version": "1.0.0",
+	"title": "Messages (VX)",
+	"category": "voxel-fse",
+	"description": "Direct messages inbox with real-time chat functionality. FSE equivalent of Voxel's Messages widget.",
+	"keywords": ["messages", "inbox", "chat", "direct messages", "dm", "conversation", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"icons": {
+			"type": "object",
+			"default": {
+				"search": { "library": "", "value": "" },
+				"chat": { "library": "", "value": "" },
+				"loadMore": { "library": "", "value": "" },
+				"back": { "library": "", "value": "" },
+				"more": { "library": "", "value": "" },
+				"user": { "library": "", "value": "" },
+				"clear": { "library": "", "value": "" },
+				"ban": { "library": "", "value": "" },
+				"trash": { "library": "", "value": "" },
+				"upload": { "library": "", "value": "" },
+				"gallery": { "library": "", "value": "" },
+				"emoji": { "library": "", "value": "" },
+				"send": { "library": "", "value": "" }
+			}
+		},
+		"generalHeight": {
+			"type": "number"
+		},
+		"generalHeightTablet": {
+			"type": "number"
+		},
+		"generalHeightMobile": {
+			"type": "number"
+		},
+		"generalHeightUnit": {
+			"type": "string",
+			"default": "px"
+		},
+		"enableCalcHeight": {
+			"type": "boolean",
+			"default": false
+		},
+		"calcHeight": {
+			"type": "string",
+			"default": ""
+		},
+		"generalBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"generalBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"generalBorderWidth": {
+			"type": "number",
+			"default": 0
+		},
+		"generalBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"generalBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"generalBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"sidebarWidth": {
+			"type": "number"
+		},
+		"separatorColor": {
+			"type": "string",
+			"default": ""
+		},
+		"scrollbarColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessagePadding": {
+			"type": "object",
+			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+		},
+		"inboxMessageContentGap": {
+			"type": "number"
+		},
+		"inboxMessageTitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageTitleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxMessageSubtitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageSubtitleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxMessageAvatarSize": {
+			"type": "number"
+		},
+		"inboxMessageAvatarRadius": {
+			"type": "number"
+		},
+		"inboxMessageAvatarGap": {
+			"type": "number"
+		},
+		"inboxMessageSecondaryLogoSize": {
+			"type": "number"
+		},
+		"inboxMessageSecondaryLogoRadius": {
+			"type": "number"
+		},
+		"inboxMessageSecondaryLogoBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxMessageHoverBg": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageHoverTitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageHoverSubtitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageActiveBg": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageActiveBorderWidth": {
+			"type": "number"
+		},
+		"inboxMessageActiveBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageActiveTitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageActiveSubtitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxMessageUnreadTitleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxMessageNewAvatarBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxSearchTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"inboxSearchValueColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxSearchPlaceholderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxSearchIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"inboxSearchIconSize": {
+			"type": "number"
+		},
+		"conversationTopAvatarRadius": {
+			"type": "number"
+		},
+		"conversationTopAvatarGap": {
+			"type": "number"
+		},
+		"conversationTopTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"conversationTopTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"conversationIntroContentGap": {
+			"type": "number"
+		},
+		"conversationIntroAvatarSize": {
+			"type": "number"
+		},
+		"conversationIntroAvatarRadius": {
+			"type": "number"
+		},
+		"conversationIntroNameTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"conversationIntroNameColor": {
+			"type": "string",
+			"default": ""
+		},
+		"conversationIntroSubtitleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"conversationIntroSubtitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"conversationBodyMessageGap": {
+			"type": "number"
+		},
+		"conversationBodyMessagePadding": {
+			"type": "object",
+			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+		},
+		"conversationBodyMessageTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"conversationBodyMessageRadius": {
+			"type": "number"
+		},
+		"responder1Background": {
+			"type": "object",
+			"default": {}
+		},
+		"responder1Color": {
+			"type": "string",
+			"default": ""
+		},
+		"responder2Background": {
+			"type": "object",
+			"default": {}
+		},
+		"responder2Color": {
+			"type": "string",
+			"default": ""
+		},
+		"errorBackground": {
+			"type": "object",
+			"default": {}
+		},
+		"errorColor": {
+			"type": "string",
+			"default": ""
+		},
+		"messageInfoTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"messageInfoDefaultColor": {
+			"type": "string",
+			"default": ""
+		},
+		"messageInfoDeleteColor": {
+			"type": "string",
+			"default": ""
+		},
+		"seenTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"seenColor": {
+			"type": "string",
+			"default": ""
+		},
+		"imagesRadius": {
+			"type": "number"
+		},
+		"composeAvatarRadius": {
+			"type": "number"
+		},
+		"composePlaceholderTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"composePlaceholderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"composeValueTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"composeValueColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"iconButtonBorderWidth": {
+			"type": "number",
+			"default": 0
+		},
+		"iconButtonBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonRadius": {
+			"type": "number"
+		},
+		"iconButtonHoverColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonHoverBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"iconButtonHoverBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonIconSize": {
+			"type": "number"
+		},
+		"tertiaryButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonBorderType": {
+			"type": "string",
+			"default": "default"
+		},
+		"tertiaryButtonBorderWidth": {
+			"type": "number",
+			"default": 0
+		},
+		"tertiaryButtonBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonRadius": {
+			"type": "number"
+		},
+		"tertiaryButtonTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"tertiaryButtonTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonHoverIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonHoverBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonHoverBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"tertiaryButtonHoverTextColor": {
+			"type": "string",
+			"default": ""
+		},
+		"emptyIconSize": {
+			"type": "number",
+			"default": 35
+		},
+		"emptyIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"emptyTitleColor": {
+			"type": "string",
+			"default": ""
+		},
+		"emptyTitleTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"loadingColor1": {
+			"type": "string",
+			"default": ""
+		},
+		"loadingColor2": {
+			"type": "string",
+			"default": ""
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "general"
+		},
+		"inboxMessageActiveTab": {
+			"type": "string",
+			"default": "normal"
+		},
+		"iconButtonActiveTab": {
+			"type": "string",
+			"default": "normal"
+		},
+		"tertiaryButtonActiveTab": {
+			"type": "string",
+			"default": "normal"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

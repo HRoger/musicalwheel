@@ -13,16 +13,7 @@
 
 import type { IconValue } from '@shared/types';
 import type { TypographyValue } from '@shared/controls/TypographyControl';
-import type { BoxShadowValue } from '@shared/controls/BoxShadowControl';
-
-/**
- * Border configuration
- */
-export interface BorderConfig {
-	type?: 'default' | 'none' | 'solid' | 'double' | 'dotted' | 'dashed';
-	width?: number;
-	color?: string;
-}
+import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 
 /**
  * Box spacing values (padding/margin)
@@ -109,11 +100,11 @@ export interface ProductFormAttributes {
 
 	// Primary Button - Normal
 	primaryButtonTypography: TypographyValue;
-	primaryButtonBorder: BorderConfig;
+	primaryButtonBorder: BorderGroupValue;
 	primaryButtonBorderRadius: number;
 	primaryButtonBorderRadiusTablet?: number;
 	primaryButtonBorderRadiusMobile?: number;
-	primaryButtonBoxShadow: BoxShadowValue;
+	primaryButtonBoxShadow: any;
 	primaryButtonTextColor: string;
 	primaryButtonBackground: string;
 	primaryButtonIconSize: number;
@@ -128,7 +119,7 @@ export interface ProductFormAttributes {
 	primaryButtonTextColorHover: string;
 	primaryButtonBackgroundHover: string;
 	primaryButtonBorderColorHover: string;
-	primaryButtonBoxShadowHover: BoxShadowValue;
+	primaryButtonBoxShadowHover: any;
 	primaryButtonIconColorHover: string;
 
 	// Price Calculator
@@ -157,7 +148,7 @@ export interface ProductFormAttributes {
 	stepperInputSize: number;
 	stepperButtonIconColor: string;
 	stepperButtonBackground: string;
-	stepperButtonBorder: BorderConfig;
+	stepperButtonBorder: BorderGroupValue;
 	stepperButtonBorderRadius: number;
 	stepperButtonBorderRadiusTablet?: number;
 	stepperButtonBorderRadiusMobile?: number;
@@ -172,7 +163,7 @@ export interface ProductFormAttributes {
 	cardsGapTablet?: number;
 	cardsGapMobile?: number;
 	cardsBackground: string;
-	cardsBorder: BorderConfig;
+	cardsBorder: BorderGroupValue;
 	cardsBorderRadius: number;
 	cardsBorderRadiusTablet?: number;
 	cardsBorderRadiusMobile?: number;
@@ -192,7 +183,7 @@ export interface ProductFormAttributes {
 	// Cards - Selected
 	cardsSelectedBackground: string;
 	cardsSelectedBorderColor: string;
-	cardsSelectedBoxShadow: BoxShadowValue;
+	cardsSelectedBoxShadow: any;
 	cardsSelectedPrimaryTypography: TypographyValue;
 
 	// Buttons - Normal
@@ -200,7 +191,7 @@ export interface ProductFormAttributes {
 	buttonsGapTablet?: number;
 	buttonsGapMobile?: number;
 	buttonsBackground: string;
-	buttonsBorder: BorderConfig;
+	buttonsBorder: BorderGroupValue;
 	buttonsBorderRadius: number;
 	buttonsBorderRadiusTablet?: number;
 	buttonsBorderRadiusMobile?: number;
@@ -210,14 +201,14 @@ export interface ProductFormAttributes {
 	// Buttons - Selected
 	buttonsSelectedBackground: string;
 	buttonsSelectedBorderColor: string;
-	buttonsSelectedBoxShadow: BoxShadowValue;
+	buttonsSelectedBoxShadow: any;
 
 	// Dropdown - Normal
 	dropdownTypography: TypographyValue;
-	dropdownBoxShadow: BoxShadowValue;
+	dropdownBoxShadow: any;
 	dropdownBackground: string;
 	dropdownTextColor: string;
-	dropdownBorder: BorderConfig;
+	dropdownBorder: BorderGroupValue;
 	dropdownBorderRadius: number;
 	dropdownBorderRadiusTablet?: number;
 	dropdownBorderRadiusMobile?: number;
@@ -236,7 +227,7 @@ export interface ProductFormAttributes {
 	dropdownTextColorHover: string;
 	dropdownBorderColorHover: string;
 	dropdownIconColorHover: string;
-	dropdownBoxShadowHover: BoxShadowValue;
+	dropdownBoxShadowHover: any;
 
 	// Dropdown - Filled
 	dropdownFilledTypography: TypographyValue;
@@ -245,7 +236,7 @@ export interface ProductFormAttributes {
 	dropdownFilledIconColor: string;
 	dropdownFilledBorderColor: string;
 	dropdownFilledBorderWidth: number;
-	dropdownFilledBoxShadow: BoxShadowValue;
+	dropdownFilledBoxShadow: any;
 
 	// Radio/Checkboxes - Normal
 	radioCheckboxBorderColor: string;
@@ -256,7 +247,7 @@ export interface ProductFormAttributes {
 	radioCheckboxSelectedBackground: string;
 	radioCheckboxSelectedTextTypography: TypographyValue;
 	radioCheckboxSelectedTextColor: string;
-	radioCheckboxSelectedBoxShadow: BoxShadowValue;
+	radioCheckboxSelectedBoxShadow: any;
 
 	// Switcher
 	switcherBackgroundInactive: string;
@@ -292,7 +283,7 @@ export interface ProductFormAttributes {
 	inputValueColor: string;
 	inputValueTypography: TypographyValue;
 	inputBackground: string;
-	inputBorder: BorderConfig;
+	inputBorder: BorderGroupValue;
 	inputBorderRadius: number;
 	inputBorderRadiusTablet?: number;
 	inputBorderRadiusMobile?: number;
@@ -331,7 +322,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 
 	// Primary Button
 	primaryButtonTypography: {},
-	primaryButtonBorder: { type: 'default', width: 0, color: '' },
+	primaryButtonBorder: { borderType: 'none', borderWidth: {}, borderColor: '' },
 	primaryButtonBorderRadius: 0,
 	primaryButtonBoxShadow: {},
 	primaryButtonTextColor: '',
@@ -365,7 +356,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 	stepperInputSize: 16,
 	stepperButtonIconColor: '',
 	stepperButtonBackground: '',
-	stepperButtonBorder: { type: 'default', width: 0, color: '' },
+	stepperButtonBorder: { borderType: 'none', borderWidth: {}, borderColor: '' },
 	stepperButtonBorderRadius: 0,
 	stepperButtonIconColorHover: '',
 	stepperButtonBackgroundHover: '',
@@ -374,7 +365,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 	// Cards
 	cardsGap: 10,
 	cardsBackground: '',
-	cardsBorder: { type: 'default', width: 0, color: '' },
+	cardsBorder: { borderType: 'none', borderWidth: {}, borderColor: '' },
 	cardsBorderRadius: 0,
 	cardsPrimaryTypography: {},
 	cardsPrimaryColor: '',
@@ -392,7 +383,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 	// Buttons
 	buttonsGap: 10,
 	buttonsBackground: '',
-	buttonsBorder: { type: 'default', width: 0, color: '' },
+	buttonsBorder: { borderType: 'none', borderWidth: {}, borderColor: '' },
 	buttonsBorderRadius: 0,
 	buttonsTextTypography: {},
 	buttonsTextColor: '',

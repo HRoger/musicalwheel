@@ -1,0 +1,205 @@
+{
+    "test": {
+        "modules": {
+            "base_price": {
+                "enabled": true,
+                "discount_price": {
+                    "enabled": true
+                }
+            },
+            "booking": {
+                "enabled": true,
+                "type": "days",
+                "date_ranges": {
+                    "count_mode": "nights"
+                },
+                "quantity_per_slot": {
+                    "enabled": false
+                }
+            },
+            "addons": {
+                "enabled": true,
+                "items": [
+                    {
+                        "type": "numeric",
+                        "key": "numeric-addon",
+                        "label": "Guests",
+                        "required": true,
+                        "repeat": true,
+                        "display_mode": "stepper"
+                    },
+                    {
+                        "type": "custom-multiselect",
+                        "key": "custom-multiselect-addon",
+                        "label": "Extras",
+                        "required": false,
+                        "repeat": true,
+                        "display_mode": "checkboxes",
+                        "image_max_size": 2000
+                    }
+                ]
+            },
+            "variations": {
+                "enabled": false,
+                "predefined_attributes": {
+                    "enabled": true
+                },
+                "vendor_attributes": {
+                    "enabled": true
+                }
+            },
+            "stock": {
+                "enabled": false,
+                "sku": {
+                    "enabled": true
+                }
+            },
+            "custom_prices": {
+                "enabled": true
+            },
+            "deliverables": {
+                "enabled": false,
+                "delivery_methods": {
+                    "automatic": true,
+                    "manual": true
+                },
+                "uploads": {
+                    "allowed_file_types": [
+                        "image\/jpeg",
+                        "image\/png",
+                        "image\/webp"
+                    ],
+                    "max_count": 5,
+                    "max_size": 2000
+                }
+            },
+            "multivendor": {
+                "enabled": false
+            },
+            "shipping": {
+                "enabled": false
+            }
+        },
+        "settings": {
+            "product_mode": "booking",
+            "key": "test",
+            "label": "Rental",
+            "payments": {
+                "processor": "stripe",
+                "mode": "payment",
+                "stripe": {
+                    "capture_method": "automatic"
+                },
+                "offline": {
+                    "orders": {
+                        "require_approval": true,
+                        "refunds_allowed": true
+                    }
+                }
+            },
+            "product_fields": {
+                "base-price": {
+                    "key": "base-price",
+                    "label": "Price"
+                },
+                "booking": {
+                    "key": "booking",
+                    "label": "Booking calendar"
+                },
+                "addons": {
+                    "key": "addons",
+                    "label": "Addons"
+                },
+                "custom-prices": {
+                    "key": "custom-prices",
+                    "label": "Custom prices"
+                }
+            },
+            "base_price": {
+                "active": true,
+                "default_price": 0
+            },
+            "catalog_mode": {
+                "active": false,
+                "requires_approval": true,
+                "refunds_allowed": true
+            },
+            "tags": {
+                "editable_by": "both",
+                "qr_limit": "unlimited"
+            },
+            "mode": "booking",
+            "skip_main_step": false,
+            "l10n": {
+                "field": {
+                    "base_price": "Base price",
+                    "instances_per_day": "Quantity per day",
+                    "instances_per_slot": "Quantity per timeslot",
+                    "notes": {
+                        "label": "Notes"
+                    }
+                },
+                "form": {
+                    "check_in": "Check-in",
+                    "check_out": "Check-out",
+                    "pick_date": "Choose date"
+                }
+            },
+            "deliverables": {
+                "enabled": false,
+                "delivery_methods": [
+                    "automatic",
+                    "manual"
+                ],
+                "download_limit": 3,
+                "uploads": {
+                    "allowed_file_types": [
+                        "image\/jpeg",
+                        "image\/png",
+                        "image\/webp"
+                    ],
+                    "max_count": 5,
+                    "max_size": 2000
+                }
+            },
+            "comments": {
+                "uploads": {
+                    "allowed_file_types": [
+                        "image\/jpeg",
+                        "image\/png",
+                        "image\/webp"
+                    ],
+                    "max_count": 5,
+                    "max_size": 2000
+                }
+            }
+        },
+        "calendar": {
+            "type": "booking",
+            "format": "days",
+            "allow_range": true,
+            "range_mode": "days"
+        },
+        "checkout": {
+            "on_behalf_of": false,
+            "application_fee": {
+                "type": "percentage",
+                "amount": 10
+            },
+            "tax": {
+                "mode": "none",
+                "auto": {
+                    "tax_behavior": "inclusive",
+                    "tax_id_collection": false
+                },
+                "manual": []
+            },
+            "shipping": {
+                "enabled": false
+            },
+            "promotion_codes": {
+                "enabled": false
+            }
+        }
+    }
+}

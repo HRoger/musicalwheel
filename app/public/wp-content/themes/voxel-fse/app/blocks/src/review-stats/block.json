@@ -1,0 +1,164 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/review-stats",
+	"version": "1.0.0",
+	"title": "Review Stats (VX)",
+	"category": "voxel-fse",
+	"description": "Display review statistics with bar charts - converted from Voxel Elementor widget following Plan C+ architecture",
+	"keywords": [
+		"review",
+		"stats",
+		"rating",
+		"chart",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": false,
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"statMode": {
+			"type": "string",
+			"default": "overall"
+		},
+		"columns": {
+			"type": "number",
+			"default": 1
+		},
+		"columns_tablet": {
+			"type": "number"
+		},
+		"columns_mobile": {
+			"type": "number"
+		},
+		"itemGap": {
+			"type": "number"
+		},
+		"itemGap_tablet": {
+			"type": "number"
+		},
+		"itemGap_mobile": {
+			"type": "number"
+		},
+		"iconSize": {
+			"type": "number"
+		},
+		"iconSize_tablet": {
+			"type": "number"
+		},
+		"iconSize_mobile": {
+			"type": "number"
+		},
+		"iconSpacing": {
+			"type": "number"
+		},
+		"labelTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"labelColor": {
+			"type": "string",
+			"default": ""
+		},
+		"scoreTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"scoreColor": {
+			"type": "string",
+			"default": ""
+		},
+		"chartBgColor": {
+			"type": "string",
+			"default": ""
+		},
+		"chartHeight": {
+			"type": "number"
+		},
+		"chartHeight_tablet": {
+			"type": "number"
+		},
+		"chartHeight_mobile": {
+			"type": "number"
+		},
+		"chartRadius": {
+			"type": "number"
+		},
+		"chartRadius_tablet": {
+			"type": "number"
+		},
+		"chartRadius_mobile": {
+			"type": "number"
+		},
+		"hideDesktop": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"customClasses": {
+			"type": "string",
+			"default": ""
+		},
+		"activeTab": {
+			"type": "string",
+			"default": "content"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php"
+}

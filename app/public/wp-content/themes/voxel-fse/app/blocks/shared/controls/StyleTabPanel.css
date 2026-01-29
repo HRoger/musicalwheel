@@ -1,0 +1,150 @@
+/**
+ * StyleTabPanel CSS - Gutenberg Native Styling
+ *
+ * Tab panel using native Gutenberg color variables.
+ * Uses --wp-components-color-accent for active state to match WordPress admin theme.
+ *
+ * @package VoxelFSE
+ */
+
+/* ============================================
+   Gutenberg-Compatible Variables
+   Uses WordPress admin theme colors
+   ============================================ */
+:root {
+	/* Gutenberg accent color (falls back to WordPress admin theme color) */
+	--vxfse-accent-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+	--vxfse-accent-color-darker: var(--wp-components-color-accent-darker, var(--wp-admin-theme-color-darker, #2145e6));
+
+	/* Text colors */
+	--vxfse-color-txt: #1e1e1e;
+	--vxfse-color-txt-muted: #757575;
+
+	/* Backgrounds */
+	--vxfse-bg-hover: rgba(0, 0, 0, 0.05);
+
+	/* Borders */
+	--vxfse-border-color: #c3c4c7;
+	--vxfse-border-radius: 3px;
+
+	/* Transitions */
+	--vxfse-transition: all 0.12s ease-out;
+
+	/* Control font size */
+	--control-title-size: 12px;
+}
+
+/* ============================================
+   StyleTabPanel - Tab Container
+   Matches: .elementor-control-type-tabs
+   ============================================ */
+.vxfse-style-tabs {
+	margin-bottom: 16px;
+}
+
+.vxfse-style-tabs__tabs {
+	display: flex;
+	font-size: var(--control-title-size);
+}
+
+/* ============================================
+   Individual Tab Button
+   Hollow style (like "Remove" button) with accent color border
+   ============================================ */
+.vxfse-style-tabs__tab {
+	/* Layout */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	text-align: center;
+	width: 100%;
+	padding: 0;
+	line-height: 25px;
+	height: 25px;
+
+	/* Typography */
+	font-family: inherit;
+	font-size: var(--control-title-size);
+	font-weight: 500;
+	color: var(--vxfse-accent-color);
+
+	/* Borders - blue accent color (hollow style) */
+	border: 1px solid var(--vxfse-accent-color);
+	border-right: none;
+	background: transparent;
+
+	/* Interaction */
+	cursor: pointer;
+	transition: var(--vxfse-transition);
+}
+
+/* First tab - left radius */
+.vxfse-style-tabs__tab:first-child {
+	border-top-left-radius: var(--vxfse-border-radius);
+	border-bottom-left-radius: var(--vxfse-border-radius);
+}
+
+/* Last tab - right border + radius */
+.vxfse-style-tabs__tab:last-child {
+	border-right: 1px solid var(--vxfse-accent-color);
+	border-top-right-radius: var(--vxfse-border-radius);
+	border-bottom-right-radius: var(--vxfse-border-radius);
+}
+
+/* Hover state - subtle background tint */
+.vxfse-style-tabs__tab:hover:not(.e-tab-active) {
+	background-color: color-mix(in srgb, var(--vxfse-accent-color) 8%, transparent);
+}
+
+/* Active state - solid accent color (like "Edit rules" button) */
+.vxfse-style-tabs__tab.e-tab-active {
+	background-color: var(--vxfse-accent-color);
+	border-color: var(--vxfse-accent-color);
+	color: #fff;
+}
+
+/* Focus state for accessibility - uses accent color */
+.vxfse-style-tabs__tab:focus {
+	outline: 2px solid var(--vxfse-accent-color);
+	outline-offset: -2px;
+	z-index: 1;
+}
+
+.vxfse-style-tabs__tab:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* Icon inside tab */
+.vxfse-style-tabs__tab i {
+	font-size: 12px;
+	line-height: 1;
+}
+
+/* ============================================
+   Tab Content Panel
+   ============================================ */
+.vxfse-style-tabs__content {
+	padding-top: 16px;
+}
+
+/* Hide when no visible tabs (matches Elementor :has selector) */
+.vxfse-style-tabs:empty {
+	display: none;
+}
+
+/* ============================================
+   Gutenberg Inspector Panel Integration
+   Ensure proper spacing within PanelBody
+   ============================================ */
+.components-panel__body .vxfse-style-tabs {
+	margin-left: -16px;
+	margin-right: -16px;
+	padding-left: 16px;
+	padding-right: 16px;
+}
+
+.components-panel__body .vxfse-style-tabs__content {
+	margin-left: 0;
+	margin-right: 0;
+}

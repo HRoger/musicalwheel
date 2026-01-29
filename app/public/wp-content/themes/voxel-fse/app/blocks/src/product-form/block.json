@@ -18,10 +18,51 @@
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
 	"attributes": {
 		"blockId": {
 			"type": "string",
 			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "settings"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "general"
+		},
+		"primaryBtnState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"stepperState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"cardsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"buttonsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"dropdownState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"radioCheckboxState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"imagesState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"inputTextareaState": {
+			"type": "string",
+			"default": "normal"
 		},
 		"showPriceCalculator": {
 			"type": "string",
@@ -84,7 +125,7 @@
 		},
 		"primaryButtonBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"primaryButtonBorderRadius": {
 			"type": "number",
@@ -196,7 +237,7 @@
 		},
 		"stepperButtonBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"stepperButtonBorderRadius": {
 			"type": "number",
@@ -224,7 +265,7 @@
 		},
 		"cardsBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"cardsBorderRadius": {
 			"type": "number",
@@ -288,7 +329,7 @@
 		},
 		"buttonsBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"buttonsBorderRadius": {
 			"type": "number",
@@ -332,7 +373,7 @@
 		},
 		"dropdownBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"dropdownBorderRadius": {
 			"type": "number",
@@ -496,7 +537,7 @@
 		},
 		"inputBorder": {
 			"type": "object",
-			"default": { "type": "default", "width": 0, "color": "" }
+			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
 		},
 		"inputBorderRadius": {
 			"type": "number",
@@ -527,6 +568,39 @@
 			"default": ""
 		},
 		"inputTextColorActive": {
+			"type": "string",
+			"default": ""
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
 			"type": "string",
 			"default": ""
 		}

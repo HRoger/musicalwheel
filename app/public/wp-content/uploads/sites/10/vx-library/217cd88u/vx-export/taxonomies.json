@@ -1,0 +1,69 @@
+{
+    "category": {
+        "settings": {
+            "key": "category",
+            "singular": "Category",
+            "plural": "Categories",
+            "post_type": [
+                "<<#posttype:place:key#>>"
+            ]
+        },
+        "templates": {
+            "single": "<<#postid:0#>>",
+            "card": "<<#postid:236#>>"
+        },
+        "_with_terms": true
+    },
+    "place_type_of_place": {
+        "settings": {
+            "key": "place_type_of_place",
+            "singular": "Type of place",
+            "plural": "Type of place",
+            "post_type": [
+                "<<#posttype:place:key#>>"
+            ]
+        },
+        "_with_terms": true
+    },
+    "amenities": {
+        "settings": {
+            "key": "amenities",
+            "singular": "Amenities",
+            "plural": "Amenities",
+            "post_type": [
+                "<<#posttype:place:key#>>"
+            ]
+        },
+        "templates": {
+            "single": "<<#postid:233#>>",
+            "card": "<<#postid:232#>>"
+        },
+        "_with_terms": true
+    },
+    "property-type": {
+        "settings": {
+            "key": "property-type",
+            "singular": "Property type",
+            "plural": "Property types",
+            "post_type": [
+                "<<#posttype:place:key#>>"
+            ]
+        },
+        "_with_terms": true
+    },
+    "area": {
+        "settings": {
+            "key": "area",
+            "singular": "Area",
+            "plural": "Areas",
+            "post_type": [
+                "<<#posttype:place:key#>>"
+            ]
+        },
+        "templates": {
+            "single": "<<#postid:235#>>",
+            "card": "<<#postid:234#>>"
+        },
+        "_with_terms": true
+    }
+}

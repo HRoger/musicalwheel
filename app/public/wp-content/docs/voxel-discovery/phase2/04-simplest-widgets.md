@@ -1,0 +1,10 @@
+/home/user/musicalwheel/themes/voxel/app/widgets/image.php: 15 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/empty-skin.php: 23 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/base-widget.php: 40 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/print-template.php: 50 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/nested-tabs.php: 139 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/nested-accordion.php: 155 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/product-price.php: 172 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/template-tabs.php: 179 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/ring-chart.php: 187 lines
+/home/user/musicalwheel/themes/voxel/app/widgets/review-stats.php: 284 lines

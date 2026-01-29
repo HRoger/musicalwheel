@@ -1,0 +1,4 @@
+/* Line Awesome Icons - CSS escape syntax */
+.la-code:before {
+  content: "\f121";
+}

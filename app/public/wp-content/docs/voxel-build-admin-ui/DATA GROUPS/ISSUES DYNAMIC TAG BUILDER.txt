@@ -1,0 +1,577 @@
+Several issues with the Dynamic data panel
+
+1. Top DataGroups don't match voxel top datagroups (Post, Author, User, Site) and its children 
+
+VOXEL Post Data Model - Complete Hierarchical Structure
+Post
+├── ID
+├── Title
+├── Content
+├── Slug
+├── Permalink
+├── Edit link
+│
+├── Post type
+│   ├── Key
+│   ├── Singular name
+│   └── Plural name
+│
+├── Status
+│   ├── Key
+│   └── Label
+│
+├── Date created
+├── Last modified date
+├── Expiration date
+├── Priority
+├── Excerpt
+│
+├── Reviews
+│   ├── Total count
+│   ├── Average rating
+│   ├── Percentage
+│   │
+│   ├── Latest review
+│   │   ├── ID
+│   │   ├── Date created
+│   │   └── Author
+│   │       ├── Name
+│   │       ├── Link
+│   │       └── Avatar
+│   │
+│   └── Replies
+│       ├── Total count
+│       └── Latest reply
+│           ├── ID
+│           ├── Date created
+│           └── Author
+│               ├── Name
+│               ├── Link
+│               └── Avatar
+│
+├── Timeline posts
+│   ├── Total count
+│   ├── Latest post
+│   │   ├── ID
+│   │   └── Date created
+│   │
+│   └── Replies
+│       ├── Total count
+│       └── Latest reply
+│           ├── ID
+│           ├── Date created
+│           └── Author
+│               ├── Name
+│               ├── Link
+│               └── Avatar
+│
+├── Wall posts
+│   ├── Total count
+│   ├── Latest post
+│   │   ├── ID
+│   │   └── Date created
+│   │
+│   └── Replies
+│       ├── Total count
+│       └── Latest reply
+│           ├── ID
+│           ├── Date created
+│           └── Author
+│               ├── Name
+│               ├── Link
+│               └── Avatar
+│
+├── Followers
+│   ├── Follow count
+│   └── Block count
+│
+├── Is verified?
+│
+├── Post meta
+│
+├── Author
+│   ├── ID
+│   ├── Username
+│   ├── Display name
+│   ├── Email
+│   ├── Avatar
+│   ├── First name
+│   ├── Last name
+│   │
+│   ├── Profile
+│   │   ├── ID
+│   │   ├── Title
+│   │   ├── Content
+│   │   ├── Slug
+│   │   ├── Permalink
+│   │   ├── Edit link
+│   │   │
+│   │   ├── Post type
+│   │   │   ├── Key
+│   │   │   ├── Singular name
+│   │   │   └── Plural name
+│   │   │
+│   │   ├── Status
+│   │   │   ├── Key
+│   │   │   └── Label
+│   │   │
+│   │   ├── Date created
+│   │   ├── Last modified date
+│   │   ├── Expiration date
+│   │   ├── Priority
+│   │   ├── Excerpt
+│   │   │
+│   │   ├── Reviews
+│   │   │   ├── Total count
+│   │   │   ├── Average rating
+│   │   │   ├── Percentage
+│   │   │   │
+│   │   │   ├── Latest review
+│   │   │   │   ├── ID
+│   │   │   │   ├── Date created
+│   │   │   │   └── Author
+│   │   │   │       ├── Name
+│   │   │   │       ├── Link
+│   │   │   │       └── Avatar
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Timeline posts
+│   │   │   ├── Total count
+│   │   │   │
+│   │   │   ├── Latest post
+│   │   │   │   ├── ID
+│   │   │   │   └── Date created
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Wall posts
+│   │   │   ├── Total count
+│   │   │   │
+│   │   │   ├── Latest post
+│   │   │   │   ├── ID
+│   │   │   │   └── Date created
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Followers
+│   │   │   ├── Follow count
+│   │   │   └── Block count
+│   │   │
+│   │   ├── Is verified?
+│   │   ├── Profile name
+│   │   │
+│   │   ├── Location
+│   │   │   ├── Full address
+│   │   │   ├── Latitude
+│   │   │   ├── Longitude
+│   │   │   ├── Short address
+│   │   │   ├── Medium address
+│   │   │   ├── Long address
+│   │   │   │
+│   │   │   └── Distance
+│   │   │       ├── Meters
+│   │   │       ├── Kilometers
+│   │   │       └── Miles
+│   │   │
+│   │   ├── Website
+│   │   │
+│   │   ├── Profile picture
+│   │   │   ├── File ID
+│   │   │   ├── File URL
+│   │   │   └── File name
+│   │   │
+│   │   ├── Featured image
+│   │   │   ├── File ID
+│   │   │   ├── File URL
+│   │   │   └── File name
+│   │   │
+│   │   └── Bio
+│   │
+│   ├── Profile ID
+│   ├── Profile URL
+│   ├── Is verified?
+│   │
+│   ├── Role
+│   │   ├── Label
+│   │   └── Key
+│   │
+│   ├── Post types
+│   │   ├── Pages
+│   │   │   ├── Published count
+│   │   │   ├── Pending count
+│   │   │   ├── Unpublished count
+│   │   │   ├── Expired count
+│   │   │   ├── Rejected count
+│   │   │   ├── Draft count
+│   │   │   └── Archive link
+│   │   │
+│   │   ├── Profiles
+│   │   │   ├── Published count
+│   │   │   ├── Pending count
+│   │   │   ├── Unpublished count
+│   │   │   ├── Expired count
+│   │   │   ├── Rejected count
+│   │   │   ├── Draft count
+│   │   │   └── Archive link
+│   │   │
+│   │   └── Spaces
+│   │       ├── Published count
+│   │       ├── Pending count
+│   │       ├── Unpublished count
+│   │       ├── Expired count
+│   │       ├── Rejected count
+│   │       ├── Draft count
+│   │       └── Archive link
+│   │
+│   ├── Membership plan
+│   │   ├── Key
+│   │   ├── Label
+│   │   ├── Description
+│   │   │
+│   │   └── Pricing
+│   │       ├── Amount
+│   │       ├── Period
+│   │       ├── Currency
+│   │       ├── Status
+│   │       └── Start date
+│   │
+│   ├── Followers
+│   │   ├── Follow count
+│   │   └── Block count
+│   │
+│   ├── Following
+│   │   ├── Follow count
+│   │   ├── Follow requested count
+│   │   ├── Block count
+│   │   │
+│   │   └── By post type
+│   │       ├── Pages
+│   │       │   ├── Follow count
+│   │       │   ├── Follow requested count
+│   │       │   └── Block count
+│   │       │
+│   │       ├── Profiles
+│   │       │   ├── Follow count
+│   │   │   │   ├── Follow requested count
+│   │   │   │   └── Block count
+│   │   │   │
+│   │       └── Spaces
+│   │           ├── Follow count
+│   │           ├── Follow requested count
+│   │           └── Block count
+│   │
+│   ├── User timeline
+│   │   ├── Total count
+│   │   ├── Repost count
+│   │   └── Quote count
+│   │
+│   ├── Vendor stats
+│   │   ├── Total earnings
+│   │   ├── Total platform fees
+│   │   ├── Customer count
+│   │   │
+│   │   ├── Order count
+│   │   │   ├── Completed
+│   │   │   ├── Pending approval
+│   │   │   ├── Canceled
+│   │   │   └── Refunded
+│   │   │
+│   │   ├── This year
+│   │   │   ├── Earnings
+│   │   │   ├── Completed orders
+│   │   │   └── Platform fees
+│   │   │
+│   │   ├── This month
+│   │   │   ├── Earnings
+│   │   │   ├── Completed orders
+│   │   │   └── Platform fees
+│   │   │
+│   │   ├── This week
+│   │   │   ├── Earnings
+│   │   │   ├── Completed orders
+│   │   │   └── Platform fees
+│   │   │
+│   │   └── Today
+│   │       ├── Earnings
+│   │       ├── Completed orders
+│   │       └── Platform fees
+│   │
+│   ├── Listing limits
+│   │   ├── By post type (This is dynamic generated)
+│   │   │
+│   │   ├── By plan (This is dynamic generated)
+│   │   │
+│   │   └── All
+│   │       ├── Total
+│   │       ├── Used
+│   │       └── Remaining
+│   │
+│   └── User meta
+│
+├── User
+│   ├── ID
+│   ├── Username
+│   ├── Display name
+│   ├── Email
+│   ├── Avatar
+│   ├── First name
+│   ├── Last name
+│   │
+│   ├── Profile
+│   │   ├── ID
+│   │   ├── Title
+│   │   ├── Content
+│   │   ├── Slug
+│   │   ├── Permalink
+│   │   ├── Edit link
+│   │   │
+│   │   ├── Post type
+│   │   │   ├── Key
+│   │   │   ├── Singular name
+│   │   │   └── Plural name
+│   │   │
+│   │   ├── Status
+│   │   │   ├── Key
+│   │   │   └── Label
+│   │   │
+│   │   ├── Date created
+│   │   ├── Last modified date
+│   │   ├── Expiration date
+│   │   ├── Priority
+│   │   ├── Excerpt
+│   │   │
+│   │   ├── Reviews
+│   │   │   ├── Total count
+│   │   │   ├── Average rating
+│   │   │   ├── Percentage
+│   │   │   │
+│   │   │   ├── Latest review
+│   │   │   │   ├── ID
+│   │   │   │   ├── Date created
+│   │   │   │   └── Author
+│   │   │   │       ├── Name
+│   │   │   │       ├── Link
+│   │   │   │       └── Avatar
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Timeline posts
+│   │   │   ├── Total count
+│   │   │   │
+│   │   │   ├── Latest post
+│   │   │   │   ├── ID
+│   │   │   │   └── Date created
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Wall posts
+│   │   │   ├── Total count
+│   │   │   │
+│   │   │   ├── Latest post
+│   │   │   │   ├── ID
+│   │   │   │   └── Date created
+│   │   │   │
+│   │   │   └── Replies
+│   │   │       ├── Total count
+│   │   │       └── Latest reply
+│   │   │           ├── ID
+│   │   │           ├── Date created
+│   │   │           └── Author
+│   │   │               ├── Name
+│   │   │               ├── Link
+│   │   │               └── Avatar
+│   │   │
+│   │   ├── Followers
+│   │   │   ├── Follow count
+│   │   │   └── Block count
+│   │   │
+│   │   ├── Is verified?
+│   │   ├── Profile name
+│   │   │
+│   │   ├── Location
+│   │   │   ├── Full address
+│   │   │   ├── Latitude
+│   │   │   ├── Longitude
+│   │   │   ├── Short address
+│   │   │   ├── Medium address
+│   │   │   ├── Long address
+│   │   │   │
+│   │   │   └── Distance
+│   │   │       ├── Meters
+│   │   │       ├── Kilometers
+│   │   │       └── Miles
+│   │   │
+│   │   ├── Website
+│   │   │
+│   │   ├── Profile picture
+│   │   │   ├── File ID
+│   │   │   ├── File URL
+│   │   │   └── File name
+│   │   │
+│   │   ├── Featured image
+│   │   │   ├── File ID
+│   │   │   ├── File URL
+│   │   │   └── File name
+│   │   │
+│   │   └── Bio
+│   │
+│   ├── Profile ID
+│   ├── Profile URL
+│   ├── Is verified?
+│   │
+│   ├── Role
+│   │
+│   ├── Post types
+│   │
+│   ├── Membership plan
+│   │
+│   ├── Followers
+│   │
+│   ├── Following
+│   │
+│   ├── User timeline
+│   │
+│   ├── Vendor stats
+│   │
+│   ├── Listing limits
+│   │   ├── By post type (This is dynamic generated)
+│   │   │
+│   │   ├── By plan (This is dynamic generated)
+│   │   │
+│   │   └── All
+│   │       ├── Total
+│   │       ├── Used
+│   │       └── Remaining
+│   │
+│   └── User meta
+│
+└── Site
+    ├── Title
+    ├── Logo
+    ├── Tagline
+    ├── URL
+    ├── WP Admin URL
+    ├── Login URL
+    ├── Register URL
+    ├── Logout URL
+    ├── Current plan URL
+    ├── Language
+    ├── Date
+    │
+    ├── Post types
+    │   ├── Pages
+    │   │   ├── Singular name
+    │   │   ├── Plural name
+    │   │   ├── Icon
+    │   │   ├── Archive link
+    │   │   ├── Create post link
+    │   │   │
+    │   │   └── Templates
+    │   │       ├── Single page
+    │   │       ├── Preview card
+    │   │       ├── Archive
+    │   │       ├── Create post
+    │   │       └── Custom (This is dynamic generated)
+    │   │
+    │   ├── Profiles
+    │   │   ├── Singular name
+    │   │   ├── Plural name
+    │   │   ├── Icon
+    │   │   ├── Archive link
+    │   │   ├── Create post link
+    │   │   │
+    │   │   └── Templates
+    │   │       ├── Single page
+    │   │       ├── Preview card
+    │   │       ├── Archive
+    │   │       ├── Create post
+    │   │       └── Custom (This is dynamic generated)
+    │   │
+    │   └── Spaces
+    │       ├── Singular name
+    │       ├── Plural name
+    │       ├── Icon
+    │       ├── Archive link
+    │       ├── Create post link
+    │       │
+    │       └── Templates
+    │           ├── Single page
+    │           ├── Preview card
+    │           ├── Archive
+    │           ├── Create post
+    │           └── Custom (This is dynamic generated)
+    │
+    ├── Query variable
+    └── Math expression
+
+
+2. The loading of modal content is too slow. It tries to load all datagroups at once. 
+Voxel for example DataGroups are dynamic loaded once with click in a top sub <Ul> to speed up the modal loading.
+
+3. When we press the @ the popup dropdown is not showing like voxel dynamictagbuild does.
+ "Press @ to quickly add a tag, or pick one from the left bar"
+ 
+4. When writing the "." dot in a tag script the quick tag insert mod does not show 
+
+5. When clicking inside a voxel tag , the Tagline(site/Tagline) with the dropdown "add a mod" 
+modifiers does not show up in the right sidebar
+
+6. The right sidebar modifiers should work  like this:
+when selecting an item it should show the modifier "minipanel". Each modifier has its own characteristics
+For instance, by selecting currency format, it shows a minipane with a dropdown to choose the currency
+and a dropdown to select "Amount in cents " yes or no. etc
+
+7- Whenever we click the dynamic tag and add a custom voxel script tag it shows as a tag control-content 
+as a feedback to the user for which tag has been applied. So for instance the heading title if I
+add a script it will show as Title @user(username) and below EDIT TAGS | DISABLE TAGS
+
+8- The block with the dynamic tag is not being rendered in the admin editor. Also the dynamic tags
+are not being rendered too. So, for instance if i use  a @user(username) dynamic tag, it should be 
+rendered with my name "Roger" instead of simply displaying the "@user(username)" dynamic tag without rendering
+
+
+9. The tags script colors don't match voxel. They are all white color.
+
+
+

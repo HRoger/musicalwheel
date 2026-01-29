@@ -1,0 +1,281 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/userbar",
+	"version": "1.0.0",
+	"title": "Userbar (VX)",
+	"category": "voxel-fse",
+	"description": "User bar with notifications, messages, cart, user menu, and custom links. FSE equivalent of Voxel's User bar widget.",
+	"keywords": ["userbar", "user", "notifications", "messages", "cart", "menu", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"items": {
+			"type": "array",
+			"default": []
+		},
+		"icons": {
+			"type": "object",
+			"default": {
+				"downArrow": { "library": "", "value": "" },
+				"rightArrow": { "library": "", "value": "" },
+				"leftArrow": { "library": "", "value": "" },
+				"close": { "library": "", "value": "" },
+				"trash": { "library": "", "value": "" },
+				"inbox": { "library": "", "value": "" },
+				"loadMore": { "library": "", "value": "" }
+			}
+		},
+		"itemsAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"verticalOrientation": {
+			"type": "boolean",
+			"default": false
+		},
+		"verticalOrientationTablet": {
+			"type": "boolean",
+			"default": false
+		},
+		"verticalOrientationMobile": {
+			"type": "boolean",
+			"default": false
+		},
+		"itemContentAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"itemGap": {
+			"type": "number",
+			"default": 0
+		},
+		"itemGapTablet": {
+			"type": "number"
+		},
+		"itemGapMobile": {
+			"type": "number"
+		},
+		"itemMargin": {
+			"type": "object",
+			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+		},
+		"itemPadding": {
+			"type": "object",
+			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+		},
+		"itemBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"itemBackgroundHover": {
+			"type": "string",
+			"default": "#fff"
+		},
+		"itemBorderRadius": {
+			"type": "number",
+			"default": 0
+		},
+		"itemBorderRadiusTablet": {
+			"type": "number"
+		},
+		"itemBorderRadiusMobile": {
+			"type": "number"
+		},
+		"itemContentGap": {
+			"type": "number",
+			"default": 0
+		},
+		"itemContentGapTablet": {
+			"type": "number"
+		},
+		"itemContentGapMobile": {
+			"type": "number"
+		},
+		"iconContainerSize": {
+			"type": "number",
+			"default": 40
+		},
+		"iconContainerSizeTablet": {
+			"type": "number"
+		},
+		"iconContainerSizeMobile": {
+			"type": "number"
+		},
+		"iconContainerRadius": {
+			"type": "number",
+			"default": 40
+		},
+		"iconContainerRadiusTablet": {
+			"type": "number"
+		},
+		"iconContainerRadiusMobile": {
+			"type": "number"
+		},
+		"iconContainerBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"iconContainerBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"iconSize": {
+			"type": "number",
+			"default": 20
+		},
+		"iconSizeTablet": {
+			"type": "number"
+		},
+		"iconSizeMobile": {
+			"type": "number"
+		},
+		"iconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"iconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"unreadIndicatorColor": {
+			"type": "string",
+			"default": ""
+		},
+		"unreadIndicatorMargin": {
+			"type": "number",
+			"default": 0
+		},
+		"unreadIndicatorMarginTablet": {
+			"type": "number"
+		},
+		"unreadIndicatorMarginMobile": {
+			"type": "number"
+		},
+		"unreadIndicatorSize": {
+			"type": "number",
+			"default": 8
+		},
+		"unreadIndicatorSizeTablet": {
+			"type": "number"
+		},
+		"unreadIndicatorSizeMobile": {
+			"type": "number"
+		},
+		"avatarSize": {
+			"type": "number",
+			"default": 32
+		},
+		"avatarSizeTablet": {
+			"type": "number"
+		},
+		"avatarSizeMobile": {
+			"type": "number"
+		},
+		"avatarRadius": {
+			"type": "number",
+			"default": 50
+		},
+		"avatarRadiusTablet": {
+			"type": "number"
+		},
+		"avatarRadiusMobile": {
+			"type": "number"
+		},
+		"labelTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"labelColor": {
+			"type": "string",
+			"default": ""
+		},
+		"labelColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"chevronColor": {
+			"type": "string",
+			"default": ""
+		},
+		"chevronColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"hideChevron": {
+			"type": "boolean",
+			"default": false
+		},
+		"customPopupEnable": {
+			"type": "boolean",
+			"default": false
+		},
+		"popupBackdropColor": {
+			"type": "string",
+			"default": ""
+		},
+		"popupPointerEvents": {
+			"type": "boolean",
+			"default": false
+		},
+		"popupBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"popupTopMargin": {
+			"type": "number",
+			"default": 0
+		},
+		"popupMaxHeight": {
+			"type": "number",
+			"default": 0
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

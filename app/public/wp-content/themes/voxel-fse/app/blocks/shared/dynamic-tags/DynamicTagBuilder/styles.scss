@@ -1,0 +1,1439 @@
+@charset "UTF-8";
+
+/**
+ * DynamicTagBuilder Styles
+ *
+ * @package MusicalWheel
+ */
+
+.mw-dynamic-tag-builder-trigger {
+	margin: 8px 0;
+
+	&__preview {
+		margin-top: 8px;
+		padding: 8px;
+		background: #f0f0f0;
+		border-radius: 4px;
+		font-size: 12px;
+		font-family: monospace;
+	}
+}
+
+.mw-dynamic-tag-builder-modal {
+	// Make modal fullscreen and dark mode - high specificity to override WordPress core
+	&.components-modal__screen-overlay {
+		background: rgba(0, 0, 0, 0.9) !important;
+	}
+
+	.components-modal__frame {
+		position: fixed !important;
+		top: 0 !important;
+		left: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		width: 100vw !important;
+		height: 100vh !important;
+		max-width: none !important;
+		max-height: none !important;
+		min-width: 100vw !important;
+		min-height: 100vh !important;
+		margin: 0 !important;
+		border-radius: 0 !important;
+		background: rgb(32, 44, 49) !important; // --nvx-dark-1
+		box-shadow: none !important;
+		animation: none !important;
+	}
+
+	.components-modal__header {
+		display: none !important; // Hide WordPress modal header - we use our own topbar
+	}
+
+	.components-modal__content {
+		flex: 1;
+		margin-top: 0;
+		overflow: auto;
+		padding: 0;
+		background: rgb(32, 44, 49); // --nvx-dark-1
+	}
+}
+
+// Additional high-specificity override for stubborn WordPress core styles
+.components-modal__screen-overlay.mw-dynamic-tag-builder-modal {
+	.components-modal__frame {
+		position: fixed !important;
+		top: 0 !important;
+		left: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		width: 100vw !important;
+		height: 100vh !important;
+		max-width: none !important;
+		max-height: none !important;
+		min-width: 100vw !important;
+		min-height: 100vh !important;
+		margin: 0 !important;
+		border-radius: 0 !important;
+	}
+}
+
+// Provide CSS variables for nvx-editor inside our modal
+.nvx-editor {
+	// Apply Voxel's variables (matching backend.css exactly)
+	--nvx-font: Arial, Helvetica, sans-serif;
+	--nvx-dark-1: rgb(32, 44, 49);
+	--nvx-light-1: #fff;
+	--nvx-light-2: #868e94;
+	--nvx-light-3: rgba(146, 155, 163, 0.431372549);
+	--nvx-light-4: rgba(146, 155, 163, 0.129411765);
+	--nvx-padding-1: 20px;
+	--nvx-gap-0: 10px;
+	--nvx-gap-1: 15px;
+	--nvx-gap-2: 20px;
+	--nvx-font-size-1: 15px;
+	--nvx-font-size-2: 20px;
+	--nvx-accent-1: oklch(64.83% 0.1909 337.62);
+	--nvx-border-1: hsla(0, 0%, 100%, 0.1);
+	--content-text-size: 16px; // For code editor
+}
+
+// Keep only loading and error styles (still using mw- prefix in component)
+.mw-dynamic-tag-builder__loading,
+.mw-dynamic-tag-builder__error {
+	padding: 20px;
+	text-align: center;
+}
+
+.mw-dynamic-tag-builder__loading {
+	color: #fff;
+	font-size: 15px;
+}
+
+.mw-dynamic-tag-builder__error {
+	color: #ff6b6b;
+	background: rgba(255, 107, 107, 0.1);
+	border: 1px solid rgba(255, 107, 107, 0.3);
+	margin: 20px;
+	border-radius: 5px;
+	font-size: 15px;
+}
+
+// Voxel's ts-form-group styling is already in backend.css
+// No custom mw-tag-search styles needed
+
+// Tag Tree (Voxel-like structure with ul/li)
+.nvx-tagslist {
+	ul {
+		display: flex;
+		flex-direction: column;
+		color: var(--nvx-light-2, #868e94);
+		-webkit-user-select: none;
+		user-select: none;
+		gap: 12px; // Voxel uses 12px gap
+		list-style: none;
+		position: relative;
+		margin: 0;
+		padding: 0;
+	}
+
+	li {
+		margin: 0;
+		padding: 0;
+		position: relative;
+
+		> span {
+			display: flex;
+			align-items: center;
+			gap: var(--nvx-gap-0, 10px);
+			padding: 0;
+			cursor: pointer;
+			-webkit-user-select: none;
+			user-select: none;
+			font-size: var(--nvx-font-size-1, 15px);
+			color: var(--nvx-light-2, #868e94); // Gray by default
+			transition: .2s ease;
+			position: relative;
+
+			&:hover {
+				background: transparent; // Voxel hover background
+				color: white;
+			}
+
+			&[draggable="true"]:hover {
+				background: transparent; // Voxel draggable hover
+				color: white;
+			}
+
+			// Line Awesome icon for methods
+			i.la-code {
+				margin-right: 5px;
+				font-size: 15px;
+				color: var(--nvx-light-2, #868e94);
+			}
+		}
+
+		> ul {
+			display: none;
+			padding-left: var(--nvx-padding-1, 20px);
+			overflow: hidden;
+			transition: height 0.2s ease;
+
+			// Voxel's beautiful vertical dashed line for hierarchy
+			&::after {
+				content: "";
+				width: 10px;
+				height: 100%;
+				border-left: 1.5px dashed var(--nvx-border-1, hsla(0, 0%, 100%, 0.1));
+				display: block;
+				position: absolute;
+				left: 20px;
+				top: 0;
+			}
+		}
+
+		// Expandable parent items (groups with children)
+		&.is-group {
+			> span {
+				font-weight: 400; // Voxel uses 400 not 600
+				padding-left: 35px; // Make room for arrow
+
+				// Down arrow (collapsed state) - light gray
+				&::before {
+					content: '▼';
+					position: absolute;
+					left: 15px;
+					font-size: 10px;
+					color: var(--nvx-light-2, #868e94); // Light gray when collapsed
+					transition: color 0.2s ease, transform 0.2s ease;
+				}
+			}
+
+			// When expanded - pink arrow and pink text
+			&.is-open {
+				> span {
+					color: var(--nvx-accent-1, oklch(64.83% 0.1909 337.62)); // Pink text when expanded
+
+					&::before {
+						content: '▲'; // UP arrow when expanded
+						color: var(--nvx-accent-1, oklch(64.83% 0.1909 337.62)); // Pink arrow when expanded
+					}
+				}
+
+				> ul {
+					display: flex;
+					flex-direction: column;
+					gap: 12px;
+					color: var(--nvx-light-2, #868e94);
+					-webkit-user-select: none;
+					user-select: none;
+					list-style: none;
+					position: relative;
+				}
+			}
+		}
+
+		// Non-expandable items (leaf nodes)
+		&:not(.is-group) {
+			> span {
+				padding-left: 35px; // Align with parent items
+				font-weight: 400;
+				color: var(--nvx-light-2, #868e94); // Gray for leaf nodes
+			}
+		}
+
+		// First child margin
+		&:first-child {
+			margin-top: 15px;
+		}
+	}
+}
+
+// Additional Voxel-specific tree styling
+.nvx-editor .nvx-tagslist {
+	ul {
+		display: flex;
+		flex-direction: column;
+		color: var(--nvx-light-2, #868e94);
+		-webkit-user-select: none;
+		user-select: none;
+		gap: 12px;
+		list-style: none;
+		position: relative;
+
+		li {
+			ul > li:first-child {
+				margin-top: 15px;
+			}
+
+			&:not(.is-group) {
+				transition: .2s ease;
+			}
+
+			> span {
+				transition: .2s ease;
+				cursor: pointer;
+			}
+		}
+	}
+}
+
+.mw-tag-tree {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: var(--nvx-gap-0, 10px) 0;
+	max-height: calc(100vh - 200px);
+	background: var(--nvx-dark-1, rgb(32, 44, 49));
+
+	/* Voxel scrollbar styling */
+	&::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: var(--nvx-light-4, rgba(146, 155, 163, 0.129411765));
+		border-radius: 4px;
+
+		&:hover {
+			background: var(--nvx-light-3, rgba(146, 155, 163, 0.431372549));
+		}
+	}
+
+	&--empty {
+		padding: var(--nvx-padding-1, 20px);
+		text-align: center;
+		color: var(--nvx-light-2, #868e94);
+		font-size: var(--nvx-font-size-1, 15px);
+	}
+}
+
+.mw-tag-group__loading,
+.mw-tag-item__loading {
+	padding: 10px 15px;
+	color: var(--nvx-light-2, #868e94);
+	font-size: var(--nvx-font-size-1, 15px);
+	font-style: italic;
+}
+
+// ============================================================================
+// VOXEL EXTRACTED CSS - Exact copy from backend.css
+// DO NOT modify or add duplicates - cursor alignment depends on exact CSS!
+// ============================================================================
+
+// Line Awesome fonts are loaded via Voxel's backend.css (dynamically loaded when modal opens)
+// No @font-face declaration needed here - avoids Vite build warnings
+
+.nvx-editor {
+  line-height:1;
+  --nvx-font:var(--vx-main-font);
+  --nvx-dark-1:rgb(32 44 49);
+  --nvx-light-1:#fff;
+  --nvx-light-2:#868e94;
+  --nvx-light-3:#929ba36e;
+  --nvx-light-4:#929ba321;
+  --nvx-padding-1:20px;
+  --nvx-gap-0:10px;
+  --nvx-gap-1:15px;
+  --nvx-gap-2:20px;
+  --nvx-font-size-1:15px;
+  --nvx-font-size-2:20px;
+  --nvx-accent-1:oklch(64.83% 0.1909 337.62);
+  --nvx-border-1:hsla(0,0%,100%,.1);
+  background:var(--nvx-dark-1);
+  color:var(--nvx-light-1);
+  font-family:var(--nvx-font);
+  width:100vw;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:9999999;
+}
+
+.nvx-editor abbr,.nvx-editor b,.nvx-editor blockquote,.nvx-editor code,.nvx-editor details,.nvx-editor em,.nvx-editor fieldset,.nvx-editor form,.nvx-editor h1,.nvx-editor h2,.nvx-editor h3,.nvx-editor h4,.nvx-editor h5,.nvx-editor h6,.nvx-editor i,.nvx-editor iframe,.nvx-editor img,.nvx-editor li,.nvx-editor ol,.nvx-editor pre,.nvx-editor section,.nvx-editor small,.nvx-editor span,.nvx-editor strike,.nvx-editor strong,.nvx-editor sub,.nvx-editor summary,.nvx-editor sup,.nvx-editor u,.nvx-editor ul,.nvx-editor var {
+  border:0;
+  font-size:var(--nvx-font-size-1);
+  vertical-align:baseline;
+  box-sizing:border-box;
+  padding:0;
+  margin:0;
+}
+
+.nvx-editor h1,.nvx-editor h2,.nvx-editor h3,.nvx-editor h4 {
+  color:var(--nvx-light-1);
+  font-weight:400;
+  padding:0;
+  margin:0;
+}
+
+.nvx-editor div {
+  box-sizing:border-box;
+}
+
+.mod-head {
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.mod-head h3 {
+  font-size:18px;
+}
+
+.nvx-editor .nvx-output-preview {
+  font-size:var(--nvx-font-size-2);
+  font-family:georgia,sans-serif;
+}
+
+.nvx-editor .nvx-flex {
+  display:flex;
+  gap:var(--nvx-gap-1);
+}
+
+.nvx-editor .nvx-flex.nvx-v-center {
+  align-items:center;
+}
+
+.nvx-editor .nvx-flex.nvx-h-center {
+  justify-content:center;
+}
+
+.nvx-editor .nvx-topbar {
+  justify-content:space-between;
+  padding:var(--nvx-padding-1);
+  border-bottom:1px solid var(--nvx-border-1);
+  display:flex;
+  align-items:center;
+  height:70px;
+  overflow:hidden;
+  flex-wrap:nowrap;
+}
+
+.nvx-editor .nvx-topbar__title {
+  gap:var(--nvx-gap-0);
+}
+
+.nvx-editor .nvx-topbar__title h2 {
+  font-size:20px;
+}
+
+.nvx-editor .nvx-editor-body {
+  height:calc(100vh - 70px);
+  display:flex;
+}
+
+.nvx-editor .nvx-right-sidebar {
+  border-left:1px solid var(--nvx-border-1);
+  width:25%;
+  max-width:350px;
+}
+
+.nvx-editor .nvx-center,.nvx-editor .nvx-right-sidebar {
+  flex-shrink:0;
+  padding:var(--nvx-padding-1);
+  gap:var(--nvx-gap-1);
+  display:flex;
+  flex-direction:column;
+}
+
+.nvx-editor .nvx-center {
+  margin-left:auto;
+  margin-right:auto;
+  width:900px;
+}
+
+.nvx-editor div.nvx-condition {
+  border:1px solid var(--nvx-border-1);
+  flex-wrap:nowrap;
+  border-radius:8px;
+}
+
+.nvx-editor .nvx-left-sidebar,.nvx-editor div.nvx-condition {
+  display:flex;
+  padding:var(--nvx-padding-1);
+  gap:var(--nvx-gap-1);
+}
+
+.nvx-editor .nvx-left-sidebar {
+  border-right:1px solid var(--nvx-border-1);
+  width:25%;
+  max-width:350px;
+  flex-shrink:0;
+  flex-direction:column;
+}
+
+.nvx-editor .nvx-tagslist ul {
+  display:flex;
+  flex-direction:column;
+  color:var(--nvx-light-2);
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  user-select:none;
+  gap:12px;
+  list-style:none;
+  position:relative;
+}
+
+.nvx-editor .nvx-tagslist ul li>span {
+  cursor:pointer;
+  transition:.2s ease;
+  color:var(--nvx-light-2, #868e94); // Explicit color - gray text
+  opacity:1; // Ensure full opacity (not inherited from parent)
+}
+
+.nvx-editor .nvx-tagslist ul li>span.is-active {
+  outline:none;
+  color:#fff;
+  transform:translateX(3px);
+  text-decoration:underline;
+}
+
+.nvx-editor .nvx-tagslist ul li.is-group>span:before {
+  content:"▼ ";
+}
+
+.nvx-editor .nvx-tagslist ul li.is-group.is-open>span {
+  color:var(--nvx-accent-1);
+}
+
+.nvx-editor .nvx-tagslist ul li.is-group.is-open>span:before {
+  content:"▲ ";
+}
+
+.nvx-editor .nvx-tagslist ul li>span:hover {
+  color:var(--nvx-light-1);
+}
+
+.nvx-editor .nvx-tagslist ul li>ul:after {
+  content:"";
+  width:10px;
+  height:100%;
+  border-left:1.5px dashed var(--nvx-border-1);
+  display:block;
+  position:absolute;
+  left:19px;
+  top:10px;
+}
+
+.nvx-editor .nvx-tagslist ul li>ul {
+  padding:0 0 0 25px;
+}
+
+.nvx-editor .nvx-tagslist ul li:not(.is-group) {
+  transition:.2s ease;
+}
+
+.nvx-editor .nvx-tagslist ul li:not(.is-group):hover {
+  color:var(--nvx-light-1);
+}
+
+.nvx-editor .nvx-tagslist ul li ul>li:first-child {
+  margin-top:15px;
+}
+
+.nvx-editor .nvx-tagslist ul .is-group>ul {
+  will-change:height;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  perspective:1000px;
+}
+
+.nvx-editor .nvx-tagslist .expand-enter-active,.nvx-editor .nvx-tagslist .expand-leave-active {
+  transition:height .3s ease-out;
+  overflow:hidden;
+}
+
+.nvx-editor .nvx-tagslist .expand-enter,.nvx-editor .nvx-tagslist .expand-leave-to {
+  height:0;
+}
+
+.nvx-editor .nvx-main {
+  flex-grow:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.nvx-editor .nvx-visual-editor {
+  padding:var(--nvx-padding-1);
+  height:100%;
+  padding-left:0;
+  padding-right:0;
+}
+
+.nvx-editor .nvx-scrollable {
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:hsla(0,0%,100%,.031372549) transparent;
+  scrollbar-gutter:stable;
+}
+
+.nvx-editor .nvx-placeholder {
+  color:var(--nvx-light-2);
+}
+
+.nvx-editor .nvx-placeholder.placeholder-center {
+  text-align:center;
+}
+
+.nvx-editor .nvx-placeholder.placeholder-all-center {
+  text-align:center;
+  align-items:center;
+  justify-content:center;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  gap:10px;
+}
+
+.nvx-editor .nvx-placeholder.placeholder-all-center svg {
+  fill:var(--nvx-light-3);
+  width:30px;
+  height:30px;
+}
+
+.nvx-editor .nvx-placeholder.placeholder-all-center svg path {
+  fill:currentColor;
+}
+
+.nvx-editor .nvx-placeholder.nvx-tag-path>span[title] {
+  border-bottom:1px dotted var(--nvx-light-2);
+}
+
+// Removed Voxel's mobile overlay - not needed in WordPress admin
+// Original rule: .nvx-editor :after with "Editing in this resolution..." message
+// This was extracted without its @media (max-width:960px) wrapper, causing it to show on all screens
+
+.nvx-editor .dtags-ac {
+  position:absolute;
+  -webkit-backdrop-filter:blur(30px);
+  backdrop-filter:blur(30px);
+  background:#2d3a40;
+  border-radius:8px;
+  min-width:250px;
+  max-width:450px;
+  max-height:500px;
+  overflow-y:auto;
+  z-index:1000;
+  color:#fff;
+  scrollbar-gutter:auto;
+}
+
+.nvx-editor .dtags-wrapper {
+  width:100%;
+  height:100%;
+}
+
+.nvx-editor .dtags-content {
+  position:relative;
+  width:100%;
+  height:100%;
+  --content-text-size:20px;
+}
+
+.nvx-editor .dtags-content.vxs-font {
+  --content-text-size:16px;
+}
+
+.nvx-editor .dtags-content>pre {
+  font-size:var(--content-text-size);
+  padding:0 20px 0 35px;
+  margin:0;
+  line-height:1.5;
+  font-family:JetBrains Mono,monospace;
+  -moz-tab-size:2;
+  -o-tab-size:2;
+  tab-size:2;
+  border:0;
+  width:100%;
+  height:100%;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  word-break:break-all;
+  background:transparent;
+}
+
+.nvx-editor .dtags-content>pre:has(.ts-line:nth-child(100)) .ts-line-number {
+  opacity:0;
+}
+
+.nvx-editor .dtags-content>pre .ts-line {
+  position:relative;
+}
+
+.nvx-editor .dtags-content>pre .ts-line .ts-line-number {
+  position:absolute;
+  color:var(--nvx-light-3);
+  transform:translateX(-40px);
+  width:30px;
+  text-align:right;
+  font-size:13px;
+}
+
+.nvx-editor .hl-group {
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:7px;
+  text-decoration-color:hsla(0,0%,100%,.168627451);
+  color:#ff459a;
+}
+
+.nvx-editor .hl-group-props {
+  color:#67feb5;
+}
+
+.nvx-editor .hl-group-mods {
+  color:#6e88a6;
+}
+
+.nvx-editor .hl-group-arg {
+  color:#e3b45a;
+}
+
+.nvx-editor .hl-caret {
+  width:2px;
+  background:red;
+}
+
+.nvx-editor .dtags-content>textarea {
+  font-size:var(--content-text-size);
+  padding:0 20px 0 35px;
+  margin:0;
+  line-height:1.5;
+  font-family:JetBrains Mono,monospace;
+  -moz-tab-size:2;
+  -o-tab-size:2;
+  tab-size:2;
+  border:0;
+  width:100%;
+  height:100%;
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  word-break:break-all;
+  resize:none;
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  background:transparent;
+  color:transparent;
+  caret-color:#fff;
+}
+
+.nvx-editor .dtags-content>textarea::-moz-placeholder {
+  color:var(--nvx-light-3)!important;
+}
+
+.nvx-editor .dtags-content>textarea::placeholder {
+  color:var(--nvx-light-3)!important;
+}
+
+.nvx-editor .dtags-content>pre span {
+  font-size:var(--content-text-size);
+  padding:0;
+  margin:0;
+  font-family:JetBrains Mono,monospace;
+  -moz-tab-size:2;
+  -o-tab-size:2;
+  tab-size:2;
+}
+
+.nvx-divider {
+  height:20px;
+  width:1px;
+  margin:auto;
+  background:var(--nvx-border-1);
+  align-self:center;
+  margin:0;
+}
+
+.ts-button {
+  display:inline-flex;
+  justify-content:center;
+  color:#fff;
+  padding:13px 18px;
+  background:var(--nvx-accent-1);
+  align-items:center;
+  border:none;
+  border-radius:50px;
+  height:44px;
+  cursor:pointer;
+  white-space:nowrap;
+  text-decoration:none;
+  transition:.15s ease;
+  font-weight:500;
+  box-sizing:border-box;
+  grid-gap:5px;
+}
+
+.ts-button .icon-sm {
+  font-size:20px;
+}
+
+.ts-button svg {
+  width:20px;
+  height:20px;
+  fill:#fff;
+}
+
+.ts-button svg path {
+  fill:currentColor;
+}
+
+.ts-button:active,.ts-button:focus,.ts-button:hover {
+  color:#fff;
+  box-shadow:none;
+}
+
+.ts-button:hover {
+  background:var(--accent-secondary);
+}
+
+.ts-button.ts-outline {
+  border:1px solid hsla(0,0%,100%,.1);
+  background:hsla(0,0%,100%,.0392156863);
+  color:#fff;
+  font-weight:400;
+}
+
+.ts-button.ts-outline:hover {
+  border-color:hsla(0,0%,100%,.2);
+}
+
+.ts-button.ts-outline .dtag-content {
+  color:#fff;
+}
+
+.ts-button.ts-white {
+  background:#fff;
+  color:var(--bg-color);
+  font-weight:400;
+}
+
+.ts-button.ts-white:hover {
+  background:hsla(0,0%,100%,.9);
+  color:var(--bg-color);
+}
+
+.ts-button.ts-white i {
+  color:var(--bg-color);
+}
+
+.ts-button.ts-faded {
+  background:hsla(0,0%,100%,.05);
+  color:hsla(0,0%,100%,.7);
+  box-shadow:none;
+  outline:none;
+  font-weight:400;
+}
+
+.ts-button.ts-faded:hover {
+  color:#fff;
+  background:hsla(0,0%,100%,.1);
+}
+
+.ts-button.ts-transparent {
+  background:transparent;
+  opacity:.5;
+  outline:none;
+  color:#fff;
+  font-weight:400;
+  box-shadow:none;
+}
+
+.ts-button.ts-transparent:hover {
+  opacity:1;
+}
+
+.ts-button.ts-dashed {
+  background:transparent;
+  border:1.5px dashed hsla(0,0%,100%,.15);
+  color:#fff;
+  font-weight:400;
+}
+
+.ts-button.ts-dashed:hover {
+  border-color:hsla(0,0%,100%,.3);
+  color:#fff;
+}
+
+.ts-button.icon-only {
+  padding:13px;
+}
+
+.ts-button.icon-only i {
+  font-size:18px;
+  padding-right:0;
+}
+
+.ts-button.icon-only.ts-outline {
+  padding:12px;
+}
+
+.ts-button.full-width {
+  width:100%;
+}
+
+.add-field .ts-button {
+  border-radius:50px;
+  height:40px;
+  padding:15px;
+}
+
+.add-field .ts-button:active {
+  transform:scale(.95);
+}
+
+.single-condition .ts-form-group .ts-button:not(.icon-only) {
+  width:100%;
+  border-radius:8px;
+  border:1.5px solid hsla(0,0%,100%,.15);
+  overflow:hidden;
+  justify-content:flex-start;
+}
+
+.single-condition .ts-form-group .ts-button:not(.icon-only):hover {
+  border-color:hsla(0,0%,100%,.25);
+}
+
+.single-condition .ts-form-group .ts-button:not(.icon-only)>div,.single-condition .ts-form-group .ts-button:not(.icon-only)>span {
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.nvx-mod-list .nvx-mod-title .ts-button {
+  width:34px;
+  height:34px;
+  padding:8px;
+}
+
+.edit-voxel.ts-button {
+  color:hsla(0,0%,100%,.5);
+  box-shadow:none;
+  outline:none;
+}
+
+.edit-key a.ts-button {
+  padding:0;
+  width:32px;
+  height:32px;
+  border-radius:50px;
+}
+
+.library-item .lib-buttons .ts-button {
+  flex-grow:1;
+  height:44px;
+}
+
+.xt-actions .icon-only {
+  width:38px;
+  height:38px;
+}
+
+.xt-actions .icon-only i {
+  font-size:14px;
+}
+
+.ts-save-settings {
+  position:relative;
+  overflow:hidden;
+  z-index:3;
+}
+
+.ts-save-settings:before {
+  background:hsla(0,0%,100%,.09);
+  content:"";
+  width:100%;
+  height:100%;
+  opacity:0;
+  position:absolute;
+  top:0;
+  left:0;
+  z-index:5;
+  transition:.2s ease;
+}
+
+.ts-save-settings:hover:before {
+  opacity:1;
+}
+
+.ts-save-settings.ts-saving {
+  color:transparent;
+}
+
+.ts-save-settings.ts-saving i {
+  color:transparent!important;
+}
+
+.ts-save-settings.ts-saving:after {
+  content:"\f1ce";
+  font-family:Line Awesome Free;
+  font-weight:900;
+  animation-name:spin;
+  animation-duration:.5s;
+  animation-iteration-count:infinite;
+  animation-timing-function:linear;
+  font-size:23px;
+  color:#fff;
+  position:absolute;
+  width:23px;
+  height:23px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:23px;
+}
+
+.ts-col-1-2,.ts-col-1-3,.ts-col-1-4,.ts-col-2-3 {
+  width:100%;
+}
+
+.ts-form-group {
+  position:relative;
+}
+
+.ts-form-group:last-child {
+  margin-bottom:0;
+}
+
+.ts-form-group select {
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  text-indent:1px;
+  text-overflow:"";
+}
+
+.ts-form-group input,.ts-form-group select,.ts-form-group textarea {
+  width:100%;
+  background:transparent;
+  border:1px solid hsla(0,0%,100%,.15);
+  height:45px;
+  border-radius:8px;
+  color:#fff;
+  transition:border-color .15s ease;
+  max-width:none;
+  padding:0 14px;
+  font-size:14px;
+}
+
+.ts-form-group input:focus,.ts-form-group select:focus,.ts-form-group textarea:focus {
+  border-color:var(--accent-text);
+  color:#fff;
+  outline:none!important;
+  box-shadow:none!important;
+}
+
+.ts-form-group input[readonly],.ts-form-group select[readonly],.ts-form-group textarea[readonly] {
+  border:1px dashed hsla(0,0%,100%,.2)!important;
+}
+
+.ts-form-group input:hover,.ts-form-group select:hover,.ts-form-group textarea:hover {
+  border-color:hsla(0,0%,100%,.25);
+}
+
+.ts-form-group input:hover:focus,.ts-form-group select:hover:focus,.ts-form-group textarea:hover:focus {
+  border-color:var(--accent-text);
+  color:#fff;
+}
+
+.ts-form-group input::-moz-placeholder, .ts-form-group select::-moz-placeholder, .ts-form-group textarea::-moz-placeholder {
+  color:hsla(0,0%,100%,.5);
+}
+
+.ts-form-group input::placeholder,.ts-form-group select::placeholder,.ts-form-group textarea::placeholder {
+  color:hsla(0,0%,100%,.5);
+}
+
+.ts-form-group textarea {
+  padding-top:11px;
+}
+
+.ts-form-group select {
+  color:#fff;
+  background-image:linear-gradient(45deg,transparent 50%,gray 0),linear-gradient(135deg,gray 50%,transparent 0);
+  background-position:calc(100% - 19px) calc(1em + 5px),calc(100% - 15px) calc(1em + 5px);
+  background-size:5px 5px,5px 5px,1px 1.5em;
+  background-repeat:no-repeat;
+  padding-right:36px!important;
+  text-overflow:ellipsis;
+}
+
+.ts-form-group select optgroup,.ts-form-group select option {
+  color:#23282d;
+}
+
+.ts-form-group select:focus,.ts-form-group select:hover {
+  color:#fff;
+  border-color:hsla(0,0%,100%,.3);
+}
+
+.ts-form-group details summary {
+  color:#fff;
+}
+
+.ts-form-group details a {
+  color:var(--accent-text);
+}
+
+.ts-form-group select[multiple] {
+  background:transparent;
+  color:#fff;
+}
+
+.ts-form-group select[multiple] option {
+  padding:5px;
+  color:hsla(0,0%,100%,.7);
+}
+
+.ts-form-group select[multiple] option:checked {
+  background:#393e42 linear-gradient(0deg,#393e42,#393e42);
+  color:#fff;
+  font-weight:400;
+}
+
+.ts-form-group select[multiple]:focus,.ts-form-group select[multiple]:hover {
+  color:#fff;
+  border-color:hsla(0,0%,100%,.3);
+}
+
+.ts-form-group select[multiple]:focus option:checked {
+  background:#393e42 linear-gradient(0deg,#393e42,#393e42);
+}
+
+.ts-form-group>label {
+  display:block;
+  color:#fff;
+  padding-bottom:10px;
+  opacity:1;
+  z-index:10;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.ts-form-group>p {
+  color:hsla(0,0%,100%,.4901960784);
+  opacity:1;
+  margin:0;
+  line-height:1.3;
+}
+
+.ts-form-group a {
+  font-weight:400;
+  text-decoration:none;
+  box-shadow:none;
+}
+
+#voxel-term-settings .ts-form-group p {
+  color:#b1b1b1;
+}
+
+.vx-dark-mode #wpcontent .ts-form-group ol,.vx-dark-mode #wpcontent .ts-form-group p,.vx-dark-mode .ts-field-modal .ts-form-group ol,.vx-dark-mode .ts-field-modal .ts-form-group p {
+  color:hsla(0,0%,100%,.4901960784);
+}
+
+.vx-dark-mode #wpcontent .ts-form-group ol a,.vx-dark-mode #wpcontent .ts-form-group p a,.vx-dark-mode .ts-field-modal .ts-form-group ol a,.vx-dark-mode .ts-field-modal .ts-form-group p a {
+  color:var(--accent-text);
+}
+
+.ts-form-group label a {
+  color:#fff;
+  border-bottom:1px solid #fff;
+}
+
+.panel-switcher .ts-form-group {
+  padding:0;
+}
+
+#dynamic-tags-modal .ts-form-group>p>a {
+  color:var(--accent-text);
+}
+
+.ts-form-group input:disabled {
+  color:hsla(0,0%,100%,.2);
+}
+
+.ts-form-group input:disabled:hover {
+  border-color:hsla(0,0%,100%,.2);
+}
+
+.create-mebership-plan .ts-form-group {
+  margin-left:0;
+  margin-right:0;
+}
+
+code.ts-snippet,pre.ts-snippet,pre[debug] {
+  padding:10px;
+  border-radius:5px;
+  white-space:break-spaces;
+  overflow-y:auto;
+}
+
+code.ts-snippet,pre.ts-snippet {
+  color:#fff;
+  background:#0b1223;
+  font-size:13px;
+  background:#1e2227;
+  font-family:JetBrains Mono,monospace;
+  -moz-tab-size:4;
+  -o-tab-size:4;
+  tab-size:4;
+}
+
+code.ts-snippet .ts-gray,pre.ts-snippet .ts-gray {
+  color:#656565!important;
+}
+
+code.ts-snippet .ts-blue,pre.ts-snippet .ts-blue {
+  color:#7fc6ff!important;
+}
+
+code.ts-snippet .ts-green,pre.ts-snippet .ts-green {
+  color:#b0ffba!important;
+}
+
+code.ts-snippet .ts-red,pre.ts-snippet .ts-red {
+  color:#ff7b7b!important;
+}
+
+code.ts-snippet .ts-purple,pre.ts-snippet .ts-purple {
+  color:#dc86ff!important;
+}
+
+code.ts-snippet .ts-yellow,pre.ts-snippet .ts-yellow {
+  color:#fffab0!important;
+}
+
+code.ts-snippet .ts-italic,pre.ts-snippet .ts-italic {
+  font-style:italic;
+}
+
+.dtags-content {
+  position:relative;
+  font-size:16px;
+  flex-grow:1;
+}
+
+.dtags-content .editor-placeholder {
+  position:absolute;
+  top:0;
+  left:0;
+  pointer-events:none;
+  font-size:18px;
+  opacity:.7;
+  display:none;
+  line-height:26px;
+  font-weight:400;
+}
+
+.dtags-content .dynamic-editor {
+  height:100%;
+  font-size:18px;
+  line-height:26px;
+  border:none;
+  outline:none;
+}
+
+.dtags-content .dynamic-editor .dtag {
+  color:var(--accent-text);
+  border-bottom:2px solid;
+  cursor:pointer;
+}
+
+.dtags-content .dynamic-editor:empty~.editor-placeholder {
+  display:block;
+}
+
+.dtags-content textarea {
+  width:100%;
+  height:calc(100% - 5px);
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:18px;
+  line-height:26px;
+  padding:0;
+  box-shadow:none!important;
+  font-family:JetBrains Mono,monospace;
+}
+
+.dtags-mode-input .dtags-mode-input__content>pre .hl-group {
+  text-decoration:none;
+}
+
+.dtags-mode-input .dtags-mode-input__content>pre .ts-line-number {
+  display:none;
+}
+
+.nvx-quick-tags li {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:5px 7px;
+  font-family:JetBrains Mono,monospace;
+  letter-spacing:-1px;
+}
+
+.nvx-quick-tags li.is-active,.nvx-quick-tags li:hover {
+  background:#3c4b52;
+  cursor:pointer;
+}
+
+.nvx-quick-tags li.is-active span {
+  max-width:unset;
+}
+
+.nvx-quick-tags li span {
+  border:1px solid var(--nvx-border-1);
+  font-size:13px;
+  padding:4px 7px;
+  color:hsla(0,0%,100%,.7);
+  border-radius:5px;
+  white-space:nowrap;
+  max-width:175px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.nvx-quick-tags li span:hover {
+  max-width:unset;
+}
+
+.nvx-quick-tags li p {
+  max-width:100%;
+  white-space:nowrap;
+  overflow:hidden;
+  font-size:14px;
+  text-overflow:ellipsis;
+  margin:0;
+}
+
+.nvx-quick-tags.nvx-insert-mod li>p>code {
+  font-size:14px;
+  opacity:.5;
+  display:none;
+}
+
+.nvx-quick-tags.nvx-insert-mod li.is-active>p>code {
+  display:block;
+}
+
+/* Show code instruction only for the very first item in the list */
+.nvx-quick-tags.nvx-insert-mod li.first-item>p>code {
+  display:block;
+}
+
+.nvx-mod-list {
+  gap:var(--nvx-gap-0);
+  display:flex;
+  flex-direction:column;
+}
+
+.nvx-mod-list .nvx-mod {
+  border:1px solid var(--nvx-border-1);
+  border-radius:8px;
+  transition:.15s ease;
+}
+
+.nvx-mod-list .nvx-mod:not(.mod-open):hover {
+  border-color:var(--nvx-light-3);
+}
+
+.nvx-mod-list .nvx-mod.mod-unknown .nvx-mod-title {
+  color:hsla(0,0%,100%,.3);
+}
+
+.nvx-mod-list .nvx-mod.mod-active {
+  outline:2px solid var(--accent-text);
+  border-radius:5px;
+}
+
+.nvx-mod-list .nvx-mod-title {
+  padding:8px 15px;
+  display:flex;
+  cursor:pointer;
+  transition:.15s ease;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.nvx-mod-list .nvx-mod-content {
+  display:grid;
+  gap:15px;
+  padding:15px;
+  border-top:1px solid var(--nvx-border-1);
+}
+
+.nvx-mod-list .nvx-mod-actions {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Drag and drop styles */
+.nvx-mod[draggable="true"] {
+  cursor: move;
+}
+
+.nvx-mod[draggable="true"]:active {
+  opacity: 0.5;
+}
+
+/* All panels are clickable - Voxel pattern */
+.nvx-mod-title {
+  user-select: none;
+  cursor: pointer;
+}
+
+/* Info tooltip styles */
+.vx-info-box {
+  position: relative;
+  display: inline-block;
+}
+
+.vx-info-box svg {
+  width: 16px;
+  height: 16px;
+}
+
+.vx-info-box svg,
+.vx-info-box svg path {
+  fill: hsla(0, 0%, 100%, 0.38);
+}
+
+.vx-info-box > div,
+.vx-info-box p {
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.2s;
+  position: absolute;
+  width: 200px;
+  height: auto;
+  z-index: 20;
+  top: 5px;
+  right: 0;
+  padding: 15px !important;
+  background: rgb(33 43 48);
+  margin-top: 1em;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid hsla(0, 0%, 100%, 0.05) !important;
+  color: #fff !important;
+}
+
+.vx-info-box:hover > div,
+.vx-info-box:hover p {
+  opacity: 1;
+  visibility: visible;
+}
+

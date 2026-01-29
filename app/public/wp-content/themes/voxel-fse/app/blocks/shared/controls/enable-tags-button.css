@@ -1,0 +1,54 @@
+/**
+ * Voxel Dynamic Tag Enable Button CSS
+ *
+ * Circular button with Voxel logo and gradient background.
+ * Used in ImageUploadControl, GalleryUploadControl, and other controls
+ * that support dynamic tag switching.
+ *
+ * This file is imported directly by controls that use the button
+ * to ensure the CSS is always loaded with the component.
+ *
+ * @package VoxelFSE
+ */
+
+.voxel-fse-enable-tags {
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	padding: 0;
+	transition: 0.2s ease;
+}
+
+.voxel-fse-enable-tags:hover {
+	transform: scale(1.1);
+}
+
+.voxel-fse-enable-tags__icon {
+	position: relative;
+	z-index: 10;
+	width: 16px;
+	height: 16px;
+	display: block;
+	background-size: contain;
+	background-image: url('/wp-content/themes/voxel/assets/images/post-types/logo.svg');
+	background-repeat: no-repeat;
+	background-position: center;
+	filter: invert(1);
+}
+
+.voxel-fse-enable-tags::after {
+	content: "";
+	width: 28px;
+	height: 28px;
+	position: absolute;
+	/* Voxel brand gradient - oklch color space */
+	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+	border-radius: 50px;
+	z-index: 1;
+}

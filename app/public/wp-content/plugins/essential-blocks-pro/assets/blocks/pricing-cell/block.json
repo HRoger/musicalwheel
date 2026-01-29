@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "title": "Pricing Cell",
+  "name": "essential-blocks/pro-pricing-cell",
+  "category": "essential-blocks",
+  "description": "This is the individual Pricing Cell to insert any blocks for your Multicolumn Pricing Table",
+  "apiVersion": 2,
+  "textdomain": "essential-blocks-pro",
+  "supports": {
+    "inserter": false,
+    "reusable": false,
+    "lock": false
+  },
+  "parent": [
+    "essential-blocks/pro-pricing-column"
+  ],
+  "usesContext": [
+    "eb/parentSellDetailsCell",
+    "eb/parentSellColumn",
+    "eb/parentColumnNumber",
+    "eb/parentHasCollapse",
+    "eb/parentCollapseRowNumber"
+  ]
+}

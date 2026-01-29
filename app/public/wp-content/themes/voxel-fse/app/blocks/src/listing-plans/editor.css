@@ -1,0 +1,177 @@
+/**
+ * Listing Plans Block - Editor Styles
+ *
+ * Editor-only styles for the Listing Plans block.
+ * Frontend styles are inherited from Voxel parent theme.
+ *
+ * @package VoxelFSE
+ */
+
+/* Price group repeater item */
+.voxel-fse-listing-plans .voxel-fse-price-group {
+	padding: 12px;
+	margin-bottom: 12px;
+	background: #f7f7f7;
+	border-radius: 4px;
+}
+
+.voxel-fse-listing-plans .voxel-fse-price-group-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.voxel-fse-listing-plans .voxel-fse-price-group-header .components-text-control {
+	flex: 1;
+}
+
+/* Feature item */
+.voxel-fse-listing-plans .voxel-fse-feature-item {
+	padding: 12px;
+	margin-bottom: 8px;
+	background: #f7f7f7;
+	border-radius: 4px;
+}
+
+/* Image upload preview */
+.voxel-fse-listing-plans .voxel-fse-image-upload {
+	margin-bottom: 16px;
+}
+
+.voxel-fse-listing-plans .voxel-fse-image-upload img {
+	display: block;
+	max-width: 100%;
+	border-radius: 4px;
+}
+
+/* Editor placeholder for empty state */
+.voxel-fse-listing-plans .voxel-fse-block-placeholder {
+	background: #f0f0f0;
+	border: 2px dashed #ccc;
+	border-radius: 8px;
+	padding: 40px;
+	text-align: center;
+}
+
+/* Grid preview in editor */
+.voxel-fse-listing-plans .ts-plans-list {
+	display: grid;
+	grid-template-columns: repeat(var(--ts-plans-columns, 3), 1fr);
+	gap: var(--ts-plans-gap, 20px);
+}
+
+/* Plan card styles in editor */
+.voxel-fse-listing-plans .ts-plan-container {
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.voxel-fse-listing-plans .ts-plan-container.hidden {
+	display: none;
+}
+
+.voxel-fse-listing-plans .ts-plan-body {
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+.voxel-fse-listing-plans .ts-plan-name {
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.voxel-fse-listing-plans .ts-plan-pricing {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.voxel-fse-listing-plans .ts-plan-price {
+	font-size: 24px;
+	font-weight: 700;
+}
+
+.voxel-fse-listing-plans .ts-price-period {
+	font-size: 14px;
+	color: #666;
+}
+
+.voxel-fse-listing-plans .ts-plan-image img {
+	max-width: 100%;
+	height: auto;
+}
+
+.voxel-fse-listing-plans .ts-plan-desc {
+	color: #666;
+	font-size: 14px;
+}
+
+.voxel-fse-listing-plans .ts-plan-features ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.voxel-fse-listing-plans .ts-plan-features li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.voxel-fse-listing-plans .ts-plan-features svg {
+	color: #10b981;
+	flex-shrink: 0;
+}
+
+.voxel-fse-listing-plans .ts-plan-footer {
+	margin-top: auto;
+}
+
+.voxel-fse-listing-plans .ts-plan-footer a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 12px 24px;
+	background: #3b82f6;
+	color: #fff;
+	text-decoration: none;
+	border-radius: 6px;
+	font-weight: 500;
+	width: 100%;
+}
+
+.voxel-fse-listing-plans .ts-plan-footer a.ts-btn-1 {
+	background: #e5e7eb;
+	color: #374151;
+}
+
+/* Tabs in editor */
+.voxel-fse-listing-plans .ts-plan-tabs {
+	display: flex;
+	list-style: none;
+	padding: 0;
+	margin: 0 0 20px 0;
+	gap: 8px;
+}
+
+.voxel-fse-listing-plans .ts-plan-tabs li a {
+	display: block;
+	padding: 8px 16px;
+	background: #f3f4f6;
+	color: #374151;
+	text-decoration: none;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.voxel-fse-listing-plans .ts-plan-tabs li.ts-tab-active a {
+	background: #3b82f6;
+	color: #fff;
+}

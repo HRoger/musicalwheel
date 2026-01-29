@@ -1,0 +1,44 @@
+/**
+ * Review Stats Block - Editor Styles
+ *
+ * Minimal editor-only styles. Main styling comes from Voxel parent theme CSS.
+ * Only add overrides here for responsive controls and editor states.
+ *
+ * @package VoxelFSE
+ */
+
+/* Editor wrapper - minimal height to prevent collapse */
+.vxfse-review-stats-editor {
+	min-height: 40px;
+}
+
+/* Loading state */
+.vxfse-loading-state {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 24px;
+	color: #6b7280;
+	font-size: 14px;
+}
+
+/* Error state */
+.vxfse-error-state {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background: #fef2f2;
+	border-radius: 4px;
+	color: #dc2626;
+	font-size: 14px;
+}
+
+/* Visibility classes - show in editor with indicator */
+.vxfse-hide-desktop,
+.vxfse-hide-tablet,
+.vxfse-hide-mobile {
+	opacity: 0.5;
+	border: 1px dashed #ccc;
+}

@@ -6,233 +6,56 @@
  */
 
 import { useBlockProps } from '@wordpress/block-editor';
+import {
+	getAdvancedVoxelTabProps,
+	renderBackgroundElements,
+} from '../../shared/utils';
 
-import type { MapSaveProps, MapVxConfig } from './types';
+import type { MapSaveProps } from './types';
+import { buildVxConfig } from './utils';
+import { generateMapResponsiveCSS } from './styles';
 
-/**
- * Build vxconfig object from attributes
- */
-function buildVxConfig(attributes: MapSaveProps['attributes']): MapVxConfig {
-	return {
-		source: attributes.source,
-		searchFormId: attributes.searchFormId,
-		dragSearch: attributes.dragSearch,
-		dragSearchMode: attributes.dragSearchMode,
-		dragSearchDefault: attributes.dragSearchDefault,
-		center: {
-			lat: attributes.defaultLat,
-			lng: attributes.defaultLng,
-		},
-		zoom: attributes.defaultZoom,
-		minZoom: attributes.minZoom,
-		maxZoom: attributes.maxZoom,
-		styles: {
-			height: {
-				desktop: attributes.height,
-				tablet: attributes.height_tablet,
-				mobile: attributes.height_mobile,
-			},
-			heightUnit: attributes.heightUnit,
-			calcHeight: {
-				desktop: attributes.calcHeight,
-				tablet: attributes.calcHeight_tablet,
-				mobile: attributes.calcHeight_mobile,
-			},
-			enableCalcHeight: {
-				desktop: attributes.enableCalcHeight,
-				tablet: attributes.enableCalcHeight_tablet,
-				mobile: attributes.enableCalcHeight_mobile,
-			},
-			borderRadius: {
-				desktop: attributes.borderRadius,
-				tablet: attributes.borderRadius_tablet,
-				mobile: attributes.borderRadius_mobile,
-			},
-			cluster: {
-				size: {
-					desktop: attributes.clusterSize,
-					tablet: attributes.clusterSize_tablet,
-					mobile: attributes.clusterSize_mobile,
-				},
-				bgColor: {
-					desktop: attributes.clusterBgColor,
-					tablet: attributes.clusterBgColor_tablet,
-					mobile: attributes.clusterBgColor_mobile,
-				},
-				shadow: attributes.clusterShadow,
-				radius: {
-					desktop: attributes.clusterRadius,
-					tablet: attributes.clusterRadius_tablet,
-					mobile: attributes.clusterRadius_mobile,
-				},
-				typography: attributes.clusterTypography,
-				textColor: {
-					desktop: attributes.clusterTextColor,
-					tablet: attributes.clusterTextColor_tablet,
-					mobile: attributes.clusterTextColor_mobile,
-				},
-			},
-			iconMarker: {
-				size: {
-					desktop: attributes.iconMarkerSize,
-					tablet: attributes.iconMarkerSize_tablet,
-					mobile: attributes.iconMarkerSize_mobile,
-				},
-				iconSize: {
-					desktop: attributes.iconMarkerIconSize,
-					tablet: attributes.iconMarkerIconSize_tablet,
-					mobile: attributes.iconMarkerIconSize_mobile,
-				},
-				radius: {
-					desktop: attributes.iconMarkerRadius,
-					tablet: attributes.iconMarkerRadius_tablet,
-					mobile: attributes.iconMarkerRadius_mobile,
-				},
-				shadow: attributes.iconMarkerShadow,
-				staticBg: {
-					desktop: attributes.iconMarkerStaticBg,
-					tablet: attributes.iconMarkerStaticBg_tablet,
-					mobile: attributes.iconMarkerStaticBg_mobile,
-				},
-				staticBgActive: {
-					desktop: attributes.iconMarkerStaticBgActive,
-					tablet: attributes.iconMarkerStaticBgActive_tablet,
-					mobile: attributes.iconMarkerStaticBgActive_mobile,
-				},
-				staticIconColor: {
-					desktop: attributes.iconMarkerStaticIconColor,
-					tablet: attributes.iconMarkerStaticIconColor_tablet,
-					mobile: attributes.iconMarkerStaticIconColor_mobile,
-				},
-				staticIconColorActive: {
-					desktop: attributes.iconMarkerStaticIconColorActive,
-					tablet: attributes.iconMarkerStaticIconColorActive_tablet,
-					mobile: attributes.iconMarkerStaticIconColorActive_mobile,
-				},
-			},
-			textMarker: {
-				bgColor: {
-					desktop: attributes.textMarkerBgColor,
-					tablet: attributes.textMarkerBgColor_tablet,
-					mobile: attributes.textMarkerBgColor_mobile,
-				},
-				bgColorActive: {
-					desktop: attributes.textMarkerBgColorActive,
-					tablet: attributes.textMarkerBgColorActive_tablet,
-					mobile: attributes.textMarkerBgColorActive_mobile,
-				},
-				textColor: {
-					desktop: attributes.textMarkerTextColor,
-					tablet: attributes.textMarkerTextColor_tablet,
-					mobile: attributes.textMarkerTextColor_mobile,
-				},
-				textColorActive: {
-					desktop: attributes.textMarkerTextColorActive,
-					tablet: attributes.textMarkerTextColorActive_tablet,
-					mobile: attributes.textMarkerTextColorActive_mobile,
-				},
-				radius: {
-					desktop: attributes.textMarkerRadius,
-					tablet: attributes.textMarkerRadius_tablet,
-					mobile: attributes.textMarkerRadius_mobile,
-				},
-				typography: attributes.textMarkerTypography,
-				padding: {
-					desktop: attributes.textMarkerPadding,
-					tablet: attributes.textMarkerPadding_tablet,
-					mobile: attributes.textMarkerPadding_mobile,
-				},
-				shadow: attributes.textMarkerShadow,
-			},
-			imageMarker: {
-				size: {
-					desktop: attributes.imageMarkerSize,
-					tablet: attributes.imageMarkerSize_tablet,
-					mobile: attributes.imageMarkerSize_mobile,
-				},
-				radius: {
-					desktop: attributes.imageMarkerRadius,
-					tablet: attributes.imageMarkerRadius_tablet,
-					mobile: attributes.imageMarkerRadius_mobile,
-				},
-				shadow: attributes.imageMarkerShadow,
-			},
-			popup: {
-				cardWidth: {
-					desktop: attributes.popupCardWidth,
-					tablet: attributes.popupCardWidth_tablet,
-					mobile: attributes.popupCardWidth_mobile,
-				},
-				loaderColor1: attributes.popupLoaderColor1,
-				loaderColor2: attributes.popupLoaderColor2,
-			},
-			searchBtn: {
-				typography: attributes.searchBtnTypography,
-				textColor: {
-					desktop: attributes.searchBtnTextColor,
-					tablet: attributes.searchBtnTextColor_tablet,
-					mobile: attributes.searchBtnTextColor_mobile,
-				},
-				bgColor: {
-					desktop: attributes.searchBtnBgColor,
-					tablet: attributes.searchBtnBgColor_tablet,
-					mobile: attributes.searchBtnBgColor_mobile,
-				},
-				iconColor: {
-					desktop: attributes.searchBtnIconColor,
-					tablet: attributes.searchBtnIconColor_tablet,
-					mobile: attributes.searchBtnIconColor_mobile,
-				},
-				iconColorActive: {
-					desktop: attributes.searchBtnIconColorActive,
-					tablet: attributes.searchBtnIconColorActive_tablet,
-					mobile: attributes.searchBtnIconColorActive_mobile,
-				},
-				radius: {
-					desktop: attributes.searchBtnRadius,
-					tablet: attributes.searchBtnRadius_tablet,
-					mobile: attributes.searchBtnRadius_mobile,
-				},
-				checkmarkIcon: attributes.checkmarkIcon,
-			},
-			navBtn: {
-				iconColor: attributes.navBtnIconColor,
-				iconColorHover: attributes.navBtnIconColorHover,
-				iconSize: {
-					desktop: attributes.navBtnIconSize,
-					tablet: attributes.navBtnIconSize_tablet,
-					mobile: attributes.navBtnIconSize_mobile,
-				},
-				bgColor: attributes.navBtnBgColor,
-				bgColorHover: attributes.navBtnBgColorHover,
-				borderType: attributes.navBtnBorderType,
-				borderWidth: attributes.navBtnBorderWidth,
-				borderColor: attributes.navBtnBorderColor,
-				borderColorHover: attributes.navBtnBorderColorHover,
-				radius: {
-					desktop: attributes.navBtnRadius,
-					tablet: attributes.navBtnRadius_tablet,
-					mobile: attributes.navBtnRadius_mobile,
-				},
-				shadow: attributes.navBtnShadow,
-				size: {
-					desktop: attributes.navBtnSize,
-					tablet: attributes.navBtnSize_tablet,
-					mobile: attributes.navBtnSize_mobile,
-				},
-			},
-		},
-	};
-}
+
 
 /**
  * Save function - outputs static HTML with vxconfig
  */
 export default function save({ attributes }: MapSaveProps) {
+	const blockId = attributes.blockId || 'map';
+
+	// Use shared utility for AdvancedTab + VoxelTab wiring
+	// This handles: styles, className, responsiveCSS, customAttrs, elementId
+	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+		blockId,
+		baseClass: 'voxel-fse-map ts-map-widget',
+		selectorPrefix: 'voxel-fse-map',
+	});
+
+	// Generate map-specific responsive CSS
+	const mapResponsiveCSS = generateMapResponsiveCSS(attributes, blockId);
+
+	// Combine all responsive CSS
+	const combinedResponsiveCSS = [advancedProps.responsiveCSS, mapResponsiveCSS]
+		.filter(Boolean)
+		.join('\n');
+
 	const blockProps = useBlockProps.save({
-		className: 'voxel-fse-map ts-map-widget',
+		id: advancedProps.elementId,
+		className: advancedProps.className,
+		style: advancedProps.styles,
 		'data-source': attributes.source,
 		'data-search-form-id': attributes.searchFormId || undefined,
+		// Headless-ready: Visibility rules configuration
+		'data-visibility-behavior': attributes['visibilityBehavior'] || undefined,
+		'data-visibility-rules': (attributes['visibilityRules'] as any[])?.length
+			? JSON.stringify(attributes['visibilityRules'])
+			: undefined,
+		// Headless-ready: Loop element configuration
+		'data-loop-source': attributes['loopSource'] || undefined,
+		'data-loop-property': attributes['loopProperty'] || undefined,
+		'data-loop-limit': attributes['loopLimit'] || undefined,
+		'data-loop-offset': attributes['loopOffset'] || undefined,
+		...advancedProps.customAttrs,
 	});
 
 	// Build vxconfig JSON
@@ -240,12 +63,19 @@ export default function save({ attributes }: MapSaveProps) {
 
 	return (
 		<div {...blockProps}>
+			{/* Responsive CSS from AdvancedTab + VoxelTab + Style Tab */}
+			{combinedResponsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
+			)}
 			{/* vxconfig JSON for frontend hydration */}
 			<script
 				type="text/json"
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
+
+			{/* Background elements: video, slideshow, overlay, shape dividers */}
+			{renderBackgroundElements(attributes, false, undefined, undefined, advancedProps.uniqueSelector)}
 
 			{/* Placeholder replaced during hydration */}
 			<div

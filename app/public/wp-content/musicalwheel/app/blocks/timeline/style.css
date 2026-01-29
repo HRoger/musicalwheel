@@ -1,0 +1,135 @@
+/**
+ * Timeline Block - Frontend Styles
+ * @package MusicalWheel_FSE
+ */
+
+.wp-block-musicalwheel-timeline {
+	container-type: inline-size;
+	container-name: timeline;
+}
+
+.timeline-feed {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.timeline-item {
+	background: var(--wp--preset--color--base, #ffffff);
+	border: 1px solid var(--wp--preset--color--contrast-2, #e0e0e0);
+	border-radius: 8px;
+	padding: 1.5rem;
+	transition: box-shadow 0.2s ease;
+}
+
+.timeline-item:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item__header {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.timeline-item__avatar img {
+	border-radius: 50%;
+	width: 48px;
+	height: 48px;
+	object-fit: cover;
+}
+
+.timeline-item__meta {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.timeline-item__author {
+	font-weight: 600;
+	color: var(--wp--preset--color--contrast, #000000);
+}
+
+.timeline-item__time {
+	font-size: 0.875rem;
+	color: var(--wp--preset--color--contrast-3, #757575);
+}
+
+.timeline-item__content {
+	margin-bottom: 1rem;
+}
+
+.timeline-item__title {
+	margin: 0 0 0.5rem;
+	font-size: 1.125rem;
+	font-weight: 600;
+}
+
+.timeline-item__title a {
+	color: var(--wp--preset--color--contrast, #000000);
+	text-decoration: none;
+}
+
+.timeline-item__title a:hover {
+	color: var(--wp--preset--color--primary, #0066cc);
+}
+
+.timeline-item__excerpt {
+	color: var(--wp--preset--color--contrast-2, #4a4a4a);
+	line-height: 1.6;
+}
+
+.timeline-item__footer {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.timeline-item__link {
+	color: var(--wp--preset--color--primary, #0066cc);
+	text-decoration: none;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.timeline-item__link:hover {
+	text-decoration: underline;
+}
+
+.timeline-load-more {
+	margin-top: 2rem;
+	text-align: center;
+}
+
+.timeline-load-more__button {
+	background: var(--wp--preset--color--primary, #0066cc);
+	color: #ffffff;
+	border: none;
+	border-radius: 4px;
+	padding: 0.75rem 2rem;
+	font-size: 1rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s ease;
+}
+
+.timeline-load-more__button:hover {
+	background: var(--wp--preset--color--primary-hover, #0052a3);
+}
+
+.timeline-empty {
+	text-align: center;
+	padding: 3rem 1.5rem;
+	color: var(--wp--preset--color--contrast-3, #757575);
+}
+
+/* Container queries for responsive design */
+@container timeline (min-width: 600px) {
+	.timeline-item {
+		padding: 2rem;
+	}
+
+	.timeline-item__title {
+		font-size: 1.25rem;
+	}
+}

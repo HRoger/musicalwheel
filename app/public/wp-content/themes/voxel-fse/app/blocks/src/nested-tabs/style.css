@@ -1,0 +1,196 @@
+/**
+ * Nested Tabs Block - Frontend Styles
+ *
+ * These styles complement Elementor's widget-nested-tabs.css
+ * Only add styles that are needed for the FSE block wrapper.
+ *
+ * @package VoxelFSE
+ */
+
+/* Block wrapper */
+.vxfse-nested-tabs {
+	position: relative;
+}
+
+/* Ensure tabs structure works with CSS variables */
+.vxfse-nested-tabs .e-n-tabs {
+	display: flex;
+	flex-direction: var(--n-tabs-direction, column);
+	gap: var(--n-tabs-gap, 0);
+}
+
+.vxfse-nested-tabs .e-n-tabs-heading {
+	display: flex;
+	flex-direction: var(--n-tabs-heading-direction, row);
+	flex-wrap: var(--n-tabs-heading-wrap, wrap);
+	justify-content: var(--n-tabs-heading-justify-content, flex-start);
+	width: var(--n-tabs-heading-width, initial);
+	gap: var(--n-tabs-title-gap, 0);
+	overflow-x: var(--n-tabs-heading-overflow-x, initial);
+}
+
+.vxfse-nested-tabs .e-n-tab-title {
+	display: flex;
+	flex-direction: var(--n-tabs-title-direction, row);
+	align-items: var(--n-tabs-title-align-items, center);
+	justify-content: var(--n-tabs-title-justify-content, center);
+	gap: var(--n-tabs-icon-gap, 8px);
+	padding: var(--n-tabs-title-padding-top, 15px) var(--n-tabs-title-padding-right, 20px) var(--n-tabs-title-padding-bottom, 15px) var(--n-tabs-title-padding-left, 20px);
+	border-radius: var(--n-tabs-title-border-radius, 0);
+	background: var(--n-tabs-title-background-color, transparent);
+	color: var(--n-tabs-title-color, inherit);
+	border: none;
+	cursor: pointer;
+	transition: all var(--n-tabs-title-transition, 0.3s) ease;
+	flex-grow: var(--n-tabs-title-flex-grow, 0);
+	flex-shrink: 0;
+	width: var(--n-tabs-title-width, initial);
+	white-space: var(--n-tabs-title-white-space, initial);
+	order: var(--n-tabs-title-order, initial);
+}
+
+.vxfse-nested-tabs .e-n-tab-title:hover {
+	background: var(--n-tabs-title-background-color-hover, var(--n-tabs-title-background-color, transparent));
+	color: var(--n-tabs-title-color-hover, var(--n-tabs-title-color, inherit));
+}
+
+.vxfse-nested-tabs .e-n-tab-title.e-active,
+.vxfse-nested-tabs .e-n-tab-title[aria-selected="true"] {
+	background: var(--n-tabs-title-background-color-active, var(--n-tabs-title-background-color, transparent));
+	color: var(--n-tabs-title-color-active, var(--n-tabs-title-color, inherit));
+}
+
+.vxfse-nested-tabs .e-n-tab-icon {
+	display: flex;
+	align-items: center;
+	font-size: var(--n-tabs-icon-size, 16px);
+	color: var(--n-tabs-icon-color, inherit);
+	order: var(--n-tabs-icon-order, initial);
+}
+
+.vxfse-nested-tabs .e-n-tab-title:hover .e-n-tab-icon {
+	color: var(--n-tabs-icon-color-hover, var(--n-tabs-icon-color, inherit));
+}
+
+.vxfse-nested-tabs .e-n-tab-title.e-active .e-n-tab-icon,
+.vxfse-nested-tabs .e-n-tab-title[aria-selected="true"] .e-n-tab-icon {
+	color: var(--n-tabs-icon-color-active, var(--n-tabs-icon-color, inherit));
+}
+
+.vxfse-nested-tabs .e-n-tab-title-text {
+	font-size: var(--n-tabs-title-font-size, inherit);
+}
+
+.vxfse-nested-tabs .e-n-tabs-content {
+	flex: 1;
+	background: var(--n-tabs-content-background-color, transparent);
+	border-radius: var(--n-tabs-content-border-radius, 0);
+	padding: var(--n-tabs-content-padding, 0);
+}
+
+/* Tab content panels - support both Elementor's .e-con and WordPress InnerBlocks output */
+.vxfse-nested-tabs .e-n-tabs-content > .e-con,
+.vxfse-nested-tabs .e-n-tabs-content > .vxfse-tab-panel,
+.vxfse-nested-tabs .e-n-tabs-content > .wp-block-group {
+	display: none;
+	order: var(--n-tabs-title-order, initial);
+}
+
+.vxfse-nested-tabs .e-n-tabs-content > .e-con.e-active,
+.vxfse-nested-tabs .e-n-tabs-content > .vxfse-tab-panel.e-active,
+.vxfse-nested-tabs .e-n-tabs-content > .wp-block-group.e-active {
+	display: block;
+}
+
+/* Icon visibility for active/inactive states */
+.vxfse-nested-tabs .e-n-tab-icon i:nth-child(2) {
+	display: none;
+}
+
+.vxfse-nested-tabs .e-n-tab-title.e-active .e-n-tab-icon i:first-child,
+.vxfse-nested-tabs .e-n-tab-title[aria-selected="true"] .e-n-tab-icon i:first-child {
+	display: none;
+}
+
+.vxfse-nested-tabs .e-n-tab-title.e-active .e-n-tab-icon i:nth-child(2),
+.vxfse-nested-tabs .e-n-tab-title[aria-selected="true"] .e-n-tab-icon i:nth-child(2) {
+	display: inline-block;
+}
+
+/* Accordion mode (mobile breakpoint) */
+.vxfse-nested-tabs .e-n-tabs.e-n-tabs-accordion-mode {
+	--n-tabs-direction: column;
+	--n-tabs-heading-direction: column;
+	--n-tabs-heading-width: 100%;
+}
+
+.vxfse-nested-tabs .e-n-tabs.e-n-tabs-accordion-mode .e-n-tabs-heading {
+	flex-direction: column;
+	width: 100%;
+}
+
+.vxfse-nested-tabs .e-n-tabs.e-n-tabs-accordion-mode .e-n-tab-title {
+	width: 100%;
+	justify-content: flex-start;
+}
+
+/* Visibility Classes */
+.vxfse-hide-desktop {
+	display: none !important;
+}
+
+@media (max-width: 1024px) {
+	.vxfse-hide-tablet {
+		display: none !important;
+	}
+	.vxfse-hide-desktop {
+		display: block !important;
+	}
+}
+
+@media (max-width: 767px) {
+	.vxfse-hide-mobile {
+		display: none !important;
+	}
+	.vxfse-hide-tablet {
+		display: block !important;
+	}
+}
+
+/* Mobile breakpoint - auto accordion */
+@media (max-width: 767px) {
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-mobile {
+		--n-tabs-direction: column;
+		--n-tabs-heading-direction: column;
+		--n-tabs-heading-width: 100%;
+	}
+
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-mobile .e-n-tabs-heading {
+		flex-direction: column;
+		width: 100%;
+	}
+
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-mobile .e-n-tab-title {
+		width: 100%;
+		justify-content: flex-start;
+	}
+}
+
+/* Tablet breakpoint - auto accordion */
+@media (max-width: 1024px) {
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-tablet {
+		--n-tabs-direction: column;
+		--n-tabs-heading-direction: column;
+		--n-tabs-heading-width: 100%;
+	}
+
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-tablet .e-n-tabs-heading {
+		flex-direction: column;
+		width: 100%;
+	}
+
+	.vxfse-nested-tabs .e-n-tabs.e-n-tabs-tablet .e-n-tab-title {
+		width: 100%;
+		justify-content: flex-start;
+	}
+}

@@ -1,0 +1,157 @@
+/**
+ * LoopVisibilityControl.css
+ *
+ * Styles for the reusable Loop & Visibility inspector control.
+ * Consolidated from advanced-list/editor.css (lines 136-240)
+ *
+ * @package VoxelFSE
+ */
+
+/* Loop & Visibility wrapper - matches Voxel's visibility section styling */
+.voxel-fse-loop-visibility-wrapper {
+    order: 99999999;
+    padding: 15px;
+    background: #fbfafb;
+    border-radius: 4px;
+    margin: 0 -15px -15px;
+}
+
+.voxel-fse-loop-visibility-wrapper .voxel-fse-loop-section,
+.voxel-fse-loop-visibility-wrapper .voxel-fse-visibility-section {
+    margin-bottom: 20px;
+}
+
+.voxel-fse-loop-visibility-wrapper .voxel-fse-loop-section:last-child,
+.voxel-fse-loop-visibility-wrapper .voxel-fse-visibility-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Loop source display - matches Voxel's @user(role) style */
+.voxel-fse-loop-source {
+    margin: 0 0 12px;
+    font-size: 12px;
+    color: #515962;
+    font-weight: 600;
+}
+
+/* Loop limit/offset fields - inline layout */
+.voxel-fse-loop-field {
+    margin-top: 16px;
+}
+
+.voxel-fse-loop-field .components-base-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.voxel-fse-loop-field .components-base-control__field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+.voxel-fse-loop-field .components-base-control__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e1e1e;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.voxel-fse-loop-field .components-base-control__help {
+    font-size: 12px;
+    color: #9ca3af;
+    font-style: italic;
+    margin-top: 4px;
+    width: 100%;
+}
+
+.voxel-fse-loop-field .components-text-control__input {
+    width: 80px;
+}
+
+/* Control note */
+.voxel-fse-control-note {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Visibility rules display - no border, simple text */
+.voxel-fse-visibility-rules-display {
+    margin: 8px 0 12px;
+}
+
+.voxel-fse-visibility-rule-text {
+    margin: 0 0 4px;
+    font-size: 13px;
+    color: #1e1e1e;
+    line-height: 1.5;
+}
+
+.voxel-fse-visibility-rule-text:last-child {
+    margin-bottom: 0;
+}
+
+/* Visibility rules list (styled as chips) */
+.voxel-fse-visibility-rules-list {
+    margin: 8px 0 12px;
+}
+
+.voxel-fse-visibility-rule-item {
+    font-size: 12px;
+    padding: 4px 8px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    border-left: 3px solid #007cba;
+}
+
+.voxel-fse-visibility-rule-item:last-child {
+    margin-bottom: 0;
+}
+
+.voxel-fse-visibility-rule-label {
+    color: #1e1e1e;
+}
+
+/* Filter actions row */
+.voxel-fse-filter-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.voxel-fse-filter-actions-row .components-button {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Visibility section dropdown - full width */
+.voxel-fse-visibility-section .components-select-control {
+    margin-bottom: 8px;
+}
+
+/* Inline row visibility layout (label + dropdown side by side) */
+.voxel-fse-row-visibility-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.voxel-fse-row-visibility-header .components-base-control__label {
+    margin-bottom: 0;
+}
+
+.voxel-fse-row-visibility-header .components-select-control {
+    margin-bottom: 0;
+}
+
+.voxel-fse-row-visibility-header .components-select-control__input {
+    min-width: 140px;
+}

@@ -1,0 +1,321 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/current-plan",
+	"version": "1.0.0",
+	"title": "Current plan (VX)",
+	"category": "voxel-fse",
+	"description": "Display current user membership plan with subscription management and plan switching. FSE equivalent of Voxel's Current plan widget.",
+	"keywords": [
+		"plan",
+		"membership",
+		"subscription",
+		"pricing",
+		"voxel"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "number"
+		},
+		"loopOffset": {
+			"type": "number"
+		},
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "icons"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "panel"
+		},
+		"secondaryButtonState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"planIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"viewPlansIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"configureIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"switchIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"cancelIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"portalIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"panelsSpacing": {
+			"type": "number"
+		},
+		"panelsSpacing_tablet": {
+			"type": "number"
+		},
+		"panelsSpacing_mobile": {
+			"type": "number"
+		},
+		"panelBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"panelRadius": {
+			"type": "number"
+		},
+		"panelRadius_tablet": {
+			"type": "number"
+		},
+		"panelRadius_mobile": {
+			"type": "number"
+		},
+		"panelBg": {
+			"type": "string"
+		},
+		"panelShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"headPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"headIcoSize": {
+			"type": "number"
+		},
+		"headIcoSize_tablet": {
+			"type": "number"
+		},
+		"headIcoSize_mobile": {
+			"type": "number"
+		},
+		"headIcoMargin": {
+			"type": "number"
+		},
+		"headIcoMargin_tablet": {
+			"type": "number"
+		},
+		"headIcoMargin_mobile": {
+			"type": "number"
+		},
+		"headIcoCol": {
+			"type": "string"
+		},
+		"headTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"headTypoCol": {
+			"type": "string"
+		},
+		"headBorderCol": {
+			"type": "string"
+		},
+		"priceAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"priceTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"priceCol": {
+			"type": "string"
+		},
+		"periodTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"periodCol": {
+			"type": "string"
+		},
+		"panelSpacing": {
+			"type": "number"
+		},
+		"panelSpacing_tablet": {
+			"type": "number"
+		},
+		"panelSpacing_mobile": {
+			"type": "number"
+		},
+		"panelGap": {
+			"type": "number"
+		},
+		"panelGap_tablet": {
+			"type": "number"
+		},
+		"panelGap_mobile": {
+			"type": "number"
+		},
+		"textAlign": {
+			"type": "string",
+			"default": "left"
+		},
+		"bodyTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"bodyTypoCol": {
+			"type": "string"
+		},
+		"bodyTypoLink": {
+			"type": "object",
+			"default": {}
+		},
+		"bodyColLink": {
+			"type": "string"
+		},
+		"panelButtonsGap": {
+			"type": "number"
+		},
+		"panelButtonsGap_tablet": {
+			"type": "number"
+		},
+		"panelButtonsGap_mobile": {
+			"type": "number"
+		},
+		"scndBtnTypo": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnRadius": {
+			"type": "number"
+		},
+		"scndBtnRadius_tablet": {
+			"type": "number"
+		},
+		"scndBtnRadius_mobile": {
+			"type": "number"
+		},
+		"scndBtnC": {
+			"type": "string"
+		},
+		"scndBtnPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnHeight": {
+			"type": "number"
+		},
+		"scndBtnHeight_tablet": {
+			"type": "number"
+		},
+		"scndBtnHeight_mobile": {
+			"type": "number"
+		},
+		"scndBtnBg": {
+			"type": "string"
+		},
+		"scndBtnBorder": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnIconSize": {
+			"type": "number"
+		},
+		"scndBtnIconSize_tablet": {
+			"type": "number"
+		},
+		"scndBtnIconSize_mobile": {
+			"type": "number"
+		},
+		"scndBtnIconPad": {
+			"type": "number"
+		},
+		"scndBtnIconPad_tablet": {
+			"type": "number"
+		},
+		"scndBtnIconPad_mobile": {
+			"type": "number"
+		},
+		"scndBtnIconColor": {
+			"type": "string"
+		},
+		"scndBtnCH": {
+			"type": "string"
+		},
+		"scndBtnBgH": {
+			"type": "string"
+		},
+		"scndBtnBorderH": {
+			"type": "string"
+		},
+		"scndBtnIconColorH": {
+			"type": "string"
+		}
+	}
+}

@@ -1,0 +1,167 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "voxel-fse/ring-chart",
+  "version": "1.0.0",
+  "title": "Ring Chart (VX)",
+  "category": "voxel-fse",
+  "description": "Display an animated ring chart with customizable value, colors, and size",
+  "keywords": [
+    "chart",
+    "ring",
+    "progress",
+    "circle",
+    "statistics"
+  ],
+  "textdomain": "voxel-fse",
+  "supports": {
+    "html": false,
+    "anchor": true,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "blockId": {
+      "type": "string"
+    },
+    "activeTab": {
+      "type": "string",
+      "default": "content"
+    },
+    "ts_chart_position": {
+      "type": "string",
+      "default": "flex-start"
+    },
+    "ts_chart_value": {
+      "type": "number",
+      "default": 0
+    },
+    "ts_chart_value_suffix": {
+      "type": "string",
+      "default": ""
+    },
+    "ts_chart_size": {
+      "type": "number",
+      "default": 100
+    },
+    "ts_chart_stroke_width": {
+      "type": "number",
+      "default": 2
+    },
+    "ts_chart_animation_duration": {
+      "type": "number",
+      "default": 3
+    },
+    "ts_chart_animation_duration_tablet": {
+      "type": "number",
+      "default": 3
+    },
+    "ts_chart_animation_duration_mobile": {
+      "type": "number",
+      "default": 3
+    },
+    "ts_chart_cirle_color": {
+      "type": "string",
+      "default": "#efefef"
+    },
+    "ts_chart_fill_color": {
+      "type": "string",
+      "default": "#00acc1"
+    },
+    "ts_chart_value_color": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_font_family": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_font_size": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_font_size_tablet": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_font_size_mobile": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_font_weight": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_line_height": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_line_height_tablet": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_line_height_mobile": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_letter_spacing": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_letter_spacing_tablet": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_letter_spacing_mobile": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_text_transform": {
+      "type": "string",
+      "default": ""
+    },
+    "chart_value_typography_text_decoration": {
+      "type": "string",
+      "default": ""
+    },
+    "_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+    "visibilityBehavior": {
+      "type": "string",
+      "default": "show",
+      "enum": ["show", "hide"]
+    },
+    "visibilityRules": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object"
+      }
+    },
+    "loopEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "loopSource": {
+      "type": "string",
+      "default": ""
+    },
+    "loopProperty": {
+      "type": "string",
+      "default": ""
+    },
+    "loopLimit": {
+      "type": "string",
+      "default": ""
+    },
+    "loopOffset": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "editorScript": "file:./index.tsx",
+  "editorStyle": "file:./editor.css",
+  "viewScript": "file:./frontend.js",
+	"render": "file:./render.php"
+}

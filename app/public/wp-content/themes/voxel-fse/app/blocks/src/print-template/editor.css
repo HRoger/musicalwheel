@@ -1,0 +1,195 @@
+/**
+ * Print Template Block - Editor Styles
+ *
+ * Editor-only styles for the block. Does NOT import style.css
+ * to avoid CSS conflicts with Voxel parent theme.
+ *
+ * @package VoxelFSE
+ */
+
+/* Block container */
+.voxel-fse-print-template {
+	position: relative;
+	min-height: 60px;
+}
+
+/* Placeholder state */
+.voxel-fse-print-template .voxel-fse-block-placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background: #f0f0f0;
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+	min-height: 80px;
+}
+
+.voxel-fse-print-template .voxel-fse-block-placeholder .placeholder-icon {
+	font-size: 24px;
+	margin-bottom: 8px;
+}
+
+.voxel-fse-print-template .voxel-fse-block-placeholder .placeholder-text {
+	font-size: 13px;
+	color: #666;
+}
+
+/* Loading state */
+.ts-print-template-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	padding: 24px;
+	background: #f9f9f9;
+	border: 1px dashed #ddd;
+	border-radius: 4px;
+	color: #666;
+	font-size: 13px;
+}
+
+.ts-print-template-loading .ts-loader {
+	width: 20px;
+	height: 20px;
+	border: 2px solid #ddd;
+	border-top-color: #666;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Error state */
+.ts-print-template-error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: #fff5f5;
+	border: 1px solid #ffcccc;
+	border-radius: 4px;
+	color: #cc0000;
+	font-size: 13px;
+}
+
+/* Empty state */
+.ts-print-template-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 24px;
+	background: #f0f0f0;
+	border: 1px dashed #ccc;
+	border-radius: 4px;
+	color: #666;
+	font-size: 13px;
+}
+
+.ts-print-template-empty .placeholder-icon {
+	font-size: 32px;
+	opacity: 0.6;
+}
+
+/* Dynamic template placeholder */
+.ts-print-template-dynamic {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 24px;
+	background: linear-gradient(135deg, #f5f0ff 0%, #f0f5ff 100%);
+	border: 1px dashed #9b87f5;
+	border-radius: 4px;
+	color: #666;
+	font-size: 13px;
+}
+
+.ts-print-template-dynamic .placeholder-icon {
+	font-size: 32px;
+}
+
+.ts-print-template-dynamic code {
+	padding: 4px 8px;
+	background: rgba(155, 135, 245, 0.1);
+	border-radius: 3px;
+	font-size: 11px;
+	color: #6c5ce7;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Rendered content preview */
+.ts-print-template-rendered {
+	padding: 16px;
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+}
+
+/* Info bar */
+.voxel-fse-print-template__info {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-top: 8px;
+	padding: 8px 12px;
+	background: #f9f9f9;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	font-size: 12px;
+}
+
+.voxel-fse-print-template__info .template-name {
+	font-weight: 500;
+	color: #333;
+}
+
+.voxel-fse-print-template__info .template-note {
+	color: #888;
+	font-style: italic;
+}
+
+/* Responsive visibility classes (editor preview) */
+.hide-desktop,
+.hide-tablet,
+.hide-mobile {
+	position: relative;
+}
+
+.hide-desktop::after,
+.hide-tablet::after,
+.hide-mobile::after {
+	content: "Hidden on " attr(data-hidden);
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	padding: 2px 6px;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	font-size: 10px;
+	border-radius: 3px;
+	pointer-events: none;
+}
+
+.hide-desktop[data-hidden="desktop"]::after {
+	content: "Hidden on desktop";
+}
+
+.hide-tablet::after {
+	content: "Hidden on tablet";
+}
+
+.hide-mobile::after {
+	content: "Hidden on mobile";
+}

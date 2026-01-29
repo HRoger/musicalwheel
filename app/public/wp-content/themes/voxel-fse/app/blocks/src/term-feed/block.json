@@ -1,0 +1,312 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/term-feed",
+	"version": "1.0.0",
+	"title": "Term Feed (VX)",
+	"category": "voxel-fse",
+	"description": "Display taxonomy terms in a grid or carousel layout. FSE equivalent of Voxel's Term Feed widget.",
+	"keywords": ["term", "taxonomy", "feed", "carousel", "grid", "voxel"],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"align": ["wide", "full"],
+		"anchor": true,
+		"className": true,
+		"customClassName": true
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css",
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php",
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "term-feed-settings"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "carousel-navigation"
+		},
+		"carouselNavState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"source": {
+			"type": "string",
+			"default": "filters",
+			"enum": ["filters", "manual"]
+		},
+		"manualTerms": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"term_id": {
+						"type": "number"
+					}
+				}
+			}
+		},
+		"taxonomy": {
+			"type": "string",
+			"default": ""
+		},
+		"parentTermId": {
+			"type": "number",
+			"default": 0
+		},
+		"order": {
+			"type": "string",
+			"default": "default",
+			"enum": ["default", "name"]
+		},
+		"perPage": {
+			"type": "number",
+			"default": 10
+		},
+		"hideEmpty": {
+			"type": "boolean",
+			"default": false
+		},
+		"hideEmptyPostType": {
+			"type": "string",
+			"default": ":all"
+		},
+		"cardTemplate": {
+			"type": "string",
+			"default": "main"
+		},
+		"layoutMode": {
+			"type": "string",
+			"default": "ts-feed-grid-default",
+			"enum": ["ts-feed-grid-default", "ts-feed-nowrap"]
+		},
+		"carouselItemWidth": {
+			"type": "number",
+			"default": 16
+		},
+		"carouselItemWidth_tablet": {
+			"type": "number"
+		},
+		"carouselItemWidth_mobile": {
+			"type": "number"
+		},
+		"carouselItemWidthUnit": {
+			"type": "string",
+			"default": "%"
+		},
+		"carouselAutoplay": {
+			"type": "boolean",
+			"default": false
+		},
+		"carouselAutoplayInterval": {
+			"type": "number",
+			"default": 3000
+		},
+		"gridColumns": {
+			"type": "number",
+			"default": 3
+		},
+		"gridColumns_tablet": {
+			"type": "number"
+		},
+		"gridColumns_mobile": {
+			"type": "number"
+		},
+		"itemGap": {
+			"type": "number",
+			"default": 20
+		},
+		"itemGap_tablet": {
+			"type": "number"
+		},
+		"itemGap_mobile": {
+			"type": "number"
+		},
+		"scrollPadding": {
+			"type": "number",
+			"default": 0
+		},
+		"scrollPadding_tablet": {
+			"type": "number"
+		},
+		"scrollPadding_mobile": {
+			"type": "number"
+		},
+		"itemPadding": {
+			"type": "number",
+			"default": 0
+		},
+		"itemPadding_tablet": {
+			"type": "number"
+		},
+		"itemPadding_mobile": {
+			"type": "number"
+		},
+		"replaceAccentColor": {
+			"type": "boolean",
+			"default": false
+		},
+		"navHorizontalPosition": {
+			"type": "number",
+			"default": -15
+		},
+		"navHorizontalPosition_tablet": {
+			"type": "number"
+		},
+		"navHorizontalPosition_mobile": {
+			"type": "number"
+		},
+		"navVerticalPosition": {
+			"type": "number",
+			"default": 0
+		},
+		"navVerticalPosition_tablet": {
+			"type": "number"
+		},
+		"navVerticalPosition_mobile": {
+			"type": "number"
+		},
+		"navButtonIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonSize": {
+			"type": "number"
+		},
+		"navButtonSize_tablet": {
+			"type": "number"
+		},
+		"navButtonSize_mobile": {
+			"type": "number"
+		},
+		"navButtonIconSize": {
+			"type": "number"
+		},
+		"navButtonIconSize_tablet": {
+			"type": "number"
+		},
+		"navButtonIconSize_mobile": {
+			"type": "number"
+		},
+		"navButtonBackground": {
+			"type": "string",
+			"default": ""
+		},
+		"navBackdropBlur": {
+			"type": "number"
+		},
+		"navBackdropBlur_tablet": {
+			"type": "number"
+		},
+		"navBackdropBlur_mobile": {
+			"type": "number"
+		},
+		"navBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"navBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"navBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"navBorderRadius": {
+			"type": "number",
+			"default": 50
+		},
+		"navBorderRadius_tablet": {
+			"type": "number"
+		},
+		"navBorderRadius_mobile": {
+			"type": "number"
+		},
+		"navButtonSizeHover": {
+			"type": "number"
+		},
+		"navButtonSizeHover_tablet": {
+			"type": "number"
+		},
+		"navButtonSizeHover_mobile": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover_tablet": {
+			"type": "number"
+		},
+		"navButtonIconSizeHover_mobile": {
+			"type": "number"
+		},
+		"navButtonIconColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonBackgroundHover": {
+			"type": "string",
+			"default": ""
+		},
+		"navButtonBorderColorHover": {
+			"type": "string",
+			"default": ""
+		},
+		"rightChevronIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"leftChevronIcon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": ["show", "hide"]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	}
+}

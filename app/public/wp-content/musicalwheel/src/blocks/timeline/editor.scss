@@ -1,0 +1,104 @@
+/**
+ * Timeline Block Editor Styles
+ */
+
+.mw-timeline-editor {
+	.mw-timeline-preview {
+		padding: 2rem;
+		background: #f5f5f5;
+		border-radius: 8px;
+		border: 2px dashed #ddd;
+
+		&__header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			padding-bottom: 1rem;
+			border-bottom: 2px solid #ddd;
+
+			h3 {
+				margin: 0;
+				font-size: 1.5rem;
+			}
+		}
+
+		&__settings {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		&__badge {
+			padding: 0.25rem 0.75rem;
+			background: #5B47FB;
+			color: white;
+			border-radius: 4px;
+			font-size: 0.85rem;
+		}
+
+		&__footer {
+			margin-top: 1.5rem;
+			padding-top: 1rem;
+			border-top: 2px solid #ddd;
+			text-align: center;
+			color: #666;
+		}
+	}
+
+	.mw-timeline-composer-preview {
+		margin-bottom: 1.5rem;
+		padding: 1rem;
+		background: white;
+		border-radius: 8px;
+
+		&__input {
+			padding: 1rem;
+			background: #f9f9f9;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			color: #999;
+		}
+	}
+
+	.mw-timeline-status-preview {
+		display: flex;
+		gap: 1rem;
+		padding: 1.5rem;
+		background: white;
+		border-radius: 8px;
+		margin-bottom: 1rem;
+
+		&__avatar {
+			width: 48px;
+			height: 48px;
+			background: #ddd;
+			border-radius: 50%;
+		}
+
+		&__content {
+			flex: 1;
+		}
+
+		&__author {
+			font-weight: 600;
+			margin-bottom: 0.5rem;
+		}
+
+		&__text {
+			color: #666;
+			margin-bottom: 1rem;
+		}
+
+		&__actions {
+			display: flex;
+			gap: 1rem;
+
+			span {
+				padding: 0.5rem 1rem;
+				background: #f5f5f5;
+				border-radius: 6px;
+				font-size: 0.9rem;
+			}
+		}
+	}
+}

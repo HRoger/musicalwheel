@@ -1,0 +1,724 @@
+/**
+ * Membership Plans Block - Style Tab Inspector Controls
+ *
+ * Extracted from edit.tsx for maintainability.
+ * Matches Voxel's pricing-plans widget Style tab controls.
+ *
+ * Evidence:
+ * - Voxel widget: themes/voxel/app/modules/paid-memberships/widgets/pricing-plans-widget.php
+ *
+ * @package VoxelFSE
+ */
+
+import { __ } from '@wordpress/i18n';
+import { ToggleControl, SelectControl } from '@wordpress/components';
+import {
+	AccordionPanelGroup,
+	AccordionPanel,
+	SectionHeading,
+	ResponsiveRangeControl,
+	ResponsiveDimensionsControl,
+	ColorControl,
+	TypographyControl,
+	BorderGroupControl,
+	StyleTabPanel,
+	AdvancedIconControl,
+} from '@shared/controls';
+import type { MembershipPlansAttributes } from '../types';
+
+interface StyleTabProps {
+	attributes: MembershipPlansAttributes;
+	setAttributes: (attrs: Partial<MembershipPlansAttributes>) => void;
+}
+
+export function StyleTab({
+	attributes,
+	setAttributes,
+}: StyleTabProps): JSX.Element {
+	return (
+		<AccordionPanelGroup
+			attributes={attributes}
+			setAttributes={setAttributes}
+			stateAttribute="styleTabOpenPanel"
+			defaultPanel="general"
+		>
+			{/* ==================== GENERAL ==================== */}
+			<AccordionPanel id="general" title={__('General', 'voxel-fse')}>
+				<ResponsiveRangeControl
+					label={__('Number of columns', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="plansColumns"
+					min={1}
+					max={6}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Item gap', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="plansGap"
+					min={0}
+					max={100}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Border radius', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="plansBorderRadius"
+					min={0}
+					max={50}
+				/>
+
+				<SectionHeading label={__('Plan body', 'voxel-fse')} />
+
+				<ResponsiveRangeControl
+					label={__('Body padding', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="bodyPadding"
+					min={0}
+					max={100}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Body content gap', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="bodyContentGap"
+					min={0}
+					max={100}
+				/>
+
+				<SectionHeading label={__('Plan image', 'voxel-fse')} />
+
+				<ResponsiveDimensionsControl
+					label={__('Image padding', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="imagePadding"
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Height', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="imageHeight"
+					min={0}
+					max={500}
+				/>
+
+				<SectionHeading label={__('Plan pricing', 'voxel-fse')} />
+
+				<SelectControl
+					label={__('Align', 'voxel-fse')}
+					value={attributes.pricingAlign}
+					options={[
+						{ value: 'flex-start', label: __('Left', 'voxel-fse') },
+						{ value: 'center', label: __('Center', 'voxel-fse') },
+						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
+					]}
+					onChange={(value) =>
+						setAttributes({
+							pricingAlign: value as 'flex-start' | 'center' | 'flex-end',
+						})
+					}
+				/>
+
+				<SectionHeading label={__('Plan name', 'voxel-fse')} />
+
+				<SelectControl
+					label={__('Align content', 'voxel-fse')}
+					value={attributes.contentAlign}
+					options={[
+						{ value: 'flex-start', label: __('Left', 'voxel-fse') },
+						{ value: 'center', label: __('Center', 'voxel-fse') },
+						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
+					]}
+					onChange={(value) =>
+						setAttributes({
+							contentAlign: value as 'flex-start' | 'center' | 'flex-end',
+						})
+					}
+				/>
+
+				<SectionHeading label={__('Plan description', 'voxel-fse')} />
+
+				<SelectControl
+					label={__('Text align', 'voxel-fse')}
+					value={attributes.descAlign}
+					options={[
+						{ value: 'left', label: __('Left', 'voxel-fse') },
+						{ value: 'center', label: __('Center', 'voxel-fse') },
+						{ value: 'right', label: __('Right', 'voxel-fse') },
+					]}
+					onChange={(value) =>
+						setAttributes({
+							descAlign: value as 'left' | 'center' | 'right',
+						})
+					}
+				/>
+
+				<SectionHeading label={__('Plan features', 'voxel-fse')} />
+
+				<SelectControl
+					label={__('Align content', 'voxel-fse')}
+					value={attributes.listAlign}
+					options={[
+						{ value: 'flex-start', label: __('Left', 'voxel-fse') },
+						{ value: 'center', label: __('Center', 'voxel-fse') },
+						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
+					]}
+					onChange={(value) =>
+						setAttributes({
+							listAlign: value as 'flex-start' | 'center' | 'flex-end',
+						})
+					}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Item gap', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="listGap"
+					min={0}
+					max={50}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Icon size', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="listIconSize"
+					min={10}
+					max={50}
+				/>
+
+				<ResponsiveRangeControl
+					label={__('Icon right padding', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					attributeBaseName="listIconRightPad"
+					min={0}
+					max={30}
+				/>
+			</AccordionPanel>
+
+			{/* ==================== TABS ==================== */}
+			<AccordionPanel id="tabs" title={__('Tabs', 'voxel-fse')}>
+				<StyleTabPanel
+					tabs={[
+						{ name: 'normal', title: __('Normal', 'voxel-fse') },
+						{ name: 'hover', title: __('Hover', 'voxel-fse') },
+					]}
+				>
+					{(tab) => (
+						<>
+							{/* Normal Tab */}
+							{tab.name === 'normal' && (
+								<>
+									<SectionHeading label={__('Tabs', 'voxel-fse')} />
+
+									<ToggleControl
+										label={__('Disable tabs', 'voxel-fse')}
+										help={__('Disable label on tablet', 'voxel-fse')}
+										checked={attributes.tabsDisabled}
+										onChange={(value) => setAttributes({ tabsDisabled: value })}
+									/>
+
+									<SelectControl
+										label={__('Justify', 'voxel-fse')}
+										value={attributes.tabsJustify}
+										options={[
+											{ value: 'flex-start', label: __('Left', 'voxel-fse') },
+											{ value: 'center', label: __('Center', 'voxel-fse') },
+											{ value: 'flex-end', label: __('Right', 'voxel-fse') },
+											{ value: 'space-between', label: __('Space between', 'voxel-fse') },
+											{ value: 'space-around', label: __('Space around', 'voxel-fse') },
+										]}
+										onChange={(value) =>
+											setAttributes({
+												tabsJustify: value as MembershipPlansAttributes['tabsJustify'],
+											})
+										}
+									/>
+
+									<ResponsiveDimensionsControl
+										label={__('Padding', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="tabsPadding"
+									/>
+
+									<ResponsiveDimensionsControl
+										label={__('Margin', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="tabsMargin"
+									/>
+
+									<TypographyControl
+										label={__('Tab typography', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										typographyAttributeName="tabTypography"
+									/>
+
+									<TypographyControl
+										label={__('Active tab typography', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										typographyAttributeName="tabActiveTypography"
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.tabTextColor}
+											onChange={(value) => setAttributes({ tabTextColor: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active text color', 'voxel-fse')}
+											value={attributes.tabActiveTextColor}
+											onChange={(value) => setAttributes({ tabActiveTextColor: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background', 'voxel-fse')}
+											value={attributes.tabBackground}
+											onChange={(value) => setAttributes({ tabBackground: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active background', 'voxel-fse')}
+											value={attributes.tabActiveBackground}
+											onChange={(value) => setAttributes({ tabActiveBackground: value })}
+										/>
+									</div>
+
+									<BorderGroupControl
+										label={__('Border', 'voxel-fse')}
+										value={{
+											borderType: attributes.tabBorderType || '',
+											borderWidth: attributes.tabBorderWidth || {},
+											borderColor: attributes.tabBorderColor || '',
+										}}
+										onChange={(value) => {
+											const updates: Partial<MembershipPlansAttributes> = {};
+											if (value.borderType !== undefined) {
+												updates.tabBorderType = value.borderType;
+											}
+											if (value.borderWidth !== undefined) {
+												updates.tabBorderWidth = value.borderWidth as any;
+											}
+											if (value.borderColor !== undefined) {
+												updates.tabBorderColor = value.borderColor;
+											}
+											setAttributes(updates);
+										}}
+										hideRadius={true}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active border color', 'voxel-fse')}
+											value={attributes.tabActiveBorderColor}
+											onChange={(value) => setAttributes({ tabActiveBorderColor: value })}
+										/>
+									</div>
+
+									<ResponsiveRangeControl
+										label={__('Border radius', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="tabsBorderRadius"
+										min={0}
+										max={30}
+									/>
+								</>
+							)}
+
+							{/* Hover Tab - Timeline tabs section */}
+							{tab.name === 'hover' && (
+								<>
+									<SectionHeading label={__('Timeline tabs', 'voxel-fse')} />
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.tabTextColorHover}
+											onChange={(value) => setAttributes({ tabTextColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active text color', 'voxel-fse')}
+											value={attributes.tabActiveTextColorHover}
+											onChange={(value) => setAttributes({ tabActiveTextColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Border color', 'voxel-fse')}
+											value={attributes.tabBorderColorHover}
+											onChange={(value) => setAttributes({ tabBorderColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active border color', 'voxel-fse')}
+											value={attributes.tabActiveBorderColorHover}
+											onChange={(value) => setAttributes({ tabActiveBorderColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background', 'voxel-fse')}
+											value={attributes.tabBackgroundHover}
+											onChange={(value) => setAttributes({ tabBackgroundHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Active background', 'voxel-fse')}
+											value={attributes.tabActiveBackgroundHover}
+											onChange={(value) => setAttributes({ tabActiveBackgroundHover: value })}
+										/>
+									</div>
+								</>
+							)}
+						</>
+					)}
+				</StyleTabPanel>
+			</AccordionPanel>
+
+			{/* ==================== PRIMARY BUTTON ==================== */}
+			<AccordionPanel id="primary_button" title={__('Primary button', 'voxel-fse')}>
+				<StyleTabPanel
+					tabs={[
+						{ name: 'normal', title: __('Normal', 'voxel-fse') },
+						{ name: 'hover', title: __('Hover', 'voxel-fse') },
+					]}
+				>
+					{(tab) => (
+						<>
+							{/* Normal Tab */}
+							{tab.name === 'normal' && (
+								<>
+									<TypographyControl
+										label={__('Button typography', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										typographyAttributeName="primaryBtnTypography"
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Border radius', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="primaryBtnRadius"
+										min={0}
+										max={30}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.primaryBtnTextColor}
+											onChange={(value) => setAttributes({ primaryBtnTextColor: value })}
+										/>
+									</div>
+
+									<ResponsiveDimensionsControl
+										label={__('Padding', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="primaryBtnPadding"
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Height', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="primaryBtnHeight"
+										min={0}
+										max={100}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background color', 'voxel-fse')}
+											value={attributes.primaryBtnBgColor}
+											onChange={(value) => setAttributes({ primaryBtnBgColor: value })}
+										/>
+									</div>
+
+									<BorderGroupControl
+										label={__('Border', 'voxel-fse')}
+										value={{
+											borderType: attributes.primaryBtnBorderType || '',
+											borderWidth: attributes.primaryBtnBorderWidth || {},
+											borderColor: attributes.primaryBtnBorderColor || '',
+										}}
+										onChange={(value) => {
+											const updates: Partial<MembershipPlansAttributes> = {};
+											if (value.borderType !== undefined) {
+												updates.primaryBtnBorderType = value.borderType;
+											}
+											if (value.borderWidth !== undefined) {
+												updates.primaryBtnBorderWidth = value.borderWidth as any;
+											}
+											if (value.borderColor !== undefined) {
+												updates.primaryBtnBorderColor = value.borderColor;
+											}
+											setAttributes(updates);
+										}}
+										hideRadius={true}
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Icon size', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="primaryBtnIconSize"
+										min={10}
+										max={40}
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Text/Icon spacing', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="primaryBtnIconPad"
+										min={0}
+										max={30}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Icon color', 'voxel-fse')}
+											value={attributes.primaryBtnIconColor}
+											onChange={(value) => setAttributes({ primaryBtnIconColor: value })}
+										/>
+									</div>
+								</>
+							)}
+
+							{/* Hover Tab */}
+							{tab.name === 'hover' && (
+								<>
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.primaryBtnTextColorHover}
+											onChange={(value) => setAttributes({ primaryBtnTextColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background color', 'voxel-fse')}
+											value={attributes.primaryBtnBgColorHover}
+											onChange={(value) => setAttributes({ primaryBtnBgColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Border color', 'voxel-fse')}
+											value={attributes.primaryBtnBorderColorHover}
+											onChange={(value) => setAttributes({ primaryBtnBorderColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Icon color', 'voxel-fse')}
+											value={attributes.primaryBtnIconColorHover}
+											onChange={(value) => setAttributes({ primaryBtnIconColorHover: value })}
+										/>
+									</div>
+								</>
+							)}
+						</>
+					)}
+				</StyleTabPanel>
+			</AccordionPanel>
+
+			{/* ==================== SECONDARY BUTTON ==================== */}
+			<AccordionPanel id="secondary_button" title={__('Secondary button', 'voxel-fse')}>
+				<StyleTabPanel
+					tabs={[
+						{ name: 'normal', title: __('Normal', 'voxel-fse') },
+						{ name: 'hover', title: __('Hover', 'voxel-fse') },
+					]}
+				>
+					{(tab) => (
+						<>
+							{/* Normal Tab */}
+							{tab.name === 'normal' && (
+								<>
+									<TypographyControl
+										label={__('Button typography', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										typographyAttributeName="secondaryBtnTypography"
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Border radius', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="secondaryBtnRadius"
+										min={0}
+										max={30}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.secondaryBtnTextColor}
+											onChange={(value) => setAttributes({ secondaryBtnTextColor: value })}
+										/>
+									</div>
+
+									<ResponsiveDimensionsControl
+										label={__('Padding', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="secondaryBtnPadding"
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Height', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="secondaryBtnHeight"
+										min={0}
+										max={100}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background color', 'voxel-fse')}
+											value={attributes.secondaryBtnBgColor}
+											onChange={(value) => setAttributes({ secondaryBtnBgColor: value })}
+										/>
+									</div>
+
+									<BorderGroupControl
+										label={__('Border', 'voxel-fse')}
+										value={{
+											borderType: attributes.secondaryBtnBorderType || '',
+											borderWidth: attributes.secondaryBtnBorderWidth || {},
+											borderColor: attributes.secondaryBtnBorderColor || '',
+										}}
+										onChange={(value) => {
+											const updates: Partial<MembershipPlansAttributes> = {};
+											if (value.borderType !== undefined) {
+												updates.secondaryBtnBorderType = value.borderType;
+											}
+											if (value.borderWidth !== undefined) {
+												updates.secondaryBtnBorderWidth = value.borderWidth as any;
+											}
+											if (value.borderColor !== undefined) {
+												updates.secondaryBtnBorderColor = value.borderColor;
+											}
+											setAttributes(updates);
+										}}
+										hideRadius={true}
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Icon size', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="secondaryBtnIconSize"
+										min={10}
+										max={40}
+									/>
+
+									<ResponsiveRangeControl
+										label={__('Text/Icon spacing', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="secondaryBtnIconPad"
+										min={0}
+										max={30}
+									/>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Icon color', 'voxel-fse')}
+											value={attributes.secondaryBtnIconColor}
+											onChange={(value) => setAttributes({ secondaryBtnIconColor: value })}
+										/>
+									</div>
+								</>
+							)}
+
+							{/* Hover Tab */}
+							{tab.name === 'hover' && (
+								<>
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Text color', 'voxel-fse')}
+											value={attributes.secondaryBtnTextColorHover}
+											onChange={(value) => setAttributes({ secondaryBtnTextColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Background color', 'voxel-fse')}
+											value={attributes.secondaryBtnBgColorHover}
+											onChange={(value) => setAttributes({ secondaryBtnBgColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Border color', 'voxel-fse')}
+											value={attributes.secondaryBtnBorderColorHover}
+											onChange={(value) => setAttributes({ secondaryBtnBorderColorHover: value })}
+										/>
+									</div>
+
+									<div className="voxel-fse-control-row">
+										<ColorControl
+											label={__('Icon color', 'voxel-fse')}
+											value={attributes.secondaryBtnIconColorHover}
+											onChange={(value) => setAttributes({ secondaryBtnIconColorHover: value })}
+										/>
+									</div>
+								</>
+							)}
+						</>
+					)}
+				</StyleTabPanel>
+			</AccordionPanel>
+
+			{/* ==================== ICONS ==================== */}
+			<AccordionPanel id="icons" title={__('Icons', 'voxel-fse')}>
+				<AdvancedIconControl
+					label={__('Right arrow', 'voxel-fse')}
+					value={attributes.arrowIcon}
+					onChange={(value) => setAttributes({ arrowIcon: value })}
+				/>
+			</AccordionPanel>
+		</AccordionPanelGroup>
+	);
+}

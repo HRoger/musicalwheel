@@ -1,0 +1,34 @@
+/**
+ * Responsive Visibility Classes
+ *
+ * CSS classes for responsive hiding of blocks based on device breakpoints.
+ * Used by the AdvancedTab's "Hide on Desktop/Tablet/Mobile" controls.
+ *
+ * Breakpoints match Voxel/Elementor conventions:
+ * - Desktop: > 1024px
+ * - Tablet: 768px - 1024px
+ * - Mobile: < 768px
+ *
+ * @package VoxelFSE
+ */
+
+/* Hide on Desktop (min-width: 1025px) */
+@media (min-width: 1025px) {
+	.vx-hidden-desktop {
+		display: none !important;
+	}
+}
+
+/* Hide on Tablet (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.vx-hidden-tablet {
+		display: none !important;
+	}
+}
+
+/* Hide on Mobile (max-width: 767px) */
+@media (max-width: 767px) {
+	.vx-hidden-mobile {
+		display: none !important;
+	}
+}
