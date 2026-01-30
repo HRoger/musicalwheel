@@ -282,6 +282,9 @@ export interface SaveProps {
  */
 declare global {
 	interface Window {
+		Voxel?: {
+			alert?: (message: string, type: 'error' | 'success' | 'warning' | 'info') => void;
+		};
 		Voxel_Config?: {
 			ajax_url: string;
 			l10n?: {

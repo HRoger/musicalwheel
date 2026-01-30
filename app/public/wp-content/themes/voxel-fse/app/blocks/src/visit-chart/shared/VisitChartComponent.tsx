@@ -176,6 +176,11 @@ export default function VisitChartComponent({
 						},
 					}));
 				} else {
+					// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
+					const errorMessage = data.message || window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+					if (window.Voxel?.alert) {
+						window.Voxel.alert(errorMessage, 'error');
+					}
 					setCharts((prev) => ({
 						...prev,
 						[timeframe]: {
@@ -184,8 +189,12 @@ export default function VisitChartComponent({
 						},
 					}));
 				}
-			} catch (error) {
-				console.error('Failed to load chart data:', error);
+			} catch {
+				// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
+				const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+				if (window.Voxel?.alert) {
+					window.Voxel.alert(errorMessage, 'error');
+				}
 				setCharts((prev) => ({
 					...prev,
 					[timeframe]: {

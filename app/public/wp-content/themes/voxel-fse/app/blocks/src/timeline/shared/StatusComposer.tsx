@@ -34,8 +34,9 @@ import { useState, useCallback, useRef, useEffect, useMemo, type ChangeEvent, ty
 import { useTimelineContext, usePermissions, useStrings, useFileUpload } from '../hooks';
 import { publishStatus, editStatus, getLinkPreview, type LinkPreviewResponse } from '../api';
 import { countCharacters } from '../utils';
-import type { Status, StatusCreatePayload, StatusEditPayload, MediaFile } from '../types';
+import type { Status, StatusCreatePayload, StatusEditPayload, MediaFile, ReviewConfig } from '../types';
 import EmojiPicker from './EmojiPicker';
+import { ReviewScore } from './ReviewScore';
 import MediaPopup from '../../../shared/MediaPopup';
 
 /**
@@ -127,6 +128,11 @@ export function StatusComposer({
 	// Determine if we're in edit mode
 	const isEditMode = !!status;
 
+	// IMPORTANT: Permission checks must happen AFTER all hooks are called to comply with Rules of Hooks.
+	// We compute these values here but check them after all hooks.
+	const hasEditPermission = isEditMode ? status?.current_user.can_edit : true;
+	const hasPostPermission = !isEditMode ? permissions.can_post : true;
+
 	// Expanded state (shows footer when focused, always expanded in edit mode)
 	const [isExpanded, setIsExpanded] = useState(isEditMode);
 
@@ -137,6 +143,10 @@ export function StatusComposer({
 
 	// Existing files from status (for edit mode)
 	const [existingFiles, setExistingFiles] = useState<MediaFile[]>(status?.files ?? []);
+
+	// Rating state for reviews (matches Voxel's data.rating)
+	// See: timeline-composer.beautified.js line 295
+	const [rating, setRating] = useState<Record<string, number>>(status?.review?.rating ?? {});
 
 	// Emoji picker state
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -173,6 +183,7 @@ export function StatusComposer({
 		if (isEditMode && status) {
 			setContent(status.content);
 			setExistingFiles(status.files ?? []);
+			setRating(status.review?.rating ?? {});
 			setIsExpanded(true);
 		}
 	}, [isEditMode, status]);
@@ -344,7 +355,7 @@ export function StatusComposer({
 					status_id: status.id,
 					content: content.trim(),
 					files: allFileIds,
-					rating: status.review?.rating, // Preserve existing rating if any
+					rating: rating, // Use current rating state (user can edit review scores)
 				};
 
 				const updatedStatus = await editStatus(payload, nonce);
@@ -362,6 +373,7 @@ export function StatusComposer({
 					feed,
 					content: content.trim(),
 					files: allFileIds,
+					rating: Object.keys(rating).length > 0 ? rating : undefined, // Include rating if set
 				};
 
 				if (postId) {
@@ -379,6 +391,7 @@ export function StatusComposer({
 				setContent('');
 				clearUploads();
 				setExistingFiles([]);
+				setRating({}); // Reset rating on success
 				setLinkPreview({ url: null, loading: false, data: null });
 				setIsExpanded(false);
 
@@ -395,7 +408,7 @@ export function StatusComposer({
 		} finally {
 			setIsSubmitting(false);
 		}
-	}, [canSubmit, content, feed, postId, uploads, completedFiles, existingFiles, uploadAll, clearUploads, isEditMode, status, config?.nonces?.status_edit, config?.nonces?.status_publish, onStatusCreated, onUpdate, strings.error_generic, linkPreview]);
+	}, [canSubmit, content, feed, postId, uploads, completedFiles, existingFiles, uploadAll, clearUploads, isEditMode, status, config?.nonces?.status_edit, config?.nonces?.status_publish, onStatusCreated, onUpdate, strings.error_generic, linkPreview, rating]);
 
 	/**
 	 * Handle keyboard shortcuts
@@ -447,21 +460,59 @@ export function StatusComposer({
 
 	/**
 	 * Remove existing file (for edit mode)
-	 * NOTE: Must be defined before early returns to comply with Rules of Hooks
 	 */
 	const removeExistingFile = useCallback((fileId: number) => {
 		setExistingFiles(prev => prev.filter(f => f.id !== fileId));
 	}, []);
 
+	/**
+	 * Compute review config for this composer
+	 * Matches Voxel's reviewConfig computed property (timeline-composer.beautified.js lines 461-471)
+	 * - If editing a review status, use the status's review post type
+	 * - If creating in post_reviews feed, use the configured reviews_post_type
+	 * - Otherwise, no review config (no rating UI)
+	 *
+	 * IMPORTANT: This useMemo MUST be placed BEFORE any early returns to comply with React Rules of Hooks.
+	 */
+	const reviewConfig = useMemo((): ReviewConfig | null => {
+		// Not for quote posts
+		// if (quoteOf) return null; // Uncomment if quoteOf support added
+
+		// Check if we should show review score
+		const isReviewFeed = feed === 'post_reviews';
+		const isEditingReview = isEditMode && status?.feed === 'post_reviews' && status?.review;
+
+		if (!isReviewFeed && !isEditingReview) {
+			return null;
+		}
+
+		// Get reviews config from timeline config
+		const reviewsConfig = config?.review_config;
+		if (!reviewsConfig) return null;
+
+		// Determine post type to use for review config
+		let postType: string | undefined;
+		if (isEditingReview && status?.review?.post_type) {
+			postType = status.review.post_type;
+		} else {
+			// Use the current post's type for new reviews
+			postType = config?.current_post?.post_type;
+		}
+
+		if (!postType || !reviewsConfig[postType]) {
+			return null;
+		}
+
+		return reviewsConfig[postType];
+	}, [feed, isEditMode, status, config?.review_config, config?.current_post]);
+
 	// Don't render if user can't post (in create mode) or can't edit (in edit mode)
-	if (isEditMode) {
-		if (!status?.current_user.can_edit) {
-			return null;
-		}
-	} else {
-		if (!permissions.can_post) {
-			return null;
-		}
+	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
+	if (isEditMode && !hasEditPermission) {
+		return null;
+	}
+	if (!isEditMode && !hasPostPermission) {
+		return null;
 	}
 
 	// Get current user for avatar
@@ -505,6 +556,17 @@ export function StatusComposer({
 				{/* Footer wrapper - only shown when expanded (matches Voxel's transition-height) */}
 				{isExpanded && (
 					<div className="vxf-footer-wrapper">
+						{/* Review score input - shown for post_reviews feed (matches Voxel's review-score component) */}
+						{reviewConfig && (
+							<div className="vxf-review-score-section">
+								<ReviewScore
+									config={reviewConfig}
+									value={rating}
+									onChange={setRating}
+								/>
+							</div>
+						)}
+
 						{/* File upload previews - matches Voxel's ts-file-upload structure exactly */}
 						{(uploads.length > 0 || completedFiles.length > 0 || existingFiles.length > 0) && (
 							<div className="ts-form-group ts-file-upload vxf-create-section">

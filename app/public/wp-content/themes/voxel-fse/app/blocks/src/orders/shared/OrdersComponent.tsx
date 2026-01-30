@@ -212,9 +212,26 @@ function replaceVars(template: string, vars: Record<string, string | number>): s
 }
 
 /**
- * Format currency
+ * Format currency using Voxel.helpers.currencyFormat when available
+ * Reference: voxel-orders.beautified.js lines 976-978
+ *
+ * Falls back to Intl.NumberFormat for Next.js compatibility
  */
 export function currencyFormat(amount: number, currency: string): string {
+	// Use Voxel.helpers.currencyFormat if available (matches Voxel behavior exactly)
+	const win = window as unknown as {
+		Voxel?: {
+			helpers?: {
+				currencyFormat?: (amount: number, currency: string) => string;
+			};
+		};
+	};
+
+	if (win.Voxel?.helpers?.currencyFormat) {
+		return win.Voxel.helpers.currencyFormat(amount, currency);
+	}
+
+	// Fallback for Next.js or when Voxel is not available
 	try {
 		return new Intl.NumberFormat(undefined, {
 			style: 'currency',

@@ -245,8 +245,9 @@ export interface MapComponentProps {
  * vxconfig structure for save.tsx and frontend.tsx
  */
 export interface MapVxConfig {
+	blockId: string; // Map's own unique ID - used for event targeting
 	source: MapSource;
-	searchFormId: string;
+	searchFormId: string; // ID of the search form this map is linked to (for reference)
 	dragSearch: boolean;
 	dragSearchMode: DragSearchMode;
 	dragSearchDefault: DragSearchDefault;

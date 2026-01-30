@@ -102,11 +102,6 @@ export function CommentComposer({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
-	// Don't render if not logged in
-	if (!currentUser) {
-		return null;
-	}
-
 	const l10n = config?.strings ?? {};
 
 	/**
@@ -248,6 +243,12 @@ export function CommentComposer({
 		e.preventDefault();
 		setShowEmojiPicker((prev) => !prev);
 	}, []);
+
+	// Don't render if not logged in
+	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
+	if (!currentUser) {
+		return null;
+	}
 
 	// Build classes - matches Voxel's structure exactly
 	const containerClasses = [

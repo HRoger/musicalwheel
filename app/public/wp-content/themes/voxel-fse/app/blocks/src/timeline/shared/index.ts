@@ -28,6 +28,8 @@ export { RichTextFormatter, SimpleRichText } from './RichTextFormatter';
 export { MediaGallery } from './MediaGallery';
 export { LinkPreview } from './LinkPreview';
 export { QuotedStatus } from './QuotedStatus';
+export { QuoteComposer } from './QuoteComposer';
+export { ReviewScore } from './ReviewScore';
 export { EmojiPicker } from './EmojiPicker';
 export { MentionsAutocomplete } from './MentionsAutocomplete';
 

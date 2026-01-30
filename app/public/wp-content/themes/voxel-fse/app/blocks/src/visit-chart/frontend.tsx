@@ -109,6 +109,10 @@
  * ✅ .ts-icon-btn - Navigation buttons
  * ✅ .ts-no-posts - No activity state
  *
+ * ERROR HANDLING:
+ * ✅ Voxel.alert() for AJAX errors (matches beautified reference line 146-147)
+ * ✅ Fallback to Voxel_Config.l10n.ajaxError message
+ *
  * NEXT.JS READINESS:
  * ✅ normalizeConfig() handles both vxconfig and REST API formats
  * ✅ TypeScript strict mode
@@ -420,8 +424,12 @@ async function fetchChartContext(
 
 		const data = await response.json();
 		return data as { nonce: string; postId?: number };
-	} catch (error) {
-		console.error('Visit Chart: Failed to fetch context', error);
+	} catch {
+		// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
+		const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'Failed to load chart context';
+		if (window.Voxel?.alert) {
+			window.Voxel.alert(errorMessage, 'error');
+		}
 		return null;
 	}
 }

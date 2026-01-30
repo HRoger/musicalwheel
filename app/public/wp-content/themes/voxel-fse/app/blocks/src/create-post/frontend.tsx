@@ -88,50 +88,29 @@ import type { CreatePostAttributes, VoxelField } from './types';
 /**
  * Window extension for WordPress API settings and Voxel data
  */
-interface WpApiSettings {
-	root: string;
-	nonce: string;
-}
+// Kept for potential future use
+// interface WpApiSettings {
+// 	root: string;
+// 	nonce: string;
+// }
 
-interface VoxelFseCreatePostData {
-	restUrl?: string;
-	ajaxUrl?: string;
-	nonce?: string;
-	postStatus?: string | null;
-	adminModeNonce?: string;
-	isAdminMode?: boolean;
-	isAdminMetabox?: boolean;
-	i18n?: Record<string, string>;
-}
+// Note: VoxelFseCreatePostData and Window interface extended elsewhere
+// Avoiding redeclaration conflicts
 
-declare global {
-	interface Window {
-		wp: {
-			element: {
-				createRoot: (container: Element) => {
-					render: (element: React.ReactNode) => void;
-					unmount: () => void;
-				};
-			};
-		};
-		wpApiSettings?: WpApiSettings;
-		voxelFseCreatePost?: VoxelFseCreatePostData;
-	}
-}
-
-import { getSiteBaseUrl, getRestBaseUrl } from '@shared/utils/siteUrl';
+import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
 /**
  * Get Voxel AJAX URL for form submission
  * MULTISITE FIX: Uses getSiteBaseUrl() for multisite subdirectory support
  */
-function getAjaxUrl(): string {
-	if (typeof window !== 'undefined' && window.voxelFseCreatePost?.ajaxUrl) {
-		return window.voxelFseCreatePost.ajaxUrl;
-	}
-	// MULTISITE FIX: Use getSiteBaseUrl() which properly detects site path
-	return getSiteBaseUrl();
-}
+// Kept for potential future use
+// function getAjaxUrl(): string {
+// 	if (typeof window !== 'undefined' && window.voxelFseCreatePost?.ajaxUrl) {
+// 		return window.voxelFseCreatePost.ajaxUrl;
+// 	}
+// 	// MULTISITE FIX: Use getSiteBaseUrl() which properly detects site path
+// 	return getSiteBaseUrl();
+// }
 
 /**
  * Get the REST API base URL
@@ -156,10 +135,10 @@ async function fetchFieldsConfig(
 	isAdminMetabox: boolean = false
 ): Promise<FieldsConfigResponse | null> {
 	const restUrl = getRestUrl();
-	console.log('[Create Post DEBUG] fetchFieldsConfig - restUrl:', restUrl);
-	console.log('[Create Post DEBUG] fetchFieldsConfig - postTypeKey:', postTypeKey);
-	console.log('[Create Post DEBUG] fetchFieldsConfig - postId:', postId);
-	console.log('[Create Post DEBUG] fetchFieldsConfig - isAdminMetabox:', isAdminMetabox);
+	//console.log('[Create Post DEBUG] fetchFieldsConfig - restUrl:', restUrl);
+	//console.log('[Create Post DEBUG] fetchFieldsConfig - postTypeKey:', postTypeKey);
+	//console.log('[Create Post DEBUG] fetchFieldsConfig - postId:', postId);
+	//console.log('[Create Post DEBUG] fetchFieldsConfig - isAdminMetabox:', isAdminMetabox);
 
 	const params = new URLSearchParams({
 		post_type: postTypeKey,
@@ -174,20 +153,20 @@ async function fetchFieldsConfig(
 	}
 
 	const endpoint = `${restUrl}voxel-fse/v1/create-post/fields-config?${params.toString()}`;
-	console.log('[Create Post DEBUG] fetchFieldsConfig - endpoint:', endpoint);
+	//console.log('[Create Post DEBUG] fetchFieldsConfig - endpoint:', endpoint);
 
 	try {
-		console.log('[Create Post DEBUG] fetchFieldsConfig - Sending fetch request...');
+		//console.log('[Create Post DEBUG] fetchFieldsConfig - Sending fetch request...');
 		const response = await fetch(endpoint);
-		console.log('[Create Post DEBUG] fetchFieldsConfig - Response status:', response.status);
-		console.log('[Create Post DEBUG] fetchFieldsConfig - Response ok:', response.ok);
+		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response status:', response.status);
+		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response ok:', response.ok);
 		if (!response.ok) {
 			const errorText = await response.text();
 			console.error('[Create Post DEBUG] fetchFieldsConfig - Error response:', errorText);
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		const data = await response.json();
-		console.log('[Create Post DEBUG] fetchFieldsConfig - Parsed JSON data:', data);
+		//console.log('[Create Post DEBUG] fetchFieldsConfig - Parsed JSON data:', data);
 		return data as FieldsConfigResponse;
 	} catch (error) {
 		console.error('[Create Post DEBUG] fetchFieldsConfig - Caught error:', error);
@@ -219,42 +198,43 @@ function parseBool(value: string | null | undefined): boolean {
  * Fallback when vxconfig is not found (matching search-form pattern)
  */
 function parseDataAttributes(container: HTMLElement): CreatePostAttributes {
+	const dataset = container.dataset as any;
 	return {
-		postTypeKey: container.dataset.postType || '',
-		submitButtonText: container.dataset.submitButtonText || 'Publish',
-		successMessage: container.dataset.successMessage || '',
-		redirectAfterSubmit: container.dataset.redirectAfterSubmit || '',
-		showFormHead: parseBool(container.dataset.showFormHead),
-		enableDraftSaving: parseBool(container.dataset.enableDraftSaving),
+		postTypeKey: dataset['postType'] || '',
+		submitButtonText: dataset['submitButtonText'] || 'Publish',
+		successMessage: dataset['successMessage'] || '',
+		redirectAfterSubmit: dataset['redirectAfterSubmit'] || '',
+		showFormHead: parseBool(dataset['showFormHead']),
+		enableDraftSaving: parseBool(dataset['enableDraftSaving']),
 		// Icon attributes - parse from data attributes if available
-		popupIcon: parseJson(container.dataset.popupIcon, null) as any,
-		infoIcon: parseJson(container.dataset.infoIcon, null) as any,
-		tsMediaIco: parseJson(container.dataset.tsMediaIco, null) as any,
-		nextIcon: parseJson(container.dataset.nextIcon, null) as any,
-		prevIcon: parseJson(container.dataset.prevIcon, null) as any,
-		downIcon: parseJson(container.dataset.downIcon, null) as any,
-		trashIcon: parseJson(container.dataset.trashIcon, null) as any,
-		draftIcon: parseJson(container.dataset.draftIcon, null) as any,
-		publishIcon: parseJson(container.dataset.publishIcon, null) as any,
-		saveIcon: parseJson(container.dataset.saveIcon, null) as any,
-		successIcon: parseJson(container.dataset.successIcon, null) as any,
-		viewIcon: parseJson(container.dataset.viewIcon, null) as any,
-		tsCalendarIcon: parseJson(container.dataset.tsCalendarIcon, null) as any,
-		tsCalminusIcon: parseJson(container.dataset.tsCalminusIcon, null) as any,
-		tsAddIcon: parseJson(container.dataset.tsAddIcon, null) as any,
-		tsEmailIcon: parseJson(container.dataset.tsEmailIcon, null) as any,
-		tsPhoneIcon: parseJson(container.dataset.tsPhoneIcon, null) as any,
-		tsLocationIcon: parseJson(container.dataset.tsLocationIcon, null) as any,
-		tsMylocationIcon: parseJson(container.dataset.tsMylocationIcon, null) as any,
-		tsMinusIcon: parseJson(container.dataset.tsMinusIcon, null) as any,
-		tsPlusIcon: parseJson(container.dataset.tsPlusIcon, null) as any,
-		tsListIcon: parseJson(container.dataset.tsListIcon, null) as any,
-		tsSearchIcon: parseJson(container.dataset.tsSearchIcon, null) as any,
-		tsClockIcon: parseJson(container.dataset.tsClockIcon, null) as any,
-		tsLinkIcon: parseJson(container.dataset.tsLinkIcon, null) as any,
-		tsRtimeslotIcon: parseJson(container.dataset.tsRtimeslotIcon, null) as any,
-		tsUploadIco: parseJson(container.dataset.tsUploadIco, null) as any,
-		tsLoadMore: parseJson(container.dataset.tsLoadMore, null) as any,
+		popupIcon: parseJson(dataset['popupIcon'], null) as any,
+		infoIcon: parseJson(dataset['infoIcon'], null) as any,
+		tsMediaIco: parseJson(dataset['tsMediaIco'], null) as any,
+		nextIcon: parseJson(dataset['nextIcon'], null) as any,
+		prevIcon: parseJson(dataset['prevIcon'], null) as any,
+		downIcon: parseJson(dataset['downIcon'], null) as any,
+		trashIcon: parseJson(dataset['trashIcon'], null) as any,
+		draftIcon: parseJson(dataset['draftIcon'], null) as any,
+		publishIcon: parseJson(dataset['publishIcon'], null) as any,
+		saveIcon: parseJson(dataset['saveIcon'], null) as any,
+		successIcon: parseJson(dataset['successIcon'], null) as any,
+		viewIcon: parseJson(dataset['viewIcon'], null) as any,
+		tsCalendarIcon: parseJson(dataset['tsCalendarIcon'], null) as any,
+		tsCalminusIcon: parseJson(dataset['tsCalminusIcon'], null) as any,
+		tsAddIcon: parseJson(dataset['tsAddIcon'], null) as any,
+		tsEmailIcon: parseJson(dataset['tsEmailIcon'], null) as any,
+		tsPhoneIcon: parseJson(dataset['tsPhoneIcon'], null) as any,
+		tsLocationIcon: parseJson(dataset['tsLocationIcon'], null) as any,
+		tsMylocationIcon: parseJson(dataset['tsMylocationIcon'], null) as any,
+		tsMinusIcon: parseJson(dataset['tsMinusIcon'], null) as any,
+		tsPlusIcon: parseJson(dataset['tsPlusIcon'], null) as any,
+		tsListIcon: parseJson(dataset['tsListIcon'], null) as any,
+		tsSearchIcon: parseJson(dataset['tsSearchIcon'], null) as any,
+		tsClockIcon: parseJson(dataset['tsClockIcon'], null) as any,
+		tsLinkIcon: parseJson(dataset['tsLinkIcon'], null) as any,
+		tsRtimeslotIcon: parseJson(dataset['tsRtimeslotIcon'], null) as any,
+		tsUploadIco: parseJson(dataset['tsUploadIco'], null) as any,
+		tsLoadMore: parseJson(dataset['tsLoadMore'], null) as any,
 	};
 }
 
@@ -277,52 +257,52 @@ function normalizeConfig(raw: Record<string, unknown>): CreatePostAttributes {
 	};
 
 	// Helper for icon normalization (from icons object or top-level)
-	const normalizeIcon = (val: unknown): Record<string, unknown> | null => {
-		if (val && typeof val === 'object') return val as Record<string, unknown>;
+	const normalizeIcon = (val: unknown): any => {
+		if (val && typeof val === 'object') return val as any;
 		return null;
 	};
 
 	// Get icons from nested object or top-level
-	const icons = (raw.icons && typeof raw.icons === 'object' ? raw.icons : {}) as Record<string, unknown>;
+	const icons = (raw['icons'] && typeof raw['icons'] === 'object' ? raw['icons'] : {}) as Record<string, unknown>;
 
 	return {
 		// Core settings - support both camelCase and snake_case
-		postTypeKey: (raw.postTypeKey ?? raw.post_type_key ?? raw.post_type ?? '') as string,
-		submitButtonText: (raw.submitButtonText ?? raw.submit_button_text ?? 'Publish') as string,
-		successMessage: (raw.successMessage ?? raw.success_message ?? '') as string,
-		redirectAfterSubmit: (raw.redirectAfterSubmit ?? raw.redirect_after_submit ?? '') as string,
-		showFormHead: normalizeBool(raw.showFormHead ?? raw.show_form_head, true),
-		enableDraftSaving: normalizeBool(raw.enableDraftSaving ?? raw.enable_draft_saving, true),
+		postTypeKey: (raw['postTypeKey'] ?? raw['post_type_key'] ?? raw['post_type'] ?? '') as string,
+		submitButtonText: (raw['submitButtonText'] ?? raw['submit_button_text'] ?? 'Publish') as string,
+		successMessage: (raw['successMessage'] ?? raw['success_message'] ?? '') as string,
+		redirectAfterSubmit: (raw['redirectAfterSubmit'] ?? raw['redirect_after_submit'] ?? '') as string,
+		showFormHead: normalizeBool(raw['showFormHead'] ?? raw['show_form_head'], true),
+		enableDraftSaving: normalizeBool(raw['enableDraftSaving'] ?? raw['enable_draft_saving'], true),
 
 		// Icons - from nested icons object or top-level
-		popupIcon: normalizeIcon(icons.popupIcon ?? icons.popup_icon ?? raw.popupIcon),
-		infoIcon: normalizeIcon(icons.infoIcon ?? icons.info_icon ?? raw.infoIcon),
-		tsMediaIco: normalizeIcon(icons.tsMediaIco ?? icons.ts_media_ico ?? raw.tsMediaIco),
-		nextIcon: normalizeIcon(icons.nextIcon ?? icons.next_icon ?? raw.nextIcon),
-		prevIcon: normalizeIcon(icons.prevIcon ?? icons.prev_icon ?? raw.prevIcon),
-		downIcon: normalizeIcon(icons.downIcon ?? icons.down_icon ?? raw.downIcon),
-		trashIcon: normalizeIcon(icons.trashIcon ?? icons.trash_icon ?? raw.trashIcon),
-		draftIcon: normalizeIcon(icons.draftIcon ?? icons.draft_icon ?? raw.draftIcon),
-		publishIcon: normalizeIcon(icons.publishIcon ?? icons.publish_icon ?? raw.publishIcon),
-		saveIcon: normalizeIcon(icons.saveIcon ?? icons.save_icon ?? raw.saveIcon),
-		successIcon: normalizeIcon(icons.successIcon ?? icons.success_icon ?? raw.successIcon),
-		viewIcon: normalizeIcon(icons.viewIcon ?? icons.view_icon ?? raw.viewIcon),
-		tsCalendarIcon: normalizeIcon(icons.tsCalendarIcon ?? icons.ts_calendar_icon ?? raw.tsCalendarIcon),
-		tsCalminusIcon: normalizeIcon(icons.tsCalminusIcon ?? icons.ts_calminus_icon ?? raw.tsCalminusIcon),
-		tsAddIcon: normalizeIcon(icons.tsAddIcon ?? icons.ts_add_icon ?? raw.tsAddIcon),
-		tsEmailIcon: normalizeIcon(icons.tsEmailIcon ?? icons.ts_email_icon ?? raw.tsEmailIcon),
-		tsPhoneIcon: normalizeIcon(icons.tsPhoneIcon ?? icons.ts_phone_icon ?? raw.tsPhoneIcon),
-		tsLocationIcon: normalizeIcon(icons.tsLocationIcon ?? icons.ts_location_icon ?? raw.tsLocationIcon),
-		tsMylocationIcon: normalizeIcon(icons.tsMylocationIcon ?? icons.ts_mylocation_icon ?? raw.tsMylocationIcon),
-		tsMinusIcon: normalizeIcon(icons.tsMinusIcon ?? icons.ts_minus_icon ?? raw.tsMinusIcon),
-		tsPlusIcon: normalizeIcon(icons.tsPlusIcon ?? icons.ts_plus_icon ?? raw.tsPlusIcon),
-		tsListIcon: normalizeIcon(icons.tsListIcon ?? icons.ts_list_icon ?? raw.tsListIcon),
-		tsSearchIcon: normalizeIcon(icons.tsSearchIcon ?? icons.ts_search_icon ?? raw.tsSearchIcon),
-		tsClockIcon: normalizeIcon(icons.tsClockIcon ?? icons.ts_clock_icon ?? raw.tsClockIcon),
-		tsLinkIcon: normalizeIcon(icons.tsLinkIcon ?? icons.ts_link_icon ?? raw.tsLinkIcon),
-		tsRtimeslotIcon: normalizeIcon(icons.tsRtimeslotIcon ?? icons.ts_rtimeslot_icon ?? raw.tsRtimeslotIcon),
-		tsUploadIco: normalizeIcon(icons.tsUploadIco ?? icons.ts_upload_ico ?? raw.tsUploadIco),
-		tsLoadMore: normalizeIcon(icons.tsLoadMore ?? icons.ts_load_more ?? raw.tsLoadMore),
+		popupIcon: normalizeIcon(icons['popupIcon'] ?? icons['popup_icon'] ?? raw['popupIcon']),
+		infoIcon: normalizeIcon(icons['infoIcon'] ?? icons['info_icon'] ?? raw['infoIcon']),
+		tsMediaIco: normalizeIcon(icons['tsMediaIco'] ?? icons['ts_media_ico'] ?? raw['tsMediaIco']),
+		nextIcon: normalizeIcon(icons['nextIcon'] ?? icons['next_icon'] ?? raw['nextIcon']),
+		prevIcon: normalizeIcon(icons['prevIcon'] ?? icons['prev_icon'] ?? raw['prevIcon']),
+		downIcon: normalizeIcon(icons['downIcon'] ?? icons['down_icon'] ?? raw['downIcon']),
+		trashIcon: normalizeIcon(icons['trashIcon'] ?? icons['trash_icon'] ?? raw['trashIcon']),
+		draftIcon: normalizeIcon(icons['draftIcon'] ?? icons['draft_icon'] ?? raw['draftIcon']),
+		publishIcon: normalizeIcon(icons['publishIcon'] ?? icons['publish_icon'] ?? raw['publishIcon']),
+		saveIcon: normalizeIcon(icons['saveIcon'] ?? icons['save_icon'] ?? raw['saveIcon']),
+		successIcon: normalizeIcon(icons['successIcon'] ?? icons['success_icon'] ?? raw['successIcon']),
+		viewIcon: normalizeIcon(icons['viewIcon'] ?? icons['view_icon'] ?? raw['viewIcon']),
+		tsCalendarIcon: normalizeIcon(icons['tsCalendarIcon'] ?? icons['ts_calendar_icon'] ?? raw['tsCalendarIcon']),
+		tsCalminusIcon: normalizeIcon(icons['tsCalminusIcon'] ?? icons['ts_calminus_icon'] ?? raw['tsCalminusIcon']),
+		tsAddIcon: normalizeIcon(icons['tsAddIcon'] ?? icons['ts_add_icon'] ?? raw['tsAddIcon']),
+		tsEmailIcon: normalizeIcon(icons['tsEmailIcon'] ?? icons['ts_email_icon'] ?? raw['tsEmailIcon']),
+		tsPhoneIcon: normalizeIcon(icons['tsPhoneIcon'] ?? icons['ts_phone_icon'] ?? raw['tsPhoneIcon']),
+		tsLocationIcon: normalizeIcon(icons['tsLocationIcon'] ?? icons['ts_location_icon'] ?? raw['tsLocationIcon']),
+		tsMylocationIcon: normalizeIcon(icons['tsMylocationIcon'] ?? icons['ts_mylocation_icon'] ?? raw['tsMylocationIcon']),
+		tsMinusIcon: normalizeIcon(icons['tsMinusIcon'] ?? icons['ts_minus_icon'] ?? raw['tsMinusIcon']),
+		tsPlusIcon: normalizeIcon(icons['tsPlusIcon'] ?? icons['ts_plus_icon'] ?? raw['tsPlusIcon']),
+		tsListIcon: normalizeIcon(icons['tsListIcon'] ?? icons['ts_list_icon'] ?? raw['tsListIcon']),
+		tsSearchIcon: normalizeIcon(icons['tsSearchIcon'] ?? icons['ts_search_icon'] ?? raw['tsSearchIcon']),
+		tsClockIcon: normalizeIcon(icons['tsClockIcon'] ?? icons['ts_clock_icon'] ?? raw['tsClockIcon']),
+		tsLinkIcon: normalizeIcon(icons['tsLinkIcon'] ?? icons['ts_link_icon'] ?? raw['tsLinkIcon']),
+		tsRtimeslotIcon: normalizeIcon(icons['tsRtimeslotIcon'] ?? icons['ts_rtimeslot_icon'] ?? raw['tsRtimeslotIcon']),
+		tsUploadIco: normalizeIcon(icons['tsUploadIco'] ?? icons['ts_upload_ico'] ?? raw['tsUploadIco']),
+		tsLoadMore: normalizeIcon(icons['tsLoadMore'] ?? icons['ts_load_more'] ?? raw['tsLoadMore']),
 	};
 }
 
@@ -331,26 +311,26 @@ function normalizeConfig(raw: Record<string, unknown>): CreatePostAttributes {
  * Uses normalizeConfig() for consistent format handling
  */
 function parseVxConfig(container: HTMLElement): CreatePostAttributes {
-	console.log('[Create Post DEBUG] parseVxConfig called');
-	console.log('[Create Post DEBUG] Container classes:', container.className);
-	console.log('[Create Post DEBUG] Container innerHTML (first 500 chars):', container.innerHTML.substring(0, 500));
+	//console.log('[Create Post DEBUG] parseVxConfig called');
+	//console.log('[Create Post DEBUG] Container classes:', container.className);
+	//console.log('[Create Post DEBUG] Container innerHTML (first 500 chars):', container.innerHTML.substring(0, 500));
 
 	// Look for vxconfig script tag (matching Voxel pattern)
 	const vxconfigScript = container.querySelector<HTMLScriptElement>('script.vxconfig');
-	console.log('[Create Post DEBUG] vxconfigScript found:', !!vxconfigScript);
+	//console.log('[Create Post DEBUG] vxconfigScript found:', !!vxconfigScript);
 
 	if (vxconfigScript) {
-		console.log('[Create Post DEBUG] vxconfigScript.textContent:', vxconfigScript.textContent?.substring(0, 200));
+		//console.log('[Create Post DEBUG] vxconfigScript.textContent:', vxconfigScript.textContent?.substring(0, 200));
 	}
 
 	if (vxconfigScript && vxconfigScript.textContent) {
 		try {
 			const config = JSON.parse(vxconfigScript.textContent);
-			console.log('[Create Post DEBUG] Parsed vxconfig:', config);
+			//console.log('[Create Post DEBUG] Parsed vxconfig:', config);
 
 			// Use normalizeConfig for consistent format handling
 			const attributes = normalizeConfig(config);
-			console.log('[Create Post DEBUG] Normalized attributes:', attributes);
+			//console.log('[Create Post DEBUG] Normalized attributes:', attributes);
 			return attributes;
 		} catch (error) {
 			console.error('[Create Post DEBUG] Failed to parse vxconfig:', error);
@@ -358,7 +338,7 @@ function parseVxConfig(container: HTMLElement): CreatePostAttributes {
 	}
 
 	// Fallback to data attributes if vxconfig not found (matching search-form pattern)
-	console.log('[Create Post DEBUG] Falling back to data attributes');
+	//console.log('[Create Post DEBUG] Falling back to data attributes');
 	return parseDataAttributes(container);
 }
 
@@ -391,7 +371,7 @@ interface FrontendWrapperProps {
 }
 
 function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapperProps) {
-	console.log('[Create Post DEBUG] FrontendWrapper rendered with:', { attributes, isAdminMetabox });
+	//console.log('[Create Post DEBUG] FrontendWrapper rendered with:', { attributes, isAdminMetabox });
 
 	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>([]);
 	const [postId, setPostId] = useState<number | null>(null);
@@ -401,33 +381,33 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 
 	// Get post ID from URL or data attribute
 	const urlPostId = getPostIdFromUrl();
-	console.log('[Create Post DEBUG] urlPostId:', urlPostId);
+	//console.log('[Create Post DEBUG] urlPostId:', urlPostId);
 
 	useEffect(() => {
-		console.log('[Create Post DEBUG] useEffect triggered, postTypeKey:', attributes.postTypeKey);
+		//console.log('[Create Post DEBUG] useEffect triggered, postTypeKey:', attributes.postTypeKey);
 		let cancelled = false;
 
 		async function loadFieldsConfig() {
-			console.log('[Create Post DEBUG] loadFieldsConfig called');
+			//console.log('[Create Post DEBUG] loadFieldsConfig called');
 			setIsLoading(true);
 			setError(null);
 
 			try {
-				console.log('[Create Post DEBUG] Fetching fields config for:', attributes.postTypeKey);
+				//console.log('[Create Post DEBUG] Fetching fields config for:', attributes.postTypeKey);
 				const data = await fetchFieldsConfig(
 					attributes.postTypeKey,
 					urlPostId,
 					isAdminMetabox
 				);
-				console.log('[Create Post DEBUG] fetchFieldsConfig result:', data);
+				//console.log('[Create Post DEBUG] fetchFieldsConfig result:', data);
 
 				if (!cancelled && data) {
-					console.log('[Create Post DEBUG] Setting fieldsConfig, count:', data.fieldsConfig?.length);
+					//console.log('[Create Post DEBUG] Setting fieldsConfig, count:', data.fieldsConfig?.length);
 					setFieldsConfig(data.fieldsConfig);
 					setPostId(data.postId);
 					setPostStatus(data.postStatus);
 				} else if (!cancelled) {
-					console.log('[Create Post DEBUG] No data returned from fetchFieldsConfig');
+					//console.log('[Create Post DEBUG] No data returned from fetchFieldsConfig');
 					setError('Failed to load form configuration');
 				}
 			} catch (err) {
@@ -498,23 +478,23 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
  * Initialize create post forms on the page (matching search-form pattern)
  */
 function initCreatePostForms() {
-	console.log('[Create Post DEBUG] initCreatePostForms called');
+	//console.log('[Create Post DEBUG] initCreatePostForms called');
 
 	// Find all create post blocks by the class
 	const containers = document.querySelectorAll<HTMLElement>(
 		'.voxel-fse-create-post-frontend:not([data-react-mounted])'
 	);
-	console.log('[Create Post DEBUG] Found containers:', containers.length);
+	//console.log('[Create Post DEBUG] Found containers:', containers.length);
 
 	// Also log what other voxel containers exist on page
 	const allTsForms = document.querySelectorAll('.ts-form');
-	console.log('[Create Post DEBUG] All .ts-form elements:', allTsForms.length);
-	allTsForms.forEach((el, i) => {
-		console.log(`[Create Post DEBUG] .ts-form[${i}] classes:`, el.className);
+	//console.log('[Create Post DEBUG] All .ts-form elements:', allTsForms.length);
+	allTsForms.forEach((_el, _i) => {
+		//console.log(`[Create Post DEBUG] .ts-form[${_i}] classes:`, _el.className);
 	});
 
-	containers.forEach((container, index) => {
-		console.log(`[Create Post DEBUG] Processing container ${index}:`, container.className);
+	containers.forEach((container) => {
+		//console.log(`[Create Post DEBUG] Processing container ${index}:`, container.className);
 
 		// Mark as mounted immediately to prevent double-mounting
 		container.setAttribute('data-react-mounted', 'true');
@@ -522,17 +502,17 @@ function initCreatePostForms() {
 		// Parse attributes from vxconfig (matching search-form pattern - Plan C+)
 		// parseVxConfig builds full CreatePostAttributes object with fallback to data attributes
 		const attributes = parseVxConfig(container);
-		console.log(`[Create Post DEBUG] Container ${index} attributes:`, attributes);
+		//console.log(`[Create Post DEBUG] Container ${index} attributes:`, attributes);
 
 		// Check if this is admin metabox context from data attribute
-		const isAdminMetabox = container.dataset.adminMode === '1';
-		console.log(`[Create Post DEBUG] Container ${index} isAdminMetabox:`, isAdminMetabox);
+		const isAdminMetabox = (container.dataset as any)['adminMode'] === '1';
+		//console.log(`[Create Post DEBUG] Container ${index} isAdminMetabox:`, isAdminMetabox);
 
 		// Clear placeholder content and create React root
 		container.innerHTML = '';
 
 		const root = createRoot(container);
-		console.log(`[Create Post DEBUG] Rendering FrontendWrapper for container ${index}`);
+		//console.log(`[Create Post DEBUG] Rendering FrontendWrapper for container ${index}`);
 		root.render(
 			<FrontendWrapper
 				attributes={attributes}
@@ -543,18 +523,18 @@ function initCreatePostForms() {
 }
 
 // DEBUG: Script loaded
-console.log('[Create Post DEBUG] frontend.tsx script LOADED');
-console.log('[Create Post DEBUG] document.readyState:', document.readyState);
-console.log('[Create Post DEBUG] window.wp available:', typeof window.wp !== 'undefined');
-console.log('[Create Post DEBUG] window.wp.element available:', typeof window.wp?.element !== 'undefined');
-console.log('[Create Post DEBUG] window.voxelFseCreatePost:', window.voxelFseCreatePost);
+//console.log('[Create Post DEBUG] frontend.tsx script LOADED');
+//console.log('[Create Post DEBUG] document.readyState:', document.readyState);
+//console.log('[Create Post DEBUG] window.wp available:', typeof window.wp !== 'undefined');
+//console.log('[Create Post DEBUG] window.wp.element available:', typeof window.wp?.element !== 'undefined');
+//console.log('[Create Post DEBUG] window.voxelFseCreatePost:', window.voxelFseCreatePost);
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-	console.log('[Create Post DEBUG] Adding DOMContentLoaded listener');
+	//console.log('[Create Post DEBUG] Adding DOMContentLoaded listener');
 	document.addEventListener('DOMContentLoaded', initCreatePostForms);
 } else {
-	console.log('[Create Post DEBUG] DOM already ready, calling initCreatePostForms immediately');
+	//console.log('[Create Post DEBUG] DOM already ready, calling initCreatePostForms immediately');
 	initCreatePostForms();
 }
 

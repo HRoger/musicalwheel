@@ -958,80 +958,39 @@ if ($is_admin_metabox) {
         wp_enqueue_script('vue');
     }
 
-    // Enqueue commons.js (contains Voxel.Maps and Voxel.alert())
-    // Required for location fields and other interactive features
-    if (wp_script_is('vx:commons.js', 'registered')) {
-        wp_enqueue_script('vx:commons.js');
+    // CRITICAL: Use React-compatible voxel-commons.js instead of Vue-based vx:commons.js
+    // The Vue-based commons.js causes conflicts in Gutenberg editor (React environment)
+    // Our voxel-commons.js provides the same Voxel.* APIs without Vue dependencies
+    if (!wp_script_is('voxel-fse-commons', 'enqueued')) {
+        $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        wp_enqueue_script(
+            'voxel-fse-commons',
+            $commons_url,
+            [],
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0',
+            true
+        );
 
-        // CRITICAL: After commons.js loads, ensure everything is properly initialized
-        // This handles both cases: Google Maps loaded before/after commons.js
-        $admin_google_maps_setup = <<<'JAVASCRIPT'
-// After commons.js loads, FORCE GoogleMaps callback to exist
-(function() {
-	var ensureCallback = function() {
-		if (typeof window.Voxel === 'undefined' || typeof window.Voxel.Maps === 'undefined') {
-			return false;
-		}
-
-		// FORCE callback to exist - commons.js may have removed it
-		if (typeof window.Voxel.Maps.GoogleMaps !== 'function') {
-			console.warn('[Voxel FSE Admin] GoogleMaps callback missing, creating it');
-			window.Voxel.Maps.GoogleMaps = function() {
-				if (window.Voxel && window.Voxel.Maps) {
-					window.Voxel.Maps.Loaded = true;
-					if (typeof document !== 'undefined' && document.dispatchEvent) {
-						try {
-							document.dispatchEvent(new CustomEvent('maps:loaded'));
-						} catch(e) {}
-					}
-				}
-			};
-		}
-
-		// If Google Maps already loaded, trigger initialization
-		if (window._voxel_gmaps_callback_fired && typeof google !== 'undefined' && google.maps && !window.Voxel.Maps.Loaded) {
-			try {
-				if (typeof window.Voxel.Maps.GoogleMaps === 'function') {
-					window.Voxel.Maps.GoogleMaps();
-				}
-			} catch (error) {
-				console.error('[Voxel FSE Admin] Error initializing:', error);
-			}
-		}
-
-		return true;
-	};
-
-	// Try immediately, then retry if needed
-	if (!ensureCallback()) {
-		var tries = 0;
-		var interval = setInterval(function() {
-			tries++;
-			if (ensureCallback() || tries >= 20) {
-				clearInterval(interval);
-			}
-		}, 50);
-	}
-})();
-JAVASCRIPT;
-        wp_add_inline_script('vx:commons.js', $admin_google_maps_setup, 'after');
-
-        // Add post-commons.js script to manually trigger Google Maps initialization if needed
+        // Add script to set up GoogleMaps callback after our commons loads
         $post_commons_script = <<<'JAVASCRIPT'
-// After commons.js loads, manually trigger Google Maps initialization if needed
 (function() {
-	if (typeof google !== 'undefined' && google.maps && !window.Voxel?.Maps?.Loaded) {
-		if (typeof window.Voxel?.Maps?.GoogleMaps === 'function') {
-			try {
-				window.Voxel.Maps.GoogleMaps();
-			} catch (error) {
-				console.error('[Voxel FSE Admin] Error triggering GoogleMaps callback:', error);
+	if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
+		window.Voxel.Maps.GoogleMaps = function() {
+			window.Voxel.Maps.Loaded = true;
+			document.dispatchEvent(new CustomEvent('maps:loaded'));
+		};
+
+		// Check if Google Maps already loaded and called the stub
+		if (window._voxel_gmaps_callback_fired && !window.Voxel.Maps.Loaded) {
+			if (typeof google !== 'undefined' && google.maps) {
+				window.Voxel.Maps.Loaded = true;
+				document.dispatchEvent(new CustomEvent('maps:loaded'));
 			}
 		}
 	}
 })();
 JAVASCRIPT;
-        wp_add_inline_script('vx:commons.js', $post_commons_script, 'after');
+        wp_add_inline_script('voxel-fse-commons', $post_commons_script, 'after');
     }
 
     // If location fields exist, ensure maps are properly enqueued

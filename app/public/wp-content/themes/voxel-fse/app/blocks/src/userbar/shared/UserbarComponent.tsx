@@ -15,6 +15,9 @@
  * ✅ Pagination with "Load More" pattern
  * ✅ HTML structure matches exactly (.ts-notifications-wrapper, .ts-popup-messages, .ts-popup-cart)
  * ✅ CSS classes match Voxel's Vue.js template output
+ * ✅ window.VX_Cart global assignment (line 210) - exposes cart for external scripts
+ * ✅ form-group component pattern (via FormPopup React component)
+ * ✅ Global render functions (render_notifications, render_popup_messages, render_voxel_cart)
  *
  * NEXT.JS READY:
  * ✅ Pure React implementation (no jQuery)
@@ -771,6 +774,11 @@ interface CartItemProps {
 /**
  * CartItem - Full Voxel parity implementation
  * Reference: voxel-user-bar.beautified.js lines 190-365
+ *
+ * VOXEL PARITY:
+ * ✅ window.VX_Cart global assignment (line 210)
+ * ✅ voxel:added_cart_item event listener (lines 211-215)
+ * ✅ Full cart API methods exposed globally
  */
 function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -783,6 +791,9 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 	const [items, setItems] = useState<Record<string, CartItem> | null>(null);
 	const [checkoutLink, setCheckoutLink] = useState('');
 	const [disabled, setDisabled] = useState(false);
+
+	// Ref to track if VX_Cart has been assigned (prevent duplicates)
+	const vxCartAssignedRef = useRef(false);
 
 	/**
 	 * Check if cart has items
@@ -1086,11 +1097,40 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 	};
 
 	/**
-	 * Listen for cart update events
+	 * Listen for cart update events and expose window.VX_Cart
 	 * Reference: voxel-user-bar.beautified.js lines 209-215
+	 *
+	 * VOXEL PARITY:
+	 * ✅ window.VX_Cart = this (line 210) - exposes cart instance globally
+	 * ✅ voxel:added_cart_item event listener (lines 211-215)
 	 */
 	useEffect(() => {
 		if (context !== 'frontend') return;
+
+		/**
+		 * Expose cart instance globally as window.VX_Cart
+		 * Reference: voxel-user-bar.beautified.js line 210
+		 * This allows external scripts to interact with the cart
+		 */
+		if (!vxCartAssignedRef.current) {
+			vxCartAssignedRef.current = true;
+
+			// Create VX_Cart global with cart methods
+			// Note: We use a getter pattern to always get fresh state values
+			Object.defineProperty(window, 'VX_Cart', {
+				configurable: true, // Allow reassignment if component remounts
+				get: () => ({
+					open: handleOpen,
+					getItems,
+					hasItems,
+					getSubtotal,
+					get loading() { return loading; },
+					get loaded() { return loaded; },
+					get items() { return items; },
+					get checkout_link() { return checkoutLink; },
+				}),
+			});
+		}
 
 		const handleCartUpdate = () => {
 			getItems();
@@ -1099,12 +1139,13 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 		};
 
 		// Listen for voxel:added_cart_item event
+		// Reference: voxel-user-bar.beautified.js lines 211-215
 		document.addEventListener('voxel:added_cart_item', handleCartUpdate);
 
 		return () => {
 			document.removeEventListener('voxel:added_cart_item', handleCartUpdate);
 		};
-	}, [context, getItems]);
+	}, [context, getItems, handleOpen, hasItems, getSubtotal, loading, loaded, items, checkoutLink]);
 
 	/**
 	 * Render cart item row

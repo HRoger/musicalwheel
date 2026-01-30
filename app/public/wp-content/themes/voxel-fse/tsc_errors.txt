@@ -1,0 +1,231 @@
+app/blocks/src/create-post/components/FieldRenderer.tsx(71,36): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(74,37): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(77,35): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(80,37): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(85,42): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(88,38): error TS2322: Type 'FieldValue' is not assignable to type 'string | number'.
+  Type 'boolean' is not assignable to type 'string | number'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(92,37): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(96,40): error TS2322: Type 'FieldValue' is not assignable to type 'LocationValue'.
+  Type 'string' is not assignable to type 'LocationValue'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(96,54): error TS2322: Type '(value: FieldValue) => void' is not assignable to type '(value: LocationValue) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'LocationValue' is not assignable to type 'FieldValue'.
+      Type 'LocationValue' is not assignable to type 'Record<string, unknown>'.
+        Index signature for type 'string' is missing in type 'LocationValue'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(103,40): error TS2322: Type 'FieldValue' is not assignable to type 'boolean'.
+  Type 'string' is not assignable to type 'boolean'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(106,43): error TS2322: Type 'FieldValue' is not assignable to type '{ [key: string]: boolean; }'.
+  Type 'string' is not assignable to type '{ [key: string]: boolean; }'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(109,40): error TS2322: Type 'FieldValue' is not assignable to type '{ [key: string]: boolean; }'.
+  Type 'string' is not assignable to type '{ [key: string]: boolean; }'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(116,36): error TS2322: Type 'FieldValue' is not assignable to type 'string | DateValue'.
+  Type 'number' is not assignable to type 'string | DateValue'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(116,50): error TS2322: Type '(value: FieldValue) => void' is not assignable to type '(value: string | DateValue) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'string | DateValue' is not assignable to type 'FieldValue'.
+      Type 'DateValue' is not assignable to type 'FieldValue'.
+        Type 'DateValue' is not assignable to type 'Record<string, unknown>'.
+          Index signature for type 'string' is missing in type 'DateValue'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(119,36): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(122,40): error TS2322: Type 'FieldValue' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(127,45): error TS2322: Type 'FieldValue' is not assignable to type 'RecurringDateValue[]'.
+  Type 'string' is not assignable to type 'RecurringDateValue[]'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(127,59): error TS2322: Type '(value: FieldValue) => void' is not assignable to type '(value: RecurringDateValue[]) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'RecurringDateValue[]' is not assignable to type 'FieldValue'.
+      Type 'RecurringDateValue[]' is not assignable to type 'string[]'.
+        Type 'RecurringDateValue' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(132,41): error TS2322: Type 'FieldValue' is not assignable to type 'ScheduleGroup[]'.
+  Type 'string' is not assignable to type 'ScheduleGroup[]'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(132,55): error TS2322: Type '(value: FieldValue) => void' is not assignable to type '(value: ScheduleGroup[]) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'ScheduleGroup[]' is not assignable to type 'FieldValue'.
+      Type 'ScheduleGroup[]' is not assignable to type 'string[]'.
+        Type 'ScheduleGroup' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(145,36): error TS2322: Type 'FieldValue' is not assignable to type 'FileObject[]'.
+  Type 'string' is not assignable to type 'FileObject[]'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(145,50): error TS2322: Type '(value: FieldValue) => void' is not assignable to type '(value: FileObject[]) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'FileObject[]' is not assignable to type 'FieldValue'.
+      Type 'FileObject[]' is not assignable to type 'string[]'.
+        Type 'FileObject' is not assignable to type 'string'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(150,40): error TS2322: Type 'FieldValue' is not assignable to type 'RepeaterRow[]'.
+  Type 'string' is not assignable to type 'RepeaterRow[]'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(155,39): error TS2322: Type 'FieldValue' is not assignable to type 'ProductFieldValue'.
+  Type 'string' is not assignable to type 'ProductFieldValue'.
+app/blocks/src/create-post/components/FieldRenderer.tsx(160,44): error TS2322: Type 'FieldValue' is not assignable to type 'number | number[]'.
+  Type 'string' is not assignable to type 'number | number[]'.
+app/blocks/src/create-post/components/fields/ColorField.tsx(129,6): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/DateField.tsx(25,40): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/DateField.tsx(191,6): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/DescriptionField.tsx(82,56): error TS2365: Operator '>' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/DescriptionField.tsx(83,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/DescriptionField.tsx(108,5): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/FieldLabel.tsx(75,24): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/FileField.tsx(51,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/FileField.tsx(164,23): error TS2339: Property 'length' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/fields/FileField.tsx(164,49): error TS2339: Property 'join' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/fields/FileField.tsx(176,19): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+app/blocks/src/create-post/components/fields/FileField.tsx(213,7): error TS2365: Operator '>' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/FileField.tsx(270,7): error TS2365: Operator '>' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/FileField.tsx(386,16): error TS2365: Operator '>' cannot be applied to types 'unknown' and 'number'.
+app/blocks/src/create-post/components/fields/FileField.tsx(396,15): error TS2365: Operator '>' cannot be applied to types 'unknown' and 'number'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(137,18): error TS2339: Property 'alert' does not exist on type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(151,41): error TS2339: Property 'getGeocoder' does not exist on type '{ await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(167,22): error TS2339: Property 'alert' does not exist on type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(177,20): error TS2339: Property 'alert' does not exist on type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(189,19): error TS2339: Property 'alert' does not exist on type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(234,7): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/LocationField.tsx(289,8): error TS2322: Type 'unknown' is not assignable to type 'number'.
+app/blocks/src/create-post/components/fields/MultiselectField.tsx(32,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/MultiselectField.tsx(278,13): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/NumberField.tsx(201,7): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/NumberField.tsx(257,7): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/NumberField.tsx(265,37): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/NumberField.tsx(275,6): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(30,32): error TS2307: Cannot find module '@shared/utils/siteUrl' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(32,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(45,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel_Config' must be of type 'VoxelConfig', but here has type 'VoxelConfig'.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(201,41): error TS2339: Property 'ajax_url' does not exist on type 'VoxelConfig'.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(273,41): error TS2339: Property 'ajax_url' does not exist on type 'VoxelConfig'.
+app/blocks/src/create-post/components/fields/PostRelationField.tsx(485,12): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/ProductField.tsx(295,12): error TS2739: Type '{}' is missing the following properties from type 'SubscriptionIntervalValue': frequency, unit
+app/blocks/src/create-post/components/fields/ProductField.tsx(305,12): error TS2740: Type '{}' is missing the following properties from type 'FileObject[]': length, pop, push, concat, and 35 more.
+app/blocks/src/create-post/components/fields/ProductField.tsx(316,12): error TS2739: Type '{}' is missing the following properties from type 'CustomPricesFieldValue': enabled, list
+app/blocks/src/create-post/components/fields/ProductField.tsx(319,12): error TS2559: Type 'ProductFieldValue' has no properties in common with type 'ProductFieldValue'.
+app/blocks/src/create-post/components/fields/ProductField.tsx(329,12): error TS2741: Property 'addons' is missing in type '{}' but required in type 'AddonsFieldValue'.
+app/blocks/src/create-post/components/fields/ProductField.tsx(349,12): error TS2739: Type '{}' is missing the following properties from type 'VariationsFieldValue': attributeList, variations
+app/blocks/src/create-post/components/fields/RecurringDateField.tsx(16,27): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/RecurringDateField.tsx(427,3): error TS2322: Type 'unknown' is not assignable to type 'Record<string, string>'.
+  Index signature for type 'string' is missing in type '{}'.
+app/blocks/src/create-post/components/fields/RecurringDateField.tsx(428,3): error TS2739: Type 'Record<string, string | Record<string, string>>' is missing the following properties from type '{ from: string; to: string; }': from, to
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(125,23): error TS2339: Property '_uid' does not exist on type '{}'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(126,28): error TS2339: Property 'collapsed' does not exist on type '{}'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(127,24): error TS2339: Property 'label' does not exist on type '{}'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(226,4): error TS2322: Type 'unknown' is not assignable to type 'FieldValue | RepeaterRowMeta'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(257,4): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(269,9): error TS2322: Type '{ value: string | number | boolean | FieldValue[] | Record<string, unknown> | RepeaterRowMeta; id?: number; key: string; type: string; label: string; required: boolean; ... 10 more ...; is_ui?: number | boolean; }[]' is not assignable to type 'VoxelField[]'.
+  Type '{ value: string | number | boolean | FieldValue[] | Record<string, unknown> | RepeaterRowMeta; id?: number; key: string; type: string; label: string; ... 11 more ...; is_ui?: boolean | number; }' is not assignable to type 'VoxelField'.
+    Types of property 'value' are incompatible.
+      Type 'string | number | boolean | FieldValue[] | Record<string, unknown> | RepeaterRowMeta' is not assignable to type 'FieldValue'.
+        Type 'RepeaterRowMeta' is not assignable to type 'FieldValue'.
+          Type 'RepeaterRowMeta' is not assignable to type 'Record<string, unknown>'.
+            Index signature for type 'string' is missing in type 'RepeaterRowMeta'.
+app/blocks/src/create-post/components/fields/RepeaterField.tsx(277,49): error TS2352: Conversion of type 'string | number | boolean | string[] | number[] | FieldValue[] | Record<string, unknown> | RepeaterRowMeta' to type 'VoxelField' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'RepeaterRowMeta' is missing the following properties from type 'VoxelField': key, type, required, value, validation
+app/blocks/src/create-post/components/fields/SelectField.tsx(62,49): error TS2339: Property 'icon' does not exist on type 'SelectChoice'.
+app/blocks/src/create-post/components/fields/SelectField.tsx(63,61): error TS2339: Property 'icon' does not exist on type 'SelectChoice'.
+app/blocks/src/create-post/components/fields/SelectField.tsx(125,59): error TS2339: Property 'icon' does not exist on type 'SelectChoice'.
+app/blocks/src/create-post/components/fields/SelectField.tsx(165,6): error TS2322: Type 'string | number | true | FieldValue[] | Record<string, unknown>' is not assignable to type 'string | number | readonly string[]'.
+  Type 'boolean' is not assignable to type 'string | number | readonly string[]'.
+app/blocks/src/create-post/components/fields/SelectField.tsx(175,8): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/TaxonomyField.tsx(34,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/TaxonomyField.tsx(98,8): error TS2740: Type '{}' is missing the following properties from type 'Term[]': length, pop, push, concat, and 35 more.
+app/blocks/src/create-post/components/fields/TaxonomyField.tsx(308,54): error TS2339: Property 'label' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/fields/TaxonomyField.tsx(315,13): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/TaxonomyField.tsx(346,59): error TS2339: Property 'label' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(95,3): error TS2687: All declarations of 'wp' must have identical modifiers.
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(144,21): error TS2365: Operator '<' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(146,28): error TS2365: Operator '>' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(214,21): error TS2551: Property 'toolbar1' does not exist on type 'TinyMCESettings'. Did you mean 'toolbar'?
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(220,21): error TS2551: Property 'toolbar1' does not exist on type 'TinyMCESettings'. Did you mean 'toolbar'?
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(334,25): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/TexteditorField.tsx(359,7): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/TextField.tsx(45,21): error TS2365: Operator '<' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/TextField.tsx(47,28): error TS2365: Operator '>' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/components/fields/TextField.tsx(95,6): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/TextField.tsx(100,50): error TS2322: Type 'unknown' is not assignable to type 'ReactNode'.
+app/blocks/src/create-post/components/fields/TimezoneField.tsx(18,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/fields/TimezoneField.tsx(37,8): error TS2740: Type '{}' is missing the following properties from type 'string[]': length, pop, push, concat, and 35 more.
+app/blocks/src/create-post/components/fields/TimezoneField.tsx(38,8): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/UIField.tsx(82,11): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/UIField.tsx(82,26): error TS2322: Type 'unknown' is not assignable to type 'string'.
+app/blocks/src/create-post/components/fields/WorkHoursField.tsx(16,27): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/popup-kit/MapPicker.tsx(28,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel' must be of type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }', but here has type '{ Maps?: { await: (callback: () => void) => void; Map: new (config: { el: HTMLElement; zoom: number; center?: VoxelLatLng; }) => VoxelMap; Marker: new (config: { template: string; map?: VoxelMap; position?: VoxelLatLng; }) => VoxelMarker; LatLng: new (lat: number, lng: number) => VoxelLatLng; getGeocoder: () => Voxe...'.
+app/blocks/src/create-post/components/popup-kit/MapPicker.tsx(110,39): error TS2339: Property 'getGeocoder' does not exist on type '{ await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }'.
+app/blocks/src/create-post/components/popup-kit/MapPicker.tsx(141,65): error TS2339: Property 'alert' does not exist on type '{ Maps?: { await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }; }'.
+app/blocks/src/create-post/components/popup-kit/MapPicker.tsx(155,38): error TS2339: Property 'Map' does not exist on type '{ await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }'.
+app/blocks/src/create-post/components/popup-kit/MapPicker.tsx(170,41): error TS2339: Property 'Marker' does not exist on type '{ await: (callback: () => void) => void; Autocomplete: new (element: HTMLInputElement, callback: (result: VoxelAutocompleteResult) => void, config?: VoxelAutocompleteConfig) => VoxelAutocompleteInstance; LatLng: new (lat: number, lng: number) => VoxelLatLng; }'.
+app/blocks/src/create-post/components/product-fields/addons/NumericAddon.tsx(29,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel_Config' must be of type 'VoxelConfig', but here has type 'VoxelConfig'.
+app/blocks/src/create-post/components/product-fields/addons/SelectAddon.tsx(31,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel_Config' must be of type 'VoxelConfig', but here has type 'VoxelConfig'.
+app/blocks/src/create-post/components/product-fields/addons/SwitcherAddon.tsx(27,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel_Config' must be of type 'VoxelConfig', but here has type 'VoxelConfig'.
+app/blocks/src/create-post/components/product-fields/AddonsField.tsx(139,19): error TS2352: Conversion of type 'AddonsFieldValue' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Index signature for type 'string' is missing in type 'AddonsFieldValue'.
+app/blocks/src/create-post/components/product-fields/BasePriceField.tsx(63,55): error TS2339: Property 'enabled' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/product-fields/booking/DaySelector.tsx(10,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/booking/WeekdayExclusions.tsx(12,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/custom-prices/DateCondition.tsx(10,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/custom-prices/DateRangeCondition.tsx(10,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/custom-prices/DayOfWeekCondition.tsx(10,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/custom-prices/SinglePrice.tsx(18,2): error TS2305: Module '"../../../types"' has no exported member 'ProductTypeField'.
+app/blocks/src/create-post/components/product-fields/custom-prices/SinglePrice.tsx(33,3): error TS2717: Subsequent property declarations must have the same type.  Property 'Voxel_Config' must be of type 'VoxelConfig', but here has type 'VoxelConfig'.
+app/blocks/src/create-post/components/product-fields/CustomPricesField.tsx(36,2): error TS2305: Module '"../../types"' has no exported member 'ProductTypeField'.
+app/blocks/src/create-post/components/product-fields/DeliverablesField.tsx(13,27): error TS2305: Module '"../../types"' has no exported member 'FileObject'.
+app/blocks/src/create-post/components/product-fields/ShippingField.tsx(75,9): error TS2322: Type 'unknown' is not assignable to type 'boolean'.
+app/blocks/src/create-post/components/product-fields/ShippingField.tsx(106,34): error TS2345: Argument of type '{ shipping_class: string; enabled?: boolean; } | { shipping_class: string; enabled: unknown; }' is not assignable to parameter of type 'ShippingValue'.
+  Type '{ shipping_class: string; enabled: unknown; }' is not assignable to type 'ShippingValue'.
+    Types of property 'enabled' are incompatible.
+      Type 'unknown' is not assignable to type 'boolean'.
+app/blocks/src/create-post/components/product-fields/ShippingField.tsx(113,50): error TS2538: Type 'unknown' cannot be used as an index type.
+app/blocks/src/create-post/components/product-fields/StockField.tsx(57,39): error TS2339: Property 'enabled' does not exist on type 'unknown'.
+app/blocks/src/create-post/components/product-fields/SubscriptionIntervalField.tsx(63,12): error TS2345: Argument of type '{ frequency: number; unit: string; }' is not assignable to parameter of type 'SubscriptionIntervalValue'.
+  Types of property 'unit' are incompatible.
+    Type 'string' is not assignable to type '"day" | "week" | "month" | "year"'.
+app/blocks/src/create-post/components/product-fields/SubscriptionIntervalField.tsx(65,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'number'.
+app/blocks/src/create-post/components/product-fields/SubscriptionIntervalField.tsx(73,4): error TS2322: Type 'string' is not assignable to type '"day" | "week" | "month" | "year"'.
+app/blocks/src/create-post/components/product-fields/SubscriptionIntervalField.tsx(100,7): error TS2322: Type 'unknown' is not assignable to type 'string | number'.
+app/blocks/src/create-post/components/product-fields/variations/ChoiceRow.tsx(27,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/variations/ChoiceRow.tsx(217,16): error TS2339: Property 'name' does not exist on type 'MediaPopupExisting'.
+app/blocks/src/create-post/components/product-fields/variations/ChoiceRow.tsx(218,16): error TS2339: Property 'type' does not exist on type 'MediaPopupExisting'.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(28,28): error TS2307: Cannot find module '@shared' or its corresponding type declarations.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(260,5): error TS2322: Type '{ source: "existing"; id: any; name: any; type: any; preview: any; }' is not assignable to type 'number | AttributeChoiceImage'.
+  Property 'url' is missing in type '{ source: "existing"; id: any; name: any; type: any; preview: any; }' but required in type 'AttributeChoiceImageExisting'.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(262,15): error TS2339: Property 'id' does not exist on type 'MediaPopupSelectedFile'.
+  Property 'id' does not exist on type 'MediaPopupNewUpload'.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(263,17): error TS2339: Property 'name' does not exist on type 'MediaPopupSelectedFile'.
+  Property 'name' does not exist on type 'MediaPopupExisting'.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(264,17): error TS2339: Property 'type' does not exist on type 'MediaPopupSelectedFile'.
+  Property 'type' does not exist on type 'MediaPopupExisting'.
+app/blocks/src/create-post/components/product-fields/variations/VariationRow.tsx(265,20): error TS2339: Property 'preview' does not exist on type 'MediaPopupSelectedFile'.
+  Property 'preview' does not exist on type 'MediaPopupExisting'.
+app/blocks/src/create-post/components/product-fields/VariationsField.tsx(60,8): error TS2739: Type 'VoxelFieldProps' is missing the following properties from type 'VariationsFieldConfig': attributeList, variations
+app/blocks/src/create-post/frontend.tsx(109,3): error TS2687: All declarations of 'wp' must have identical modifiers.
+app/blocks/src/create-post/frontend.tsx(109,3): error TS2717: Subsequent property declarations must have the same type.  Property 'wp' must be of type 'WPGlobal', but here has type '{ element: { createRoot: (container: Element) => { render: (element: ReactNode) => void; unmount: () => void; }; }; }'.
+app/blocks/src/create-post/frontend.tsx(122,48): error TS2307: Cannot find module '@shared/utils/siteUrl' or its corresponding type declarations.
+app/blocks/src/create-post/hooks/useConditions.ts(11,15): error TS2305: Module '"../types"' has no exported member 'CreatePostField'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(82,32): error TS2307: Cannot find module '@shared/utils/siteUrl' or its corresponding type declarations.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(84,34): error TS2307: Cannot find module '@shared/controls/EmptyPlaceholder' or its corresponding type declarations.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(479,7): error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(496,6): error TS2367: This comparison appears to be unintentional because the types '{ amount?: number; }' and '""' have no overlap.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(527,24): error TS2352: Conversion of type 'string[] | number[] | FieldValue[]' to type 'FileObject[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'FieldValue[]' is not comparable to type 'FileObject[]'.
+    Type 'FieldValue' is not comparable to type 'FileObject'.
+      Property 'source' is missing in type 'Record<string, unknown>' but required in type 'FileObject'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(585,16): error TS2345: Argument of type 'number | boolean | FieldValue[] | Record<string, unknown>' is not assignable to parameter of type 'number'.
+  Type 'boolean' is not assignable to type 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(586,44): error TS2365: Operator '<' cannot be applied to types 'number | boolean | FieldValue[] | Record<string, unknown>' and 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(589,44): error TS2365: Operator '>' cannot be applied to types 'number | boolean | FieldValue[] | Record<string, unknown>' and 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(598,36): error TS2365: Operator '<' cannot be applied to types 'number' and 'unknown'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(605,3): error TS2322: Type '{ errors: string[]; } | {}' is not assignable to type '{ errors: string[]; }'.
+  Property 'errors' is missing in type '{}' but required in type '{ errors: string[]; }'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(661,16): error TS2345: Argument of type 'number | boolean | FieldValue[] | Record<string, unknown>' is not assignable to parameter of type 'number'.
+  Type 'boolean' is not assignable to type 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(662,44): error TS2365: Operator '<' cannot be applied to types 'number | boolean | FieldValue[] | Record<string, unknown>' and 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(665,44): error TS2365: Operator '>' cannot be applied to types 'number | boolean | FieldValue[] | Record<string, unknown>' and 'number'.
+app/blocks/src/create-post/shared/CreatePostForm.tsx(677,4): error TS2322: Type '{ errors: string[]; } | {}' is not assignable to type '{ errors: string[]; }'.
+  Property 'errors' is missing in type '{}' but required in type '{ errors: string[]; }'.
+app/blocks/src/create-post/shared/FormHeader.tsx(6,44): error TS2459: Module '"../types"' declares 'IconValue' locally, but it is not exported.
+app/blocks/src/create-post/shared/index.ts(10,36): error TS2459: Module '"./CreatePostForm"' declares 'SubmissionResult' locally, but it is not exported.
+app/blocks/src/create-post/types.ts(180,32): error TS2307: Cannot find module '@shared/types' or its corresponding type declarations.
+app/blocks/src/create-post/types.ts(181,46): error TS2307: Cannot find module '@shared/utils' or its corresponding type declarations.
+app/blocks/src/create-post/utils/iconRenderer.tsx(6,15): error TS2459: Module '"../types"' declares 'IconValue' locally, but it is not exported.
+app/blocks/src/create-post/utils/iconToHtml.ts(12,15): error TS2459: Module '"../types"' declares 'IconValue' locally, but it is not exported.

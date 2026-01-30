@@ -161,6 +161,8 @@ export interface TimelineStrings {
 	delete_confirm: string;
 	delete_comment_confirm: string;
 	is_deleting: string; // Added missing string
+	cancel?: string;
+	update?: string;
 
 	// Validation
 	content_too_short: string;
@@ -198,6 +200,7 @@ export interface CurrentPost {
 	display_name: string;
 	avatar_url: string;
 	link: string;
+	post_type?: string; // Post type key for review config lookup
 }
 
 /**
@@ -218,7 +221,9 @@ export interface TimelineConfig {
 	post_types: StatusPostType[];
 	character_limits: CharacterLimits;
 	upload_config: UploadConfig;
-	review_config: TimelineReviewConfig | null;
+	// Review config is a map of post_type -> ReviewConfig
+	// Matches Voxel's $root.config.reviews structure
+	review_config: Record<string, import('./status').ReviewConfig> | null;
 
 	// Feed settings
 	feed_modes: FeedModeConfig[];

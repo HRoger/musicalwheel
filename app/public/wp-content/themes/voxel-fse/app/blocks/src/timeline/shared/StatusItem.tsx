@@ -40,6 +40,7 @@ import { QuotedStatus } from './QuotedStatus';
 import { DropdownList } from './DropdownList';
 import { CommentFeed } from './CommentFeed';
 import { StatusComposer } from './StatusComposer';
+import { QuoteComposer } from './QuoteComposer';
 import type { Status } from '../types';
 
 /**
@@ -49,6 +50,7 @@ interface StatusItemProps {
 	status: Status;
 	onStatusUpdate?: (status: Status) => void;
 	onStatusDelete?: (statusId: number) => void;
+	onQuote?: (quotedStatus: Status) => void;
 	repostedBy?: Status;
 	isQuoted?: boolean;
 	className?: string;
@@ -73,6 +75,7 @@ export function StatusItem({
 	status,
 	onStatusUpdate,
 	onStatusDelete,
+	onQuote,
 	repostedBy,
 	isQuoted = false,
 	className = '',
@@ -89,6 +92,7 @@ export function StatusItem({
 	// Dropdown menu state
 	const [showActions, setShowActions] = useState(false);
 	const [showRepost, setShowRepost] = useState(false);
+	const [showQuoteBox, setShowQuoteBox] = useState(false);
 	const [showComments, setShowComments] = useState(false);
 	const [focusComposer, setFocusComposer] = useState(false); // Whether to focus composer when opening
 
@@ -542,7 +546,16 @@ export function StatusItem({
 									</a>
 								</li>
 								<li>
-									<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); setShowRepost(false); }}>
+									<a href="#" className="flexify" onClick={(e) => {
+										e.preventDefault();
+										setShowRepost(false);
+										// Open quote composer (matches Voxel's quoteStatus() behavior)
+										if (!(window as any).Voxel_Config?.is_logged_in) {
+											(window as any).Voxel?.authRequired?.();
+											return;
+										}
+										setShowQuoteBox(true);
+									}}>
 										<span>{l10n.quote ?? 'Quote'}</span>
 									</a>
 								</li>
@@ -552,8 +565,17 @@ export function StatusItem({
 				)}
 			</div>
 
-			{/* Quote composer - when quoting */}
-			{/* TODO: Implement quote composer */}
+			{/* Quote composer - when quoting (matches Voxel's showQuoteBox behavior) */}
+			{showQuoteBox && (
+				<QuoteComposer
+					quoteOf={status}
+					onQuotePublished={(quotedStatus) => {
+						setShowQuoteBox(false);
+						onQuote?.(quotedStatus);
+					}}
+					onCancel={() => setShowQuoteBox(false)}
+				/>
+			)}
 
 			{/* Comment feed - when showing comments */}
 			{showComments && (

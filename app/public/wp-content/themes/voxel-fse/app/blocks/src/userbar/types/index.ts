@@ -460,8 +460,32 @@ export interface GlobalVoxelFSEUser {
 	id: number;
 }
 
+/**
+ * VX_Cart global interface - exposed for external scripts
+ * Reference: voxel-user-bar.beautified.js line 210 (window.VX_Cart = this)
+ */
+export interface VXCartGlobal {
+	/** Open the cart popup */
+	open: () => void;
+	/** Refresh cart items from server */
+	getItems: () => void;
+	/** Check if cart has items */
+	hasItems: () => boolean;
+	/** Get subtotal */
+	getSubtotal: () => number;
+	/** Whether cart is currently loading */
+	loading: boolean;
+	/** Whether cart is loaded */
+	loaded: boolean;
+	/** Current cart items */
+	items: Record<string, CartItem> | null;
+	/** Checkout link */
+	checkout_link: string;
+}
+
 declare global {
 	interface Window {
 		VoxelFSEUser?: GlobalVoxelFSEUser;
+		VX_Cart?: VXCartGlobal;
 	}
 }

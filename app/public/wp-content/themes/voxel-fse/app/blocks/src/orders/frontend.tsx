@@ -18,6 +18,9 @@
  * ✅ Content truncation with HTML preservation
  * ✅ Promotion cancellation (cancelPromotion)
  * ✅ ItemPromotionDetails component
+ * ✅ Voxel.prompt() styled confirmation dialogs (with native fallback)
+ * ✅ Actions dropdown blur after execution
+ * ✅ Voxel.helpers.currencyFormat (with Intl.NumberFormat fallback)
  *
  * ARCHITECTURAL NOTES:
  * - Uses REST API endpoints (future Next.js compatible)

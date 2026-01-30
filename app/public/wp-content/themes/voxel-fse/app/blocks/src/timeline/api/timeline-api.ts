@@ -170,13 +170,47 @@ export async function toggleRepost(statusId: number, nonce: string): Promise<Rep
 
 /**
  * Quote a status (create new status that quotes another)
- * Voxel action: timeline/v2/status.quote
+ * Uses Voxel's native AJAX endpoint: /?vx=1&action=timeline/v2/status.quote
+ *
+ * NOTE: Voxel expects complex data as a JSON-encoded string in the 'data' parameter.
+ * See: timeline-composer.beautified.js lines 371-396
+ *
+ * @param payload - Quote payload (quote_of, content, files)
+ * @param nonce - The timeline nonce (from config.nonces.status_quote or status_publish)
  */
 export async function quoteStatus(payload: QuoteStatusPayload): Promise<Status> {
 	return voxelPost<Status>(`${API_NAMESPACE}/status/${payload.quote_of}/quote`, {
 		content: payload.content,
 		files: payload.files,
 	});
+}
+
+/**
+ * Quote a status via Voxel's native AJAX (recommended)
+ * Uses Voxel's native AJAX endpoint: /?vx=1&action=timeline/v2/status.quote
+ *
+ * NOTE: Voxel expects complex data as a JSON-encoded string in the 'data' parameter.
+ * See: timeline-composer.beautified.js lines 371-396
+ *
+ * @param payload - Quote payload (quote_of, content, files)
+ * @param nonce - The timeline nonce (from config.nonces.status_quote or status_publish)
+ */
+export async function quoteStatusApi(
+	payload: QuoteStatusPayload,
+	nonce: string
+): Promise<Status> {
+	// Voxel expects: data=JSON.stringify({status_id, content, files})
+	const dataPayload = {
+		status_id: payload.quote_of,
+		content: payload.content,
+		files: payload.files ?? [],
+	};
+
+	const response = await voxelAjaxPost<{ status: Status; message?: string }>('timeline/v2/status.quote', {
+		data: JSON.stringify(dataPayload),
+		_wpnonce: nonce,
+	});
+	return response.status;
 }
 
 /**

@@ -429,7 +429,30 @@ export class VxMap {
      * Initialize the map (must be called after Voxel.Maps is ready)
      */
     async init(): Promise<void> {
+        console.log('[VxMap] init() called');
         const Maps = await waitForVoxelMaps();
+        console.log('[VxMap] Got Voxel.Maps:', Maps);
+        console.log('[VxMap] Maps.Map constructor:', Maps.Map);
+
+        // CRITICAL: Ensure container has dimensions BEFORE creating map
+        // Google Maps v3.62+ uses lazy rendering and won't render tiles
+        // if the container has 0 dimensions at creation time
+        const computedStyle = window.getComputedStyle(this._el);
+        const containerRect = this._el.getBoundingClientRect();
+        console.log('[VxMap] Container dimensions BEFORE map creation:', {
+            width: containerRect.width,
+            height: containerRect.height,
+            display: computedStyle.display,
+            visibility: computedStyle.visibility,
+            offsetParent: this._el.offsetParent ? 'exists' : 'null',
+            styleHeight: this._el.style.height,
+        });
+
+        // If container has no height, set a minimum height
+        if (containerRect.height === 0) {
+            console.log('[VxMap] WARNING: Container has 0 height! Setting fallback height of 400px');
+            this._el.style.height = '400px';
+        }
 
         const centerLatLng = this._options.center
             ? new Maps.LatLng(
@@ -440,15 +463,72 @@ export class VxMap {
                   getDefaultMapConfig().lat,
                   getDefaultMapConfig().lng
               );
+        console.log('[VxMap] centerLatLng created:', centerLatLng);
 
-        this._native = new Maps.Map({
+        const mapOptions = {
             el: this._el,
             zoom: this._options.zoom ?? 10,
             center: centerLatLng,
             minZoom: this._options.minZoom ?? 2,
             maxZoom: this._options.maxZoom ?? 20,
             draggable: this._options.draggable ?? true,
-        });
+        };
+        console.log('[VxMap] About to call new Maps.Map() with:', mapOptions);
+
+        try {
+            this._native = new Maps.Map(mapOptions);
+            console.log('[VxMap] Maps.Map created successfully:', this._native);
+            console.log('[VxMap] Native map object:', this._native?.map);
+            console.log('[VxMap] Container after init:', this._el.innerHTML.substring(0, 200));
+
+            // Add ts-map-loaded class to container (matches Voxel behavior)
+            this._el.classList.add('ts-map-loaded');
+            // Also attach instance to element (matches Voxel behavior: el.__vx_map__ = this)
+            (this._el as any).__vx_map__ = this._native;
+
+            // CRITICAL: Trigger resize event to force Google Maps to render tiles
+            // Google Maps v3.62+ uses lazy rendering and may not render tiles until
+            // the map is visible and has proper dimensions
+            const googleMap = this._native?.map;
+            if (googleMap && typeof google !== 'undefined' && google.maps?.event) {
+                console.log('[VxMap] Triggering resize event sequence...');
+
+                // First, force a layout recalculation
+                void this._el.offsetHeight;
+
+                // Then trigger resize immediately
+                google.maps.event.trigger(googleMap, 'resize');
+
+                // Use requestAnimationFrame to ensure DOM is painted
+                requestAnimationFrame(() => {
+                    // Trigger resize again after paint
+                    google.maps.event.trigger(googleMap, 'resize');
+
+                    // Force center to be re-set (this can trigger tile loading)
+                    const center = googleMap.getCenter();
+                    if (center) {
+                        googleMap.setCenter(center);
+                    }
+
+                    // Trigger bounds_changed and idle events
+                    setTimeout(() => {
+                        google.maps.event.trigger(googleMap, 'bounds_changed');
+                        google.maps.event.trigger(googleMap, 'idle');
+                        console.log('[VxMap] Resize sequence completed');
+
+                        // Log final container state
+                        const finalRect = this._el.getBoundingClientRect();
+                        console.log('[VxMap] Container dimensions AFTER resize:', {
+                            width: finalRect.width,
+                            height: finalRect.height,
+                        });
+                    }, 100);
+                });
+            }
+        } catch (err) {
+            console.error('[VxMap] Error creating Maps.Map:', err);
+            throw err;
+        }
     }
 
     setZoom(zoom: number): void {

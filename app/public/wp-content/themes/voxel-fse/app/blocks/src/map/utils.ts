@@ -22,8 +22,9 @@ import type {
  */
 export function buildVxConfig(attributes: MapAttributes): MapVxConfig {
     return {
+        blockId: attributes['blockId'] as string, // Map's own ID for event targeting
         source: attributes['source'] as MapSource,
-        searchFormId: attributes['searchFormId'] as string,
+        searchFormId: attributes['searchFormId'] as string, // ID of linked search form (for reference)
         dragSearch: attributes['dragSearch'] as boolean,
         dragSearchMode: attributes['dragSearchMode'] as DragSearchMode,
         dragSearchDefault: attributes['dragSearchDefault'] as DragSearchDefault,
@@ -568,6 +569,7 @@ export function normalizeConfig(raw: Record<string, any>): MapVxConfig {
     };
 
     return {
+        blockId: String(raw['blockId'] || raw['block_id'] || ''), // Map's own ID for event targeting
         source: (raw['source'] || 'search-form') as MapSource,
         center,
         zoom: Number(raw['zoom'] || raw['initialZoom'] || 11),
@@ -576,7 +578,7 @@ export function normalizeConfig(raw: Record<string, any>): MapVxConfig {
         dragSearch: raw['dragSearch'] !== undefined ? Boolean(raw['dragSearch']) : (raw['drag_search'] !== undefined ? Boolean(raw['drag_search']) : true),
         dragSearchMode: (raw['dragSearchMode'] || raw['drag_search_mode'] || 'manual') as DragSearchMode,
         dragSearchDefault: (raw['dragSearchDefault'] || raw['drag_search_default'] || 'unchecked') as DragSearchDefault,
-        searchFormId: String(raw['searchFormId'] || raw['search_form_id'] || ''),
+        searchFormId: String(raw['searchFormId'] || raw['search_form_id'] || ''), // ID of linked search form
         styles: {
             height: normalizeResponsive(rawStyles['height'] || rawStyles['mapHeight'], 400),
             heightUnit: String(rawStyles['heightUnit'] || rawStyles['height_unit'] || 'px'),

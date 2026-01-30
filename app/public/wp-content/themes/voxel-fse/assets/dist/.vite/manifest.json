@@ -1,0 +1,1079 @@
+{
+  "_AdvancedIconControl-BPdxcRLY.js": {
+    "file": "AdvancedIconControl-BPdxcRLY.js",
+    "name": "AdvancedIconControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_BackgroundControl-CJYnO3jL.js": {
+    "file": "BackgroundControl-CJYnO3jL.js",
+    "name": "BackgroundControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_GalleryUploadControl-BiHnGe6_.js"
+    ]
+  },
+  "_CssFiltersPopup-CZrgCBRb.js": {
+    "file": "CssFiltersPopup-CZrgCBRb.js",
+    "name": "CssFiltersPopup",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_DatePicker-NCeMpzfF.js": {
+    "file": "DatePicker-NCeMpzfF.js",
+    "name": "DatePicker"
+  },
+  "_EmptyPlaceholder-CZuftqhV.js": {
+    "file": "EmptyPlaceholder-CZuftqhV.js",
+    "name": "EmptyPlaceholder"
+  },
+  "_FormPopup-DDYHzYWU.js": {
+    "file": "FormPopup-DDYHzYWU.js",
+    "name": "FormPopup"
+  },
+  "_GalleryUploadControl-BiHnGe6_.js": {
+    "file": "GalleryUploadControl-BiHnGe6_.js",
+    "name": "GalleryUploadControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_IconPickerControl-DZSJ-4aK.js": {
+    "file": "IconPickerControl-DZSJ-4aK.js",
+    "name": "IconPickerControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_InspectorTabs-DmdaThza.js": {
+    "file": "InspectorTabs-DmdaThza.js",
+    "name": "InspectorTabs",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_LoopElementModal-CaevVMh1.js": {
+    "file": "LoopElementModal-CaevVMh1.js",
+    "name": "LoopElementModal"
+  },
+  "_MediaPopup-CXePoOCG.js": {
+    "file": "MediaPopup-CXePoOCG.js",
+    "name": "MediaPopup",
+    "imports": [
+      "_FormPopup-DDYHzYWU.js"
+    ]
+  },
+  "_PopupCustomStyleControl-DvCsFGfS.js": {
+    "file": "PopupCustomStyleControl-DvCsFGfS.js",
+    "name": "PopupCustomStyleControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_RepeaterControl-BJok1GGr.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "_PostSelectControl-CwUQHJkX.js": {
+    "file": "PostSelectControl-CwUQHJkX.js",
+    "name": "PostSelectControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_RelationControl-JoVYYjAo.js": {
+    "file": "RelationControl-JoVYYjAo.js",
+    "name": "RelationControl",
+    "imports": [
+      "_RepeaterControl-BJok1GGr.js"
+    ]
+  },
+  "_RepeaterControl-BJok1GGr.js": {
+    "file": "RepeaterControl-BJok1GGr.js",
+    "name": "RepeaterControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ],
+    "css": [
+      "RepeaterControl.css"
+    ]
+  },
+  "_RepeaterControl-xj2PJ-Sc.js": {
+    "file": "RepeaterControl-xj2PJ-Sc.js",
+    "name": "RepeaterControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_RepeaterControl-BJok1GGr.js"
+    ]
+  },
+  "_RepeaterControl.css": {
+    "file": "RepeaterControl.css",
+    "src": "_RepeaterControl.css"
+  },
+  "_ResponsiveDimensionsControl-CZ2u4xxQ.js": {
+    "file": "ResponsiveDimensionsControl-CZ2u4xxQ.js",
+    "name": "ResponsiveDimensionsControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_ResponsiveSelectControl-C3rlOT6O.js": {
+    "file": "ResponsiveSelectControl-C3rlOT6O.js",
+    "name": "ResponsiveSelectControl",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_SearchFormComponent-Dq9FJbtp.js": {
+    "file": "SearchFormComponent-Dq9FJbtp.js",
+    "name": "SearchFormComponent",
+    "imports": [
+      "_siteUrl-7x5eJEvc.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_DatePicker-NCeMpzfF.js"
+    ]
+  },
+  "_StyleTabPanel-BnA2rBs5.js": {
+    "file": "StyleTabPanel-BnA2rBs5.js",
+    "name": "StyleTabPanel"
+  },
+  "_TextShadowPopup-CPxXZkC0.js": {
+    "file": "TextShadowPopup-CPxXZkC0.js",
+    "name": "TextShadowPopup",
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js"
+    ]
+  },
+  "_TypographyPopup-BXz72zyZ.js": {
+    "file": "TypographyPopup-BXz72zyZ.js",
+    "name": "TypographyPopup",
+    "css": [
+      "TypographyPopup.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "_TypographyPopup.css": {
+    "file": "TypographyPopup.css",
+    "src": "_TypographyPopup.css"
+  },
+  "_VoxelGridIcon-D5dF5acW.js": {
+    "file": "VoxelGridIcon-D5dF5acW.js",
+    "name": "VoxelGridIcon"
+  },
+  "_backgroundElements-Ui-iCrLV.js": {
+    "file": "backgroundElements-Ui-iCrLV.js",
+    "name": "backgroundElements"
+  },
+  "_css-generators-C6r5Gcv6.js": {
+    "file": "css-generators-C6r5Gcv6.js",
+    "name": "css-generators"
+  },
+  "_enable-tags-button.css": {
+    "file": "enable-tags-button.css",
+    "src": "_enable-tags-button.css"
+  },
+  "_generateAdvancedStyles-CRpLcHXt.js": {
+    "file": "generateAdvancedStyles-CRpLcHXt.js",
+    "name": "generateAdvancedStyles"
+  },
+  "_generateVoxelStyles-oZeaeuKH.js": {
+    "file": "generateVoxelStyles-oZeaeuKH.js",
+    "name": "generateVoxelStyles"
+  },
+  "_iconDefaults-4kDCIhgb.js": {
+    "file": "iconDefaults-4kDCIhgb.js",
+    "name": "iconDefaults"
+  },
+  "_renderIcon-BvG46iB6.js": {
+    "file": "renderIcon-BvG46iB6.js",
+    "name": "renderIcon"
+  },
+  "_siteUrl-7x5eJEvc.js": {
+    "file": "siteUrl-7x5eJEvc.js",
+    "name": "siteUrl"
+  },
+  "_useAdvancedTabProps-BnJDQbKr.js": {
+    "file": "useAdvancedTabProps-BnJDQbKr.js",
+    "name": "useAdvancedTabProps",
+    "imports": [
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ]
+  },
+  "_voxelIcons-DHmdKhqs.js": {
+    "file": "voxelIcons-DHmdKhqs.js",
+    "name": "voxelIcons"
+  },
+  "_voxelShim-DB_Ue-9R.js": {
+    "file": "voxelShim-DB_Ue-9R.js",
+    "name": "voxelShim"
+  },
+  "app/blocks/shared/controls/shared-styles.ts": {
+    "file": "shared-controls.js",
+    "name": "shared-controls",
+    "src": "app/blocks/shared/controls/shared-styles.ts",
+    "isEntry": true,
+    "css": [
+      "shared-controls.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/shared/voxel-commons.ts": {
+    "file": "voxel-commons.js",
+    "name": "voxel-commons",
+    "src": "app/blocks/shared/voxel-commons.ts",
+    "isEntry": true
+  },
+  "app/blocks/src/advanced-list/index.tsx": {
+    "file": "advanced-list/index.js",
+    "name": "advanced-list/index",
+    "src": "app/blocks/src/advanced-list/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_LoopElementModal-CaevVMh1.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index9.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/cart-summary/index.tsx": {
+    "file": "cart-summary/index.js",
+    "name": "cart-summary/index",
+    "src": "app/blocks/src/cart-summary/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_renderIcon-BvG46iB6.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/countdown/index.tsx": {
+    "file": "countdown/index.js",
+    "name": "countdown/index",
+    "src": "app/blocks/src/countdown/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/create-post/index.tsx": {
+    "file": "create-post/index.js",
+    "name": "create-post/index",
+    "src": "app/blocks/src/create-post/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_DatePicker-NCeMpzfF.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_siteUrl-7x5eJEvc.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_PopupCustomStyleControl-DvCsFGfS.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/current-plan/index.tsx": {
+    "file": "current-plan/index.js",
+    "name": "current-plan/index",
+    "src": "app/blocks/src/current-plan/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_backgroundElements-Ui-iCrLV.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/current-role/index.tsx": {
+    "file": "current-role/index.js",
+    "name": "current-role/index",
+    "src": "app/blocks/src/current-role/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_generateAdvancedStyles-CRpLcHXt.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/flex-container/index.tsx": {
+    "file": "flex-container/index.js",
+    "name": "flex-container/index",
+    "src": "app/blocks/src/flex-container/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_BackgroundControl-CJYnO3jL.js",
+      "_CssFiltersPopup-CZrgCBRb.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_GalleryUploadControl-BiHnGe6_.js"
+    ],
+    "css": [
+      "index14.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/gallery/index.tsx": {
+    "file": "gallery/index.js",
+    "name": "gallery/index",
+    "src": "app/blocks/src/gallery/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_GalleryUploadControl-BiHnGe6_.js",
+      "_ResponsiveSelectControl-C3rlOT6O.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/image/index.tsx": {
+    "file": "image/index.js",
+    "name": "image/index",
+    "src": "app/blocks/src/image/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_TextShadowPopup-CPxXZkC0.js",
+      "_CssFiltersPopup-CZrgCBRb.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_VoxelGridIcon-D5dF5acW.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/listing-plans/index.tsx": {
+    "file": "listing-plans/index.js",
+    "name": "listing-plans/index",
+    "src": "app/blocks/src/listing-plans/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_VoxelGridIcon-D5dF5acW.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/login/index.tsx": {
+    "file": "login/index.js",
+    "name": "login/index",
+    "src": "app/blocks/src/login/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_renderIcon-BvG46iB6.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js",
+      "_css-generators-C6r5Gcv6.js",
+      "_backgroundElements-Ui-iCrLV.js"
+    ],
+    "css": [
+      "index12.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/map/index.tsx": {
+    "file": "map/index.js",
+    "name": "map/index",
+    "src": "app/blocks/src/map/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_RelationControl-JoVYYjAo.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/membership-plans/index.tsx": {
+    "file": "membership-plans/index.js",
+    "name": "membership-plans/index",
+    "src": "app/blocks/src/membership-plans/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_VoxelGridIcon-D5dF5acW.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/messages/index.tsx": {
+    "file": "messages/index.js",
+    "name": "messages/index",
+    "src": "app/blocks/src/messages/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_MediaPopup-CXePoOCG.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_BackgroundControl-CJYnO3jL.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js",
+      "_GalleryUploadControl-BiHnGe6_.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/navbar/index.tsx": {
+    "file": "navbar/index.js",
+    "name": "navbar/index",
+    "src": "app/blocks/src/navbar/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_FormPopup-DDYHzYWU.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_iconDefaults-4kDCIhgb.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_RelationControl-JoVYYjAo.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_PopupCustomStyleControl-DvCsFGfS.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/nested-accordion/index.tsx": {
+    "file": "nested-accordion/index.js",
+    "name": "nested-accordion/index",
+    "src": "app/blocks/src/nested-accordion/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_LoopElementModal-CaevVMh1.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_TextShadowPopup-CPxXZkC0.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/nested-tabs/index.tsx": {
+    "file": "nested-tabs/index.js",
+    "name": "nested-tabs/index",
+    "src": "app/blocks/src/nested-tabs/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_ResponsiveSelectControl-C3rlOT6O.js",
+      "_LoopElementModal-CaevVMh1.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_TextShadowPopup-CPxXZkC0.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index3.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/orders/index.tsx": {
+    "file": "orders/index.js",
+    "name": "orders/index",
+    "src": "app/blocks/src/orders/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_iconDefaults-4kDCIhgb.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/popup-kit/index.tsx": {
+    "file": "popup-kit/index.js",
+    "name": "popup-kit/index",
+    "src": "app/blocks/src/popup-kit/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_VoxelGridIcon-D5dF5acW.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/post-feed/index.tsx": {
+    "file": "post-feed/index.js",
+    "name": "post-feed/index",
+    "src": "app/blocks/src/post-feed/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_RelationControl-JoVYYjAo.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/print-template/index.tsx": {
+    "file": "print-template/index.js",
+    "name": "print-template/index",
+    "src": "app/blocks/src/print-template/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_PostSelectControl-CwUQHJkX.js",
+      "_siteUrl-7x5eJEvc.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_SearchFormComponent-Dq9FJbtp.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_DatePicker-NCeMpzfF.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index2.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/product-form/index.tsx": {
+    "file": "product-form/index.js",
+    "name": "product-form/index",
+    "src": "app/blocks/src/product-form/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index13.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/product-price/index.tsx": {
+    "file": "product-price/index.js",
+    "name": "product-price/index",
+    "src": "app/blocks/src/product-price/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/quick-search/index.tsx": {
+    "file": "quick-search/index.js",
+    "name": "quick-search/index",
+    "src": "app/blocks/src/quick-search/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_siteUrl-7x5eJEvc.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_PostSelectControl-CwUQHJkX.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_PopupCustomStyleControl-DvCsFGfS.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index10.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/review-stats/index.tsx": {
+    "file": "review-stats/index.js",
+    "name": "review-stats/index",
+    "src": "app/blocks/src/review-stats/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index4.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/ring-chart/index.tsx": {
+    "file": "ring-chart/index.js",
+    "name": "ring-chart/index",
+    "src": "app/blocks/src/ring-chart/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_InspectorTabs-DmdaThza.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/sales-chart/index.tsx": {
+    "file": "sales-chart/index.js",
+    "name": "sales-chart/index",
+    "src": "app/blocks/src/sales-chart/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_BackgroundControl-CJYnO3jL.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_css-generators-C6r5Gcv6.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_GalleryUploadControl-BiHnGe6_.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index7.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/search-form/index.tsx": {
+    "file": "search-form/index.js",
+    "name": "search-form/index",
+    "src": "app/blocks/src/search-form/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_SearchFormComponent-Dq9FJbtp.js",
+      "_TypographyPopup-BXz72zyZ.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_RelationControl-JoVYYjAo.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_StyleTabPanel-BnA2rBs5.js",
+      "_PopupCustomStyleControl-DvCsFGfS.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_siteUrl-7x5eJEvc.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_DatePicker-NCeMpzfF.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/slider/index.tsx": {
+    "file": "slider/index.js",
+    "name": "slider/index",
+    "src": "app/blocks/src/slider/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_GalleryUploadControl-BiHnGe6_.js",
+      "_ResponsiveSelectControl-C3rlOT6O.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index11.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/stripe-account/index.tsx": {
+    "file": "stripe-account/index.js",
+    "name": "stripe-account/index",
+    "src": "app/blocks/src/stripe-account/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_css-generators-C6r5Gcv6.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/term-feed/index.tsx": {
+    "file": "term-feed/index.js",
+    "name": "term-feed/index",
+    "src": "app/blocks/src/term-feed/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_voxelIcons-DHmdKhqs.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/timeline-kit/index.tsx": {
+    "file": "timeline-kit/index.js",
+    "name": "timeline-kit/index",
+    "src": "app/blocks/src/timeline-kit/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/timeline/index.tsx": {
+    "file": "timeline/index.js",
+    "name": "timeline/index",
+    "src": "app/blocks/src/timeline/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_siteUrl-7x5eJEvc.js",
+      "_MediaPopup-CXePoOCG.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index5.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/userbar/index.tsx": {
+    "file": "userbar/index.js",
+    "name": "userbar/index",
+    "src": "app/blocks/src/userbar/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_LoopElementModal-CaevVMh1.js",
+      "_RepeaterControl-xj2PJ-Sc.js",
+      "_PopupCustomStyleControl-DvCsFGfS.js",
+      "_FormPopup-DDYHzYWU.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/visit-chart/index.tsx": {
+    "file": "visit-chart/index.js",
+    "name": "visit-chart/index",
+    "src": "app/blocks/src/visit-chart/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_BackgroundControl-CJYnO3jL.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js",
+      "_GalleryUploadControl-BiHnGe6_.js"
+    ],
+    "css": [
+      "index8.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "app/blocks/src/work-hours/index.tsx": {
+    "file": "work-hours/index.js",
+    "name": "work-hours/index",
+    "src": "app/blocks/src/work-hours/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_InspectorTabs-DmdaThza.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_EmptyPlaceholder-CZuftqhV.js",
+      "_AdvancedIconControl-BPdxcRLY.js",
+      "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
+      "_voxelShim-DB_Ue-9R.js",
+      "_useAdvancedTabProps-BnJDQbKr.js",
+      "_backgroundElements-Ui-iCrLV.js",
+      "_VoxelGridIcon-D5dF5acW.js",
+      "_generateAdvancedStyles-CRpLcHXt.js",
+      "_generateVoxelStyles-oZeaeuKH.js"
+    ],
+    "css": [
+      "index6.css",
+      "enable-tags-button.css"
+    ]
+  },
+  "templates/backend/admin-icon-picker/index.tsx": {
+    "file": "admin-icon-picker.js",
+    "name": "admin-icon-picker",
+    "src": "templates/backend/admin-icon-picker/index.tsx",
+    "isEntry": true,
+    "imports": [
+      "_TypographyPopup-BXz72zyZ.js",
+      "_RepeaterControl-BJok1GGr.js",
+      "_IconPickerControl-DZSJ-4aK.js"
+    ],
+    "css": [
+      "enable-tags-button.css"
+    ]
+  }
+}
