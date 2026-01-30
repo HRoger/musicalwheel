@@ -12,13 +12,11 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { Placeholder, Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import SearchFormComponent from './shared/SearchFormComponent';
 import { usePostTypes } from './hooks/usePostTypes';
 import { ContentTab, GeneralTab, InlineTab } from './inspector';
 import InspectorTabs from '@shared/controls/InspectorTabs';
-import AdvancedTab from '@shared/controls/AdvancedTab';
-import { VoxelTab } from '@shared/controls';
 import {
 	generateAdvancedStyles,
 	generateAdvancedResponsiveCSS,
@@ -107,8 +105,35 @@ export default function Edit({
 	// Pass filterLists to usePostTypes for proper 1:1 Voxel parity
 	// This allows the PHP controller to set filter values and resets_to
 	// Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
+	// Pass filterLists to usePostTypes for proper 1:1 Voxel parity
+	// This allows the PHP controller to set filter values and resets_to
+	// Evidence: themes/voxel/app/widgets/search-form.php:4192-4203
+	//
+	// CRITICAL FIX: We strip style props to prevent refetching/re-rendering
+	// when style controls (slider, popup width) change. This fixes sidebar scroll jumps.
+	const stableFilterConfigs = useMemo(() => {
+		const result: Record<string, any[]> = {};
+		if (!attributes.filterLists) return result;
+
+		Object.entries(attributes.filterLists).forEach(([postTypeKey, filters]) => {
+			if (Array.isArray(filters)) {
+				result[postTypeKey] = filters.map(f => ({
+					filterKey: f.filterKey,
+					defaultValue: f.defaultValue,
+					defaultValueEnabled: f.defaultValueEnabled,
+					resetValue: f.resetValue,
+					// Include type to ensure we have it, though API mostly needs keys
+					type: f.type,
+					// Include ID for potential future use (parity with attributes)
+					id: f.id,
+				}));
+			}
+		});
+		return result;
+	}, [attributes.filterLists]);
+
 	const { postTypes, isLoading, error } = usePostTypes({
-		filterConfigs: attributes.filterLists,
+		filterConfigs: stableFilterConfigs,
 	});
 
 	// Generate stable block ID on mount if not set
@@ -144,18 +169,19 @@ export default function Edit({
 	// Evidence: popup-kit/edit.tsx uses same pattern
 	const normalizedDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
-	// CRITICAL: useMemo must be called BEFORE any early returns to satisfy React's rules of hooks
-	// All hooks must run on every render in the same order - early returns would skip this hook
-	// causing React error #310 "Invalid hook call"
+	// CRITICAL: Memoize tabs configuration to prevent sidebar flickering
+	// The render() functions must use the props passed to them (containing latest attributes)
+	// instead of closing over the 'attributes' variable from the component scope.
+	// This ensures the 'tabs' array remains stable even when attributes change (e.g. slider dragging).
 	const inspectorTabs = useMemo(() => [
 		{
 			id: 'content',
 			label: __('Content', 'voxel-fse'),
 			icon: '\ue92c',
-			render: () => (
+			render: (props: any) => (
 				<ContentTab
-					attributes={attributes}
-					setAttributes={setAttributes}
+					attributes={props.attributes}
+					setAttributes={props.setAttributes}
 					postTypes={postTypes}
 					isLoading={isLoading}
 					clientId={clientId}
@@ -166,10 +192,10 @@ export default function Edit({
 			id: 'general',
 			label: __('General', 'voxel-fse'),
 			icon: '\ue921',
-			render: () => (
+			render: (props: any) => (
 				<GeneralTab
-					attributes={attributes}
-					setAttributes={setAttributes}
+					attributes={props.attributes}
+					setAttributes={props.setAttributes}
 					clientId={clientId}
 				/>
 			),
@@ -178,33 +204,19 @@ export default function Edit({
 			id: 'inline',
 			label: __('Inline', 'voxel-fse'),
 			icon: '\ue921',
-			render: () => (
-				<InlineTab attributes={attributes} setAttributes={setAttributes} />
-			),
-		},
-		{
-			id: 'advanced',
-			label: __('Advanced', 'voxel-fse'),
-			icon: '\ue916',
-			render: () => (
-				<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
-			),
-		},
-		{
-			id: 'voxel',
-			label: __('Voxel', 'voxel-fse'),
-			icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
-			render: () => (
-				<VoxelTab
-					attributes={attributes}
-					setAttributes={setAttributes}
+			render: (props: any) => (
+				<InlineTab
+					attributes={props.attributes}
+					setAttributes={props.setAttributes}
 				/>
 			),
 		},
-	], [attributes, setAttributes, postTypes, isLoading, clientId]);
+	], [postTypes, isLoading, clientId]);
 
-	// If loading post types, show spinner
-	if (isLoading) {
+	// If loading post types (initial load only), show spinner
+	// We keep the component mounted during background refreshes to avoid popup closing
+	// and state resets when modifying inspector controls
+	if (isLoading && postTypes.length === 0) {
 		return (
 			<div {...blockProps}>
 				<Placeholder
@@ -259,23 +271,65 @@ export default function Edit({
 	}
 
 	// Inspector controls with InspectorTabs component
-	const renderInspectorControls = () => (
-		<InspectorControls>
-			<InspectorTabs
-				tabs={inspectorTabs}
-				includeAdvancedTab={false}
-				attributes={attributes}
-				setAttributes={setAttributes}
-				defaultTab="content"
-			/>
-		</InspectorControls>
-	);
+	// Persistence: Store active tab in block attributes to survive device changes
+	//
+	// NOTE: InspectorControls is rendered directly without memoization.
+	// The flickering is caused by WordPress's slot system, not React re-renders.
+	// Our state persistence handles preserving expanded states across remounts.
 
 	// If no post types selected, show placeholder with instructions
 	if (!attributes.postTypes || attributes.postTypes.length === 0) {
 		return (
 			<div {...blockProps}>
-				{renderInspectorControls()}
+				<InspectorControls>
+					<InspectorTabs
+						tabs={[
+							{
+								id: 'content',
+								label: __('Content', 'voxel-fse'),
+								icon: '\ue92c',
+								render: () => (
+									<ContentTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										postTypes={postTypes}
+										isLoading={isLoading}
+										clientId={clientId}
+									/>
+								),
+							},
+							{
+								id: 'general',
+								label: __('General', 'voxel-fse'),
+								icon: '\ue921',
+								render: () => (
+									<GeneralTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										clientId={clientId}
+									/>
+								),
+							},
+							{
+								id: 'inline',
+								label: __('Inline', 'voxel-fse'),
+								icon: '\ue921',
+								render: () => (
+									<InlineTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+									/>
+								),
+							},
+						]}
+						includeAdvancedTab={true}
+						includeVoxelTab={true}
+						attributes={attributes}
+						setAttributes={setAttributes}
+						defaultTab="content"
+						activeTabAttribute="inspectorActiveTab"
+					/>
+				</InspectorControls>
 				<Placeholder
 					icon="search"
 					label={__('Search Form (VX)', 'voxel-fse')}
@@ -299,7 +353,17 @@ export default function Edit({
 			{responsiveCSS && (
 				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
 			)}
-			{renderInspectorControls()}
+			<InspectorControls>
+				<InspectorTabs
+					tabs={inspectorTabs}
+					includeAdvancedTab={true}
+					includeVoxelTab={true}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					defaultTab="content"
+					activeTabAttribute="inspectorActiveTab"
+				/>
+			</InspectorControls>
 
 			{ /* Fully interactive preview - NO ServerSideRender */}
 			<SearchFormComponent

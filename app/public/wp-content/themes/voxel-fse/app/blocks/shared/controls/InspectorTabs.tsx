@@ -14,7 +14,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { __ } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
@@ -28,7 +28,11 @@ export interface TabConfig {
 	label: string;
 	/** Icon character code (eicons) or image URL (starts with http:// or https://) */
 	icon?: string;
-	render: () => ReactNode;
+	/**
+	 * Render function for tab content.
+	 * Can optionally receive attributes and setAttributes for proper re-rendering.
+	 */
+	render: (props?: { attributes?: any; setAttributes?: (attrs: any) => void }) => ReactNode;
 }
 
 export interface InspectorTabsProps {
@@ -90,39 +94,53 @@ export default function InspectorTabs({
 	defaultTab,
 	activeTabAttribute,
 }: InspectorTabsProps) {
-	// Build tabs array, optionally adding AdvancedTab and VoxelTab
-	let allTabs: TabConfig[] = tabs.map(tab => {
-		// Apply standard default icons if not provided
-		if (!tab.icon) {
-			if (tab.id === 'content') return { ...tab, icon: '\ue92c' }; // eicon-edit
-			if (tab.id === 'style') return { ...tab, icon: '\ue921' }; // eicon-paint-brush
+	// Memoize the tabs array to prevent recreation on every render
+	// Only recreate when the tabs prop identity changes
+	// Note: render() functions receive attributes via props from the caller
+	const allTabs = useMemo(() => {
+		// Build tabs array, optionally adding AdvancedTab and VoxelTab
+		const result: TabConfig[] = tabs.map(tab => {
+			// Apply standard default icons if not provided
+			if (!tab.icon) {
+				if (tab.id === 'content') return { ...tab, icon: '\ue92c' }; // eicon-edit
+				if (tab.id === 'style') return { ...tab, icon: '\ue921' }; // eicon-paint-brush
+			}
+			return tab;
+		});
+
+		// Auto-add AdvancedTab if requested
+		// render() receives props from the caller with current attributes
+		if (includeAdvancedTab) {
+			result.push({
+				id: 'advanced',
+				label: __('Advanced', 'voxel-fse'),
+				icon: '\ue916',
+				render: (props) => (
+					<AdvancedTab
+						attributes={props?.attributes}
+						setAttributes={props?.setAttributes}
+					/>
+				),
+			});
 		}
-		return tab;
-	});
 
-	// Auto-add AdvancedTab if requested
-	if (includeAdvancedTab && attributes && setAttributes) {
-		allTabs.push({
-			id: 'advanced',
-			label: __('Advanced', 'voxel-fse'),
-			icon: '\ue916',
-			render: () => (
-				<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
-			),
-		});
-	}
+		// Auto-add VoxelTab if requested (always last)
+		if (includeVoxelTab) {
+			result.push({
+				id: 'voxel',
+				label: __('Voxel', 'voxel-fse'),
+				icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
+				render: (props) => (
+					<VoxelTab
+						attributes={props?.attributes}
+						setAttributes={props?.setAttributes}
+					/>
+				),
+			});
+		}
 
-	// Auto-add VoxelTab if requested (always last)
-	if (includeVoxelTab && attributes && setAttributes) {
-		allTabs.push({
-			id: 'voxel',
-			label: __('Voxel', 'voxel-fse'),
-			icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
-			render: () => (
-				<VoxelTab attributes={attributes} setAttributes={setAttributes} />
-			),
-		});
-	}
+		return result;
+	}, [tabs, includeAdvancedTab, includeVoxelTab]);
 
 	// Get current client ID to key persistence
 	const clientId = useSelect((select) => select('core/block-editor').getSelectedBlockClientId(), []);
@@ -148,11 +166,24 @@ export default function InspectorTabs({
 	});
 
 	// Sync internal state with attributes when they change (e.g. undo/redo)
+	// Also restore from sessionStorage if internal state gets cleared
 	useEffect(() => {
-		if (activeTabAttribute && attributes?.[activeTabAttribute] && attributes[activeTabAttribute] !== internalState) {
-			setInternalState(attributes[activeTabAttribute]);
+		const attrValue = activeTabAttribute ? attributes?.[activeTabAttribute] : undefined;
+
+		// Priority 1: Sync from attributes if they have a value
+		if (activeTabAttribute && attrValue && attrValue !== internalState) {
+			setInternalState(attrValue);
+			return;
 		}
-	}, [activeTabAttribute, attributes?.[activeTabAttribute]]);
+
+		// Priority 2: Restore from sessionStorage if internal state is null but storage has a value
+		if (internalState === null && persistenceKey) {
+			const stored = sessionStorage.getItem(persistenceKey);
+			if (stored && allTabs.some((t) => t.id === stored)) {
+				setInternalState(stored);
+			}
+		}
+	}, [activeTabAttribute, attributes?.[activeTabAttribute], internalState, persistenceKey, allTabs]);
 
 	const activeTab = internalState || defaultTab || allTabs[0]?.id || '';
 
@@ -179,7 +210,7 @@ export default function InspectorTabs({
 	const activeTabConfig = allTabs.find((tab) => tab.id === activeTab);
 
 	return (
-		<>
+		<div className="voxel-fse-inspector-wrapper">
 			{/* Tab navigation */}
 			<div
 				className="voxel-fse-inspector-tabs"
@@ -213,11 +244,18 @@ export default function InspectorTabs({
 				})}
 			</div>
 
-			{/* Tab content */}
-			<div className="voxel-fse-tab-content">{activeTabConfig?.render()}</div>
+			{/* Tab content - render() is called with current attributes to ensure fresh values */}
+			<div className="voxel-fse-tab-content">
+				{activeTabConfig?.render({ attributes, setAttributes })}
+			</div>
 
 			{/* Inline styles */}
 			<style>{`
+				/* Stable wrapper - use display:block to create stable layout context */
+				.voxel-fse-inspector-wrapper {
+					display: block;
+				}
+
 				/* Inspector tabs - Elementor-style horizontal navigation */
 				.voxel-fse-inspector-tabs {
 					display: flex;
@@ -348,6 +386,6 @@ export default function InspectorTabs({
 					padding: 0;
 				}
 			`}</style>
-		</>
+		</div>
 	);
 }

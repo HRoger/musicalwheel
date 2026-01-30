@@ -86,7 +86,12 @@ export interface RoleField {
 	value?: unknown;
 	props?: Record<string, unknown>;
 	_is_auth_field?: boolean;
-	conditions?: FieldCondition[];
+	conditions?: FieldCondition[][]; // Array of AND groups (OR between groups)
+	conditions_behavior?: 'show' | 'hide';
+	step?: string; // For wizard steps
+	validation?: {
+		errors: string[];
+	};
 }
 
 /**
@@ -100,11 +105,55 @@ export interface VisibilityRule {
 
 /**
  * Field condition for conditional logic
+ * Matches Voxel's condition structure from auth.js
  */
 export interface FieldCondition {
-	field: string;
-	compare: string;
-	value: unknown;
+	type: string; // e.g., 'text:equals', 'taxonomy:contains', 'switcher:checked'
+	source: string; // Field key, e.g., 'role' or 'role.key'
+	value?: unknown;
+	_passes?: boolean; // Internal state for condition evaluation
+}
+
+/**
+ * Term for taxonomy fields
+ */
+export interface TaxonomyTerm {
+	id: number;
+	slug: string;
+	label: string;
+	children?: TaxonomyTerm[];
+	parentRef?: TaxonomyTerm | null;
+}
+
+/**
+ * Choice for select/multiselect fields
+ */
+export interface FieldChoice {
+	value: string;
+	label: string;
+	order?: number;
+}
+
+/**
+ * File value structure
+ */
+export interface FileValue {
+	id?: number;
+	_id?: string; // Session ID for new uploads
+	source: 'existing' | 'new_upload';
+	name: string;
+	type: string;
+	size: number;
+	preview?: string;
+	item?: File;
+}
+
+/**
+ * Date value structure
+ */
+export interface DateValue {
+	date: string | null;
+	time?: string | null;
 }
 
 /**

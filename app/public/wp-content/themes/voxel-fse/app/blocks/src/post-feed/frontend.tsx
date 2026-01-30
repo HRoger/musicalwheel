@@ -13,6 +13,7 @@
  * ✅ Loading states with .vx-loading
  * ✅ Button disabled/hidden states
  * ✅ Page bounds handling
+ * ✅ CSS/JS asset injection to #vx-assets-cache with deduplication
  * ✅ Scroll position management (FIXES Voxel gap)
  * ✅ Loading state on error (BETTER than Voxel)
  * ✅ Load More button disabled during loading (BETTER than Voxel)

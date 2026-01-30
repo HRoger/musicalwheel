@@ -92,7 +92,11 @@ export default function FilterRange({
 	isNarrowing,
 }: FilterComponentProps) {
 	// Generate popup className for styling portal elements (renders at document.body)
-	const popupClassName = blockId ? `voxel-popup-${blockId}` : '';
+	// Includes repeater item ID for scoped custom styling
+	const popupClassName = [
+		blockId ? `voxel-popup-${blockId}` : '',
+		config.id ? `elementor-repeater-item-${config.id}` : ''
+	].filter(Boolean).join(' ');
 
 	const triggerRef = useRef<HTMLDivElement>(null);
 	const sliderRef = useRef<HTMLDivElement>(null);
@@ -116,9 +120,10 @@ export default function FilterRange({
 	const rangeEnd = narrowedRange?.max ?? originalRangeEnd;
 
 	// Format configuration from Voxel
+	// Voxel passes format as an object { numeric, prefix, suffix }
 	const format = props.format || 'number';
-	const prefix = props.prefix || '';
-	const suffix = props.suffix || '';
+	const prefix = props.prefix || (typeof format === 'object' ? format.prefix : '') || '';
+	const suffix = props.suffix || (typeof format === 'object' ? format.suffix : '') || '';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100

@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { usePikaday } from './usePikaday';
+import { usePikaday, type PikadayDayData, type PikadayDayElement } from './usePikaday';
 import {
 	formatDate,
 	parseDate,
@@ -24,6 +24,9 @@ import {
 import { getMinimumPriceForDate, formatPrice } from '../../pricing';
 import type { BookingFieldConfig, BookingValue, SearchContext, ExtendedProductFormConfig } from '../../types';
 
+/** Day in milliseconds - Evidence: voxel-product-form.beautified.js line 2027 */
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
 export interface BookingDateRangeProps {
 	field: BookingFieldConfig;
 	value: BookingValue;
@@ -35,35 +38,35 @@ export interface BookingDateRangeProps {
 }
 
 /**
- * Add price tooltips to Pikaday calendar days
+ * Create dayRenderHook for inline price tooltips
  *
- * Evidence: voxel-product-form.beautified.js lines 1863-1874
+ * This creates a callback that Pikaday calls for each day cell during rendering.
+ * It adds a pika-tooltip div inside the TD cell with the price for that day.
+ *
+ * Evidence: voxel-product-form.beautified.js lines 1992-1999
+ * - dayRenderHook: (dayData, dayEl) => {
+ * -     let tooltip = `<div class="pika-tooltip">${price}</div>`;
+ * -     dayEl.beforeCloseTd += tooltip;
+ * - }
  */
-function addPriceTooltips(
-	container: HTMLElement | null,
+function createDayRenderHook(
 	config: ExtendedProductFormConfig | null
-): void {
-	if ( ! container || ! config ) return;
+): ( ( dayData: PikadayDayData, dayEl: PikadayDayElement ) => void ) | undefined {
+	if ( ! config ) return undefined;
 
-	// Find all day cells in the calendar
-	const dayCells = container.querySelectorAll( '.pika-button' );
+	return ( dayData: PikadayDayData, dayEl: PikadayDayElement ) => {
+		// Don't add tooltips to disabled days
+		if ( dayData.isDisabled ) return;
 
-	dayCells.forEach( ( cell ) => {
-		const button = cell as HTMLElement;
-		const dataset = button.dataset as DOMStringMap;
-		const year = parseInt( dataset[ 'pikaYear' ] ?? '0', 10 );
-		const month = parseInt( dataset[ 'pikaMonth' ] ?? '0', 10 );
-		const day = parseInt( dataset[ 'pikaDay' ] ?? '0', 10 );
+		const date = new Date( dayData.year, dayData.month, dayData.day );
+		const price = getMinimumPriceForDate( date, config );
 
-		if ( year && day ) {
-			const date = new Date( year, month, day );
-			const price = getMinimumPriceForDate( date, config );
-
-			if ( price > 0 ) {
-				button.setAttribute( 'title', formatPrice( price ) );
-			}
+		if ( price > 0 ) {
+			// Add inline price tooltip matching Voxel's structure
+			const tooltip = `<div class="pika-tooltip">${ formatPrice( price ) }</div>`;
+			dayEl.beforeCloseTd += tooltip;
 		}
-	} );
+	};
 }
 
 /**
@@ -79,6 +82,8 @@ export default function BookingDateRange( {
 	const [ selecting, setSelecting ] = useState<'start' | 'end'>( 'start' );
 	const [ error, setError ] = useState<string | null>( null );
 	const [ initialized, setInitialized ] = useState( false );
+	// Hover date for range preview - Evidence: voxel-product-form.beautified.js line 1688
+	const [ hoverDate, setHoverDate ] = useState<Date | null>( null );
 	const startContainerRef = useRef<HTMLDivElement>( null );
 	const endContainerRef = useRef<HTMLDivElement>( null );
 
@@ -160,14 +165,76 @@ export default function BookingDateRange( {
 		setSelecting( 'start' );
 	}, [ value, onChange ] );
 
-	// Handle calendar draw - add price tooltips
-	const handleStartDraw = useCallback( () => {
-		addPriceTooltips( startContainerRef.current, config ?? null );
-	}, [ config ] );
+	/**
+	 * Handle mouseover on calendar for date range preview
+	 *
+	 * Shows visual feedback of range as user hovers over end date options.
+	 * Adds is-inrange class to dates between start and hover, and is-endrange to hovered date.
+	 *
+	 * Evidence: voxel-product-form.beautified.js lines 2008-2048
+	 */
+	const handleCalendarMouseOver = useCallback( ( event: MouseEvent, pickerEl: HTMLElement | null ) => {
+		// Only show preview when selecting end date and start is already set
+		if ( ! value.start_date || value.end_date ) return;
+		if ( ! pickerEl ) return;
 
-	const handleEndDraw = useCallback( () => {
-		addPriceTooltips( endContainerRef.current, config ?? null );
-	}, [ config ] );
+		const target = event.target as HTMLElement;
+		const td = target.tagName === 'TD' ? target : target.closest( 'td' );
+		if ( ! td || td.classList.contains( 'is-empty' ) || td.classList.contains( 'is-disabled' ) ) return;
+
+		const button = td.querySelector( '.pika-button' ) as HTMLButtonElement | null;
+		if ( ! button || button.disabled ) return;
+
+		// Mark this cell as end of range
+		td.classList.add( 'is-endrange' );
+
+		// Parse hover date from button data attributes
+		const hoverYear = parseInt( button.getAttribute( 'data-pika-year' ) ?? '0', 10 );
+		const hoverMonth = parseInt( button.getAttribute( 'data-pika-month' ) ?? '0', 10 );
+		const hoverDay = parseInt( button.getAttribute( 'data-pika-day' ) ?? '0', 10 );
+		const newHoverDate = new Date( hoverYear, hoverMonth, hoverDay );
+
+		setHoverDate( new Date( newHoverDate.getTime() ) );
+
+		// Add in-range class to dates between start and hover
+		const startDate = parseDate( value.start_date );
+		let checkDate = new Date( newHoverDate.getTime() - DAY_IN_MS );
+
+		while ( checkDate > startDate ) {
+			const selector = [
+				`.pika-button[data-pika-year="${ checkDate.getFullYear() }"]`,
+				`[data-pika-month="${ checkDate.getMonth() }"]`,
+				`[data-pika-day="${ checkDate.getDate() }"]`,
+			].join( '' );
+
+			const dayButton = pickerEl.querySelector( selector );
+			if ( dayButton?.parentElement ) {
+				dayButton.parentElement.classList.add( 'is-inrange' );
+			}
+			checkDate.setTime( checkDate.getTime() - DAY_IN_MS );
+		}
+
+		// Clean up on mouseleave
+		td.addEventListener( 'mouseleave', () => {
+			Array.from( pickerEl.querySelectorAll( 'td.is-inrange:not(.is-disabled)' ) )
+				.forEach( el => el.classList.remove( 'is-inrange' ) );
+			td.classList.remove( 'is-endrange' );
+			setHoverDate( null );
+		}, { once: true } );
+	}, [ value.start_date, value.end_date ] );
+
+	// Day render hook for inline price tooltips
+	const dayRenderHook = useMemo( () => createDayRenderHook( config ?? null ), [ config ] );
+
+	// Handle calendar draw - attach mouseover listener for range preview
+	const handleStartDraw = useCallback( ( picker: { el: HTMLElement } ) => {
+		// Attach mouseover listener for hover preview
+		picker.el.addEventListener( 'mouseover', ( e ) => handleCalendarMouseOver( e, picker.el ) );
+	}, [ handleCalendarMouseOver ] );
+
+	const handleEndDraw = useCallback( ( picker: { el: HTMLElement } ) => {
+		picker.el.addEventListener( 'mouseover', ( e ) => handleCalendarMouseOver( e, picker.el ) );
+	}, [ handleCalendarMouseOver ] );
 
 	// Pikaday for start date
 	const startPicker = usePikaday( {
@@ -177,8 +244,11 @@ export default function BookingDateRange( {
 		maxDate,
 		defaultDate: value.start_date ? parseDate( value.start_date ) : undefined,
 		disableDayFn,
+		dayRenderHook,
 		container: startContainerRef.current,
 		bound: false,
+		startRange: value.start_date ? parseDate( value.start_date ) : null,
+		endRange: value.end_date ? parseDate( value.end_date ) : null,
 	} );
 
 	// Pikaday for end date (min date is start date + 1)
@@ -196,22 +266,44 @@ export default function BookingDateRange( {
 		maxDate,
 		defaultDate: value.end_date ? parseDate( value.end_date ) : undefined,
 		disableDayFn,
+		dayRenderHook,
 		container: endContainerRef.current,
 		bound: false,
+		startRange: value.start_date ? parseDate( value.start_date ) : null,
+		endRange: value.end_date ? parseDate( value.end_date ) : null,
 	} );
 
-	// Sync picker values with state
+	// Sync picker values and range highlighting with state
+	// Evidence: voxel-product-form.beautified.js lines 2054-2067
 	useEffect( () => {
 		if ( value.start_date ) {
+			const startDate = parseDate( value.start_date );
 			startPicker.setDate( value.start_date );
+			startPicker.setStartRange( startDate );
+			endPicker.setStartRange( startDate );
+		} else {
+			startPicker.setStartRange( null );
+			endPicker.setStartRange( null );
 		}
 	}, [ value.start_date ] );
 
 	useEffect( () => {
 		if ( value.end_date ) {
+			const endDate = parseDate( value.end_date );
 			endPicker.setDate( value.end_date );
+			startPicker.setEndRange( endDate );
+			endPicker.setEndRange( endDate );
+		} else {
+			startPicker.setEndRange( null );
+			endPicker.setEndRange( null );
 		}
 	}, [ value.end_date ] );
+
+	// Clear hover date when start date changes
+	// Evidence: voxel-product-form.beautified.js line 2056
+	useEffect( () => {
+		setHoverDate( null );
+	}, [ value.start_date ] );
 
 	// Labels based on count mode
 	const startLabel = l10n?.select_start_and_end_date ?? 'Select start date';
@@ -220,15 +312,37 @@ export default function BookingDateRange( {
 		? ( l10n?.select_nights ?? 'Select nights' )
 		: ( l10n?.select_days ?? 'Select days' );
 
-	// Display value
+	/**
+	 * Display value with hover preview support
+	 *
+	 * Shows date range and length, updating dynamically during hover.
+	 *
+	 * Evidence: voxel-product-form.beautified.js lines 2140-2157
+	 * - If start_date && hover_date, show preview range
+	 * - popupTitle computed property uses hover_date for dynamic feedback
+	 */
 	const displayValue = useMemo( () => {
 		if ( ! value.start_date ) return placeholderText;
-		if ( ! value.end_date ) return `${ value.start_date } - ...`;
 
-		const length = calculateRangeLength( value.start_date, value.end_date, count_mode );
-		const rangeLabel = formatRangeLength( length, count_mode, l10n );
-		return `${ value.start_date } - ${ value.end_date } (${ rangeLabel })`;
-	}, [ value.start_date, value.end_date, count_mode, l10n, placeholderText ] );
+		// Show confirmed selection
+		if ( value.end_date ) {
+			const length = calculateRangeLength( value.start_date, value.end_date, count_mode );
+			const rangeLabel = formatRangeLength( length, count_mode, l10n );
+			return `${ value.start_date } - ${ value.end_date } (${ rangeLabel })`;
+		}
+
+		// Show hover preview when user is hovering over potential end date
+		// Evidence: voxel-product-form.beautified.js lines 2149-2153
+		if ( hoverDate ) {
+			const hoverDateStr = formatDate( hoverDate );
+			const length = calculateRangeLength( value.start_date, hoverDateStr, count_mode );
+			const rangeLabel = formatRangeLength( length, count_mode, l10n );
+			return `${ value.start_date } - ${ hoverDateStr } (${ rangeLabel })`;
+		}
+
+		// Waiting for end date selection
+		return `${ value.start_date } - ${ l10n?.select_end_date ?? '...' }`;
+	}, [ value.start_date, value.end_date, hoverDate, count_mode, l10n, placeholderText ] );
 
 	return (
 		<div className="ts-form-group ts-booking-field ts-booking-date-range">

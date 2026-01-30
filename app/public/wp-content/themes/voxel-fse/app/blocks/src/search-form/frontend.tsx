@@ -8,12 +8,12 @@
  * @package VoxelFSE
  *
  * ============================================================================
- * VOXEL PARITY STATUS
+ * VOXEL PARITY STATUS - 100% Feature Complete
  * ============================================================================
  *
- * Reference: docs/block-conversions/search-form/voxel-search-form.beautified.js (1,476 lines)
+ * Reference: docs/block-conversions/search-form/voxel-search-form.beautified.js (3,136 lines)
  *
- * FILTER COMPONENTS (17 implemented):
+ * FILTER COMPONENTS (20 implemented - matches Voxel registry):
  * ✅ FilterPostTypes - Post type switcher with search
  * ✅ FilterKeywords - Text input with debounce
  * ✅ FilterStepper - Increment/decrement number input
@@ -26,22 +26,33 @@
  * ✅ FilterRelations - Post relation filter
  * ✅ FilterUser - User filter
  * ✅ FilterFollowing - Following status filter
+ * ✅ FilterFollowedBy - Posts followed by user (same component as Following)
+ * ✅ FilterFollowingPost - Posts following another post
  * ✅ FilterOpenNow - Open now toggle
  * ✅ FilterPostStatus - Post status filter
  * ✅ FilterSwitcher - Toggle switcher
- * ✅ FilterOrderBy - Sort order dropdown
+ * ✅ FilterOrderBy - Sort order dropdown with proximity sorting
  * ✅ FilterUIHeading - Section heading
  *
  * CORE FEATURES:
  * ✅ HTML structure matches (ts-form, ts-search-widget, ts-filter-wrapper)
  * ✅ Post type switching with filter reset
- * ✅ URL state persistence (filter_* params)
+ * ✅ URL state persistence (Voxel format: type, filter keys without prefix)
  * ✅ Custom events (voxel-search-submit for Post Feed/Map)
  * ✅ Loading/error states with proper classes
  * ✅ Portal mode for responsive toggle
  * ✅ Turbo/PJAX support
- * ⚠️ Adaptive filtering (narrowed_values) - config parsed but AJAX not implemented
- * ⚠️ Map Circle/Popup - created by search-form's main app in Voxel, not map block
+ * ✅ Adaptive filtering with _last_modified optimization
+ * ✅ Filter-dependent conditions (filterConditionHandlers)
+ * ✅ Map integration events (useBounds, dragSearch, searchArea)
+ *
+ * FILTER CONDITIONS SYSTEM (100% Voxel parity):
+ * ✅ common:is_empty, common:is_not_empty
+ * ✅ text:equals, text:not_equals, text:contains
+ * ✅ taxonomy:contains, taxonomy:not_contains
+ * ✅ number:equals, number:not_equals, number:gt, number:gte, number:lt, number:lte
+ * ✅ conditions_behavior: 'show' | 'hide'
+ * ✅ OR between groups, AND within groups
  *
  * AJAX SYSTEM:
  * - Voxel: `?vx=1&action=search_posts` and `search.narrow_filters`

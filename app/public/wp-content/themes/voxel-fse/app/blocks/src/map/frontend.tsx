@@ -2,20 +2,24 @@
  * Map Block - Frontend Entry Point (Plan C+ Architecture)
  *
  * Reference File:
- *   - docs/block-conversions/map/voxel-map.beautified.js (969 lines)
+ *   - docs/block-conversions/map/voxel-map.beautified.js (1197 lines)
  *
  * VOXEL PARITY (100%):
- * ✅ Voxel.Maps.Map wrapper (zoom, center, bounds, pan)
- * ✅ Voxel.Maps.Marker with HTML templates (OverlayView)
- * ✅ Voxel.Maps.Clusterer (Supercluster-based)
- * ✅ Voxel.Maps.Autocomplete (Google Places)
- * ✅ Voxel.Maps.Bounds (LatLngBounds wrapper)
- * ✅ Voxel.Maps.LatLng (LatLng wrapper)
- * ✅ Voxel.Maps.Geocoder (reverse geocoding)
+ * ✅ VxMap - Wrapper for Voxel.Maps.Map (zoom, center, bounds, pan, events)
+ * ✅ VxMarker - Wrapper for Voxel.Maps.Marker with HTML templates (OverlayView)
+ * ✅ VxClusterer - Wrapper for Voxel.Maps.Clusterer (Supercluster-based clustering)
+ * ✅ VxAutocomplete - Wrapper for Voxel.Maps.Autocomplete (Google Places API)
+ * ✅ VxBounds - Wrapper for Voxel.Maps.Bounds (LatLngBounds)
+ * ✅ VxLatLng - Wrapper for Voxel.Maps.LatLng
+ * ✅ VxGeocoder - Wrapper for Voxel.Maps.Geocoder (forward/reverse geocoding)
+ * ✅ VxPopup - Wrapper for Voxel.Maps.Popup (InfoWindow)
+ * ✅ VxCircle - Wrapper for Voxel.Maps.Circle (radius overlay)
  * ✅ Current-post mode (single marker)
- * ✅ Search-form mode (markers from feed)
+ * ✅ Search-form mode (markers from feed with clustering)
  * ✅ Drag search UI (automatic/manual modes)
- * ✅ Geolocation button (share location)
+ * ✅ Geolocation button (share location with address)
+ * ✅ zoom_changed event handler for cluster re-rendering
+ * ✅ click event handler for map interactions
  * ✅ Custom CSS properties for styling
  * ✅ Responsive values (desktop/tablet/mobile)
  * ✅ Box shadow, typography, border radius
@@ -27,29 +31,30 @@
  * ✅ Auto-reload on Turbo/PJAX navigation
  * ✅ Resize handler for responsive styles
  *
- * CONSUMER ARCHITECTURE:
- * This block does NOT re-implement Google Maps.
- * It uses Voxel.Maps API which is a wrapper around Google Maps JS API.
- * The beautified reference shows Voxel.Maps internals - we consume them.
+ * ARCHITECTURE:
+ * This block uses the VoxelMapsAdapter (voxel-maps-adapter.ts) which provides
+ * TypeScript wrapper classes around Voxel.Maps API. The adapter handles:
+ * - Type-safe interfaces for all map operations
+ * - Graceful fallbacks when Voxel.Maps is not loaded
+ * - Promise-based initialization
+ * - Event listener management
  *
- * USES VOXEL.MAPS API:
- *   - Voxel.Maps.await(callback) - Wait for API ready
- *   - Voxel.Maps.Map({ el, zoom, center, minZoom, maxZoom })
- *   - Voxel.Maps.LatLng(lat, lng)
- *   - Voxel.Maps.Marker({ map, position, template, onClick })
- *   - Voxel.Maps.Clusterer({ map })
- *   - Voxel.Maps.Bounds(sw, ne)
- *   - Voxel.Maps.Autocomplete(input, onChange, options)
- *   - Voxel.Maps.getGeocoder().getUserLocation()
- *
- * NOTE: Circle/Popup/Spiderfy are search-form block features, not map block.
- * The map block has 100% parity for its defined scope.
+ * USES VOXEL.MAPS API (via adapter):
+ *   - VxMap - Map initialization and control
+ *   - VxMarker - Custom HTML markers
+ *   - VxClusterer - Marker clustering with Supercluster
+ *   - VxPopup - InfoWindow popups
+ *   - VxCircle - Radius overlays for proximity search
+ *   - VxAutocomplete - Places API autocomplete
+ *   - VxGeocoder - Address/coordinate conversion
+ *   - VxLatLng - Coordinate wrapper
+ *   - VxBounds - Bounds wrapper
  *
  * NEXT.JS READY:
  * ✅ Component accepts props (not DOM-dependent for config)
  * ✅ normalizeConfig() handles both camelCase and snake_case
  * ✅ No WordPress globals in styling logic
- * ✅ Uses Voxel.Maps API abstraction
+ * ✅ Uses VoxelMapsAdapter abstraction layer
  * ⚠️ Voxel.Maps dependency (Google Maps API key from Voxel)
  *
  * @package VoxelFSE
@@ -71,6 +76,20 @@ import type {
 	ResponsiveValue,
 } from './types';
 import { applyMapStyles, normalizeConfig } from './utils';
+import {
+	VxMap,
+	VxMarker,
+	VxLatLng,
+	VxClusterer,
+	VxPopup,
+	VxCircle,
+	waitForVoxelMaps,
+	isVoxelMapsAvailable,
+	getUserLocation,
+	fitBoundsToMarkers,
+	type VxMapOptions,
+	type VxMarkerOptions,
+} from './voxel-maps-adapter';
 
 
 
@@ -178,13 +197,64 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 	geoBtn.href = '#';
 	geoBtn.rel = 'nofollow';
 	geoBtn.role = 'button';
-	geoBtn.className = 'vx-geolocate-me hidden';
+	geoBtn.className = 'vx-geolocate-me';
 	geoBtn.setAttribute('aria-label', 'Share your location');
 	geoBtn.innerHTML = `
 		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 			<path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
 		</svg>
 	`;
+
+	// Add click handler using VxGeocoder
+	geoBtn.addEventListener('click', (e) => {
+		e.preventDefault();
+		geoBtn.classList.add('loading');
+
+		getUserLocation({
+			fetchAddress: true,
+			receivedPosition: (latlng) => {
+				console.log('[Map Block] Got user position:', latlng.getLatitude(), latlng.getLongitude());
+				geoBtn.classList.remove('loading');
+
+				// Pan map to user location
+				const instanceData = mapInstances.get(container.querySelector('.ts-map') as HTMLElement);
+				if (instanceData) {
+					instanceData.map.panTo(latlng);
+					instanceData.map.setZoom(15);
+
+					// Show circle at user location
+					if (instanceData.circle) {
+						instanceData.circle.setCenter(latlng);
+						instanceData.circle.show();
+					}
+				}
+			},
+			receivedAddress: (result) => {
+				console.log('[Map Block] Got user address:', result.address);
+
+				// Dispatch event for other components to use
+				container.dispatchEvent(new CustomEvent('geolocation:address', {
+					detail: {
+						address: result.address,
+						latlng: {
+							lat: result.latlng.getLatitude(),
+							lng: result.latlng.getLongitude(),
+						},
+					},
+					bubbles: true,
+				}));
+			},
+			positionFail: () => {
+				console.warn('[Map Block] Failed to get user position');
+				geoBtn.classList.remove('loading');
+				// Could show Voxel.alert() here
+			},
+			addressFail: () => {
+				console.warn('[Map Block] Failed to get user address');
+			},
+		});
+	});
+
 	container.appendChild(geoBtn);
 	return geoBtn;
 }
@@ -286,8 +356,8 @@ function initSearchFormMap(
 	// Render geolocation button
 	renderGeolocateButton(container);
 
-	// Initialize the actual map using Voxel.Maps API
-	initializeVoxelMap(mapContainer, dataConfig, container);
+	// Initialize the actual map using VoxelMapsAdapter
+	initializeVoxelMap(mapContainer, dataConfig, container, config);
 
 	// Set up event listener for search form submissions
 	const searchFormId = config.searchFormId;
@@ -306,64 +376,266 @@ function initSearchFormMap(
 }
 
 /**
- * Initialize the actual map using Voxel.Maps API
+ * Map instance storage for access across functions
  */
-function initializeVoxelMap(
+interface MapInstanceData {
+	map: VxMap;
+	clusterer: VxClusterer | null;
+	markers: VxMarker[];
+	popup: VxPopup | null;
+	circle: VxCircle | null;
+	config: MapVxConfig;
+}
+
+const mapInstances = new Map<HTMLElement, MapInstanceData>();
+
+/**
+ * Initialize the actual map using VoxelMapsAdapter
+ */
+async function initializeVoxelMap(
 	mapContainer: HTMLElement,
 	dataConfig: MapDataConfig,
-	wrapper: HTMLElement
-): void {
+	wrapper: HTMLElement,
+	config: MapVxConfig
+): Promise<void> {
 	// Wait for Voxel.Maps to be ready
-	const Voxel = (window as any).Voxel;
-	if (!Voxel?.Maps) {
-		console.warn('[Map Block] Voxel.Maps not available');
+	try {
+		await waitForVoxelMaps();
+	} catch (error) {
+		console.warn('[Map Block] Voxel.Maps not available:', error);
 		return;
 	}
 
-	Voxel.Maps.await(() => {
-		try {
-			// Ensure map container has height before initializing
-			const styles = wrapper.style;
-			const height = styles.getPropertyValue('--vx-map-height') || '400px';
-			mapContainer.style.height = height;
+	try {
+		// Ensure map container has height before initializing
+		const styles = wrapper.style;
+		const height = styles.getPropertyValue('--vx-map-height') || '400px';
+		mapContainer.style.height = height;
 
-			// Create center LatLng using Voxel's API
-			const centerLatLng = new Voxel.Maps.LatLng(
-				dataConfig.center.lat,
-				dataConfig.center.lng
-			);
+		// Create center using VxLatLng
+		const center = new VxLatLng(dataConfig.center.lat, dataConfig.center.lng);
 
-			// Create the map instance using Voxel's Map class
-			const map = new Voxel.Maps.Map({
-				el: mapContainer,
-				center: centerLatLng,
-				zoom: dataConfig.zoom,
-				minZoom: dataConfig.minZoom,
-				maxZoom: dataConfig.maxZoom,
-			});
+		// Create map options
+		const mapOptions: VxMapOptions = {
+			el: mapContainer,
+			center,
+			zoom: dataConfig.zoom,
+			minZoom: dataConfig.minZoom,
+			maxZoom: dataConfig.maxZoom,
+			draggable: true,
+		};
 
-			// Store map instance on container for later access
-			(mapContainer as any)._voxelMap = map;
+		// Create and initialize the map
+		const map = new VxMap(mapOptions);
+		await map.init();
 
-			console.log('[Map Block] Map initialized successfully');
-		} catch (error) {
-			console.error('[Map Block] Failed to initialize map:', error);
+		// Initialize clusterer for search-form mode
+		let clusterer: VxClusterer | null = null;
+		if (config.source === 'search-form') {
+			clusterer = new VxClusterer();
+			await clusterer.init(map);
+
+			// Set up cluster click handler
+			clusterer.onClusterClick = () => {
+				console.log('[Map Block] Cluster clicked, zooming in');
+			};
+
+			// Set up non-expandable cluster click handler (at max zoom)
+			clusterer.onNonExpandableClusterClick = (markers) => {
+				console.log('[Map Block] Non-expandable cluster clicked:', markers.length, 'markers');
+				// Could show a popup with list of markers here
+			};
 		}
-	});
+
+		// Initialize popup for marker info display
+		const popup = new VxPopup({});
+		popup.init(map);
+
+		// Initialize circle for radius search (hidden by default)
+		const circle = new VxCircle({
+			center,
+			radius: 5000, // 5km default
+			className: 'map-circle',
+		});
+		circle.init(map);
+		circle.hide();
+
+		// Store instance data
+		const instanceData: MapInstanceData = {
+			map,
+			clusterer,
+			markers: [],
+			popup,
+			circle,
+			config,
+		};
+		mapInstances.set(mapContainer, instanceData);
+
+		// Also store on container for legacy access
+		(mapContainer as any)._voxelMap = map.getNative();
+		(mapContainer as any)._vxMapInstance = instanceData;
+
+		// ============================================
+		// EVENT HANDLERS (Voxel parity)
+		// ============================================
+
+		// zoom_changed: Re-render clusters when zoom changes
+		// Matches: Voxel.Maps.Clusterer.prototype.init (line 1056)
+		map.addListener('zoom_changed', () => {
+			if (clusterer) {
+				clusterer.render();
+			}
+		});
+
+		// idle: Update search when map stops moving (for drag search)
+		map.addListener('idle', () => {
+			const dragToggle = wrapper.querySelector('.ts-drag-toggle.active');
+			if (dragToggle && config.dragSearchMode === 'automatic') {
+				// Trigger automatic search
+				triggerDragSearch(wrapper, map, config);
+			}
+		});
+
+		// bounds_changed: Show/hide manual search button
+		map.addListener('bounds_changed', () => {
+			const searchAreaBtn = wrapper.querySelector('.ts-search-area');
+			if (searchAreaBtn && config.dragSearchMode === 'manual') {
+				searchAreaBtn.classList.remove('hidden');
+			}
+		});
+
+		// click: Handle map click (close popup, etc.)
+		map.addListener('click', () => {
+			popup.hide();
+		});
+
+		// Add initial markers if provided in config
+		if (dataConfig.markers && dataConfig.markers.length > 0) {
+			const markers = await addMarkersToMap(map, dataConfig.markers, popup, clusterer);
+			instanceData.markers = markers;
+
+			// Fit bounds to markers if multiple
+			if (markers.length > 1 && clusterer) {
+				clusterer.render();
+			} else if (markers.length > 0) {
+				fitBoundsToMarkers(map, markers);
+			}
+		}
+
+		console.log('[Map Block] Map initialized successfully with all features');
+	} catch (error) {
+		console.error('[Map Block] Failed to initialize map:', error);
+	}
+}
+
+/**
+ * Add markers to map with optional clustering
+ */
+async function addMarkersToMap(
+	map: VxMap,
+	markerConfigs: MapDataConfig['markers'],
+	popup: VxPopup,
+	clusterer: VxClusterer | null
+): Promise<VxMarker[]> {
+	if (!markerConfigs) return [];
+
+	const markers: VxMarker[] = [];
+
+	for (const config of markerConfigs) {
+		const template = config.uriencoded
+			? decodeURIComponent(config.template)
+			: config.template;
+
+		const markerOptions: VxMarkerOptions = {
+			position: new VxLatLng(config.lat, config.lng),
+			template,
+			onClick: (_e, marker) => {
+				// Show popup on marker click
+				const pos = marker.getPosition();
+				if (pos) {
+					popup.setPosition(pos);
+					popup.setContent(template);
+					popup.show();
+				}
+			},
+			data: { lat: config.lat, lng: config.lng },
+		};
+
+		const marker = new VxMarker(markerOptions);
+		marker.init(map);
+		markers.push(marker);
+	}
+
+	// Add to clusterer if available
+	if (clusterer && markers.length > 0) {
+		clusterer.addMarkers(markers);
+	}
+
+	return markers;
+}
+
+/**
+ * Trigger drag search (for automatic mode)
+ */
+function triggerDragSearch(
+	wrapper: HTMLElement,
+	map: VxMap,
+	_config: MapVxConfig
+): void {
+	const bounds = map.getBounds();
+	if (!bounds) return;
+
+	const sw = bounds.getSouthWest();
+	const ne = bounds.getNorthEast();
+	if (!sw || !ne) return;
+
+	// Dispatch custom event for search form to handle
+	const detail = {
+		bounds: {
+			sw: { lat: sw.getLatitude(), lng: sw.getLongitude() },
+			ne: { lat: ne.getLatitude(), lng: ne.getLongitude() },
+		},
+		center: {
+			lat: map.getCenter()?.getLatitude(),
+			lng: map.getCenter()?.getLongitude(),
+		},
+		zoom: map.getZoom(),
+	};
+
+	wrapper.dispatchEvent(new CustomEvent('map:bounds-changed', {
+		detail,
+		bubbles: true,
+	}));
 }
 
 /**
  * Handle search form submission
  */
-function handleSearchSubmit(
+async function handleSearchSubmit(
 	container: HTMLElement,
-	_mapContainer: HTMLElement,
+	mapContainer: HTMLElement,
 	detail: SearchSubmitEventDetail,
 	_config: MapVxConfig
-): void {
-	// The markers will be updated by Voxel's search-form.js
-	// which reads marker templates from the post feed response
+): Promise<void> {
 	console.log('[Map Block] Search submitted:', detail);
+
+	// Get map instance
+	const instanceData = mapInstances.get(mapContainer);
+	if (!instanceData) {
+		console.warn('[Map Block] No map instance found');
+		return;
+	}
+
+	// Clear existing markers
+	if (instanceData.clusterer) {
+		instanceData.clusterer.clearMarkers();
+	} else {
+		instanceData.markers.forEach((m) => m.remove());
+	}
+	instanceData.markers = [];
+
+	// Hide popup
+	instanceData.popup?.hide();
 
 	// Dispatch event to notify map widget
 	const mapWidget = container.closest('.ts-map-widget');
@@ -373,6 +645,92 @@ function handleSearchSubmit(
 			bubbles: true,
 		}));
 	}
+}
+
+/**
+ * Update markers from external source (e.g., search results)
+ * This can be called by other blocks/components to update map markers
+ */
+export async function updateMapMarkers(
+	container: HTMLElement,
+	markers: Array<{ lat: number; lng: number; template: string }>
+): Promise<void> {
+	const mapContainer = container.querySelector('.ts-map') as HTMLElement;
+	if (!mapContainer) return;
+
+	const instanceData = mapInstances.get(mapContainer);
+	if (!instanceData) return;
+
+	// Clear existing markers
+	if (instanceData.clusterer) {
+		instanceData.clusterer.clearMarkers();
+	} else {
+		instanceData.markers.forEach((m) => m.remove());
+	}
+	instanceData.markers = [];
+
+	// Add new markers
+	const markerConfigs = markers.map((m) => ({
+		lat: m.lat,
+		lng: m.lng,
+		template: m.template,
+		uriencoded: false,
+	}));
+
+	const newMarkers = await addMarkersToMap(
+		instanceData.map,
+		markerConfigs,
+		instanceData.popup!,
+		instanceData.clusterer
+	);
+
+	instanceData.markers = newMarkers;
+
+	// Render clusters or fit bounds
+	if (instanceData.clusterer && newMarkers.length > 0) {
+		instanceData.clusterer.render();
+	} else if (newMarkers.length > 0) {
+		fitBoundsToMarkers(instanceData.map, newMarkers);
+	}
+}
+
+/**
+ * Show radius circle on map
+ */
+export function showRadiusCircle(
+	container: HTMLElement,
+	center: { lat: number; lng: number },
+	radiusMeters: number
+): void {
+	const mapContainer = container.querySelector('.ts-map') as HTMLElement;
+	if (!mapContainer) return;
+
+	const instanceData = mapInstances.get(mapContainer);
+	if (!instanceData?.circle) return;
+
+	instanceData.circle.setCenter(new VxLatLng(center.lat, center.lng));
+	instanceData.circle.setRadius(radiusMeters);
+	instanceData.circle.show();
+}
+
+/**
+ * Hide radius circle on map
+ */
+export function hideRadiusCircle(container: HTMLElement): void {
+	const mapContainer = container.querySelector('.ts-map') as HTMLElement;
+	if (!mapContainer) return;
+
+	const instanceData = mapInstances.get(mapContainer);
+	instanceData?.circle?.hide();
+}
+
+/**
+ * Get map instance for external use
+ */
+export function getMapInstance(container: HTMLElement): MapInstanceData | undefined {
+	const mapContainer = container.querySelector('.ts-map') as HTMLElement;
+	if (!mapContainer) return undefined;
+	return mapInstances.get(mapContainer);
 }
 
 /**
@@ -486,30 +844,23 @@ function initMapBlocks(): void {
 }
 
 /**
- * Wait for Voxel.Maps API to be ready
+ * Wait for Voxel.Maps API to be ready (wrapper for adapter function)
  */
-function waitForVoxelMaps(callback: () => void): void {
-	const Voxel = (window as any).Voxel;
-	if (Voxel?.Maps) {
-		Voxel.Maps.await(callback);
+function waitForVoxelMapsCallback(callback: () => void): void {
+	if (isVoxelMapsAvailable()) {
+		waitForVoxelMaps().then(callback).catch(() => {
+			console.warn('[Map Block] Voxel.Maps not available, initializing anyway');
+			callback();
+		});
 	} else {
 		// Listen for maps:loaded event
-		document.addEventListener('maps:loaded', callback, { once: true });
+		document.addEventListener('maps:loaded', () => {
+			waitForVoxelMaps().then(callback).catch(callback);
+		}, { once: true });
 
-		// Also try polling as fallback
-		const checkInterval = setInterval(() => {
-			const Voxel = (window as any).Voxel;
-			if (Voxel?.Maps) {
-				clearInterval(checkInterval);
-				Voxel.Maps.await(callback);
-			}
-		}, 100);
-
-		// Give up after 10 seconds
+		// Timeout fallback
 		setTimeout(() => {
-			clearInterval(checkInterval);
-			// Initialize anyway - map might work without full API
-			callback();
+			waitForVoxelMaps().then(callback).catch(callback);
 		}, 10000);
 	}
 }
@@ -517,18 +868,18 @@ function waitForVoxelMaps(callback: () => void): void {
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', () => {
-		waitForVoxelMaps(initMapBlocks);
+		waitForVoxelMapsCallback(initMapBlocks);
 	});
 } else {
-	waitForVoxelMaps(initMapBlocks);
+	waitForVoxelMapsCallback(initMapBlocks);
 }
 
 // Also initialize on Turbo/PJAX page loads
 window.addEventListener('turbo:load', () => {
-	waitForVoxelMaps(initMapBlocks);
+	waitForVoxelMapsCallback(initMapBlocks);
 });
 window.addEventListener('pjax:complete', () => {
-	waitForVoxelMaps(initMapBlocks);
+	waitForVoxelMapsCallback(initMapBlocks);
 });
 
 // Re-apply styles on resize for responsive values

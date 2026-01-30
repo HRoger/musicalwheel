@@ -805,6 +805,10 @@ export interface VisibilityRule {
 	value?: string;
 }
 
+/**
+ * Filter types matching Voxel's component registry
+ * Reference: voxel-search-form.beautified.js lines 3081-3100
+ */
 export type FilterType =
 	| 'keywords'
 	| 'range'
@@ -820,6 +824,9 @@ export type FilterType =
 	| 'user'
 	| 'relations'
 	| 'following'
+	| 'followed-by'      // filter-followed-by (same component as following)
+	| 'following-user'   // filter-following-user (same component as followed-by)
+	| 'following-post'   // filter-following-post
 	| 'switcher'
 	| 'ui-heading';
 

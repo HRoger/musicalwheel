@@ -103,11 +103,24 @@ export function AccordionPanelGroup({
 	});
 
 	// Sync internal state with attributes when they change (e.g. undo/redo)
+	// Also restore from sessionStorage if internal state gets cleared
 	useEffect(() => {
-		if (attributes?.[stateAttribute] !== undefined && attributes[stateAttribute] !== internalState) {
-			setInternalState(attributes[stateAttribute]);
+		const attrValue = attributes?.[stateAttribute];
+
+		// Priority 1: Sync from attributes if they have a value
+		if (attrValue !== undefined && attrValue !== internalState) {
+			setInternalState(attrValue);
+			return;
 		}
-	}, [attributes?.[stateAttribute]]);
+
+		// Priority 2: Restore from sessionStorage if internal state is null but storage has a value
+		if (internalState === null && persistenceKey) {
+			const stored = sessionStorage.getItem(persistenceKey);
+			if (stored) {
+				setInternalState(stored);
+			}
+		}
+	}, [attributes?.[stateAttribute], internalState, persistenceKey, stateAttribute]);
 
 	const openPanel = internalState;
 

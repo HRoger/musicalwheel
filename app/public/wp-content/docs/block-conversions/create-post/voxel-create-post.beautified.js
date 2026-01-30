@@ -1179,8 +1179,17 @@ const FieldWorkHours = {
         displayDays(days) {
             return days.map(d => this.field.props.weekdays[d]).filter(Boolean).join(", ");
         },
+        displayTime(time) {
+            // Format time string (e.g., "09:00") to locale time format
+            return new Date("2021-01-01 " + time)
+                .toLocaleTimeString()
+                .replace(/([\d]+:[\d]{2})(:[\d]{2})(.*)/, "$1$3");
+        },
         id() {
             return this.field.id + "." + Object.values(arguments).join(".") + "." + this.index;
+        },
+        isChecked(day, list) {
+            return list.includes(day);
         },
         check(day, list) {
             list.includes(day) ? list.splice(list.indexOf(day), 1) : list.push(day);
@@ -1250,8 +1259,22 @@ const TermList = {
         goBack() {
             this.taxonomyField.slide_from = "left";
             this.taxonomyField.active_list = this.previousList;
+        },
+        afterEnter(el, key) {
+            // Restore scroll position after slide animation
+            setTimeout(() => {
+                el.closest(".min-scroll").scrollTop = this.taxonomyField.scrollPosition[key] || 0;
+            }, 100);
+        },
+        beforeLeave(el, key) {
+            // Save scroll position before slide animation
+            this.taxonomyField.scrollPosition[key] = el.closest(".min-scroll").scrollTop;
         }
-        // scroll helpers...
+    },
+    computed: {
+        termsWithChildren() {
+            return this.terms.filter(term => term.children && term.children.length);
+        }
     }
 };
 
@@ -1556,6 +1579,2312 @@ const FieldRepeater = {
     }
 };
 
+/**
+ * FIELD: UI-STEP
+ * Step marker for multi-step forms (ui-only, no value)
+ */
+const FieldUiStep = {
+    template: "#create-post-ui-step-field",
+    props: { field: Object }
+};
+
+/**
+ * FIELD: UI-HEADING
+ * Section heading for form organization (ui-only, no value)
+ */
+const FieldUiHeading = {
+    template: "#create-post-ui-heading-field",
+    props: { field: Object }
+};
+
+/**
+ * FIELD: UI-HTML
+ * Custom HTML content field (ui-only, no value)
+ */
+const FieldUiHtml = {
+    template: "#create-post-ui-html-field",
+    props: { field: Object },
+    mounted() {
+        let content = jQuery.parseHTML(this.field.props.content, document, true);
+        this.$nextTick(() => {
+            jQuery(this.$refs.composer).append(content);
+        });
+    }
+};
+
+/**
+ * FIELD: UI-IMAGE
+ * Static image display field (ui-only, no value)
+ */
+const FieldUiImage = {
+    template: "#create-post-ui-image-field",
+    props: { field: Object }
+};
+
+/**
+ * FIELD: PROFILE-NAME (extends Text)
+ * Profile name field - uses same template/logic as text field
+ */
+const FieldProfileName = {
+    template: "#create-post-text-field",
+    extends: FieldText
+};
+
+/**
+ * FIELD: TIMEZONE
+ * Timezone selector with search functionality
+ */
+const FieldTimezone = {
+    template: "#create-post-timezone-field",
+    props: { field: Object },
+    data() {
+        return {
+            search: ""
+        };
+    },
+    methods: {
+        onSave() {
+            this.$refs.formGroup.blur();
+        },
+        onClear() {
+            this.field.value = null;
+            this.search = "";
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(typeof val === "string" && val.trim().length >= 1);
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    },
+    computed: {
+        choices() {
+            if (this.search.trim().length) {
+                return this.field.props.list.filter(e =>
+                    e.toLowerCase().indexOf(this.search.trim().toLowerCase()) !== -1
+                );
+            }
+            return this.field.props.list;
+        }
+    },
+    watch: {
+        "field.value"() { this.validate(this.field.value); }
+    }
+};
+
+/**
+ * FIELD: SELECT
+ * Single select dropdown
+ */
+const FieldSelect = {
+    template: "#create-post-select-field",
+    props: { field: Object, index: { type: Number, default: 0 } },
+    data() {
+        let choiceMap = {};
+        this.field.props.choices.forEach(choice => choiceMap[choice.value] = choice);
+        return {
+            value: this.field.value,
+            choiceMap: choiceMap
+        };
+    },
+    created() {
+        // Validate initial value exists in choices
+        if (this.field.value !== null && !this.choiceMap[this.field.value]) {
+            this.field.value = null;
+            this.value = null;
+        }
+
+        // Auto-select first option if required and empty
+        if (this.value === null && this.field.required) {
+            this.value = this.field.props.choices[0]?.value;
+            this.saveValue();
+        }
+
+        this.$watch(() => this.field.value, () => this.validate(this.field.value));
+    },
+    methods: {
+        saveValue() {
+            this.field.value = this.isFilled() ? this.value : null;
+        },
+        isFilled() {
+            return this.value !== null && this.choiceMap[this.value];
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(typeof val === "string" && val.trim().length >= 1);
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    }
+};
+
+/**
+ * FIELD: MULTISELECT
+ * Multi-select field with search
+ */
+const FieldMultiselect = {
+    template: "#create-post-multiselect-field",
+    props: { field: Object, index: { type: Number, default: 0 } },
+    data() {
+        let choiceMap = {};
+        this.field.props.choices.forEach(choice => choiceMap[choice.value] = choice);
+        return {
+            value: this.field.props.selected,
+            choiceMap: choiceMap,
+            displayValue: "",
+            search: ""
+        };
+    },
+    created() {
+        this.$watch(() => this.field.value, () => this.validate(this.field.value));
+        this.displayValue = this._getDisplayValue();
+    },
+    methods: {
+        selectChoice(choice) {
+            if (this.value[choice.value]) {
+                delete this.value[choice.value];
+            } else {
+                this.value[choice.value] = choice;
+            }
+            if (this.field.props.display_as === 'inline') {
+                this.saveValue();
+            }
+        },
+        saveValue() {
+            this.field.value = this.isFilled() ? Object.keys(this.value) : null;
+            this.displayValue = this._getDisplayValue();
+        },
+        isFilled() {
+            return Object.keys(this.value).length > 0;
+        },
+        _getDisplayValue() {
+            return Object.values(this.value)
+                .sort((a, b) => a.order - b.order)
+                .map(c => c.label)
+                .join(", ");
+        },
+        onSave() {
+            this.saveValue();
+            this.$refs.formGroup.$refs.popup.$emit("blur");
+        },
+        onClear() {
+            this.value = {};
+            this.search = "";
+            this.$refs.searchInput?.focus();
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(Array.isArray(val) && val.length);
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    },
+    computed: {
+        searchResults() {
+            if (!this.search.trim().length) return false;
+            let list = [];
+            let term = this.search.trim().toLowerCase();
+            for (let choice of this.field.props.choices) {
+                if (choice.label.toLowerCase().indexOf(term) !== -1) {
+                    list.push(choice);
+                    if (list.length >= 100) break;
+                }
+            }
+            return list;
+        }
+    }
+};
+
+/**
+ * FIELD: DATE
+ * Single date picker with optional time
+ */
+const FieldDate = {
+    template: "#create-post-date-field",
+    components: {
+        datePicker: {
+            template: '<div class="ts-form-group" ref="calendar"><input type="hidden" ref="input"></div>',
+            props: { field: Object, parent: Object },
+            data() {
+                return { picker: null };
+            },
+            mounted() {
+                this.picker = new Pikaday({
+                    field: this.$refs.input,
+                    container: this.$refs.calendar,
+                    bound: false,
+                    firstDay: 1,
+                    keyboardInput: false,
+                    defaultDate: this.parent.date,
+                    onSelect: (date) => {
+                        this.parent.date = date;
+                        this.parent.onSave();
+                    },
+                    selectDayFn: (date) => {
+                        return this.parent.date && this.parent.date.toDateString() === date.toDateString();
+                    }
+                });
+            },
+            unmounted() {
+                setTimeout(() => this.picker.destroy(), 200);
+            },
+            methods: {
+                reset() {
+                    this.parent.date = null;
+                    this.picker.draw();
+                }
+            }
+        }
+    },
+    props: { field: Object, index: { type: Number, default: 0 } },
+    data() {
+        return {
+            date: this.field.value.date,
+            time: this.field.value.time,
+            displayValue: ""
+        };
+    },
+    created() {
+        if (typeof this.date === "string") {
+            this.date = new Date(this.date + "T00:00:00");
+            this.displayValue = this.getDisplayValue();
+        }
+    },
+    methods: {
+        saveValue() {
+            this.field.value.date = this.isFilled() ? Voxel.helpers.dateFormatYmd(this.date) : null;
+            this.displayValue = this.getDisplayValue();
+        },
+        onSave() {
+            this.saveValue();
+            this.$refs.formGroup.blur();
+        },
+        onClear() {
+            this.$refs.picker.reset();
+        },
+        isFilled() {
+            return this.date && isFinite(this.date);
+        },
+        getDisplayValue() {
+            return this.date ? Voxel.helpers.dateFormat(this.date) : "";
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let hasTimepicker = !!this.field.props.enable_timepicker;
+                let isEmpty = !(typeof val === "object" && val.date && (!hasTimepicker || val.time));
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    },
+    watch: {
+        "field.value.date"() { this.validate(this.field.value); },
+        "field.value.time"() { this.validate(this.field.value); }
+    }
+};
+
+/**
+ * FIELD: TIME
+ * Time picker field
+ */
+const FieldTime = {
+    template: "#create-post-time-field",
+    props: { field: Object },
+    methods: {
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(typeof val === "string" && val.trim().length >= 1);
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        },
+        formattedTime() {
+            if (typeof this.field.value === "string" && this.field.value.length) {
+                // Validate time format HH:MM
+                if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(this.field.value)) return null;
+
+                let [hours, minutes, seconds = 0] = this.field.value.split(":").map(Number);
+                let date = new Date();
+                date.setHours(hours, minutes, seconds, 0);
+                return Voxel.helpers.timeFormat(date);
+            }
+            return null;
+        }
+    },
+    watch: {
+        "field.value"() { this.validate(this.field.value); }
+    }
+};
+
+/**
+ * FIELD: COLOR
+ * Color picker field with hex validation
+ */
+const FieldColor = {
+    template: "#create-post-color-field",
+    props: { field: Object },
+    methods: {
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(typeof val === "string" && val.trim().length >= 1);
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+
+                if (!isEmpty) {
+                    // Validate hex color format
+                    if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(val)) {
+                        errors.push(this.$root.get_error("color:invalid"));
+                    }
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    },
+    watch: {
+        "field.value"() { this.validate(this.field.value); }
+    }
+};
+
+/**
+ * FIELD: POST-RELATION
+ * Links posts to other posts with search functionality
+ */
+const FieldPostRelation = {
+    template: "#create-post-post-relation-field",
+    props: { field: Object, index: { type: Number, default: 0 } },
+    data() {
+        return {
+            posts: {
+                loading: false,
+                has_more: false,
+                list: null
+            },
+            value: this.field.props.selected,
+            displayValue: "",
+            search: {
+                term: "",
+                offset: 0,
+                loading: false,
+                loading_more: false,
+                has_more: false,
+                list: null
+            }
+        };
+    },
+    created() {
+        this.displayValue = this._getDisplayValue();
+    },
+    methods: {
+        onOpen() {
+            if (this.posts.list === null) {
+                this.posts.list = [];
+                this.loadPosts();
+            }
+        },
+        loadPosts() {
+            this.posts.loading = true;
+            jQuery.get(Voxel_Config.ajax_url + "&action=create_post.relations.get_posts", {
+                offset: this.posts.list.length,
+                post_id: this.$root.post?.id,
+                exclude: this.$root.post?.id,
+                post_type: this.$root.config.post_type.key,
+                field_key: this.field.key,
+                field_path: this.field.path
+            }).always((res) => {
+                this.posts.loading = false;
+                if (res.success) {
+                    this.posts.list.push(...res.data);
+                    this.posts.has_more = res.has_more;
+                } else {
+                    Voxel.alert(res.message || Voxel_Config.l10n.ajaxError, "error");
+                }
+            });
+        },
+        saveValue() {
+            this.field.value = this.isFilled() ? Object.keys(this.value) : null;
+            this.displayValue = this._getDisplayValue();
+        },
+        onSave() {
+            this.saveValue();
+            this.$refs.formGroup.blur();
+        },
+        onClear() {
+            Object.keys(this.value).forEach(k => delete this.value[k]);
+        },
+        isFilled() {
+            return Object.keys(this.value).length > 0;
+        },
+        _getDisplayValue() {
+            let items = Object.values(this.value);
+            let result = "";
+            if (items[0]) {
+                result += items[0].title;
+            }
+            if (items.length > 1) {
+                result += " +" + (items.length - 1);
+            }
+            return result;
+        },
+        selectPost(post) {
+            if (this.value[post.id]) {
+                delete this.value[post.id];
+            } else {
+                if (!this.field.props.multiple) {
+                    Object.keys(this.value).forEach(k => delete this.value[k]);
+                }
+                this.value[post.id] = post;
+                if (!this.field.props.multiple) {
+                    this.onSave();
+                }
+            }
+        },
+        clientSearchPosts() {
+            let term = this.search.term.trim().toLowerCase();
+            let list = [];
+            let full = false;
+            this.posts.list.forEach((post) => {
+                if (!full && post.title.toLowerCase().indexOf(term) !== -1) {
+                    list.push(post);
+                    full = list.length >= 10;
+                }
+            });
+            this.search.list = list;
+            this.search.loading = false;
+            this.search.has_more = false;
+            this.search.loading_more = false;
+        },
+        serverSearchPosts: Voxel.helpers.debounce(function (vm, loadMore = false) {
+            jQuery.get(Voxel_Config.ajax_url + "&action=create_post.relations.get_posts", {
+                offset: loadMore ? vm.search.list.length : 0,
+                post_id: vm.$root.post?.id,
+                exclude: vm.$root.post?.id,
+                search: vm.search.term.trim(),
+                post_type: vm.$root.config.post_type.key,
+                field_key: vm.field.key,
+                field_path: vm.field.path
+            }).always((res) => {
+                vm.search.loading = false;
+                vm.search.loading_more = false;
+                if (res.success) {
+                    if (loadMore) {
+                        vm.search.list.push(...res.data);
+                    } else {
+                        vm.search.list = res.data;
+                    }
+                    vm.search.has_more = res.has_more;
+                } else {
+                    Voxel.alert(res.message || Voxel_Config.l10n.ajaxError, "error");
+                }
+            });
+        }),
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(Array.isArray(val) && val.length >= 1);
+                let max = this.field.props.multiple ? this.field.props.max_count : 1;
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+
+                if (!isEmpty) {
+                    if (max && val.length > max) {
+                        errors.push(this.$root.replace_vars(this.$root.get_error("relation:max"), { "@max": max }));
+                    }
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    },
+    watch: {
+        "search.term"() {
+            if (this.search.term.trim() && this.posts.list) {
+                this.search.loading = true;
+                if (!this.posts.has_more || this.search.term.trim().length <= 2) {
+                    this.clientSearchPosts();
+                } else {
+                    this.serverSearchPosts(this);
+                }
+            }
+        },
+        "field.value"() { this.validate(this.field.value); }
+    }
+};
+
+/**
+ * DATE RANGE PICKER Component
+ * Used by recurring date field for multi-day events
+ */
+const DateRangePicker = {
+    template: "#recurring-date-range-picker",
+    props: { date: Object, parent: Object },
+    emits: ["save"],
+    data() {
+        return {
+            picker: null,
+            activePicker: "start",
+            value: {
+                start: this.date.startDate ? new Date(this.date.startDate + "T00:00:00") : null,
+                end: this.date.endDate ? new Date(this.date.endDate + "T00:00:00") : null
+            }
+        };
+    },
+    mounted() {
+        this.picker = new Pikaday({
+            field: this.$refs.input,
+            container: this.$refs.calendar,
+            bound: false,
+            firstDay: 1,
+            keyboardInput: false,
+            numberOfMonths: 2,
+            defaultDate: this.value.start,
+            startRange: this.value.start,
+            endRange: this.value.end,
+            theme: "pika-range",
+            onSelect: (date) => {
+                if (this.activePicker === "start") {
+                    this.setStartDate(date);
+                    this.setEndDate(null);
+                    this.activePicker = "end";
+                } else {
+                    this.setEndDate(date);
+                    this.activePicker = "start";
+                    this.date.startDate = Voxel.helpers.dateFormatYmd(this.value.start);
+                    this.date.endDate = Voxel.helpers.dateFormatYmd(this.value.end);
+                    this.$emit("save");
+                }
+                this.refresh();
+            },
+            selectDayFn: (date) => {
+                if (this.value.start && date.toDateString() === this.value.start.toDateString()) return true;
+                if (this.value.end && date.toDateString() === this.value.end.toDateString()) return true;
+                return false;
+            },
+            disableDayFn: (date) => {
+                if (this.activePicker === "end" && this.value.start && date <= this.value.start) {
+                    return true;
+                }
+                return false;
+            }
+        });
+        this.setStartDate(this.value.start);
+        this.setEndDate(this.value.end);
+        this.refresh();
+    },
+    unmounted() {
+        setTimeout(() => this.picker.destroy(), 200);
+    },
+    methods: {
+        setStartDate(date) {
+            this.value.start = date;
+            this.picker.setStartRange(date);
+            if (this.value.end && this.value.start > this.value.end) {
+                this.setEndDate(null);
+            }
+        },
+        setEndDate(date) {
+            this.value.end = date;
+            this.picker.setEndRange(date);
+        },
+        refresh() {
+            this.picker.draw();
+        },
+        reset() {
+            this.setStartDate(null);
+            this.setEndDate(null);
+            this.refresh();
+            this.activePicker = "start";
+        }
+    },
+    computed: {
+        startLabel() {
+            return this.value.start
+                ? Voxel.helpers.dateFormat(this.value.start)
+                : this.parent.field.props.l10n.from;
+        },
+        endLabel() {
+            return this.value.end
+                ? Voxel.helpers.dateFormat(this.value.end)
+                : this.parent.field.props.l10n.to;
+        }
+    },
+    watch: {
+        activePicker() { this.refresh(); }
+    }
+};
+
+/**
+ * FIELD: RECURRING-DATE
+ * Recurring date field with single/multi-day events and repeat rules
+ */
+const FieldRecurringDate = {
+    template: "#create-post-recurring-date-field",
+    props: { field: Object, index: { type: Number, default: 0 } },
+    components: {
+        datePicker: {
+            template: '#recurring-date-picker',
+            props: ['modelValue', 'minDate'],
+            emits: ['update:modelValue'],
+            data() {
+                return { picker: null };
+            },
+            mounted() {
+                this.picker = new Pikaday({
+                    field: this.$refs.input,
+                    container: this.$refs.calendar,
+                    bound: false,
+                    firstDay: 1,
+                    keyboardInput: false,
+                    defaultDate: this.modelValue ? new Date(this.modelValue) : null,
+                    onSelect: (date) => {
+                        this.$emit('update:modelValue', Voxel.helpers.dateFormatYmd(date));
+                    },
+                    selectDayFn: (date) => {
+                        return this.modelValue && this.modelValue === Voxel.helpers.dateFormatYmd(date);
+                    }
+                });
+            },
+            unmounted() {
+                setTimeout(() => this.picker.destroy(), 200);
+            },
+            watch: {
+                modelValue() { this.picker.draw(); }
+            }
+        },
+        dateRangePicker: DateRangePicker
+    },
+    methods: {
+        add() {
+            this.field.value.push({
+                multiday: false,
+                startDate: null,
+                startTime: "09:00",
+                endDate: null,
+                endTime: "10:00",
+                allday: false,
+                repeat: false,
+                frequency: 1,
+                unit: "week",
+                until: null
+            });
+        },
+        remove(date) {
+            this.field.value.splice(this.field.value.indexOf(date), 1);
+        },
+        id() {
+            return this.field.id + ":" + this.index + "." + Object.values(arguments).join(".");
+        },
+        clearDate(date) {
+            date.startDate = null;
+            date.startTime = null;
+            date.endDate = null;
+            date.endTime = null;
+            this.$refs.rangePicker?.[0]?.reset();
+        },
+        singleDatePicked(date) {
+            let startDate = new Date(date.startDate + "T00:00:00Z");
+            let nextDay = new Date(startDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            date.endDate = Voxel.helpers.dateFormatYmd(nextDay);
+        },
+        getStartDate(date) {
+            let time = date.startTime || "00:00:00";
+            let d = new Date(date.startDate + " " + time);
+            return date.startDate && isFinite(d) ? d : null;
+        },
+        getEndDate(date) {
+            let time = date.endTime || "00:00:00";
+            let d = new Date(date.endDate + " " + time);
+            return date.endDate && isFinite(d) ? d : null;
+        },
+        getUntilDate(date) {
+            let d = new Date(date.until);
+            return date.until && isFinite(d) ? d : null;
+        },
+        format(date) {
+            return Voxel.helpers.dateTimeFormat(date);
+        },
+        formatDate(date) {
+            return Voxel.helpers.dateFormat(date);
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = !(Array.isArray(val) && val.length >= 1);
+                let max = this.field.props.max_date_count;
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+
+                if (!isEmpty) {
+                    if (max && val.length > max) {
+                        errors.push(this.$root.replace_vars(this.$root.get_error("recurring-date:max"), { "@max": max }));
+                    }
+                    val.forEach(date => {
+                        if (!date.startDate || (date.multiday && !date.endDate)) {
+                            errors.push(this.$root.get_error("recurring-date:empty"));
+                        }
+                        if (date.repeat && !date.until) {
+                            errors.push(this.$root.get_error("recurring-date:missing-until"));
+                        }
+                    });
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    }
+};
+
+
+/* ==========================================================================
+   SECTION 2B: PRODUCT FIELD & SUB-COMPONENTS
+   ========================================================================== */
+
+/**
+ * PRODUCT ADDON: NUMERIC
+ * Numeric addon for products
+ */
+const ProductAddonNumeric = {
+    template: "#product-addon-numeric",
+    props: { product: Object, field: Object, addon: Object },
+    data() {
+        return {
+            value: this.field.value[this.addon.key]
+        };
+    }
+};
+
+/**
+ * PRODUCT ADDON: SWITCHER
+ * Toggle addon for products
+ */
+const ProductAddonSwitcher = {
+    template: "#product-addon-switcher",
+    props: { product: Object, field: Object, addon: Object },
+    data() {
+        return {
+            value: this.field.value[this.addon.key]
+        };
+    }
+};
+
+/**
+ * PRODUCT ADDON: SELECT
+ * Single/multi-select addon for products
+ */
+const ProductAddonSelect = {
+    template: "#product-addon-select",
+    props: { product: Object, field: Object, addon: Object },
+    data() {
+        return {
+            value: this.field.value[this.addon.key],
+            active: null
+        };
+    },
+    methods: {
+        beforeSubmit() {
+            Object.values(this.value.choices).forEach(choice => {
+                if (typeof choice.price === "number" && choice.price >= 0) {
+                    choice.enabled = true;
+                } else {
+                    choice.enabled = false;
+                    choice.price = null;
+                }
+            });
+        }
+    }
+};
+
+/**
+ * PRODUCT ADDON: CUSTOM SELECT
+ * User-defined select choices addon
+ */
+const ProductAddonCustomSelect = {
+    template: "#product-addon-custom-select",
+    props: { product: Object, field: Object, addon: Object },
+    data() {
+        return {
+            value: this.field.value[this.addon.key],
+            active: null,
+            list: [],
+            addon_id: [this.product.field.key, this.field.field.key, this.addon.key].join(".")
+        };
+    },
+    created() {
+        if (this.value.choices === null) {
+            this.value.choices = {};
+        }
+        Object.keys(this.value.choices).forEach(key => {
+            let choice = this.value.choices[key];
+            choice.value = key;
+            this.list.push(choice);
+        });
+    },
+    methods: {
+        insertChoice() {
+            let choice = jQuery.extend(true, {}, this.addon.props.choice);
+            this.active = choice;
+            this.list.push(choice);
+            this.$nextTick(() => {
+                this.$refs.formGroup.querySelector(".ts-field-repeater:not(.collapsed) .ts-choice-label .ts-filter")?.focus();
+            });
+        },
+        deleteChoice(target) {
+            this.list = this.list.filter(c => c !== target);
+        },
+        beforeSubmit(data, formData) {
+            let choices = {};
+            this.list.forEach(choice => {
+                if (typeof choice?.value === "string" && choice.value.length) {
+                    let entry = {
+                        value: choice.value,
+                        price: choice.price,
+                        subheading: choice.subheading,
+                        image: null
+                    };
+
+                    if (["cards", "radio", "checkboxes"].includes(this.addon.props.display_mode)) {
+                        entry.quantity = {
+                            enabled: choice.quantity.enabled,
+                            min: choice.quantity.min,
+                            max: choice.quantity.max
+                        };
+                    }
+
+                    if (["cards", "images"].includes(this.addon.props.display_mode)) {
+                        let fileKey = `files[${this.addon_id + "." + choice.value}][]`;
+                        if (Array.isArray(choice.image) && choice.image.length) {
+                            let file = choice.image[0];
+                            if (file.source === "new_upload") {
+                                formData.append(fileKey, file.item);
+                                entry.image = "uploaded_file";
+                            } else if (file.source === "existing") {
+                                entry.image = file.id;
+                            }
+                        }
+                    }
+
+                    choices[entry.value] = entry;
+                }
+            });
+            this.value.choices = choices;
+        }
+    }
+};
+
+/**
+ * PRODUCT ADDONS Container
+ * Manages all addon types for a product
+ */
+const ProductAddons = {
+    template: "#product-addons",
+    props: { product: Object, field: Object, productType: Object },
+    components: {
+        addonNumeric: ProductAddonNumeric,
+        addonSwitcher: ProductAddonSwitcher,
+        addonSelect: ProductAddonSelect,
+        addonMultiselect: ProductAddonSelect,
+        addonCustomSelect: ProductAddonCustomSelect,
+        addonCustomMultiselect: ProductAddonCustomSelect
+    },
+    data() {
+        return {
+            value: this.productType.value.addons
+        };
+    },
+    methods: {
+        beforeSubmit(data, formData) {
+            Object.values(this.field.props.addons).forEach(addon => {
+                let ref = this.$refs["addon:" + addon.key]?.[0];
+                if (typeof ref?.beforeSubmit === "function") {
+                    ref.beforeSubmit(data, formData);
+                }
+            });
+        }
+    }
+};
+
+/**
+ * PRODUCT BASE PRICE
+ * Base price configuration for products
+ */
+const ProductBasePrice = {
+    template: "#product-base-price",
+    props: { product: Object, productType: Object, field: Object },
+    data() {
+        return {
+            value: this.productType.value.base_price
+        };
+    }
+};
+
+/**
+ * PRODUCT BOOKING CALENDAR
+ * Availability calendar for booking products
+ */
+const ProductBookingCalendar = {
+    template: '<div class="ts-calendar-wrapper ts-availability-calendar"><input type="hidden" ref="input"></div>',
+    props: { booking: Object },
+    data() {
+        return {
+            picker: null,
+            today: new Date(),
+            weekdays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]
+        };
+    },
+    mounted() {
+        this.picker = new Pikaday({
+            field: this.$refs.input,
+            container: this.$el,
+            bound: false,
+            firstDay: 1,
+            keyboardInput: false,
+            onSelect: (date) => {
+                let formatted = Voxel.helpers.dateFormatYmd(date);
+                if (this.booking.value.excluded_days.includes(formatted)) {
+                    this.booking.value.excluded_days = this.booking.value.excluded_days.filter(d => d !== formatted);
+                } else {
+                    this.booking.value.excluded_days.push(formatted);
+                }
+            },
+            selectDayFn: (date) => {
+                return this.booking.value.excluded_days.includes(Voxel.helpers.dateFormatYmd(date));
+            },
+            disableDayFn: (date) => {
+                if (date < this.today) return true;
+                if (this.booking.field.props.booking_type === "days") {
+                    if (this.booking.value.excluded_weekdays.includes(this.weekdays[date.getDay()])) {
+                        return true;
+                    }
+                }
+                if (this.booking.field.props.booking_type === "timeslots") {
+                    if (this.booking.$refs.timeslots.unusedDays.includes(this.weekdays[date.getDay()])) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+
+        if (this.booking.field.props.booking_type === "days") {
+            this.$watch(() => this.booking.value.excluded_weekdays, () => this.refresh(), { deep: true });
+        } else if (this.booking.field.props.booking_type === "timeslots") {
+            this.$watch(() => this.booking.$refs.timeslots.unusedDays, () => this.refresh());
+        }
+    },
+    unmounted() {
+        this.picker.destroy();
+    },
+    methods: {
+        refresh() {
+            this.picker.draw();
+        }
+    }
+};
+
+/**
+ * PRODUCT WEEKDAY EXCLUSIONS
+ * Configure which weekdays are excluded from booking
+ */
+const ProductWeekdayExclusions = {
+    template: "#product-weekday-exclusions",
+    props: { booking: Object },
+    methods: {
+        toggleDay(day) {
+            let days = this.booking.value.excluded_weekdays;
+            if (days.includes(day)) {
+                days.splice(days.indexOf(day), 1);
+            } else {
+                days.push(day);
+            }
+        }
+    },
+    computed: {
+        label() {
+            return Object.keys(this.booking.field.props.weekdays)
+                .filter(d => this.booking.value.excluded_weekdays.includes(d))
+                .map(d => this.booking.field.props.weekdays[d])
+                .join(", ");
+        }
+    }
+};
+
+/**
+ * PRODUCT TIMESLOTS
+ * Configure time slot availability for booking
+ */
+const ProductTimeslots = {
+    template: "#product-timeslots",
+    props: { booking: Object },
+    data() {
+        return {
+            active: null,
+            groups: this.booking.value.timeslots.groups,
+            generate: {
+                from: "09:00",
+                to: "17:00",
+                length: 30,
+                gap: 0
+            },
+            showGenerate: false
+        };
+    },
+    methods: {
+        isDayUsed(day, group) {
+            return group.days.indexOf(day) !== -1;
+        },
+        isDayAvailable(day, group) {
+            return this.isDayUsed(day, group) || this.unusedDays.indexOf(day) !== -1;
+        },
+        addGroup() {
+            let group = { days: [], slots: [] };
+            this.groups.push(group);
+            this.active = group;
+            this.showGenerate = false;
+        },
+        createSlot(group) {
+            if (group.slots.length < 50) {
+                group.slots.push({ from: "09:00", to: "09:30" });
+            }
+        },
+        removeSlot(slot, group) {
+            group.slots = group.slots.filter(s => s !== slot);
+        },
+        removeGroup(target) {
+            this.groups = this.booking.value.timeslots.groups = this.groups.filter(g => g !== target);
+        },
+        toggleDay(day, group) {
+            if (this.isDayUsed(day, group)) {
+                group.days = group.days.filter(d => d !== day);
+            } else {
+                group.days.push(day);
+            }
+        },
+        groupKey(index, suffix = "") {
+            suffix = suffix.length ? "." + suffix : "";
+            return `${this.booking.product.key}.${this.booking.field.key}.slots.` + index + suffix;
+        },
+        groupLabel(group) {
+            return Object.keys(this.booking.field.props.weekdays)
+                .filter(d => group.days.includes(d))
+                .map(d => this.booking.field.props.weekdays[d])
+                .join(", ");
+        },
+        groupLabelShort(group) {
+            return Object.keys(this.booking.field.props.weekdays_short)
+                .filter(d => group.days.includes(d))
+                .map(d => this.booking.field.props.weekdays_short[d])
+                .join(", ");
+        },
+        generateSlots(group) {
+            let fromParts = this.generate.from.split(":");
+            let toParts = this.generate.to.split(":");
+            let length = this.generate.length;
+            let gap = this.generate.gap;
+
+            let fromHour = parseInt(fromParts[0], 10);
+            let fromMinute = parseInt(fromParts[1], 10);
+            let toHour = parseInt(toParts[0], 10);
+            let toMinute = parseInt(toParts[1], 10);
+
+            if (isNaN(fromHour) || isNaN(fromMinute) || isNaN(toHour) || isNaN(toMinute) || length < 5) {
+                return;
+            }
+
+            let slots = [];
+            let startMinutes = fromHour * 60 + fromMinute;
+            let endMinutes = toHour * 60 + toMinute;
+
+            if (endMinutes <= startMinutes) {
+                endMinutes += 1440; // next day
+            }
+
+            while (startMinutes < endMinutes && endMinutes >= startMinutes + length && slots.length < 50) {
+                let startTime = {
+                    hour: Math.floor(startMinutes / 60),
+                    minute: startMinutes % 60
+                };
+                let endTime = {
+                    hour: Math.floor((startMinutes + length) / 60),
+                    minute: (startMinutes + length) % 60
+                };
+
+                if (startTime.hour >= 24) startTime.hour -= 24;
+                if (endTime.hour >= 24) endTime.hour -= 24;
+
+                slots.push({
+                    from: [startTime.hour.toString().padStart(2, "0"), startTime.minute.toString().padStart(2, "0")].join(":"),
+                    to: [endTime.hour.toString().padStart(2, "0"), endTime.minute.toString().padStart(2, "0")].join(":")
+                });
+
+                startMinutes += length + gap;
+            }
+
+            group.slots = slots;
+            this.showGenerate = false;
+        }
+    },
+    computed: {
+        unusedDays() {
+            let used = [];
+            this.groups.forEach(g => used = used.concat(g.days));
+            return Object.keys(this.booking.field.props.weekdays).filter(d => !used.includes(d));
+        }
+    }
+};
+
+/**
+ * PRODUCT BOOKING
+ * Complete booking configuration component
+ */
+const ProductBooking = {
+    template: "#product-booking",
+    props: { product: Object, field: Object, productType: Object },
+    components: {
+        bookingCalendar: ProductBookingCalendar,
+        weekdayExclusions: ProductWeekdayExclusions,
+        timeSlots: ProductTimeslots
+    },
+    data() {
+        return {
+            value: this.productType.value.booking
+        };
+    },
+    methods: {
+        toggleWeekdayExclusion(day) {
+            let days = this.value.excluded_weekdays;
+            if (days.includes(day)) {
+                days.splice(days.indexOf(day), 1);
+            } else {
+                days.push(day);
+            }
+        }
+    },
+    computed: {
+        excludedWeekdays() {
+            return Object.keys(this.field.props.weekdays)
+                .filter(d => this.value.excluded_weekdays.includes(d))
+                .map(d => this.field.props.weekdays[d])
+                .join(", ");
+        }
+    }
+};
+
+/**
+ * PRODUCT DELIVERABLES
+ * Digital product deliverable files
+ */
+const ProductDeliverables = {
+    template: "#product-deliverables",
+    props: { product: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.productType.value.deliverables,
+            files: this.productType.value.deliverables.files
+        };
+    },
+    created() {
+        if (!Array.isArray(this.files)) {
+            this.files = [];
+        }
+    },
+    methods: {
+        beforeSubmit(data, formData) {
+            let key = `files[${this.product.field.key}.deliverables][]`;
+            let fileIds = [];
+
+            if (Array.isArray(this.files) && this.files.length) {
+                this.files.forEach(file => {
+                    if (file.source === "new_upload") {
+                        formData.append(key, file.item);
+                        fileIds.push("uploaded_file");
+                    } else if (file.source === "existing") {
+                        fileIds.push(file.id);
+                    }
+                });
+            }
+            this.value.files = fileIds;
+        }
+    }
+};
+
+/**
+ * PRODUCT SHIPPING
+ * Physical product shipping configuration
+ */
+const ProductShipping = {
+    template: "#product-shipping",
+    props: { product: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.productType.value.shipping
+        };
+    }
+};
+
+/**
+ * PRODUCT STOCK
+ * Inventory/stock management
+ */
+const ProductStock = {
+    template: "#product-stock",
+    props: { product: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.productType.value.stock
+        };
+    }
+};
+
+/**
+ * PRODUCT SUBSCRIPTION INTERVAL
+ * Recurring payment interval configuration
+ */
+const ProductSubscriptionInterval = {
+    template: "#product-subscription-interval",
+    props: { product: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.productType.value.subscription
+        };
+    },
+    computed: {
+        maxFrequency() {
+            let unit = this.value.unit;
+            if (unit === "day") return 365;
+            if (unit === "week") return 156;
+            if (unit === "month") return 36;
+            return 3; // year
+        }
+    }
+};
+
+/**
+ * PRODUCT ATTRIBUTE
+ * Single attribute definition for variations
+ */
+const ProductAttribute = {
+    template: "#product-attribute",
+    props: { product: Object, field: Object, attributes: Object, attribute: Object, productType: Object },
+    data() {
+        return {
+            activeChoice: null
+        };
+    },
+    methods: {
+        createChoice() {
+            let choice = { id: this.field.randomId(6) };
+            this.activeChoice = choice;
+            this.attribute.choices.push(choice);
+            this.$nextTick(() => {
+                this.$refs.formGroup.querySelector(".ts-field-repeater:not(.collapsed)")?.querySelector(".ts-choice-label .ts-filter")?.focus();
+            });
+        },
+        deleteChoice(target) {
+            this.attribute.choices = this.attribute.choices.filter(c => c !== target);
+        },
+        toggleChoice(choice) {
+            if (this.attribute.choices[choice.value]) {
+                delete this.attribute.choices[choice.value];
+            } else {
+                this.attribute.choices[choice.value] = { enabled: true };
+            }
+        }
+    }
+};
+
+/**
+ * PRODUCT ATTRIBUTES
+ * Manages all attributes for product variations
+ */
+const ProductAttributes = {
+    template: "#product-attributes",
+    props: { product: Object, field: Object, productType: Object },
+    emits: ["change:attributes"],
+    components: {
+        attribute: ProductAttribute
+    },
+    data() {
+        return {
+            value: this.field.value,
+            active: null
+        };
+    },
+    created() {
+        if (this.value.attributes === null) {
+            this.value.attributes = {};
+        }
+
+        Object.keys(this.value.attributes).forEach(key => {
+            let attr = this.value.attributes[key];
+            attr.key = key;
+            if (attr.type === "custom") {
+                Object.keys(attr.choices).forEach(choiceKey => {
+                    attr.choices[choiceKey].id = choiceKey;
+                });
+            }
+        });
+
+        this.field.attributeList = Object.values(this.value.attributes);
+        this.field.attributeList.forEach(attr => {
+            if (attr.type === "custom") {
+                attr.choices = Object.values(attr.choices);
+            }
+        });
+
+        this.$watch(() => this.field.attributeList, () => {
+            this.$emit("change:attributes", this.field.attributeList, this);
+        }, { deep: true });
+
+        this.$nextTick(() => this.$emit("change:attributes", this.field.attributeList, this));
+    },
+    methods: {
+        createAttribute() {
+            this.field.attributeList.push({
+                type: "custom",
+                key: this.field.randomId(6),
+                label: this.field.field.props.l10n.new_attribute_label,
+                display_mode: "dropdown",
+                choices: []
+            });
+            this.active = this.field.attributeList.at(-1);
+            this.$nextTick(() => {
+                this.$refs.attribute.$refs.formGroup.querySelector(".variation-box .ts-attribute-label .ts-filter")?.focus();
+            });
+        },
+        useAttribute(preset) {
+            this.field.attributeList.push({
+                type: "existing",
+                key: preset.key,
+                choices: {}
+            });
+            this.active = this.field.attributeList.at(-1);
+        },
+        isUsed(preset) {
+            return this.field.attributeList.find(a => a.type === "existing" && a.key === preset.key);
+        },
+        getPreset(attr) {
+            return this.field.getAttributePreset(attr);
+        },
+        getLabel(attr) {
+            return this.field.getAttributeLabel(attr);
+        },
+        getChoiceCount(attr) {
+            if (attr.type !== "existing") {
+                return attr.choices.length;
+            }
+            let count = 0;
+            Object.values(attr.choices).forEach(c => { if (c.enabled) count++; });
+            return count;
+        },
+        deleteAttribute(target) {
+            this.field.attributeList = this.field.attributeList.filter(a => a !== target);
+        },
+        beforeSubmit(data, formData) {
+            let attributes = {};
+
+            this.field.attributeList.forEach(attr => {
+                if (attr.type === "existing") {
+                    let choices = {};
+                    Object.keys(attr.choices).forEach(key => {
+                        if (attr.choices[key].enabled) {
+                            choices[key] = { enabled: true };
+                        }
+                    });
+                    attributes[attr.key] = {
+                        type: "existing",
+                        choices: choices
+                    };
+                } else if (attr.type === "custom") {
+                    let choices = {};
+                    attr.choices.forEach(choice => {
+                        choices[choice.id] = {
+                            label: choice.label,
+                            color: choice.color,
+                            subheading: choice.subheading,
+                            image: null
+                        };
+
+                        if (["cards", "images"].includes(attr.display_mode)) {
+                            let fileKey = `files[${this.product.field.key + ".custom-attributes." + choice.id}][]`;
+                            if (Array.isArray(choice.image) && choice.image.length) {
+                                let file = choice.image[0];
+                                if (file.source === "new_upload") {
+                                    formData.append(fileKey, file.item);
+                                    choices[choice.id].image = "uploaded_file";
+                                } else if (file.source === "existing") {
+                                    choices[choice.id].image = file.id;
+                                }
+                            }
+                        }
+                    });
+
+                    attributes[attr.key] = {
+                        type: "custom",
+                        label: attr.label,
+                        display_mode: attr.display_mode,
+                        choices: choices
+                    };
+                }
+            });
+
+            this.value.attributes = attributes;
+        }
+    }
+};
+
+/**
+ * PRODUCT VARIATION BASE PRICE
+ * Price configuration for a single variation
+ */
+const ProductVariationBasePrice = {
+    template: "#product-variation-base-price",
+    props: { product: Object, variations: Object, variation: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.variation.config.base_price
+        };
+    }
+};
+
+/**
+ * PRODUCT VARIATION STOCK
+ * Stock configuration for a single variation
+ */
+const ProductVariationStock = {
+    template: "#product-variation-stock",
+    props: { product: Object, variations: Object, variation: Object, field: Object, productType: Object },
+    data() {
+        return {
+            value: this.variation.config.stock
+        };
+    }
+};
+
+/**
+ * PRODUCT VARIATION BULK SETTINGS
+ * Apply settings to multiple variations at once
+ */
+const ProductVariationBulkSettings = {
+    template: "#product-variation-bulk-settings",
+    props: { product: Object, variations: Object, variation: Object, productType: Object },
+    data() {
+        return {
+            open: false,
+            copy: {
+                what: "price",
+                where: "all"
+            }
+        };
+    },
+    methods: {
+        getWhereChoices() {
+            let choices = [];
+            this.variations.attributeList?.forEach(attr => {
+                if (attr.type === "custom") {
+                    let choiceLabel = attr.choices.find(c => c.id === this.variation.attributes[attr.key])?.label;
+                    choices.push({ key: attr.key, label: attr.label + ": " + choiceLabel });
+                } else {
+                    let preset = this.variations.getAttributePreset(attr);
+                    let choiceLabel = preset.choices.find(c => c.value === this.variation.attributes[attr.key])?.label;
+                    choices.push({ key: attr.key, label: preset.label + ": " + choiceLabel });
+                }
+            });
+            return choices;
+        },
+        apply() {
+            let what = this.copy.what;
+            let where = this.copy.where;
+            let settings = {};
+
+            if (what === "all" || what === "price") {
+                settings.price = this.variation.config.base_price;
+                settings.enabled = this.variation.enabled;
+            }
+            if (what === "all" || what === "image") {
+                settings.image = this.variation.image;
+            }
+            if (this.variations.field.props.stock.enabled && (what === "all" || what === "stock")) {
+                settings.stock = this.variation.config.stock;
+            }
+
+            let count = 0;
+            for (let v of this.variations.variationList) {
+                if (v.id === this.variation.id) continue;
+                if (where !== "all" && v.attributes[where] !== this.variation.attributes[where]) continue;
+
+                count++;
+                if (settings.price) {
+                    v.enabled = settings.enabled;
+                    v.config.base_price.amount = settings.price.amount;
+                    if (this.variations.field.props.fields["base-price"].props.discount_price.enabled) {
+                        v.config.base_price.discount_amount = settings.price.discount_amount;
+                    }
+                }
+                if (settings.image) {
+                    if (!v.image) v.image = [];
+                    v.image.length = 0;
+                    if (settings.image.length) {
+                        v.image.push(settings.image[0]);
+                    }
+                }
+                if (settings.stock) {
+                    v.config.stock.enabled = settings.stock.enabled;
+                    v.config.stock.quantity = settings.stock.quantity;
+                    v.config.stock.sold_individually = settings.stock.sold_individually;
+                }
+            }
+
+            if (count > 1) {
+                let message = count === 1
+                    ? this.variations.field.props.l10n.one_variation_updated
+                    : this.variations.field.props.l10n.multiple_variations_updated.replace("@count", count);
+                Voxel.alert(message, "success", 3000);
+                this.open = false;
+            }
+        }
+    }
+};
+
+/**
+ * PRODUCT VARIATIONS
+ * Manages product variations (attribute combinations)
+ */
+const ProductVariations = {
+    template: "#product-variations",
+    props: { product: Object, field: Object, productType: Object },
+    components: {
+        attributes: ProductAttributes,
+        variationBasePrice: ProductVariationBasePrice,
+        variationStock: ProductVariationStock,
+        variationBulkSettings: ProductVariationBulkSettings
+    },
+    data() {
+        return {
+            value: this.productType.value.variations,
+            attributeList: null,
+            filteredAttributes: [],
+            activeVariation: null,
+            variationList: null,
+            keyMapCache: {},
+            manualVariationsCache: [],
+            autoVariationsCache: [],
+            manualMode: false,
+            manualVariation: {
+                active: false,
+                attributes: {}
+            }
+        };
+    },
+    created() {
+        if (this.value.variations === null) {
+            this.value.variations = {};
+        }
+
+        this.manualMode = !!this.value.manual_mode;
+
+        Object.keys(this.value.variations).forEach(key => {
+            let variation = this.value.variations[key];
+            variation.id = key;
+            variation._key = JSON.stringify(this.sortObject(variation.attributes));
+            if (this.manualMode) {
+                variation._manual = true;
+            }
+        });
+
+        this.variationList = Object.values(this.value.variations);
+        if (this.manualMode) {
+            this.manualVariationsCache = [...this.variationList];
+        }
+
+        this.enableManualVariationsForEditing();
+    },
+    methods: {
+        sortObject(obj) {
+            return Object.fromEntries(Object.entries(obj).sort());
+        },
+        getAttributePreset(attr) {
+            return this.field.props.attributes.find(a => a.key === attr.key);
+        },
+        getAttributeLabel(attr) {
+            return attr.type === "existing" ? this.getAttributePreset(attr)?.label : attr.label;
+        },
+        getVariationLabel(variation) {
+            let labels = [];
+            let attrs = this.filteredAttributes.length ? this.filteredAttributes : (this.attributeList || []);
+
+            attrs.forEach(attr => {
+                let value = variation.attributes[attr.key];
+                if (value === "any") {
+                    labels.push(this.getAttributeLabel(attr) + ": " + this.field.props.l10n.any);
+                } else if (attr.type === "custom") {
+                    labels.push(attr.choices.find(c => c.id === value)?.label);
+                } else {
+                    let preset = this.getAttributePreset(attr);
+                    labels.push(preset.choices.find(c => c.value === value)?.label);
+                }
+            });
+
+            return labels.filter(Boolean).join(" / ");
+        },
+        onAttributesUpdate(attrList) {
+            this.filteredAttributes = attrList.filter(attr => {
+                if (attr.type === "custom") {
+                    return attr.choices && attr.choices.length > 0;
+                }
+                return Object.values(attr.choices).some(c => c.enabled);
+            });
+
+            this.autoVariationsCache = [];
+
+            if (this.manualMode && this.manualVariationsCache.length) {
+                this.cleanupInvalidManualVariations();
+            } else if (!this.manualMode) {
+                let combinations = this.filteredAttributes.length
+                    ? this._generateCombinations(this.filteredAttributes)
+                    : [];
+
+                let newList = [];
+                this.variationList.forEach(v => this.keyMapCache[v._key] = v);
+
+                combinations.forEach(combo => {
+                    let key = JSON.stringify(this.sortObject(combo));
+                    if (this.keyMapCache[key]) {
+                        newList.push(this.keyMapCache[key]);
+                    } else {
+                        let variation = jQuery.extend(true, {}, this.field.props.variation_props);
+                        variation.id = this.randomId(8);
+                        variation.attributes = this.sortObject(combo);
+                        variation.image = [];
+                        variation._key = JSON.stringify(this.sortObject(variation.attributes));
+                        newList.push(variation);
+                    }
+                });
+
+                this.variationList = newList;
+            }
+        },
+        cleanupInvalidManualVariations() {
+            let validChoices = {};
+            this.filteredAttributes.forEach(attr => {
+                if (attr.type === "custom") {
+                    validChoices[attr.key] = attr.choices.map(c => c.id);
+                } else {
+                    validChoices[attr.key] = Object.keys(attr.choices).filter(k => attr.choices[k].enabled);
+                }
+            });
+
+            let validVariations = this.manualVariationsCache.filter(v => {
+                for (let attrKey of Object.keys(v.attributes)) {
+                    let value = v.attributes[attrKey];
+                    if (!validChoices[attrKey]) return false;
+                    if (value !== "any" && !validChoices[attrKey].includes(value)) return false;
+                }
+                for (let attrKey of Object.keys(validChoices)) {
+                    if (!(attrKey in v.attributes)) return false;
+                }
+                return true;
+            });
+
+            this.manualVariationsCache = validVariations;
+            this.variationList = [...validVariations];
+            this.enableManualVariationsForEditing();
+
+            Object.keys(this.keyMapCache).forEach(key => {
+                let v = this.keyMapCache[key];
+                if (v._manual && !validVariations.includes(v)) {
+                    delete this.keyMapCache[key];
+                }
+            });
+        },
+        onManualModeToggle() {
+            this.manualVariation.active = false;
+
+            if (this.manualMode) {
+                this.autoVariationsCache = [...this.variationList];
+                this.variationList = [...this.manualVariationsCache];
+                this.enableManualVariationsForEditing();
+            } else {
+                this.manualVariationsCache = [...this.variationList];
+
+                if (this.filteredAttributes.length) {
+                    let combinations = this._generateCombinations(this.filteredAttributes);
+                    let newList = [];
+
+                    combinations.forEach(combo => {
+                        let key = JSON.stringify(this.sortObject(combo));
+                        if (this.keyMapCache[key]) {
+                            newList.push(this.keyMapCache[key]);
+                        } else {
+                            let variation = jQuery.extend(true, {}, this.field.props.variation_props);
+                            variation.id = this.randomId(8);
+                            variation.attributes = this.sortObject(combo);
+                            variation.image = [];
+                            variation._key = key;
+                            newList.push(variation);
+                        }
+                    });
+
+                    this.variationList = newList;
+                    this.autoVariationsCache = [...newList];
+                } else {
+                    this.variationList = [];
+                    this.autoVariationsCache = [];
+                }
+            }
+        },
+        showManualVariationForm() {
+            this.manualVariation.active = true;
+            this.manualVariation.attributes = {};
+            this.filteredAttributes.forEach(attr => {
+                this.manualVariation.attributes[attr.key] = "";
+            });
+        },
+        createManualVariation() {
+            let attributes = {};
+            let allAny = true;
+            let hasEmpty = false;
+
+            this.filteredAttributes.forEach(attr => {
+                let value = this.manualVariation.attributes[attr.key];
+                attributes[attr.key] = value;
+                if (value === "") hasEmpty = true;
+                if (value !== "any" && value !== "") allAny = false;
+            });
+
+            if (hasEmpty) {
+                Voxel.alert(this.field.props.l10n.select_at_least_one, "error");
+                return;
+            }
+            if (allAny) {
+                Voxel.alert(this.field.props.l10n.select_at_least_one, "error");
+                return;
+            }
+
+            let key = JSON.stringify(this.sortObject(attributes));
+            if (this.variationList.find(v => v._key === key)) {
+                Voxel.alert(this.field.props.l10n.variation_exists, "error");
+                return;
+            }
+
+            let variation = jQuery.extend(true, {}, this.field.props.variation_props);
+            variation.id = this.randomId(8);
+            variation.attributes = this.sortObject(attributes);
+            variation.image = [];
+            variation._key = key;
+            variation.enabled = true;
+            variation._manual = true;
+
+            this.variationList.push(variation);
+            this.manualVariationsCache.push(variation);
+            this.keyMapCache[key] = variation;
+            this.activeVariation = variation;
+            this.manualVariation.active = false;
+        },
+        removeVariation(target) {
+            let index = this.variationList.indexOf(target);
+            if (index !== -1) {
+                this.variationList.splice(index, 1);
+            }
+
+            let manualIndex = this.manualVariationsCache.findIndex(v => v._key === target._key);
+            if (manualIndex !== -1) {
+                this.manualVariationsCache.splice(manualIndex, 1);
+            }
+
+            delete this.keyMapCache[target._key];
+        },
+        _generateCombinations(attributes, index = 0, current = {}, results = []) {
+            if (results.length >= this.field.props.max_variations) {
+                return results;
+            }
+
+            if (index === attributes.length) {
+                results.push({ ...current });
+                return results;
+            }
+
+            let attr = attributes[index];
+            let key = attr.key;
+            let choices;
+
+            if (attr.type === "custom") {
+                choices = attr.choices;
+            } else {
+                choices = [];
+                let preset = this.field.props.attributes.find(a => a.key === attr.key);
+                preset.choices.forEach(c => {
+                    if (attr.choices[c.value]?.enabled) {
+                        choices.push(c.value);
+                    }
+                });
+            }
+
+            for (let i = 0; i < choices.length; i++) {
+                current[key] = attr.type === "custom" ? choices[i].id : choices[i];
+                this._generateCombinations(attributes, index + 1, current, results);
+            }
+
+            return results;
+        },
+        randomId(length = 8) {
+            let chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+            let result = "";
+            for (let i = 0; i < length; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        },
+        beforeSubmit(data, formData) {
+            this.$refs.attributes.beforeSubmit(data, formData);
+
+            let variations = {};
+            this.variationList.forEach(v => {
+                variations[v.id] = {
+                    attributes: v.attributes,
+                    config: v.config,
+                    image: null,
+                    enabled: v.enabled
+                };
+
+                let fileKey = `files[${this.product.field.key + ".variations." + v.id}][]`;
+                if (Array.isArray(v.image) && v.image.length) {
+                    let file = v.image[0];
+                    if (file.source === "new_upload") {
+                        formData.append(fileKey, file.item);
+                        variations[v.id].image = "uploaded_file";
+                    } else if (file.source === "existing") {
+                        variations[v.id].image = file.id;
+                    }
+                }
+
+                if (v.enabled && !this.hasValidPrice(v)) {
+                    variations[v.id].enabled = false;
+                }
+            });
+
+            this.value.variations = variations;
+            this.value.manual_mode = this.manualMode;
+        },
+        enableManualVariationsForEditing() {
+            this.variationList.forEach(v => {
+                if (v._manual && !v.enabled) {
+                    v.enabled = true;
+                }
+            });
+        },
+        hasValidPrice(variation) {
+            return typeof variation.config.base_price.amount === "number";
+        },
+        hasValidStock(variation) {
+            if (!this.field.props.stock.enabled) return true;
+            if (!variation.config.stock.enabled) return true;
+            return variation.config.stock.quantity >= 1;
+        }
+    },
+    computed: {
+        currentAttributes() {
+            return this.filteredAttributes;
+        }
+    }
+};
+
+/**
+ * PRODUCT CUSTOM PRICES SINGLE
+ * Single custom price rule configuration
+ */
+const ProductCustomPricesSingle = {
+    template: "#product-custom-prices-single",
+    props: { product: Object, customPrices: Object, pricing: Object, productType: Object },
+    data() {
+        return {};
+    },
+    created() {
+        if (this.customPrices.field.props.addons.enabled) {
+            this.handleCustomChoices();
+        }
+    },
+    methods: {
+        createCondition() {
+            this.pricing.conditions.push({
+                type: "day_of_week",
+                days: [],
+                date: null,
+                range: { from: null, to: null }
+            });
+        },
+        deleteCondition(condition) {
+            this.pricing.conditions.splice(this.pricing.conditions.indexOf(condition), 1);
+        },
+        conditionKey(index, suffix = "") {
+            suffix = suffix.length ? "." + suffix : "";
+            return `${this.product.field.key}.${this.customPrices.field.key}.conditions.` + index + suffix;
+        },
+        conditionLabel(condition) {
+            if (condition.type === "day_of_week") {
+                return Object.keys(this.customPrices.field.props.weekdays)
+                    .filter(d => condition.days.includes(d))
+                    .map(d => this.customPrices.field.props.weekdays[d])
+                    .join(", ");
+            }
+            if (condition.type === "date") {
+                let date = new Date(condition.date + "T00:00:00");
+                if (date && isFinite(date)) {
+                    return Voxel.helpers.dateFormat(date);
+                }
+            }
+            if (condition.type === "date_range") {
+                let from = new Date(condition.range.from + "T00:00:00");
+                let to = new Date(condition.range.to + "T00:00:00");
+                if (from && to && isFinite(from) && isFinite(to)) {
+                    return Voxel.helpers.dateFormat(from) + " - " + Voxel.helpers.dateFormat(to);
+                }
+            }
+            return "";
+        },
+        toggleDay(day, condition) {
+            let index = condition.days.indexOf(day);
+            if (index !== -1) {
+                condition.days.splice(index, 1);
+            } else {
+                condition.days.push(day);
+            }
+        },
+        isAddonActive(addonKey) {
+            let addon = this.productType.fields.addons.props.addons[addonKey];
+            let value = this.productType.value.addons[addonKey];
+            let active = addon.required || value.enabled;
+
+            if (["select", "multiselect"].includes(addon.type)) {
+                let hasPrice = false;
+                for (let choice of Object.values(value.choices)) {
+                    if (choice.price !== null && choice.price !== "") {
+                        hasPrice = true;
+                        break;
+                    }
+                }
+                active = active && hasPrice;
+            }
+
+            if (["custom-select", "custom-multiselect"].includes(addon.type)) {
+                let hasPrice = false;
+                for (let choice of this.getAddonRef(addonKey).list) {
+                    if (choice.price !== null && choice.price !== "") {
+                        hasPrice = true;
+                        break;
+                    }
+                }
+                active = active && hasPrice;
+            }
+
+            return active;
+        },
+        isChoiceActive(choice, addonKey) {
+            let addon = this.productType.fields.addons.props.addons[addonKey];
+            let value = this.productType.value.addons[addonKey];
+
+            if (addon.type === "select" || addon.type === "multiselect") {
+                return value.choices[choice.value].price !== null && value.choices[choice.value].price !== "";
+            }
+            return choice.price !== null && choice.price !== "";
+        },
+        handleCustomChoices() {
+            if (this.pricing.prices.addons === null) return;
+
+            Object.keys(this.pricing.prices.addons).forEach(addonKey => {
+                let addon = this.productType.fields.addons.props.addons[addonKey];
+                if (addon.type === "custom-select" || addon.type === "custom-multiselect") {
+                    let ref = this.getAddonRef(addonKey);
+                    if (!this.pricing.prices.addons[addonKey]) {
+                        this.pricing.prices.addons[addonKey] = {};
+                    }
+
+                    let updatePrices = (list) => {
+                        let current = this.pricing.prices.addons[addonKey];
+                        this.pricing.prices.addons[addonKey] = {};
+                        list.forEach(choice => {
+                            if (!this.pricing.prices.addons[addonKey][choice.value]) {
+                                this.pricing.prices.addons[addonKey][choice.value] = {
+                                    price: current[choice.value]?.price
+                                };
+                            }
+                        });
+                    };
+
+                    updatePrices(ref.list);
+                    this.$watch(() => ref.list, (list) => updatePrices(list), { deep: true });
+                }
+            });
+        },
+        getAddonRef(addonKey) {
+            return this.product.$refs[`type:${this.productType.key}-field:addons`][0].$refs["addon:" + addonKey][0];
+        }
+    }
+};
+
+/**
+ * PRODUCT CUSTOM PRICES
+ * Container for multiple custom price rules
+ */
+const ProductCustomPrices = {
+    template: "#product-custom-prices",
+    props: { product: Object, field: Object, productType: Object },
+    components: {
+        singlePrice: ProductCustomPricesSingle
+    },
+    data() {
+        return {
+            value: this.productType.value.custom_prices,
+            active: null
+        };
+    },
+    methods: {
+        createPrice() {
+            this.value.list.push({
+                enabled: true,
+                label: "",
+                conditions: [],
+                prices: structuredClone(Vue.toRaw(this.field.props.prices_schema))
+            });
+            this.active = this.value.list.at(-1);
+            this.$nextTick(() => {
+                this.$refs.prices.$el.querySelector(".ts-field-repeater:not(.collapsed) .ts-pricing-label .ts-filter")?.focus();
+            });
+        },
+        deletePrice(price) {
+            this.value.list.splice(this.value.list.indexOf(price), 1);
+        }
+    }
+};
+
+/**
+ * FIELD: PRODUCT
+ * Main product field orchestrating all product sub-components
+ */
+const FieldProduct = {
+    template: "#create-post-product-field",
+    props: { field: Object },
+    components: {
+        "field-addons": ProductAddons,
+        "field-base-price": ProductBasePrice,
+        "field-booking": ProductBooking,
+        "field-deliverables": ProductDeliverables,
+        "field-shipping": ProductShipping,
+        "field-stock": ProductStock,
+        "field-subscription-interval": ProductSubscriptionInterval,
+        "field-variations": ProductVariations,
+        "field-custom-prices": ProductCustomPrices
+    },
+    data() {
+        return {
+            product_type: null
+        };
+    },
+    created() {
+        this.set_initial_product_type();
+    },
+    methods: {
+        set_initial_product_type() {
+            let productType = this.field.props.product_types[this.field.value.product_type];
+            this.product_type = productType;
+            productType.value = this.field.value;
+        },
+        set_product_type(key) {
+            let productType = this.field.props.product_types[key];
+            productType.value.enabled = true;
+            this.field.value = productType.value;
+            this.product_type = productType;
+        },
+        onSubmit(data, formData) {
+            Object.values(this.product_type.fields).forEach(field => {
+                let ref = this.$refs[`type:${this.product_type.key}-field:` + field.key]?.[0];
+                if (typeof ref?.beforeSubmit === "function") {
+                    ref.beforeSubmit(data, formData);
+                }
+            });
+            data[this.field.key] = this.field.value;
+            this.$refs.deliverables?.onSubmit(data[this.field.key], formData);
+        },
+        validate(val) {
+            if (this.$root.shouldValidate()) {
+                let errors = [];
+                let isEmpty = true;
+
+                if (this.field.required || val.enabled) {
+                    isEmpty = false;
+                }
+
+                if (this.$root.shouldValidateRequired() && this.field.required && isEmpty) {
+                    errors.push(this.$root.get_error("required"));
+                }
+                this.field.validation.errors = errors;
+            }
+        }
+    }
+};
+
+
+/* ==========================================================================
+   SECTION 2C: FILE UPLOAD COMPONENT
+   ========================================================================== */
+
+/**
+ * FILE UPLOAD
+ * Reusable file upload component with drag-drop and media library
+ */
+const FileUpload = {
+    template: "#vx-file-upload",
+    props: {
+        field: Object,
+        sortable: { type: Boolean, default: true },
+        allowedFileTypes: String,
+        maxFileCount: { type: Number, default: 1 },
+        modelValue: Array,
+        context: Object
+    },
+    emits: ["update:modelValue"],
+    data() {
+        return {
+            dragActive: false,
+            reordering: false,
+            value: this.modelValue,
+            id: "file-upload-" + Voxel.helpers.sequentialId()
+        };
+    },
+    mounted() {
+        jQuery(this.$refs.input).on("change", (e) => {
+            for (let i = 0; i < e.target.files.length; i++) {
+                this.pushFile(e.target.files[i]);
+            }
+            this.$refs.input.value = "";
+            this.update();
+        });
+    },
+    unmounted() {
+        setTimeout(() => {
+            if (Array.isArray(this.value)) {
+                this.value.forEach(file => {
+                    if (file.source === "new_upload") {
+                        URL.revokeObjectURL(file.preview);
+                    }
+                });
+            }
+        }, 10);
+    },
+    methods: {
+        getStyle(file) {
+            return file.type.startsWith("image/")
+                ? `background-image: url('${file.preview}');`
+                : "";
+        },
+        pushFile(file) {
+            if (this.maxFileCount === 1) {
+                this.value = [];
+            }
+
+            let fileObj = {
+                source: "new_upload",
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                preview: URL.createObjectURL(file),
+                item: file,
+                _id: Voxel.helpers.randomId(8)
+            };
+
+            if (window._vx_file_upload_cache === undefined) {
+                window._vx_file_upload_cache = [];
+            }
+
+            let existing = window._vx_file_upload_cache.find(e =>
+                e.item.name === file.name &&
+                e.item.type === file.type &&
+                e.item.size === file.size &&
+                e.item.lastModified === file.lastModified
+            );
+
+            if (existing) {
+                this.value.push(existing);
+            } else {
+                this.value.push(fileObj);
+                window._vx_file_upload_cache.unshift(fileObj);
+            }
+        },
+        onDrop(e) {
+            this.dragActive = false;
+            if (e.dataTransfer.items) {
+                [...e.dataTransfer.items].forEach(item => {
+                    if (item.kind === "file") {
+                        this.pushFile(item.getAsFile());
+                    }
+                });
+            } else {
+                [...e.dataTransfer.files].forEach(file => {
+                    this.pushFile(file);
+                });
+            }
+            this.update();
+        },
+        onMediaPopupSave(files) {
+            if (this.maxFileCount === 1) {
+                this.value = [];
+            }
+
+            let added = {};
+            this.value.forEach(file => {
+                if (file.source === "existing") added[file.id] = true;
+                if (file.source === "new_upload") added[file._id] = true;
+            });
+
+            Object.values(files).forEach(file => {
+                if (file.source === "existing" && !added[file.id]) {
+                    this.value.push(file);
+                }
+                if (file.source === "new_upload" && !added[file._id]) {
+                    this.value.push(file);
+                }
+            });
+
+            this.update();
+        },
+        update() {
+            this.$emit("update:modelValue", this.value);
+        }
+    },
+    watch: {
+        modelValue(val) {
+            this.value = val;
+        }
+    }
+};
+
 
 /* ==========================================================================
    SECTION 3: MAIN APP & VALIDATION Mixin
@@ -1624,43 +3953,58 @@ const ConditionMixin = {
 };
 
 
+/**
+ * CONDITION HANDLERS
+ * Used for conditional field visibility based on other field values.
+ * Each handler takes (condition, value) and returns boolean.
+ */
 window.Voxel.conditionHandlers = {
+    // Text conditions
     "text:equals": (c, v) => v === c.value,
     "text:not_equals": (c, v) => v !== c.value,
     "text:empty": (c, v) => !v?.trim()?.length,
     "text:not_empty": (c, v) => !!v?.trim()?.length,
+    "text:contains": (c, v) => v?.match(new RegExp(c.value, "i")),
+
+    // Taxonomy conditions
+    "taxonomy:contains": (c, v) => Array.isArray(v) && v.includes(c.value),
+    "taxonomy:not_contains": (c, v) => !(Array.isArray(v) && v.includes(c.value)),
+    "taxonomy:empty": (c, v) => !Array.isArray(v) || !v.length,
+    "taxonomy:not_empty": (c, v) => Array.isArray(v) && v.length > 0,
+
+    // Switcher conditions
     "switcher:checked": (c, v) => !!v,
     "switcher:unchecked": (c, v) => !v,
-    "number:equals": (c, v) => v === parseFloat(c.value),
-    "number:not_equals": (c, v) => v !== parseFloat(c.value),
-    "number:greater_than": (c, v) => v > parseFloat(c.value),
-    "number:less_than": (c, v) => v < parseFloat(c.value),
-    "number:empty": (c, v) => v === null || v === undefined,
-    "number:not_empty": (c, v) => v !== null && v !== undefined,
-    "select:equals": (c, v) => v === c.value,
-    "select:not_equals": (c, v) => v !== c.value,
-    "select:any_of": (c, v) => c.value.includes(v),
-    "select:none_of": (c, v) => !c.value.includes(v),
-    "select:empty": (c, v) => !v,
-    "select:not_empty": (c, v) => !!v,
-    "date:equals": (c, v) => v === c.value,
-    "date:not_equals": (c, v) => v !== c.value,
-    "date:after": (c, v) => v > c.value,
-    "date:before": (c, v) => v < c.value,
-    "date:empty": (c, v) => !v,
-    "date:not_empty": (c, v) => !!v,
+
+    // Number conditions
+    "number:empty": (c, v) => isNaN(parseFloat(v)),
+    "number:equals": (c, v) => parseFloat(v) === parseFloat(c.value),
+    "number:gt": (c, v) => parseFloat(v) > parseFloat(c.value),
+    "number:gte": (c, v) => parseFloat(v) >= parseFloat(c.value),
+    "number:lt": (c, v) => parseFloat(v) < parseFloat(c.value),
+    "number:lte": (c, v) => parseFloat(v) <= parseFloat(c.value),
+    "number:not_empty": (c, v) => !isNaN(parseFloat(v)),
+    "number:not_equals": (c, v) => parseFloat(v) !== parseFloat(c.value),
+
+    // File conditions
     "file:empty": (c, v) => !Array.isArray(v) || !v.length,
     "file:not_empty": (c, v) => Array.isArray(v) && v.length > 0,
-    "taxonomy:any_of": (c, v) => {
-        if (!Array.isArray(v) || !v.length) return false;
-        return v.some(term => c.value.includes(term));
+
+    // Date conditions (handles date object with date and time properties)
+    "date:empty": (c, v) => !isFinite(new Date(v.date + " " + (v.time || "00:00:00"))),
+    "date:gt": (c, v) => {
+        let dateVal = new Date(v.date + " " + (v.time || "00:00:00"));
+        let compareVal = new Date(c.value);
+        if (!isFinite(dateVal) || !isFinite(compareVal)) return false;
+        return compareVal < dateVal;
     },
-    "taxonomy:none_of": (c, v) => {
-        if (!Array.isArray(v) || !v.length) return true;
-        return !v.some(term => c.value.includes(term));
+    "date:lt": (c, v) => {
+        let dateVal = new Date(v.date + " " + (v.time || "00:00:00"));
+        let compareVal = new Date(c.value);
+        if (!isFinite(dateVal) || !isFinite(compareVal)) return false;
+        return dateVal < compareVal;
     },
-    "taxonomy:empty": (c, v) => !Array.isArray(v) || !v.length,
-    "taxonomy:not_empty": (c, v) => Array.isArray(v) && v.length > 0
+    "date:not_empty": (c, v) => isFinite(new Date(v.date + " " + (v.time || "00:00:00")))
 };
 
 window.render_create_post = () => {
@@ -1697,6 +4041,8 @@ window.render_create_post = () => {
             },
             created() {
                 window.CP = this;
+                wrapper.__vue_instance__ = this;
+
                 this.fields = config.fields;
                 this.steps = config.steps;
                 this.post_type = config.post_type;
@@ -1704,7 +4050,7 @@ window.render_create_post = () => {
 
                 this.setupConditions(this.fields);
 
-                // Routing
+                // URL-based step routing
                 let stepKey = Voxel.getSearchParam("step");
                 let stepIdx = this.activeSteps.findIndex(k => k === stepKey);
                 if (stepKey && stepIdx > 0) {
@@ -1712,9 +4058,17 @@ window.render_create_post = () => {
                 } else {
                     this.setStep(0);
                 }
+
+                // Log any config errors (for debugging)
+                config.errors.forEach(error => console.log(error));
             },
             mounted() {
                 wrapper.classList.toggle("ts-ready");
+
+                // Notify parent frame in admin mode (for iframe embedding)
+                if (config.is_admin_mode) {
+                    window.parent.postMessage("create-post:mounted", "*");
+                }
             },
             methods: {
                 setStep(i) {
@@ -1816,26 +4170,53 @@ window.render_create_post = () => {
 
                         formData.append("postdata", JSON.stringify(data));
 
-                        // Handle file aliases - map FormData file entries back to actual File objects
+                        // Handle file deduplication with aliases
+                        // Voxel uses a smart aliasing system to avoid uploading duplicate files
                         let entries = Object.fromEntries(formData);
-                        let fileAliases = {};
-                        let aliasIndex = 0;
+                        let fileAliasMap = {};
 
                         for (let key in entries) {
                             if (key.startsWith("files[")) {
                                 let files = formData.getAll(key);
-                                files.forEach((file, idx) => {
-                                    if (file instanceof File) {
-                                        let alias = `__file_${aliasIndex++}`;
-                                        fileAliases[alias] = file;
-                                        formData.delete(key);
-                                    }
-                                });
+                                let uniqueFiles = [];
 
-                                // Re-append with aliases
-                                Object.keys(fileAliases).forEach(alias => {
-                                    formData.append(key, fileAliases[alias]);
-                                });
+                                for (let idx in files) {
+                                    let file = files[idx];
+                                    if (file instanceof File) {
+                                        // Create a unique key based on file properties
+                                        let fileKey = JSON.stringify({
+                                            name: file.name,
+                                            type: file.type,
+                                            size: file.size,
+                                            lastModified: file.lastModified
+                                        });
+
+                                        if (fileAliasMap[fileKey] !== undefined) {
+                                            // File already exists, use alias
+                                            formData.append(
+                                                `_vx_file_aliases[${key.slice(6, -3)}][${idx}][path]`,
+                                                fileAliasMap[fileKey].path
+                                            );
+                                            formData.append(
+                                                `_vx_file_aliases[${key.slice(6, -3)}][${idx}][index]`,
+                                                fileAliasMap[fileKey].index
+                                            );
+                                        } else {
+                                            // New unique file
+                                            uniqueFiles.push(file);
+                                            fileAliasMap[fileKey] = {
+                                                path: key.slice(6, -3),
+                                                index: uniqueFiles.indexOf(file)
+                                            };
+                                        }
+                                    }
+                                }
+
+                                // Replace with deduplicated files
+                                formData.delete(key);
+                                for (let file of uniqueFiles) {
+                                    formData.append(key, file);
+                                }
                             }
                         }
 
@@ -1855,6 +4236,13 @@ window.render_create_post = () => {
                             processData: false
                         }).always((res) => {
                             this.submission.processing = false;
+
+                            // In admin mode, notify parent frame and skip normal response handling
+                            if (config.is_admin_mode) {
+                                window.parent.postMessage("create-post:submitted", "*");
+                                return;
+                            }
+
                             if (res.success) {
                                 this.submission.done = true;
                                 this.submission.viewLink = res.view_link;
@@ -1863,8 +4251,11 @@ window.render_create_post = () => {
                                 this.submission.status = res.status;
                                 this.scrollIntoView();
                             } else {
-                                if (res.errors) Voxel.alert(res.errors.join("<br>"), "error");
-                                else Voxel.alert(res.message || Voxel_Config.l10n.ajaxError, "error");
+                                if (res.errors) {
+                                    Voxel.alert(res.errors.join("<br>"), "error");
+                                } else {
+                                    Voxel.alert(res.message || Voxel_Config.l10n.ajaxError, "error");
+                                }
                             }
                         });
                     }
@@ -1873,20 +4264,59 @@ window.render_create_post = () => {
                     this.submit({ save_as_draft: true });
                 },
                 scrollIntoView() {
-                    let el = this.$el;
-                    if (!el) return;
-
-                    let rect = el.getBoundingClientRect();
-                    let isInView = (
-                        rect.top >= 0 &&
-                        rect.left >= 0 &&
-                        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-                        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-                    );
-
-                    if (!isInView) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Get the closest Elementor element wrapper
+                    let el = wrapper.closest(".elementor-element");
+                    if (el.getBoundingClientRect().top < 0) {
+                        requestAnimationFrame(() => {
+                            // Handle iOS Safari scroll quirks
+                            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                                document.body.scrollTop = 0;
+                                document.documentElement.scrollTop = 0;
+                            } else {
+                                window.scrollTo({ top: 0, left: 0 });
+                            }
+                        });
                     }
+                },
+                toggleRow(e) {
+                    // Toggle repeater row collapsed state
+                    e.target.closest(".ts-field-repeater").classList.toggle("collapsed");
+                },
+                replace_vars(template, vars) {
+                    // Replace @variable placeholders in error messages
+                    Object.keys(vars).forEach(key => {
+                        template = template.replaceAll(key, vars[key]);
+                    });
+                    return template;
+                },
+                get_error(key) {
+                    // Get validation error message by key
+                    return this.config.validation_errors[key];
+                },
+                validate_field(fieldKey) {
+                    // Validate a single field by key
+                    let ref = this.$refs["field:" + fieldKey];
+                    if (typeof ref?.validate === "function") {
+                        ref.validate(ref.field.value);
+                    } else {
+                        console.warn("No validation added for this field type");
+                    }
+                },
+                shouldValidate() {
+                    // Check if validation should run (disabled in admin mode)
+                    return this.$root.widget === "create-post" && !config.is_admin_mode;
+                },
+                shouldValidateRequired() {
+                    // Check if required field validation is active
+                    return this.validateRequired;
+                },
+                currencyFormat() {
+                    // Format currency values using Voxel helper
+                    return Voxel.helpers.currencyFormat(...arguments);
+                },
+                randomId() {
+                    // Generate a random ID for internal use
+                    return Math.ceil(Math.random() * 100000) + "-" + Voxel.helpers.sequentialId();
                 }
             },
             computed: {
@@ -1895,13 +4325,16 @@ window.render_create_post = () => {
             }
         });
 
-        // Register Components
+        // Apply ConditionMixin to the app
+        app.mixin(ConditionMixin);
+
+        // Register Core Components
         app.component("form-popup", Voxel.components.popup);
         app.component("form-group", Voxel.components.formGroup);
         app.component("media-popup", MediaPopup);
         app.component("term-list", TermList);
 
-        // Register Fields
+        // Register Field Components - Basic Fields
         app.component("field-title", FieldTitle);
         app.component("field-text", FieldText);
         app.component("field-texteditor", FieldTextEditor);
@@ -1911,19 +4344,155 @@ window.render_create_post = () => {
         app.component("field-url", FieldUrl);
         app.component("field-file", FieldFile);
         app.component("field-image", FieldFile);
+        app.component("field-profile-avatar", FieldFile);
+        app.component("field-profile-name", FieldProfileName);
+        app.component("field-profile-first-name", FieldText);
+        app.component("field-profile-last-name", FieldText);
+        app.component("field-profile-bio", FieldTextEditor);
         app.component("field-taxonomy", FieldTaxonomy);
+        app.component("field-phone", FieldPhone);
         app.component("field-switcher", FieldSwitcher);
         app.component("field-location", FieldLocation);
         app.component("field-work-hours", FieldWorkHours);
-        app.component("field-repeater", FieldRepeater);
-        app.component("field-phone", FieldPhone);
-        app.component("field-profile-name", FieldProfileName);
-        app.component("field-ui-step", FieldUiStep);
+
+        // Register Field Components - Product Field
+        app.component("field-product", FieldProduct);
+
+        // Register Field Components - UI Fields (no value, display only)
+        app.component("field-ui-image", FieldUiImage);
         app.component("field-ui-heading", FieldUiHeading);
         app.component("field-ui-html", FieldUiHtml);
-        app.component("field-ui-image", FieldUiImage);
-        app.component("field-product", FieldProduct);
+        app.component("field-ui-step", FieldUiStep);
+
+        // Register Field Components - Complex Fields
+        app.component("field-repeater", FieldRepeater);
+        app.component("field-timezone", FieldTimezone);
         app.component("field-recurring-date", FieldRecurringDate);
+        app.component("field-date", FieldDate);
+        app.component("field-time", FieldTime);
+        app.component("field-select", FieldSelect);
+        app.component("field-multiselect", FieldMultiselect);
+        app.component("field-color", FieldColor);
+        app.component("field-post-relation", FieldPostRelation);
+
+        // Register Utility Components
+        app.component("draggable", typeof vuedraggable === "object" ? vuedraggable : {});
+        app.component("file-upload", FileUpload);
+        app.component("inline-template", { template: "<slot></slot>" });
+
+        // Register Inline Date Input Components
+        app.component("single-date-input", {
+            template: '<div><input type="hidden" ref="input"></div>',
+            props: ["modelValue", "minDate"],
+            emits: ["update:modelValue"],
+            data() {
+                return { picker: null };
+            },
+            mounted() {
+                this.picker = new Pikaday({
+                    field: this.$refs.input,
+                    container: this.$el,
+                    bound: false,
+                    firstDay: 1,
+                    keyboardInput: false,
+                    defaultDate: this.modelValue ? new Date(this.modelValue) : null,
+                    onSelect: (date) => {
+                        this.$emit("update:modelValue", Voxel.helpers.dateFormatYmd(date));
+                    },
+                    selectDayFn: (date) => {
+                        return this.modelValue && this.modelValue === Voxel.helpers.dateFormatYmd(date);
+                    },
+                    disableDayFn: (date) => {
+                        if (this.minDate && date < this.minDate) return true;
+                        return false;
+                    }
+                });
+            },
+            unmounted() {
+                setTimeout(() => this.picker.destroy(), 200);
+            },
+            watch: {
+                modelValue() { this.picker.draw(); }
+            }
+        });
+
+        app.component("date-range-input", {
+            template: '<div class="ts-booking-date ts-booking-date-range"><input type="hidden" ref="input"></div>',
+            props: ["modelValue", "minDate", "startDate", "endDate"],
+            emits: ["update:modelValue"],
+            data() {
+                return {
+                    picker: null,
+                    activePicker: "start",
+                    value: {
+                        start: this.startDate || null,
+                        end: this.endDate || null
+                    }
+                };
+            },
+            mounted() {
+                this.picker = new Pikaday({
+                    field: this.$refs.input,
+                    container: this.$el,
+                    bound: false,
+                    firstDay: 1,
+                    keyboardInput: false,
+                    numberOfMonths: 2,
+                    defaultDate: this.value.start,
+                    startRange: this.value.start,
+                    endRange: this.value.end,
+                    theme: "pika-range",
+                    onSelect: (date) => {
+                        if (this.activePicker === "start") {
+                            this.setStartDate(date);
+                            this.activePicker = "end";
+                        } else {
+                            this.setEndDate(date);
+                            this.activePicker = "start";
+                            this.$emit("update:modelValue", {
+                                start: Voxel.helpers.dateFormatYmd(this.value.start),
+                                end: Voxel.helpers.dateFormatYmd(this.value.end)
+                            });
+                        }
+                    },
+                    selectDayFn: (date) => {
+                        if (this.value.start && date.toDateString() === this.value.start.toDateString()) return true;
+                        if (this.value.end && date.toDateString() === this.value.end.toDateString()) return true;
+                        return false;
+                    },
+                    disableDayFn: (date) => {
+                        if (this.activePicker === "end" && this.value.start && date < this.value.start) return true;
+                        if (this.minDate && date < this.minDate) return true;
+                        return false;
+                    }
+                });
+                this.setStartDate(this.value.start);
+                this.setEndDate(this.value.end);
+            },
+            unmounted() {
+                setTimeout(() => this.picker.destroy(), 200);
+            },
+            methods: {
+                setStartDate(date) {
+                    this.value.start = date;
+                    this.picker.setStartRange(date);
+                    if (this.value.end && this.value.start > this.value.end) {
+                        this.setEndDate(null);
+                    }
+                },
+                setEndDate(date) {
+                    this.value.end = date;
+                    this.picker.setEndRange(date);
+                }
+            },
+            watch: {
+                activePicker() { this.picker.draw(); },
+                value: {
+                    handler() { this.picker.draw(); },
+                    deep: true
+                }
+            }
+        });
 
         // Init Icons
         let icons = JSON.parse(wrapper.closest(".elementor-element").querySelector(".vxconfig__icons").innerHTML);
@@ -1931,6 +4500,7 @@ window.render_create_post = () => {
             app.component("icon-" + k, { template: icons[k] || "<!-- icon -->" });
         });
 
+        // Dispatch init event for extensions
         document.dispatchEvent(new CustomEvent("voxel/create-post/init", { detail: { app, config, el: wrapper } }));
 
         app.mount(wrapper);

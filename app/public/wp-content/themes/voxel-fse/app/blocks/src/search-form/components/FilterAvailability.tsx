@@ -96,7 +96,11 @@ export default function FilterAvailability({
 	blockId,
 }: FilterComponentProps) {
 	// Generate popup className for styling portal elements (renders at document.body)
-	const popupClassName = blockId ? `voxel-popup-${blockId}` : '';
+	// Includes repeater item ID for scoped custom styling
+	const popupClassName = [
+		blockId ? `voxel-popup-${blockId}` : '',
+		config.id ? `elementor-repeater-item-${config.id}` : ''
+	].filter(Boolean).join(' ');
 	const triggerRef = useRef<HTMLDivElement>(null);
 	const pickerInstanceRef = useRef<any>(null); // Store Pikaday instance for setStartRange/setEndRange
 	const [isOpen, setIsOpen] = useState(false);
@@ -156,6 +160,7 @@ export default function FilterAvailability({
 
 	// Range mode: Handle date selection with activePicker toggle
 	// Evidence: voxel-search-form.beautified.js lines 954-965
+	// FIX: If user selects a date before check-in while in 'end' mode, reset to new check-in
 	const handleDateChange = useCallback((date: Date | null) => {
 		if (isRangeMode && date && pickerInstanceRef.current) {
 			if (activePicker === 'start') {
@@ -168,20 +173,32 @@ export default function FilterAvailability({
 				// CRITICAL: Call draw() to update is-inrange visual highlighting
 				pickerInstanceRef.current.draw();
 			} else {
-				// Set end date, switch back to start, auto-save
-				// Evidence: lines 961-965
-				setPickerEndDate(date);
-				setActivePicker('start');
-				pickerInstanceRef.current.setEndRange(date);
-				// CRITICAL: Call draw() to update is-inrange visual highlighting
-				pickerInstanceRef.current.draw();
-				// Auto-save range selection - serialize to Voxel format
-				// Evidence: voxel-search-form.beautified.js line 985
-				const startStr = dateToString(pickerDate);
-				const endStr = dateToString(date);
-				if (startStr && endStr) {
-					onChange(`${startStr}..${endStr}`);
-					setIsOpen(false);
+				// In 'end' mode - check if selected date is before start date
+				// If so, treat it as a new start date (reset behavior)
+				if (pickerDate && date < pickerDate) {
+					// Selected date is before check-in - make it the new check-in
+					setPickerDate(date);
+					setPickerEndDate(null);
+					// Stay in 'end' mode to select checkout next
+					pickerInstanceRef.current.setStartRange(date);
+					pickerInstanceRef.current.setEndRange(null);
+					pickerInstanceRef.current.draw();
+				} else {
+					// Set end date, switch back to start, auto-save
+					// Evidence: lines 961-965
+					setPickerEndDate(date);
+					setActivePicker('start');
+					pickerInstanceRef.current.setEndRange(date);
+					// CRITICAL: Call draw() to update is-inrange visual highlighting
+					pickerInstanceRef.current.draw();
+					// Auto-save range selection - serialize to Voxel format
+					// Evidence: voxel-search-form.beautified.js line 985
+					const startStr = dateToString(pickerDate);
+					const endStr = dateToString(date);
+					if (startStr && endStr) {
+						onChange(`${startStr}..${endStr}`);
+						setIsOpen(false);
+					}
 				}
 			}
 		} else {
@@ -291,12 +308,13 @@ export default function FilterAvailability({
 				onSave={handleSave}
 				onClear={handleClear}
 				onClose={() => setIsOpen(false)}
-				className={`${popupClassName}${config.popupCenterPosition ? ' ts-popup-centered' : ''}`}
+				className={`${popupClassName}${isRangeMode ? ' ts-availability-wrapper xl-height xl-width' : ' md-width xl-height'}${config.popupCenterPosition ? ' ts-popup-centered' : ''}`}
 				popupStyle={popupStyles.style}
 			>
-				{/* Custom header for range mode - matches Voxel template lines 78-100 */}
-				{/* Evidence: availability-filter.php lines 82-97 shows {{ startLabel }} and {{ endLabel }} */}
-				{/* These are LABELS ("Check-in"/"Check-out"), not the selected dates */}
+				{/* Custom header for range mode - matches Voxel's actual behavior */}
+				{/* Evidence: Screenshots show Voxel displays selected date in header: "1 Feb 2026 — Check-out" */}
+				{/* When start date is selected, show the date; otherwise show the label */}
+				{/* When end date is selected, show the date; otherwise show "Check-out" label */}
 				{isRangeMode && (
 					<div className="ts-popup-head flexify">
 						<div className="ts-popup-name flexify">
@@ -307,18 +325,16 @@ export default function FilterAvailability({
 									onClick={() => setActivePicker('start')}
 									style={{ cursor: 'pointer' }}
 								>
-									{l10n.checkIn || 'Check-in'}
+									{pickerDate ? formatDateForDisplay(dateToString(pickerDate)) : (l10n.checkIn || 'Check-in')}
 								</span>
-								{pickerDate && <span> — </span>}
-								{pickerDate && (
-									<span
-										className={activePicker === 'end' ? 'chosen' : ''}
-										onClick={() => setActivePicker('end')}
-										style={{ cursor: 'pointer' }}
-									>
-										{l10n.checkOut || 'Check-out'}
-									</span>
-								)}
+								<span> — </span>
+								<span
+									className={activePicker === 'end' ? 'chosen' : ''}
+									onClick={() => setActivePicker('end')}
+									style={{ cursor: 'pointer' }}
+								>
+									{pickerEndDate ? formatDateForDisplay(dateToString(pickerEndDate)) : (l10n.checkOut || 'Check-out')}
+								</span>
 							</span>
 						</div>
 					</div>

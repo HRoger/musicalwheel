@@ -1,14 +1,20 @@
 # Critical Fixes Needed for Search Form Block
 
 **Date:** 2026-01-28
-**Status:** 🚨 CRITICAL ISSUES FOUND
+**Status:** ✅ ALL ISSUES RESOLVED (2026-01-29)
 **Comparison:** React Implementation vs. Corrected Beautified Reference
 
 ---
 
-## 🚨 Critical Issues Found
+## ✅ All Issues Resolved
 
-### Issue 1: FilterTerms Missing Parent-Child Exclusion Logic ❌
+All critical issues identified during the comparison have been fixed. See details below.
+
+---
+
+## ✅ Fixed Issues
+
+### Issue 1: FilterTerms Missing Parent-Child Exclusion Logic ✅ FIXED (2026-01-29)
 
 **Location:** `components/FilterTerms.tsx` lines 179-200
 
@@ -69,7 +75,7 @@ if (currentSlugs.includes(termSlug)) {
 
 ---
 
-### Issue 2: FilterTerms Missing Parent References ❌
+### Issue 2: FilterTerms Missing Parent References ✅ FIXED (2026-01-29)
 
 **Location:** `components/FilterTerms.tsx` lines 105-114
 
@@ -107,7 +113,7 @@ this.terms.forEach(t => setup(t, null));
 
 ---
 
-### Issue 3: Missing Auto-Save for Single-Select Popup ⚠️
+### Issue 3: Missing Auto-Save for Single-Select Popup ✅ FIXED (2026-01-29)
 
 **Location:** `components/FilterTerms.tsx` lines 196-199
 
@@ -141,7 +147,7 @@ else {
 
 ---
 
-### Issue 4: Missing `_last_modified` Tracking ❌
+### Issue 4: Missing `_last_modified` Tracking ✅ FIXED (2026-01-28)
 
 **Location:** `hooks/useSearchForm.ts` - ENTIRE HOOK
 
@@ -191,20 +197,21 @@ Object.keys(filterComponents).forEach(componentName => {
 
 ---
 
-## 📊 Severity Assessment
+## 📊 Resolution Summary
 
-| Issue | Severity | User Impact | Performance Impact |
-|-------|----------|-------------|-------------------|
-| #1: Parent-Child Logic | 🔴 CRITICAL | Data corruption, invalid searches | None |
-| #2: Parent References | 🔴 CRITICAL | Enables Issue #1 | None |
-| #3: Auto-Save Pattern | 🟡 MINOR | None (works correctly) | None |
-| #4: _last_modified | 🔴 CRITICAL | None | SEVERE - 3-10x slower adaptive filtering |
+| Issue | Status | Fixed Date | Location |
+|-------|--------|------------|----------|
+| #1: Parent-Child Logic | ✅ FIXED | 2026-01-29 | `FilterTerms.tsx:248-335` |
+| #2: Parent References | ✅ FIXED | 2026-01-29 | `FilterTerms.tsx:127-172` |
+| #3: Auto-Save Pattern | ✅ FIXED | 2026-01-29 | `FilterTerms.tsx:325-334` |
+| #4: _last_modified | ✅ FIXED | 2026-01-28 | `useSearchForm.ts` |
+| #5: FilterUser Default | ✅ FIXED | 2026-01-28 | `FilterUser.tsx` + REST endpoint |
 
 ---
 
-## 🔧 Required Fixes
+## 🔧 Fixes Applied
 
-### Fix 1: Add Parent References to Term Tree
+### Fix 1: Add Parent References to Term Tree ✅
 
 **File:** `components/FilterTerms.tsx`
 **Lines:** 105-114
@@ -250,10 +257,10 @@ const buildTermTree = useCallback((terms: TermOption[]) => {
 }, []);
 ```
 
-### Fix 2: Add Parent-Child Exclusion Logic
+### Fix 2: Add Parent-Child Exclusion Logic ✅
 
 **File:** `components/FilterTerms.tsx`
-**Lines:** 179-200
+**Lines:** 248-335 (in `handleSelect` function)
 
 **Changes Needed:** Add the exclusion logic INSIDE the handleSelect function:
 
@@ -329,10 +336,10 @@ const handleSelect = useCallback((term: TermOption) => {
 }, [multiple, selectedSlugs, onChange, termMap, term, displayAs]);
 ```
 
-### Fix 3: Add _last_modified Tracking
+### Fix 3: Add _last_modified Tracking ✅
 
 **File:** `hooks/useSearchForm.ts`
-**Lines:** Add new state and update setFilterValue
+**Status:** Implemented - tracks `lastModifiedFilter` in state and sends in requests
 
 **Changes Needed:**
 
@@ -391,9 +398,10 @@ Object.entries(state.filterValues).forEach(([key, value]) => {
 });
 ```
 
-### Fix 4: Update TypeScript Types
+### Fix 4: Update TypeScript Types ✅
 
 **File:** `types.ts`
+**Status:** Implemented - `EnrichedTermOption` interface added to FilterTerms.tsx
 
 **Changes Needed:**
 
@@ -420,11 +428,13 @@ interface EnrichedTermOption extends TermOption {
 
 ---
 
-## 🎯 Priority Order
+## 🎯 Implementation Complete
 
-1. **Fix #1 & #2 TOGETHER** (Parent references + exclusion logic) - CRITICAL for data integrity
-2. **Fix #4** (_last_modified tracking) - CRITICAL for performance
-3. **Fix #3** (Auto-save pattern) - MINOR, works correctly already
+All fixes have been applied in priority order:
+
+1. ✅ **Fix #1 & #2** (Parent references + exclusion logic) - Data integrity restored
+2. ✅ **Fix #4** (_last_modified tracking) - Performance optimization active
+3. ✅ **Fix #3** (Auto-save pattern) - Logic matches Voxel pattern
 
 ---
 
@@ -436,13 +446,13 @@ interface EnrichedTermOption extends TermOption {
 1. Select "Music > Rock"
 2. Select "Music"
 3. **Expected:** "Music > Rock" is deselected, only "Music" remains
-4. **Current:** Both remain selected ❌
+4. **Result:** ✅ Works correctly
 
 **Test Case 2: Select Parent, Then Child**
 1. Select "Music"
 2. Select "Music > Rock"
 3. **Expected:** "Music" is deselected, only "Music > Rock" remains
-4. **Current:** Both remain selected ❌
+4. **Result:** ✅ Works correctly
 
 ### Test Issue #4 (_last_modified):
 
@@ -451,24 +461,24 @@ interface EnrichedTermOption extends TermOption {
 2. Change "Category" filter
 3. Check adaptive filtering request
 4. **Expected:** `_last_modified=category` in query string
-5. **Current:** Missing ❌
+5. **Result:** ✅ Parameter included in requests
 
 ---
 
 ## 📝 Implementation Notes
 
-- All fixes should be applied in the order listed
-- Each fix has line numbers for precise targeting
-- All changes reference the corrected beautified.js for verification
-- TypeScript types must be updated alongside implementation
+- All fixes have been applied successfully
+- FilterTerms.tsx now includes `buildTermTree` function with parent references
+- `handleSelect` function implements full parent-child exclusion logic
+- TypeScript interface `EnrichedTermOption` added for type safety
 
 ---
 
-**Status:** PARTIALLY FIXED (2026-01-28)
+**Status:** ✅ ALL ISSUES RESOLVED (2026-01-29)
 
 ---
 
-## ✅ FIXED Issues
+## 📋 Fix History
 
 ### Issue #4: _last_modified Tracking ✅ FIXED (2026-01-28)
 
@@ -509,18 +519,28 @@ interface EnrichedTermOption extends TermOption {
 5. User name and avatar are displayed
 6. Clear button allows resetting (respects `resetValue` config)
 
+### Issue #1 & #2: FilterTerms Parent-Child Logic ✅ FIXED (2026-01-29)
+
+**Fix Location:** `components/FilterTerms.tsx`
+
+**Changes Applied:**
+1. Added `EnrichedTermOption` interface (lines 45-49) with `parentRef`, `hasSelection`, `depth`
+2. Added `buildTermTree` function (lines 127-151) to build parent references
+3. Added `termMap` (lines 160-172) for O(1) slug lookups
+4. Updated `handleSelect` function (lines 248-335) with full exclusion logic:
+   - Step 1: Deselects parent terms when selecting a child
+   - Step 2: Deselects child terms when selecting a parent (traverses ancestry)
+   - Updates `hasSelection` flags for proper UI state
+
+### Issue #3: Auto-Save Pattern ✅ FIXED (2026-01-29)
+
+**Fix Location:** `components/FilterTerms.tsx:325-334`
+
+**Changes Applied:**
+- Single-select popup mode auto-closes on selection
+- Inline mode stays open (value saved without closing)
+- Matches Voxel pattern from beautified.js lines 1146-1155
+
 ---
 
-## 🔴 Remaining Critical Issues
-
-### Issue #1: FilterTerms Missing Parent-Child Exclusion Logic ❌
-
-**Status:** Needs implementation (see Fix #1 & #2 above)
-
-### Issue #2: FilterTerms Missing Parent References ❌
-
-**Status:** Needs implementation (see Fix #1 & #2 above)
-
----
-
-**Risk Level:** Medium (core logic changes)
+**Final Status:** ✅ ALL CRITICAL ISSUES RESOLVED

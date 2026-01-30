@@ -1241,7 +1241,6 @@ const FieldQuantity = {
             }
         }
     }
-}
 };
 
 /**
@@ -1317,11 +1316,15 @@ const FieldVariations = {
                     return Object.values(this.variations.field.props.variations).filter(variation => {
                         // Check if variation matches all OTHER attribute selections
                         for (let attr of allAttributes) {
-                            // Skip this attribute (we're determining choices for it)
+                            // Stop when we reach this attribute (we're determining choices for it)
                             if (attr.key === this.attribute.key) break;
 
-                            // If variation doesn't match the selected value for this other attribute, exclude it
-                            if (this.variations.field.props.selections[attr.key] !== variation.attributes[attr.key]) {
+                            let variationAttrValue = variation.attributes[attr.key];
+                            let selectedValue = this.variations.field.props.selections[attr.key];
+
+                            // "any" in variation means it accepts any selection for this attribute
+                            // Otherwise, selected value must match exactly
+                            if (variationAttrValue !== "any" && selectedValue !== variationAttrValue) {
                                 return false;
                             }
                         }
@@ -1341,7 +1344,9 @@ const FieldVariations = {
 
                     return Object.values(this.attribute.props.choices).filter(choice => {
                         return availableVariations.find(variation => {
-                            return variation.attributes[this.attribute.key] === choice.value;
+                            let variationAttrValue = variation.attributes[this.attribute.key];
+                            // "any" matches all choices, otherwise must match exactly
+                            return variationAttrValue === "any" || variationAttrValue === choice.value;
                         });
                     });
                 },
@@ -1360,9 +1365,10 @@ const FieldVariations = {
                 getChoiceStatus(choice) {
                     let availableVariations = this.getAvailableVariations();
 
-                    // Filter to variations that have this choice
+                    // Filter to variations that have this choice (or "any")
                     let matchingVariations = availableVariations.filter(variation => {
-                        return variation.attributes[this.attribute.key] === choice.value;
+                        let variationAttrValue = variation.attributes[this.attribute.key];
+                        return variationAttrValue === "any" || variationAttrValue === choice.value;
                     });
 
                     if (!matchingVariations.length) {
@@ -1383,12 +1389,21 @@ const FieldVariations = {
             computed: {
                 /**
                  * Get label for currently selected choice
-                 * 
-                 * @returns {string} Choice label
+                 *
+                 * Handles "any" selections by falling back to the attribute label.
+                 *
+                 * @returns {string} Choice label or attribute label for "any"
                  */
                 selectionLabel() {
                     let selectedValue = this.variations.selections[this.attribute.key];
-                    return this.attribute.props.choices["choice_" + selectedValue].label;
+
+                    // Handle "any" selection - return attribute label
+                    if (selectedValue === "any") {
+                        return this.attribute.label;
+                    }
+
+                    // Return choice label or empty string if not found
+                    return this.attribute.props.choices["choice_" + selectedValue]?.label || "";
                 }
             }
         }
@@ -1429,7 +1444,7 @@ const FieldVariations = {
 
         /**
          * Set attribute value and revalidate
-         * 
+         *
          * Called when user selects a different choice for an attribute.
          * Triggers validation to ensure the combination is valid.
          *
@@ -1442,54 +1457,86 @@ const FieldVariations = {
         },
 
         /**
+         * Build selected attributes object for variation
+         *
+         * For variations that have "any" for some attributes, this captures
+         * the user's actual selection for those attributes.
+         *
+         * @param {Object} variation - The matched variation
+         * @returns {Object} Object mapping attribute keys to selected values
+         */
+        buildSelectedAttributes(variation) {
+            let selectedAttrs = {};
+
+            Object.keys(this.selections).forEach(attrKey => {
+                // Only include if variation allows "any" for this attribute
+                if (variation.attributes[attrKey] === "any") {
+                    selectedAttrs[attrKey] = this.selections[attrKey];
+                }
+            });
+
+            return selectedAttrs;
+        },
+
+        /**
          * Validate current attribute selections
-         * 
+         *
          * Ensures the selected combination of attributes matches an actual variation.
          * If no exact match exists, falls back to the first active variation.
-         * Updates variation_id and quantity accordingly.
+         * Updates variation_id, selected_attributes, and quantity accordingly.
+         *
+         * ALGORITHM:
+         * 1. Filter to only "active" status variations
+         * 2. For each attribute key, filter matching variations
+         * 3. Match includes "any" as wildcard in variation.attributes
+         * 4. If no match found, fall back to first active variation
+         * 5. Store variation_id and selected_attributes (for "any" attributes)
+         * 6. Scroll gallery to variation image if exists
          */
         validateSelection() {
             let matchedVariation = null;
             let activeVariations = Object.values(this.field.props.variations).filter(v => v._status === "active");
 
-            // Try to find exact match for current selections
+            // Progressively filter variations by each attribute
             for (let attributeKey of Object.keys(this.selections)) {
-                let matchingVariations = activeVariations.filter(variation => {
-                    // Check if all selected attributes match this variation
-                    for (let key of Object.keys(this.selections)) {
-                        if (variation.attributes[key] !== this.selections[key]) {
-                            return false;
-                        }
-                    }
-                    return true;
+                let filteredVariations = activeVariations.filter(variation => {
+                    // "any" in variation means it accepts any choice for this attribute
+                    let variationAttrValue = variation.attributes[attributeKey];
+                    let selectedValue = this.selections[attributeKey];
+
+                    return variationAttrValue === "any" || variationAttrValue === selectedValue;
                 });
 
-                if (matchingVariations.length) {
-                    matchedVariation = matchingVariations[0];
+                if (!filteredVariations.length) {
+                    // No match - reset to first active variation
+                    let fallback = activeVariations[0];
+
+                    Object.keys(this.selections).forEach(key => {
+                        let attrValue = fallback.attributes[key];
+                        // For "any", use first choice
+                        this.selections[key] = attrValue === "any"
+                            ? Object.values(this.field.props.attributes[key].props.choices)[0]?.value
+                            : attrValue;
+                    });
+
+                    matchedVariation = fallback;
                     break;
                 }
+
+                activeVariations = filteredVariations;
+                matchedVariation = filteredVariations[0];
             }
 
-            // Fallback to first active variation if no match
-            if (!matchedVariation && activeVariations.length) {
-                matchedVariation = activeVariations[0];
+            // Update value with matched variation
+            this.value.variation_id = matchedVariation.id;
+            this.value.selected_attributes = this.buildSelectedAttributes(matchedVariation);
+            this.validateQuantity();
 
-                // Update selections to match fallback variation
-                Object.keys(this.selections).forEach(key => {
-                    this.selections[key] = matchedVariation.attributes[key];
-                });
-            }
-
-            if (matchedVariation) {
-                this.value.variation_id = matchedVariation.id;
-                this.validateQuantity();
-
-                // Scroll to variation image in gallery if it exists
-                if (matchedVariation.image) {
-                    let imageElement = document.getElementById("ts-media-" + matchedVariation.image.id);
-                    if (imageElement) {
-                        imageElement.parentElement.scrollLeft = imageElement.offsetLeft;
-                    }
+            // Scroll gallery to variation image if exists
+            if (matchedVariation.image) {
+                let imageElement = document.getElementById("ts-media-" + matchedVariation.image.id);
+                if (imageElement) {
+                    imageElement.parentElement.scrollLeft = imageElement.offsetLeft;
                 }
             }
         },
@@ -1516,8 +1563,9 @@ const FieldVariations = {
 
         /**
          * Get pricing summary for current variation
-         * 
+         *
          * Returns price and quantity information for display in pricing summary.
+         * Handles "any" attributes by using the user's actual selection.
          *
          * @returns {Object} { label: string, amount: number, quantity: number|null }
          */
@@ -1536,11 +1584,22 @@ const FieldVariations = {
             }
 
             // Build label from attribute choices
+            // Handles "any" by using user's actual selection from this.selections
             let labels = [];
             Object.keys(this.currentVariation.attributes).forEach(attributeKey => {
-                let choiceValue = this.currentVariation.attributes[attributeKey];
-                let choice = this.field.props.attributes[attributeKey].props.choices["choice_" + choiceValue];
-                labels.push(choice.label);
+                let variationAttrValue = this.currentVariation.attributes[attributeKey];
+                let choiceValue;
+
+                if (variationAttrValue === "any") {
+                    // Use user's actual selection for "any" attributes
+                    choiceValue = this.selections[attributeKey];
+                    let choice = this.field.props.attributes[attributeKey].props.choices["choice_" + choiceValue];
+                    if (choice) labels.push(choice.label);
+                } else {
+                    // Use variation's fixed attribute value
+                    let choice = this.field.props.attributes[attributeKey].props.choices["choice_" + variationAttrValue];
+                    if (choice) labels.push(choice.label);
+                }
             });
 
             return {
@@ -1600,7 +1659,1398 @@ const FieldVariations = {
 };
 
 /* ==========================================================================
-   SECTION 2: MAIN RENDER FUNCTION
+   SECTION 3: BOOKING COMPONENTS
+   ========================================================================== */
+
+/**
+ * Book Date Range Component
+ *
+ * Pikaday-based date range picker for booking products.
+ * Supports nights vs days counting, custom pricing per date,
+ * excluded dates/weekdays, and min/max range lengths.
+ *
+ * @template #product-form-book-date-range
+ */
+const BookDateRange = {
+    template: "#product-form-book-date-range",
+
+    props: {
+        booking: Object,    // Reference to parent booking component
+        field: Object       // Field configuration
+    },
+
+    data() {
+        return {
+            picker: null,           // Pikaday instance
+            active_picker: "start", // "start" or "end" - which date is being selected
+            start_date: null,       // Date object for start
+            end_date: null,         // Date object for end
+            hover_date: null        // Date object for hover state (visual feedback)
+        };
+    },
+
+    mounted() {
+        this._setValuesFromSearchContext();
+    },
+
+    methods: {
+        /**
+         * Pre-fill dates from search context (referrer URL parameters)
+         *
+         * Validates dates are within bounds and all days in range are available.
+         */
+        _setValuesFromSearchContext() {
+            let searchContext = this.$root.config.settings.search_context.availability;
+
+            if (!searchContext.start || !searchContext.end) return;
+
+            let startDate = new Date(searchContext.start + " 00:00:00");
+            let endDate = new Date(searchContext.end + " 00:00:00");
+
+            // Validate dates are within allowed range
+            if (endDate < startDate) return;
+            if (startDate < this.booking.getMinDate()) return;
+            if (endDate > this.booking.getMaxDate()) return;
+
+            // Validate range length
+            let dateRangeConfig = this.field.props.date_range;
+            let countMode = this.field.props.count_mode;
+            let startUTC = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            let endUTC = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+            let length = Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)) + 1;
+            if (countMode === "nights") {
+                length = Math.max(1, Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)));
+            }
+
+            if (length < dateRangeConfig.min_length || length > dateRangeConfig.max_length) return;
+
+            // Validate no excluded dates in range
+            let checkDate = new Date(startDate.getTime());
+            while (countMode === "nights" ? checkDate < endDate : checkDate <= endDate) {
+                if (this.booking.isDateExcluded(checkDate)) return;
+                if (this.booking.isWeekdayExcluded(checkDate)) return;
+                checkDate.setTime(checkDate.getTime() + this.booking.DAY_IN_MS);
+            }
+
+            // All validations passed - set values
+            this.start_date = startDate;
+            this.end_date = endDate;
+            this.booking.value.start_date = searchContext.start;
+            this.booking.value.end_date = searchContext.end;
+        },
+
+        /**
+         * Called when popup opens - initializes or re-initializes Pikaday
+         */
+        onOpen() {
+            if (this.picker) {
+                this.picker.el.removeEventListener("mouseover", this.onCalendarMouseOver);
+                this.picker.destroy();
+            }
+            this.$nextTick(() => this.renderPicker());
+        },
+
+        /**
+         * Save selected dates to booking value
+         *
+         * Handles edge case where only start_date is set (auto-sets end_date).
+         */
+        saveDates() {
+            if (!this.start_date) {
+                this.booking.value.start_date = null;
+                this.booking.value.end_date = null;
+                return;
+            }
+
+            // Auto-set end_date if not selected
+            if (!this.end_date) {
+                this.end_date = this.start_date;
+            }
+
+            this.booking.value.start_date = Voxel.helpers.dateFormatYmd(this.start_date);
+            this.booking.value.end_date = Voxel.helpers.dateFormatYmd(this.end_date);
+
+            // Ensure minimum range length is met
+            if (this.booking.value.start_date === this.booking.value.end_date) {
+                let minLength = this.field.props.date_range.min_length;
+                let newEnd = new Date(this.start_date.getTime());
+
+                if (this.field.props.count_mode === "nights") {
+                    newEnd.setTime(newEnd.getTime() + minLength * this.booking.DAY_IN_MS);
+                } else {
+                    newEnd.setTime(newEnd.getTime() + (minLength - 1) * this.booking.DAY_IN_MS);
+                }
+
+                this.booking.value.end_date = Voxel.helpers.dateFormatYmd(newEnd);
+                this.end_date = newEnd;
+            }
+        },
+
+        /**
+         * Format dates for display
+         */
+        displayDates() {
+            return [
+                Voxel.helpers.dateFormat(new Date(this.booking.value.start_date + "T00:00:00")),
+                Voxel.helpers.dateFormat(new Date(this.booking.value.end_date + "T00:00:00"))
+            ].join(" - ");
+        },
+
+        /**
+         * Save and close picker
+         */
+        onSave() {
+            this.saveDates();
+            this.$refs.booking.blur();
+            this.active_picker = "start";
+        },
+
+        /**
+         * Handle blur event
+         */
+        onBlur() {
+            this.saveDates();
+            this.active_picker = "start";
+        },
+
+        /**
+         * Clear selection
+         */
+        onClear() {
+            this.setStartDate(null);
+            this.setEndDate(null);
+            this.picker.draw();
+            this.active_picker = "start";
+        },
+
+        /**
+         * Render Pikaday date picker
+         *
+         * Configures picker with:
+         * - Custom disabled day logic (excluded dates, weekdays, range constraints)
+         * - Custom unavailable day rendering
+         * - Hover effect for date range preview
+         * - Price tooltips per day
+         */
+        renderPicker() {
+            this.picker = new Pikaday({
+                field: this.$refs.input,
+                container: this.$refs.calendar,
+                bound: false,
+                firstDay: 1,
+                keyboardInput: false,
+                numberOfMonths: 2,
+                defaultDate: this.start_date,
+                minDate: this.booking.getMinDate(),
+                maxDate: this.booking.getMaxDate(),
+                startRange: this.start_date,
+                endRange: this.end_date,
+                expandYears: false,
+
+                /**
+                 * Date selection handler
+                 */
+                onSelect: (date) => {
+                    if (this.active_picker === "start") {
+                        this.setStartDate(date);
+                        this.active_picker = "end";
+
+                        // Auto-save if min_length is 1 and next day is unavailable
+                        if (this.field.props.date_range.min_length < 2) {
+                            let nextDay = new Date(date.getTime() + this.booking.DAY_IN_MS);
+                            if (!this.booking.isDateAvailable(nextDay)) {
+                                this.end_date = date;
+                                this.active_picker = "start";
+                                this.onSave();
+                                return;
+                            }
+                        }
+                    } else {
+                        // End date selection
+                        this.end_date = date;
+                        this.active_picker = "start";
+                        this.onSave();
+                    }
+                },
+
+                /**
+                 * Determine if day should show as selected
+                 */
+                selectDayFn: (date) => {
+                    if (this.start_date && date.toDateString() === this.start_date.toDateString()) {
+                        return true;
+                    }
+                    if (this.end_date && date.toDateString() === this.end_date.toDateString()) {
+                        return true;
+                    }
+                    return undefined;
+                },
+
+                /**
+                 * Determine if day should be disabled
+                 */
+                disableDayFn: (date) => {
+                    // No availability at all
+                    if (this.field.props.availability.max_days < 1) return true;
+
+                    // Can't select end date before start date
+                    if (this.active_picker === "end" && this.start_date && date < this.start_date) {
+                        return true;
+                    }
+
+                    // Weekday exclusion
+                    if (this.booking.isWeekdayExcluded(date)) return true;
+
+                    // End date range constraints
+                    if (this.active_picker === "end" && this.start_date) {
+                        let rangeConfig = this.field.props.date_range;
+                        let minEnd = new Date(this.start_date.getTime() + rangeConfig.min_length * this.booking.DAY_IN_MS);
+                        let maxEnd = new Date(this.start_date.getTime() + rangeConfig.max_length * this.booking.DAY_IN_MS);
+
+                        // Adjust for "days" mode
+                        if (this.field.props.count_mode === "days") {
+                            minEnd.setTime(minEnd.getTime() - this.booking.DAY_IN_MS);
+                            maxEnd.setTime(maxEnd.getTime() - this.booking.DAY_IN_MS);
+                        }
+
+                        if (date < minEnd || date > maxEnd) return true;
+
+                        // Check for excluded dates in path from start to this date
+                        let checkDate = new Date(this.start_date.getTime());
+                        while (checkDate <= date) {
+                            if (this.booking.isDateExcluded(checkDate)) return true;
+                            if (this.booking.isWeekdayExcluded(checkDate)) return true;
+                            checkDate.setTime(checkDate.getTime() + this.booking.DAY_IN_MS);
+                        }
+                    }
+
+                    // Start date - check if valid range can be formed
+                    if (this.active_picker === "start" && !this.booking.isDateExcluded(date)) {
+                        let rangeConfig = this.field.props.date_range;
+                        let minEnd = new Date(date.getTime() + rangeConfig.min_length * this.booking.DAY_IN_MS);
+                        let maxEnd = new Date(date.getTime() + rangeConfig.max_length * this.booking.DAY_IN_MS);
+
+                        if (this.field.props.count_mode === "days") {
+                            minEnd.setTime(minEnd.getTime() - this.booking.DAY_IN_MS);
+                            maxEnd.setTime(maxEnd.getTime() - this.booking.DAY_IN_MS);
+                        }
+
+                        // Can't form valid range if minEnd is past maxDate
+                        if (minEnd > this.booking.getMaxDate()) return true;
+
+                        // Check if at least minEnd can be reached without exclusions
+                        let checkDate = new Date(date.getTime());
+                        while (checkDate <= maxEnd) {
+                            if (this.booking.isDateExcluded(checkDate)) return true;
+                            if (this.booking.isWeekdayExcluded(checkDate)) return true;
+                            if (checkDate >= minEnd) break;
+                            checkDate.setTime(checkDate.getTime() + this.booking.DAY_IN_MS);
+                        }
+                    }
+
+                    return undefined;
+                },
+
+                /**
+                 * Determine if day is unavailable (excluded but shown differently)
+                 */
+                unavailableDayFn: (date) => {
+                    return this.booking.isDateExcluded(date);
+                },
+
+                /**
+                 * Custom CSS classes for days
+                 */
+                customClassesFn: (date) => {
+                    // Show "in range" styling for dates between start and minEnd
+                    if (this.active_picker === "end" && this.start_date) {
+                        let rangeConfig = this.field.props.date_range;
+                        let minEnd = new Date(this.start_date.getTime() + rangeConfig.min_length * this.booking.DAY_IN_MS);
+
+                        if (this.field.props.count_mode === "days") {
+                            minEnd.setTime(minEnd.getTime() - this.booking.DAY_IN_MS);
+                        }
+
+                        if (date > this.start_date && date < minEnd) {
+                            return ["is-inrange"];
+                        }
+                    }
+                    return undefined;
+                },
+
+                /**
+                 * Add mouseover listener after calendar draws
+                 */
+                onDraw: (picker) => {
+                    picker.el.addEventListener("mouseover", this.onCalendarMouseOver);
+                },
+
+                /**
+                 * Add price tooltip to each day cell
+                 */
+                dayRenderHook: (dayData, dayEl) => {
+                    if (dayData.isDisabled) return;
+
+                    let dayDate = new Date(dayData.year, dayData.month, dayData.day);
+                    let price = this.$root.getMinimumPriceForDate(dayDate);
+                    let tooltip = `<div class="pika-tooltip">${this.$root.currencyFormat(price)}</div>`;
+                    dayEl.beforeCloseTd += tooltip;
+                }
+            });
+        },
+
+        /**
+         * Handle mouseover on calendar for range preview
+         *
+         * Shows visual feedback of range as user hovers over end date options.
+         */
+        onCalendarMouseOver(event) {
+            if (!this.start_date || this.end_date) return;
+
+            let td = event.target.tagName === "TD" ? event.target : event.target.closest("td");
+            if (!td || td.classList.contains("is-empty") || td.classList.contains("is-disabled")) return;
+
+            let button = td.querySelector(".pika-button");
+            if (!button || button.disabled) return;
+
+            td.classList.add("is-endrange");
+
+            let hoverDate = new Date(
+                button.getAttribute("data-pika-year"),
+                button.getAttribute("data-pika-month"),
+                button.getAttribute("data-pika-day")
+            );
+            this.hover_date = new Date(hoverDate.getTime());
+
+            // Add in-range class to dates between start and hover
+            let checkDate = new Date(hoverDate.getTime() - this.booking.DAY_IN_MS);
+            while (checkDate > this.start_date) {
+                let selector = [
+                    `.pika-button[data-pika-year="${checkDate.getFullYear()}"]`,
+                    `[data-pika-month="${checkDate.getMonth()}"]`,
+                    `[data-pika-day="${checkDate.getDate()}"]`
+                ].join("");
+
+                let dayButton = this.picker.el.querySelector(selector);
+                if (dayButton) {
+                    dayButton.parentElement.classList.add("is-inrange");
+                }
+                checkDate.setTime(checkDate.getTime() - this.booking.DAY_IN_MS);
+            }
+
+            // Clean up on mouseleave
+            td.addEventListener("mouseleave", () => {
+                Array.from(this.picker.el.querySelectorAll("td.is-inrange:not(.is-disabled)"))
+                    .forEach(el => el.classList.remove("is-inrange"));
+                td.classList.remove("is-endrange");
+                this.hover_date = null;
+            }, { once: true });
+        },
+
+        /**
+         * Set start date and clear end date
+         */
+        setStartDate(date) {
+            this.start_date = date;
+            this.hover_date = null;
+            this.picker.setStartRange(date);
+            this.setEndDate(null);
+        },
+
+        /**
+         * Set end date
+         */
+        setEndDate(date) {
+            this.end_date = date;
+            this.picker.setEndRange(date);
+        },
+
+        /**
+         * Get length of selected range
+         *
+         * @returns {number} Number of days or nights
+         */
+        getSelectedRangeLength() {
+            let start = new Date(this.booking.value.start_date + "T00:00:00Z");
+            let end = new Date(this.booking.value.end_date + "T00:00:00Z");
+            let startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+            let endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+
+            if (this.field.props.count_mode === "nights") {
+                return Math.max(1, Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)));
+            }
+            return Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)) + 1;
+        },
+
+        /**
+         * Calculate range length between two dates
+         */
+        calculateLength(start, end, countMode = this.field.props.count_mode) {
+            let startUTC = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+            let endUTC = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+
+            if (countMode === "nights") {
+                return Math.max(1, Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)));
+            }
+            return Math.abs(Math.floor((endUTC - startUTC) / this.booking.DAY_IN_MS)) + 1;
+        }
+    },
+
+    computed: {
+        /**
+         * Dynamic popup title based on selection state
+         */
+        popupTitle() {
+            let countMode = this.field.props.count_mode;
+
+            if (countMode === "nights") {
+                if (this.start_date && this.end_date) {
+                    let length = this.calculateLength(this.start_date, this.end_date);
+                    return length === 1
+                        ? this.field.props.l10n.one_night
+                        : this.field.props.l10n.multiple_nights.replace("@count", length);
+                }
+                if (this.start_date && this.hover_date) {
+                    let length = this.calculateLength(this.start_date, this.hover_date);
+                    return length === 1
+                        ? this.field.props.l10n.one_night
+                        : this.field.props.l10n.multiple_nights.replace("@count", length);
+                }
+                return this.field.props.l10n.select_nights;
+            } else {
+                if (this.start_date && this.end_date) {
+                    let length = this.calculateLength(this.start_date, this.end_date);
+                    return length === 1
+                        ? this.field.props.l10n.one_day
+                        : this.field.props.l10n.multiple_days.replace("@count", length);
+                }
+                if (this.start_date && this.hover_date) {
+                    let length = this.calculateLength(this.start_date, this.hover_date);
+                    return length === 1
+                        ? this.field.props.l10n.one_day
+                        : this.field.props.l10n.multiple_days.replace("@count", length);
+                }
+                return this.field.props.l10n.select_days;
+            }
+        },
+
+        /**
+         * Dynamic popup description based on selection state
+         */
+        popupDescription() {
+            if (this.start_date && this.end_date) {
+                return [
+                    Voxel.helpers.dateFormat(this.start_date),
+                    Voxel.helpers.dateFormat(this.end_date)
+                ].join(" - ");
+            }
+
+            if (this.start_date && this.hover_date) {
+                return [
+                    Voxel.helpers.dateFormat(this.start_date),
+                    Voxel.helpers.dateFormat(this.hover_date)
+                ].join(" - ");
+            }
+
+            if (this.start_date) {
+                return Voxel.helpers.dateFormat(this.start_date) + " - " + this.field.props.l10n.select_end_date;
+            }
+
+            // Show custom limits message or default
+            if (this.field.props.date_range.has_custom_limits) {
+                let msg = this.field.props.count_mode === "nights"
+                    ? this.field.props.l10n.nights_range_error
+                    : this.field.props.l10n.days_range_error;
+                return msg
+                    .replace("@minlength", this.field.props.date_range.min_length)
+                    .replace("@maxlength", this.field.props.date_range.max_length);
+            }
+
+            return this.field.props.l10n.select_start_and_end_date;
+        }
+    }
+};
+
+/**
+ * Book Single Day Component
+ *
+ * Pikaday-based single date picker for booking products.
+ * Simpler than date range - just pick one date.
+ *
+ * @template #product-form-book-single-day
+ */
+const BookSingleDay = {
+    template: "#product-form-book-single-day",
+
+    props: {
+        booking: Object,
+        field: Object
+    },
+
+    data() {
+        return {
+            date: null,
+            picker: null
+        };
+    },
+
+    mounted() {
+        this._setValuesFromSearchContext();
+    },
+
+    methods: {
+        /**
+         * Pre-fill date from search context
+         */
+        _setValuesFromSearchContext() {
+            let searchContext = this.$root.config.settings.search_context.availability;
+
+            if (!searchContext.start) return;
+
+            let date = new Date(searchContext.start + " 00:00:00");
+
+            if (date < this.booking.getMinDate()) return;
+            if (date > this.booking.getMaxDate()) return;
+            if (this.booking.isDateExcluded(date)) return;
+            if (this.booking.isWeekdayExcluded(date)) return;
+
+            this.date = date;
+            this.booking.value.date = searchContext.start;
+        },
+
+        /**
+         * Initialize picker on popup open
+         */
+        onOpen() {
+            if (this.picker) this.picker.destroy();
+            this.$nextTick(() => this.renderPicker());
+        },
+
+        /**
+         * Save selected date to booking value
+         */
+        saveDate() {
+            this.booking.value.date = this.date ? Voxel.helpers.dateFormatYmd(this.date) : null;
+        },
+
+        /**
+         * Format date for display
+         */
+        displayDate() {
+            return Voxel.helpers.dateFormat(new Date(this.booking.value.date + "T00:00:00"));
+        },
+
+        /**
+         * Save and close
+         */
+        onSave() {
+            this.saveDate();
+            this.$refs.booking.blur();
+        },
+
+        /**
+         * Handle blur
+         */
+        onBlur() {
+            this.saveDate();
+        },
+
+        /**
+         * Clear selection
+         */
+        onClear() {
+            this.date = null;
+            this.picker.draw();
+        },
+
+        /**
+         * Render Pikaday for single date selection
+         */
+        renderPicker() {
+            this.picker = new Pikaday({
+                field: this.$refs.input,
+                container: this.$refs.calendar,
+                bound: false,
+                firstDay: 1,
+                keyboardInput: false,
+                numberOfMonths: 1,
+                defaultDate: this.date,
+                minDate: this.booking.getMinDate(),
+                maxDate: this.booking.getMaxDate(),
+                expandYears: false,
+
+                onSelect: (date) => {
+                    this.date = date;
+                    this.onSave();
+                },
+
+                selectDayFn: (date) => {
+                    return this.date && this.date.toDateString() === date.toDateString();
+                },
+
+                disableDayFn: (date) => {
+                    if (this.field.props.availability.max_days < 1) return true;
+
+                    let weekday = this.booking.weekdays[date.getDay()];
+                    if (this.field.props.excluded_weekdays.includes(weekday)) return true;
+
+                    return undefined;
+                },
+
+                unavailableDayFn: (date) => {
+                    return this.field.props.excluded_days.includes(Voxel.helpers.dateFormatYmd(date));
+                }
+            });
+        }
+    }
+};
+
+/**
+ * Book Timeslot Component
+ *
+ * Combined date picker + time slot selector for appointment-style bookings.
+ * First select a date, then select from available time slots for that date.
+ *
+ * @template #product-form-book-timeslot
+ */
+const BookTimeslot = {
+    template: "#product-form-book-timeslot",
+
+    props: {
+        booking: Object,
+        field: Object
+    },
+
+    data() {
+        return {
+            date: null,
+            slot: null,
+            picker: null,
+            schedule: {}    // Weekday -> slots mapping
+        };
+    },
+
+    created() {
+        // Build weekday -> slots mapping from groups
+        this.field.props.timeslots.groups.forEach(group => {
+            group.days.forEach(day => {
+                this.schedule[day] = group.slots;
+            });
+        });
+    },
+
+    mounted() {
+        this._setValuesFromSearchContext();
+    },
+
+    methods: {
+        /**
+         * Pre-fill from search context
+         */
+        _setValuesFromSearchContext() {
+            let searchContext = this.$root.config.settings.search_context.availability;
+
+            if (!searchContext.start) return;
+
+            let date = new Date(searchContext.start + " 00:00:00");
+
+            if (date < this.booking.getMinDate()) return;
+            if (date > this.booking.getMaxDate()) return;
+            if (this.booking.isDateExcluded(date)) return;
+            if (this.booking.isWeekdayExcluded(date)) return;
+
+            // Find first available slot for this date
+            let availableSlot = this.getSlotsForDate(date).find(slot => slot._disabled !== true);
+            if (!availableSlot) return;
+
+            this.date = date;
+            this.slot = { from: availableSlot.from, to: availableSlot.to };
+            this.booking.value.date = searchContext.start;
+            this.booking.value.slot = this.slot;
+        },
+
+        /**
+         * Show calendar (after slot selection to pick new date)
+         */
+        showCalendar() {
+            let prevDate = this.date;
+            this.date = null;
+
+            if (this.picker) this.picker.destroy();
+
+            this.$nextTick(() => {
+                this.renderPicker();
+                this.picker.gotoDate(prevDate);
+            });
+        },
+
+        /**
+         * Initialize picker on popup open
+         */
+        onOpen() {
+            if (this.picker) this.picker.destroy();
+            this.$nextTick(() => this.renderPicker());
+        },
+
+        /**
+         * Save selected date and slot
+         */
+        saveDate() {
+            if (this.date && this.slot) {
+                this.booking.value.date = Voxel.helpers.dateFormatYmd(this.date);
+                this.booking.value.slot = this.slot;
+            } else {
+                this.booking.value.date = null;
+                this.booking.value.slot = null;
+            }
+        },
+
+        /**
+         * Format date/time for display
+         */
+        displayDate() {
+            return Voxel.helpers.dateTimeFormat(
+                new Date(this.booking.value.date + "T" + this.booking.value.slot.from)
+            );
+        },
+
+        onSave() {
+            this.saveDate();
+            this.$refs.booking.blur();
+        },
+
+        onBlur() {
+            this.saveDate();
+        },
+
+        onClear() {
+            this.date = null;
+            this.slot = null;
+            this.showCalendar();
+        },
+
+        /**
+         * Render Pikaday for date selection
+         */
+        renderPicker() {
+            this.picker = new Pikaday({
+                field: this.$refs.input,
+                container: this.$refs.calendar,
+                bound: false,
+                firstDay: 1,
+                keyboardInput: false,
+                numberOfMonths: 1,
+                defaultDate: this.date,
+                minDate: this.booking.getMinDate(),
+                maxDate: this.booking.getMaxDate(),
+                expandYears: false,
+
+                onSelect: (date) => {
+                    this.date = date;
+                },
+
+                selectDayFn: (date) => {
+                    return this.date && this.date.toDateString() === date.toDateString();
+                },
+
+                disableDayFn: (date) => {
+                    if (this.field.props.availability.max_days < 1) return true;
+
+                    // Check if day has any slots
+                    let daySlots = this.schedule[this.booking.weekdays[date.getDay()]];
+                    if (!Array.isArray(daySlots) || !daySlots.length) return true;
+
+                    return undefined;
+                },
+
+                unavailableDayFn: (date) => {
+                    return this.field.props.excluded_days.includes(Voxel.helpers.dateFormatYmd(date));
+                },
+
+                /**
+                 * Show available slot count in tooltip
+                 */
+                dayRenderHook: (dayData, dayEl) => {
+                    if (dayData.isDisabled) return;
+
+                    let dayDate = new Date(dayData.year, dayData.month, dayData.day);
+                    let daySlots = this.schedule[this.booking.weekdays[dayDate.getDay()]];
+
+                    let quantityPerSlot = this.booking.field.props.quantity_per_slot;
+                    let bookedCounts = this.booking.field.props.booked_slot_counts;
+                    let totalAvailable = 0;
+
+                    daySlots.forEach(slot => {
+                        let slotKey = `${Voxel.helpers.dateFormatYmd(dayDate)} ${slot.from}-${slot.to}`;
+                        let available = quantityPerSlot - (bookedCounts[slotKey] || 0);
+                        if (available >= 1) totalAvailable += available;
+                    });
+
+                    let tooltip = `<div class="pika-tooltip">${this.booking.field.props.l10n.amount_available.replace("@count", totalAvailable)}</div>`;
+                    dayEl.beforeCloseTd += tooltip;
+                }
+            });
+        },
+
+        /**
+         * Select a time slot
+         */
+        pickSlot(slot) {
+            this.slot = { from: slot.from, to: slot.to };
+            this.onSave();
+        },
+
+        /**
+         * Format slot time for display
+         */
+        getSlotLabel(slot) {
+            return Voxel.helpers.timeFormat(new Date(`2020-01-01T${slot.from}:00`)) +
+                " - " +
+                Voxel.helpers.timeFormat(new Date(`2020-01-01T${slot.to}:00`));
+        },
+
+        /**
+         * Get available slots for a specific date
+         *
+         * Checks booking counts and disables fully booked slots.
+         */
+        getSlotsForDate(date) {
+            let daySlots = this.schedule[this.booking.weekdays[date.getDay()]];
+
+            // Check if date is today - disable past slots
+            if (Voxel.helpers.dateFormatYmd(date) === Voxel.helpers.dateFormatYmd(this.booking.today)) {
+                let now = this.booking.today;
+                let currentTime = parseInt("" + now.getUTCHours() + now.getUTCMinutes(), 10);
+
+                daySlots.forEach(slot => {
+                    let slotParts = slot.from.split(":");
+                    let slotTime = parseInt("" + slotParts[0] + slotParts[1], 10);
+                    slot._disabled = slotTime < currentTime;
+                });
+            }
+
+            // Check booking counts
+            let quantityPerSlot = this.booking.field.props.quantity_per_slot;
+            let bookedCounts = this.booking.field.props.booked_slot_counts;
+
+            daySlots.forEach(slot => {
+                let slotKey = `${Voxel.helpers.dateFormatYmd(date)} ${slot.from}-${slot.to}`;
+                let available = quantityPerSlot - (bookedCounts[slotKey] || 0);
+                if (available < 1) slot._disabled = true;
+            });
+
+            return daySlots;
+        }
+    },
+
+    computed: {
+        /**
+         * Get slots for currently selected date
+         *
+         * Includes buffer time check for today's date.
+         */
+        currentDaySlots() {
+            if (!this.date) return [];
+
+            let daySlots = this.schedule[this.booking.weekdays[this.date.getDay()]];
+
+            // Reset disabled state
+            daySlots.forEach(slot => slot._disabled = false);
+
+            // Check if date is today - apply buffer time
+            if (Voxel.helpers.dateFormatYmd(this.date) === Voxel.helpers.dateFormatYmd(this.booking.today)) {
+                let bufferedTime = new Date(this.booking.today.getTime() + this.booking.getBufferTime());
+                let currentTime = parseInt("" + bufferedTime.getUTCHours() + bufferedTime.getUTCMinutes(), 10);
+
+                daySlots.forEach(slot => {
+                    let slotParts = slot.from.split(":");
+                    let slotTime = parseInt("" + slotParts[0] + slotParts[1], 10);
+                    slot._disabled = slotTime < currentTime;
+                });
+            }
+
+            // Check booking counts
+            let quantityPerSlot = this.booking.field.props.quantity_per_slot;
+            let bookedCounts = this.booking.field.props.booked_slot_counts;
+
+            daySlots.forEach(slot => {
+                let slotKey = `${Voxel.helpers.dateFormatYmd(this.date)} ${slot.from}-${slot.to}`;
+                let available = quantityPerSlot - (bookedCounts[slotKey] || 0);
+                if (available < 1) slot._disabled = true;
+            });
+
+            return daySlots;
+        }
+    }
+};
+
+/**
+ * Field Booking Component
+ *
+ * Main booking field wrapper that renders the appropriate booking mode:
+ * - date_range: BookDateRange component
+ * - single_day: BookSingleDay component
+ * - timeslots: BookTimeslot component
+ *
+ * Provides shared utilities for date calculations, exclusions, and pricing.
+ *
+ * @template #product-form-booking
+ */
+const FieldBooking = {
+    template: "#product-form-booking",
+
+    props: {
+        field: Object
+    },
+
+    components: {
+        bookDateRange: BookDateRange,
+        bookSingleDay: BookSingleDay,
+        bookTimeslot: BookTimeslot
+    },
+
+    data() {
+        return {
+            value: this.$root.config.value.booking,
+            weekdays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+            today: new Date(this.field.props.today.date + "T" + this.field.props.today.time + "Z"),
+            HOUR_IN_MS: 3600000,    // 60 * 60 * 1000
+            DAY_IN_MS: 86400000,    // 24 * 60 * 60 * 1000
+            _excluded_days_map: {},
+            _excluded_weekdays_map: {},
+            _minDate: null,
+            _maxDate: null
+        };
+    },
+
+    created() {
+        // Build lookup maps for O(1) exclusion checks
+        this.field.props.excluded_days.forEach(day => this._excluded_days_map[day] = true);
+        this.field.props.excluded_weekdays?.forEach(day => this._excluded_weekdays_map[day] = true);
+    },
+
+    methods: {
+        /**
+         * Calculate buffer time in milliseconds
+         *
+         * Buffer is the minimum notice required before a booking can start.
+         */
+        getBufferTime() {
+            let buffer = this.field.props.availability.buffer;
+            if (buffer.unit === "hours") {
+                return buffer.amount * this.HOUR_IN_MS;
+            }
+            return buffer.amount * this.DAY_IN_MS;
+        },
+
+        /**
+         * Get minimum selectable date
+         *
+         * Calculated as today + buffer time.
+         */
+        getMinDate() {
+            if (this._minDate === null) {
+                let minDate = new Date(this.today.getTime() + this.getBufferTime());
+                minDate.setHours(0, 0, 0, 0);
+                this._minDate = minDate;
+            }
+            return this._minDate;
+        },
+
+        /**
+         * Get maximum selectable date
+         *
+         * Calculated as today + max_days.
+         */
+        getMaxDate() {
+            if (this._maxDate === null) {
+                let minDate = this.getMinDate();
+                let maxDate = new Date(this.today.getTime() + (this.field.props.availability.max_days - 1) * this.DAY_IN_MS);
+                maxDate.setHours(0, 0, 0, 0);
+
+                // Ensure max >= min
+                if (minDate > maxDate) maxDate = minDate;
+
+                this._maxDate = maxDate;
+            }
+            return this._maxDate;
+        },
+
+        /**
+         * Check if specific date is excluded
+         */
+        isDateExcluded(date) {
+            return this._excluded_days_map[Voxel.helpers.dateFormatYmd(date)] === true;
+        },
+
+        /**
+         * Check if weekday is excluded
+         */
+        isWeekdayExcluded(date) {
+            let weekday = this.weekdays[date.getDay()];
+            return this._excluded_weekdays_map[weekday] === true;
+        },
+
+        /**
+         * Check if date is available (not excluded, within bounds)
+         */
+        isDateAvailable(date) {
+            if (this.isWeekdayExcluded(date)) return false;
+            if (this.isDateExcluded(date)) return false;
+            if (date < this.getMinDate() || date > this.getMaxDate()) return false;
+            return true;
+        },
+
+        /**
+         * Format date for display
+         */
+        dateFormat(date) {
+            return Voxel.helpers.dateFormat(date);
+        },
+
+        /**
+         * Calculate pricing summary for booking
+         *
+         * Handles all three modes with custom pricing per date.
+         *
+         * @returns {Object|null} { label: string, amount: number } or null
+         */
+        getPricingSummary() {
+            let mode = this.field.props.mode;
+
+            // DATE RANGE MODE
+            if (mode === "date_range") {
+                if (!this.value.start_date || !this.value.end_date) return null;
+
+                let countMode = this.field.props.count_mode;
+                let length = this.$refs.dateRange.getSelectedRangeLength();
+                if (length < 1) return null;
+
+                let basePrice = this.$root.config.props.base_price;
+                let amount = 0;
+
+                // Calculate price for each day in range
+                if (basePrice.enabled) {
+                    let start = new Date(this.value.start_date + "T00:00:00Z");
+                    let end = new Date(this.value.end_date + "T00:00:00Z");
+
+                    while (countMode === "nights" ? start < end : start <= end) {
+                        let customPrice = this.$root.getCustomPriceForDate(start);
+
+                        if (customPrice) {
+                            amount += customPrice.prices.base_price.discount_amount !== null
+                                ? customPrice.prices.base_price.discount_amount
+                                : customPrice.prices.base_price.amount;
+                        } else {
+                            amount += basePrice.discount_amount !== null
+                                ? basePrice.discount_amount
+                                : basePrice.amount;
+                        }
+
+                        start.setDate(start.getDate() + 1);
+                    }
+                }
+
+                // Build label
+                let label;
+                if (countMode === "nights") {
+                    label = length === 1
+                        ? this.field.props.l10n.one_night
+                        : this.field.props.l10n.multiple_nights.replace("@count", length);
+                } else {
+                    label = length === 1
+                        ? this.field.props.l10n.one_day
+                        : this.field.props.l10n.multiple_days.replace("@count", length);
+                }
+
+                return { label: label, amount: amount };
+            }
+
+            // SINGLE DAY MODE
+            if (mode === "single_day") {
+                if (!this.value.date) return null;
+
+                let basePrice = this.$root.config.props.base_price;
+                let amount = 0;
+
+                if (basePrice.enabled) {
+                    let dayDate = new Date(this.value.date + "T00:00:00Z");
+                    let customPrice = this.$root.getCustomPriceForDate(dayDate);
+
+                    if (customPrice) {
+                        amount += customPrice.prices.base_price.discount_amount !== null
+                            ? customPrice.prices.base_price.discount_amount
+                            : customPrice.prices.base_price.amount;
+                    } else {
+                        amount += basePrice.discount_amount !== null
+                            ? basePrice.discount_amount
+                            : basePrice.amount;
+                    }
+                }
+
+                return { amount: amount, label: this.field.props.l10n.booking_price };
+            }
+
+            // TIMESLOTS MODE
+            if (mode === "timeslots") {
+                if (!this.value.date || !this.value.slot) return null;
+
+                let basePrice = this.$root.config.props.base_price;
+                let amount = 0;
+
+                if (basePrice.enabled) {
+                    let dayDate = new Date(this.value.date + "T00:00:00Z");
+                    let customPrice = this.$root.getCustomPriceForDate(dayDate);
+
+                    if (customPrice) {
+                        amount += customPrice.prices.base_price.discount_amount !== null
+                            ? customPrice.prices.base_price.discount_amount
+                            : customPrice.prices.base_price.amount;
+                    } else {
+                        amount += basePrice.discount_amount !== null
+                            ? basePrice.discount_amount
+                            : basePrice.amount;
+                    }
+                }
+
+                return { amount: amount, label: this.field.props.l10n.booking_price };
+            }
+
+            return null;
+        }
+    }
+};
+
+/* ==========================================================================
+   SECTION 4: DATA INPUTS COMPONENT
+   ========================================================================== */
+
+/**
+ * Field Data Inputs Component
+ *
+ * Container for customer data collection fields in the product form.
+ * These are additional fields the customer fills out (not addons or pricing).
+ *
+ * Supports input types:
+ * - text: Simple text input
+ * - textarea: Multi-line text
+ * - number: Numeric input with min/max/increment
+ * - select: Single choice from options
+ * - multiselect: Multiple choices from options
+ * - email: Email input
+ * - phone: Phone number input
+ * - url: URL input
+ * - switcher: On/off toggle
+ * - date: Date picker
+ *
+ * @template #product-form-data-inputs
+ */
+const FieldDataInputs = {
+    template: "#product-form-data-inputs",
+
+    props: {
+        field: Object
+    },
+
+    components: {
+        /**
+         * Text Input Component
+         */
+        dataInputText: {
+            template: "#product-form-data-input-text",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * Textarea Input Component
+         */
+        dataInputTextarea: {
+            template: "#product-form-data-input-textarea",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * Number Input Component
+         */
+        dataInputNumber: {
+            template: "#product-form-data-input-number",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            },
+            methods: {
+                /**
+                 * Set value helper
+                 */
+                setValue(value) {
+                    this.dataInputs.values[this.dataInput.key] = value;
+                },
+
+                /**
+                 * Validate value within min/max bounds
+                 */
+                validateValueInBounds() {
+                    let value = this.dataInputs.values[this.dataInput.key];
+                    let props = this.dataInput.props;
+
+                    if (typeof value === "number") {
+                        if (value > props.max) {
+                            this.setValue(props.max);
+                        } else if (value < props.min) {
+                            this.setValue(props.min);
+                        }
+                    }
+                },
+
+                /**
+                 * Increment value
+                 */
+                increment() {
+                    if (typeof this.dataInputs.values[this.dataInput.key] !== "number") {
+                        this.setValue(this.dataInput.props.min);
+                    } else {
+                        this.setValue(this.dataInputs.values[this.dataInput.key] + 1);
+                    }
+                },
+
+                /**
+                 * Decrement value
+                 */
+                decrement() {
+                    if (typeof this.dataInputs.values[this.dataInput.key] !== "number") {
+                        this.setValue(this.dataInput.props.min);
+                    } else {
+                        this.setValue(this.dataInputs.values[this.dataInput.key] - 1);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Select Input Component (radio-style single choice)
+         */
+        dataInputSelect: {
+            template: "#product-form-data-input-select",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            },
+            methods: {
+                isChecked(choice) {
+                    return this.dataInputs.values[this.dataInput.key] === choice.value;
+                },
+
+                toggleChoice(choice) {
+                    if (this.isChecked(choice)) {
+                        this.dataInputs.values[this.dataInput.key] = null;
+                    } else {
+                        this.dataInputs.values[this.dataInput.key] = choice.value;
+                    }
+                }
+            }
+        },
+
+        /**
+         * Multiselect Input Component (checkbox-style multiple choice)
+         */
+        dataInputMultiselect: {
+            template: "#product-form-data-input-multiselect",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            },
+            methods: {
+                isChecked(choice) {
+                    return this.dataInputs.values[this.dataInput.key].includes(choice.value);
+                },
+
+                toggleChoice(choice) {
+                    if (this.isChecked(choice)) {
+                        this.dataInputs.values[this.dataInput.key] =
+                            this.dataInputs.values[this.dataInput.key].filter(v => v !== choice.value);
+                    } else {
+                        this.dataInputs.values[this.dataInput.key].push(choice.value);
+                    }
+                }
+            }
+        },
+
+        /**
+         * Email Input Component
+         */
+        dataInputEmail: {
+            template: "#product-form-data-input-email",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * Phone Input Component
+         */
+        dataInputPhone: {
+            template: "#product-form-data-input-phone",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * URL Input Component
+         */
+        dataInputUrl: {
+            template: "#product-form-data-input-url",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * Switcher Input Component
+         */
+        dataInputSwitcher: {
+            template: "#product-form-data-input-switcher",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        },
+
+        /**
+         * Date Input Component
+         */
+        dataInputDate: {
+            template: "#product-form-data-input-date",
+            props: {
+                dataInput: Object,
+                dataInputs: Object
+            }
+        }
+    },
+
+    data() {
+        return {
+            values: this.$root.config.value.data_inputs
+        };
+    },
+
+    methods: {
+        // Data inputs don't affect pricing - they just collect customer info
+    }
+};
+
+/* ==========================================================================
+   SECTION 5: MAIN RENDER FUNCTION
    ========================================================================== */
 
 /**
@@ -2214,6 +3664,8 @@ window.render_product_form = () => {
         app.component("field-form-addons", FieldAddons);
         app.component("field-form-quantity", FieldQuantity);
         app.component("field-form-variations", FieldVariations);
+        app.component("field-form-booking", FieldBooking);
+        app.component("field-form-data-inputs", FieldDataInputs);
         app.component("form-popup", Voxel.components.popup);
         app.component("form-group", Voxel.components.formGroup);
 
@@ -2222,7 +3674,7 @@ window.render_product_form = () => {
 };
 
 /* ==========================================================================
-   SECTION 3: AUTO-INITIALIZATION & EVENT BINDING
+   SECTION 6: AUTO-INITIALIZATION & EVENT BINDING
    ========================================================================== */
 
 // Initialize immediately
@@ -2232,7 +3684,7 @@ window.render_product_form();
 jQuery(document).on("voxel:markup-update", window.render_product_form);
 
 /* ==========================================================================
-   SECTION 4: EDGE CASES & ERROR HANDLING SUMMARY
+   SECTION 7: EDGE CASES & ERROR HANDLING SUMMARY
    ========================================================================== */
 
 /**
@@ -2281,7 +3733,7 @@ jQuery(document).on("voxel:markup-update", window.render_product_form);
  */
 
 /* ==========================================================================
-   SECTION 5: EVENT FLOW DIAGRAM
+   SECTION 8: EVENT FLOW DIAGRAM
    ========================================================================== */
 
 /**

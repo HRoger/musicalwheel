@@ -18,6 +18,28 @@ declare global {
 	}
 }
 
+/**
+ * Day render data passed to dayRenderHook
+ * Evidence: voxel-product-form.beautified.js lines 1992-1998
+ */
+export interface PikadayDayData {
+	year: number;
+	month: number;
+	day: number;
+	isDisabled: boolean;
+	isSelected: boolean;
+	isToday: boolean;
+	isEmpty: boolean;
+}
+
+/**
+ * Day element data with mutable beforeCloseTd for adding content
+ * Evidence: voxel-product-form.beautified.js line 1998 - dayEl.beforeCloseTd += tooltip;
+ */
+export interface PikadayDayElement {
+	beforeCloseTd: string;
+}
+
 interface PikadayOptions {
 	field?: HTMLElement;
 	bound?: boolean;
@@ -32,6 +54,11 @@ interface PikadayOptions {
 	onOpen?: () => void;
 	onClose?: () => void;
 	onDraw?: ( picker: PikadayInstance ) => void;
+	/**
+	 * Custom day render hook for adding content to calendar cells
+	 * Evidence: voxel-product-form.beautified.js lines 1992-1999
+	 */
+	dayRenderHook?: ( dayData: PikadayDayData, dayEl: PikadayDayElement ) => void;
 	i18n?: {
 		previousMonth?: string;
 		nextMonth?: string;
@@ -55,6 +82,8 @@ interface PikadayInstance {
 	setDate: ( date: Date | string | null, preventOnSelect?: boolean ) => void;
 	setMinDate: ( date: Date ) => void;
 	setMaxDate: ( date: Date ) => void;
+	setStartRange: ( date: Date | null ) => void;
+	setEndRange: ( date: Date | null ) => void;
 	gotoDate: ( date: Date ) => void;
 	gotoMonth: ( month: number ) => void;
 	gotoYear: ( year: number ) => void;
@@ -62,6 +91,8 @@ interface PikadayInstance {
 	hide: () => void;
 	isVisible: () => boolean;
 	draw: ( force?: boolean ) => void;
+	/** The picker's DOM element */
+	el: HTMLElement;
 }
 
 export interface UsePikadayOptions {
@@ -75,6 +106,15 @@ export interface UsePikadayOptions {
 	container?: HTMLElement | null;
 	numberOfMonths?: number;
 	onDraw?: ( picker: PikadayInstance ) => void;
+	/**
+	 * Custom day render hook for adding content (e.g., price tooltips) to calendar cells
+	 * Evidence: voxel-product-form.beautified.js lines 1992-1999
+	 */
+	dayRenderHook?: ( dayData: PikadayDayData, dayEl: PikadayDayElement ) => void;
+	/** Initial start range for range selection */
+	startRange?: Date | null;
+	/** Initial end range for range selection */
+	endRange?: Date | null;
 }
 
 export interface UsePikadayReturn {
@@ -82,10 +122,14 @@ export interface UsePikadayReturn {
 	pickerRef: React.MutableRefObject<PikadayInstance | null>;
 	setDate: ( date: Date | string | null ) => void;
 	getDate: () => Date | null;
+	setStartRange: ( date: Date | null ) => void;
+	setEndRange: ( date: Date | null ) => void;
 	show: () => void;
 	hide: () => void;
 	gotoDate: ( date: Date ) => void;
 	redraw: () => void;
+	/** Get the picker's DOM element for event handling */
+	getPickerElement: () => HTMLElement | null;
 }
 
 /**
@@ -123,6 +167,8 @@ export function usePikaday( options: UsePikadayOptions ): UsePikadayReturn {
 			onDraw: ( picker: PikadayInstance ) => {
 				optionsRef.current.onDraw?.( picker );
 			},
+			// Evidence: voxel-product-form.beautified.js lines 1992-1999
+			dayRenderHook: optionsRef.current.dayRenderHook,
 		};
 
 		if ( optionsRef.current.container ) {
@@ -175,15 +221,30 @@ export function usePikaday( options: UsePikadayOptions ): UsePikadayReturn {
 		pickerRef.current?.draw( true );
 	}, [] );
 
+	const setStartRange = useCallback( ( date: Date | null ) => {
+		pickerRef.current?.setStartRange( date );
+	}, [] );
+
+	const setEndRange = useCallback( ( date: Date | null ) => {
+		pickerRef.current?.setEndRange( date );
+	}, [] );
+
+	const getPickerElement = useCallback( (): HTMLElement | null => {
+		return pickerRef.current?.el ?? null;
+	}, [] );
+
 	return {
 		inputRef: inputRef as React.RefObject<HTMLInputElement>,
 		pickerRef,
 		setDate,
 		getDate,
+		setStartRange,
+		setEndRange,
 		show,
 		hide,
 		gotoDate,
 		redraw,
+		getPickerElement,
 	};
 }
 

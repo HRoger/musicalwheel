@@ -57,6 +57,10 @@ export default function FilterPopupStyleControl({
 
 	const isEnabled = attributes[keys.enable] as boolean;
 
+	// Get unique identifier for this filter (used for popup state persistence)
+	// The attributes object is the filter config which has an 'id' property
+	const filterId = (attributes.id || attributes._id || '') as string;
+
 	return (
 		<>
 			{/* Custom popup style toggle - Evidence: search-form.php:343-352 */}
@@ -77,6 +81,7 @@ export default function FilterPopupStyleControl({
 						attributes={attributes}
 						setAttributes={setAttributes}
 						attributeBaseName={keys.minWidth}
+						controlKeyPrefix={filterId}
 						min={200}
 						max={800}
 						step={1}
@@ -90,6 +95,7 @@ export default function FilterPopupStyleControl({
 						attributes={attributes}
 						setAttributes={setAttributes}
 						attributeBaseName={keys.maxWidth}
+						controlKeyPrefix={filterId}
 						min={200}
 						max={800}
 						step={1}
@@ -103,6 +109,7 @@ export default function FilterPopupStyleControl({
 						attributes={attributes}
 						setAttributes={setAttributes}
 						attributeBaseName={keys.maxHeight}
+						controlKeyPrefix={filterId}
 						min={0}
 						max={800}
 						step={1}

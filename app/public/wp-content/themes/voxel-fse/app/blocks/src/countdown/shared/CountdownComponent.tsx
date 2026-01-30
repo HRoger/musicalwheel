@@ -11,20 +11,16 @@
  * ✅ Completion handling matches (hide timer, show ended message)
  * ✅ Event listening matches (voxel:markup-update for AJAX content)
  * ✅ Re-initialization prevention (data-react-mounted vs .vx-event-timer)
+ * ✅ Server timestamp pattern (uses initial timestamp + local increment like Voxel)
+ * ✅ Animation state comparison (uses ref to avoid stale closures)
  *
- * INTENTIONAL DIFFERENCES (Next.js Ready):
- * ✨ Time calculation: Uses Date.now() instead of server timestamp + local increment
- *    - Voxel: config.now++ each second (avoids timezone issues with server sync)
- *    - FSE: Date.now() recalculation (more accurate, works without server data)
- *    - Why: Better for Next.js where we'll fetch from REST API, not server-rendered
- * ✨ vxconfig format: Extended with enhancement props (spacing, colors, typography)
+ * vxconfig format: Extended with enhancement props (spacing, colors, typography)
  *    - Voxel: { now: number, due: number }
  *    - FSE: { dueDate: string, ...enhancement props }
  *    - Why: FSE block is a replacement with more features, not a wrapper
- * ✨ Enhancements: Responsive spacing, colors, typography, show/hide units, orientation
+ * Enhancements: Responsive spacing, colors, typography, show/hide units, orientation
  *
  * NEXT.JS READY:
- * ✅ No server timestamp dependency (uses Date.now())
  * ✅ Props-based component (config passed as prop)
  * ✅ No WordPress globals required
  * ✅ Pure React (no jQuery dependencies)
@@ -129,6 +125,7 @@ function normalizeConfig(raw: any): CountdownConfig {
 export function CountdownComponent({ config: rawConfig, isEditor = false }: CountdownComponentProps): JSX.Element {
 	// Normalize config to handle both vxconfig and REST API formats
 	const config = normalizeConfig(rawConfig);
+
 	// State for countdown values
 	const [state, setState] = useState<CountdownState>({
 		days: 0,
@@ -144,8 +141,18 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 	const minutesRef = useRef<HTMLSpanElement>(null);
 	const secondsRef = useRef<HTMLSpanElement>(null);
 
-	// Calculate countdown
-	const calculateCountdown = (): CountdownState => {
+	// Ref for current state to avoid stale closure in animation comparison
+	// (Voxel compares element.innerText != newValue directly; we use ref to get fresh state)
+	const stateRef = useRef<CountdownState>(state);
+	stateRef.current = state;
+
+	// Ref for server timestamp pattern (matches Voxel's config.now++ approach)
+	// This avoids drift from Date.now() recalculation and matches Voxel exactly
+	const nowRef = useRef<number>(Math.floor(Date.now() / 1000));
+
+	// Calculate countdown from current "now" timestamp
+	// Matches Voxel: var remainingSeconds = config.due - config.now;
+	const calculateCountdown = (currentNow: number): CountdownState => {
 		if (!config.dueDate) {
 			return {
 				days: 0,
@@ -156,9 +163,8 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 			};
 		}
 
-		const now = new Date().getTime();
-		const due = new Date(config.dueDate).getTime();
-		const diff = Math.floor((due - now) / 1000); // difference in seconds
+		const due = Math.floor(new Date(config.dueDate).getTime() / 1000);
+		const diff = due - currentNow; // remainingSeconds in Voxel
 
 		// Match Voxel completion check exactly (line 185: if (remainingSeconds < 0))
 		if (diff < 0) {
@@ -171,6 +177,7 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 			};
 		}
 
+		// Match Voxel calculations exactly (lines 140-143)
 		const days = Math.floor(diff / 86400);
 		const hours = Math.floor((diff % 86400) / 3600);
 		const minutes = Math.floor((diff % 3600) / 60);
@@ -207,19 +214,29 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 	};
 
 	// Update countdown every second
+	// Matches Voxel pattern: tick() called immediately, then setInterval(tick, 1000)
 	useEffect(() => {
-		// Initial calculation
-		const newState = calculateCountdown();
-		setState(newState);
+		// Reset nowRef when dueDate changes (simulates fresh server timestamp)
+		nowRef.current = Math.floor(Date.now() / 1000);
 
-		// Update every second
+		// Initial calculation (matches Voxel line 201: tick())
+		const initialState = calculateCountdown(nowRef.current);
+		setState(initialState);
+		stateRef.current = initialState;
+
+		// Update every second (matches Voxel line 204: setInterval(tick, 1000))
 		// Note: Voxel checks `if (!widgetElement)` before each tick for DOM removal safety.
 		// React handles this automatically via the cleanup function below.
 		const interval = setInterval(() => {
-			const newState = calculateCountdown();
-			const prevState = state;
+			// Increment local time (matches Voxel line 134: config.now++)
+			nowRef.current++;
+
+			const newState = calculateCountdown(nowRef.current);
+			// Use ref to get fresh state (avoids stale closure issue)
+			const prevState = stateRef.current;
 
 			// Animate numbers that changed
+			// Matches Voxel pattern: if (element.innerText != newValue)
 			if (newState.days !== prevState.days) {
 				animateNumber(daysRef, newState.days);
 			}
@@ -234,6 +251,7 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 			}
 
 			setState(newState);
+			stateRef.current = newState;
 		}, 1000);
 
 		return () => clearInterval(interval);

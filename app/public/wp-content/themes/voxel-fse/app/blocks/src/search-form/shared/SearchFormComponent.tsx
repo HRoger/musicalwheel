@@ -71,10 +71,14 @@ import {
 	FilterUser,
 	FilterRelations,
 	FilterFollowing,
+	FilterFollowedBy,
+	FilterFollowingPost,
 	FilterSwitcher,
 	FilterUIHeading,
 	FilterPostTypes,
 } from '../components';
+import { shouldShowFilterByConditions } from '../utils/filterConditions';
+import type { FilterData } from '../types';
 
 interface SearchFormComponentProps {
 	attributes: SearchFormAttributes;
@@ -188,6 +192,19 @@ export default function SearchFormComponent({
 				return; // Click inside popup, don't close
 			}
 
+			// Editor: Prevent closing when clicking on Inspector controls, Sidebar, or any Editor popovers
+			if (context === 'editor') {
+				if (
+					target.closest('.interface-interface-skeleton__sidebar') ||
+					target.closest('.edit-post-sidebar') ||
+					target.closest('.block-editor-block-inspector') ||
+					target.closest('.components-popover') ||
+					target.closest('.components-modal')
+				) {
+					return;
+				}
+			}
+
 			// Click outside popup, close it
 			togglePortal();
 		};
@@ -202,7 +219,7 @@ export default function SearchFormComponent({
 			cancelAnimationFrame(rafId);
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, [state.portalActive, togglePortal]);
+	}, [state.portalActive, togglePortal, context]);
 
 	// Listen for external reset events (from Post Feed's "Reset filters?" link)
 	// Evidence: voxel search-form.js - ts-feed-reset calls clearAll()
@@ -251,14 +268,40 @@ export default function SearchFormComponent({
 		clearAll(closePortal);
 	};
 
+	// Build filtersData map for condition evaluation
+	// Maps filter keys to filter data for type information
+	const filtersDataMap: Record<string, FilterData> = {};
+	currentPostTypeConfig?.filters?.forEach((f: FilterData) => {
+		filtersDataMap[f.key] = f;
+	});
+
 	// Render filter component based on type
 	const renderFilter = (config: FilterConfig) => {
-		// Check visibility rules before rendering (frontend only)
+		// Check user-based visibility rules before rendering (frontend only)
 		// In editor context, always show filters for configuration purposes
 		const shouldRender = context === 'frontend' ? shouldRenderFilter(config) : true;
 
 		if (!shouldRender) {
 			return null;
+		}
+
+		// Check filter-dependent conditions (Voxel's conditionsPass)
+		// Reference: voxel-search-form.beautified.js lines 2960-3033
+		// In editor context, always show filters for configuration purposes
+		const configWithConditions = config as FilterConfig & {
+			conditions?: Array<Array<{ source: string; type: string; value?: string }>>;
+			conditions_behavior?: 'show' | 'hide';
+		};
+
+		if (context === 'frontend' && configWithConditions.conditions) {
+			const conditionsPass = shouldShowFilterByConditions(
+				configWithConditions,
+				state.filterValues,
+				filtersDataMap
+			);
+			if (!conditionsPass) {
+				return null;
+			}
 		}
 
 		const filterData = currentPostTypeConfig?.filters?.find(
@@ -297,6 +340,8 @@ export default function SearchFormComponent({
 			context,
 		};
 
+		// Filter type switch matching Voxel's component registry
+		// Reference: voxel-search-form.beautified.js lines 3081-3100
 		switch (filterData.type) {
 			case 'keywords':
 				return <FilterKeywords key={config.id} {...commonProps} />;
@@ -324,8 +369,17 @@ export default function SearchFormComponent({
 				return <FilterUser key={config.id} {...commonProps} />;
 			case 'relations':
 				return <FilterRelations key={config.id} {...commonProps} />;
+			// Following filter types - Voxel uses same component for some
+			// Reference: voxel-search-form.beautified.js lines 3095-3097
 			case 'following':
 				return <FilterFollowing key={config.id} {...commonProps} />;
+			case 'followed-by':
+				return <FilterFollowedBy key={config.id} {...commonProps} />;
+			case 'following-user':
+				// Same component as followed-by per Voxel
+				return <FilterFollowedBy key={config.id} {...commonProps} />;
+			case 'following-post':
+				return <FilterFollowingPost key={config.id} {...commonProps} />;
 			case 'switcher':
 				return <FilterSwitcher key={config.id} {...commonProps} />;
 			case 'ui-heading':
