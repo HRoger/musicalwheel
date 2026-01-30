@@ -1706,51 +1706,60 @@ export function generateInlineTabResponsiveCSS(
 	cssRules.push(`.ts-popup-centered .ts-form { position: static !important; max-width: initial; width: auto !important; }`);
 
 	// ============================================
-	// 13. Filter-Level Popup: Multi-Column Menu CSS
-	// Source: search-form.php:387-419 (popup_menu_columns)
-	// Generates responsive CSS for per-filter popup menu columns/gap
+	// 13. Filter-Level Popup: Multi-Column Menu & Custom Popup CSS
+	// Source: search-form.php:334-434 (custom popup styles) & 387-419 (popup_menu_columns)
 	// ============================================
 	// Iterate over all filters in all post types to generate scoped CSS
 	if (attributes.filterLists) {
 		Object.entries(attributes.filterLists).forEach(([postTypeKey, filters]) => {
 			if (!Array.isArray(filters)) return;
 			filters.forEach((filter, index) => {
-				// Only generate CSS for filters with multi-column popup enabled
-				if (!filter.popupMenuColumnsEnabled) return;
+				// Safety check for ID
+				if (!filter.id) return;
 
-				// Create a unique selector for this filter's popup
-				// FilterTerms adds popupClassName which is `voxel-popup-${blockId}`
-				// We target the term dropdown list within that popup
-				const filterPopupSelector = `${popupSelector} .ts-term-dropdown-list`;
+				// Use strict chaining: Popup Root Class + Repeater ID Class
+				// This ensures we only target the specific popup for this filter in this block
+				// Selector: .voxel-popup-{blockId}.elementor-repeater-item-{id}
+				const filterPopupScope = `${popupSelector}.elementor-repeater-item-${filter.id}`;
 
-				// Desktop columns
-				if (filter.popupMenuColumns !== undefined && filter.popupMenuColumns > 0) {
-					cssRules.push(`${filterPopupSelector} { display: grid; grid-template-columns: repeat(${filter.popupMenuColumns}, 1fr); }`);
+				// Custom Popup Styles
+				if (filter.customPopupEnabled) {
+					// Min Width
+					if (filter.popupMinWidth !== undefined) {
+						cssRules.push(`${filterPopupScope} .ts-field-popup { min-width: ${filter.popupMinWidth}px; }`);
+					}
+					// Max Width
+					if (filter.popupMaxWidth !== undefined) {
+						cssRules.push(`${filterPopupScope} .ts-field-popup { max-width: ${filter.popupMaxWidth}px; }`);
+					}
+					// Max Height
+					if (filter.popupMaxHeight !== undefined) {
+						cssRules.push(`${filterPopupScope} .ts-popup-content-wrapper { max-height: ${filter.popupMaxHeight}px; }`);
+					}
+					// Center Position
+					if (filter.popupCenterPosition) {
+						cssRules.push(`${filterPopupScope} .ts-field-popup-container { align-items: center; justify-content: center; display: flex; }`);
+						cssRules.push(`${filterPopupScope} .ts-field-popup { margin: 0 !important; transform: none !important; }`);
+					}
 				}
 
-				// Desktop column gap
-				if (filter.popupMenuColumnGap !== undefined) {
-					cssRules.push(`${filterPopupSelector} { gap: ${filter.popupMenuColumnGap}px; }`);
-				}
+				// Multi-Column Menu Styles
+				if (filter.popupMenuColumnsEnabled) {
+					// We target the term dropdown list within that popup scope
+					const menuSelector = `${filterPopupScope} .ts-term-dropdown-list`;
 
-				// Tablet columns
-				if (filter.popupMenuColumns_tablet !== undefined && filter.popupMenuColumns_tablet > 0) {
-					tabletRules.push(`${filterPopupSelector} { grid-template-columns: repeat(${filter.popupMenuColumns_tablet}, 1fr); }`);
-				}
+					// Desktop columns
+					if (filter.popupMenuColumns !== undefined && filter.popupMenuColumns > 0) {
+						cssRules.push(`${menuSelector} { display: grid; grid-template-columns: repeat(${filter.popupMenuColumns}, 1fr); }`);
+					}
 
-				// Tablet column gap
-				if (filter.popupMenuColumnGap_tablet !== undefined) {
-					tabletRules.push(`${filterPopupSelector} { gap: ${filter.popupMenuColumnGap_tablet}px; }`);
-				}
+					// Desktop column gap
+					if (filter.popupMenuColumnGap !== undefined) {
+						cssRules.push(`${menuSelector} { gap: ${filter.popupMenuColumnGap}px; }`);
+					}
 
-				// Mobile columns
-				if (filter.popupMenuColumns_mobile !== undefined && filter.popupMenuColumns_mobile > 0) {
-					mobileRules.push(`${filterPopupSelector} { grid-template-columns: repeat(${filter.popupMenuColumns_mobile}, 1fr); }`);
-				}
-
-				// Mobile column gap
-				if (filter.popupMenuColumnGap_mobile !== undefined) {
-					mobileRules.push(`${filterPopupSelector} { gap: ${filter.popupMenuColumnGap_mobile}px; }`);
+					// Tablet columns (if supported in future updates, currently not in attributes per inspection)
+					// Mobile columns (same)
 				}
 			});
 		});

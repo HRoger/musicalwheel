@@ -340,7 +340,7 @@ window.Voxel.conditionHandlers = {
  * DATE FIELD COMPONENT
  */
 const DateFieldComponent = {
-    template: "#create-post-date-field", // Reused from create-post
+    template: "#auth-date-field",
     components: {
         datePicker: {
             template: '<div class="ts-form-group" ref="calendar"><input type="hidden" ref="input"></div>',
@@ -441,7 +441,7 @@ const DateFieldComponent = {
  * TERM LIST COMPONENT (Used by Taxonomy Field)
  */
 const TermListComponent = {
-    template: "#create-post-term-list",
+    template: "#auth-term-list",
     props: ["terms", "parent-term", "previous-list", "list-key"],
     data() {
         return {
@@ -484,7 +484,7 @@ const TermListComponent = {
  * TAXONOMY FIELD COMPONENT
  */
 const TaxonomyFieldComponent = {
-    template: "#create-post-taxonomy-field",
+    template: "#auth-taxonomy-field",
     name: "taxonomy-field",
     props: {
         field: Object,
@@ -681,7 +681,7 @@ const TaxonomyFieldComponent = {
  * FILE FIELD COMPONENT
  */
 const FileFieldComponent = {
-    template: "#create-post-file-field",
+    template: "#auth-file-field",
     props: {
         field: Object,
         mediaTarget: [Object, String],
@@ -880,7 +880,7 @@ const FileFieldComponent = {
  * SELECT FIELD COMPONENT
  */
 const SelectFieldComponent = {
-    template: "#create-post-select-field",
+    template: "#auth-select-field",
     props: {
         field: Object,
         index: { type: Number, default: 0 },
@@ -935,7 +935,7 @@ const SelectFieldComponent = {
  * MULTISELECT COMPONENT
  */
 const MultiselectFieldComponent = {
-    template: "#create-post-multiselect-field",
+    template: "#auth-multiselect-field",
     props: {
         field: Object,
         index: { type: Number, default: 0 },

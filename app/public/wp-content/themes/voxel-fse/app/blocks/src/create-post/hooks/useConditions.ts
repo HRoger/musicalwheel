@@ -40,6 +40,7 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 	'text:not_equals': (c, v) => v !== c.value,
 	'text:empty': (c, v) => !v?.trim()?.length,
 	'text:not_empty': (c, v) => !!v?.trim()?.length,
+	'text:contains': (c, v) => !!v?.match(new RegExp(c.value, 'i')),
 
 	// Switcher conditions
 	'switcher:checked': (c, v) => !!v,
@@ -74,6 +75,8 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 	'file:not_empty': (c, v) => Array.isArray(v) && v.length > 0,
 
 	// Taxonomy conditions
+	'taxonomy:contains': (c, v) => Array.isArray(v) && v.includes(c.value),
+	'taxonomy:not_contains': (c, v) => !(Array.isArray(v) && v.includes(c.value)),
 	'taxonomy:any_of': (c, v) => {
 		if (!Array.isArray(v) || !v.length) return false;
 		return v.some((term: any) => c.value.includes(term));

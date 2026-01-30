@@ -421,12 +421,64 @@ export default function FilterInspector({
 						</>
 					)}
 
-					{/* ===== GENERIC FILTERS (keywords, range, stepper, terms, etc.) ===== */}
+					{/* ===== RANGE FILTER ===== */}
+					{/* Evidence: range-filter.php:26-47 (Elementor controls: default_start, default_end) */}
+					{filterData?.type === 'range' && (
+						<>
+							<DynamicTagTextControl
+								label={__('Default start value', 'voxel-fse')}
+								value={
+									// Parse from defaultValue "min..max" if available, or fall back to individual prop
+									filter.defaultValue && typeof filter.defaultValue === 'string' && filter.defaultValue.includes('..')
+										? filter.defaultValue.split('..')[0]
+										: (filter.defaultStart as string) || ''
+								}
+								onChange={(value) => {
+									const start = value;
+									const end = filter.defaultValue && typeof filter.defaultValue === 'string' && filter.defaultValue.includes('..')
+										? filter.defaultValue.split('..')[1]
+										: (filter.defaultEnd as string) || '';
+
+									// Update individual prop AND composite defaultValue
+									onUpdate({
+										defaultStart: start,
+										defaultValue: `${start}..${end}`
+									});
+								}}
+								context="post"
+							/>
+							<DynamicTagTextControl
+								label={__('Default end value', 'voxel-fse')}
+								value={
+									// Parse from defaultValue "min..max" if available
+									filter.defaultValue && typeof filter.defaultValue === 'string' && filter.defaultValue.includes('..')
+										? filter.defaultValue.split('..')[1]
+										: (filter.defaultEnd as string) || ''
+								}
+								onChange={(value) => {
+									const start = filter.defaultValue && typeof filter.defaultValue === 'string' && filter.defaultValue.includes('..')
+										? filter.defaultValue.split('..')[0]
+										: (filter.defaultStart as string) || '';
+									const end = value;
+
+									// Update individual prop AND composite defaultValue
+									onUpdate({
+										defaultEnd: end,
+										defaultValue: `${start}..${end}`
+									});
+								}}
+								context="post"
+							/>
+						</>
+					)}
+
+					{/* ===== GENERIC FILTERS (keywords, stepper, terms, etc.) ===== */}
 					{/* Use simple text input with Dynamic Tag support */}
 					{filterData?.type !== 'availability' &&
 						filterData?.type !== 'date' &&
 						filterData?.type !== 'recurring-date' &&
-						filterData?.type !== 'location' && (
+						filterData?.type !== 'location' &&
+						filterData?.type !== 'range' && ( // Exclude range filter
 							<DynamicTagTextControl
 								label={__('Default value', 'voxel-fse')}
 								value={(filter.defaultValue as string) || ''}

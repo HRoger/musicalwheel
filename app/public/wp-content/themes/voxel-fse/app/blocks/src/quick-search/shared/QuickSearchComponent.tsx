@@ -14,6 +14,8 @@
  * ✅ Search result structure (logo → icon → default icon fallback)
  * ✅ "Search for" link at bottom of results
  * ✅ Clear searches functionality
+ * ✅ Duplicate query skip check (prevents re-fetching same query - line 295-298)
+ * ✅ Voxel.alert() on AJAX error (proper error notification - line 326)
  *
  * INTENTIONAL DIFFERENCES (Next.js Ready):
  * ✨ AJAX calls: Uses REST API pattern compatible with Next.js
@@ -201,6 +203,7 @@ export default function QuickSearchComponent({
 	// Refs
 	const inputRef = useRef<HTMLInputElement>(null);
 	const popupRef = useRef<HTMLDivElement>(null);
+	const lastQueryRef = useRef<string>(''); // Track last query to skip duplicate requests (Voxel parity: line 296)
 
 	// Get config
 	const config = vxConfig || {
@@ -272,13 +275,24 @@ export default function QuickSearchComponent({
 
 	// Search function
 	const performSearch = useCallback(async () => {
-		if (search.trim().length < config.keywords.minlength) {
+		const trimmedSearch = search.trim();
+
+		// Check minimum length requirement (Voxel parity: line 289)
+		if (trimmedSearch.length < config.keywords.minlength) {
 			setResults([]);
+			lastQueryRef.current = '';
+			return;
+		}
+
+		// Skip if query hasn't changed (Voxel parity: lines 295-298)
+		// Prevents duplicate AJAX requests for the same search term
+		if (trimmedSearch === lastQueryRef.current) {
 			return;
 		}
 
 		if (context === 'editor') {
 			// Mock results in editor
+			lastQueryRef.current = trimmedSearch;
 			setResults([
 				{
 					type: 'post',
@@ -292,6 +306,8 @@ export default function QuickSearchComponent({
 			return;
 		}
 
+		// Update query tracking before AJAX (Voxel parity: line 311)
+		lastQueryRef.current = trimmedSearch;
 		setIsLoading(true);
 
 		try {
@@ -328,9 +344,23 @@ export default function QuickSearchComponent({
 			if (data.success) {
 				setResults(data.data || []);
 			} else {
+				// Show error notification using Voxel.alert (Voxel parity: line 326)
+				const voxel = (window as unknown as { Voxel?: { alert?: (message: string, type: string) => void } }).Voxel;
+				const voxelConfig = (window as unknown as { Voxel_Config?: { l10n?: { ajaxError?: string } } }).Voxel_Config;
+				const errorMessage = data.message || voxelConfig?.l10n?.ajaxError || 'An error occurred';
+				if (voxel?.alert) {
+					voxel.alert(errorMessage, 'error');
+				}
 				setResults([]);
 			}
 		} catch {
+			// Show error notification on network/parse failure (Voxel parity: line 326)
+			const voxel = (window as unknown as { Voxel?: { alert?: (message: string, type: string) => void } }).Voxel;
+			const voxelConfig = (window as unknown as { Voxel_Config?: { l10n?: { ajaxError?: string } } }).Voxel_Config;
+			const errorMessage = voxelConfig?.l10n?.ajaxError || 'An error occurred';
+			if (voxel?.alert) {
+				voxel.alert(errorMessage, 'error');
+			}
 			setResults([]);
 		} finally {
 			setIsLoading(false);

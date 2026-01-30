@@ -153,6 +153,67 @@
 		components: {},
 
 		/* ======================================================================
+		   SUBSECTION 2.0: FILTER SYSTEM (WordPress-style hooks)
+		   ====================================================================== */
+
+		/**
+		 * Internal storage for registered filters
+		 * Structure: { filterName: [ { callback, priority }, ... ] }
+		 */
+		_filters: {},
+
+		/**
+		 * Register a filter callback
+		 *
+		 * @param {string} name - Filter name/hook identifier
+		 * @param {Function} callback - Function to call when filter is applied
+		 * @param {number} priority - Execution priority (lower = earlier, default 10)
+		 *
+		 * USAGE:
+		 * Voxel.addFilter('search_form_data', (data) => {
+		 *   data.customField = 'value';
+		 *   return data;
+		 * }, 10);
+		 *
+		 * BEHAVIOR:
+		 * - Multiple callbacks can be registered for the same filter
+		 * - Callbacks are sorted by priority (ascending)
+		 * - Each callback receives the result of the previous callback
+		 */
+		addFilter(name, callback, priority) {
+			priority = priority || 10;
+			this._filters[name] || (this._filters[name] = []);
+			this._filters[name].push({ callback, priority });
+			this._filters[name].sort((a, b) => a.priority - b.priority);
+		},
+
+		/**
+		 * Apply all registered filter callbacks to a value
+		 *
+		 * @param {string} name - Filter name/hook identifier
+		 * @param {*} value - Initial value to filter
+		 * @param {...*} args - Additional arguments passed to each callback
+		 * @returns {*} Filtered value after all callbacks have been applied
+		 *
+		 * USAGE:
+		 * const filteredData = Voxel.applyFilters('search_form_data', formData, context);
+		 *
+		 * BEHAVIOR:
+		 * - If no filters registered, returns original value unchanged
+		 * - Each callback receives: (currentValue, ...additionalArgs)
+		 * - Callbacks are executed in priority order (low to high)
+		 * - Return value of each callback becomes input to the next
+		 */
+		applyFilters(name, value, ...args) {
+			if (!this._filters[name]?.length) return value;
+			let result = value;
+			for (let i = 0; i < this._filters[name].length; i++) {
+				result = this._filters[name][i].callback.apply(null, [result].concat(args));
+			}
+			return result;
+		},
+
+		/* ======================================================================
 		   SUBSECTION 2.1: MAPS UTILITIES
 		   ====================================================================== */
 

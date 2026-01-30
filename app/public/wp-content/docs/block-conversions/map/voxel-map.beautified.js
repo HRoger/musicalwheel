@@ -586,7 +586,7 @@ Voxel.Maps.Map.prototype.init = function ({
         controlSize: 32,
         gestureHandling: "greedy",
         styles: Voxel_Config.google_maps?.skin || [
-            { featureType: "all", elementType: "labels.text", bounders: [{ color: "#878787" }] },
+            { featureType: "all", elementType: "labels.text", stylers: [{ color: "#878787" }] },
             // ... default minimal skin
         ],
     });
@@ -779,6 +779,234 @@ Voxel.Maps.SetupMarkerOverlay = () => {
                 this.node.style.visibility = "hidden";
             }
         }
+    };
+};
+
+/* ==========================================================================
+   SECTION 3.1: POPUP CLASS
+   ========================================================================== */
+
+/**
+ * Popup class for displaying info windows on the map
+ *
+ * @param {Object} options
+ * @param {Voxel.Maps.Map} options.map - Map instance
+ * @param {Voxel.Maps.LatLng} options.position - Popup position
+ * @param {string|HTMLElement} options.content - Popup content
+ *
+ * USAGE:
+ * const popup = new Voxel.Maps.Popup({
+ *   map: mapInstance,
+ *   position: new Voxel.Maps.LatLng(40.7128, -74.0060),
+ *   content: '<div>Hello World</div>'
+ * });
+ * popup.show();
+ */
+Voxel.Maps.Popup = function ({ map = null, position = null, content = null }) {
+    this.init({ map, position, content });
+};
+
+Voxel.Maps.Popup.prototype.init = function ({ map, position, content }) {
+    this.map = map;
+
+    // Create header element for InfoWindow
+    var headerElement = document.createElement("div");
+    headerElement.classList.add("ts-gmaps-popup-initial");
+
+    this.popup = new google.maps.InfoWindow({
+        headerContent: headerElement,
+    });
+
+    if (position) this.setPosition(position);
+    if (content) this.setContent(content);
+
+    // Add custom class when popup is ready
+    google.maps.event.addListener(this.popup, "domready", () => {
+        this.popup.content.closest(".gm-style-iw-a").classList.add("ts-marker");
+        if (this.popup.content?.classList?.contains("empty-popup")) {
+            this.popup.content.closest(".gm-style-iw-a").classList.add("ts-marker-empty");
+        }
+    });
+};
+
+Voxel.Maps.Popup.prototype.setContent = function (content) {
+    this.popup.setContent(content);
+};
+
+Voxel.Maps.Popup.prototype.setPosition = function (position) {
+    this.popup.setPosition(position.getSourceObject());
+};
+
+Voxel.Maps.Popup.prototype.setMap = function (map) {
+    this.map = map;
+};
+
+Voxel.Maps.Popup.prototype.show = function () {
+    this.popup.open(this.map.getSourceObject());
+};
+
+Voxel.Maps.Popup.prototype.hide = function () {
+    this.popup.close();
+};
+
+/* ==========================================================================
+   SECTION 3.2: CIRCLE CLASS
+   ========================================================================== */
+
+/**
+ * Circle class for displaying radius circles on the map
+ *
+ * @param {Object} options
+ * @param {Voxel.Maps.Map} options.map - Map instance
+ * @param {Voxel.Maps.LatLng} options.center - Circle center position
+ * @param {number} options.radius - Radius in meters
+ * @param {boolean} options.visible - Whether circle is visible
+ * @param {string} options.className - CSS class for circle element
+ *
+ * USAGE:
+ * const circle = new Voxel.Maps.Circle({
+ *   map: mapInstance,
+ *   center: new Voxel.Maps.LatLng(40.7128, -74.0060),
+ *   radius: 5000, // 5km
+ *   className: 'map-circle'
+ * });
+ */
+Voxel.Maps.Circle = function ({
+    map = null,
+    center = null,
+    radius = null,
+    visible = null,
+    className = "map-circle",
+}) {
+    this.init({ map, center, radius, visible, className });
+};
+
+Voxel.Maps.Circle.prototype.init = function ({
+    map = null,
+    center = null,
+    radius = null,
+    className = null,
+}) {
+    this.overlay = new Voxel.Maps.CircleOverlay(
+        center.getSourceObject(),
+        radius,
+        map.getSourceObject(),
+        className
+    );
+    this.circle = this.overlay.circle;
+};
+
+Voxel.Maps.Circle.prototype.hide = function () {
+    if (this.overlay.div_) {
+        this.overlay.div_.classList.add("hidden");
+        this.overlay.center_.classList.add("hidden");
+    }
+};
+
+Voxel.Maps.Circle.prototype.show = function () {
+    if (this.overlay.div_) {
+        this.overlay.div_.classList.remove("hidden");
+        this.overlay.center_.classList.remove("hidden");
+    }
+};
+
+Voxel.Maps.Circle.prototype.setCenter = function (center) {
+    this.circle.setCenter(center.getSourceObject());
+};
+
+Voxel.Maps.Circle.prototype.setRadius = function (radius) {
+    this.circle.setRadius(radius);
+};
+
+Voxel.Maps.Circle.prototype.getBounds = function () {
+    var bounds = this.circle.getBounds();
+    return new Voxel.Maps.Bounds(
+        new Voxel.Maps.LatLng(bounds.getSouthWest()),
+        new Voxel.Maps.LatLng(bounds.getNorthEast())
+    );
+};
+
+/**
+ * Setup CircleOverlay (extends google.maps.OverlayView)
+ * Called once during Voxel.Maps.GoogleMaps initialization
+ */
+Voxel.Maps.SetupCircleOverlay = () => {
+    Voxel.Maps.CircleOverlay = function (center, radius, map, className) {
+        // Create underlying Google Maps Circle (invisible, for calculations)
+        this.circle = new google.maps.Circle({
+            strokeColor: "#FF0000",
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: "#FF0000",
+            fillOpacity: 0.35,
+            clickable: false,
+            visible: false, // Hidden - we use custom overlay for visual
+            map: map,
+            center: center,
+            radius: radius,
+        });
+
+        this.map_ = map;
+        this.div_ = null;
+        this.center_ = null;
+        this.className_ = className;
+        this.setMap(map);
+    };
+
+    Voxel.Maps.CircleOverlay.prototype = new google.maps.OverlayView();
+
+    Voxel.Maps.CircleOverlay.prototype.onAdd = function () {
+        // Create circle div element
+        var div = document.createElement("div");
+        div.style.position = "absolute";
+        div.className = this.className_ + " hidden";
+
+        var inner = document.createElement("div");
+        inner.className = "map-circle-inner";
+        inner.style.width = "100%";
+        inner.style.height = "100%";
+        inner.style.position = "absolute";
+        div.appendChild(inner);
+
+        // Create center point div
+        var centerDiv = document.createElement("div");
+        centerDiv.className = this.className_ + "-center hidden";
+        centerDiv.style.position = "absolute";
+
+        this.div_ = div;
+        this.center_ = centerDiv;
+
+        var panes = this.getPanes();
+        panes.overlayLayer.appendChild(div);
+        panes.overlayLayer.appendChild(centerDiv);
+    };
+
+    Voxel.Maps.CircleOverlay.prototype.draw = function () {
+        var projection = this.getProjection();
+        var bounds = this.circle.getBounds();
+
+        var sw = projection.fromLatLngToDivPixel(bounds.getSouthWest());
+        var ne = projection.fromLatLngToDivPixel(bounds.getNorthEast());
+
+        // Position and size the circle div
+        var div = this.div_;
+        div.style.left = sw.x + "px";
+        div.style.top = ne.y + "px";
+        div.style.width = ne.x - sw.x + "px";
+        div.style.height = sw.y - ne.y + "px";
+
+        // Position the center point
+        var centerDiv = this.center_;
+        var center = projection.fromLatLngToDivPixel(bounds.getCenter());
+        centerDiv.style.left = center.x + "px";
+        centerDiv.style.top = center.y + "px";
+    };
+
+    Voxel.Maps.CircleOverlay.prototype.onRemove = function () {
+        this.div_.parentNode.removeChild(this.div_);
+        this.div_ = null;
+        this.center_.parentNode.removeChild(this.center_);
+        this.center_ = null;
     };
 };
 

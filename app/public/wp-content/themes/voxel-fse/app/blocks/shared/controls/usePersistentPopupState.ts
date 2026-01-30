@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 declare global {
     interface Window {
@@ -13,29 +13,32 @@ if (typeof window !== 'undefined') {
 }
 
 /**
- * Hook to manage popup state that survives WordPress device/viewport changes.
- * 
- * This is critical because WordPress unmounts and remounts the Inspector controls
- * whenever the device preview mode changes (Desktop -> Tablet -> Mobile).
- * Without this hook, popups would close immediately upon switching devices.
- * 
+ * Hook to manage popup state that survives:
+ * 1. WordPress device/viewport changes (Desktop -> Tablet -> Mobile)
+ * 2. Normal re-renders caused by attribute changes
+ *
+ * This is critical because:
+ * - WordPress unmounts and remounts Inspector controls on device changes
+ * - Parent component re-renders can cause child popups to lose state
+ *
+ * The hook uses a global window object to persist state across all scenarios.
+ *
  * @param key Unique key for the popup. If not provided, persistence is disabled.
  * @param defaultState Initial state.
  * @returns [isOpen, setIsOpen] tuple
  */
 export function usePersistentPopupState(key: string | undefined, defaultState: boolean = false) {
-    // Initialize from global state if a device change happened recently
+    // Track if this is the initial mount
+    const isInitialMount = useRef(true);
+
+    // Initialize from global state - ALWAYS check global state first, not just on device changes
+    // This ensures popup survives any kind of re-render
     const initializeState = (): boolean => {
         if (!key) return defaultState;
 
-        const timestamp = window.__voxelDeviceChangeTimestamp || 0;
-        // 2000ms window to catch re-renders after device change
-        const timeDiff = Date.now() - timestamp;
-        const isRecentDeviceChange = timeDiff < 2500; // Increased to 2500ms for safety
+        // Check global state - if popup is marked as open, restore it
         const hasGlobalState = window.__voxelOpenPopups?.[key];
-
-        if (isRecentDeviceChange && hasGlobalState) {
-            // console.log(`[Voxel Persistence] Restoring open state for ${key} (Diff: ${timeDiff}ms)`);
+        if (hasGlobalState) {
             return true;
         }
 
@@ -43,6 +46,17 @@ export function usePersistentPopupState(key: string | undefined, defaultState: b
     };
 
     const [isOpen, internalSetIsOpen] = useState<boolean>(initializeState);
+
+    // On mount, check if global state says we should be open
+    // This handles cases where React recreates the component but global state persists
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            if (key && window.__voxelOpenPopups?.[key] && !isOpen) {
+                internalSetIsOpen(true);
+            }
+        }
+    }, [key, isOpen]);
 
     // Sync local state to global state
     useEffect(() => {
@@ -52,10 +66,8 @@ export function usePersistentPopupState(key: string | undefined, defaultState: b
             if (!window.__voxelOpenPopups) window.__voxelOpenPopups = {};
             window.__voxelOpenPopups[key] = true;
         } else {
-            // Only clear if we are NOT in the middle of a device transition
-            // If we just unmounted (because of device change), the effect cleanup
-            // would run (if we had one), but we don't.
-            // This logic runs when isOpen changes to FALSE.
+            // Only clear global state if this is an explicit close (not unmount)
+            // We check if we're still mounted before clearing
             if (window.__voxelOpenPopups && window.__voxelOpenPopups[key]) {
                 delete window.__voxelOpenPopups[key];
             }

@@ -50,6 +50,76 @@ interface FileUploadObject {
 type ProcessedFileValue = number | 'uploaded_file';
 
 /**
+ * File alias map entry for deduplication
+ */
+interface FileAliasEntry {
+	path: string;
+	index: number;
+}
+
+/**
+ * Deduplicate files in FormData and add aliases for duplicates
+ * Evidence: voxel-create-post.beautified.js lines 4173-4221
+ *
+ * Voxel uses a smart aliasing system to avoid uploading duplicate files.
+ * When the same file is used in multiple fields (e.g., same image in gallery and cover),
+ * only one copy is uploaded and aliases point to the original.
+ *
+ * @param formData - The FormData object to deduplicate
+ */
+function deduplicateFiles(formData: FormData): void {
+	const entries = Object.fromEntries(formData);
+	const fileAliasMap: Record<string, FileAliasEntry> = {};
+
+	for (const key in entries) {
+		if (key.startsWith('files[')) {
+			const files = formData.getAll(key);
+			const uniqueFiles: File[] = [];
+
+			for (let idx = 0; idx < files.length; idx++) {
+				const file = files[idx];
+				if (file instanceof File) {
+					// Create a unique key based on file properties
+					const fileKey = JSON.stringify({
+						name: file.name,
+						type: file.type,
+						size: file.size,
+						lastModified: file.lastModified,
+					});
+
+					if (fileAliasMap[fileKey] !== undefined) {
+						// File already exists, use alias
+						// Extract field path from key: files[field_id][] -> field_id
+						const fieldPath = key.slice(6, -3);
+						formData.append(
+							`_vx_file_aliases[${fieldPath}][${idx}][path]`,
+							fileAliasMap[fileKey].path
+						);
+						formData.append(
+							`_vx_file_aliases[${fieldPath}][${idx}][index]`,
+							fileAliasMap[fileKey].index.toString()
+						);
+					} else {
+						// New unique file
+						uniqueFiles.push(file);
+						fileAliasMap[fileKey] = {
+							path: key.slice(6, -3),
+							index: uniqueFiles.indexOf(file),
+						};
+					}
+				}
+			}
+
+			// Replace with deduplicated files
+			formData.delete(key);
+			for (const file of uniqueFiles) {
+				formData.append(key, file);
+			}
+		}
+	}
+}
+
+/**
  * Repeater row without meta:state for submission
  */
 type CleanedRepeaterRow = Omit<RepeaterRow, 'meta:state'> & {
@@ -316,6 +386,10 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 				// Append JSON-stringified postdata
 				formDataObj.append('postdata', JSON.stringify(postdataForJson));
 
+				// Apply file deduplication with aliases
+				// Evidence: voxel-create-post.beautified.js lines 4173-4221
+				deduplicateFiles(formDataObj);
+
 				if (postId && postId > 0) {
 					formDataObj.append('post_id', postId.toString());
 				}
@@ -555,6 +629,11 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 
 			// Append JSON-stringified postdata
 			formDataObj.append('postdata', JSON.stringify(postdataForJson));
+
+			// Apply file deduplication with aliases
+			// Evidence: voxel-create-post.beautified.js lines 4173-4221
+			deduplicateFiles(formDataObj);
+
 			formDataObj.append('save_as_draft', 'yes');
 
 			if (postId) {

@@ -12,6 +12,7 @@
  * ✅ Triggers voxel:markup-update after content load
  * ✅ Prev/Next replaces content, Load More appends
  * ✅ Page bounds handled (min page 1 for prev)
+ * ✅ CSS/JS asset injection to #vx-assets-cache with deduplication
  *
  * INTENTIONAL DIFFERENCES (Enhancements):
  * ✨ Carousel layout mode (not in Voxel's basic post-feed)
@@ -55,6 +56,96 @@ const DEFAULT_ICONS = {
 	rightChevron: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 	reset: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4v5h.582M19.938 13A8.001 8.001 0 005.217 9.144M4.582 9H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-14.721-3.856M14.42 15H19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 };
+
+/**
+ * Inject CSS/JS assets to #vx-assets-cache element
+ *
+ * Reference: voxel-post-feed.beautified.js:143-160 (CSS) and :250-259 (JS)
+ *
+ * This matches Voxel's asset injection pattern:
+ * 1. CSS: Check if stylesheet already exists in #vx-assets-cache by ID
+ * 2. CSS: Move new stylesheets to cache, track load promises
+ * 3. JS: Check for duplicate script IDs (count >= 2 means duplicate)
+ * 4. JS: Move unique scripts to cache, remove duplicates
+ *
+ * @param doc - Parsed HTML document from AJAX response
+ * @returns Promise that resolves when all CSS is loaded
+ */
+function injectAssetsToCache(doc: Document): Promise<void> {
+	// Ensure #vx-assets-cache exists (Voxel creates this)
+	let assetsCache = document.getElementById('vx-assets-cache');
+	if (!assetsCache) {
+		// Create cache element if it doesn't exist (for non-Voxel environments)
+		assetsCache = document.createElement('div');
+		assetsCache.id = 'vx-assets-cache';
+		assetsCache.style.display = 'none';
+		document.body.appendChild(assetsCache);
+	}
+
+	const cssLoadPromises: Promise<void>[] = [];
+
+	// SECTION 2.1.1: CSS Asset Injection (lines 143-160)
+	// Find all stylesheet links in the response
+	doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((linkElement) => {
+		if (linkElement.id) {
+			// Check if stylesheet already exists in cache
+			// Uses CSS.escape for safe ID selectors (matches Voxel exactly)
+			const existingLink = document.querySelector(`#vx-assets-cache #${CSS.escape(linkElement.id)}`);
+			if (!existingLink) {
+				// Clone the link and append to cache
+				const clonedLink = linkElement.cloneNode(true) as HTMLLinkElement;
+				assetsCache!.appendChild(clonedLink);
+
+				// Track loading promise
+				cssLoadPromises.push(new Promise<void>((resolve) => {
+					clonedLink.onload = () => resolve();
+					// Also resolve on error to prevent hanging
+					clonedLink.onerror = () => resolve();
+				}));
+			}
+		}
+	});
+
+	// Return promise that resolves when all CSS is loaded
+	return Promise.all(cssLoadPromises).then(() => {});
+}
+
+/**
+ * Inject JS assets to #vx-assets-cache element
+ *
+ * Reference: voxel-post-feed.beautified.js:250-259
+ *
+ * Called AFTER content is rendered (per Voxel's pattern).
+ * This handles inline scripts that may have been included in the AJAX response.
+ *
+ * @param container - The container element that received the new content
+ */
+function injectScriptsToCache(container: HTMLElement): void {
+	// Ensure #vx-assets-cache exists
+	let assetsCache = document.getElementById('vx-assets-cache');
+	if (!assetsCache) {
+		assetsCache = document.createElement('div');
+		assetsCache.id = 'vx-assets-cache';
+		assetsCache.style.display = 'none';
+		document.body.appendChild(assetsCache);
+	}
+
+	// SECTION 2.1.4: JavaScript Asset Injection (lines 250-259)
+	// Find all scripts with type="text/javascript" in the container
+	container.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]').forEach((scriptElement) => {
+		if (scriptElement.id) {
+			// Check if script with this ID already exists (count >= 2 means duplicate)
+			const existingScripts = document.querySelectorAll(`script[id="${CSS.escape(scriptElement.id)}"]`);
+			if (existingScripts.length >= 2) {
+				// Duplicate - remove it
+				scriptElement.remove();
+			} else {
+				// Unique - move to cache
+				assetsCache!.appendChild(scriptElement);
+			}
+		}
+	});
+}
 
 /**
  * Get icon HTML from icon value or use default
@@ -347,7 +438,13 @@ export default function PostFeedComponent({
 						const hasResults = infoScript?.getAttribute('data-has-results') === 'true';
 						const totalCount = parseInt(infoScript?.getAttribute('data-total-count') || '0', 10);
 						const displayCount = infoScript?.getAttribute('data-display-count') || '0';
-						const cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
+
+						// VOXEL PARITY: Inject CSS assets to cache (also for editor preview)
+						await injectAssetsToCache(doc);
+
+						// Remove info script and stylesheet links from HTML
+						let cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
+						cleanHtml = cleanHtml.replace(/<link[^>]*rel="stylesheet"[^>]*>/g, '');
 
 						setState(prev => ({
 							...prev,
@@ -535,20 +632,44 @@ export default function PostFeedComponent({
 			const totalCount = parseInt(infoScript?.getAttribute('data-total-count') || '0', 10);
 			const displayCount = infoScript?.getAttribute('data-display-count') || '0';
 
-			// Remove the info script from the HTML
-			const cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
+			// VOXEL PARITY: Inject CSS assets to #vx-assets-cache and wait for load
+			// Reference: voxel-post-feed.beautified.js:143-174
+			// This must happen BEFORE rendering content to prevent FOUC
+			await injectAssetsToCache(doc);
 
-			setState(prev => ({
-				...prev,
-				loading: false,
-				page,
-				results: append ? prev.results + cleanHtml : cleanHtml,
-				totalCount,
-				displayCount,
-				hasPrev,
-				hasNext,
-				hasResults,
-			}));
+			// Remove the info script and stylesheet links from the HTML (they've been moved to cache)
+			let cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
+			cleanHtml = cleanHtml.replace(/<link[^>]*rel="stylesheet"[^>]*>/g, '');
+
+			// Use requestAnimationFrame for smooth rendering (matches Voxel's pattern)
+			// Reference: voxel-post-feed.beautified.js:175-176
+			requestAnimationFrame(() => {
+				setState(prev => ({
+					...prev,
+					loading: false,
+					page,
+					results: append ? prev.results + cleanHtml : cleanHtml,
+					totalCount,
+					displayCount,
+					hasPrev,
+					hasNext,
+					hasResults,
+				}));
+
+				// VOXEL PARITY: Inject JS assets to #vx-assets-cache after content render
+				// Reference: voxel-post-feed.beautified.js:250-259
+				// Note: We use a timeout to ensure React has finished rendering
+				setTimeout(() => {
+					if (containerRef.current) {
+						injectScriptsToCache(containerRef.current);
+					}
+					// Trigger voxel:markup-update for any widgets in new content
+					// Reference: voxel-post-feed.beautified.js:269
+					if ((window as any).jQuery) {
+						(window as any).jQuery(document).trigger('voxel:markup-update');
+					}
+				}, 0);
+			});
 		} catch (error) {
 			console.error('[PostFeedComponent] Failed to fetch posts:', error);
 			// Log more details about the error

@@ -16,4 +16,4 @@ export * from './bookingUtils';
 export type { BookingDateRangeProps } from './BookingDateRange';
 export type { BookingSingleDayProps } from './BookingSingleDay';
 export type { BookingTimeslotsProps } from './BookingTimeslots';
-export type { UsePikadayOptions, UsePikadayReturn } from './usePikaday';
+export type { UsePikadayOptions, UsePikadayReturn, PikadayDayData, PikadayDayElement } from './usePikaday';

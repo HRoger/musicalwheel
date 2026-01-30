@@ -415,3 +415,43 @@ export interface SearchSubmitEventDetail {
 	postType: string;
 	filters: Record<string, unknown>;
 }
+
+/**
+ * Map bounds changed event detail
+ */
+export interface MapBoundsChangedEventDetail {
+	bounds: {
+		sw: { lat: number; lng: number };
+		ne: { lat: number; lng: number };
+	};
+	center: {
+		lat?: number;
+		lng?: number;
+	};
+	zoom: number;
+}
+
+/**
+ * Geolocation address event detail
+ */
+export interface GeolocationAddressEventDetail {
+	address: string;
+	latlng: {
+		lat: number;
+		lng: number;
+	};
+}
+
+/**
+ * Re-export adapter types for external use
+ */
+export type {
+	VxMapOptions,
+	VxMarkerOptions,
+	VxPopupOptions,
+	VxCircleOptions,
+	VxAutocompleteOptions,
+	VxGeocodeResult,
+	VxGeocoderOptions,
+	VxUserLocationOptions,
+} from '../voxel-maps-adapter';

@@ -209,6 +209,7 @@ export function FieldPopup({
 	// EXACT Voxel: Handle backdrop clicks to close popup (blurable mixin)
 	// Evidence: themes/voxel/assets/dist/commons.js (Voxel.mixins.blurable)
 	// Logic: Click anywhere outside .triggers-blur closes the popup
+	// FIX: In Gutenberg editor, also exclude clicks in inspector panel/popovers
 	useEffect(() => {
 		if (!isOpen) return;
 
@@ -220,7 +221,23 @@ export function FieldPopup({
 				return; // Click inside popup, don't close
 			}
 
-			// Click outside popup, close it
+			// FIX: In Gutenberg editor, don't close popup when clicking in inspector/sidebar
+			// This allows users to use inspector controls while the popup is open
+			const gutenbergSelectors = [
+				'.interface-interface-skeleton__sidebar', // Main sidebar container
+				'.block-editor-block-inspector',         // Inspector panel
+				'.components-popover',                   // Gutenberg popovers (color picker, etc.)
+				'.components-modal__screen-overlay',    // Modal overlays
+				'.edit-post-sidebar',                    // Edit post sidebar
+			];
+
+			for (const selector of gutenbergSelectors) {
+				if (target.closest(selector)) {
+					return; // Click inside Gutenberg UI, don't close popup
+				}
+			}
+
+			// Click outside popup and Gutenberg UI, close it
 			onClose();
 		};
 

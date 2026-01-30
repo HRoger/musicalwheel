@@ -44,6 +44,8 @@ interface ResponsiveRangeControlProps {
 	/** Attribute name for storing custom CSS value (e.g., 'calc(100vh - 80px)'). Only used when unit is 'custom'. */
 	customValueAttributeName?: string;
 	enableDynamicTags?: boolean;
+	/** Optional prefix for the control key used in popup state persistence. Useful when the same attributeBaseName is used in multiple instances (e.g., inside repeater items). */
+	controlKeyPrefix?: string;
 }
 
 export default function ResponsiveRangeControl({
@@ -62,6 +64,7 @@ export default function ResponsiveRangeControl({
 	showHeader = true,
 	customValueAttributeName,
 	enableDynamicTags = false,
+	controlKeyPrefix,
 }: ResponsiveRangeControlProps) {
 	// Support 'units' prop for backward compatibility
 	const actualAvailableUnits = availableUnits || units;
@@ -86,27 +89,6 @@ export default function ResponsiveRangeControl({
 		// Handle both number and object formats (for backward compatibility)
 		if (typeof value === 'object' && value !== null) {
 			value = value[currentDevice] ?? value.desktop;
-		}
-
-		// If value is undefined, show inherited value
-		if (value === undefined || value === null) {
-			if (currentDevice === 'tablet') {
-				const desktopValue = attributes[attributeBaseName];
-				return typeof desktopValue === 'object' && desktopValue !== null
-					? desktopValue.desktop
-					: desktopValue;
-			} else if (currentDevice === 'mobile') {
-				const tabletValue = attributes[`${attributeBaseName}_tablet`];
-				if (tabletValue !== undefined && tabletValue !== null) {
-					return typeof tabletValue === 'object' && tabletValue !== null
-						? tabletValue.mobile ?? tabletValue.desktop
-						: tabletValue;
-				}
-				const desktopValue = attributes[attributeBaseName];
-				return typeof desktopValue === 'object' && desktopValue !== null
-					? desktopValue.desktop
-					: desktopValue;
-			}
 		}
 
 		return value ?? undefined;
@@ -217,7 +199,7 @@ export default function ResponsiveRangeControl({
 						{enableDynamicTags && !isTagsActive && <EnableTagsButton onClick={handleEnableTags} />}
 
 						<span className="elementor-control-title" style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize', color: 'rgb(30, 30, 30)', margin: 0 }}>{label}</span>
-						<ResponsiveDropdownButton controlKey={attributeBaseName} />
+						<ResponsiveDropdownButton controlKey={controlKeyPrefix ? `${controlKeyPrefix}_${attributeBaseName}` : attributeBaseName} />
 					</div>
 
 					{/* Right side: Unit Dropdown (if available) - pushed to right corner */}

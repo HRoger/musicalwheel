@@ -10,13 +10,19 @@
  * - Clone and delete actions in mini toolbar
  * - Expandable/collapsible items
  *
+ * State Persistence:
+ * - Supports optional persistence of expanded item state to block attributes
+ * - Uses three-tier fallback: Attributes > SessionStorage > Local State
+ * - Survives device changes, viewport switches, and re-renders
+ *
  * @package VoxelFSE
  */
 
 // @ts-nocheck - WordPress types incomplete
 import { __ } from '@wordpress/i18n';
 import { Button } from '@wordpress/components';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSelect } from '@wordpress/data';
 import {
 	DndContext,
 	closestCenter,
@@ -212,6 +218,24 @@ export interface RepeaterControlProps<T extends RepeaterItem> {
 	maxItems?: number;
 	/** Additional CSS class */
 	className?: string;
+	/**
+	 * Block attributes object (optional, for persistence).
+	 * When provided with setAttributes and stateAttribute, the expanded item
+	 * state will be persisted to block attributes, surviving re-renders
+	 * caused by device changes, viewport switches, etc.
+	 */
+	attributes?: Record<string, any>;
+	/**
+	 * setAttributes function (optional, for persistence).
+	 * Required when attributes is provided.
+	 */
+	setAttributes?: (attrs: Record<string, any>) => void;
+	/**
+	 * Attribute name to store expanded item state.
+	 * Defaults to 'repeaterExpandedItem'.
+	 * The value stored will be the item ID (string) or null.
+	 */
+	stateAttribute?: string;
 }
 
 /**
@@ -222,6 +246,7 @@ export interface RepeaterControlProps<T extends RepeaterItem> {
  * - Expandable/collapsible items
  * - Clone and delete actions
  * - Custom item rendering via render prop
+ * - Optional state persistence to block attributes
  */
 export default function RepeaterControl<T extends RepeaterItem>({
 	label,
@@ -236,8 +261,92 @@ export default function RepeaterControl<T extends RepeaterItem>({
 	minItems = 0,
 	maxItems,
 	className = '',
+	attributes,
+	setAttributes,
+	stateAttribute = 'repeaterExpandedItem',
 }: RepeaterControlProps<T>) {
-	const [expandedItem, setExpandedItem] = useState<string | null>(null);
+	// Get current client ID for session storage key
+	const clientId = useSelect(
+		(select: (store: string) => { getSelectedBlockClientId: () => string | null }) =>
+			select('core/block-editor').getSelectedBlockClientId(),
+		[]
+	);
+
+	// Determine session storage key (unique per block instance and repeater)
+	const persistenceKey = clientId ? `voxel_repeater_${clientId}_${stateAttribute}` : null;
+
+	// Check if persistence is enabled (both attributes and setAttributes must be provided)
+	const isPersistenceEnabled = !!(attributes && setAttributes);
+
+	// Internal state initialized from: Attributes > SessionStorage > null
+	// This three-tier approach ensures:
+	// 1. State survives device changes (via attributes)
+	// 2. State survives component re-mounts within session (via sessionStorage)
+	// 3. Graceful fallback when nothing is stored
+	const [internalExpandedItem, setInternalExpandedItem] = useState<string | null>(() => {
+		// 1. Check block attributes first (highest priority - survives everything)
+		if (isPersistenceEnabled && attributes[stateAttribute] !== undefined) {
+			return attributes[stateAttribute];
+		}
+
+		// 2. Check session storage (survives component re-mounts)
+		if (persistenceKey) {
+			const stored = sessionStorage.getItem(persistenceKey);
+			if (stored) {
+				// Validate that the stored item still exists in the items array
+				const itemExists = items.some(item => getItemId(item) === stored);
+				if (itemExists) return stored;
+				// If item no longer exists, clear the stored value
+				sessionStorage.removeItem(persistenceKey);
+			}
+		}
+
+		// 3. Fallback to null (no item expanded)
+		return null;
+	});
+
+	// Sync internal state with attributes when they change externally (e.g., undo/redo)
+	// Also restore from sessionStorage if internal state gets cleared but storage has a value
+	useEffect(() => {
+		const attrValue = attributes?.[stateAttribute];
+
+		// Priority 1: Sync from attributes if they have a value
+		if (isPersistenceEnabled && attrValue !== undefined && attrValue !== internalExpandedItem) {
+			setInternalExpandedItem(attrValue);
+			return;
+		}
+
+		// Priority 2: Restore from sessionStorage if internal state is null but storage has a value
+		if (internalExpandedItem === null && persistenceKey) {
+			const stored = sessionStorage.getItem(persistenceKey);
+			if (stored && items.some(item => getItemId(item) === stored)) {
+				setInternalExpandedItem(stored);
+			}
+		}
+	}, [isPersistenceEnabled, attributes?.[stateAttribute], internalExpandedItem, persistenceKey, items, stateAttribute]);
+
+	// The actual expanded item state (from internal state)
+	const expandedItem = internalExpandedItem;
+
+	// Unified setter that updates all three tiers
+	const setExpandedItem = useCallback((itemId: string | null) => {
+		// 1. Update session storage (immediate, survives re-mounts)
+		if (persistenceKey) {
+			if (itemId) {
+				sessionStorage.setItem(persistenceKey, itemId);
+			} else {
+				sessionStorage.removeItem(persistenceKey);
+			}
+		}
+
+		// 2. Update block attributes (persistent, survives device changes)
+		if (isPersistenceEnabled) {
+			setAttributes({ [stateAttribute]: itemId });
+		}
+
+		// 3. Update internal state (triggers re-render)
+		setInternalExpandedItem(itemId);
+	}, [persistenceKey, isPersistenceEnabled, setAttributes, stateAttribute]);
 
 	// DnD sensors
 	const sensors = useSensors(
