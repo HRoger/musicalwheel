@@ -10,6 +10,7 @@
  * ✅ Status feed with pagination (loadFeed(), loadMore())
  * ✅ Status CRUD (create, edit, delete)
  * ✅ Like/unlike with optimistic UI updates
+ * ✅ Cross-instance sync via CustomEvent (voxel/tl/status/{id}/like, /repost)
  * ✅ Nested comments with max depth limit
  * ✅ Comment CRUD (create, edit, delete)
  * ✅ Comment likes
@@ -17,15 +18,18 @@
  * ✅ Emoji picker with recent emojis (localStorage)
  * ✅ File uploads with drag & drop
  * ✅ Client-side link preview detection (500ms debounce with AbortController)
- * ✅ Repost/quote functionality
+ * ✅ Repost functionality
+ * ✅ Quote composer UI (inline quote status creation)
  * ✅ Rich text formatting (links, mentions, hashtags, code blocks)
  * ✅ Multiple feed modes (user_feed, post_wall, post_reviews, etc.)
  * ✅ Ordering options (latest, earliest, most_liked, etc.)
  * ✅ Search filtering
  * ✅ Pending/approved comment moderation
  * ✅ Review scores for post_reviews mode
+ * ✅ Review score editing component (ReviewScore with stars/numeric input)
  * ✅ Delete confirmation using Voxel_Config.l10n.confirmAction
- * ✅ 20 API endpoints implemented (including getLinkPreview)
+ * ✅ Polling refresh for real-time updates
+ * ✅ 21 API endpoints implemented (including getLinkPreview, quoteStatusApi)
  *
  * ⚠️ USES VOXEL'S ?vx=1 AJAX SYSTEM:
  *   - timeline.get_feed, timeline.create_status, timeline.update_status

@@ -393,6 +393,43 @@ declare global {
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
 /**
+ * Voxel global types for alert and config
+ * Matches: Voxel.alert(message, type) and Voxel_Config.l10n.ajaxError
+ */
+interface VoxelGlobals {
+  Voxel?: {
+    alert?: (message: string, type: 'error' | 'success') => void;
+  };
+  Voxel_Config?: {
+    l10n?: {
+      ajaxError?: string;
+    };
+  };
+}
+
+/**
+ * Show Voxel alert notification
+ * Matches Voxel parity: Voxel.alert(e.message || Voxel_Config.l10n.ajaxError, "error")
+ * Reference: voxel-vendor-stats.beautified.js line 133
+ */
+function showVoxelAlert(message?: string, type: 'error' | 'success' = 'error'): void {
+  const win = window as unknown as VoxelGlobals;
+  const fallbackMessage = win.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+  const alertMessage = message || fallbackMessage;
+
+  if (win.Voxel?.alert) {
+    win.Voxel.alert(alertMessage, type);
+  } else {
+    // Fallback to console when Voxel is not available
+    if (type === 'error') {
+      console.error('[SalesChart]', alertMessage);
+    } else {
+      console.log('[SalesChart]', alertMessage);
+    }
+  }
+}
+
+/**
  * Fetch chart data from REST API
  * MULTISITE FIX: Uses getRestBaseUrl() for multisite subdirectory support
  */
@@ -426,7 +463,9 @@ async function fetchChartData(): Promise<SalesChartApiConfig | null> {
     const data = await response.json();
     return data as SalesChartApiConfig;
   } catch (error) {
-    console.error('[SalesChart] Failed to fetch chart data:', error);
+    // Use Voxel.alert() for error display (Voxel parity: line 133)
+    const errorMessage = error instanceof Error ? error.message : undefined;
+    showVoxelAlert(errorMessage, 'error');
     return null;
   }
 }
@@ -466,12 +505,13 @@ async function initSalesChart(block: Element): Promise<void> {
   const config = await fetchChartData();
 
   // Re-render with data
+  // Note: Errors are handled via Voxel.alert() in fetchChartData(), not inline UI
   root.render(
     <SalesChartComponent
       attributes={attributes}
       config={config}
       isLoading={false}
-      error={config ? null : 'Failed to load chart data'}
+      error={null}
       context="frontend"
     />
   );

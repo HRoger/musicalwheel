@@ -116,6 +116,14 @@ class Block_Loader
         // to be registered before we enqueue them. The method has is_block_editor() checks.
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_voxel_core_scripts'], 15);
 
+        // CRITICAL: Dequeue Vue/commons.js in block editor to prevent Vue errors
+        // enqueue_block_editor_assets only fires in block editor, so no need for screen checks
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'dequeue_vue_commons_in_block_editor'], 999);
+
+        // Also dequeue at print time in case something re-enqueues after our dequeue
+        add_action('admin_print_scripts', [__CLASS__, 'dequeue_vue_commons_in_editor'], 1);
+        add_action('admin_print_footer_scripts', [__CLASS__, 'dequeue_vue_commons_in_editor'], 1);
+
         // Enqueue pikaday at later priority to ensure it loads after editor.css
         // editor.css is auto-enqueued by WordPress when block is used, so we need pikaday to load after
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_pikaday_styles'], 30);
@@ -165,6 +173,9 @@ class Block_Loader
 
         // Enqueue work-hours.css on frontend when work-hours block is used
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_frontend_work_hours_styles'], 10);
+
+        // Enqueue map.css on frontend (using check logic)
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_frontend_map_styles'], 10);
 
         // Ensure React scripts are available on frontend for Plan C+ blocks
         // WordPress registers react/react-dom but doesn't enqueue them on frontend by default
@@ -329,6 +340,20 @@ class Block_Loader
                         'vx:product-form.css',
                         $assets_url . $product_form_file,
                         ['vx:forms.css'],
+                        $version
+                );
+            }
+        }
+
+        // Register map.css (depends on commons)
+        if (!wp_style_is('vx:map.css', 'registered')) {
+            $map_file = 'map' . $suffix;
+            $map_path = $assets_dir . $map_file;
+            if (file_exists($map_path)) {
+                wp_register_style(
+                        'vx:map.css',
+                        $assets_url . $map_file,
+                        ['vx:commons.css'],
                         $version
                 );
             }
@@ -834,6 +859,12 @@ CSS;
         }
         if (wp_style_is('vx:product-form.css', 'registered') && !wp_style_is('vx:product-form.css', 'enqueued')) {
             wp_enqueue_style('vx:product-form.css');
+        }
+
+        // Enqueue Voxel map styles
+        // This ensures the map block inherits parent theme styles in the editor
+        if (wp_style_is('vx:map.css', 'registered') && !wp_style_is('vx:map.css', 'enqueued')) {
+            wp_enqueue_style('vx:map.css');
         }
 
         // Enqueue nouislider CSS (pikaday is enqueued separately at priority 30)
@@ -1365,57 +1396,47 @@ CSS;
             return;
         }
 
-        // Blocks that require maps scripts
-        $map_requiring_blocks = ['voxel-fse/create-post', 'voxel-fse/map'];
+        // Check which map provider is configured
+        // The Google Maps callback stub is ONLY needed for Google Maps provider
+        // OpenStreetMap/Mapbox have different initialization mechanisms
+        $map_provider = 'google_maps'; // Default
+        if (function_exists('\Voxel\get')) {
+            $map_provider = \Voxel\get('settings.maps.provider', 'google_maps');
+        }
 
-        // Check if any map-requiring block is present on the page
-        $has_map_block = false;
-
-        if (is_singular()) {
-            global $post;
-            if ($post && has_blocks($post->post_content)) {
-                foreach ($map_requiring_blocks as $block_name) {
-                    if (has_block($block_name, $post)) {
-                        $has_map_block = true;
-                        break;
+        // Only inject Google Maps callback stub if using Google Maps
+        // OpenStreetMap uses Leaflet which doesn't need a callback - it dispatches maps:loaded on script load
+        // Mapbox also doesn't use the callback mechanism
+        if ($map_provider !== 'google_maps') {
+            // For non-Google Maps providers, just initialize Voxel.Maps structure
+            // The actual maps:loaded event is dispatched by Voxel's openstreetmap.js or mapbox.js
+            ?>
+            <script type="text/javascript">
+                // FRONTEND: Initialize Voxel.Maps structure for OpenStreetMap/Mapbox
+                (function () {
+                    'use strict';
+                    if (typeof window.Voxel === 'undefined') {
+                        window.Voxel = {};
                     }
-                }
-            }
-        }
-
-        // Also check widget areas (sidebar blocks)
-        if (!$has_map_block) {
-            $sidebars_widgets = wp_get_sidebars_widgets();
-            foreach ($sidebars_widgets as $sidebar_id => $widgets) {
-                if (is_array($widgets)) {
-                    foreach ($widgets as $widget) {
-                        if (strpos($widget, 'block-') === 0) {
-                            $widget_id = str_replace('block-', '', $widget);
-                            $widget_content = get_post_field('post_content', $widget_id);
-                            if ($widget_content) {
-                                foreach ($map_requiring_blocks as $block_name) {
-                                    if (has_block($block_name, $widget_content)) {
-                                        $has_map_block = true;
-                                        break 3;
-                                    }
-                                }
-                            }
-                        }
+                    if (typeof window.Voxel.Maps === 'undefined') {
+                        window.Voxel.Maps = {};
                     }
-                }
-            }
-        }
-
-        // Check FSE templates (for block-based themes)
-        if (!$has_map_block) {
-            $has_map_block = self::check_fse_templates_for_blocks($map_requiring_blocks);
-        }
-
-        if (!$has_map_block) {
+                    // OpenStreetMap/Mapbox don't use the GoogleMaps callback
+                    // They dispatch maps:loaded event themselves after Leaflet/Mapbox loads
+                    console.log('[VoxelFSE Frontend] Non-Google Maps provider detected, skipping callback stub');
+                })();
+            </script>
+            <?php
             return;
         }
 
-        // Output stub script directly in head - runs BEFORE any wp_enqueue_script output
+        // ALWAYS inject the Google Maps callback stub when using Google Maps provider
+        // This is needed because:
+        // 1. Google Maps API uses async loading with a callback (Voxel.Maps.GoogleMaps)
+        // 2. The callback must exist BEFORE the Google Maps API script loads
+        // 3. Maps can be loaded by FSE blocks OR Voxel widgets (post-feed, search-form, etc.)
+        // 4. We can't predict at wp_head time which widgets will load maps
+        // Output Google Maps stub script directly in head - runs BEFORE any wp_enqueue_script output
         ?>
         <script type="text/javascript">
             // FRONTEND: Define Voxel.Maps.GoogleMaps stub IMMEDIATELY in head
@@ -1433,11 +1454,257 @@ CSS;
                     window.Voxel.Maps = {};
                 }
 
+                // Store reference to our Maps object
+                var ourMapsObject = window.Voxel.Maps;
+
+                // CRITICAL: Intercept attempts to replace Voxel.Maps entirely
+                // commons.js does: Voxel.Maps = { ... } which would lose our await
+                var _voxelMapsValue = ourMapsObject;
+                Object.defineProperty(window.Voxel, 'Maps', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() {
+                        return _voxelMapsValue;
+                    },
+                    set: function(newValue) {
+                        console.log('[VoxelFSE Frontend] Intercepted Voxel.Maps replacement');
+                        // MERGE: Copy all properties from new value to our object
+                        // But preserve our safe await
+                        if (newValue && typeof newValue === 'object') {
+                            Object.keys(newValue).forEach(function(key) {
+                                if (key !== 'await' && key !== '_fsePatched') {
+                                    _voxelMapsValue[key] = newValue[key];
+                                }
+                            });
+                        }
+                        // Re-apply our protected await
+                        if (window._voxelFseSafeAwait) {
+                            Object.defineProperty(_voxelMapsValue, 'await', {
+                                configurable: true,
+                                enumerable: true,
+                                get: function() { return window._voxelFseSafeAwait; },
+                                set: function() {
+                                    console.log('[VoxelFSE Frontend] Blocked attempt to overwrite await');
+                                }
+                            });
+                        }
+                        console.log('[VoxelFSE Frontend] Merged Voxel.Maps, preserved safe await');
+                    }
+                });
+
+                // CRITICAL: Provide a SAFE Maps.await implementation IMMEDIATELY
+                // This prevents commons.js from corrupting script src when it replaces Voxel.Maps
+                //
+                // The original Voxel Maps.await does: scriptElement.src = scriptElement.dataset.src
+                // If our PHP filter already set src and removed data-src, dataset.src is undefined
+                // which corrupts src to the string "undefined"
+                //
+                // Our safe version checks if src already exists and is valid before touching it
+
+                // Helper to check if ALL maps requirements are met
+                // This does a REAL test by creating a temporary map
+                var _mapsReallyReady = false;
+                var _mapsTestInProgress = false;
+
+                function checkAllMapsReady() {
+                    // If we've already confirmed it works, return true
+                    if (_mapsReallyReady) {
+                        return true;
+                    }
+
+                    try {
+                        // 1. Check Google Maps API functions exist
+                        var googleReady = typeof google !== 'undefined' &&
+                            google.maps &&
+                            typeof google.maps.Map === 'function' &&
+                            typeof google.maps.LatLng === 'function' &&
+                            typeof google.maps.OverlayView === 'function';
+
+                        // 2. Check Voxel.Maps wrapper exists
+                        var voxelReady = window.Voxel &&
+                            window.Voxel.Maps &&
+                            typeof window.Voxel.Maps.Map === 'function';
+
+                        if (!googleReady || !voxelReady) {
+                            return false;
+                        }
+
+                        // 3. CRITICAL: Try to actually create a test map to verify internals are ready
+                        // This catches the "Cannot read properties of undefined (reading 'ip')" errors
+                        if (!_mapsTestInProgress) {
+                            _mapsTestInProgress = true;
+                            try {
+                                var testDiv = document.createElement('div');
+                                testDiv.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;visibility:hidden;';
+                                document.body.appendChild(testDiv);
+
+                                // This will throw if Google Maps internals aren't ready
+                                var testMap = new google.maps.Map(testDiv, {
+                                    zoom: 1,
+                                    center: { lat: 0, lng: 0 },
+                                    disableDefaultUI: true
+                                });
+
+                                // Success! Clean up
+                                setTimeout(function() {
+                                    if (testDiv.parentNode) {
+                                        testDiv.parentNode.removeChild(testDiv);
+                                    }
+                                }, 100);
+
+                                _mapsReallyReady = true;
+                                _mapsTestInProgress = false;
+                                console.log('[VoxelFSE Frontend] checkAllMapsReady: Test map created successfully');
+                                return true;
+                            } catch (testError) {
+                                _mapsTestInProgress = false;
+                                console.log('[VoxelFSE Frontend] checkAllMapsReady: Test map failed -', testError.message);
+                                return false;
+                            }
+                        }
+
+                        return false;
+                    } catch (e) {
+                        _mapsTestInProgress = false;
+                        return false;
+                    }
+                }
+
+                // Define the safe await function
+                var safeAwaitFunction = function(callback) {
+                    console.log('[VoxelFSE Frontend] Safe Maps.await called, Loaded flag:', window.Voxel.Maps.Loaded);
+
+                    // CRITICAL FIX: Don't trust Loaded flag alone!
+                    // Voxel or other code may set Loaded=true before Google Maps is actually ready.
+                    // ALWAYS verify with checkAllMapsReady() before executing callback.
+
+                    // If ready NOW (both Loaded flag AND actual readiness check), execute immediately
+                    if (window.Voxel.Maps.Loaded && checkAllMapsReady()) {
+                        console.log('[VoxelFSE Frontend] Safe Maps.await: Loaded=true AND checkAllMapsReady=true, executing callback');
+                        callback();
+                        return;
+                    }
+
+                    // If NOT ready but flag is true, we need to wait
+                    if (window.Voxel.Maps.Loaded && !checkAllMapsReady()) {
+                        console.log('[VoxelFSE Frontend] Safe Maps.await: Loaded=true but checkAllMapsReady=false, will poll');
+                    }
+
+                    // If Loaded is false, check if maps are actually ready anyway
+                    if (!window.Voxel.Maps.Loaded && checkAllMapsReady()) {
+                        console.log('[VoxelFSE Frontend] Safe Maps.await: Loaded=false but checkAllMapsReady=true, executing callback');
+                        window.Voxel.Maps.Loaded = true;
+                        callback();
+                        return;
+                    }
+
+                    // Not ready - set up listener and polling
+                    var callbackFired = false;
+
+                    // Wait for maps:loaded event
+                    document.addEventListener("maps:loaded", function() {
+                        // Double-check readiness even on event
+                        if (!callbackFired && checkAllMapsReady()) {
+                            callbackFired = true;
+                            console.log('[VoxelFSE Frontend] Safe Maps.await: maps:loaded event + checkAllMapsReady=true');
+                            callback();
+                        }
+                    }, { once: true });
+
+                    // POLL for maps readiness - this is the most reliable method
+                    var pollCount = 0;
+                    var pollInterval = setInterval(function() {
+                        pollCount++;
+
+                        if (checkAllMapsReady()) {
+                            clearInterval(pollInterval);
+                            if (!callbackFired) {
+                                callbackFired = true;
+                                console.log('[VoxelFSE Frontend] Safe Maps.await: Maps ready via polling (poll #' + pollCount + ')');
+                                if (!window.Voxel.Maps.Loaded) {
+                                    window.Voxel.Maps.Loaded = true;
+                                    // Dispatch the event for other listeners
+                                    document.dispatchEvent(new CustomEvent('maps:loaded'));
+                                }
+                                callback();
+                            }
+                        }
+
+                        if (pollCount >= 200) { // 10 seconds
+                            clearInterval(pollInterval);
+                            console.error('[VoxelFSE Frontend] Safe Maps.await: Timeout waiting for maps');
+                        }
+                    }, 50);
+
+                    // Trigger lazy loading of maps script if not yet loaded
+                    // BUT: Only if the script has data-src AND no valid src
+                    var mapScriptIds = ['vx:google-maps.js-js', 'google-maps-js', 'vx:mapbox.js-js', 'mapbox-gl-js'];
+                    mapScriptIds.forEach(function(id) {
+                        var scriptElement = document.getElementById(id);
+                        if (scriptElement) {
+                            var currentSrc = scriptElement.getAttribute('src');
+                            var dataSrc = scriptElement.dataset.src;
+
+                            // Only trigger soft-load if:
+                            // 1. src is missing OR invalid (empty, "undefined")
+                            // 2. AND data-src has a valid URL
+                            if ((!currentSrc || currentSrc === '' || currentSrc === 'undefined') && dataSrc && dataSrc !== 'null' && dataSrc !== 'undefined') {
+                                console.log('[VoxelFSE Frontend] Safe Maps.await triggering soft-load for: ' + id);
+                                scriptElement.src = dataSrc;
+                            }
+                        }
+                    });
+                };
+
+                // Store global reference to safe await that can't be overwritten
+                window._voxelFseSafeAwait = safeAwaitFunction;
+
+                // CRITICAL: Use Object.defineProperty to make await non-writable
+                // This prevents commons.js from replacing our safe implementation
+                Object.defineProperty(window.Voxel.Maps, 'await', {
+                    configurable: true, // Allow redefinition by our restore code
+                    enumerable: true,
+                    get: function() {
+                        return window._voxelFseSafeAwait;
+                    },
+                    set: function(newValue) {
+                        // INTERCEPT: commons.js tries to overwrite await
+                        // Store the original for reference but return our safe version
+                        console.log('[VoxelFSE Frontend] Intercepted attempt to overwrite Maps.await, keeping safe version');
+                        window._voxelOriginalAwait = newValue;
+                        // Don't actually replace - keep returning our safe version
+                    }
+                });
+
+                window.Voxel.Maps._fsePatched = true;
+                console.log('[VoxelFSE Frontend] Safe Maps.await provided (protected with defineProperty)');
+
+                // Helper to check if Google Maps API is fully initialized
+                // The callback fires but Google's internal objects may not be ready
+                function isGoogleMapsApiReady() {
+                    try {
+                        // Check that google.maps exists and has the core classes
+                        return typeof google !== 'undefined' &&
+                            google.maps &&
+                            typeof google.maps.Map === 'function' &&
+                            typeof google.maps.LatLng === 'function' &&
+                            typeof google.maps.LatLngBounds === 'function' &&
+                            typeof google.maps.OverlayView === 'function';
+                    } catch (e) {
+                        return false;
+                    }
+                }
+
                 // Helper to check if vx:google-maps.js has loaded (defines Map class)
                 function isVoxelMapsReady() {
                     return window.Voxel &&
                         window.Voxel.Maps &&
                         typeof window.Voxel.Maps.Map === 'function';
+                }
+
+                // Helper to check if BOTH Google Maps API AND Voxel wrapper are ready
+                function isAllMapsReady() {
+                    return isGoogleMapsApiReady() && isVoxelMapsReady();
                 }
 
                 // Helper to dispatch maps:loaded event
@@ -1464,38 +1731,198 @@ CSS;
                     window._voxel_gmaps_loaded = true;
                     window._voxel_gmaps_callback_fired = true;
 
-                    // Only dispatch maps:loaded if vx:google-maps.js has loaded
-                    if (isVoxelMapsReady()) {
-                        console.log('[VoxelFSE Frontend] vx:google-maps.js already ready, dispatching immediately');
-                        dispatchMapsLoaded();
-                    } else {
-                        console.log('[VoxelFSE Frontend] Waiting for vx:google-maps.js...');
-                        // Poll for vx:google-maps.js to load
-                        var waitCount = 0;
-                        var waitInterval = setInterval(function () {
-                            waitCount++;
-                            if (isVoxelMapsReady()) {
-                                console.log('[VoxelFSE Frontend] vx:google-maps.js now ready (wait #' + waitCount + ')');
+                    // CRITICAL: Google Maps API v3.62+ has async internals that may not be ready
+                    // even when the callback fires. We need to wait for internal initialization
+                    // to complete, then verify with a test Map creation.
+                    //
+                    // The errors like "Cannot read properties of undefined (reading 'ip')"
+                    // occur when google.maps.Map is called before Google's internal objects
+                    // are fully initialized.
+
+                    function testGoogleMapsReady() {
+                        try {
+                            // Try to create a temporary map to test if Google Maps is really ready
+                            var testDiv = document.createElement('div');
+                            testDiv.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;';
+                            document.body.appendChild(testDiv);
+
+                            var testMap = new google.maps.Map(testDiv, {
+                                zoom: 1,
+                                center: { lat: 0, lng: 0 },
+                                disableDefaultUI: true
+                            });
+
+                            // Clean up
+                            setTimeout(function() {
+                                if (testDiv.parentNode) {
+                                    testDiv.parentNode.removeChild(testDiv);
+                                }
+                            }, 100);
+
+                            console.log('[VoxelFSE Frontend] Google Maps API test: SUCCESS');
+                            return true;
+                        } catch (e) {
+                            console.log('[VoxelFSE Frontend] Google Maps API test: FAILED -', e.message);
+                            return false;
+                        }
+                    }
+
+                    // Log Google Maps API readiness for debugging
+                    console.log('[VoxelFSE Frontend] Google Maps API classes ready:', isGoogleMapsApiReady());
+                    console.log('[VoxelFSE Frontend] Voxel.Maps ready:', isVoxelMapsReady());
+
+                    // Wait for both Voxel.Maps AND a successful test Map creation
+                    var waitCount = 0;
+                    var waitInterval = setInterval(function () {
+                        waitCount++;
+
+                        var voxelReady = isVoxelMapsReady();
+                        var googleReady = isGoogleMapsApiReady();
+
+                        // Log status periodically
+                        if (waitCount % 10 === 1 || waitCount === 1) {
+                            console.log('[VoxelFSE Frontend] Wait #' + waitCount + ' - Google API:', googleReady, 'Voxel:', voxelReady);
+                        }
+
+                        // Only test Google Maps when both class checks pass
+                        if (voxelReady && googleReady) {
+                            if (testGoogleMapsReady()) {
+                                console.log('[VoxelFSE Frontend] All maps now ready (wait #' + waitCount + ')');
                                 clearInterval(waitInterval);
                                 dispatchMapsLoaded();
+                                return;
                             }
-                            if (waitCount >= 200) { // Stop after 10 seconds
-                                clearInterval(waitInterval);
-                                console.error('[VoxelFSE Frontend] Timeout waiting for vx:google-maps.js');
+                        }
+
+                        if (waitCount >= 200) { // Stop after 10 seconds
+                            clearInterval(waitInterval);
+                            console.error('[VoxelFSE Frontend] Timeout waiting for maps');
+                            // Try to dispatch anyway as fallback
+                            if (voxelReady) {
+                                console.warn('[VoxelFSE Frontend] Dispatching anyway (Voxel ready, Google may be partial)');
+                                dispatchMapsLoaded();
                             }
-                        }, 50);
-                    }
+                        }
+                    }, 50);
                 };
 
                 // Assign immediately - MUST exist before Google Maps loads
                 window.Voxel.Maps.GoogleMaps = gmapsCallbackStub;
                 console.log('[VoxelFSE Frontend] GoogleMaps callback stub assigned');
 
-                // Monitor and restore callback if commons.js replaces Voxel.Maps
+                // Store reference to our safe await for restoration (using global)
+                var safeAwait = window._voxelFseSafeAwait;
+
+                // CRITICAL: Save script src URLs early so we can restore them if corrupted
+                // This runs BEFORE any other script can corrupt them
+                window._voxel_fse_saved_srcs = {};
+                var mapScriptIds = ['vx:google-maps.js-js', 'google-maps-js', 'vx:mapbox.js-js', 'mapbox-gl-js'];
+
+                function saveScriptSrc(id) {
+                    var script = document.getElementById(id);
+                    if (script) {
+                        var src = script.getAttribute('src');
+                        if (src && src !== 'undefined' && src !== '' && src !== 'null') {
+                            window._voxel_fse_saved_srcs[id] = src;
+                            console.log('[VoxelFSE Frontend] Saved src for ' + id + ': ' + src.substring(0, 60) + '...');
+                        }
+                    }
+                }
+
+                // Track which scripts have been "rescued" by replacing with new element
+                window._voxel_fse_rescued_scripts = {};
+
+                // CRITICAL: MutationObserver to catch src corruption in REAL-TIME
+                // This is the key fix - we catch the corruption IMMEDIATELY when it happens,
+                // BEFORE the browser tries to load from the corrupted src.
+                // Deferred scripts don't load until DOM is fully parsed, but the src attribute
+                // can be changed at any time. We catch the change and revert it instantly.
+                var srcObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+                            var script = mutation.target;
+                            var id = script.id;
+                            if (mapScriptIds.indexOf(id) !== -1) {
+                                var newSrc = script.getAttribute('src');
+                                var savedSrc = window._voxel_fse_saved_srcs[id];
+
+                                // Check if src was corrupted
+                                if ((newSrc === 'undefined' || newSrc === '' || newSrc === null) && savedSrc) {
+                                    console.log('[VoxelFSE Frontend] MutationObserver: Blocked src corruption for ' + id + ', reverting to saved src');
+
+                                    // CRITICAL: If the browser already tried to load from corrupted src,
+                                    // just setting src back won't help - we need to create a new script element.
+                                    // Check if script already failed by seeing if it's been "in the DOM" for a while
+                                    if (!window._voxel_fse_rescued_scripts[id]) {
+                                        window._voxel_fse_rescued_scripts[id] = true;
+
+                                        // Create a fresh script element with the correct src
+                                        var newScript = document.createElement('script');
+                                        newScript.id = id + '-rescue';
+                                        newScript.src = savedSrc;
+                                        newScript.defer = script.defer;
+                                        newScript.async = script.async;
+
+                                        console.log('[VoxelFSE Frontend] MutationObserver: Creating rescue script for ' + id);
+
+                                        // Insert after the original (which may have failed)
+                                        script.parentNode.insertBefore(newScript, script.nextSibling);
+                                    }
+
+                                    // Still set the attribute back (in case browser hasn't tried yet)
+                                    script.setAttribute('src', savedSrc);
+                                }
+                            }
+                        }
+                    });
+                });
+
+                // Also observe for new script elements being added to catch them early
+                var documentObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeName === 'SCRIPT') {
+                                var id = node.id;
+                                if (mapScriptIds.indexOf(id) !== -1) {
+                                    // Save the src immediately when script is added
+                                    var src = node.getAttribute('src');
+                                    if (src && src !== 'undefined' && src !== '' && src !== 'null') {
+                                        if (!window._voxel_fse_saved_srcs[id]) {
+                                            window._voxel_fse_saved_srcs[id] = src;
+                                            console.log('[VoxelFSE Frontend] MutationObserver: Saved src for new script ' + id);
+                                        }
+                                    }
+
+                                    // Start observing this script for src changes
+                                    srcObserver.observe(node, { attributes: true, attributeFilter: ['src'] });
+                                    console.log('[VoxelFSE Frontend] MutationObserver: Now watching ' + id + ' for src changes');
+                                }
+                            }
+                        });
+                    });
+                });
+
+                // Start observing the document for new scripts
+                documentObserver.observe(document.documentElement, { childList: true, subtree: true });
+                console.log('[VoxelFSE Frontend] MutationObserver started - watching for script additions');
+
+                // Try to save and observe existing scripts immediately
+                // (scripts may already be in DOM from server-side rendering)
+                mapScriptIds.forEach(function(id) {
+                    saveScriptSrc(id);
+                    var script = document.getElementById(id);
+                    if (script) {
+                        srcObserver.observe(script, { attributes: true, attributeFilter: ['src'] });
+                        console.log('[VoxelFSE Frontend] MutationObserver: Watching existing script ' + id);
+                    }
+                });
+
+                // Monitor and restore both callback AND safe await if commons.js overwrites Voxel.Maps
                 var checkCount = 0;
                 var checkInterval = setInterval(function () {
                     checkCount++;
                     if (window.Voxel && window.Voxel.Maps) {
+                        // Restore GoogleMaps callback if overwritten
                         if (typeof window.Voxel.Maps.GoogleMaps !== 'function') {
                             window.Voxel.Maps.GoogleMaps = gmapsCallbackStub;
                             console.log('[VoxelFSE Frontend] Restored GoogleMaps callback (was overwritten)');
@@ -1504,7 +1931,16 @@ CSS;
                                 gmapsCallbackStub();
                             }
                         }
+
+                        // CRITICAL: Restore safe Maps.await if it was overwritten
+                        // commons.js replaces the entire Voxel.Maps object, losing our safe await
+                        if (!window.Voxel.Maps._fsePatched) {
+                            window.Voxel.Maps.await = safeAwait;
+                            window.Voxel.Maps._fsePatched = true;
+                            console.log('[VoxelFSE Frontend] Restored safe Maps.await (was overwritten by commons.js)');
+                        }
                     }
+
                     if (checkCount >= 100) { // Stop after 5 seconds
                         clearInterval(checkInterval);
                     }
@@ -1515,10 +1951,16 @@ CSS;
     }
 
     /**
-     * Bypass Voxel's soft-loading for maps scripts on frontend when map-requiring blocks are present
+     * Bypass Voxel's soft-loading for maps scripts on frontend
      *
      * Voxel replaces src= with data-src= for maps scripts to defer loading.
-     * When create-post or map blocks are present, we need maps to load immediately.
+     * This causes issues with FSE blocks because the maps:loaded event may never fire.
+     *
+     * CRITICAL: We ALWAYS add the filter to bypass soft-loading, not just when our blocks
+     * are detected. This is because:
+     * 1. Voxel's own widgets (post-feed with map, search-form) may load maps
+     * 2. The Google Maps callback stub expects vx:google-maps.js to load
+     * 3. If vx:google-maps.js has data-src, it never executes, causing timeout
      *
      * Evidence: themes/voxel/app/controllers/assets-controller.php:49-54 and :367-372
      *
@@ -1531,40 +1973,30 @@ CSS;
             return;
         }
 
-        // Blocks that require maps scripts
-        $map_requiring_blocks = ['voxel-fse/create-post', 'voxel-fse/map'];
+        // Check if map block is used on the current page
+        $has_map_block = true; // Force True for Debugging/Fix
 
-        // Check if any map-requiring block is present on the page
-        $has_map_block = false;
-
+        /*
+        // Check current post/page content
         if (is_singular()) {
             global $post;
             if ($post && has_blocks($post->post_content)) {
-                foreach ($map_requiring_blocks as $block_name) {
-                    if (has_block($block_name, $post)) {
-                        $has_map_block = true;
-                        break;
-                    }
-                }
+                $has_map_block = has_block('voxel-fse/map', $post);
             }
         }
 
-        // Also check widget areas (sidebar blocks)
-        if (!$has_map_block) {
-            $sidebars_widgets = wp_get_sidebars_widgets();
-            foreach ($sidebars_widgets as $sidebar_id => $widgets) {
+        // Check widgets (block widgets)
+        if (!$has_map_block && function_exists('wp_get_sidebars_widgets')) {
+            $sidebars = wp_get_sidebars_widgets();
+             foreach ($sidebars as $sidebar => $widgets) {
                 if (is_array($widgets)) {
                     foreach ($widgets as $widget) {
                         if (strpos($widget, 'block-') === 0) {
                             $widget_id = str_replace('block-', '', $widget);
                             $widget_content = get_post_field('post_content', $widget_id);
-                            if ($widget_content) {
-                                foreach ($map_requiring_blocks as $block_name) {
-                                    if (has_block($block_name, $widget_content)) {
-                                        $has_map_block = true;
-                                        break 3;
-                                    }
-                                }
+                            if ($widget_content && has_block('voxel-fse/map', $widget_content)) {
+                                $has_map_block = true;
+                                break 2;
                             }
                         }
                     }
@@ -1572,30 +2004,96 @@ CSS;
             }
         }
 
-        // Check FSE templates (for block-based themes)
+        // Also check FSE templates (for archive pages, single templates, etc.)
+        // FSE templates are stored in wp_template and wp_template_part post types
         if (!$has_map_block) {
-            $has_map_block = self::check_fse_templates_for_blocks($map_requiring_blocks);
-        }
+            // Get the current template hierarchy
+            $template_slugs = [];
 
-        if (!$has_map_block) {
-            return;
-        }
-
-        // Enqueue maps scripts if registered
-        if (function_exists('\Voxel\enqueue_maps')) {
-            \Voxel\enqueue_maps();
-        }
-
-        // Add filter to bypass soft-loading (runs after Voxel's filter at priority 10)
-        add_filter('script_loader_tag', function ($tag, $handle) {
-            $maps_scripts = ['google-maps', 'vx:google-maps.js', 'mapbox-gl', 'vx:mapbox.js'];
-            if (in_array($handle, $maps_scripts, true)) {
-                // Convert data-src back to src to force immediate loading
-                $tag = str_replace(' data-src=', ' src=', $tag);
+            // Check for block theme template
+            if (function_exists('wp_is_block_theme') && wp_is_block_theme()) {
+                // Get current template from global
+                global $_wp_current_template_content;
+                if (!empty($_wp_current_template_content)) {
+                    foreach ($map_blocks as $block_name) {
+                        if (strpos($_wp_current_template_content, '<!-- wp:' . $block_name) !== false) {
+                            $has_map_block = true;
+                            break;
+                        }
+                    }
+                }
             }
+        }
+        */
+
+        // If FSE blocks that need maps are present, enqueue Voxel's map scripts
+        // This is the key fix: Voxel's enqueue_maps() is only called by Elementor widgets
+        // We need to call it for FSE blocks too
+        if ($has_map_block && function_exists('\Voxel\enqueue_maps')) {
+            // CRITICAL: Explicitly enqueue vx:commons.js FIRST
+            // It defines the Voxel.Maps namespace that vx:google-maps.js extends
+            // Without it, vx:google-maps.js will fail silently
+            wp_enqueue_script('vx:commons.js');
+
+            // Now enqueue the map scripts
+            \Voxel\enqueue_maps();
+
+            // Debug: Log what we're doing
+            error_log('[VoxelFSE] Enqueued maps scripts for FSE blocks');
+        }
+
+
+
+        // Filter approach to bypass soft-loading for Voxel's wrapper scripts
+        // Priority PHP_INT_MAX - 1 runs AFTER Voxel's filter at priority 10
+        //
+        // IMPORTANT: We ONLY bypass soft-loading for the WRAPPER scripts (vx:google-maps.js, etc.)
+        // We do NOT bypass for the EXTERNAL API scripts (google-maps, mapbox-gl, leaflet)
+        //
+        // WHY: Voxel's soft-loading order is:
+        // 1. vx:google-maps.js loads (defines Voxel.Maps.GoogleMaps callback)
+        // 2. At the end of vx:google-maps.js: t.src = t.dataset.src (triggers Google Maps API)
+        // 3. Google Maps API loads and calls Voxel.Maps.GoogleMaps callback
+        //
+        // If we bypass BOTH, they load in parallel and the callback may not exist when called.
+        add_filter('script_loader_tag', function ($tag, $handle, $src) {
+            // Only bypass soft-loading for Voxel's WRAPPER scripts, NOT external APIs
+            $wrapper_scripts = [
+                // Google Maps wrapper (NOT 'google-maps' - that's the external API)
+                'vx:google-maps.js',
+                // Mapbox wrapper (NOT 'mapbox-gl' - that's the external API)
+                'vx:mapbox.js',
+                // OpenStreetMap wrapper (NOT 'leaflet' - that's the external API)
+                'vx:openstreetmap.js',
+            ];
+
+            if (!in_array($handle, $wrapper_scripts, true)) {
+                return $tag;
+            }
+
+            // Check if data-src exists (Voxel soft-loading applied)
+            if (preg_match('/data-src=["\']([^"\']+)["\']/', $tag, $matches)) {
+                $data_src_value = $matches[1];
+
+                // Force load the WRAPPER script immediately
+                // Check if src attribute already exists
+                if (!preg_match('/ src=["\']/', $tag)) {
+                    $tag = preg_replace('/<script\s+/', '<script src="' . esc_url($data_src_value) . '" ', $tag, 1);
+                }
+
+                // Keep data-src for the wrapper script - it doesn't have the "set src from data-src" code
+                // Only google-maps.js (the wrapper) has that code at the end, but it looks for 'google-maps-js' ID
+                // The wrapper script has ID 'vx:google-maps.js-js', not 'google-maps-js'
+
+                error_log("[VoxelFSE] Bypassed soft-loading for wrapper: {$handle}");
+                return "<!-- VoxelFSE: Immediate Load for {$handle} -->\n" . $tag;
+            }
+
             return $tag;
-        }, 20, 2);
+        }, PHP_INT_MAX - 1, 3);
+
     }
+
 
     /**
      * Enqueue Voxel core scripts (commons.js and maps) in block editor
@@ -1632,18 +2130,24 @@ CSS;
             }
         }
 
-        // Enqueue Vue (dependency for commons.js)
-        if (wp_script_is('vue', 'registered')) {
-            wp_enqueue_script('vue');
-        }
+        // NOTE: We DON'T deregister Vue/commons.js here because this runs on admin_enqueue_scripts
+        // which affects the main admin page - Voxel's admin UI needs Vue for backend.js, dynamic-data.js
+        // The deregister happens in dequeue_vue_commons_in_block_editor() via enqueue_block_editor_assets
+        // which specifically targets the editor iframe where the Vue conflict occurs
 
-        // Enqueue commons.js (contains Voxel.Maps and Voxel.alert())
-        if (wp_script_is('vx:commons.js', 'registered')) {
-            wp_enqueue_script('vx:commons.js');
+        // Enqueue our React-compatible voxel-commons.js instead
+        // Provides the same Voxel.* APIs without Vue dependencies
+        $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        wp_enqueue_script(
+            'voxel-fse-commons',
+            $commons_url,
+            [], // No dependencies - standalone vanilla JS
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0',
+            true // In footer
+        );
 
-            // Add script AFTER commons.js to define GoogleMaps callback
-            // Must run AFTER commons.js because commons.js replaces window.Voxel.Maps
-            $post_commons_script = <<<'JAVASCRIPT'
+        // Add script AFTER our commons to define GoogleMaps callback
+        $post_commons_script = <<<'JAVASCRIPT'
 (function() {
 	if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
 		window.Voxel.Maps.GoogleMaps = function() {
@@ -1663,8 +2167,7 @@ CSS;
 	}
 })();
 JAVASCRIPT;
-            wp_add_inline_script('vx:commons.js', $post_commons_script, 'after');
-        }
+        wp_add_inline_script('voxel-fse-commons', $post_commons_script, 'after');
 
         // Enqueue map provider scripts based on Voxel settings
         if (function_exists('\Voxel\get')) {
@@ -1687,6 +2190,38 @@ JAVASCRIPT;
                 }
             }
         }
+    }
+
+    /**
+     * Dequeue Vue and commons.js specifically in block editor
+     *
+     * DISABLED: Cannot deregister Vue/commons.js because Voxel's admin UI (backend.js,
+     * dynamic-data.js, vue-draggable.js) runs on the same admin page and needs Vue.
+     * WordPress doesn't have separate script queues for the main admin page vs editor iframe.
+     *
+     * Instead, we use the voxel-fse-compat.js shim to intercept and suppress errors
+     * from render_static_popups() when it tries to access .elementor-element.
+     *
+     * @since 1.0.0
+     */
+    public static function dequeue_vue_commons_in_block_editor()
+    {
+        // DISABLED - breaks Voxel admin UI
+        // The shim approach (voxel-fse-compat.js) handles the error instead
+        return;
+    }
+
+    /**
+     * Dequeue Vue and commons.js in block editor context (backup for print hooks)
+     *
+     * DISABLED: Same reason as dequeue_vue_commons_in_block_editor - breaks Voxel admin.
+     *
+     * @since 1.0.0
+     */
+    public static function dequeue_vue_commons_in_editor()
+    {
+        // DISABLED - breaks Voxel admin UI
+        return;
     }
 
     /**
@@ -2005,6 +2540,67 @@ JAVASCRIPT;
     }
 
     /**
+     * Enqueue map.css on frontend when map block is used
+     */
+    public static function enqueue_frontend_map_styles()
+    {
+        // Only run on frontend (not in admin/editor)
+        if (is_admin()) {
+            return;
+        }
+
+        // Check if map block is used on the current page
+        $has_map_block = true; // Force True for Debugging/Fix
+
+        /*
+        // Check current post/page content
+        if (is_singular()) {
+            global $post;
+            if ($post && has_blocks($post->post_content)) {
+                $has_map_block = has_block('voxel-fse/map', $post);
+            }
+        }
+
+        // Check widgets (block widgets)
+        if (!$has_map_block && function_exists('wp_get_sidebars_widgets')) {
+            $sidebars = wp_get_sidebars_widgets();
+            foreach ($sidebars as $sidebar => $widgets) {
+                if (is_array($widgets)) {
+                    foreach ($widgets as $widget) {
+                        if (strpos($widget, 'block-') === 0) {
+                            $widget_id = str_replace('block-', '', $widget);
+                            $widget_content = get_post_field('post_content', $widget_id);
+                            if ($widget_content && has_block('voxel-fse/map', $widget_content)) {
+                                $has_map_block = true;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check FSE templates
+        if (!$has_map_block) {
+            $has_map_block = self::check_fse_templates_for_block('voxel-fse/map');
+        }
+        */
+
+        // If map block is used, enqueue map.css from Voxel parent theme
+        if ($has_map_block) {
+            self::ensure_voxel_styles_registered();
+
+            if (wp_style_is('vx:commons.css', 'registered')) {
+                wp_enqueue_style('vx:commons.css');
+            }
+
+            if (wp_style_is('vx:map.css', 'registered')) {
+                wp_enqueue_style('vx:map.css');
+            }
+        }
+    }
+
+    /**
      * Enqueue work-hours.css on frontend when work-hours block is used
      *
      * Evidence:
@@ -2068,6 +2664,8 @@ JAVASCRIPT;
             }
         }
     }
+
+
 
     /**
      * Check if a block is used in FSE templates or template parts
@@ -3085,14 +3683,17 @@ JAVASCRIPT;
                                         wp_enqueue_style('pikaday');
                                     }
 
-                                    // Enqueue Vue (dependency for commons.js)
-                                    if (wp_script_is('vue', 'registered')) {
-                                        wp_enqueue_script('vue');
-                                    }
-
-                                    // Enqueue Voxel's commons.js for location fields and other interactive features
-                                    if (wp_script_is('vx:commons.js', 'registered')) {
-                                        wp_enqueue_script('vx:commons.js');
+                                    // CRITICAL: Use React-compatible voxel-commons.js instead of Vue-based vx:commons.js
+                                    // The Vue-based commons.js causes conflicts in Gutenberg editor
+                                    if (!wp_script_is('voxel-fse-commons', 'enqueued')) {
+                                        $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+                                        wp_enqueue_script(
+                                            'voxel-fse-commons',
+                                            $commons_url,
+                                            [],
+                                            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0',
+                                            true
+                                        );
                                     }
                                 }, 100);
 

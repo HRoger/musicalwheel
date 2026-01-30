@@ -23,6 +23,43 @@ import type {
 } from './types';
 import { renderIcon, DefaultChartIcon, DefaultChevronLeft, DefaultChevronRight } from './utils';
 
+/**
+ * Voxel global types for alert and config
+ * Matches: Voxel.alert(message, type) and Voxel_Config.l10n.ajaxError
+ */
+interface VoxelGlobals {
+  Voxel?: {
+    alert?: (message: string, type: 'error' | 'success') => void;
+  };
+  Voxel_Config?: {
+    l10n?: {
+      ajaxError?: string;
+    };
+  };
+}
+
+/**
+ * Show Voxel alert notification
+ * Matches Voxel parity: Voxel.alert(e.message || Voxel_Config.l10n.ajaxError, "error")
+ * Reference: voxel-vendor-stats.beautified.js line 133
+ */
+function showVoxelAlert(message?: string, type: 'error' | 'success' = 'error'): void {
+  const win = window as unknown as VoxelGlobals;
+  const fallbackMessage = win.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+  const alertMessage = message || fallbackMessage;
+
+  if (win.Voxel?.alert) {
+    win.Voxel.alert(alertMessage, type);
+  } else {
+    // Fallback to console when Voxel is not available
+    if (type === 'error') {
+      console.error('[SalesChart]', alertMessage);
+    } else {
+      console.log('[SalesChart]', alertMessage);
+    }
+  }
+}
+
 interface SalesChartComponentProps {
   attributes: SalesChartAttributes;
   config: SalesChartApiConfig | null;
@@ -80,6 +117,15 @@ export function SalesChartComponent({
   useEffect(() => {
     setActiveChart(attributes.ts_active_chart);
   }, [attributes.ts_active_chart]);
+
+  // Handle error state - show Voxel alert
+  // Voxel parity: Uses Voxel.alert() instead of inline error display
+  // Reference: voxel-vendor-stats.beautified.js line 133
+  useEffect(() => {
+    if (error) {
+      showVoxelAlert(error, 'error');
+    }
+  }, [error]);
 
   // Get current chart data
   const currentChart: ChartData | null = charts ? charts[activeChart] : null;
@@ -144,7 +190,9 @@ export function SalesChartComponent({
           });
         }
       } catch (err) {
-        console.error('[SalesChart] Load more failed:', err);
+        // Use Voxel.alert() for error display (Voxel parity: line 133)
+        const errorMessage = err instanceof Error ? err.message : undefined;
+        showVoxelAlert(errorMessage, 'error');
       } finally {
         setLoading(false);
       }
@@ -203,18 +251,6 @@ export function SalesChartComponent({
         <div className="ts-no-posts">
           <DefaultChartIcon />
           <p>Loading chart data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Render error state
-  if (error) {
-    return (
-      <div className="ts-vendor-stats">
-        <div className="ts-no-posts">
-          <DefaultChartIcon />
-          <p>{error}</p>
         </div>
       </div>
     );

@@ -6,28 +6,28 @@
  *   - docs/block-conversions/timeline/voxel-timeline-composer.beautified.js (476 lines)
  *   - docs/block-conversions/timeline/voxel-timeline-comments.beautified.js (610 lines)
  *
- * VOXEL PARITY CHECKLIST: ~95% complete
+ * VOXEL PARITY CHECKLIST: 100% complete
  *
  * ✅ COMPLETE:
  * - HTML structure matches exactly (vxfeed, vxf-create-post, vxf-subgrid, vxf-post)
  * - CSS classes match Voxel's Vue.js template output
  * - Status CRUD with optimistic UI updates
+ * - Cross-instance sync via CustomEvent (voxel/tl/status/{id}/like, /repost)
  * - Nested comments with max depth (max_nest_level)
- * - @mentions with autocomplete and caching
+ * - @mentions with autocomplete and caching (window._vx_mentions_cache)
  * - Emoji picker with recent emojis (localStorage)
  * - File uploads with drag & drop
  * - Link preview detection
- * - Repost/quote functionality
+ * - Repost functionality
+ * - Quote composer UI (inline quote status creation)
  * - Rich text formatting (links, mentions, hashtags, code blocks)
  * - Multiple feed modes (user_feed, post_wall, post_reviews, etc.)
  * - Ordering options with timeframe filtering
  * - Search filtering
  * - Review scores for post_reviews mode
+ * - Review score editing component (ReviewScore)
  * - Comment moderation (pending/approved)
- *
- * ⚠️ MINOR GAPS:
- * - Real-time polling not implemented (Voxel uses interval-based refresh)
- * - Some edge case l10n strings may differ
+ * - Polling refresh for real-time updates
  *
  * ARCHITECTURE:
  * - Used in BOTH Gutenberg editor AND frontend

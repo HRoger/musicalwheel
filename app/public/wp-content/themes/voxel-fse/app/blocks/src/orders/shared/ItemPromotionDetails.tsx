@@ -34,11 +34,6 @@ export default function ItemPromotionDetails({
 }: ItemPromotionDetailsProps) {
 	const promotionPackage = item.details?.promotion_package;
 
-	// If no promotion package, don't render
-	if (!promotionPackage) {
-		return null;
-	}
-
 	/**
 	 * Handle cancel promotion click
 	 * Reference: voxel-orders.beautified.js lines 140-165
@@ -56,6 +51,12 @@ export default function ItemPromotionDetails({
 
 		await onCancelPromotion();
 	}, [onCancelPromotion]);
+
+	// If no promotion package, don't render
+	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
+	if (!promotionPackage) {
+		return null;
+	}
 
 	/**
 	 * Check if promotion has date range

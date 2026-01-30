@@ -4,6 +4,12 @@
  * Dropdown autocomplete for @mentions in timeline composer.
  * Searches users and posts via API.
  *
+ * VOXEL PARITY: Global mentions cache (window._vx_mentions_cache)
+ * Voxel caches mention search results globally to avoid redundant API calls.
+ * When a search is performed, results are stored in window._vx_mentions_cache[query].
+ * Before making an API call, we check if results exist in the cache.
+ * See: timeline-composer.beautified.js lines 77-92, 107-109
+ *
  * @package VoxelFSE
  */
 
@@ -11,6 +17,24 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { searchMentions } from '../api';
 import type { MentionResult } from '../api';
 import { getInitials, stringToColor } from '../utils';
+
+// Declare global mentions cache type
+declare global {
+	interface Window {
+		_vx_mentions_cache?: Record<string, MentionResult[]>;
+	}
+}
+
+/**
+ * Initialize global mentions cache if not exists
+ * This matches Voxel's initialization in timeline-main.beautified.js line 1367
+ */
+function initMentionsCache(): Record<string, MentionResult[]> {
+	if (typeof window._vx_mentions_cache !== 'object') {
+		window._vx_mentions_cache = {};
+	}
+	return window._vx_mentions_cache;
+}
 
 /**
  * Props
@@ -43,7 +67,8 @@ export function MentionsAutocomplete({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
-	// Debounced search
+	// Debounced search with global cache (matches Voxel's behavior)
+	// See: timeline-composer.beautified.js lines 77-92, 107-109
 	useEffect(() => {
 		if (!isActive || !query || query.length < 1) {
 			setResults([]);
@@ -55,7 +80,18 @@ export function MentionsAutocomplete({
 			abortControllerRef.current.abort();
 		}
 
-		// Debounce
+		// Initialize global cache
+		const cache = initMentionsCache();
+
+		// Check cache first (matches Voxel's check at line 107)
+		if (Array.isArray(cache[query])) {
+			setResults(cache[query]);
+			setSelectedIndex(0);
+			setIsLoading(false);
+			return;
+		}
+
+		// Debounce API call (200ms like Voxel's debounce at line 78)
 		const timeoutId = setTimeout(async () => {
 			setIsLoading(true);
 			setError(null);
@@ -65,7 +101,12 @@ export function MentionsAutocomplete({
 
 			try {
 				const response = await searchMentions(query, controller.signal);
-				setResults(response.results || []);
+				const searchResults = response.results || [];
+
+				// Cache the results (matches Voxel's caching at line 90)
+				cache[query] = searchResults;
+
+				setResults(searchResults);
 				setSelectedIndex(0);
 			} catch (err) {
 				if (err instanceof Error && err.name !== 'AbortError') {

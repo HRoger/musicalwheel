@@ -129,13 +129,23 @@ export function getRestBaseUrl(): string {
 		}
 	}
 
-	// Last resort: Use site path + /wp-json/
-	const sitePath = getSitePath();
-	if (typeof window !== 'undefined') {
-		return window.location.origin + sitePath + '/wp-json/';
+	// Last resort: Use window.location.origin + /wp-json/
+	// NOTE: getSitePath() could fail if getSiteBaseUrl() also can't find values
+	// so we avoid the circular dependency and use origin directly
+	if (typeof window !== 'undefined' && window.location?.origin) {
+		// Try to extract site path from current URL for multisite subdirectory support
+		// The pathname might be like /vx-stays/stays-grid/ - we need just /vx-stays
+		const pathParts = window.location.pathname.split('/').filter(Boolean);
+		// Check if first part looks like a subsite (not a post type or common WP path)
+		const wpPaths = ['wp-admin', 'wp-content', 'wp-includes', 'wp-json'];
+		if (pathParts.length > 0 && !wpPaths.includes(pathParts[0])) {
+			// Might be a multisite subsite path, include first segment
+			return window.location.origin + '/' + pathParts[0] + '/wp-json/';
+		}
+		return window.location.origin + '/wp-json/';
 	}
 
-	// SSR fallback
+	// SSR fallback - always return a usable value
 	return '/wp-json/';
 }
 

@@ -35,6 +35,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
+import MediaPopup from '../../../shared/MediaPopup';
 import type {
 	MessagesAttributes,
 	MessagesVxConfig,
@@ -42,6 +43,7 @@ import type {
 	MessagesState,
 	VoxelChat,
 	VoxelMessage,
+	VoxelMessageFile,
 } from '../types';
 
 interface MessagesComponentProps {
@@ -81,6 +83,8 @@ const DEFAULT_ICONS = {
 	close: `<svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>`,
 	trash: `<svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>`,
 	block: `<svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path></svg>`,
+	gallery: `<svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path><path d="M6 6.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"></path></svg>`,
+	file: `<svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path></svg>`,
 };
 
 /**
@@ -1296,6 +1300,41 @@ export default function MessagesComponent({
 	}, []);
 
 	/**
+	 * Handle MediaPopup save - add selected files from media library
+	 * Reference: voxel-messages.beautified.js line 379-399
+	 */
+	const onMediaPopupSave = useCallback((selectedFiles: Record<string | number, FileData>) => {
+		const maxCount = messagesConfig?.files?.max_count || 5;
+
+		// Get existing file IDs to avoid duplicates
+		const existingIds: Record<string | number, boolean> = {};
+		state.files.forEach((file) => {
+			if (file.source === 'existing' && file.id) existingIds[file.id] = true;
+			if (file.source === 'new_upload' && file._id) existingIds[file._id] = true;
+		});
+
+		// Add selected files that aren't already in the list
+		const newFiles: FileData[] = [];
+		Object.values(selectedFiles).forEach((file) => {
+			if (file.source === 'existing' && file.id && !existingIds[file.id]) {
+				newFiles.push(file);
+			}
+			if (file.source === 'new_upload' && file._id && !existingIds[file._id]) {
+				newFiles.push(file);
+			}
+		});
+
+		setState((prev) => {
+			const combinedFiles = [...prev.files, ...newFiles];
+			// Respect max count limit
+			return {
+				...prev,
+				files: combinedFiles.slice(0, maxCount),
+			};
+		});
+	}, [messagesConfig, state.files]);
+
+	/**
 	 * Handle search input with debounce
 	 * Reference: voxel-messages.beautified.js line 1172-1184
 	 */
@@ -1804,10 +1843,45 @@ export default function MessagesComponent({
 													</>
 												) : (
 													<>
+														{/* File attachments - rendered BEFORE content (matches Voxel order) */}
+														{/* Reference: messages-widget.php lines 181-198 */}
+														{message.files && message.files.length > 0 && (
+															<>
+																{message.files.map((file: VoxelMessageFile, fileIndex: number) => (
+																	file.is_image ? (
+																		<a
+																			key={`${message.id}-file-${fileIndex}`}
+																			href={file.url}
+																			target="_blank"
+																			rel="noopener noreferrer"
+																			className="ts-image-attachment"
+																		>
+																			<img
+																				src={file.preview || file.url}
+																				alt={file.alt || file.name}
+																				width={file.width}
+																				height={file.height}
+																				loading="lazy"
+																			/>
+																		</a>
+																	) : (
+																		<p key={`${message.id}-file-${fileIndex}`}>
+																			<a
+																				href={file.url}
+																				target="_blank"
+																				rel="noopener noreferrer"
+																			>
+																				{file.name}
+																			</a>
+																		</p>
+																	)
+																))}
+															</>
+														)}
+														{/* Message content - rendered AFTER files */}
 														{message.has_content && (
 															<p dangerouslySetInnerHTML={{ __html: message.content }} />
 														)}
-														{/* File attachments would render here */}
 														<ul className="flexify simplify-ul ms-info">
 															{message.sent_by === 'author' && !message.tmp && (
 																<>
@@ -1971,10 +2045,11 @@ export default function MessagesComponent({
 											)}
 										</div>
 
-										{/* Attach file button */}
+										{/* Attach file button (upload new files) */}
 										<button
 											onClick={() => fileInputRef.current?.click()}
 											className="ts-icon-btn ts-attach-btn"
+											title={__('Upload file', 'voxel-fse')}
 										>
 											<span
 												dangerouslySetInnerHTML={{
@@ -1982,6 +2057,43 @@ export default function MessagesComponent({
 												}}
 											/>
 										</button>
+
+										{/* Media library button (select existing files) */}
+										<MediaPopup
+											multiple={true}
+											saveLabel={__('Add files', 'voxel-fse')}
+											onSave={(files) => {
+												// Convert MediaPopup files to FileData format
+												const fileDataMap: Record<string | number, FileData> = {};
+												files.forEach((file) => {
+													const key = file.source === 'existing' ? file.id : file._id;
+													if (key !== undefined) {
+														fileDataMap[key] = {
+															source: file.source as 'existing' | 'new_upload',
+															id: file.id,
+															_id: file._id,
+															name: file.name,
+															type: file.type,
+															size: 0,
+															preview: file.preview || '',
+															url: file.preview,
+														};
+													}
+												});
+												onMediaPopupSave(fileDataMap);
+											}}
+										>
+											<button
+												className="ts-icon-btn ts-gallery-btn"
+												title={__('Media library', 'voxel-fse')}
+											>
+												<span
+													dangerouslySetInnerHTML={{
+														__html: getIcon(attributes.icons.gallery, DEFAULT_ICONS.gallery),
+													}}
+												/>
+											</button>
+										</MediaPopup>
 
 										<div className="compose-message min-scroll">
 											<textarea

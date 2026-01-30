@@ -2,7 +2,11 @@
  * useStatusFeed Hook
  *
  * Manages timeline feed state with infinite scroll, filtering, and ordering.
- * Handles pagination, optimistic updates, and real-time additions.
+ * Handles pagination, optimistic updates, real-time additions, and polling refresh.
+ *
+ * VOXEL PARITY: Polling refresh
+ * When configured, the feed can automatically poll for new statuses at a set interval.
+ * This matches Voxel's optional polling behavior for live feeds.
  *
  * @package VoxelFSE
  */
@@ -56,8 +60,21 @@ interface UseStatusFeedReturn {
 	updateStatus: (status: Status) => void;
 	removeStatus: (statusId: number) => void;
 
+	// Polling controls
+	startPolling: (intervalMs?: number) => void;
+	stopPolling: () => void;
+	isPolling: boolean;
+
 	// Current filters
 	filters: FeedFilters;
+}
+
+/**
+ * Polling options
+ */
+interface PollingOptions {
+	enabled?: boolean;
+	intervalMs?: number;
 }
 
 /**
@@ -74,10 +91,12 @@ const defaultFilters: FeedFilters = {
  *
  * @param mode - Display mode from block attributes (NOT user controllable)
  * @param initialFilters - Initial filter values for user-controllable options
+ * @param pollingOptions - Optional polling configuration for real-time updates
  */
 export function useStatusFeed(
 	mode: FeedType | string = 'user_feed',
-	initialFilters: Partial<Omit<FeedFilters, 'mode'>> = {}
+	initialFilters: Partial<Omit<FeedFilters, 'mode'>> = {},
+	pollingOptions: PollingOptions = {}
 ): UseStatusFeedReturn {
 	const [filters, setFiltersState] = useState<FeedFilters>({
 		...defaultFilters,
@@ -102,6 +121,11 @@ export function useStatusFeed(
 
 	// Track previous mode to detect changes
 	const prevModeRef = useRef(mode);
+
+	// Polling state and refs
+	const [isPolling, setIsPolling] = useState(false);
+	const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const defaultPollingInterval = 30000; // 30 seconds default
 
 	/**
 	 * Build feed params - ALWAYS uses the mode prop, not filters.mode
@@ -295,6 +319,50 @@ export function useStatusFeed(
 	}, [filters.order, filters.time, filters.timeCustom, filters.search, filters.filter]);
 
 	/**
+	 * Start polling for new statuses
+	 * This provides real-time updates by refreshing the feed at a set interval
+	 *
+	 * @param intervalMs - Polling interval in milliseconds (default 30000)
+	 */
+	const startPolling = useCallback((intervalMs: number = defaultPollingInterval) => {
+		// Don't start if already polling
+		if (pollingIntervalRef.current) return;
+
+		setIsPolling(true);
+		console.log(`[useStatusFeed] Starting polling every ${intervalMs}ms`);
+
+		pollingIntervalRef.current = setInterval(() => {
+			// Only poll if not currently loading
+			if (!state.isLoading && !state.isLoadingMore) {
+				console.log('[useStatusFeed] Polling refresh');
+				fetchFeed(1, false);
+			}
+		}, intervalMs);
+	}, [fetchFeed, state.isLoading, state.isLoadingMore]);
+
+	/**
+	 * Stop polling
+	 */
+	const stopPolling = useCallback(() => {
+		if (pollingIntervalRef.current) {
+			clearInterval(pollingIntervalRef.current);
+			pollingIntervalRef.current = null;
+			setIsPolling(false);
+			console.log('[useStatusFeed] Stopped polling');
+		}
+	}, []);
+
+	/**
+	 * Auto-start polling if configured
+	 */
+	useEffect(() => {
+		if (pollingOptions.enabled && pollingOptions.intervalMs) {
+			startPolling(pollingOptions.intervalMs);
+		}
+		return () => stopPolling();
+	}, [pollingOptions.enabled, pollingOptions.intervalMs, startPolling, stopPolling]);
+
+	/**
 	 * Cleanup on unmount
 	 */
 	useEffect(() => {
@@ -303,6 +371,10 @@ export function useStatusFeed(
 			isMounted.current = false;
 			if (currentRequest.current) {
 				currentRequest.current.abort();
+			}
+			// Stop polling on unmount
+			if (pollingIntervalRef.current) {
+				clearInterval(pollingIntervalRef.current);
 			}
 		};
 	}, []);
@@ -319,6 +391,9 @@ export function useStatusFeed(
 		addStatus,
 		updateStatus,
 		removeStatus,
+		startPolling,
+		stopPolling,
+		isPolling,
 		filters: { ...filters, mode }, // Always return current mode
 	};
 }

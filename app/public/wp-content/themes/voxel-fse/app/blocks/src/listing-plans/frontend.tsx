@@ -176,6 +176,17 @@
  * ✅ .ts-btn-1 - Secondary button
  * ✅ .vx-dialog-content - Dialog container
  *
+ * JAVASCRIPT BEHAVIOR (listing-plans-widget.js parity):
+ * ✅ Click event handler - Intercepts .vx-pick-plan button clicks
+ * ✅ Loading state - Adds .vx-pending class to .ts-plan-container during AJAX
+ * ✅ jQuery.get() AJAX request - Matches Voxel's exact request pattern
+ * ✅ localStorage cart storage - voxel:direct_cart key for checkout flow
+ * ✅ Checkout response handling - type="checkout" with item.key/value + checkout_link
+ * ✅ Redirect response handling - type="redirect" with redirect_to
+ * ✅ Legacy redirect handling - redirect_url fallback for older responses
+ * ✅ Error display - Voxel.alert() with error message or l10n.ajaxError fallback
+ * ✅ Loading state removal - .always() callback removes .vx-pending on success/error
+ *
  * NEXT.JS READINESS:
  * ✅ normalizeConfig() handles both vxconfig and REST API formats
  * ✅ TypeScript strict mode

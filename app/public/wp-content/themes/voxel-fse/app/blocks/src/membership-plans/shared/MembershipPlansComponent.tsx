@@ -7,12 +7,13 @@
  * Evidence:
  * - Voxel template: themes/voxel/app/modules/paid-memberships/templates/frontend/pricing-plans-widget.php
  * - CSS classes: ts-plan-tabs, ts-generic-tabs, ts-plans-list, ts-paid-members-plans, ts-plan-container
+ * - JS behavior: docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js
  *
  * @package VoxelFSE
  */
 
 import { __ } from '@wordpress/i18n';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type {
 	MembershipPlansComponentProps,
 	MembershipPlansVxConfig,
@@ -23,6 +24,262 @@ import type {
 import { defaultIconValue, defaultPlanConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+
+/**
+ * Declare global types for Voxel
+ * @see docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js
+ */
+declare global {
+	interface Window {
+		jQuery?: JQueryStatic;
+		Voxel?: {
+			alert: (message: string, type: 'error' | 'success' | 'info') => void;
+			dialog: (options: VoxelDialogOptions) => void;
+		};
+		Voxel_Config?: {
+			l10n: {
+				ajaxError: string;
+			};
+		};
+	}
+}
+
+interface JQueryStatic {
+	get: (url: string) => JQueryPromise;
+}
+
+interface JQueryPromise {
+	always: (callback: (response: MembershipPlanResponse) => void) => void;
+}
+
+/**
+ * Dialog action interface
+ * @see docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js lines 56-70
+ */
+interface VoxelDialogAction {
+	label: string;
+	confirm_switch?: boolean;
+	confirm_cancel?: boolean;
+	link?: string;
+	onClick?: (event: Event) => void;
+}
+
+/**
+ * Dialog options interface
+ */
+interface VoxelDialogOptions {
+	title: string;
+	message: string;
+	actions: VoxelDialogAction[];
+}
+
+/**
+ * API response types for membership plan selection
+ * @see docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js lines 48-109
+ */
+interface MembershipPlanResponse {
+	success?: boolean;
+	type?: 'dialog' | 'checkout' | 'redirect';
+	dialog?: VoxelDialogOptions;
+	item?: {
+		key: string;
+		value: unknown;
+	};
+	checkout_link?: string;
+	redirect_to?: string;
+	redirect_url?: string; // Legacy format
+	message?: string;
+}
+
+/**
+ * Confirmation action response
+ */
+interface ConfirmationResponse {
+	success?: boolean;
+	redirect_to?: string;
+	message?: string;
+}
+
+/**
+ * Direct cart localStorage key
+ * @see docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js lines 111-119
+ */
+const DIRECT_CART_KEY = 'voxel:direct_cart';
+
+/**
+ * Handle plan button click - matches Voxel pricing-plans.js exactly
+ *
+ * This is more complex than listing-plans because it supports:
+ * 1. Dialog confirmations for subscription changes
+ * 2. Nested AJAX calls for confirm_switch/confirm_cancel
+ * 3. Multiple action buttons in confirmation dialogs
+ *
+ * Flow:
+ * 1. Prevent default link behavior
+ * 2. Add loading state (.vx-pending) to plan container
+ * 3. Make AJAX request to button's href
+ * 4. Handle response based on type:
+ *    - dialog: Show confirmation with actions (may have nested AJAX)
+ *    - checkout: Store cart in localStorage + redirect
+ *    - redirect: Direct redirect
+ *    - legacy redirect_url: Fallback redirect
+ * 5. Remove loading state
+ *
+ * @see docs/block-conversions/membership-plans/voxel-pricing-plans.beautified.js lines 168-328
+ */
+function handlePlanClick(
+	event: React.MouseEvent<HTMLAnchorElement>,
+	planContainerRef: React.RefObject<HTMLDivElement | null>
+): void {
+	event.preventDefault();
+
+	const buttonElement = event.currentTarget;
+	const planContainer = planContainerRef.current;
+
+	if (!planContainer) {
+		console.error('[MembershipPlans] Plan container not found');
+		return;
+	}
+
+	// Add loading state
+	planContainer.classList.add('vx-pending');
+
+	// Get the href for the AJAX request
+	const href = buttonElement.href;
+
+	// Use jQuery for AJAX request to match Voxel's pattern
+	const jQuery = window.jQuery;
+	if (!jQuery) {
+		console.error('[MembershipPlans] jQuery not available');
+		planContainer.classList.remove('vx-pending');
+		return;
+	}
+
+	jQuery.get(href).always(function (response: MembershipPlanResponse) {
+		if (response.success) {
+			// ========================================
+			// DIALOG TYPE RESPONSE
+			// Used for subscription changes that need user confirmation
+			// @see lines 214-261 of beautified.js
+			// ========================================
+			if (response.type === 'dialog' && response.dialog) {
+				// Process each action in the dialog
+				response.dialog.actions.forEach(function (action: VoxelDialogAction) {
+					// Check if action needs confirmation AJAX call
+					if (action.confirm_switch || action.confirm_cancel) {
+						/**
+						 * Add onClick handler for confirmation actions
+						 *
+						 * When clicked:
+						 * 1. Prevent default
+						 * 2. Add loading state
+						 * 3. Make confirmation AJAX call
+						 * 4. Redirect on success or show error
+						 * 5. Remove loading state
+						 *
+						 * @see lines 232-255 of beautified.js
+						 */
+						action.onClick = function (clickEvent: Event) {
+							clickEvent.preventDefault();
+
+							// Add loading state
+							planContainer.classList.add('vx-pending');
+
+							// Make confirmation AJAX request
+							if (action.link) {
+								jQuery.get(action.link).always(function (
+									confirmResponse: ConfirmationResponse
+								) {
+									if (confirmResponse.success) {
+										// Redirect to success page
+										if (confirmResponse.redirect_to) {
+											window.location.href = confirmResponse.redirect_to;
+										}
+									} else {
+										// Show error using Voxel alert system
+										const errorMessage =
+											confirmResponse.message ||
+											window.Voxel_Config?.l10n?.ajaxError ||
+											'An error occurred';
+
+										if (window.Voxel?.alert) {
+											window.Voxel.alert(errorMessage, 'error');
+										} else {
+											console.error('[MembershipPlans] Error:', errorMessage);
+										}
+									}
+
+									// Remove loading state
+									planContainer.classList.remove('vx-pending');
+								});
+							}
+						};
+					}
+				});
+
+				// Show the dialog with modified actions
+				if (window.Voxel?.dialog) {
+					window.Voxel.dialog(response.dialog);
+				} else {
+					console.error('[MembershipPlans] Voxel.dialog not available');
+				}
+			}
+			// ========================================
+			// CHECKOUT TYPE RESPONSE
+			// Store cart item in localStorage and redirect
+			// @see lines 274-282 of beautified.js
+			// ========================================
+			else if (response.type === 'checkout' && response.item && response.checkout_link) {
+				// Store cart item in localStorage
+				localStorage.setItem(
+					DIRECT_CART_KEY,
+					JSON.stringify({
+						[response.item.key]: response.item.value,
+					})
+				);
+
+				// Redirect to checkout
+				window.location.href = response.checkout_link;
+			}
+			// ========================================
+			// REDIRECT TYPE RESPONSE
+			// Used when no checkout is needed (e.g., free plan)
+			// @see lines 293-295 of beautified.js
+			// ========================================
+			else if (response.type === 'redirect' && response.redirect_to) {
+				window.location.href = response.redirect_to;
+			}
+			// ========================================
+			// LEGACY REDIRECT_URL RESPONSE
+			// Fallback for older response format
+			// @see lines 306-308 of beautified.js
+			// ========================================
+			else if (response.redirect_url) {
+				window.location.href = response.redirect_url;
+			}
+		} else {
+			// ========================================
+			// ERROR RESPONSE
+			// Show error message using Voxel alert system
+			// @see lines 321-322 of beautified.js
+			// ========================================
+			const errorMessage =
+				response.message ||
+				window.Voxel_Config?.l10n?.ajaxError ||
+				'An error occurred';
+
+			if (window.Voxel?.alert) {
+				window.Voxel.alert(errorMessage, 'error');
+			} else {
+				console.error('[MembershipPlans] Error:', errorMessage);
+			}
+		}
+
+		// Remove loading state (always, on both success and error)
+		// @see line 325 of beautified.js
+		planContainer.classList.remove('vx-pending');
+	});
+}
 
 /**
  * Merge block config with API price data
@@ -39,6 +296,183 @@ function mergePriceWithConfig(
 		image: config.image?.url || priceData.image,
 		features: config.features.length > 0 ? config.features : priceData.features,
 	};
+}
+
+/**
+ * Plan Card Component Props
+ */
+interface PlanCardProps {
+	price: PriceData;
+	groupId: string;
+	isActiveGroup: boolean;
+	isCurrentPlan: boolean;
+	buttonText: string;
+	buttonClass: string;
+	pricingAlign: string;
+	descAlign: string;
+	listAlign: string;
+	arrowIconElement: JSX.Element;
+	context: 'editor' | 'frontend';
+}
+
+/**
+ * Plan Card Component
+ *
+ * Individual plan card with its own ref for loading state management.
+ * Extracted to allow each card to manage its own ref for the click handler.
+ */
+function PlanCard({
+	price,
+	groupId,
+	isActiveGroup,
+	isCurrentPlan,
+	buttonText,
+	buttonClass,
+	pricingAlign,
+	descAlign,
+	listAlign,
+	arrowIconElement,
+	context,
+}: PlanCardProps): JSX.Element {
+	// Ref for loading state management
+	const planContainerRef = useRef<HTMLDivElement>(null);
+
+	// Click handler for plan selection
+	const handleClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>) => {
+			// Skip click handling in editor context
+			if (context === 'editor') {
+				e.preventDefault();
+				return;
+			}
+
+			// Skip if this is the current plan (no action needed)
+			if (isCurrentPlan) {
+				e.preventDefault();
+				return;
+			}
+
+			// Handle plan selection with AJAX
+			handlePlanClick(e, planContainerRef);
+		},
+		[context, isCurrentPlan]
+	);
+
+	return (
+		<div
+			ref={planContainerRef}
+			className={`ts-plan-container ${!isActiveGroup ? 'hidden' : ''}`}
+			data-group={groupId}
+		>
+			{/* Plan Image */}
+			{price.image && (
+				<div className="ts-plan-image flexify">
+					{typeof price.image === 'string' ? (
+						price.image.startsWith('<') ? (
+							<span dangerouslySetInnerHTML={{ __html: price.image }} />
+						) : (
+							<img src={price.image} alt={price.label} />
+						)
+					) : null}
+				</div>
+			)}
+
+			{/* Plan Body */}
+			<div className="ts-plan-body">
+				{/* Plan Details */}
+				<div className="ts-plan-details">
+					<span className="ts-plan-name">{price.label}</span>
+				</div>
+
+				{/* Plan Pricing */}
+				<div
+					className="ts-plan-pricing"
+					style={{ justifyContent: pricingAlign }}
+				>
+					{price.isFree ? (
+						<span className="ts-plan-price">
+							{__('Free', 'voxel-fse')}
+						</span>
+					) : (
+						<>
+							{price.discountAmount ? (
+								<>
+									<span className="ts-plan-price">
+										{price.discountAmount}
+									</span>
+									<span className="ts-plan-price">
+										<s>{price.amount}</s>
+									</span>
+								</>
+							) : (
+								<span className="ts-plan-price">{price.amount}</span>
+							)}
+							{price.period && (
+								<div className="ts-price-period">
+									/ {price.period}
+								</div>
+							)}
+							{price.trialDays != null && price.trialDays > 0 && (
+								<p className="ts-price-trial">
+									{price.trialDays}
+									{__('-day free trial', 'voxel-fse')}
+								</p>
+							)}
+						</>
+					)}
+				</div>
+
+				{/* Plan Description */}
+				{price.description && (
+					<div
+						className="ts-plan-desc"
+						style={{ textAlign: descAlign as 'left' | 'center' | 'right' }}
+					>
+						<p
+							dangerouslySetInnerHTML={{
+								__html: price.description.replace(/\n/g, '<br />'),
+							}}
+						/>
+					</div>
+				)}
+
+				{/* Plan Features */}
+				{price.features.length > 0 && (
+					<div
+						className="ts-plan-features"
+						style={{ justifyContent: listAlign }}
+					>
+						<ul className="simplify-ul">
+							{price.features
+								.filter((f) => f.rowVisibility !== 'hide')
+								.map((feature, index) => (
+									<li key={index}>
+										{renderIcon(
+											feature.icon as any,
+											VoxelIcons.checkmark
+										)}
+										<span>{feature.text}</span>
+									</li>
+								))}
+						</ul>
+					</div>
+				)}
+
+				{/* Plan Footer */}
+				<div className="ts-plan-footer">
+					<a
+						href={price.link || '#'}
+						className={buttonClass}
+						rel={isCurrentPlan ? undefined : 'nofollow'}
+						onClick={handleClick}
+					>
+						{buttonText}
+						{!isCurrentPlan && arrowIconElement}
+					</a>
+				</div>
+			</div>
+		</div>
+	);
 }
 
 export default function MembershipPlansComponent({
@@ -258,124 +692,20 @@ export default function MembershipPlansComponent({
 					const isActiveGroup = group.id === currentGroupId;
 
 					return groupPrices.map((price) => (
-						<div
+						<PlanCard
 							key={`${group.id}-${price.key}`}
-							className={`ts-plan-container ${!isActiveGroup ? 'hidden' : ''}`}
-							data-group={group.id}
-						>
-							{/* ... rest of the card ... */}
-							{/* Plan Image */}
-							{price.image && (
-								<div className="ts-plan-image flexify">
-									{typeof price.image === 'string' ? (
-										price.image.startsWith('<') ? (
-											<span dangerouslySetInnerHTML={{ __html: price.image }} />
-										) : (
-											<img src={price.image} alt={price.label} />
-										)
-									) : null}
-								</div>
-							)}
-
-							{/* Plan Body */}
-							<div className="ts-plan-body">
-								{/* Plan Details */}
-								<div className="ts-plan-details">
-									<span className="ts-plan-name">{price.label}</span>
-								</div>
-
-								{/* Plan Pricing */}
-								<div
-									className="ts-plan-pricing"
-									style={{ justifyContent: attributes.pricingAlign }}
-								>
-									{price.isFree ? (
-										<span className="ts-plan-price">
-											{__('Free', 'voxel-fse')}
-										</span>
-									) : (
-										<>
-											{price.discountAmount ? (
-												<>
-													<span className="ts-plan-price">
-														{price.discountAmount}
-													</span>
-													<span className="ts-plan-price">
-														<s>{price.amount}</s>
-													</span>
-												</>
-											) : (
-												<span className="ts-plan-price">{price.amount}</span>
-											)}
-											{price.period && (
-												<div className="ts-price-period">
-													/ {price.period}
-												</div>
-											)}
-											{price.trialDays != null && price.trialDays > 0 && (
-												<p className="ts-price-trial">
-													{price.trialDays}
-													{__('-day free trial', 'voxel-fse')}
-												</p>
-											)}
-										</>
-									)}
-								</div>
-
-								{/* Plan Description */}
-								{price.description && (
-									<div
-										className="ts-plan-desc"
-										style={{ textAlign: attributes.descAlign }}
-									>
-										<p
-											dangerouslySetInnerHTML={{
-												__html: price.description.replace(/\n/g, '<br />'),
-											}}
-										/>
-									</div>
-								)}
-
-								{/* Plan Features */}
-								{price.features.length > 0 && (
-									<div
-										className="ts-plan-features"
-										style={{ justifyContent: attributes.listAlign }}
-									>
-										<ul className="simplify-ul">
-											{price.features
-												.filter((f) => f.rowVisibility !== 'hide')
-												.map((feature, index) => (
-													<li key={index}>
-														{renderIcon(
-															feature.icon as any,
-															VoxelIcons.checkmark
-														)}
-														<span>{feature.text}</span>
-													</li>
-												))}
-										</ul>
-									</div>
-								)}
-
-								{/* Plan Footer */}
-								<div className="ts-plan-footer">
-									<a
-										href={price.link || '#'}
-										className={getButtonClass(price.key)}
-										rel={isCurrentPlan(price.key) ? undefined : 'nofollow'}
-										onClick={
-											context === 'editor'
-												? (e) => e.preventDefault()
-												: undefined
-										}
-									>
-										{getButtonText(price.key)}
-										{!isCurrentPlan(price.key) && arrowIconElement}
-									</a>
-								</div>
-							</div>
-						</div>
+							price={price}
+							groupId={group.id}
+							isActiveGroup={isActiveGroup}
+							isCurrentPlan={isCurrentPlan(price.key)}
+							buttonText={getButtonText(price.key)}
+							buttonClass={getButtonClass(price.key)}
+							pricingAlign={attributes.pricingAlign}
+							descAlign={attributes.descAlign}
+							listAlign={attributes.listAlign}
+							arrowIconElement={arrowIconElement}
+							context={context}
+						/>
 					));
 				})}
 			</div>

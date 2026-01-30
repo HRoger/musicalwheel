@@ -32,6 +32,8 @@ export default defineConfig({
       input: {
         // Shared control styles - dedicated entry for proper CSS naming
         'shared-controls': './app/blocks/shared/controls/shared-styles.ts',
+        // React-compatible Voxel commons (replaces Vue-based commons.js in editor)
+        'voxel-commons': './app/blocks/shared/voxel-commons.ts',
         'create-post/index': './app/blocks/src/create-post/index.tsx',
         'product-price/index': './app/blocks/src/product-price/index.tsx',
         'popup-kit/index': './app/blocks/src/popup-kit/index.tsx',

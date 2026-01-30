@@ -29,6 +29,7 @@ export {
 	toggleStatusLike,
 	toggleRepost,
 	quoteStatus,
+	quoteStatusApi,
 	removeStatusLinkPreview,
 	approveStatus,
 	markStatusPending,

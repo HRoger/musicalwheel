@@ -6,9 +6,30 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
 import type { SingleOrderProps, Order, OrderAction, OrderItem } from '../types';
+
+/**
+ * Type declarations for Voxel global objects
+ */
+declare const Voxel: {
+	prompt?: (
+		message: string,
+		type: 'warning' | 'error' | 'success',
+		buttons: Array<{ label: string; onClick: () => void }>,
+		timeout?: number
+	) => void;
+};
+
+declare const Voxel_Config: {
+	l10n: {
+		confirmAction: string;
+		yes: string;
+		no: string;
+		ajaxError: string;
+	};
+};
 import { renderIcon, currencyFormat, getStatusClass, getStatusLabel, getIconWithFallback } from './OrdersComponent';
 import ItemPromotionDetails from './ItemPromotionDetails';
 
@@ -29,6 +50,10 @@ export default function SingleOrder({
 	const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
 	const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
 
+	// Ref for actions dropdown to blur after action execution
+	// Reference: voxel-orders.beautified.js line 430 - self.$refs.actions?.blur()
+	const actionsRef = useRef<HTMLAnchorElement>(null);
+
 	/**
 	 * Handle promotion cancellation for an order item
 	 * Reference: voxel-orders.beautified.js lines 140-165
@@ -43,20 +68,55 @@ export default function SingleOrder({
 	}, [order.id, onCancelPromotion]);
 
 	// Handle action execution
+	// Reference: voxel-orders.beautified.js lines 401-447 - runAction()
 	const handleRunAction = useCallback(
 		async (action: OrderAction) => {
 			if (runningAction) return;
 
-			// Confirmation if required
-			if (action.confirm) {
-				const confirmed = window.confirm(action.confirm);
-				if (!confirmed) return;
-			}
+			/**
+			 * Execute the action after confirmation (or immediately if no confirm)
+			 * Reference: voxel-orders.beautified.js lines 404-431 - executeAction()
+			 */
+			const executeAction = async () => {
+				setRunningAction(true);
+				await onAction(action.action);
+				setRunningAction(false);
+				setActionsMenuOpen(false);
 
-			setRunningAction(true);
-			await onAction(action.action);
-			setRunningAction(false);
-			setActionsMenuOpen(false);
+				// Blur actions dropdown after execution
+				// Reference: voxel-orders.beautified.js line 430 - self.$refs.actions?.blur()
+				actionsRef.current?.blur();
+			};
+
+			// Check for confirmation requirement
+			// Reference: voxel-orders.beautified.js lines 434-446
+			if (typeof action.confirm === 'string') {
+				// Use Voxel.prompt() for styled confirmation dialogs when available
+				if (typeof Voxel !== 'undefined' && typeof Voxel.prompt === 'function') {
+					const confirmMessage = action.confirm || Voxel_Config?.l10n?.confirmAction || 'Are you sure?';
+					const yesLabel = Voxel_Config?.l10n?.yes || 'Yes';
+					const noLabel = Voxel_Config?.l10n?.no || 'No';
+
+					Voxel.prompt(
+						confirmMessage,
+						'warning',
+						[
+							{ label: yesLabel, onClick: () => { executeAction(); } },
+							{ label: noLabel, onClick: () => {} }
+						],
+						7500
+					);
+				} else {
+					// Fallback to native confirm if Voxel.prompt is not available
+					const confirmed = window.confirm(action.confirm);
+					if (confirmed) {
+						await executeAction();
+					}
+				}
+			} else {
+				// No confirmation required, execute immediately
+				await executeAction();
+			}
 		},
 		[onAction, runningAction]
 	);
@@ -129,6 +189,7 @@ export default function SingleOrder({
 					{order.actions.secondary.length > 0 && (
 						<div className="ts-inline-filter">
 							<a
+								ref={actionsRef}
 								href="#"
 								className="ts-btn ts-btn-1 has-tooltip ts-popup-target"
 								data-tooltip="More actions"

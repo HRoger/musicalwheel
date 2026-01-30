@@ -140,13 +140,16 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-base-controller.php';
  * Load FSE Compatibility Controller
  * Enqueues compatibility shims for Voxel parent theme integration
  * CRITICAL: Must load early to patch Vue mixins before components are created
- * 
- * TEMPORARILY DISABLED - Investigating critical error
+ *
+ * Patches Voxel.mixins.base to prevent "Cannot read properties of null (reading 'dataset')"
+ * errors when Vue components try to find Elementor parent elements.
+ *
+ * IMPORTANT: This is needed on BOTH frontend and editor because:
+ * - Frontend: Our React blocks trigger 'voxel:static-popups' which calls render_static_popups()
+ * - Editor: Gutenberg uses React, not Vue, so Vue components fail without the shim
  */
-// require_once VOXEL_FSE_PATH . '/app/controllers/fse-compatibility-controller.php';
-
-// Initialize FSE Compatibility controller
-// new \VoxelFSE\Controllers\FSE_Compatibility_Controller();
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-compatibility-controller.php';
+new \VoxelFSE\Controllers\FSE_Compatibility_Controller();
 
 /**
  * Load FSE Templates controller (follows Voxel pattern)

@@ -274,7 +274,18 @@ export interface PostTypeData {
 }
 
 /**
- * Search results response from API
+ * Filter configuration for "Filters" source mode
+ * 1:1 PARITY: Matches Voxel post-feed.php:1456-1466 filter_list structure
+ */
+export interface FilterConfig {
+	/** Filter key (e.g., 'keywords', 'location', 'date') */
+	filter: string;
+	/** Control values keyed by control key or full key */
+	[key: string]: unknown;
+}
+
+/**
+ * Search results response from Voxel's native endpoint
  */
 export interface SearchResultsResponse {
 	success: boolean;
@@ -286,6 +297,24 @@ export interface SearchResultsResponse {
 	hasResults: boolean;
 	styles?: string;
 	scripts?: string;
+}
+
+/**
+ * Search with filters response from our REST endpoint
+ * 1:1 PARITY: /voxel-fse/v1/post-feed/search-with-filters
+ */
+export interface SearchWithFiltersResponse {
+	success: boolean;
+	html: string;
+	ids: number[];
+	hasResults: boolean;
+	hasPrev: boolean;
+	hasNext: boolean;
+	totalCount: number;
+	displayCount: string;
+	templateId: number | null;
+	page: number;
+	error?: string;
 }
 
 /**

@@ -5,7 +5,7 @@
  * Implements interactive Google Maps in editor following Plan C+ architecture.
  */
 
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
@@ -27,6 +27,7 @@ import {
 	VoxelTab,
 	AccordionPanelGroup,
 	AccordionPanel,
+	EmptyPlaceholder,
 } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
 
@@ -119,6 +120,9 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 	const mapInstanceRef = useRef<VoxelMapInstance | null>(null);
 	const mapInitializedRef = useRef(false);
 
+	// Loading state for map initialization
+	const [isMapLoaded, setIsMapLoaded] = useState(false);
+
 	// Generate block ID on mount if not set
 	useEffect(() => {
 		if (!attributes.blockId) {
@@ -206,6 +210,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 				});
 				mapContainerRef.current.classList.add('ts-map-loaded');
 				mapInitializedRef.current = true;
+				setIsMapLoaded(true);
 
 				console.log('[Map Block] Interactive map initialized in editor');
 			} catch (error) {
@@ -534,26 +539,46 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 					</div>
 				)}
 
-				{/* Interactive Map Container */}
-				<div
-					ref={mapContainerRef}
-					className="ts-map"
-					style={{
-						height: attributes.enableCalcHeight && attributes.calcHeight
-							? attributes.calcHeight
-							: `${attributes.height || 400}${attributes.heightUnit || 'px'}`,
-						borderRadius: `${attributes.borderRadius || 0}px`,
-					}}
-					data-config={JSON.stringify({
-						center: {
-							lat: attributes.defaultLat,
-							lng: attributes.defaultLng,
-						},
-						zoom: attributes.defaultZoom,
-						minZoom: attributes.minZoom,
-						maxZoom: attributes.maxZoom,
-					})}
-				/>
+				{/* Map wrapper with relative positioning for placeholder overlay */}
+				<div style={{ position: 'relative' }}>
+					{/* Loading placeholder - rendered as sibling to avoid DOM conflicts with Google Maps */}
+					{!isMapLoaded && (
+						<EmptyPlaceholder
+							icon={'\ue826'} /* eicon-map-pin */
+							text={__('Loading map...', 'voxel-fse')}
+							style={{
+								position: 'absolute',
+								inset: 0,
+								zIndex: 10,
+								height: attributes.enableCalcHeight && attributes.calcHeight
+									? attributes.calcHeight
+									: `${attributes.height || 400}${attributes.heightUnit || 'px'}`,
+								borderRadius: `${attributes.borderRadius || 0}px`,
+							}}
+						/>
+					)}
+
+					{/* Interactive Map Container */}
+					<div
+						ref={mapContainerRef}
+						className="ts-map"
+						style={{
+							height: attributes.enableCalcHeight && attributes.calcHeight
+								? attributes.calcHeight
+								: `${attributes.height || 400}${attributes.heightUnit || 'px'}`,
+							borderRadius: `${attributes.borderRadius || 0}px`,
+						}}
+						data-config={JSON.stringify({
+							center: {
+								lat: attributes.defaultLat,
+								lng: attributes.defaultLng,
+							},
+							zoom: attributes.defaultZoom,
+							minZoom: attributes.minZoom,
+							maxZoom: attributes.maxZoom,
+						})}
+					/>
+				</div>
 
 				{/* Hidden marker symbol for Voxel compatibility */}
 				<div style={{ display: 'none' }}>

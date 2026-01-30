@@ -219,13 +219,14 @@ export interface StatusDraft {
 
 /**
  * Status create payload
+ * Matches Voxel's timeline/v2/status.publish expected parameters
  */
 export interface StatusCreatePayload {
-	feed: FeedType;
+	feed: FeedType | string;
 	post_id?: number;
 	content: string;
 	files?: number[];
-	rating?: Record<string, number>;
+	rating?: Record<string, number>; // Review rating by category key
 	link_preview?: string; // URL for link preview (detected client-side)
 }
 

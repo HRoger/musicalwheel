@@ -168,7 +168,7 @@ function renderDragSearchUI(
 		const isChecked = config.dragSearchDefault === 'checked';
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-map-btn ts-drag-toggle ${isChecked ? 'active' : ''}">
-				<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon">
+				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon">
 					<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
 				</svg>
 				Search as I move the map
@@ -177,7 +177,7 @@ function renderDragSearchUI(
 	} else {
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-search-area hidden ts-map-btn">
-				<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon">
+				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon">
 					<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
 				</svg>
 				Search this area
@@ -197,10 +197,11 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 	geoBtn.href = '#';
 	geoBtn.rel = 'nofollow';
 	geoBtn.role = 'button';
-	geoBtn.className = 'vx-geolocate-me';
+	// PARITY FIX: Voxel starts with 'hidden' class (templates/widgets/map.php:55)
+	geoBtn.className = 'vx-geolocate-me hidden';
 	geoBtn.setAttribute('aria-label', 'Share your location');
 	geoBtn.innerHTML = `
-		<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+		<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 			<path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
 		</svg>
 	`;
@@ -360,10 +361,13 @@ function initSearchFormMap(
 	initializeVoxelMap(mapContainer, dataConfig, container, config);
 
 	// Set up event listener for search form submissions
-	const searchFormId = config.searchFormId;
-	if (searchFormId) {
+	// PARITY FIX: Listen for events targeting this map's own blockId, NOT the searchFormId
+	// The search form dispatches events with targetId = map's blockId (the target)
+	// Previously we incorrectly checked against searchFormId (the source)
+	const mapBlockId = config.blockId;
+	if (mapBlockId) {
 		window.addEventListener('voxel-search-submit', ((event: CustomEvent<SearchSubmitEventDetail>) => {
-			if (event.detail.targetId === searchFormId) {
+			if (event.detail.targetId === mapBlockId) {
 				handleSearchSubmit(container, mapContainer, event.detail, config);
 			}
 		}) as EventListener);
@@ -398,9 +402,13 @@ async function initializeVoxelMap(
 	wrapper: HTMLElement,
 	config: MapVxConfig
 ): Promise<void> {
+	console.log('[Map Block] initializeVoxelMap called', { mapContainer, dataConfig });
+
 	// Wait for Voxel.Maps to be ready
 	try {
+		console.log('[Map Block] Waiting for Voxel.Maps...');
 		await waitForVoxelMaps();
+		console.log('[Map Block] Voxel.Maps ready!');
 	} catch (error) {
 		console.warn('[Map Block] Voxel.Maps not available:', error);
 		return;
@@ -408,12 +416,29 @@ async function initializeVoxelMap(
 
 	try {
 		// Ensure map container has height before initializing
-		const styles = wrapper.style;
-		const height = styles.getPropertyValue('--vx-map-height') || '400px';
+		// Read from inline styles set by applyMapStyles()
+		const inlineHeight = wrapper.style.getPropertyValue('--vx-map-height');
+		// Also check computed styles as fallback
+		const computedHeight = window.getComputedStyle(wrapper).getPropertyValue('--vx-map-height');
+		const height = inlineHeight || computedHeight || '400px';
+
+		// Set both height AND min-height to ensure it's respected
 		mapContainer.style.height = height;
+		mapContainer.style.minHeight = height;
+
+		// Also ensure wrapper has proper dimensions
+		wrapper.style.width = wrapper.style.width || '100%';
+
+		console.log('[Map Block] Height values:', {
+			inlineHeight,
+			computedHeight,
+			finalHeight: height,
+			wrapperStyle: wrapper.getAttribute('style')?.substring(0, 100),
+		});
 
 		// Create center using VxLatLng
 		const center = new VxLatLng(dataConfig.center.lat, dataConfig.center.lng);
+		console.log('[Map Block] Center created:', center.getLatitude(), center.getLongitude());
 
 		// Create map options
 		const mapOptions: VxMapOptions = {
@@ -424,10 +449,13 @@ async function initializeVoxelMap(
 			maxZoom: dataConfig.maxZoom,
 			draggable: true,
 		};
+		console.log('[Map Block] Creating VxMap with options:', { zoom: mapOptions.zoom, minZoom: mapOptions.minZoom, maxZoom: mapOptions.maxZoom });
 
 		// Create and initialize the map
 		const map = new VxMap(mapOptions);
+		console.log('[Map Block] VxMap instance created, calling init()...');
 		await map.init();
+		console.log('[Map Block] VxMap.init() completed, native map:', map.getNative());
 
 		// Initialize clusterer for search-form mode
 		let clusterer: VxClusterer | null = null;
