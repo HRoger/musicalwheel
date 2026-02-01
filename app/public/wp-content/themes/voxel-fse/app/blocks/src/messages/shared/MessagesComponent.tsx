@@ -44,6 +44,7 @@ import type {
 	VoxelChat,
 	VoxelMessage,
 	VoxelMessageFile,
+	FileData,
 } from '../types';
 
 interface MessagesComponentProps {
@@ -53,16 +54,7 @@ interface MessagesComponentProps {
 	messagesConfig?: MessagesConfig | null;
 }
 
-interface FileData {
-	source: 'new_upload' | 'existing';
-	name: string;
-	type: string;
-	size: number;
-	preview: string;
-	item?: File;
-	_id?: string;
-	id?: number;
-}
+// FileData interface removed - using the one from types.ts
 
 interface EmojiCategory {
 	[key: string]: Array<{ name: string; emoji: string }>;
@@ -114,9 +106,9 @@ function randomId(length: number = 8): string {
  * Debounce helper
  * Reference: voxel-messages.beautified.js line 1172
  */
-function debounce<T extends (...args: unknown[]) => void>(fn: T, delay: number = 300): T {
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number = 300): T {
 	let timeoutId: NodeJS.Timeout | null = null;
-	return ((...args: unknown[]) => {
+	return ((...args: any[]) => {
 		if (timeoutId) clearTimeout(timeoutId);
 		timeoutId = setTimeout(() => fn(...args), delay);
 	}) as T;
@@ -1030,7 +1022,6 @@ export default function MessagesComponent({
 			if (data.success) {
 				setState((prev) => {
 					const updatedChats: VoxelChat[] = [];
-					let chatToAutoload: VoxelChat | null = null;
 					const newList = data.list || [];
 
 					newList.forEach((newChat: VoxelChat) => {
@@ -1040,10 +1031,8 @@ export default function MessagesComponent({
 							const existing = prev.chats.list[existingIndex];
 							const patched = patchChat(existing, newChat);
 							updatedChats.push(patched);
-							if (newChat.autoload) chatToAutoload = patched;
 						} else {
 							updatedChats.push(newChat);
-							if (newChat.autoload) chatToAutoload = newChat;
 						}
 					});
 
@@ -1323,7 +1312,7 @@ export default function MessagesComponent({
 	 * Handle MediaPopup save - add selected files from media library
 	 * Reference: voxel-messages.beautified.js line 379-399
 	 */
-	const onMediaPopupSave = useCallback((selectedFiles: Record<string | number, FileData>) => {
+	const onMediaPopupSave = useCallback((selectedFiles: FileData[]) => {
 		const maxCount = messagesConfig?.files?.max_count || 5;
 
 		// Get existing file IDs to avoid duplicates
@@ -1335,7 +1324,7 @@ export default function MessagesComponent({
 
 		// Add selected files that aren't already in the list
 		const newFiles: FileData[] = [];
-		Object.values(selectedFiles).forEach((file) => {
+		selectedFiles.forEach((file) => {
 			if (file.source === 'existing' && file.id && !existingIds[file.id]) {
 				newFiles.push(file);
 			}
@@ -2080,23 +2069,16 @@ export default function MessagesComponent({
 											saveLabel={__('Add files', 'voxel-fse')}
 											onSave={(files) => {
 												// Convert MediaPopup files to FileData format
-												const fileDataMap: Record<string | number, FileData> = {};
-												files.forEach((file) => {
-													const key = file.source === 'existing' ? file.id : file._id;
-													if (key !== undefined) {
-														fileDataMap[key] = {
-															source: file.source as 'existing' | 'new_upload',
-															id: file.id,
-															_id: file._id,
-															name: file.name,
-															type: file.type,
-															size: 0,
-															preview: file.preview || '',
-															url: file.preview,
-														};
-													}
-												});
-												onMediaPopupSave(fileDataMap);
+												const fileDataList: FileData[] = files.map((file) => ({
+													source: (file.source || 'existing') as 'existing' | 'new_upload',
+													id: file.id,
+													_id: file.id ? String(file.id) : undefined,
+													name: file.name,
+													type: file.type || '',
+													size: 0,
+													preview: file.preview || '',
+												}));
+												onMediaPopupSave(fileDataList);
 											}}
 										>
 											<button
