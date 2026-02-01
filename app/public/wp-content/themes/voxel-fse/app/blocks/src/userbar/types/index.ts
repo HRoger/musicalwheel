@@ -484,9 +484,53 @@ export interface VXCartGlobal {
 	checkout_link: string;
 }
 
+/**
+ * Server-injected userbar config from FSE_Userbar_API_Controller
+ * Reference: fse-userbar-api-controller.php
+ */
+export interface VoxelFSEUserbarConfig {
+	/** Whether user is logged in */
+	isLoggedIn: boolean;
+	/** Nonces for AJAX actions */
+	nonces: {
+		chat: string;
+		cart: string;
+	};
+	/** Cart empty state from server */
+	isCartEmpty: boolean;
+	/** Initial unread counts */
+	unread: {
+		notifications: number;
+		messages: boolean;
+	};
+	/** Current user data */
+	user: {
+		id: number;
+		displayName: string;
+		avatarUrl: string;
+		avatarMarkup: string;
+	} | null;
+	/** Localized strings */
+	l10n: {
+		confirmClear: string;
+		noNotifications: string;
+		noChats: string;
+		noCartItems: string;
+		loadMore: string;
+		subtotal: string;
+		free: string;
+		continue: string;
+	};
+	/** Template links */
+	templates: {
+		inbox: string;
+	};
+}
+
 declare global {
 	interface Window {
 		VoxelFSEUser?: GlobalVoxelFSEUser;
+		VoxelFSEUserbar?: VoxelFSEUserbarConfig;
 		VX_Cart?: VXCartGlobal;
 	}
 }

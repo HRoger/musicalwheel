@@ -17,185 +17,37 @@
  * @package VoxelFSE
  */
 
-import { useState, useRef, useEffect, useCallback, CSSProperties } from 'react';
+import { useState, useRef, useEffect, useCallback, CSSProperties, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
 import type { SliderComponentProps, ProcessedImage, SliderVxConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons } from '@shared/utils';
 
 /**
- * Lightbox component
+ * Check if page is RTL
+ * Evidence: themes/voxel/assets/dist/commons.js - Voxel_Config.is_rtl
  */
-interface LightboxProps {
-	images: ProcessedImage[];
-	currentIndex: number;
-	onClose: () => void;
-	onPrev: () => void;
-	onNext: () => void;
-	galleryId: string;
-}
+const isRTL = (): boolean => {
+	if (typeof window !== 'undefined') {
+		// Check Voxel config first
+		const voxelConfig = (window as Record<string, unknown>).Voxel_Config as { is_rtl?: boolean } | undefined;
+		if (voxelConfig?.is_rtl !== undefined) {
+			return voxelConfig.is_rtl;
+		}
+		// Fallback to document direction
+		return document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
+	}
+	return false;
+};
 
-function Lightbox({ images, currentIndex, onClose, onPrev, onNext }: LightboxProps) {
-	const currentImage = images[currentIndex];
-
-	// Handle keyboard navigation
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') onClose();
-			if (e.key === 'ArrowLeft') onPrev();
-			if (e.key === 'ArrowRight') onNext();
-		};
-
-		document.addEventListener('keydown', handleKeyDown);
-		document.body.style.overflow = 'hidden';
-
-		return () => {
-			document.removeEventListener('keydown', handleKeyDown);
-			document.body.style.overflow = '';
-		};
-	}, [onClose, onPrev, onNext]);
-
-	if (!currentImage) return null;
-
-	return (
-		<div
-			className="voxel-fse-lightbox"
-			style={{
-				position: 'fixed',
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				backgroundColor: 'rgba(0, 0, 0, 0.9)',
-				zIndex: 999999,
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-			}}
-			onClick={onClose}
-		>
-			{/* Close button */}
-			<button
-				onClick={onClose}
-				style={{
-					position: 'absolute',
-					top: '20px',
-					right: '20px',
-					background: 'none',
-					border: 'none',
-					color: '#fff',
-					fontSize: '32px',
-					cursor: 'pointer',
-					zIndex: 10,
-				}}
-				aria-label={__('Close', 'voxel-fse')}
-			>
-				&times;
-			</button>
-
-			{/* Image */}
-			<img
-				src={currentImage.srcLightbox}
-				alt={currentImage.alt}
-				style={{
-					maxWidth: '90%',
-					maxHeight: '90vh',
-					objectFit: 'contain',
-				}}
-				onClick={(e) => e.stopPropagation()}
-			/>
-
-			{/* Navigation */}
-			{images.length > 1 && (
-				<>
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							onPrev();
-						}}
-						style={{
-							position: 'absolute',
-							left: '20px',
-							top: '50%',
-							transform: 'translateY(-50%)',
-							background: 'rgba(255, 255, 255, 0.2)',
-							border: 'none',
-							color: '#fff',
-							width: '48px',
-							height: '48px',
-							borderRadius: '50%',
-							cursor: 'pointer',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}
-						aria-label={__('Previous', 'voxel-fse')}
-					>
-						{VoxelIcons.chevronLeft}
-					</button>
-					<button
-						onClick={(e) => {
-							e.stopPropagation();
-							onNext();
-						}}
-						style={{
-							position: 'absolute',
-							right: '20px',
-							top: '50%',
-							transform: 'translateY(-50%)',
-							background: 'rgba(255, 255, 255, 0.2)',
-							border: 'none',
-							color: '#fff',
-							width: '48px',
-							height: '48px',
-							borderRadius: '50%',
-							cursor: 'pointer',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}
-						aria-label={__('Next', 'voxel-fse')}
-					>
-						{VoxelIcons.chevronRight}
-					</button>
-				</>
-			)}
-
-			{/* Caption */}
-			{currentImage.caption && (
-				<div
-					style={{
-						position: 'absolute',
-						bottom: '20px',
-						left: '50%',
-						transform: 'translateX(-50%)',
-						color: '#fff',
-						textAlign: 'center',
-						padding: '10px 20px',
-						backgroundColor: 'rgba(0, 0, 0, 0.5)',
-						borderRadius: '4px',
-						maxWidth: '80%',
-					}}
-				>
-					{currentImage.caption}
-				</div>
-			)}
-
-			{/* Counter */}
-			<div
-				style={{
-					position: 'absolute',
-					top: '20px',
-					left: '20px',
-					color: '#fff',
-					fontSize: '14px',
-				}}
-			>
-				{currentIndex + 1} / {images.length}
-			</div>
-		</div>
-	);
-}
+/**
+ * Get image description for Elementor lightbox
+ * Evidence: themes/voxel/templates/widgets/slider.php:19,44
+ * Uses caption, falls back to alt, then description
+ */
+const getLightboxDescription = (image: ProcessedImage): string => {
+	return image.caption || image.alt || image.description || '';
+};
 
 /**
  * Main Slider Component
@@ -208,10 +60,20 @@ export default function SliderComponent({
 	onOpenMediaLibrary,
 }: SliderComponentProps) {
 	const [currentSlide, setCurrentSlide] = useState(0);
-	const [lightboxOpen, setLightboxOpen] = useState(false);
-	const [lightboxIndex, setLightboxIndex] = useState(0);
+	const [isHovered, setIsHovered] = useState(false);
+	const [canScrollPrev, setCanScrollPrev] = useState(false);
+	const [canScrollNext, setCanScrollNext] = useState(true);
 	const sliderRef = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 	const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+	// Generate unique slider ID matching Voxel pattern
+	// Evidence: themes/voxel/app/widgets/slider.php:694 - $slider_id = 'slider-'.wp_unique_id()
+	const sliderId = useMemo(() => `slider-${galleryId}`, [galleryId]);
+
+	// Determine if this is a slideshow (multiple images) for lightbox grouping
+	// Evidence: themes/voxel/templates/widgets/slider.php:18,43
+	const isSlideshow = processedImages.length > 1;
 
 	const images = processedImages;
 	const isSingleImage = images.length === 1;
@@ -245,13 +107,35 @@ export default function SliderComponent({
 	}
 
 	/**
-	 * Scroll to a specific slide
+	 * Update scroll state for nav button disabled states
+	 * Evidence: themes/voxel/assets/dist/commons.js - scroll detection logic
+	 */
+	const updateScrollState = useCallback(() => {
+		if (!sliderRef.current) return;
+
+		const container = sliderRef.current;
+		const scrollLeft = Math.abs(container.scrollLeft);
+		const maxScroll = container.scrollWidth - container.clientWidth;
+
+		// At start (can't scroll prev)
+		setCanScrollPrev(scrollLeft > 10);
+		// At end (can't scroll next)
+		setCanScrollNext(scrollLeft < maxScroll - 10);
+	}, []);
+
+	/**
+	 * Scroll to a specific slide by index
+	 * Evidence: themes/voxel/templates/widgets/slider.php:59 - scroll logic
 	 */
 	const scrollToSlide = useCallback((index: number) => {
 		if (sliderRef.current) {
-			const slide = sliderRef.current.querySelector(`[data-slide-index="${index}"]`);
+			const slide = sliderRef.current.querySelector(`[data-slide-index="${index}"]`) as HTMLElement | null;
 			if (slide) {
-				slide.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+				// Match Voxel's scroll behavior: scrollLeft = slide.offsetLeft
+				sliderRef.current.scrollTo({
+					left: slide.offsetLeft,
+					behavior: 'smooth',
+				});
 				setCurrentSlide(index);
 			}
 		}
@@ -259,42 +143,84 @@ export default function SliderComponent({
 
 	/**
 	 * Navigate to previous slide
+	 * Evidence: themes/voxel/assets/dist/commons.js - navigation logic with RTL support
 	 */
 	const handlePrev = useCallback(() => {
+		if (!sliderRef.current) return;
+
+		const container = sliderRef.current;
+		const firstSlide = container.querySelector('.ts-preview') as HTMLElement | null;
+		if (!firstSlide) return;
+
+		let scrollAmount = -firstSlide.scrollWidth;
+
+		// At start - wrap to end
+		if (Math.abs(container.scrollLeft) <= 10) {
+			scrollAmount = container.scrollWidth - container.clientWidth - container.scrollLeft;
+		}
+
+		// RTL support
+		container.scrollBy({
+			left: isRTL() ? -scrollAmount : scrollAmount,
+			behavior: 'smooth',
+		});
+
+		// Update current slide index
 		const newIndex = currentSlide > 0 ? currentSlide - 1 : images.length - 1;
-		scrollToSlide(newIndex);
-	}, [currentSlide, images.length, scrollToSlide]);
+		setCurrentSlide(newIndex);
+	}, [currentSlide, images.length]);
 
 	/**
 	 * Navigate to next slide
+	 * Evidence: themes/voxel/assets/dist/commons.js - navigation logic with RTL support
 	 */
 	const handleNext = useCallback(() => {
-		const newIndex = currentSlide < images.length - 1 ? currentSlide + 1 : 0;
-		scrollToSlide(newIndex);
-	}, [currentSlide, images.length, scrollToSlide]);
+		if (!sliderRef.current) return;
 
-	/**
-	 * Open lightbox
-	 */
-	const openLightbox = useCallback((index: number) => {
-		if (attributes.linkType === 'lightbox') {
-			setLightboxIndex(index);
-			setLightboxOpen(true);
+		const container = sliderRef.current;
+		const firstSlide = container.querySelector('.ts-preview') as HTMLElement | null;
+		if (!firstSlide) return;
+
+		let scrollAmount = firstSlide.scrollWidth;
+
+		// At end - wrap to start
+		if (container.clientWidth + Math.abs(container.scrollLeft) + 10 >= container.scrollWidth) {
+			scrollAmount = -container.scrollLeft;
 		}
-	}, [attributes.linkType]);
+
+		// RTL support
+		container.scrollBy({
+			left: isRTL() ? -scrollAmount : scrollAmount,
+			behavior: 'smooth',
+		});
+
+		// Update current slide index
+		const newIndex = currentSlide < images.length - 1 ? currentSlide + 1 : 0;
+		setCurrentSlide(newIndex);
+	}, [currentSlide, images.length]);
 
 	/**
-	 * Auto-slide effect
+	 * Auto-slide effect with hover pause
+	 * Evidence: themes/voxel/assets/dist/commons.js - auto-slide with hover check
+	 * "Array.from(document.querySelectorAll(":hover")).includes(o)||l(o,"next")"
 	 */
 	useEffect(() => {
 		if (attributes.autoSlide && hasMultipleImages && context === 'frontend') {
+			const interval = attributes.autoSlideInterval || 3000;
+
+			// Don't start auto-slide if interval is too short (Voxel uses 20ms minimum)
+			if (interval <= 20) return;
+
 			autoSlideRef.current = setInterval(() => {
+				// Pause auto-slide when hovered (Voxel parity)
+				if (isHovered) return;
+
 				setCurrentSlide((prev) => {
 					const newIndex = prev < images.length - 1 ? prev + 1 : 0;
 					scrollToSlide(newIndex);
 					return newIndex;
 				});
-			}, attributes.autoSlideInterval);
+			}, interval);
 
 			return () => {
 				if (autoSlideRef.current) {
@@ -302,7 +228,25 @@ export default function SliderComponent({
 				}
 			};
 		}
-	}, [attributes.autoSlide, attributes.autoSlideInterval, hasMultipleImages, images.length, context, scrollToSlide]);
+	}, [attributes.autoSlide, attributes.autoSlideInterval, hasMultipleImages, images.length, context, scrollToSlide, isHovered]);
+
+	/**
+	 * Scroll event listener for updating nav button states
+	 */
+	useEffect(() => {
+		const container = sliderRef.current;
+		if (!container || !hasMultipleImages) return;
+
+		// Initial state
+		updateScrollState();
+
+		// Listen for scroll events
+		container.addEventListener('scroll', updateScrollState);
+
+		return () => {
+			container.removeEventListener('scroll', updateScrollState);
+		};
+	}, [hasMultipleImages, updateScrollState]);
 
 	/**
 	 * Render icon (either custom or default from VoxelIcons)
@@ -316,8 +260,14 @@ export default function SliderComponent({
 
 	/**
 	 * Get link props for image
+	 * Evidence: themes/voxel/templates/widgets/slider.php:14-22, 39-47
+	 *
+	 * For lightbox mode, uses Elementor's native lightbox via data attributes:
+	 * - data-elementor-open-lightbox="yes" - Triggers Elementor lightbox
+	 * - data-elementor-lightbox-slideshow="{gallery_id}" - Groups images (only for multiple images)
+	 * - data-elementor-lightbox-description="{caption}" - Shows caption in lightbox
 	 */
-	const getLinkProps = (image: ProcessedImage, index: number) => {
+	const getLinkProps = (image: ProcessedImage) => {
 		if (attributes.linkType === 'custom_link' && attributes.customLinkUrl) {
 			return {
 				href: attributes.customLinkUrl,
@@ -325,14 +275,22 @@ export default function SliderComponent({
 			};
 		}
 		if (attributes.linkType === 'lightbox') {
-			return {
+			// Use Elementor's native lightbox (100% Voxel parity)
+			// Evidence: themes/voxel/templates/widgets/slider.php:17-19, 42-44
+			const props: Record<string, string> = {
 				href: image.srcLightbox,
-				onClick: (e: React.MouseEvent) => {
-					e.preventDefault();
-					openLightbox(index);
-				},
-				'data-lightbox-gallery': galleryId,
+				'data-elementor-open-lightbox': 'yes',
+				'data-elementor-lightbox-description': getLightboxDescription(image),
 			};
+
+			// Only add slideshow attribute for multiple images
+			// Evidence: themes/voxel/templates/widgets/slider.php:18,43
+			// $is_slideshow ? sprintf( 'data-elementor-lightbox-slideshow="%s"', $gallery_id ) : ''
+			if (isSlideshow) {
+				props['data-elementor-lightbox-slideshow'] = galleryId;
+			}
+
+			return props;
 		}
 		return null;
 	};
@@ -386,7 +344,7 @@ export default function SliderComponent({
 				<div className="ts-preview ts-single-slide" style={sliderStyle}>
 					{(() => {
 						const image = images[0];
-						const linkProps = getLinkProps(image, 0);
+						const linkProps = getLinkProps(image);
 
 						const imageElement = (
 							<img
@@ -411,8 +369,15 @@ export default function SliderComponent({
 			)}
 
 			{/* Multiple Images Layout - Slider */}
+			{/* Evidence: themes/voxel/templates/widgets/slider.php:29-55 */}
 			{hasMultipleImages && (
-				<div className="ts-slider flexify" style={sliderStyle}>
+				<div
+					ref={containerRef}
+					className="ts-slider flexify"
+					style={sliderStyle}
+					onMouseEnter={() => setIsHovered(true)}
+					onMouseLeave={() => setIsHovered(false)}
+				>
 					<div
 						ref={sliderRef}
 						className="post-feed-grid ts-feed-nowrap nav-type-dots"
@@ -426,7 +391,7 @@ export default function SliderComponent({
 						}}
 					>
 						{images.map((image, index) => {
-							const linkProps = getLinkProps(image, index);
+							const linkProps = getLinkProps(image);
 
 							const imageElement = (
 								<img
@@ -437,11 +402,14 @@ export default function SliderComponent({
 								/>
 							);
 
+							{/* Evidence: themes/voxel/templates/widgets/slider.php:33
+							    _id="slide-{slider_id}-{image_id}" id="ts-media-{image_id}" */}
 							return (
 								<div
 									key={image.id}
 									className="ts-preview"
 									data-slide-index={index}
+									data-id={`slide-${sliderId}-${image.id}`}
 									id={`ts-media-${image.id}`}
 									style={{
 										flex: '0 0 100%',
@@ -497,12 +465,13 @@ export default function SliderComponent({
 			)}
 
 			{/* Carousel Navigation Buttons */}
+			{/* Evidence: themes/voxel/templates/widgets/slider.php:67-79 */}
 			{hasMultipleImages && (
 				<ul className="simplify-ul flexify post-feed-nav">
 					<li>
 						<a
 							href="#"
-							className="ts-icon-btn ts-prev-page"
+							className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
 							aria-label={__('Previous', 'voxel-fse')}
 							onClick={(e) => {
 								e.preventDefault();
@@ -515,7 +484,7 @@ export default function SliderComponent({
 					<li>
 						<a
 							href="#"
-							className="ts-icon-btn ts-next-page"
+							className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
 							aria-label={__('Next', 'voxel-fse')}
 							onClick={(e) => {
 								e.preventDefault();
@@ -528,17 +497,9 @@ export default function SliderComponent({
 				</ul>
 			)}
 
-			{/* Lightbox */}
-			{lightboxOpen && (
-				<Lightbox
-					images={images}
-					currentIndex={lightboxIndex}
-					onClose={() => setLightboxOpen(false)}
-					onPrev={() => setLightboxIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-					onNext={() => setLightboxIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-					galleryId={galleryId}
-				/>
-			)}
+			{/* Lightbox is handled by Elementor's native lightbox via data attributes */}
+			{/* Evidence: themes/voxel/templates/widgets/slider.php:17-19, 42-44 */}
+			{/* data-elementor-open-lightbox="yes" triggers Elementor's lightbox automatically */}
 		</>
 	);
 }

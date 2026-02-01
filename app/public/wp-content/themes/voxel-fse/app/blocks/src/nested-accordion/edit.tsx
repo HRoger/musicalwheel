@@ -97,25 +97,8 @@ export default function Edit({
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
-	/**
-	 * Inject Voxel Template Accordion CSS for Editor
-	 */
-	useEffect(() => {
-		const cssId = 'voxel-template-accordion-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
-			link.id = cssId;
-			link.rel = 'stylesheet';
-
-			// Get site URL from Voxel config or fallback to origin
-			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
-			// Ensure no trailing slash for consistency
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/template-accordion.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
-		}
-	}, []);
+	// Note: Removed Voxel Template Accordion CSS injection - file doesn't exist in Voxel dist
+	// The accordion styling is handled by Voxel's core styles which are already loaded
 
 	// Sync inner blocks with accordion items when items change
 	useEffect(() => {

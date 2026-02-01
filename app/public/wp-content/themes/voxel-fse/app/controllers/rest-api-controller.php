@@ -1047,8 +1047,47 @@ class REST_API_Controller extends FSE_Base_Controller {
 	 * @param \WP_REST_Request $request REST request object
 	 * @return bool Always true - permission is handled by Voxel's AJAX endpoint
 	 */
+	/**
+	 * Check permission for visit chart context endpoint
+	 *
+	 * Permission logic matches Voxel's visits-chart-controller.php:
+	 * - Site: Requires logged-in user (admin-level access implied)
+	 * - User: Requires logged-in user (can only view own stats)
+	 * - Post: Permission check happens in callback (needs post_id)
+	 *
+	 * Evidence: themes/voxel/app/controllers/frontend/statistics/visits-chart-controller.php:22-31
+	 *
+	 * @param \WP_REST_Request $request REST request object
+	 * @return bool|\WP_Error True if authorized, error otherwise
+	 */
 	public function check_visit_chart_permission( $request ) {
-		// Public endpoint - nonce validation happens in Voxel's AJAX handler
+		$source = $request->get_param( 'source' );
+
+		// Site stats require admin capability
+		// Evidence: Voxel only shows site-wide stats to admins in backend
+		if ( $source === 'site' ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return new \WP_Error(
+					'rest_forbidden',
+					__( 'You do not have permission to view site-wide statistics.', 'voxel-fse' ),
+					[ 'status' => 403 ]
+				);
+			}
+		}
+
+		// User stats require logged-in user
+		// Evidence: visits-chart-controller.php:61-64 - verify_nonce uses get_current_user_id()
+		if ( $source === 'user' ) {
+			if ( ! is_user_logged_in() ) {
+				return new \WP_Error(
+					'rest_not_logged_in',
+					__( 'You must be logged in to view user statistics.', 'voxel-fse' ),
+					[ 'status' => 401 ]
+				);
+			}
+		}
+
+		// Post permission check happens in callback (needs post_id to check ownership)
 		return true;
 	}
 
@@ -1062,6 +1101,11 @@ class REST_API_Controller extends FSE_Base_Controller {
 	 * - Site: 'ts-visits-chart--site'
 	 * - User: 'ts-visits-chart--u{user_id}'
 	 * - Post: 'ts-visits-chart--p{post_id}'
+	 *
+	 * PARITY: Full 1:1 match with Voxel's visits-chart-controller.php
+	 * - Post source: Checks is_editable_by_current_user() (line 24)
+	 * - User source: Uses current user ID for nonce (line 61-62)
+	 * - Site source: Uses fixed nonce action (line 95)
 	 *
 	 * @param \WP_REST_Request $request REST request object
 	 * @return \WP_REST_Response|\WP_Error Response object or error
@@ -1079,11 +1123,21 @@ class REST_API_Controller extends FSE_Base_Controller {
 		// Generate nonce based on source (matching Voxel's widget logic)
 		switch ( $source ) {
 			case 'site':
+				// Evidence: visits-chart-controller.php:95
 				$response['nonce'] = wp_create_nonce( 'ts-visits-chart--site' );
 				break;
 
 			case 'user':
+				// Evidence: visits-chart-controller.php:61-62
+				// Nonce is tied to current user ID - only the logged-in user can view their own stats
 				$user_id = get_current_user_id();
+				if ( ! $user_id ) {
+					return new \WP_Error(
+						'not_logged_in',
+						__( 'You must be logged in to view user statistics.', 'voxel-fse' ),
+						[ 'status' => 401 ]
+					);
+				}
 				$response['nonce'] = wp_create_nonce( 'ts-visits-chart--u' . $user_id );
 				break;
 
@@ -1096,27 +1150,41 @@ class REST_API_Controller extends FSE_Base_Controller {
 					);
 				}
 
-				// Verify post exists and has tracking enabled
+				// Verify post exists, user can edit it, and tracking is enabled
+				// Evidence: visits-chart-controller.php:22-31
 				if ( class_exists( '\Voxel\Post' ) ) {
 					$post = \Voxel\Post::get( $post_id );
-					if ( ! $post ) {
+
+					// PARITY: Line 24 - Check post exists AND user can edit it
+					// This is the critical permission check that was missing
+					if ( ! ( $post && $post->is_editable_by_current_user() ) ) {
 						return new \WP_Error(
-							'post_not_found',
-							__( 'Post not found.', 'voxel-fse' ),
-							[ 'status' => 404 ]
+							'access_denied',
+							__( 'Invalid request.', 'voxel-fse' ), // Match Voxel's error message
+							[ 'status' => 403 ]
 						);
 					}
 
-					// Check if tracking is enabled for this post type
+					// PARITY: Lines 29-31 - Check tracking is enabled for this post type
 					if ( ! ( $post->post_type && $post->post_type->is_tracking_enabled() ) ) {
 						return new \WP_Error(
 							'tracking_not_enabled',
-							__( 'Tracking is not enabled for this post type.', 'voxel-fse' ),
+							__( 'Invalid request.', 'voxel-fse' ), // Match Voxel's generic error
 							[ 'status' => 400 ]
+						);
+					}
+				} else {
+					// Fallback if Voxel\Post class not available - use WordPress capability check
+					if ( ! current_user_can( 'edit_post', $post_id ) ) {
+						return new \WP_Error(
+							'access_denied',
+							__( 'Invalid request.', 'voxel-fse' ),
+							[ 'status' => 403 ]
 						);
 					}
 				}
 
+				// Evidence: visits-chart-controller.php:28
 				$response['nonce'] = wp_create_nonce( 'ts-visits-chart--p' . $post_id );
 				$response['postId'] = (int) $post_id;
 				break;
@@ -1198,10 +1266,11 @@ class REST_API_Controller extends FSE_Base_Controller {
 		$timestamp = current_time( 'timestamp' );
 
 		// Build charts data matching Voxel widget render() method
+		// Reference: themes/voxel/app/modules/stripe-connect/widgets/sales-chart-widget.php:1036-1041
 		$charts = [
 			'this-week'  => $stats->get_week_chart( date( 'Y-m-d', $timestamp ) ),
 			'this-month' => $stats->get_month_chart( date( 'Y-m', $timestamp ) ),
-			'this-year'  => $stats->get_year_chart( date( 'Y', $timestamp ) ),
+			'this-year'  => $stats->get_year_chart( (int) date( 'Y', $timestamp ) ), // Cast to int for array key lookup
 			'all-time'   => $stats->get_all_time_chart(),
 		];
 
@@ -1217,6 +1286,7 @@ class REST_API_Controller extends FSE_Base_Controller {
 	 * Matches the AJAX action: stripe_connect.sales_chart.get_data
 	 *
 	 * Evidence:
+	 * - Voxel Controller: themes/voxel/app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:162-196
 	 * - Voxel JS: themes/voxel/assets/dist/vendor-stats.js (loadMore method)
 	 *
 	 * @param \WP_REST_Request $request REST request object
@@ -1258,26 +1328,28 @@ class REST_API_Controller extends FSE_Base_Controller {
 		// Calculate new date based on direction
 		$chart_data = null;
 
+		// Date timestamp from request
+		// Reference: themes/voxel/app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:166
+		$date_timestamp = strtotime( $date );
+
 		switch ( $chart_type ) {
 			case 'this-week':
-				// Move by 7 days
-				$offset = $direction === 'prev' ? '-7 days' : '+7 days';
-				$new_date = date( 'Y-m-d', strtotime( $offset, strtotime( $date ) ) );
-				$chart_data = $stats->get_week_chart( $new_date );
+				// Move by 7 days - matches Voxel: connect-frontend-controller.php:176-177
+				$change = $direction === 'next' ? '+7 days' : '-7 days';
+				$chart_data = $stats->get_week_chart( date( 'Y-m-d', strtotime( $change, $date_timestamp ) ) );
 				break;
 
 			case 'this-month':
-				// Move by 1 month
-				$offset = $direction === 'prev' ? '-1 month' : '+1 month';
-				$new_date = date( 'Y-m-01', strtotime( $offset, strtotime( $date ) ) );
-				$chart_data = $stats->get_month_chart( date( 'Y-m', strtotime( $new_date ) ) );
+				// Move by 1 month - matches Voxel: connect-frontend-controller.php:179-180
+				$change = $direction === 'next' ? '+1 month' : '-1 month';
+				$chart_data = $stats->get_month_chart( date( 'Y-m-01', strtotime( $change, $date_timestamp ) ) );
 				break;
 
 			case 'this-year':
-				// Move by 1 year
-				$offset = $direction === 'prev' ? '-1 year' : '+1 year';
-				$new_date = date( 'Y-01-01', strtotime( $offset, strtotime( $date ) ) );
-				$chart_data = $stats->get_year_chart( date( 'Y', strtotime( $new_date ) ) );
+				// Move by 1 year - matches Voxel: connect-frontend-controller.php:182-183
+				// IMPORTANT: Cast to (int) for array key lookup in Vendor_Stats::get_year_chart()
+				$change = $direction === 'next' ? '+1 year' : '-1 year';
+				$chart_data = $stats->get_year_chart( (int) date( 'Y', strtotime( $change, $date_timestamp ) ) );
 				break;
 
 			case 'all-time':

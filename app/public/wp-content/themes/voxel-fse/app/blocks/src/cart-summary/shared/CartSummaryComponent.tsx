@@ -4,16 +4,25 @@
  * Renders the cart summary UI for both editor and frontend.
  * Matches Voxel's HTML structure 1:1 for CSS inheritance.
  *
+ * Evidence:
+ * - Template: themes/voxel/templates/widgets/cart-summary.php
+ * - Cart Item: themes/voxel/templates/widgets/cart-summary/cart-item.php
+ *
  * @package VoxelFSE
  */
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import { renderIcon } from '@shared/utils/renderIcon';
+import QuickRegister from './QuickRegister';
+import ShippingDetails from './ShippingDetails';
+import ShippingMethodCards from './ShippingMethodCards';
+import VendorShippingCards from './VendorShippingCards';
 import type {
 	CartSummaryComponentProps,
 	CartItem,
 	CartSummaryVxConfig,
+	Vendor,
 } from '../types';
 import type { IconValue } from '@shared/controls/IconPickerControl';
 
@@ -57,7 +66,29 @@ function currencyFormat(amount: number, currency: string): string {
 }
 
 /**
+ * Get quantity from cart item
+ */
+function getItemQuantity(item: CartItem): number {
+	if (item.product_mode === 'regular') {
+		const value = item.value as Record<string, Record<string, number>>;
+		return value.stock?.quantity || 1;
+	} else {
+		const value = item.value as Record<string, Record<string, number>>;
+		return value.variations?.quantity || 1;
+	}
+}
+
+/**
+ * Check if item has stock left for incrementing
+ */
+function hasStockLeft(item: CartItem): boolean {
+	const qty = getItemQuantity(item);
+	return item.quantity.max === 0 || qty < item.quantity.max;
+}
+
+/**
  * Cart Item Component
+ * Matches themes/voxel/templates/widgets/cart-summary/cart-item.php
  */
 interface CartItemRowProps {
 	item: CartItem;
@@ -74,13 +105,11 @@ function CartItemRow({
 	onRemoveItem,
 	context,
 }: CartItemRowProps) {
-	const quantity =
-		item.product_mode === 'regular'
-			? (item.value as Record<string, Record<string, number>>).stock?.quantity
-			: (item.value as Record<string, Record<string, number>>).variations?.quantity;
+	const quantity = getItemQuantity(item);
+	const stockLeft = hasStockLeft(item);
 
 	const handleMinusOne = () => {
-		if (quantity !== undefined && quantity > 1 && onUpdateQuantity) {
+		if (quantity > 1 && onUpdateQuantity) {
 			onUpdateQuantity(item.key, quantity - 1);
 		} else if (onRemoveItem) {
 			onRemoveItem(item.key);
@@ -88,7 +117,7 @@ function CartItemRow({
 	};
 
 	const handlePlusOne = () => {
-		if (quantity !== undefined && onUpdateQuantity) {
+		if (stockLeft && onUpdateQuantity) {
 			onUpdateQuantity(item.key, quantity + 1);
 		}
 	};
@@ -129,7 +158,7 @@ function CartItemRow({
 					<span>{quantity}</span>
 					<a
 						href="#"
-						className="ts-icon-btn ts-smaller"
+						className={`ts-icon-btn ts-smaller ${!stockLeft ? 'vx-disabled' : ''}`}
 						onClick={(e) => {
 							e.preventDefault();
 							if (context === 'frontend') handlePlusOne();
@@ -157,6 +186,93 @@ function CartItemRow({
 }
 
 /**
+ * Order Notes Component
+ */
+interface OrderNotesProps {
+	enabled: boolean;
+	content: string;
+	onToggle: () => void;
+	onChange: (content: string) => void;
+	context: 'editor' | 'frontend';
+}
+
+function OrderNotes({ enabled, content, onToggle, onChange, context }: OrderNotesProps) {
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const hiddenTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Auto-resize textarea
+	const resizeComposer = () => {
+		if (textareaRef.current && hiddenTextareaRef.current) {
+			hiddenTextareaRef.current.value = textareaRef.current.value;
+			textareaRef.current.style.height = `${hiddenTextareaRef.current.scrollHeight}px`;
+		}
+	};
+
+	useEffect(() => {
+		if (enabled) {
+			resizeComposer();
+			textareaRef.current?.focus();
+		}
+	}, [enabled, content]);
+
+	return (
+		<>
+			{/* Toggle checkbox */}
+			<div className="tos-checkbox ts-form-group vx-1-1 switcher-label">
+				<label
+					onClick={(e) => {
+						e.preventDefault();
+						if (context === 'frontend') onToggle();
+					}}
+				>
+					<div className="ts-checkbox-container">
+						<label className="container-checkbox">
+							<input
+								type="checkbox"
+								tabIndex={0}
+								className="hidden"
+								checked={enabled}
+								readOnly
+							/>
+							<span className="checkmark"></span>
+						</label>
+					</div>
+					{__('Add order notes?', 'voxel-fse')}
+				</label>
+			</div>
+
+			{/* Textarea */}
+			{enabled && (
+				<div className="ts-form-group vx-1-1">
+					<textarea
+						ref={textareaRef}
+						value={content}
+						onChange={(e) => {
+							onChange(e.target.value);
+							resizeComposer();
+						}}
+						placeholder={__('Add notes about your order', 'voxel-fse')}
+						className="autofocus ts-filter"
+					/>
+					{/* Hidden textarea for height calculation */}
+					<textarea
+						ref={hiddenTextareaRef}
+						disabled
+						style={{
+							height: '5px',
+							position: 'fixed',
+							top: '-9999px',
+							left: '-9999px',
+							visibility: 'hidden',
+						}}
+					/>
+				</div>
+			)}
+		</>
+	);
+}
+
+/**
  * Main Cart Summary Component
  */
 export default function CartSummaryComponent({
@@ -169,6 +285,12 @@ export default function CartSummaryComponent({
 	onUpdateQuantity,
 	onRemoveItem,
 	onCheckout,
+	shipping,
+	onShippingChange,
+	quickRegister,
+	onQuickRegisterChange,
+	orderNotes,
+	onOrderNotesChange,
 }: CartSummaryComponentProps) {
 	// Build vxconfig for re-rendering (Plan C+ pattern)
 	const vxConfig = useMemo<CartSummaryVxConfig>(() => {
@@ -201,15 +323,94 @@ export default function CartSummaryComponent({
 			link.id = cssId;
 			link.rel = 'stylesheet';
 
-			// Get site URL from Voxel config or fallback to origin
 			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
-			// Ensure no trailing slash for consistency
 			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
 
 			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/product-summary.css?ver=1.7.5.2`;
 			document.head.appendChild(link);
 		}
 	}, []);
+
+	// Group items by vendor for multivendor display
+	const vendors = useMemo<Record<string, Vendor>>(() => {
+		if (!items) return {};
+
+		const vendorMap: Record<string, Vendor> = {};
+
+		Object.values(items).forEach((item) => {
+			const vendorId = item.vendor?.id;
+			const vendorKey = vendorId ? `vendor_${vendorId}` : 'platform';
+
+			if (!vendorMap[vendorKey]) {
+				vendorMap[vendorKey] = {
+					id: vendorId || null,
+					display_name: item.vendor?.display_name || __('Platform', 'voxel-fse'),
+					vendor_key: vendorKey,
+					key: vendorKey,
+					items: {},
+					has_shippable_products: false,
+					shipping_zones: item.vendor?.shipping_zones || null,
+					shipping_countries: item.vendor?.shipping_countries || null,
+				};
+			}
+
+			vendorMap[vendorKey].items[item.key] = item;
+			if (item.shipping.is_shippable) {
+				vendorMap[vendorKey].has_shippable_products = true;
+			}
+		});
+
+		return vendorMap;
+	}, [items]);
+
+	// Check if should group by vendor
+	// Matches Voxel's shouldGroupItemsByVendor() method
+	const shouldGroupByVendor = useMemo(() => {
+		if (!config?.multivendor.enabled) return false;
+		const vendorCount = Object.keys(vendors).length;
+		if (vendorCount < 1) return false;
+		// If only one vendor and it's platform, don't group
+		if (vendorCount === 1 && vendors.platform) return false;
+		return true;
+	}, [config, vendors]);
+
+	/**
+	 * Get shipping method
+	 * Matches Voxel's getShippingMethod() method
+	 */
+	const getShippingMethod = (): 'platform_rates' | 'vendor_rates' => {
+		if (!config?.multivendor.enabled) return 'platform_rates';
+		return config.shipping.responsibility === 'vendor' ? 'vendor_rates' : 'platform_rates';
+	};
+
+	/**
+	 * Merge shipping countries from platform and vendors
+	 * Matches Voxel's shippingCountries computed property
+	 */
+	const shippingCountries = useMemo(() => {
+		const countries = { ...config?.shipping.countries };
+
+		// For vendor shipping, merge in vendor-specific countries
+		if (getShippingMethod() === 'vendor_rates') {
+			Object.values(vendors).forEach((vendor) => {
+				if (vendor.shipping_countries) {
+					Object.entries(vendor.shipping_countries).forEach(([code, data]) => {
+						if (!countries[code]) {
+							countries[code] = data;
+						}
+					});
+				}
+			});
+		}
+
+		return countries;
+	}, [config?.shipping.countries, vendors]);
+
+	// Check if cart has shippable products
+	const hasShippableProducts = useMemo(() => {
+		if (!items) return false;
+		return Object.values(items).some((item) => item.shipping.is_shippable);
+	}, [items]);
 
 	// Calculate subtotal
 	const subtotal = useMemo(() => {
@@ -221,15 +422,111 @@ export default function CartSummaryComponent({
 		return total;
 	}, [items]);
 
+	/**
+	 * Check if vendor shipping is fully selected
+	 * Matches Voxel's isVendorShippingSelected for all vendors
+	 */
+	const isAllVendorShippingSelected = useMemo(() => {
+		if (getShippingMethod() !== 'vendor_rates') return true;
+		if (!shipping.country) return false;
+
+		const vendorsWithShippable = Object.values(vendors).filter(
+			(v) => v.has_shippable_products
+		);
+
+		for (const vendor of vendorsWithShippable) {
+			const selection = shipping.vendors[vendor.key];
+			if (!selection?.zone || !selection?.rate) return false;
+		}
+
+		return true;
+	}, [vendors, shipping]);
+
+	// Calculate shipping total
+	const shippingTotal = useMemo(() => {
+		if (!shipping || !config) return null;
+
+		if (getShippingMethod() === 'platform_rates') {
+			if (!shipping.zone || !shipping.rate) return null;
+			// Find the rate in config and calculate
+			const zone = config.shipping.zones[shipping.zone];
+			if (!zone || !zone.rates[shipping.rate]) return null;
+			// For now simplified - return 0 for free shipping
+			const rate = zone.rates[shipping.rate];
+			if (rate.type === 'free_shipping') return 0;
+			return rate.amount_per_unit || 0;
+		} else {
+			// Vendor rates - sum all vendor shipping totals
+			if (!isAllVendorShippingSelected) return null;
+			let total = 0;
+			Object.values(vendors).forEach((vendor) => {
+				if (!vendor.has_shippable_products) return;
+				const selection = shipping.vendors[vendor.key];
+				if (!selection || !vendor.shipping_zones) return;
+				const zone = vendor.shipping_zones[selection.zone];
+				if (!zone || !zone.rates[selection.rate]) return;
+				const rate = zone.rates[selection.rate];
+				if (rate.type === 'free_shipping') return;
+				total += rate.amount_per_unit || 0;
+			});
+			return total;
+		}
+	}, [shipping, config, vendors, isAllVendorShippingSelected]);
+
 	// Has items check
 	const hasItems = items && Object.keys(items).length > 0;
 	const currency = config?.currency || 'USD';
+	const isLoggedIn = config?.is_logged_in || false;
+
+	// Guest checkout behavior
+	const guestBehavior = config?.guest_customers.behavior || 'redirect_to_login';
+	const showQuickRegister = !isLoggedIn && guestBehavior === 'proceed_with_email';
+	const requireVerification = config?.guest_customers.proceed_with_email?.require_verification || false;
+	const requireTos = config?.guest_customers.proceed_with_email?.require_tos || false;
+
+	// Check if can proceed with payment
+	const canProceedWithPayment = useMemo(() => {
+		if (!hasItems) return false;
+		if (!isLoggedIn && guestBehavior === 'proceed_with_email') {
+			// Must have valid email
+			if (!quickRegister?.email || !/^\S+@\S+\.\S+$/.test(quickRegister.email)) {
+				return false;
+			}
+			// Must have verification code if required
+			if (requireVerification && !quickRegister.registered && (!quickRegister.sent_code || !quickRegister.code)) {
+				return false;
+			}
+			// Must accept terms if required
+			if (requireTos && !quickRegister.terms_agreed) {
+				return false;
+			}
+		}
+		// Check shipping if required
+		if (hasShippableProducts && shipping) {
+			if (!shipping.country) return false;
+			const shippingMethod = getShippingMethod();
+			// Platform shipping - need zone and rate
+			if (shippingMethod === 'platform_rates' && (!shipping.zone || !shipping.rate)) {
+				return false;
+			}
+			// Vendor shipping - need all vendors to have zone and rate selected
+			if (shippingMethod === 'vendor_rates' && !isAllVendorShippingSelected) {
+				return false;
+			}
+		}
+		return true;
+	}, [hasItems, isLoggedIn, guestBehavior, quickRegister, requireVerification, requireTos, hasShippableProducts, shipping, config, isAllVendorShippingSelected]);
+
+	// Check if offline payment
+	const isOfflinePayment = useMemo(() => {
+		if (!items) return false;
+		return Object.values(items).every((item) => item.payment_method === 'offline_payment');
+	}, [items]);
 
 	// Loading state
 	if (isLoading) {
 		return (
 			<>
-				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
 					className="vxconfig"
@@ -248,7 +545,6 @@ export default function CartSummaryComponent({
 	if (error) {
 		return (
 			<>
-				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
 					className="vxconfig"
@@ -261,68 +557,73 @@ export default function CartSummaryComponent({
 		);
 	}
 
-	// Editor preview mode - show placeholder
+	// Editor preview mode
 	if (context === 'editor') {
 		return (
 			<>
-				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 				<div className="ts-form ts-checkout ts-checkout-regular">
-					{/* Cart Head */}
 					<div className="ts-cart-head">
-						<h3>{__('Your Cart', 'voxel-fse')}</h3>
+						<h1>{__('Order summary', 'voxel-fse')}</h1>
 					</div>
-
-					{/* Sample Cart Items */}
 					<div className="checkout-section form-field-grid">
-						<ul className="simplify-ul ts-cart-list">
-							<li>
-								<div
-									className="cart-image"
-									style={{
-										width: '60px',
-										height: '60px',
-										backgroundColor: '#e0e0e0',
-										borderRadius: '8px',
-									}}
-								></div>
-								<div className="cart-item-details">
-									<a href="#">{__('Sample Product', 'voxel-fse')}</a>
-									<span>{__('Product description', 'voxel-fse')}</span>
-									<span>$99.00</span>
+						<div className="ts-form-group">
+							<div className="or-group">
+								<div className="or-line"></div>
+								<span className="or-text">{__('Items', 'voxel-fse')}</span>
+								<div className="or-line"></div>
+							</div>
+						</div>
+						<div className="ts-form-group">
+							<ul className="ts-cart-list simplify-ul">
+								<li>
+									<div
+										className="cart-image"
+										style={{
+											width: '60px',
+											height: '60px',
+											backgroundColor: '#e0e0e0',
+											borderRadius: '8px',
+										}}
+									></div>
+									<div className="cart-item-details">
+										<a href="#">{__('Sample Product', 'voxel-fse')}</a>
+										<span>{__('Product description', 'voxel-fse')}</span>
+										<span>$99.00</span>
+									</div>
+									<div className="cart-stepper">
+										<a href="#" className="ts-icon-btn ts-smaller">
+											{renderIcon(getIcon(attributes.minusIcon, 'minusIcon'))}
+										</a>
+										<span>1</span>
+										<a href="#" className="ts-icon-btn ts-smaller">
+											{renderIcon(getIcon(attributes.plusIcon, 'plusIcon'))}
+										</a>
+									</div>
+								</li>
+							</ul>
+						</div>
+					</div>
+					<div className="checkout-section">
+						<ul className="ts-cost-calculator simplify-ul flexify">
+							<li className="ts-total">
+								<div className="ts-item-name">
+									<p>{__('Subtotal', 'voxel-fse')}</p>
 								</div>
-								<div className="cart-stepper">
-									<a href="#" className="ts-icon-btn ts-smaller">
-										{renderIcon(getIcon(attributes.minusIcon, 'minusIcon'))}
-									</a>
-									<span>1</span>
-									<a href="#" className="ts-icon-btn ts-smaller">
-										{renderIcon(getIcon(attributes.plusIcon, 'plusIcon'))}
-									</a>
+								<div className="ts-item-price">
+									<p>$99.00</p>
 								</div>
 							</li>
 						</ul>
+						<a href="#" className="ts-btn ts-btn-2 form-btn">
+							{__('Proceed to payment', 'voxel-fse')}
+							{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
+						</a>
 					</div>
-
-					{/* Cost Calculator */}
-					<div className="ts-cost-calculator">
-						<ul className="simplify-ul flexify">
-							<li className="cost-total">
-								<span>{__('Total', 'voxel-fse')}</span>
-								<span>$99.00</span>
-							</li>
-						</ul>
-					</div>
-
-					{/* Checkout Button */}
-					<button type="button" className="ts-btn ts-btn-2 form-btn">
-						{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
-						{__('Proceed to checkout', 'voxel-fse')}
-					</button>
 				</div>
 			</>
 		);
@@ -332,16 +633,17 @@ export default function CartSummaryComponent({
 	if (!hasItems) {
 		return (
 			<>
-				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 				<div className="ts-form ts-checkout ts-checkout-regular">
-					<div className="ts-no-posts">
-						{renderIcon(getIcon(attributes.noProductsIcon, 'noProductsIcon'))}
-						<p>{__('Your cart is empty', 'voxel-fse')}</p>
+					<div className="vx-loading-screen">
+						<div className="ts-form-group ts-no-posts">
+							{renderIcon(getIcon(attributes.noProductsIcon, 'noProductsIcon'))}
+							<p>{__('No products selected for checkout', 'voxel-fse')}</p>
+						</div>
 					</div>
 				</div>
 			</>
@@ -351,57 +653,249 @@ export default function CartSummaryComponent({
 	// Main cart view
 	return (
 		<>
-			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
 			<div className="ts-form ts-checkout ts-checkout-regular">
-				{/* Cart Head */}
-				<div className="ts-cart-head">
-					<h3>{__('Your Cart', 'voxel-fse')}</h3>
+				{/* Quick Register for guests */}
+				{showQuickRegister && quickRegister && onQuickRegisterChange && config && (
+					<QuickRegister
+						config={config}
+						quickRegister={quickRegister}
+						onQuickRegisterChange={onQuickRegisterChange}
+						authLink={config.auth_link}
+						requireVerification={requireVerification}
+						loginIcon={getIcon(attributes.loginIcon, 'loginIcon')}
+						emailIcon={getIcon(attributes.emailIcon, 'emailIcon')}
+						context={context}
+					/>
+				)}
+
+				{/* Cart Head - Only show if logged in or not quick register mode */}
+				{(isLoggedIn || guestBehavior !== 'proceed_with_email') && (
+					<div className="ts-cart-head">
+						<h1>{__('Order summary', 'voxel-fse')}</h1>
+					</div>
+				)}
+
+				{/* Cart Items Section */}
+				<div className="checkout-section form-field-grid">
+					{shouldGroupByVendor ? (
+						// Grouped by vendor
+						Object.values(vendors).map((vendor) => (
+							<div key={vendor.key}>
+								<div className="ts-form-group">
+									<div className="or-group">
+										<div className="or-line"></div>
+										<span className="or-text">
+											{__('Sold by', 'voxel-fse')} {vendor.display_name}
+										</span>
+										<div className="or-line"></div>
+									</div>
+								</div>
+								<div className="ts-form-group">
+									<ul className="ts-cart-list simplify-ul">
+										{Object.values(vendor.items).map((item) => (
+											<CartItemRow
+												key={item.key}
+												item={item}
+												attributes={attributes}
+												onUpdateQuantity={onUpdateQuantity}
+												onRemoveItem={onRemoveItem}
+												context={context}
+											/>
+										))}
+									</ul>
+								</div>
+							</div>
+						))
+					) : (
+						// Not grouped
+						<>
+							<div className="ts-form-group">
+								<div className="or-group">
+									<div className="or-line"></div>
+									<span className="or-text">{__('Items', 'voxel-fse')}</span>
+									<div className="or-line"></div>
+								</div>
+							</div>
+							<div className="ts-form-group">
+								<ul className="ts-cart-list simplify-ul">
+									{Object.values(items).map((item) => (
+										<CartItemRow
+											key={item.key}
+											item={item}
+											attributes={attributes}
+											onUpdateQuantity={onUpdateQuantity}
+											onRemoveItem={onRemoveItem}
+											context={context}
+										/>
+									))}
+								</ul>
+							</div>
+						</>
+					)}
 				</div>
 
-				{/* Cart Items */}
-				<div className="checkout-section form-field-grid">
-					<ul className="simplify-ul ts-cart-list">
-						{Object.values(items).map((item) => (
-							<CartItemRow
-								key={item.key}
-								item={item}
-								attributes={attributes}
-								onUpdateQuantity={onUpdateQuantity}
-								onRemoveItem={onRemoveItem}
+				{/* Shipping Details */}
+				{hasShippableProducts && shipping && onShippingChange && config && (
+					<>
+						<ShippingDetails
+							shipping={shipping}
+							onShippingChange={onShippingChange}
+							countries={shippingCountries}
+							context={context}
+						/>
+
+						{/* Shipping Method Cards - Platform or Vendor */}
+						{shipping.status === 'completed' && shipping.country && (
+							<>
+								{/* Platform shipping rates */}
+								{getShippingMethod() === 'platform_rates' && (
+									<ShippingMethodCards
+										config={config}
+										shipping={shipping}
+										onShippingChange={onShippingChange}
+										items={items}
+										shippingIcon={getIcon(attributes.shippingIcon, 'shippingIcon')}
+										currency={currency}
+										l10n={config.l10n}
+										context={context}
+									/>
+								)}
+
+								{/* Vendor shipping rates */}
+								{getShippingMethod() === 'vendor_rates' && (
+									<VendorShippingCards
+										config={config}
+										shipping={shipping}
+										onShippingChange={onShippingChange}
+										items={items}
+										vendors={vendors}
+										shippingIcon={getIcon(attributes.shippingIcon, 'shippingIcon')}
+										currency={currency}
+										l10n={config.l10n}
+										context={context}
+									/>
+								)}
+							</>
+						)}
+					</>
+				)}
+
+				{/* Details Section - Order notes, Terms */}
+				{(isLoggedIn || guestBehavior === 'proceed_with_email') && (
+					<div className="checkout-section form-field-grid">
+						<div className="ts-form-group">
+							<div className="or-group">
+								<div className="or-line"></div>
+								<span className="or-text">{__('Details', 'voxel-fse')}</span>
+								<div className="or-line"></div>
+							</div>
+						</div>
+
+						{/* Order Notes */}
+						{orderNotes && onOrderNotesChange && (
+							<OrderNotes
+								enabled={orderNotes.enabled}
+								content={orderNotes.content}
+								onToggle={() => onOrderNotesChange({ enabled: !orderNotes.enabled })}
+								onChange={(content) => onOrderNotesChange({ content })}
 								context={context}
 							/>
-						))}
-					</ul>
+						)}
+
+						{/* Terms & Conditions checkbox for guests */}
+						{!isLoggedIn && guestBehavior === 'proceed_with_email' && requireTos && quickRegister && onQuickRegisterChange && (
+							<div className="tos-checkbox ts-form-group vx-1-1 switcher-label">
+								<label
+									onClick={(e) => {
+										e.preventDefault();
+										if (context === 'frontend') {
+											onQuickRegisterChange({ terms_agreed: !quickRegister.terms_agreed });
+										}
+									}}
+								>
+									<div className="ts-checkbox-container">
+										<label className="container-checkbox">
+											<input
+												type="checkbox"
+												tabIndex={0}
+												className="hidden"
+												checked={quickRegister.terms_agreed}
+												readOnly
+											/>
+											<span className="checkmark"></span>
+										</label>
+									</div>
+									<p className="field-info">
+										{__('I agree to the Terms and Conditions and Privacy Policy', 'voxel-fse')}
+									</p>
+								</label>
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Checkout Section */}
+				<div className="checkout-section">
+					{subtotal !== 0 && (
+						<ul className="ts-cost-calculator simplify-ul flexify">
+							{shippingTotal !== null && (
+								<li>
+									<div className="ts-item-name">
+										<p>{__('Shipping', 'voxel-fse')}</p>
+									</div>
+									<div className="ts-item-price">
+										<p>{currencyFormat(shippingTotal, currency)}</p>
+									</div>
+								</li>
+							)}
+							<li className="ts-total">
+								<div className="ts-item-name">
+									<p>{__('Subtotal', 'voxel-fse')}</p>
+								</div>
+								<div className="ts-item-price">
+									<p>{currencyFormat(subtotal + (shippingTotal || 0), currency)}</p>
+								</div>
+							</li>
+						</ul>
+					)}
+
+					{/* Checkout Button */}
+					{(isLoggedIn || guestBehavior === 'proceed_with_email') ? (
+						<a
+							href="#"
+							className={`ts-btn ts-btn-2 form-btn ${!canProceedWithPayment ? 'vx-disabled' : ''}`}
+							onClick={(e) => {
+								e.preventDefault();
+								if (context === 'frontend' && canProceedWithPayment && onCheckout) {
+									onCheckout();
+								}
+							}}
+						>
+							{subtotal === 0 || isOfflinePayment ? (
+								<>
+									{__('Submit order', 'voxel-fse')}
+									{renderIcon(getIcon(attributes.continueIcon, 'continueIcon'))}
+								</>
+							) : (
+								<>
+									{__('Proceed to payment', 'voxel-fse')}
+									{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
+								</>
+							)}
+						</a>
+					) : (
+						// Login button for guests when quick register is not enabled
+						<a href={config?.auth_link || '#'} className="ts-btn ts-btn-2 form-btn">
+							{renderIcon(getIcon(attributes.userIcon, 'userIcon'))}
+							{__('Log in to continue', 'voxel-fse')}
+						</a>
+					)}
 				</div>
-
-				{/* TODO: Shipping details section - implement when shipping state is provided */}
-
-				{/* Cost Calculator */}
-				<div className="ts-cost-calculator">
-					<ul className="simplify-ul flexify">
-						<li className="cost-total">
-							<span>{__('Total', 'voxel-fse')}</span>
-							<span>{currencyFormat(subtotal, currency)}</span>
-						</li>
-					</ul>
-				</div>
-
-				{/* Checkout Button */}
-				<button
-					type="button"
-					className="ts-btn ts-btn-2 form-btn"
-					onClick={() => {
-						if (onCheckout) onCheckout();
-					}}
-				>
-					{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
-					{__('Proceed to checkout', 'voxel-fse')}
-				</button>
 			</div>
 		</>
 	);

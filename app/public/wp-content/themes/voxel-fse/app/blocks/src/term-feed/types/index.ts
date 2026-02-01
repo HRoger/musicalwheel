@@ -35,6 +35,8 @@ export interface ManualTermItem {
 
 /**
  * Term data from REST API
+ *
+ * PARITY: Matches response from fse-term-feed-controller.php get_terms()
  */
 export interface TermData {
 	id: number;
@@ -44,9 +46,10 @@ export interface TermData {
 	count: number;
 	parent: number;
 	taxonomy: string;
-	color: string;
-	icon: string;
-	cardHtml: string;
+	link: string; // Voxel term link URL
+	color: string; // Voxel term color (for accent replacement)
+	icon: string; // Rendered icon HTML markup
+	cardHtml: string; // Rendered term card template HTML
 }
 
 /**

@@ -288,6 +288,19 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-messages-api-controller.php'
 new \VoxelFSE\Controllers\FSE_Messages_API_Controller();
 
 /**
+ * Load FSE Userbar API Controller
+ * Provides REST API endpoints and server-side config injection for the Userbar block
+ * - Nonces for notifications, messages, cart AJAX actions
+ * - Initial unread counts (notifications, messages)
+ * - Cart empty state
+ * - User data (avatar, display name)
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-userbar-api-controller.php';
+
+// Initialize FSE Userbar API controller
+new \VoxelFSE\Controllers\FSE_Userbar_API_Controller();
+
+/**
  * Load FSE Orders API Controller
  * Provides REST API endpoints for the Orders block (Plan C+ architecture)
  */
@@ -327,6 +340,19 @@ require_once VOXEL_FSE_PATH . '/app/controllers/frontend/search/fse-search-contr
 
 // Initialize FSE Search controller
 new \VoxelFSE\Controllers\Frontend\Search\FSE_Search_Controller();
+
+/**
+ * Load FSE Stripe Account API Controller
+ * Provides REST API endpoints for the Stripe Account block (Plan C+ architecture)
+ * - Account status (exists, charges_enabled, details_submitted)
+ * - Onboard/dashboard links
+ * - Shipping zones/rates for vendor shipping
+ * - Nonces for AJAX operations
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controller.php';
+
+// Initialize FSE Stripe Account API controller
+new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme

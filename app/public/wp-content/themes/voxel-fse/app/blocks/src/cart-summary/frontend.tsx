@@ -1001,6 +1001,64 @@ async function fetchCartItems(
 }
 
 /**
+ * Fetch direct cart items (single item checkout via URL)
+ * Matches Voxel's _getDirectCartSummary() method
+ */
+async function fetchDirectCartItems(
+	config: CartConfig,
+	checkoutItemKey: string
+): Promise<Record<string, CartItem> | null> {
+	const ajaxUrl = getAjaxUrl();
+
+	try {
+		// Get item from localStorage
+		let itemData = null;
+		try {
+			const directCart = localStorage.getItem('voxel:direct_cart');
+			if (directCart) {
+				const parsed = JSON.parse(directCart);
+				itemData = parsed[checkoutItemKey];
+			}
+		} catch (err) {
+			console.error('Failed to parse direct cart:', err);
+		}
+
+		const url = new URL(`${ajaxUrl}`);
+		url.searchParams.set('vx', '1');
+		url.searchParams.set('action', 'products.get_direct_cart');
+		url.searchParams.set('_wpnonce', config.nonce.cart);
+		if (itemData) {
+			url.searchParams.set('item', JSON.stringify(itemData));
+		}
+
+		const response = await fetch(url.toString(), {
+			credentials: 'same-origin',
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+
+		const data = (await response.json()) as {
+			success: boolean;
+			item?: CartItem;
+			metadata?: Record<string, unknown>;
+			message?: string;
+		};
+
+		if (data.success && data.item) {
+			return { [data.item.key]: data.item };
+		}
+
+		console.error('Failed to fetch direct cart item:', data.message);
+		return {};
+	} catch (error) {
+		console.error('Failed to fetch direct cart item:', error);
+		return null;
+	}
+}
+
+/**
  * Wrapper component that handles data fetching and state management
  */
 interface CartSummaryWrapperProps {
@@ -1041,6 +1099,52 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 		content: '',
 	});
 
+	// Track checkout source (cart or direct_cart)
+	const [source, setSource] = useState<'cart' | 'direct_cart'>('cart');
+
+	/**
+	 * GeoIP country detection
+	 * Matches Voxel's geocodeCountry() method
+	 */
+	const geocodeCountry = async (providers: CartConfig['geoip_providers']): Promise<string | null> => {
+		for (const provider of providers) {
+			try {
+				const response = await fetch(provider.url);
+				const data = await response.json();
+				if (data?.[provider.prop]) {
+					const countryCode = data[provider.prop];
+					if (typeof countryCode === 'string') {
+						// Store in cookie for future use
+						document.cookie = `_vx_ccode=${countryCode}; max-age:259200; path=/`;
+						return countryCode.toUpperCase();
+					}
+				}
+			} catch (err) {
+				console.error('GeoIP provider error:', err);
+			}
+		}
+		return null;
+	};
+
+	/**
+	 * Get search param helper
+	 * Matches Voxel.getSearchParam()
+	 */
+	const getSearchParam = (name: string): string | null => {
+		const urlParams = new URLSearchParams(window.location.search);
+		return urlParams.get(name);
+	};
+
+	/**
+	 * Delete search param helper
+	 * Matches Voxel.deleteSearchParam()
+	 */
+	const deleteSearchParam = (name: string): void => {
+		const url = new URL(window.location.href);
+		url.searchParams.delete(name);
+		window.history.replaceState({}, '', url.toString());
+	};
+
 	// Load configuration and items on mount
 	useEffect(() => {
 		let cancelled = false;
@@ -1057,6 +1161,105 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 			}
 
 			setConfig(configData);
+
+			// Check if this is a direct cart checkout (single item via URL)
+			const checkoutItem = getSearchParam('checkout_item');
+			if (checkoutItem) {
+				setSource('direct_cart');
+				// Handle _item param for direct cart (base64 encoded item data)
+				const itemParam = getSearchParam('_item');
+				if (itemParam) {
+					try {
+						const itemData = JSON.parse(atob(itemParam));
+						localStorage.setItem('voxel:direct_cart', JSON.stringify({ [checkoutItem]: itemData }));
+					} catch (err) {
+						console.error('Failed to parse direct cart item:', err);
+					}
+				}
+
+				// Fetch direct cart item
+				const directItems = await fetchDirectCartItems(configData, checkoutItem);
+				if (!cancelled && directItems !== null) {
+					setItems(directItems);
+				}
+				setIsLoading(false);
+				return;
+			}
+
+			// Initialize shipping state
+			const savedAddress = configData.shipping.saved_address;
+			const defaultCountry = configData.shipping.default_country;
+			const shippingCountries = configData.shipping.countries;
+
+			let initialCountry: string | null = null;
+
+			if (savedAddress && savedAddress.country && shippingCountries[savedAddress.country]) {
+				// Use saved address
+				setShipping({
+					first_name: savedAddress.first_name || '',
+					last_name: savedAddress.last_name || '',
+					country: savedAddress.country,
+					state: savedAddress.state || '',
+					address: savedAddress.address || '',
+					zip: savedAddress.zip || '',
+					zone: null,
+					rate: null,
+					status: 'completed',
+					vendors: {},
+				});
+				initialCountry = savedAddress.country;
+			} else if (defaultCountry && shippingCountries[defaultCountry]) {
+				// Use default country
+				initialCountry = defaultCountry;
+				setShipping((prev) => ({
+					...prev,
+					country: defaultCountry,
+					status: 'completed',
+				}));
+			} else if (configData.geoip_providers.length > 0) {
+				// Try GeoIP detection
+				const detectedCountry = await geocodeCountry(configData.geoip_providers);
+				if (detectedCountry && shippingCountries[detectedCountry]) {
+					initialCountry = detectedCountry;
+					setShipping((prev) => ({
+						...prev,
+						country: detectedCountry,
+						status: 'completed',
+					}));
+				} else {
+					// Fall back to first available country
+					const availableCountries = Object.keys(shippingCountries);
+					if (availableCountries.length > 0) {
+						initialCountry = availableCountries[0];
+						setShipping((prev) => ({
+							...prev,
+							country: availableCountries[0],
+							status: 'completed',
+						}));
+					} else {
+						setShipping((prev) => ({
+							...prev,
+							status: 'completed',
+						}));
+					}
+				}
+			} else {
+				// No GeoIP, fall back to first available country
+				const availableCountries = Object.keys(shippingCountries);
+				if (availableCountries.length > 0) {
+					initialCountry = availableCountries[0];
+					setShipping((prev) => ({
+						...prev,
+						country: availableCountries[0],
+						status: 'completed',
+					}));
+				} else {
+					setShipping((prev) => ({
+						...prev,
+						status: 'completed',
+					}));
+				}
+			}
 
 			// Fetch cart items
 			const itemsData = await fetchCartItems(configData, configData.is_logged_in);
@@ -1161,6 +1364,14 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 			const item = items[itemKey];
 			if (!item) return;
 
+			// Direct cart mode: clear items and URL param
+			if (source === 'direct_cart') {
+				setItems({});
+				localStorage.removeItem('voxel:direct_cart');
+				deleteSearchParam('checkout_item');
+				return;
+			}
+
 			// Optimistic update
 			const updatedItems = { ...items };
 			delete updatedItems[itemKey];
@@ -1218,16 +1429,207 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 		}
 	};
 
-	// Handle checkout
+	// State for checkout processing
+	const [isProcessing, setIsProcessing] = useState(false);
+
+	/**
+	 * Submit quick register for guest checkout
+	 * Matches Voxel's submitQuickRegister() method
+	 */
+	const submitQuickRegister = useCallback(async (): Promise<boolean> => {
+		if (!config) return false;
+
+		const ajaxUrl = getAjaxUrl();
+		const formData = new FormData();
+		formData.append('email', quickRegister.email);
+		formData.append('_wpnonce', config.nonce.checkout);
+
+		if (config.guest_customers.proceed_with_email?.require_verification) {
+			formData.append('_confirmation_code', quickRegister.code);
+		}
+
+		if (config.guest_customers.proceed_with_email?.require_tos) {
+			formData.append('terms_agreed', quickRegister.terms_agreed ? '1' : '0');
+		}
+
+		// Include guest cart for merging
+		const guestCart = localStorage.getItem('voxel:guest_cart');
+		if (guestCart) {
+			formData.append('guest_cart', guestCart);
+		}
+
+		// Add reCAPTCHA if enabled
+		if (config.recaptcha.enabled && config.recaptcha.key) {
+			const grecaptcha = (window as unknown as {
+				grecaptcha?: {
+					ready: (cb: () => void) => void;
+					execute: (key: string, opts: { action: string }) => Promise<string>;
+				};
+			}).grecaptcha;
+
+			if (grecaptcha) {
+				try {
+					const token = await new Promise<string>((resolve) => {
+						grecaptcha.ready(async () => {
+							const t = await grecaptcha.execute(config.recaptcha.key!, { action: 'quick_register' });
+							resolve(t);
+						});
+					});
+					formData.append('_recaptcha', token);
+				} catch (err) {
+					console.error('reCAPTCHA error:', err);
+				}
+			}
+		}
+
+		try {
+			const response = await fetch(
+				`${ajaxUrl}?vx=1&action=products.quick_register.process`,
+				{
+					method: 'POST',
+					credentials: 'same-origin',
+					body: formData,
+				}
+			);
+
+			const data = await response.json() as {
+				success: boolean;
+				nonces?: { cart: string; checkout: string };
+				message?: string;
+			};
+
+			if (data.success && data.nonces) {
+				// Update nonces and mark as registered
+				setConfig((prev) => {
+					if (!prev) return prev;
+					return {
+						...prev,
+						nonce: data.nonces!,
+						is_logged_in: true,
+					};
+				});
+				setQuickRegister((prev) => ({ ...prev, registered: true }));
+
+				// Clear guest cart from localStorage
+				localStorage.removeItem('voxel:guest_cart');
+
+				return true;
+			} else {
+				const win = window as unknown as { Voxel?: { alert: (msg: string) => void } };
+				if (win.Voxel?.alert) {
+					win.Voxel.alert(data.message || 'Registration failed');
+				} else {
+					alert(data.message || 'Registration failed');
+				}
+				return false;
+			}
+		} catch (err) {
+			console.error('Quick register error:', err);
+			return false;
+		}
+	}, [config, quickRegister]);
+
+	/**
+	 * Handle checkout submission
+	 * Matches Voxel's checkout() method
+	 */
 	const handleCheckout = useCallback(async () => {
 		if (!config || !items) return;
+		if (isProcessing) return;
 
-		// For now, just log - full checkout implementation would go here
-		console.log('Checkout triggered', { config, items, shipping, quickRegister, orderNotes });
+		setIsProcessing(true);
 
-		// TODO: Implement full checkout flow
-		// This would call the checkout API and redirect to payment
-	}, [config, items, shipping, quickRegister, orderNotes]);
+		try {
+			// For guests, first complete quick register if needed
+			const isLoggedIn = config.is_logged_in || quickRegister.registered;
+			if (!isLoggedIn && config.guest_customers.behavior === 'proceed_with_email') {
+				const registerSuccess = await submitQuickRegister();
+				if (!registerSuccess) {
+					setIsProcessing(false);
+					return;
+				}
+			}
+
+			// Build FormData for checkout
+			const formData = new FormData();
+			formData.append('source', source); // 'cart' or 'direct_cart'
+
+			// Add items as JSON array
+			const itemsArray = Object.values(items).map((item) => ({
+				key: item.key,
+				value: item.value,
+			}));
+			formData.append('items', JSON.stringify(itemsArray));
+
+			// Add order notes if enabled
+			if (orderNotes.enabled && orderNotes.content) {
+				formData.append('order_notes', orderNotes.content);
+			}
+
+			// Add shipping info if there are shippable products
+			const hasShippable = Object.values(items).some((item) => item.shipping.is_shippable);
+			if (hasShippable && shipping.country) {
+				const shippingData: Record<string, unknown> = {
+					address: {
+						first_name: shipping.first_name,
+						last_name: shipping.last_name,
+						country: shipping.country,
+						state: shipping.state,
+						address: shipping.address,
+						zip: shipping.zip,
+					},
+				};
+
+				// Add shipping method based on responsibility
+				if (config.shipping.responsibility === 'platform' && shipping.zone && shipping.rate) {
+					shippingData.method = {
+						zone: shipping.zone,
+						rate: shipping.rate,
+					};
+				} else if (config.shipping.responsibility === 'vendor' && Object.keys(shipping.vendors).length > 0) {
+					shippingData.vendors = shipping.vendors;
+				}
+
+				formData.append('shipping', JSON.stringify(shippingData));
+			}
+
+			// Add redirect URL (current page or checkout success page)
+			formData.append('redirect_to', window.location.href);
+
+			// Submit checkout
+			const ajaxUrl = getAjaxUrl();
+			const response = await fetch(
+				`${ajaxUrl}?vx=1&action=products.checkout&_wpnonce=${config.nonce.checkout}`,
+				{
+					method: 'POST',
+					credentials: 'same-origin',
+					body: formData,
+				}
+			);
+
+			const data = await response.json() as {
+				success: boolean;
+				redirect_url?: string;
+				message?: string;
+			};
+
+			if (data.success && data.redirect_url) {
+				// Redirect to payment page
+				window.location.href = data.redirect_url;
+			} else {
+				const win = window as unknown as { Voxel?: { alert: (msg: string) => void } };
+				if (win.Voxel?.alert) {
+					win.Voxel.alert(data.message || 'Checkout failed');
+				} else {
+					alert(data.message || 'Checkout failed');
+				}
+				setIsProcessing(false);
+			}
+		} catch (err) {
+			console.error('Checkout error:', err);
+			setIsProcessing(false);
+		}
+	}, [config, items, shipping, quickRegister, orderNotes, isProcessing, submitQuickRegister]);
 
 	// Handle shipping state change
 	const handleShippingChange = useCallback((changes: Partial<ShippingState>) => {

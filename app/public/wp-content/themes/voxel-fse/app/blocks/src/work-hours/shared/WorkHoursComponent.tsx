@@ -47,8 +47,20 @@ const CLOCK_ICON_PATH = "M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 
 // Voxel's expand/collapse arrow icon SVG path
 const EXPAND_ICON_PATH = "M12.7461 3.99951C12.7461 3.5853 12.4103 3.24951 11.9961 3.24951C11.5819 3.24951 11.2461 3.5853 11.2461 3.99951L11.2461 13.2548H6.00002C5.69663 13.2548 5.42312 13.4376 5.30707 13.7179C5.19101 13.9982 5.25526 14.3208 5.46986 14.5353L11.4228 20.4844C11.5604 20.6474 11.7662 20.7509 11.9961 20.7509C12.0038 20.7509 12.0114 20.7508 12.019 20.7505C12.2045 20.7458 12.3884 20.6727 12.53 20.5313L18.5302 14.5353C18.7448 14.3208 18.809 13.9982 18.693 13.7179C18.5769 13.4376 18.3034 13.2548 18 13.2548H12.7461L12.7461 3.99951Z";
 
-// Format time from 24-hour format (HH:MM) to 12-hour format
-const formatTime = (time: string): string => {
+/**
+ * Format time - prefers server-formatted time (respects WP site settings)
+ *
+ * PARITY: Server formats times using \Voxel\time_format() which respects WP site settings
+ * Reference: themes/voxel/templates/widgets/work-hours.php:63-68
+ *
+ * Falls back to 12-hour format for preview mode where no server data exists
+ */
+const formatTime = (time: string, formatted?: string): string => {
+  // Use server-formatted time if available (respects WP site settings)
+  if (formatted) {
+    return formatted;
+  }
+  // Fallback for preview mode - simple 12-hour format
   const [hours, minutes] = time.split(':');
   const hour = parseInt(hours, 10);
   const meridiem = hour >= 12 ? 'PM' : 'AM';
@@ -145,8 +157,9 @@ export default function WorkHoursComponent({
         if (!currentDayStatus.hours || currentDayStatus.hours.length === 0) {
           return 'Closed all day';
         }
+        // PARITY: Use server-formatted times when available (respects WP site settings)
         return currentDayStatus.hours
-          .map((h) => `${formatTime(h.from)} - ${formatTime(h.to)}`)
+          .map((h) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
           .join(', ');
       default:
         return 'Not available';
@@ -236,8 +249,9 @@ export default function WorkHoursComponent({
                     if (!daySchedule.hours || daySchedule.hours.length === 0) {
                       return 'Closed all day';
                     }
+                    // PARITY: Use server-formatted times when available
                     return daySchedule.hours
-                      .map((h) => `${formatTime(h.from)} - ${formatTime(h.to)}`)
+                      .map((h) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
                       .join(', ');
                   default:
                     return 'Not available';
