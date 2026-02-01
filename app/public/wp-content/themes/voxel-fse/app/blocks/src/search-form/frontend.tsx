@@ -482,12 +482,15 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 		};
 	}, [attributes.blockId, dispatchInitialValues]);
 
-	// Loading state
+	// Loading state - matches Voxel's v-cloak pattern (display: none until ready)
+	// Since React renders when ready, we just show a simple loader without custom classes
 	if (isLoading) {
 		return (
-			<div className="ts-form ts-search-widget voxel-fse-loading">
+			<div className="ts-form ts-search-widget">
 				<div className="ts-filter-wrapper flexify">
-					<span className="ts-loader"></span>
+					<div className="ts-no-posts">
+						<span className="ts-loader"></span>
+					</div>
 				</div>
 			</div>
 		);

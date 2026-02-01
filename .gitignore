@@ -1,0 +1,130 @@
+# MusicalWheel - Git Ignore Rules
+# Git Repository Root: C:/Users/herle/Local Sites/musicalwheel
+# Only tracking: app/public/wp-content/
+
+# ============================================
+# IGNORE EVERYTHING OUTSIDE WP-CONTENT
+# ============================================
+/*
+!.gitignore
+!app/
+app/*
+!app/public/
+app/public/*
+!app/public/wp-content/
+
+# ============================================
+# WordPress Uploads & User Content
+# ============================================
+app/public/wp-content/uploads/
+app/public/wp-content/upgrade/
+app/public/wp-content/upgrade-temp-backup/
+app/public/wp-content/backup-db/
+app/public/wp-content/backups/
+app/public/wp-content/blogs.dir/
+app/public/wp-content/cache/
+app/public/wp-content/ai1wm-backups/
+
+# ============================================
+# WordPress Cache & Temporary Files
+# ============================================
+app/public/wp-content/advanced-cache.php
+app/public/wp-content/wp-cache-config.php
+app/public/wp-content/object-cache.php
+*.log
+error_log
+debug.log
+
+# ============================================
+# Database & Backups
+# ============================================
+*.sql
+*.sql.gz
+*.tar.gz
+*.zip
+*.bak
+
+# ============================================
+# Node.js Dependencies
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
+# PHP Dependencies (Composer)
+# ============================================
+vendor/
+
+# ============================================
+# Build Output (but keep Voxel's dist)
+# ============================================
+.cache/
+*.map
+
+# ============================================
+# Operating System Files
+# ============================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Editor & IDE Files
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ============================================
+# Environment & Configuration
+# ============================================
+.env
+.env.local
+.env.*.local
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.backup
+*.orig
+nul
+
+# ============================================
+# PLUGINS: Ignore ALL by default
+# ============================================
+app/public/wp-content/plugins/*
+
+# EXCEPTION: Keep ONLY these specific plugins
+!app/public/wp-content/plugins/elementor/
+!app/public/wp-content/plugins/wp-graphql/
+!app/public/wp-content/plugins/wp-graphql-content-blocks/
+
+# Ignore dependencies inside kept plugins
+app/public/wp-content/plugins/*/node_modules/
+app/public/wp-content/plugins/*/vendor/
+
+# ============================================
+# THEMES: Ignore ALL by default
+# ============================================
+app/public/wp-content/themes/*
+
+# EXCEPTION: Keep ONLY these themes
+!app/public/wp-content/themes/voxel-fse/
+!app/public/wp-content/themes/voxel/
+
+# Ignore dependencies inside kept themes
+app/public/wp-content/themes/*/node_modules/
+app/public/wp-content/themes/*/vendor/
+
+# ============================================
+# DOCS: Always Track
+# ============================================
+!app/public/wp-content/docs/

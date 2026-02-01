@@ -10,7 +10,6 @@ import { useMemo, useEffect } from 'react';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	Button,
-	Spinner,
 	Placeholder,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
@@ -51,6 +50,20 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 			setAttributes({ blockId: clientId });
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
+
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-orders-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/orders.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
 
 	// Generate block-specific responsive CSS
 	const css = useMemo(() => {
@@ -97,13 +110,6 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 			</InspectorControls>
 
 			<div {...blockProps}>
-				{isLoading && (
-					<div className="voxel-fse-loading">
-						<Spinner />
-						<span>{__('Loading Stripe account configuration...', 'voxel-fse')}</span>
-					</div>
-				)}
-
 				{error && (
 					<Placeholder
 						icon="warning"
@@ -116,7 +122,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 					</Placeholder>
 				)}
 
-				{!isLoading && !error && config && (
+				{!error && config && (
 					<StripeAccountComponent
 						attributes={attributes}
 						config={config}
@@ -124,7 +130,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 					/>
 				)}
 
-				{!isLoading && !error && !config && (
+				{!error && !config && (
 					<Placeholder
 						icon="admin-users"
 						label={__('Stripe Account', 'voxel-fse')}

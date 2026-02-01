@@ -83,7 +83,8 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect } from 'react';
 import { CreatePostForm } from './shared';
-import type { CreatePostAttributes, VoxelField } from './types';
+import { NoPermissionScreen } from './components/NoPermissionScreen';
+import type { CreatePostAttributes, VoxelField, PostContext } from './types';
 
 /**
  * Window extension for WordPress API settings and Voxel data
@@ -170,6 +171,46 @@ async function fetchFieldsConfig(
 		return data as FieldsConfigResponse;
 	} catch (error) {
 		console.error('[Create Post DEBUG] fetchFieldsConfig - Caught error:', error);
+		return null;
+	}
+}
+
+/**
+ * Fetch post context from REST API (Plan C+ parity)
+ * Returns permission state, post context, and nonces for React hydration.
+ *
+ * Evidence: FSE_Create_Post_Controller::get_post_context()
+ */
+async function fetchPostContext(
+	postTypeKey: string,
+	postId: number | null = null
+): Promise<PostContext | null> {
+	const restUrl = getRestUrl();
+
+	const params = new URLSearchParams({
+		post_type: postTypeKey,
+	});
+
+	if (postId) {
+		params.append('post_id', postId.toString());
+	}
+
+	const endpoint = `${restUrl}voxel-fse/v1/create-post/post-context?${params.toString()}`;
+
+	try {
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin', // Include cookies for authentication
+		});
+
+		if (!response.ok) {
+			console.error('[Create Post] fetchPostContext - Error status:', response.status);
+			return null;
+		}
+
+		const data = await response.json();
+		return data as PostContext;
+	} catch (error) {
+		console.error('[Create Post] fetchPostContext - Error:', error);
 		return null;
 	}
 }
@@ -374,8 +415,7 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 	//console.log('[Create Post DEBUG] FrontendWrapper rendered with:', { attributes, isAdminMetabox });
 
 	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>([]);
-	const [postId, setPostId] = useState<number | null>(null);
-	const [postStatus, setPostStatus] = useState<string | null>(null);
+	const [postContext, setPostContext] = useState<PostContext | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -387,31 +427,33 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 		//console.log('[Create Post DEBUG] useEffect triggered, postTypeKey:', attributes.postTypeKey);
 		let cancelled = false;
 
-		async function loadFieldsConfig() {
-			//console.log('[Create Post DEBUG] loadFieldsConfig called');
+		async function loadFormData() {
+			//console.log('[Create Post DEBUG] loadFormData called');
 			setIsLoading(true);
 			setError(null);
 
 			try {
-				//console.log('[Create Post DEBUG] Fetching fields config for:', attributes.postTypeKey);
-				const data = await fetchFieldsConfig(
-					attributes.postTypeKey,
-					urlPostId,
-					isAdminMetabox
-				);
-				//console.log('[Create Post DEBUG] fetchFieldsConfig result:', data);
+				// Fetch both post-context and fields-config in parallel (Plan C+ pattern)
+				const [contextData, fieldsData] = await Promise.all([
+					fetchPostContext(attributes.postTypeKey, urlPostId),
+					fetchFieldsConfig(attributes.postTypeKey, urlPostId, isAdminMetabox),
+				]);
 
-				if (!cancelled && data) {
-					//console.log('[Create Post DEBUG] Setting fieldsConfig, count:', data.fieldsConfig?.length);
-					setFieldsConfig(data.fieldsConfig);
-					setPostId(data.postId);
-					setPostStatus(data.postStatus);
-				} else if (!cancelled) {
-					//console.log('[Create Post DEBUG] No data returned from fetchFieldsConfig');
+				if (cancelled) return;
+
+				// Handle post-context response
+				if (contextData) {
+					setPostContext(contextData);
+				}
+
+				// Handle fields-config response
+				if (fieldsData) {
+					setFieldsConfig(fieldsData.fieldsConfig);
+				} else {
 					setError('Failed to load form configuration');
 				}
 			} catch (err) {
-				console.error('[Create Post DEBUG] fetchFieldsConfig error:', err);
+				console.error('[Create Post] loadFormData error:', err);
 				if (!cancelled) {
 					setError(err instanceof Error ? err.message : 'Failed to load');
 				}
@@ -422,19 +464,20 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 			}
 		}
 
-		loadFieldsConfig();
+		loadFormData();
 
 		return () => {
 			cancelled = true;
 		};
 	}, [attributes.postTypeKey, urlPostId, isAdminMetabox]);
 
-	// Loading state
+	// Loading state - matches Voxel's spinner pattern
+	// Reference: Voxel uses .ts-no-posts > .ts-loader for loading states
 	if (isLoading) {
 		return (
-			<div className="ts-form ts-create-post voxel-fse-loading">
-				<div className="loading-placeholder" style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-					<p>Loading form...</p>
+			<div className="ts-form ts-create-post">
+				<div className="ts-no-posts">
+					<span className="ts-loader" aria-label="Loading form..."></span>
 				</div>
 			</div>
 		);
@@ -449,6 +492,13 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 				</div>
 			</div>
 		);
+	}
+
+	// No permission screen - shows when user can't create/edit
+	// Evidence: themes/voxel/templates/widgets/create-post.php:11
+	// "if ( ! $post && ! $user->can_create_post( $post_type->get_key() ) )"
+	if (postContext && !postContext.hasPermission) {
+		return <NoPermissionScreen context={postContext} />;
 	}
 
 	// No fields configured
@@ -467,9 +517,10 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 			attributes={attributes}
 			fieldsConfig={fieldsConfig}
 			context="frontend"
-			postId={postId}
-			postStatus={postStatus}
+			postId={postContext?.postId ?? null}
+			postStatus={postContext?.postStatus ?? null}
 			isAdminMode={isAdminMetabox}
+			postContext={postContext}
 		/>
 	);
 }

@@ -14,10 +14,10 @@ import metadata from './block.json';
 import type { VisitChartAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
-import './editor.css';
+
 
 // Register the block
-registerBlockType<VisitChartAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Visit Chart (VX)', 'voxel-fse'),
@@ -27,4 +27,4 @@ registerBlockType<VisitChartAttributes>(metadata.name, {
 	),
 	edit: Edit,
 	save,
-} as Parameters<typeof registerBlockType<VisitChartAttributes>>[1]);
+} as any);

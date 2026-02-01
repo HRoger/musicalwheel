@@ -21,25 +21,26 @@ import { generatePopupKitCSS } from './shared/generateCSS';
 import { StyleTab } from './inspector';
 
 export default function Edit({ attributes, setAttributes }: PopupKitEditProps) {
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-popup-kit-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/popup-kit.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Generate CSS for preview
 	const previewCSS = generatePopupKitCSS(attributes);
 
 	const blockProps = useBlockProps({
 		className: 'voxel-fse-popup-kit-editor',
 	});
-
-	// Device state for Avatar radius (responsive control) - Unused?
-	// const wpDeviceType = useSelect((select: any) => {
-	// 	const editPostStore = select('core/edit-post');
-	// 	if (editPostStore && typeof editPostStore.getPreviewDeviceType === 'function') {
-	// 		return editPostStore.getPreviewDeviceType();
-	// 	}
-	// 	return 'Desktop';
-	// }, []);
-	// const wpDevice = wpDeviceType ? wpDeviceType.toLowerCase() as 'desktop' | 'tablet' | 'mobile' : 'desktop';
-
-
-
 
 	// Disable all links in popup block when in editor (not frontend)
 	useEffect(() => {
@@ -90,8 +91,6 @@ export default function Edit({ attributes, setAttributes }: PopupKitEditProps) {
 			observer.disconnect();
 		};
 	}, [attributes]); // Re-run when attributes change (ServerSideRender updates)
-
-
 
 	return (
 		<>

@@ -18,7 +18,7 @@ import metadata from './block.json';
 import type { ProductFormAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
-import './editor.css';
+
 
 // Register the block
 registerBlockType<ProductFormAttributes>(metadata.name, {

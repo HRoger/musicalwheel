@@ -1146,3 +1146,75 @@ export interface DataInputsFieldConfig {
  * Data input value types
  */
 export type DataInputValue = string | number | boolean | string[] | null;
+
+/* ==========================================================================
+   POST CONTEXT TYPE DEFINITIONS
+   Evidence: FSE API Controller fse-product-form-api-controller.php
+   ========================================================================== */
+
+/**
+ * Cart configuration from API
+ */
+export interface CartConfigFromAPI {
+	enabled: boolean;
+	checkout_url: string;
+	currency: string;
+	currency_symbol: string;
+}
+
+/**
+ * Post context permissions
+ */
+export interface ProductFormPermissions {
+	edit: boolean;
+	purchase: boolean;
+}
+
+/**
+ * Post context nonces for CSRF protection
+ */
+export interface ProductFormNonces {
+	cart: string;
+	checkout: string;
+}
+
+/**
+ * Localization strings from API
+ */
+export interface ProductFormL10n {
+	added_to_cart: string;
+	view_cart: string;
+	out_of_stock: string;
+	add_to_cart: string;
+	continue: string;
+}
+
+/**
+ * Post context returned by /product-form/post-context endpoint
+ * Provides permissions, nonces, and state for React component
+ */
+export interface ProductFormPostContext {
+	success: boolean;
+	postId: number;
+	postTitle: string;
+	postLink: string;
+	isLoggedIn: boolean;
+	isPurchasable: boolean;
+	productMode: 'regular' | 'variable' | 'booking';
+	permissions: ProductFormPermissions;
+	editLink: string | null;
+	checkoutLink: string;
+	cartPageLink: string;
+	cart: CartConfigFromAPI;
+	nonces: ProductFormNonces;
+	l10n: ProductFormL10n;
+}
+
+/**
+ * API response for /product-form/config endpoint
+ */
+export interface ProductFormAPIResponse extends ExtendedProductFormConfig {
+	success: boolean;
+	is_purchasable: boolean;
+	out_of_stock_message?: string;
+}

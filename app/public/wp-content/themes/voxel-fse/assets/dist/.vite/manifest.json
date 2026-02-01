@@ -25,8 +25,8 @@
     "file": "DatePicker-NCeMpzfF.js",
     "name": "DatePicker"
   },
-  "_EmptyPlaceholder-CZuftqhV.js": {
-    "file": "EmptyPlaceholder-CZuftqhV.js",
+  "_EmptyPlaceholder-BsL18qxN.js": {
+    "file": "EmptyPlaceholder-BsL18qxN.js",
     "name": "EmptyPlaceholder"
   },
   "_FormPopup-DDYHzYWU.js": {
@@ -126,12 +126,12 @@
       "_TypographyPopup-BXz72zyZ.js"
     ]
   },
-  "_SearchFormComponent-Dq9FJbtp.js": {
-    "file": "SearchFormComponent-Dq9FJbtp.js",
+  "_SearchFormComponent-LE9uDL09.js": {
+    "file": "SearchFormComponent-LE9uDL09.js",
     "name": "SearchFormComponent",
     "imports": [
       "_siteUrl-7x5eJEvc.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_MediaPopup-CXePoOCG.js",
@@ -205,8 +205,8 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ]
   },
-  "_voxelIcons-DHmdKhqs.js": {
-    "file": "voxelIcons-DHmdKhqs.js",
+  "_voxelIcons-gVyOSQ_B.js": {
+    "file": "voxelIcons-gVyOSQ_B.js",
     "name": "voxelIcons"
   },
   "_voxelShim-DB_Ue-9R.js": {
@@ -249,7 +249,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index9.css",
       "enable-tags-button.css"
     ]
   },
@@ -263,6 +262,7 @@
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
       "_renderIcon-BvG46iB6.js",
+      "_siteUrl-7x5eJEvc.js",
       "_IconPickerControl-DZSJ-4aK.js",
       "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
       "_StyleTabPanel-BnA2rBs5.js",
@@ -320,7 +320,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index.css",
       "enable-tags-button.css"
     ]
   },
@@ -373,7 +372,6 @@
       "_GalleryUploadControl-BiHnGe6_.js"
     ],
     "css": [
-      "index14.css",
       "enable-tags-button.css"
     ]
   },
@@ -389,8 +387,8 @@
       "_GalleryUploadControl-BiHnGe6_.js",
       "_ResponsiveSelectControl-C3rlOT6O.js",
       "_AdvancedIconControl-BPdxcRLY.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
@@ -413,7 +411,7 @@
       "_RepeaterControl-BJok1GGr.js",
       "_TextShadowPopup-CPxXZkC0.js",
       "_CssFiltersPopup-CZrgCBRb.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_VoxelGridIcon-D5dF5acW.js"
     ],
@@ -430,8 +428,8 @@
       "_TypographyPopup-BXz72zyZ.js",
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_AdvancedIconControl-BPdxcRLY.js",
@@ -465,7 +463,6 @@
       "_backgroundElements-Ui-iCrLV.js"
     ],
     "css": [
-      "index12.css",
       "enable-tags-button.css"
     ]
   },
@@ -478,7 +475,7 @@
       "_TypographyPopup-BXz72zyZ.js",
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_RelationControl-JoVYYjAo.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
@@ -504,8 +501,8 @@
       "_RepeaterControl-xj2PJ-Sc.js",
       "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
       "_StyleTabPanel-BnA2rBs5.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -551,7 +548,7 @@
       "_backgroundElements-Ui-iCrLV.js",
       "_iconDefaults-4kDCIhgb.js",
       "_MediaPopup-CXePoOCG.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_TypographyPopup-BXz72zyZ.js",
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
@@ -614,7 +611,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index3.css",
       "enable-tags-button.css"
     ]
   },
@@ -667,7 +663,7 @@
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_IconPickerControl-DZSJ-4aK.js",
       "_RelationControl-JoVYYjAo.js",
       "_StyleTabPanel-BnA2rBs5.js",
@@ -690,13 +686,13 @@
       "_RepeaterControl-BJok1GGr.js",
       "_PostSelectControl-CwUQHJkX.js",
       "_siteUrl-7x5eJEvc.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_SearchFormComponent-Dq9FJbtp.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_SearchFormComponent-LE9uDL09.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_VoxelGridIcon-D5dF5acW.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_MediaPopup-CXePoOCG.js",
       "_FormPopup-DDYHzYWU.js",
       "_DatePicker-NCeMpzfF.js",
@@ -704,7 +700,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index2.css",
       "enable-tags-button.css"
     ]
   },
@@ -718,7 +713,7 @@
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
       "_IconPickerControl-DZSJ-4aK.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -727,7 +722,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index13.css",
       "enable-tags-button.css"
     ]
   },
@@ -737,7 +731,7 @@
     "src": "app/blocks/src/product-price/index.tsx",
     "isEntry": true,
     "imports": [
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_TypographyPopup-BXz72zyZ.js",
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
@@ -774,7 +768,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index10.css",
       "enable-tags-button.css"
     ]
   },
@@ -795,7 +788,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index4.css",
       "enable-tags-button.css"
     ]
   },
@@ -839,7 +831,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index7.css",
       "enable-tags-button.css"
     ]
   },
@@ -849,7 +840,7 @@
     "src": "app/blocks/src/search-form/index.tsx",
     "isEntry": true,
     "imports": [
-      "_SearchFormComponent-Dq9FJbtp.js",
+      "_SearchFormComponent-LE9uDL09.js",
       "_TypographyPopup-BXz72zyZ.js",
       "_RepeaterControl-BJok1GGr.js",
       "_IconPickerControl-DZSJ-4aK.js",
@@ -862,7 +853,7 @@
       "_generateVoxelStyles-oZeaeuKH.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_siteUrl-7x5eJEvc.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_MediaPopup-CXePoOCG.js",
@@ -885,8 +876,8 @@
       "_AdvancedIconControl-BPdxcRLY.js",
       "_GalleryUploadControl-BiHnGe6_.js",
       "_ResponsiveSelectControl-C3rlOT6O.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
@@ -894,7 +885,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index11.css",
       "enable-tags-button.css"
     ]
   },
@@ -931,8 +921,8 @@
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
-      "_voxelIcons-DHmdKhqs.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
+      "_voxelIcons-gVyOSQ_B.js",
       "_AdvancedIconControl-BPdxcRLY.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -984,7 +974,7 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index5.css",
+      "index.css",
       "enable-tags-button.css"
     ]
   },
@@ -1005,7 +995,7 @@
       "_RepeaterControl-xj2PJ-Sc.js",
       "_PopupCustomStyleControl-DvCsFGfS.js",
       "_FormPopup-DDYHzYWU.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
@@ -1034,7 +1024,6 @@
       "_GalleryUploadControl-BiHnGe6_.js"
     ],
     "css": [
-      "index8.css",
       "enable-tags-button.css"
     ]
   },
@@ -1047,7 +1036,7 @@
       "_TypographyPopup-BXz72zyZ.js",
       "_InspectorTabs-DmdaThza.js",
       "_RepeaterControl-BJok1GGr.js",
-      "_EmptyPlaceholder-CZuftqhV.js",
+      "_EmptyPlaceholder-BsL18qxN.js",
       "_AdvancedIconControl-BPdxcRLY.js",
       "_ResponsiveDimensionsControl-CZ2u4xxQ.js",
       "_voxelShim-DB_Ue-9R.js",
@@ -1058,7 +1047,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index6.css",
       "enable-tags-button.css"
     ]
   },

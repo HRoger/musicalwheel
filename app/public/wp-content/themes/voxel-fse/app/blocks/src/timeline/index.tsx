@@ -15,14 +15,14 @@ import type { TimelineAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 // Import editor styles
-import './editor.css';
+
 
 /**
  * Register the Timeline block
  */
-registerBlockType<TimelineAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...(metadata as Omit<typeof metadata, 'name'>),
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
-});
+} as any);

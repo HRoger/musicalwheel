@@ -6,17 +6,27 @@
 	"title": "Userbar (VX)",
 	"category": "voxel-fse",
 	"description": "User bar with notifications, messages, cart, user menu, and custom links. FSE equivalent of Voxel's User bar widget.",
-	"keywords": ["userbar", "user", "notifications", "messages", "cart", "menu", "voxel"],
+	"keywords": [
+		"userbar",
+		"user",
+		"notifications",
+		"messages",
+		"cart",
+		"menu",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -31,13 +41,34 @@
 		"icons": {
 			"type": "object",
 			"default": {
-				"downArrow": { "library": "", "value": "" },
-				"rightArrow": { "library": "", "value": "" },
-				"leftArrow": { "library": "", "value": "" },
-				"close": { "library": "", "value": "" },
-				"trash": { "library": "", "value": "" },
-				"inbox": { "library": "", "value": "" },
-				"loadMore": { "library": "", "value": "" }
+				"downArrow": {
+					"library": "",
+					"value": ""
+				},
+				"rightArrow": {
+					"library": "",
+					"value": ""
+				},
+				"leftArrow": {
+					"library": "",
+					"value": ""
+				},
+				"close": {
+					"library": "",
+					"value": ""
+				},
+				"trash": {
+					"library": "",
+					"value": ""
+				},
+				"inbox": {
+					"library": "",
+					"value": ""
+				},
+				"loadMore": {
+					"library": "",
+					"value": ""
+				}
 			}
 		},
 		"itemsAlign": {
@@ -72,11 +103,21 @@
 		},
 		"itemMargin": {
 			"type": "object",
-			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+			"default": {
+				"top": "",
+				"right": "",
+				"bottom": "",
+				"left": ""
+			}
 		},
 		"itemPadding": {
 			"type": "object",
-			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+			"default": {
+				"top": "",
+				"right": "",
+				"bottom": "",
+				"left": ""
+			}
 		},
 		"itemBackground": {
 			"type": "string",
@@ -248,7 +289,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

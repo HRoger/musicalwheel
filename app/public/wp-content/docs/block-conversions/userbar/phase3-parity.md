@@ -1,12 +1,63 @@
 # Userbar Block - Phase 3 Parity
 
-**Date:** December 23, 2025
-**Status:** Analysis Complete (100% parity)
+**Date:** February 1, 2026 (Updated)
+**Status:** Full Parity with Server-Side Config (100%+)
 **Reference:** voxel-user-bar.beautified.js (369 lines, ~11KB)
 
 ## Summary
 
-The userbar block has **100% parity** with Voxel's Vue.js implementation. All three Vue components (Notifications, Messages Popup, Cart) are fully implemented in React with identical functionality: paginated lists, AJAX API calls, loading states, guest cart support via localStorage, and event listeners. The React implementation extends to 1,599 lines with full TypeScript typing for type safety.
+The userbar block has **100% parity** with Voxel's Vue.js implementation, PLUS proper **server-side config injection** via `FSE_Userbar_API_Controller`. All three Vue components (Notifications, Messages Popup, Cart) are fully implemented in React with identical functionality: paginated lists, AJAX API calls, loading states, guest cart support via localStorage, and event listeners.
+
+## February 2026 Update: Server-Side Parity (Plan C+)
+
+### New: FSE_Userbar_API_Controller
+
+Added server-side controller (`fse-userbar-api-controller.php`) that injects configuration matching Voxel's `data-config` attributes:
+
+| Voxel PHP Source | FSE Controller Output | Status |
+|------------------|----------------------|--------|
+| `notifications.php:3-7` - l10n.confirmClear | `l10n.confirmClear` | ✅ Done |
+| `messages.php:2` - `wp_create_nonce('vx_chat')` | `nonces.chat` | ✅ Done |
+| `cart.php:4` - `wp_create_nonce('vx_cart')` | `nonces.cart` | ✅ Done |
+| `cart.php:5` - `metadata_exists('user', id, 'voxel:cart')` | `isCartEmpty` | ✅ Done |
+| `notifications.php:12` - `get_notification_count()['unread']` | `unread.notifications` | ✅ Done |
+| `messages.php:7` - `get_inbox_meta()['unread']` | `unread.messages` | ✅ Done |
+| `user-bar.php:19-26` - user avatar/displayName | `user.avatarUrl`, `user.displayName` | ✅ Done |
+
+### Config Injection Method
+
+The controller injects `window.VoxelFSEUserbar` via `wp_head` hook:
+
+```php
+// Output in wp_head
+window.VoxelFSEUserbar = {
+    isLoggedIn: true,
+    nonces: { chat: "abc123", cart: "def456" },
+    isCartEmpty: false,
+    unread: { notifications: 3, messages: true },
+    user: { id: 1, displayName: "John", avatarUrl: "..." },
+    l10n: { confirmClear: "Clear all notifications?", ... },
+    templates: { inbox: "https://..." }
+};
+```
+
+### React Component Updates
+
+The React components now use the server config:
+
+1. **`getNonce(type)`** - Gets nonces from `window.VoxelFSEUserbar.nonces`
+2. **`getServerConfig()`** - Accesses the full server config
+3. **Initial unread indicators** - Display immediately from server data, not API call
+4. **User avatar/name** - Uses server-injected data for immediate rendering
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `fse-userbar-api-controller.php` | **NEW** - REST API + config injection |
+| `functions.php` | Added controller registration |
+| `UserbarComponent.tsx` | Uses `getServerConfig()`, `getNonce()` |
+| `types/index.ts` | Added `VoxelFSEUserbarConfig` type |
 
 ## Voxel JS Analysis
 

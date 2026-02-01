@@ -6,11 +6,21 @@
 	"title": "Accordion (VX)",
 	"category": "voxel-fse",
 	"description": "Collapsible accordion with nested content. FSE equivalent of Voxel's Nested Accordion widget.",
-	"keywords": ["accordion", "collapse", "toggle", "faq", "nested", "voxel"],
+	"keywords": [
+		"accordion",
+		"collapse",
+		"toggle",
+		"faq",
+		"nested",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true,
@@ -20,7 +30,6 @@
 		}
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
@@ -52,19 +61,43 @@
 		"items": {
 			"type": "array",
 			"default": [
-				{ "id": "item-1", "title": "Item #1", "cssId": "" },
-				{ "id": "item-2", "title": "Item #2", "cssId": "" },
-				{ "id": "item-3", "title": "Item #3", "cssId": "" }
+				{
+					"id": "item-1",
+					"title": "Item #1",
+					"cssId": ""
+				},
+				{
+					"id": "item-2",
+					"title": "Item #2",
+					"cssId": ""
+				},
+				{
+					"id": "item-3",
+					"title": "Item #3",
+					"cssId": ""
+				}
 			]
 		},
 		"itemPosition": {
 			"type": "object",
-			"default": { "desktop": "start" }
+			"default": {
+				"desktop": "start"
+			}
 		},
 		"titleTag": {
 			"type": "string",
 			"default": "div",
-			"enum": ["h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "p"]
+			"enum": [
+				"h1",
+				"h2",
+				"h3",
+				"h4",
+				"h5",
+				"h6",
+				"div",
+				"span",
+				"p"
+			]
 		},
 		"faqSchema": {
 			"type": "boolean",
@@ -72,29 +105,46 @@
 		},
 		"iconPosition": {
 			"type": "object",
-			"default": { "desktop": "end" }
+			"default": {
+				"desktop": "end"
+			}
 		},
 		"expandIcon": {
 			"type": "object",
-			"default": { "library": "icon", "value": "las la-plus" }
+			"default": {
+				"library": "icon",
+				"value": "las la-plus"
+			}
 		},
 		"collapseIcon": {
 			"type": "object",
-			"default": { "library": "icon", "value": "las la-minus" }
+			"default": {
+				"library": "icon",
+				"value": "las la-minus"
+			}
 		},
 		"defaultState": {
 			"type": "string",
 			"default": "expanded",
-			"enum": ["expanded", "all_collapsed"]
+			"enum": [
+				"expanded",
+				"all_collapsed"
+			]
 		},
 		"maxItemsExpanded": {
 			"type": "string",
 			"default": "one",
-			"enum": ["one", "multiple"]
+			"enum": [
+				"one",
+				"multiple"
+			]
 		},
 		"animationDuration": {
 			"type": "object",
-			"default": { "size": 400, "unit": "ms" }
+			"default": {
+				"size": 400,
+				"unit": "ms"
+			}
 		},
 		"itemSpacing": {
 			"type": "number",
@@ -130,7 +180,14 @@
 		},
 		"accordionPadding": {
 			"type": "object",
-			"default": { "desktop": { "top": "10px", "right": "10px", "bottom": "10px", "left": "10px" } }
+			"default": {
+				"desktop": {
+					"top": "10px",
+					"right": "10px",
+					"bottom": "10px",
+					"left": "10px"
+				}
+			}
 		},
 		"accordionNormalBgType": {
 			"type": "string",
@@ -308,7 +365,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

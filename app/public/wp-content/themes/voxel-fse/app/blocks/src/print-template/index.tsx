@@ -17,7 +17,7 @@ import metadata from './block.json';
 import type { PrintTemplateAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
-import './editor.css';
+
 
 /**
  * Deprecated block versions for migration

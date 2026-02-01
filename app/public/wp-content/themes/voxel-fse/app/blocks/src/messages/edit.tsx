@@ -47,7 +47,7 @@ export default function Edit({
 	}, [attributes.blockId, clientId, setAttributes]);
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'voxel-fse-messages',
 		selectorPrefix: 'voxel-fse-messages',

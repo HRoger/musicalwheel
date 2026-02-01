@@ -466,6 +466,107 @@ export default function SearchFormComponent({
 		? editorDeviceType
 		: frontendDeviceType;
 
+	// ============================================
+	// Map/Feed Switcher State
+	// Evidence: themes/voxel/templates/widgets/search-form.php:194-222
+	// ============================================
+
+	// Check if switcher is enabled for current device
+	const isSwitcherEnabled =
+		(deviceType === 'desktop' && (attributes.mfSwitcherDesktop ?? false)) ||
+		(deviceType === 'tablet' && (attributes.mfSwitcherTablet ?? false)) ||
+		(deviceType === 'mobile' && (attributes.mfSwitcherMobile ?? false));
+
+	// Get default view for current device
+	const getSwitcherDefault = (): 'feed' | 'map' => {
+		if (deviceType === 'desktop') return attributes.mfSwitcherDesktopDefault ?? 'feed';
+		if (deviceType === 'tablet') return attributes.mfSwitcherTabletDefault ?? 'feed';
+		return attributes.mfSwitcherMobileDefault ?? 'feed';
+	};
+
+	// Current view state (feed or map)
+	const [currentView, setCurrentView] = useState<'feed' | 'map'>(getSwitcherDefault);
+
+	// Reset view when device type changes
+	useEffect(() => {
+		setCurrentView(getSwitcherDefault());
+	}, [deviceType, attributes.mfSwitcherDesktopDefault, attributes.mfSwitcherTabletDefault, attributes.mfSwitcherMobileDefault]);
+
+	// Toggle to list view (show feed, hide map)
+	// Evidence: voxel-search-form.beautified.js:2908-2914
+	const toggleListView = () => {
+		setCurrentView('feed');
+
+		// Find and toggle visibility on Map and Post Feed widgets
+		// Uses Voxel's vx-hidden-{breakpoint} classes
+		const bp = deviceType;
+		const mapWidget = document.getElementById(attributes.postToMapId || '');
+		const feedWidget = document.getElementById(attributes.postToFeedId || '');
+
+		if (mapWidget) mapWidget.classList.add(`vx-hidden-${bp}`);
+		if (feedWidget) feedWidget.classList.remove(`vx-hidden-${bp}`);
+	};
+
+	// Toggle to map view (show map, hide feed)
+	// Evidence: voxel-search-form.beautified.js:2920-2926
+	const toggleMapView = () => {
+		setCurrentView('map');
+
+		const bp = deviceType;
+		const mapWidget = document.getElementById(attributes.postToMapId || '');
+		const feedWidget = document.getElementById(attributes.postToFeedId || '');
+
+		if (mapWidget) mapWidget.classList.remove(`vx-hidden-${bp}`);
+		if (feedWidget) feedWidget.classList.add(`vx-hidden-${bp}`);
+	};
+
+	// Render the Map/Feed Switcher button
+	// Evidence: themes/voxel/templates/widgets/search-form.php:200-221
+	const renderMapFeedSwitcher = () => {
+		if (!isSwitcherEnabled || context === 'editor') {
+			return null;
+		}
+
+		// Build visibility classes based on which devices have switcher enabled
+		const containerClasses = [
+			!attributes.mfSwitcherDesktop ? 'vx-hidden-desktop' : '',
+			!attributes.mfSwitcherTablet ? 'vx-hidden-tablet' : '',
+			!attributes.mfSwitcherMobile ? 'vx-hidden-mobile' : '',
+		].filter(Boolean).join(' ');
+
+		return createPortal(
+			<div className={`ts-switcher-btn ${containerClasses}`}>
+				{/* List View toggle - visible when map is active */}
+				<a
+					href="#"
+					className={`ts-btn ts-btn-1 ${currentView === 'feed' ? `vx-hidden-${deviceType}` : ''}`}
+					onClick={(e) => {
+						e.preventDefault();
+						toggleListView();
+					}}
+					role="button"
+				>
+					{VoxelIcons.grid}
+					List view
+				</a>
+				{/* Map View toggle - visible when feed is active */}
+				<a
+					href="#"
+					className={`ts-btn ts-btn-1 ${currentView === 'map' ? `vx-hidden-${deviceType}` : ''}`}
+					onClick={(e) => {
+						e.preventDefault();
+						toggleMapView();
+					}}
+					role="button"
+				>
+					{VoxelIcons.marker}
+					Map view
+				</a>
+			</div>,
+			document.body
+		);
+	};
+
 	// Determine if toggle mode is enabled for the current device
 	// Works in both editor (responsive preview) and frontend
 	const isToggleEnabledForDevice =
@@ -708,6 +809,11 @@ export default function SearchFormComponent({
 				</div>,
 				document.body
 			)}
+
+			{/* Map/Feed Switcher Button - matches Voxel's <teleport to=".ts-switcher-btn-..."> */}
+			{/* Evidence: themes/voxel/templates/widgets/search-form.php:194-222 */}
+			{/* Rendered as floating buttons when switcher is enabled for current device */}
+			{renderMapFeedSwitcher()}
 		</>
 	);
 }

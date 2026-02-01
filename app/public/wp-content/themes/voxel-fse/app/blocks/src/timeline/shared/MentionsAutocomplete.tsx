@@ -225,11 +225,10 @@ export function MentionsAutocomplete({
 			role="listbox"
 			aria-label="Mention suggestions"
 		>
-			{/* Loading state */}
+			{/* Loading state - matches Voxel standard */}
 			{isLoading && (
-				<div className="vxf-mentions-autocomplete-loading">
-					<span className="vxf-mentions-autocomplete-spinner" />
-					Searching...
+				<div className="ts-no-posts">
+					<span className="ts-loader" />
 				</div>
 			)}
 

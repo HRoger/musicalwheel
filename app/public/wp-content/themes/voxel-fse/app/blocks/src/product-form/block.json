@@ -6,17 +6,26 @@
 	"title": "Product Form (VX)",
 	"category": "voxel-fse",
 	"description": "A product purchase form with dynamic fields, cart integration, and price calculator. Must be placed on a single post template with a product field.",
-	"keywords": ["product", "form", "cart", "checkout", "purchase", "voxel"],
+	"keywords": [
+		"product",
+		"form",
+		"cart",
+		"checkout",
+		"purchase",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -67,17 +76,26 @@
 		"showPriceCalculator": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"showPriceCalculatorTablet": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"showPriceCalculatorMobile": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"showSubtotalOnly": {
 			"type": "boolean",
@@ -94,11 +112,26 @@
 		"icons": {
 			"type": "object",
 			"default": {
-				"addToCart": { "library": "line-awesome", "value": "la-shopping-cart" },
-				"outOfStock": { "library": "line-awesome", "value": "la-exclamation-circle" },
-				"checkout": { "library": "line-awesome", "value": "la-arrow-right" },
-				"calendar": { "library": "line-awesome", "value": "la-calendar" },
-				"clock": { "library": "line-awesome", "value": "la-clock" }
+				"addToCart": {
+					"library": "line-awesome",
+					"value": "la-shopping-cart"
+				},
+				"outOfStock": {
+					"library": "line-awesome",
+					"value": "la-exclamation-circle"
+				},
+				"checkout": {
+					"library": "line-awesome",
+					"value": "la-arrow-right"
+				},
+				"calendar": {
+					"library": "line-awesome",
+					"value": "la-calendar"
+				},
+				"clock": {
+					"library": "line-awesome",
+					"value": "la-clock"
+				}
 			}
 		},
 		"fieldSpacing": {
@@ -125,7 +158,11 @@
 		},
 		"primaryButtonBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"primaryButtonBorderRadius": {
 			"type": "number",
@@ -237,7 +274,11 @@
 		},
 		"stepperButtonBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"stepperButtonBorderRadius": {
 			"type": "number",
@@ -265,7 +306,11 @@
 		},
 		"cardsBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"cardsBorderRadius": {
 			"type": "number",
@@ -329,7 +374,11 @@
 		},
 		"buttonsBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"buttonsBorderRadius": {
 			"type": "number",
@@ -373,7 +422,11 @@
 		},
 		"dropdownBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"dropdownBorderRadius": {
 			"type": "number",
@@ -537,7 +590,11 @@
 		},
 		"inputBorder": {
 			"type": "object",
-			"default": { "borderType": "none", "borderWidth": {}, "borderColor": "" }
+			"default": {
+				"borderType": "none",
+				"borderWidth": {},
+				"borderColor": ""
+			}
 		},
 		"inputBorderRadius": {
 			"type": "number",
@@ -575,7 +632,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

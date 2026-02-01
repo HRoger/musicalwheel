@@ -21,6 +21,7 @@ export type { VoxelResponse, FetchOptions } from './voxel-fetch';
 export {
 	// Config
 	getTimelineConfig,
+	getPostContext,
 
 	// Status operations
 	publishStatus,
@@ -69,4 +70,5 @@ export type {
 	UploadProgressCallback,
 	ModerationResponse,
 	LinkPreviewResponse,
+	PostContextResponse,
 } from './timeline-api';

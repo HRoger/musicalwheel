@@ -76,7 +76,7 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                     value={attributes.ts_chart_stroke_width}
                     onChange={(value) => setAttributes({ ts_chart_stroke_width: value ?? 2 })}
                     min={0}
-                    max={100}
+                    max={5}
                     step={1}
                     __nextHasNoMarginBottom
                 />
@@ -88,8 +88,8 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                     setAttributes={setAttributes}
                     attributeBaseName="ts_chart_animation_duration"
                     min={0}
-                    max={10}
-                    step={0.1}
+                    max={5}
+                    step={0.01}
                     enableDynamicTags={true}
                 />
             </AccordionPanel>

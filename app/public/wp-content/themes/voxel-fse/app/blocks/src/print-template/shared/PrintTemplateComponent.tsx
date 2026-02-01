@@ -172,12 +172,14 @@ function SearchFormHydrationWrapper({ attributes }: SearchFormHydrationWrapperPr
 		};
 	}, [attributes.postTypes]);
 
-	// Loading state - show Voxel loader
+	// Loading state - matches Voxel standard (ts-no-posts + ts-loader)
 	if (isLoading) {
 		return (
-			<div className="ts-form ts-search-widget voxel-fse-loading">
+			<div className="ts-form ts-search-widget">
 				<div className="ts-filter-wrapper flexify">
-					<span className="ts-loader"></span>
+					<div className="ts-no-posts">
+						<span className="ts-loader"></span>
+					</div>
 				</div>
 			</div>
 		);

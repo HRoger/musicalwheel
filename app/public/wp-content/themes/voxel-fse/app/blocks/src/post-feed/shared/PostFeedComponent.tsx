@@ -41,6 +41,7 @@ import type {
 } from '../types';
 import { generatePostFeedStyles } from '../styles';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import { Loader } from '@shared/components/Loader';
 
 /**
  * Default icons (matches Voxel defaults)
@@ -107,7 +108,7 @@ function injectAssetsToCache(doc: Document): Promise<void> {
 	});
 
 	// Return promise that resolves when all CSS is loaded
-	return Promise.all(cssLoadPromises).then(() => {});
+	return Promise.all(cssLoadPromises).then(() => { });
 }
 
 /**
@@ -319,6 +320,7 @@ export default function PostFeedComponent({
 	config,
 	context,
 	editorFilters,
+	containerElement,
 }: PostFeedComponentProps): JSX.Element {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -465,7 +467,7 @@ export default function PostFeedComponent({
 				doFetch();
 			}
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [context, editorFilters, attributes.postType, attributes.postsPerPage, attributes.displayDetails]);
 
 	// Build CSS classes
@@ -637,9 +639,21 @@ export default function PostFeedComponent({
 			// This must happen BEFORE rendering content to prevent FOUC
 			await injectAssetsToCache(doc);
 
-			// Remove the info script and stylesheet links from the HTML (they've been moved to cache)
+			// Remove the info script from the HTML (it's been parsed)
+			// KEEP stylesheet links to match Elementor widget DOM structure (id="vx:post-feed.css-css")
 			let cleanHtml = html.replace(/<script class="info"[^>]*><\/script>/g, '');
-			cleanHtml = cleanHtml.replace(/<link[^>]*rel="stylesheet"[^>]*>/g, '');
+
+			// Manual Injection Parity: If the server response didn't include the stylesheet (which currently happens in FSE/AJAX context),
+			// we manually inject it to ensure layout parity with Elementor which has this link inside the grid.
+			if (!cleanHtml.includes('vx:post-feed.css-css')) {
+				const voxelConfig = (window as any).Voxel_Config;
+				if (voxelConfig?.ajax_url) {
+					const siteUrl = voxelConfig.ajax_url.replace(/\?vx=1.*$/, '');
+					// Use a standard version or try to get it from config if possible (hardcoded to match 1.x line)
+					const cssUrl = `${siteUrl}wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
+					cleanHtml = `<link rel="stylesheet" id="vx:post-feed.css-css" href="${cssUrl}" type="text/css" media="all">` + cleanHtml;
+				}
+			}
 
 			// Use requestAnimationFrame for smooth rendering (matches Voxel's pattern)
 			// Reference: voxel-post-feed.beautified.js:175-176
@@ -660,13 +674,65 @@ export default function PostFeedComponent({
 				// Reference: voxel-post-feed.beautified.js:250-259
 				// Note: We use a timeout to ensure React has finished rendering
 				setTimeout(() => {
-					if (containerRef.current) {
-						injectScriptsToCache(containerRef.current);
+					const targetContainer = containerElement || containerRef.current;
+					if (targetContainer) {
+						injectScriptsToCache(targetContainer);
 					}
 					// Trigger voxel:markup-update for any widgets in new content
 					// Reference: voxel-post-feed.beautified.js:269
 					if ((window as any).jQuery) {
 						(window as any).jQuery(document).trigger('voxel:markup-update');
+					}
+
+					// MAP INTEGRATION: Extract markers from feed DOM and dispatch to Map block
+					// Reference: voxel-search-form.beautified.js:2501-2518 (_updateMarkers)
+					// Voxel reads from: feed.find(".post-feed-grid:first").find(".ts-marker-wrapper > .map-marker")
+					if (context === 'frontend' && attributes.source === 'search-form') {
+						const feedContainer = containerElement || containerRef.current;
+						if (feedContainer) {
+							// Extract marker data from .ts-marker-wrapper elements (Voxel embeds these in preview cards)
+							const markerEls = feedContainer.querySelectorAll('.post-feed-grid .ts-marker-wrapper > .map-marker');
+							const markers: Array<{
+								postId: string;
+								lat: number;
+								lng: number;
+								template: string;
+							}> = [];
+
+							markerEls.forEach((markerEl) => {
+								const el = markerEl as HTMLElement;
+								const position = el.dataset.position;
+								const postId = el.dataset.postId;
+
+								if (!position || !postId) return;
+
+								const [lat, lng] = position.split(',').map(parseFloat);
+								if (isNaN(lat) || isNaN(lng)) return;
+
+								// Get the full marker HTML from the wrapper
+								const wrapper = el.parentElement;
+								const template = wrapper ? wrapper.innerHTML : el.outerHTML;
+
+								markers.push({
+									postId,
+									lat,
+									lng,
+									template,
+								});
+							});
+
+							// Dispatch event with marker data for Map block
+							if (markers.length > 0) {
+								console.log('[PostFeed] Dispatching', markers.length, 'markers to Map block');
+								window.dispatchEvent(new CustomEvent('voxel-fse:post-feed-markers', {
+									detail: {
+										sourceBlockId: attributes.blockId,
+										markers,
+									},
+									bubbles: true,
+								}));
+							}
+						}
 					}
 				}, 0);
 			});
@@ -781,7 +847,7 @@ export default function PostFeedComponent({
 				window.dispatchEvent(readyEvent);
 			}
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded to prevent infinite loop
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded to prevent infinite loop
 	}, [context, attributes.source, attributes.postType, attributes.blockId, attributes.searchFormId]);
 
 	// Pagination handlers
@@ -796,11 +862,12 @@ export default function PostFeedComponent({
 	 * Addresses Voxel issue: "No scroll position management" (voxel-post-feed.beautified.js:438-440)
 	 */
 	const scrollToTop = useCallback(() => {
-		if (containerRef.current) {
+		const targetContainer = containerElement || containerRef.current;
+		if (targetContainer) {
 			// Scroll to top of feed container with smooth animation
-			containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			targetContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
-	}, []);
+	}, [containerElement]);
 
 	const handlePrev = useCallback(() => {
 		if (!state.loading && state.hasPrev) {
@@ -920,53 +987,52 @@ export default function PostFeedComponent({
 					</div>
 				)}
 
-				{/* Post grid - actual content or placeholder */}
-				<div
-					className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
-					style={gridStyle}
-				>
-					{isUnconfigured ? (
-						/* Empty placeholder when NO data source configured */
+				{/* Post grid - actual content or loading spinner */}
+				{(!isUnconfigured && !showSkeletonCards && state.results) ? (
+					/* Actual post cards from Voxel - rendered directly in grid container */
+					<div
+						className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
+						style={gridStyle}
+						dangerouslySetInnerHTML={{ __html: state.results }}
+					/>
+				) : isUnconfigured ? (
+					/* Empty placeholder when NO data source configured */
+					<div
+						className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
+						style={gridStyle}
+					>
 						<EmptyPlaceholder />
-					) : showSkeletonCards ? (
-						/* Skeleton cards while loading with configured data source */
-						<>
-							{Array.from({ length: 6 }).map((_, i) => (
-								<div key={i} className="placeholder-card" style={{ background: '#f5f5f5', borderRadius: '8px', overflow: 'hidden' }}>
-									<div className="placeholder-image" style={{ height: '200px', background: '#e0e0e0' }} />
-									<div style={{ padding: '16px' }}>
-										<div className="placeholder-title" style={{ height: '20px', background: '#e0e0e0', marginBottom: '8px', borderRadius: '4px' }} />
-										<div className="placeholder-text" style={{ height: '14px', background: '#e0e0e0', width: '60%', borderRadius: '4px' }} />
-									</div>
-								</div>
-							))}
-						</>
-					) : state.results ? (
-						/* Actual post cards from Voxel */
-						<div dangerouslySetInnerHTML={{ __html: state.results }} />
-					) : (
-						/* No results placeholder */
-						<div className="ts-no-posts">
-							<span
-								className="ts-no-posts-icon"
-								dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.noResultsIcon, DEFAULT_ICONS.noResults),
-								}}
-							/>
-							<p>{attributes.noResultsLabel}</p>
-						</div>
-					)}
-				</div>
+					</div>
+				) : null}
+
+				{/* Loading spinner - shown during fetch */}
+				{showSkeletonCards && (
+					<div className="ts-no-posts">
+						<Loader variant="inline" ariaLabel="Loading posts..." />
+					</div>
+				)}
+
+				{/* No results placeholder - rendered as sibling, matched with Frontend structure */}
+				{/* Evidence: themes/voxel/templates/widgets/post-feed/no-results.php:1-11 */}
+				{/* VOXEL PARITY: Icon rendered directly (dangerouslySetInnerHTML on div), no wrapper span */}
+				<div
+					className={`ts-no-posts ${isUnconfigured || showSkeletonCards || state.hasResults ? 'hidden' : ''}`}
+					dangerouslySetInnerHTML={{
+						__html: `${getIconHtml(attributes.noResultsIcon, DEFAULT_ICONS.noResults)}<p>${attributes.noResultsLabel}</p>`,
+					}}
+				/>
 
 				{/* Pagination - functional in editor too */}
+				{/* Evidence: themes/voxel/templates/widgets/post-feed/pagination.php:2-20 */}
 				{attributes.pagination !== 'none' && (
 					<div className="feed-pagination flexify">
 						{attributes.pagination === 'prev_next' && (
 							<>
-								<button
-									className={`ts-btn ts-btn-1 ts-load-prev ${!state.hasPrev ? 'disabled' : ''}`}
-									onClick={handlePrev}
-									disabled={!state.hasPrev || state.loading}
+								{/* Evidence: pagination.php:4 - ts-btn-large class on prev/next */}
+								<a
+									href="#"
+									className={`ts-btn ts-btn-1 ts-btn-large ts-load-prev ${!state.hasPrev ? 'disabled' : ''}`}
+									onClick={(e) => { e.preventDefault(); handlePrev(); }}
 								>
 									<span
 										dangerouslySetInnerHTML={{
@@ -974,11 +1040,12 @@ export default function PostFeedComponent({
 										}}
 									/>
 									<span>{__('Previous', 'voxel-fse')}</span>
-								</button>
-								<button
-									className={`ts-btn ts-btn-1 ts-load-next ${!state.hasNext ? 'disabled' : ''}`}
-									onClick={handleNext}
-									disabled={!state.hasNext || state.loading}
+								</a>
+								{/* Evidence: pagination.php:8 - btn-icon-right class on next button */}
+								<a
+									href="#"
+									className={`ts-btn ts-btn-1 ts-btn-large btn-icon-right ts-load-next ${!state.hasNext ? 'disabled' : ''}`}
+									onClick={(e) => { e.preventDefault(); handleNext(); }}
 								>
 									<span>{__('Next', 'voxel-fse')}</span>
 									<span
@@ -986,14 +1053,14 @@ export default function PostFeedComponent({
 											__html: getIconHtml(attributes.rightArrowIcon, DEFAULT_ICONS.rightArrow),
 										}}
 									/>
-								</button>
+								</a>
 							</>
 						)}
 						{attributes.pagination === 'load_more' && state.hasNext && (
-							<button
+							<a
+								href="#"
 								className="ts-btn ts-btn-1 ts-btn-large ts-load-more"
-								onClick={handleLoadMore}
-								disabled={!state.hasNext || state.loading}
+								onClick={(e) => { e.preventDefault(); handleLoadMore(); }}
 							>
 								<span
 									dangerouslySetInnerHTML={{
@@ -1001,29 +1068,45 @@ export default function PostFeedComponent({
 									}}
 								/>
 								<span>{__('Load more', 'voxel-fse')}</span>
-							</button>
+							</a>
 						)}
 					</div>
 				)}
 
 				{/* Carousel navigation */}
+				{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
+				{/* VOXEL PARITY: ul.simplify-ul.flexify > li > a structure */}
 				{attributes.layoutMode === 'carousel' && (
-					<div className="post-feed-nav">
-						<button className="ts-icon-btn ts-prev-page" disabled>
-							<span
-								dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
-								}}
-							/>
-						</button>
-						<button className="ts-icon-btn ts-next-page" disabled>
-							<span
-								dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
-								}}
-							/>
-						</button>
-					</div>
+					<ul className="simplify-ul flexify post-feed-nav">
+						<li>
+							<a
+								href="#"
+								className="ts-icon-btn ts-prev-page disabled"
+								aria-label="Previous"
+								onClick={(e) => e.preventDefault()}
+							>
+								<span
+									dangerouslySetInnerHTML={{
+										__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+									}}
+								/>
+							</a>
+						</li>
+						<li>
+							<a
+								href="#"
+								className="ts-icon-btn ts-next-page disabled"
+								aria-label="Next"
+								onClick={(e) => e.preventDefault()}
+							>
+								<span
+									dangerouslySetInnerHTML={{
+										__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+									}}
+								/>
+							</a>
+						</li>
+					</ul>
 				)}
 			</div>
 		);
@@ -1035,8 +1118,10 @@ export default function PostFeedComponent({
 	// The container .voxel-fse-post-feed-frontend already has the necessary wrapper classes
 	// Note: responsiveLayoutCSS is generated above (line 348) and handles all responsive styles
 
+	// STRICT PARITY: Use Fragment to avoid extra wrapper div
+	// The parent container in save.tsx (voxel-fse-post-feed-frontend) mimics elementor-widget-container
 	return (
-		<div ref={containerRef} className="ts-post-feed-content" data-block-id={attributes.blockId}>
+		<>
 			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
@@ -1111,15 +1196,20 @@ export default function PostFeedComponent({
 			</div>
 
 			{/* Pagination - always rendered, shown/hidden via CSS */}
-			{/* Evidence: themes/voxel/templates/widgets/post-feed/pagination.php */}
+			{/* Evidence: themes/voxel/templates/widgets/post-feed/pagination.php:1-20 */}
+			{/* VOXEL PARITY: Uses <a> tags with ts-btn-large class */}
 			{attributes.pagination !== 'none' && (
 				<div className={`feed-pagination flexify ${!state.hasPrev && !state.hasNext ? 'hidden' : ''}`}>
 					{attributes.pagination === 'prev_next' && (
 						<>
-							<button
-								className={`ts-btn ts-btn-1 ts-load-prev ${!state.hasPrev ? 'disabled' : ''}`}
-								onClick={handlePrev}
-								disabled={!state.hasPrev || state.loading}
+							{/* Evidence: pagination.php:4 - ts-btn-large class */}
+							<a
+								href="#"
+								className={`ts-btn ts-btn-1 ts-btn-large ts-load-prev ${!state.hasPrev ? 'disabled' : ''}`}
+								onClick={(e) => {
+									e.preventDefault();
+									if (state.hasPrev && !state.loading) handlePrev();
+								}}
 							>
 								<span
 									dangerouslySetInnerHTML={{
@@ -1127,11 +1217,15 @@ export default function PostFeedComponent({
 									}}
 								/>
 								<span>{__('Previous', 'voxel-fse')}</span>
-							</button>
-							<button
-								className={`ts-btn ts-btn-1 ts-load-next ${!state.hasNext ? 'disabled' : ''}`}
-								onClick={handleNext}
-								disabled={!state.hasNext || state.loading}
+							</a>
+							{/* Evidence: pagination.php:8 - btn-icon-right class on next */}
+							<a
+								href="#"
+								className={`ts-btn ts-btn-1 ts-btn-large btn-icon-right ts-load-next ${!state.hasNext ? 'disabled' : ''}`}
+								onClick={(e) => {
+									e.preventDefault();
+									if (state.hasNext && !state.loading) handleNext();
+								}}
 							>
 								<span>{__('Next', 'voxel-fse')}</span>
 								<span
@@ -1139,14 +1233,17 @@ export default function PostFeedComponent({
 										__html: getIconHtml(attributes.rightArrowIcon, DEFAULT_ICONS.rightArrow),
 									}}
 								/>
-							</button>
+							</a>
 						</>
 					)}
 					{attributes.pagination === 'load_more' && (
-						<button
+						<a
+							href="#"
 							className={`ts-btn ts-btn-1 ts-btn-large ts-load-more ${!state.hasNext ? 'hidden' : ''}`}
-							onClick={handleLoadMore}
-							disabled={!state.hasNext || state.loading}
+							onClick={(e) => {
+								e.preventDefault();
+								if (state.hasNext && !state.loading) handleLoadMore();
+							}}
 						>
 							<span
 								dangerouslySetInnerHTML={{
@@ -1154,37 +1251,52 @@ export default function PostFeedComponent({
 								}}
 							/>
 							<span>{__('Load more', 'voxel-fse')}</span>
-						</button>
+						</a>
 					)}
 				</div>
 			)}
 
 			{/* Carousel navigation */}
-			{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php */}
+			{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
+			{/* VOXEL PARITY: ul.simplify-ul.flexify > li > a structure */}
 			{attributes.layoutMode === 'carousel' && (
-				<div className={`post-feed-nav ${!state.hasResults ? 'hidden' : ''}`}>
-					<button
-						className="ts-icon-btn ts-prev-page"
-						onClick={handleCarouselPrev}
-					>
-						<span
-							dangerouslySetInnerHTML={{
-								__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+				<ul className={`simplify-ul flexify post-feed-nav ${!state.hasResults ? 'hidden' : ''}`}>
+					<li>
+						<a
+							href="#"
+							className="ts-icon-btn ts-prev-page"
+							aria-label="Previous"
+							onClick={(e) => {
+								e.preventDefault();
+								handleCarouselPrev();
 							}}
-						/>
-					</button>
-					<button
-						className="ts-icon-btn ts-next-page"
-						onClick={handleCarouselNext}
-					>
-						<span
-							dangerouslySetInnerHTML={{
-								__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+						>
+							<span
+								dangerouslySetInnerHTML={{
+									__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+								}}
+							/>
+						</a>
+					</li>
+					<li>
+						<a
+							href="#"
+							className="ts-icon-btn ts-next-page"
+							aria-label="Next"
+							onClick={(e) => {
+								e.preventDefault();
+								handleCarouselNext();
 							}}
-						/>
-					</button>
-				</div>
+						>
+							<span
+								dangerouslySetInnerHTML={{
+									__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+								}}
+							/>
+						</a>
+					</li>
+				</ul>
 			)}
-		</div>
+		</>
 	);
 }

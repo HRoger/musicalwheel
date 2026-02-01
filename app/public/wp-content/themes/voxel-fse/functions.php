@@ -261,6 +261,15 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-cart-api-controller.php';
 new \VoxelFSE\Controllers\FSE_Cart_API_Controller();
 
 /**
+ * Load FSE Advanced List API Controller
+ * Provides REST API endpoints for the Advanced List block (Plan C+ architecture)
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-advanced-list-api-controller.php';
+
+// Initialize FSE Advanced List API controller
+new \VoxelFSE\Controllers\FSE_Advanced_List_API_Controller();
+
+/**
  * Load FSE Work Hours API Controller
  * Provides REST API endpoints for the Work Hours block (Plan C+ architecture)
  */
@@ -279,6 +288,19 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-messages-api-controller.php'
 new \VoxelFSE\Controllers\FSE_Messages_API_Controller();
 
 /**
+ * Load FSE Userbar API Controller
+ * Provides REST API endpoints and server-side config injection for the Userbar block
+ * - Nonces for notifications, messages, cart AJAX actions
+ * - Initial unread counts (notifications, messages)
+ * - Cart empty state
+ * - User data (avatar, display name)
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-userbar-api-controller.php';
+
+// Initialize FSE Userbar API controller
+new \VoxelFSE\Controllers\FSE_Userbar_API_Controller();
+
+/**
  * Load FSE Orders API Controller
  * Provides REST API endpoints for the Orders block (Plan C+ architecture)
  */
@@ -288,6 +310,29 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-orders-api-controller.php';
 new \VoxelFSE\Controllers\FSE_Orders_API_Controller();
 
 /**
+ * Load FSE Map API Controller
+ * Provides REST API endpoints for the Map block (Plan C+ architecture)
+ * - Post location for current-post mode
+ * - Marker templates for search-form mode
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-map-api-controller.php';
+
+// Initialize FSE Map API controller
+new \VoxelFSE\Controllers\FSE_Map_API_Controller();
+
+/**
+ * Load FSE Product Form API Controller
+ * Provides REST API endpoints for the Product Form block (Plan C+ architecture)
+ * - Product configuration with proper Voxel parity
+ * - Cart operations with nonces
+ * - Search context config for URL param mapping
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-product-form-api-controller.php';
+
+// Initialize FSE Product Form API controller
+new \VoxelFSE\Controllers\FSE_Product_Form_API_Controller();
+
+/**
  * Load FSE Search Controller
  * Overrides Voxel's Search_Controller to fix undefined array key warnings
  */
@@ -295,6 +340,19 @@ require_once VOXEL_FSE_PATH . '/app/controllers/frontend/search/fse-search-contr
 
 // Initialize FSE Search controller
 new \VoxelFSE\Controllers\Frontend\Search\FSE_Search_Controller();
+
+/**
+ * Load FSE Stripe Account API Controller
+ * Provides REST API endpoints for the Stripe Account block (Plan C+ architecture)
+ * - Account status (exists, charges_enabled, details_submitted)
+ * - Onboard/dashboard links
+ * - Shipping zones/rates for vendor shipping
+ * - Nonces for AJAX operations
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controller.php';
+
+// Initialize FSE Stripe Account API controller
+new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
@@ -422,6 +480,9 @@ function voxel_fse_setup()
 
     // Add support for custom units
     add_theme_support('custom-units');
+
+    // Load editor overrides as editor-style for FSE iframe
+    add_editor_style('assets/gutenberg-editor-overrides.css');
 }
 
 add_action('after_setup_theme', 'voxel_fse_setup');
@@ -448,7 +509,7 @@ function voxel_fse_enqueue_block_editor_assets()
     );
 }
 
-add_action('enqueue_block_editor_assets', 'voxel_fse_enqueue_block_editor_assets');
+add_action('enqueue_block_editor_assets', 'voxel_fse_enqueue_block_editor_assets', 999);
 
 /**
  * Enqueue Line Awesome for Voxel admin pages

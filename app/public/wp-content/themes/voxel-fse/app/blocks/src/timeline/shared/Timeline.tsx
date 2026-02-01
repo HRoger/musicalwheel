@@ -49,7 +49,7 @@
  */
 
 import { useRef, useMemo } from 'react';
-import { TimelineProvider, useTimelineConfig } from '../hooks';
+import { TimelineProvider, useTimelineConfig, useVisibility, useComposerConfig } from '../hooks';
 import { StatusComposer } from './StatusComposer';
 import { StatusFeed, type StatusFeedHandle } from './StatusFeed';
 import type { TimelineAttributes, OrderingOption, Status } from '../types';
@@ -60,6 +60,7 @@ import type { TimelineAttributes, OrderingOption, Status } from '../types';
 interface TimelineProps {
 	attributes: TimelineAttributes;
 	context: 'editor' | 'frontend';
+	postId?: number;
 	className?: string;
 }
 
@@ -69,6 +70,29 @@ interface TimelineProps {
  * IMPORTANT: No full-page loading state!
  * Renders immediately with defaults, StatusFeed handles its own loading.
  */
+/**
+ * Access Restricted Component - shown when timeline is not visible
+ * Matches Voxel's visibility restriction messages
+ */
+function AccessRestricted({ reason }: { reason: string | null }): JSX.Element {
+	const messages: Record<string, string> = {
+		login_required: 'Please log in to view this content.',
+		followers_only: 'Only followers can view this content.',
+		customers_only: 'Only customers can view this content.',
+		private: 'This content is private.',
+		no_post_context: 'Post not found.',
+		no_author_context: 'Author not found.',
+	};
+
+	const message = reason ? messages[reason] ?? 'Content not available.' : 'Content not available.';
+
+	return (
+		<div className="ts-no-posts">
+			<p>{message}</p>
+		</div>
+	);
+}
+
 function TimelineInner({
 	attributes,
 	context,
@@ -76,6 +100,12 @@ function TimelineInner({
 }: TimelineProps): JSX.Element {
 	// Config is optional - we render with defaults while it loads
 	const { config } = useTimelineConfig();
+
+	// CRITICAL FOR 1:1 VOXEL PARITY: Check visibility from post-context endpoint
+	const { visible, reason } = useVisibility();
+
+	// CRITICAL FOR 1:1 VOXEL PARITY: Get composer config from post-context endpoint
+	const composerConfig = useComposerConfig();
 
 	// Ref to StatusFeed for adding new statuses without remounting
 	const feedRef = useRef<StatusFeedHandle>(null);
@@ -100,15 +130,30 @@ function TimelineInner({
 		feedRef.current?.addStatus(newStatus);
 	};
 
+	// CRITICAL FOR 1:1 VOXEL PARITY: Check visibility before rendering
+	// This matches Voxel's timeline.php:316-384 visibility checks
+	if (!visible) {
+		return (
+			<div className={`vxfeed ${className}`}>
+				<AccessRestricted reason={reason} />
+			</div>
+		);
+	}
+
 	// Can user post?
 	// - In editor: always show composer for preview (admins can always post)
-	// - In frontend: check permissions from config
+	// - In frontend: use composerConfig.can_post from post-context endpoint
+	//   This is the CORRECT 1:1 Voxel parity - uses server-side permission checks
 	const canPost = context === 'editor'
 		? true  // Always show in editor for preview purposes
-		: (config?.permissions?.can_post ?? false);
+		: (composerConfig?.can_post ?? false);
 
-	// Show composer based on mode (only for modes that support posting)
-	const showComposer = canPost && ['user_feed', 'global_feed', 'post_wall'].includes(attributes.mode);
+	// Show composer based on composerConfig (post-context endpoint determines this server-side)
+	// This replaces the hardcoded mode check with server-side logic
+	const showComposer = canPost;
+
+	// Get dynamic placeholder from composer config (1:1 Voxel parity)
+	const composerPlaceholder = composerConfig?.placeholder;
 
 	return (
 		<>
@@ -151,9 +196,11 @@ function TimelineInner({
 			)}
 
 			<div className={`vxfeed ${className}`}>
-				{/* Status Composer */}
+				{/* Status Composer - uses composerConfig for 1:1 Voxel parity */}
 				{showComposer && (
 					<StatusComposer
+						feed={composerConfig?.feed}
+						placeholder={composerPlaceholder}
 						onStatusCreated={handleStatusCreated}
 					/>
 				)}
@@ -178,10 +225,11 @@ function TimelineInner({
 export function Timeline({
 	attributes,
 	context,
+	postId,
 	className = '',
 }: TimelineProps): JSX.Element {
 	return (
-		<TimelineProvider attributes={attributes} context={context}>
+		<TimelineProvider attributes={attributes} postId={postId} context={context}>
 			<TimelineInner
 				attributes={attributes}
 				context={context}

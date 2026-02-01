@@ -73,7 +73,12 @@ function normalizeConfig(raw: any): MessagesVxConfig {
 		loadMore: raw.icons?.loadMore ?? raw.icons?.load_more ?? {},
 		send: raw.icons?.send ?? raw.icons?.sendIcon ?? {},
 		emoji: raw.icons?.emoji ?? raw.icons?.emojiIcon ?? {},
-		attachment: raw.icons?.attachment ?? raw.icons?.attachmentIcon ?? {},
+		upload: raw.icons?.upload ?? raw.icons?.uploadIcon ?? {},
+		gallery: raw.icons?.gallery ?? raw.icons?.galleryIcon ?? {},
+		user: raw.icons?.user ?? raw.icons?.userIcon ?? {},
+		clear: raw.icons?.clear ?? raw.icons?.clearIcon ?? {},
+		ban: raw.icons?.ban ?? raw.icons?.banIcon ?? {},
+		trash: raw.icons?.trash ?? raw.icons?.trashIcon ?? {},
 	};
 
 	// Normalize settings
@@ -94,9 +99,9 @@ function normalizeConfig(raw: any): MessagesVxConfig {
 function getMessagesConfig(container: HTMLElement): MessagesConfig | null {
 	// Try to get from data-config attribute (Voxel pattern)
 	const inboxElement = container.querySelector<HTMLElement>('.ts-inbox');
-	if (inboxElement && inboxElement.dataset.config) {
+	if (inboxElement && inboxElement.dataset['config']) {
 		try {
-			return JSON.parse(inboxElement.dataset.config) as MessagesConfig;
+			return JSON.parse(inboxElement.dataset['config']) as MessagesConfig;
 		} catch (error) {
 			console.error('Failed to parse messages config:', error);
 		}
@@ -231,7 +236,7 @@ function initMessages() {
 
 	messagesBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -249,7 +254,7 @@ function initMessages() {
 		const messagesConfig = getMessagesConfig(container);
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Remove placeholder
 		const placeholder = container.querySelector('.voxel-fse-block-placeholder');

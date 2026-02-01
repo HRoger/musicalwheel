@@ -50,7 +50,6 @@ const LoadingIcon = () => (
 		viewBox="0 0 24 24"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
-		className="vxf-loading-icon"
 	>
 		<path
 			d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"

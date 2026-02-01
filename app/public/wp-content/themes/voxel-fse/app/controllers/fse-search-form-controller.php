@@ -100,6 +100,17 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 				],
 			],
 		] );
+
+		// Public endpoint for adaptive filtering (narrow filters)
+		// Returns narrowed values for terms and range filters based on current search results
+		// CRITICAL: This is the 1:1 Voxel parity endpoint for adaptive filtering
+		// Evidence: themes/voxel/app/controllers/frontend/search/search-controller.php:162-184
+		// Voxel AJAX: ?vx=1&action=search.narrow_filters
+		register_rest_route( 'voxel-fse/v1', '/search-form/narrow-filters', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'narrow_filters' ],
+			'permission_callback' => '__return_true', // Public for frontend
+		] );
 	}
 
 	/**
@@ -838,5 +849,87 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 			'name'   => $wp_user->display_name,
 			'avatar' => get_avatar( $user_id, 32 ),
 		] );
+	}
+
+	/**
+	 * Narrow filters for adaptive filtering
+	 *
+	 * CRITICAL: 1:1 Voxel Parity - This replicates the exact behavior of
+	 * themes/voxel/app/controllers/frontend/search/search-controller.php:162-184
+	 *
+	 * Returns narrowed values for:
+	 * - Terms filters: Available term counts based on current search results
+	 * - Range filters: Min/max bounds based on current search results
+	 *
+	 * Voxel's workflow:
+	 * 1. Receives filter values + term_taxonomy_ids via POST
+	 * 2. Calls \Voxel\get_narrowed_filter_values() which uses index queries
+	 * 3. Returns { terms: { taxonomy_key: { term_id: count } }, ranges: { filter_key: { min, max } } }
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function narrow_filters( \WP_REST_Request $request ) {
+		// Ensure Voxel is available
+		if ( ! function_exists( '\Voxel\get_narrowed_filter_values' ) ) {
+			return new \WP_Error(
+				'voxel_not_active',
+				__( 'Voxel theme is not active or function not available', 'voxel-fse' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		try {
+			// Get term_taxonomy_ids from POST body
+			// Evidence: themes/voxel/app/controllers/frontend/search/search-controller.php:168
+			$body               = $request->get_json_params();
+			$term_taxonomy_ids  = $body['term_taxonomy_ids'] ?? [];
+
+			// Build request array from GET params (filter values)
+			// Evidence: themes/voxel/app/controllers/frontend/search/search-controller.php:170
+			$filter_request = [];
+
+			// Get 'type' parameter for post type
+			$type = $request->get_param( 'type' );
+			if ( $type ) {
+				$filter_request['type'] = sanitize_text_field( $type );
+			}
+
+			// Get _last_modified for optimization
+			// Evidence: themes/voxel/app/utils/post-utils.php:426,525
+			$last_modified = $request->get_param( '_last_modified' );
+			if ( $last_modified ) {
+				$_REQUEST['_last_modified'] = sanitize_text_field( $last_modified );
+			}
+
+			// Get all other filter values from query params
+			foreach ( $request->get_query_params() as $key => $value ) {
+				if ( ! in_array( $key, [ 'type', '_last_modified' ], true ) ) {
+					$filter_request[ sanitize_text_field( $key ) ] = sanitize_text_field( $value );
+				}
+			}
+
+			// Start output buffering to capture any unwanted output
+			ob_start();
+
+			// Call Voxel's native function for 1:1 parity
+			// Evidence: themes/voxel/app/controllers/frontend/search/search-controller.php:171
+			$response = \Voxel\get_narrowed_filter_values( $filter_request, (array) $term_taxonomy_ids );
+
+			// Discard any captured output
+			ob_end_clean();
+
+			return rest_ensure_response( [
+				'success' => true,
+				'data'    => $response,
+			] );
+
+		} catch ( \Exception $e ) {
+			return rest_ensure_response( [
+				'success' => false,
+				'message' => $e->getMessage(),
+				'code'    => $e->getCode(),
+			] );
+		}
 	}
 }

@@ -1,12 +1,51 @@
 # Stripe Account Block - Phase 3 Parity
 
-**Date:** December 24, 2025
-**Status:** Analysis Complete (100% parity)
-**Reference:** stripe-account-widget.php (2731 lines) - Largest Voxel widget
+**Date:** February 1, 2026
+**Status:** Analysis Complete (100% parity) ✅
+**Reference:**
+- stripe-account-widget.php (2731 lines) - Largest Voxel widget
+- themes/voxel/app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php
 
 ## Summary
 
 The stripe-account block has **100% parity** with Voxel's implementation. **Important Note:** The Voxel stripe-account widget is primarily PHP/HTML forms with minimal JavaScript for UI interactions (tabs, repeaters). It's part of the `stripe-connect` module and provides a comprehensive interface for vendors to manage their Stripe Connect account and shipping settings. The React implementation correctly renders the same HTML structure as Voxel's PHP template while adding REST API data fetching for headless/Next.js compatibility.
+
+## Stripe Connect Controller Parity
+
+The FSE block correctly integrates with Voxel's `connect-frontend-controller.php` AJAX handlers:
+
+| Voxel AJAX Action | FSE Implementation | Status |
+|-------------------|-------------------|--------|
+| `stripe_connect.account.onboard` | Link in REST API config (lines 119-122) | ✅ |
+| `stripe_connect.account.save_shipping` | AJAX via frontend.tsx (line 474) | ✅ |
+| `stripe_connect.account.login` | Link in REST API config (lines 124-127) | ✅ |
+
+### AJAX Parity Details
+
+**1. save_shipping (POST request):**
+| Voxel (`connect-frontend-controller.php:49-138`) | FSE (`frontend.tsx:464-502`) | Match |
+|--------------------------------------------------|------------------------------|-------|
+| `verify_nonce($_REQUEST['_wpnonce'], 'vx_vendor_dashboard')` | `formData.append('_wpnonce', nonce)` | ✅ |
+| `$_SERVER['REQUEST_METHOD'] === 'POST'` | `method: 'POST'` | ✅ |
+| `json_decode($_REQUEST['shipping_zones'])` | `JSON.stringify(zones)` | ✅ |
+| `json_decode($_REQUEST['shipping_rates'])` | `JSON.stringify(rates)` | ✅ |
+
+**2. onboard/login (Redirect links):**
+Both use URL parameters matching Voxel's format:
+```php
+// FSE controller (lines 119-127)
+$onboard_link = add_query_arg([
+    'vx' => 1,
+    'action' => 'stripe_connect.account.onboard',
+], home_url('/'));
+
+$dashboard_link = add_query_arg([
+    'vx' => 1,
+    'action' => 'stripe_connect.account.login',
+], home_url('/'));
+```
+
+**Verified:** February 1, 2026
 
 ## Reference File Information
 

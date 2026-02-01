@@ -394,6 +394,20 @@ class Block_Loader
             }
         }
 
+        // Register post-feed.css (depends on commons)
+        if (!wp_style_is('vx:post-feed.css', 'registered')) {
+            $post_feed_file = 'post-feed' . $suffix;
+            $post_feed_path = $assets_dir . $post_feed_file;
+            if (file_exists($post_feed_path)) {
+                wp_register_style(
+                        'vx:post-feed.css',
+                        $assets_url . $post_feed_file,
+                        ['vx:commons.css'],
+                        $version
+                );
+            }
+        }
+
         // Register vendor CSS files (pikaday, nouislider)
         // These are needed for date pickers and range sliders in popup components
         $vendor_dir = $parent_theme_dir . '/assets/vendor/';
@@ -1131,24 +1145,26 @@ CSS;
 
         $build_url = get_stylesheet_directory_uri() . '/assets/dist';
 
-        // Note: TagMultiSelect styles are bundled into elementor-controls.css via the shared controls index
+        // Note: TagMultiSelect styles are bundled into shared-controls.css via the shared controls index
 
-        // Enqueue shared controls CSS (search form editor styles, RelationControl, etc.)
-        // These styles are bundled by Vite into index2.css from search-form editor.css imports
-        wp_enqueue_style(
-            'voxel-fse-shared-controls',
-            $build_url . '/index2.css',
-            [],
-            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0'
-        );
-
-        // Enqueue shared controls CSS (elementor-controls.css, enable-tags-button.css, StyleTabPanel.css)
+        // Enqueue shared controls CSS (elementor-controls.css, StyleTabPanel.css)
+        // Note: enable-tags-button.css is code-split by Vite and enqueued separately below
         // CRITICAL: This file contains :root CSS variables (--vxfse-accent-color, etc.) needed by
         // StyleTabPanel, StateTabPanel, ChooseControl inline variant, ImageUploadControl, and other controls.
         // Must be loaded for all blocks.
         wp_enqueue_style(
             'voxel-fse-shared-controls-main',
             $build_url . '/shared-controls.css',
+            [],
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0'
+        );
+
+        // Enqueue Enable Tags Button CSS (code-split chunk)
+        // Used by IconPickerControl, ImageUploadControl, GalleryUploadControl for dynamic tag button
+        // Vite splits this from shared-controls.css because multiple entry points import it
+        wp_enqueue_style(
+            'voxel-fse-enable-tags-button',
+            $build_url . '/enable-tags-button.css',
             [],
             defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0'
         );
@@ -3486,6 +3502,47 @@ JAVASCRIPT;
                                     'vx:commons.css',
                                     'vx:review-stats.css'
                             ];
+                        } elseif ($block_name === 'quick-search') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css'
+                            ];
+                        } elseif ($block_name === 'userbar') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css'
+                            ];
+                        } elseif ($block_name === 'login') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css'
+                            ];
+                        } elseif ($block_name === 'product-form') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css',
+                                    'vx:product-form.css'
+                            ];
+                        } elseif ($block_name === 'navbar') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css'
+                            ];
+                        } elseif ($block_name === 'messages') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css'
+                            ];
+                        } elseif ($block_name === 'term-feed') {
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:post-feed.css'
+                            ];
                         }
 
                         // WordPress requires 'wp-edit-blocks' dependency for editor styles
@@ -3592,6 +3649,76 @@ JAVASCRIPT;
                                         );
                                     }
                                     wp_enqueue_style('vx:review-stats.css');
+                                });
+                            }
+
+                            // quick-search needs Voxel's forms.css
+                            if ($block_name === 'quick-search') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:forms.css', 'registered')) {
+                                        wp_enqueue_style('vx:forms.css');
+                                    }
+                                });
+                            }
+
+                            // userbar needs Voxel's commons.css
+                            if ($block_name === 'userbar') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:commons.css', 'registered')) {
+                                        wp_enqueue_style('vx:commons.css');
+                                    }
+                                });
+                            }
+
+                            // login needs Voxel's forms.css
+                            if ($block_name === 'login') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:forms.css', 'registered')) {
+                                        wp_enqueue_style('vx:forms.css');
+                                    }
+                                });
+                            }
+
+                            // product-form needs Voxel's product-form.css
+                            if ($block_name === 'product-form') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:product-form.css', 'registered')) {
+                                        wp_enqueue_style('vx:product-form.css');
+                                    }
+                                });
+                            }
+
+                            // navbar needs Voxel's commons.css
+                            if ($block_name === 'navbar') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:commons.css', 'registered')) {
+                                        wp_enqueue_style('vx:commons.css');
+                                    }
+                                });
+                            }
+
+                            // messages needs Voxel's forms.css
+                            if ($block_name === 'messages') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:forms.css', 'registered')) {
+                                        wp_enqueue_style('vx:forms.css');
+                                    }
+                                });
+                            }
+
+                            // term-feed needs Voxel's post-feed.css
+                            if ($block_name === 'term-feed') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:post-feed.css', 'registered')) {
+                                        wp_enqueue_style('vx:post-feed.css');
+                                    }
                                 });
                             }
 

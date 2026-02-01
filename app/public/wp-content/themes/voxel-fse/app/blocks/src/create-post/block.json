@@ -3527,7 +3527,6 @@
     }
   },
   "editorScript": "file:./index.js",
-  "editorStyle": "file:./editor.css",
   "viewScript": "file:./frontend.js",
   "render": "file:./render.php"
 }

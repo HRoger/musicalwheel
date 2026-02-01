@@ -44,9 +44,27 @@ import type {
 	NotificationsListResponse,
 	ChatsListResponse,
 	CartItemsResponse,
+	VoxelFSEUserbarConfig,
 } from '../types';
 import FormPopup from '@shared/popup-kit/FormPopup';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+
+// ============================================================================
+// SERVER CONFIG ACCESS
+// ============================================================================
+
+/**
+ * Get server-injected userbar config
+ * Reference: fse-userbar-api-controller.php injects window.VoxelFSEUserbar
+ *
+ * PARITY: This replaces Voxel's data-config attributes on each component:
+ * - notifications.php:3-7 (l10n.confirmClear)
+ * - messages.php:1-3 (nonces.chat)
+ * - cart.php:3-6 (nonces.cart, isCartEmpty)
+ */
+function getServerConfig(): VoxelFSEUserbarConfig | null {
+	return window.VoxelFSEUserbar ?? null;
+}
 
 // ============================================================================
 // VOXEL AJAX UTILITY
@@ -68,9 +86,14 @@ function getVoxelAjaxUrl(action: string): string {
 }
 
 /**
- * Check if user is logged in (from Voxel_Config)
+ * Check if user is logged in
+ * Uses server config first (more reliable), falls back to Voxel_Config
  */
 function isLoggedIn(): boolean {
+	const serverConfig = getServerConfig();
+	if (serverConfig) {
+		return serverConfig.isLoggedIn;
+	}
 	const voxelConfig = (window as unknown as { Voxel_Config?: { is_logged_in?: boolean } }).Voxel_Config;
 	return voxelConfig?.is_logged_in ?? false;
 }
@@ -88,11 +111,35 @@ function showAlert(message: string, type: 'error' | 'success' = 'error'): void {
 }
 
 /**
- * Get l10n string from Voxel_Config
+ * Get l10n string
+ * Checks server config first (FSE l10n), then falls back to Voxel_Config
+ *
+ * PARITY: notifications.php:4-6 injects confirmClear l10n
  */
 function getL10n(key: string, fallback: string): string {
+	// Check server config first (has userbar-specific l10n)
+	const serverConfig = getServerConfig();
+	if (serverConfig?.l10n) {
+		const serverL10n = serverConfig.l10n as Record<string, string>;
+		if (serverL10n[key]) {
+			return serverL10n[key];
+		}
+	}
+	// Fallback to Voxel_Config
 	const voxelConfig = (window as unknown as { Voxel_Config?: { l10n?: Record<string, string> } }).Voxel_Config;
 	return voxelConfig?.l10n?.[key] ?? fallback;
+}
+
+/**
+ * Get nonce for AJAX action
+ *
+ * PARITY:
+ * - messages.php:2 - wp_create_nonce('vx_chat')
+ * - cart.php:4 - wp_create_nonce('vx_cart')
+ */
+function getNonce(type: 'chat' | 'cart'): string {
+	const serverConfig = getServerConfig();
+	return serverConfig?.nonces?.[type] ?? '';
 }
 
 /**
@@ -149,11 +196,19 @@ interface NotificationsItemProps {
 /**
  * NotificationsItem - Full Voxel parity implementation
  * Reference: voxel-user-bar.beautified.js lines 12-138
+ *
+ * PARITY: notifications.php:12 checks \Voxel\current_user()->get_notification_count()['unread']
+ * Server config provides this initial state so indicator shows immediately without API call
  */
 function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
+
+	// Get initial unread state from server config
+	// PARITY: notifications.php:12 - initial indicator visibility from PHP
+	const serverConfig = getServerConfig();
+	const initialUnreadCount = serverConfig?.unread?.notifications ?? 0;
 
 	// State matching Voxel's Vue.js data()
 	const [list, setList] = useState<NotificationItem[] | null>(null);
@@ -500,8 +555,13 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 			>
 				<div className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
-					{context === 'frontend' && (
-						<span ref={indicatorRef} className="unread-indicator" style={{ display: 'none' }} />
+					{/* PARITY: notifications.php:12-13 - show indicator if unread > 0 */}
+					{context === 'frontend' && isLoggedIn() && (
+						<span
+							ref={indicatorRef}
+							className="unread-indicator"
+							style={{ display: initialUnreadCount > 0 ? undefined : 'none' }}
+						/>
 					)}
 				</div>
 				<span className="ts_comp_label">{item.notificationsTitle || 'Notifications'}</span>
@@ -595,11 +655,19 @@ interface MessagesItemProps {
 /**
  * MessagesItem - Full Voxel parity implementation
  * Reference: voxel-user-bar.beautified.js lines 142-186
+ *
+ * PARITY: messages.php:1-3 provides data-config with nonce
+ * PARITY: messages.php:7 checks \Voxel\current_user()->get_inbox_meta()['unread']
  */
 function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
+
+	// Get server config for initial state and nonce
+	const serverConfig = getServerConfig();
+	const chatNonce = nonce || getNonce('chat');
+	const initialHasUnread = serverConfig?.unread?.messages ?? false;
 
 	// State matching Voxel's Vue.js data()
 	const [chats, setChats] = useState<{
@@ -627,7 +695,8 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 			const url = getVoxelAjaxUrl('inbox.list_chats');
 			const formData = new FormData();
 			formData.append('pg', pg.toString());
-			if (nonce) formData.append('_wpnonce', nonce);
+			// PARITY: messages.php:2 - use nonce from server config
+			if (chatNonce) formData.append('_wpnonce', chatNonce);
 
 			const response = await fetch(url, { method: 'POST', body: formData });
 			const data = await response.json() as ChatsListResponse;
@@ -648,7 +717,7 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 			showAlert(getL10n('ajaxError', 'An error occurred'));
 			setChats((prev) => ({ ...prev, loading: false, loadingMore: false }));
 		}
-	}, [nonce]);
+	}, [chatNonce]);
 
 	/**
 	 * Open popup and load chats
@@ -705,8 +774,13 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 			>
 				<div className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
-					{context === 'frontend' && (
-						<span ref={indicatorRef} className="unread-indicator" style={{ display: 'none' }} />
+					{/* PARITY: messages.php:7-8 - show indicator if unread */}
+					{context === 'frontend' && isLoggedIn() && (
+						<span
+							ref={indicatorRef}
+							className="unread-indicator"
+							style={{ display: initialHasUnread ? undefined : 'none' }}
+						/>
 					)}
 				</div>
 				<span className="ts_comp_label">{item.messagesTitle || 'Messages'}</span>
@@ -779,11 +853,20 @@ interface CartItemProps {
  * ✅ window.VX_Cart global assignment (line 210)
  * ✅ voxel:added_cart_item event listener (lines 211-215)
  * ✅ Full cart API methods exposed globally
+ *
+ * PARITY: cart.php:3-6 provides data-config:
+ * - nonce: wp_create_nonce('vx_cart')
+ * - is_cart_empty: from metadata_exists check
  */
 function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const iconRef = useRef<HTMLDivElement>(null);
+
+	// Get server config for nonce and cart state
+	const serverConfig = getServerConfig();
+	const cartNonce = nonce || getNonce('cart');
+	const serverIsCartEmpty = isCartEmpty ?? serverConfig?.isCartEmpty ?? true;
 
 	// State matching Voxel's Vue.js data()
 	const [loading, setLoading] = useState(true);
@@ -806,13 +889,16 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 	/**
 	 * Show indicator based on cart state
 	 * Reference: voxel-user-bar.beautified.js lines 353-360
+	 *
+	 * PARITY: cart.php:5 - is_cart_empty from metadata_exists('user', user_id, 'voxel:cart')
 	 */
 	const showIndicator = (): boolean => {
 		if (loaded) {
 			return hasItems();
 		}
 		if (isLoggedIn()) {
-			return !isCartEmpty;
+			// Use server config for initial state
+			return !serverIsCartEmpty;
 		}
 		return !!localStorage.getItem('voxel:guest_cart');
 	};
@@ -871,7 +957,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 		try {
 			const url = getVoxelAjaxUrl(action);
 			const formData = new FormData();
-			if (nonce) formData.append('_wpnonce', nonce);
+			if (cartNonce) formData.append('_wpnonce', cartNonce);
 			formData.append('guest_cart', localStorage.getItem('voxel:guest_cart') || '');
 
 			const response = await fetch(url, { method: 'POST', body: formData });
@@ -938,7 +1024,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 				const url = getVoxelAjaxUrl('products.remove_cart_item');
 				const formData = new FormData();
 				formData.append('item_key', cartItem.key);
-				if (nonce) formData.append('_wpnonce', nonce);
+				if (cartNonce) formData.append('_wpnonce', cartNonce);
 
 				const response = await fetch(url, { method: 'POST', body: formData });
 				const data = await response.json();
@@ -987,7 +1073,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 			try {
 				const url = getVoxelAjaxUrl('products.empty_cart');
 				const formData = new FormData();
-				if (nonce) formData.append('_wpnonce', nonce);
+				if (cartNonce) formData.append('_wpnonce', cartNonce);
 
 				const response = await fetch(url, { method: 'POST', body: formData });
 				const data = await response.json();
@@ -1032,7 +1118,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 			if (!loggedIn) {
 				formData.append('guest_cart', localStorage.getItem('voxel:guest_cart') || '');
 			}
-			if (nonce) formData.append('_wpnonce', nonce);
+			if (cartNonce) formData.append('_wpnonce', cartNonce);
 
 			const response = await fetch(url, { method: 'POST', body: formData });
 			const data = await response.json();
@@ -1288,9 +1374,21 @@ interface UserMenuItemProps {
 	hideChevron: boolean;
 }
 
+/**
+ * PARITY: user-bar.php:19-26
+ * - $user = \Voxel\current_user()
+ * - $user->get_avatar_markup()
+ * - $user->get_display_name()
+ */
 function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
+
+	// Get user data from server config (more reliable)
+	const serverConfig = getServerConfig();
+	const userData = serverConfig?.user ?? window.VoxelFSEUser;
+	const displayName = userData?.displayName || 'User';
+	const avatarUrl = userData?.avatarUrl || '';
 
 	const handleOpen = useCallback(() => {
 		if (context === 'frontend') {
@@ -1308,7 +1406,7 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 					handleOpen();
 				}}
 				role="button"
-				aria-label="User menu"
+				aria-label={displayName}
 			>
 				<div className="ts-comp-icon flexify">
 					{context === 'editor' ? (
@@ -1326,10 +1424,10 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 							<i className="las la-user" />
 						</div>
 					) : (
-						window.VoxelFSEUser?.avatarUrl ? (
+						avatarUrl ? (
 							<img
-								src={window.VoxelFSEUser.avatarUrl}
-								alt="Avatar"
+								src={avatarUrl}
+								alt={displayName}
 								style={{ width: '32px', height: '32px', borderRadius: '50%' }}
 							/>
 						) : (
@@ -1349,16 +1447,18 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 						)
 					)}
 				</div>
-				<span className="ts_comp_label">User</span>
+				<span className="ts_comp_label">{displayName}</span>
 				{!hideChevron && <div className="ts-down-icon" />}
 			</a>
 
+			{/* PARITY: user-bar.php:31-58 - popup with avatar and display name in header */}
 			{context === 'frontend' && (
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`user-menu-popup-${item._id}`}
 					target={targetRef.current}
-					title="User"
+					title={displayName}
+					icon={avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:24px;height:24px;border-radius:50%;">` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
 				>

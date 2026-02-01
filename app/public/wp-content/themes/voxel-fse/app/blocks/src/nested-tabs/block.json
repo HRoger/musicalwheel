@@ -6,11 +6,20 @@
 	"title": "Tabs (VX)",
 	"category": "voxel-fse",
 	"description": "Tabbed content with nested containers. FSE equivalent of Voxel's Nested Tabs widget extending Elementor's NestedTabs.",
-	"keywords": ["tabs", "tabbed", "nested", "toggle", "voxel"],
+	"keywords": [
+		"tabs",
+		"tabbed",
+		"nested",
+		"toggle",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true,
@@ -20,7 +29,6 @@
 		}
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
@@ -56,47 +64,94 @@
 		"tabs": {
 			"type": "array",
 			"default": [
-				{ "id": "tab-1", "title": "Tab #1", "cssId": "", "icon": null, "iconActive": null, "rowVisibility": "show", "visibilityRules": [] },
-				{ "id": "tab-2", "title": "Tab #2", "cssId": "", "icon": null, "iconActive": null, "rowVisibility": "show", "visibilityRules": [] },
-				{ "id": "tab-3", "title": "Tab #3", "cssId": "", "icon": null, "iconActive": null, "rowVisibility": "show", "visibilityRules": [] }
+				{
+					"id": "tab-1",
+					"title": "Tab #1",
+					"cssId": "",
+					"icon": null,
+					"iconActive": null,
+					"rowVisibility": "show",
+					"visibilityRules": []
+				},
+				{
+					"id": "tab-2",
+					"title": "Tab #2",
+					"cssId": "",
+					"icon": null,
+					"iconActive": null,
+					"rowVisibility": "show",
+					"visibilityRules": []
+				},
+				{
+					"id": "tab-3",
+					"title": "Tab #3",
+					"cssId": "",
+					"icon": null,
+					"iconActive": null,
+					"rowVisibility": "show",
+					"visibilityRules": []
+				}
 			]
 		},
 		"tabsDirection": {
 			"type": "object",
-			"default": { "desktop": "block-start" }
+			"default": {
+				"desktop": "block-start"
+			}
 		},
 		"tabsJustifyHorizontal": {
 			"type": "object",
-			"default": { "desktop": "start" }
+			"default": {
+				"desktop": "start"
+			}
 		},
 		"tabsJustifyVertical": {
 			"type": "object",
-			"default": { "desktop": "start" }
+			"default": {
+				"desktop": "start"
+			}
 		},
 		"tabsWidth": {
 			"type": "object",
-			"default": { "desktop": { "size": 25, "unit": "%" } }
+			"default": {
+				"desktop": {
+					"size": 25,
+					"unit": "%"
+				}
+			}
 		},
 		"titleAlignment": {
 			"type": "object",
-			"default": { "desktop": "center" }
+			"default": {
+				"desktop": "center"
+			}
 		},
 		"horizontalScroll": {
 			"type": "object",
-			"default": { "desktop": "disable" }
+			"default": {
+				"desktop": "disable"
+			}
 		},
 		"breakpointSelector": {
 			"type": "string",
 			"default": "mobile",
-			"enum": ["none", "mobile", "tablet"]
+			"enum": [
+				"none",
+				"mobile",
+				"tablet"
+			]
 		},
 		"tabsGap": {
 			"type": "object",
-			"default": { "desktop": "0px" }
+			"default": {
+				"desktop": "0px"
+			}
 		},
 		"tabsContentDistance": {
 			"type": "object",
-			"default": { "desktop": "0px" }
+			"default": {
+				"desktop": "0px"
+			}
 		},
 		"tabsBorderRadius": {
 			"type": "object",
@@ -104,7 +159,14 @@
 		},
 		"tabsPadding": {
 			"type": "object",
-			"default": { "desktop": { "top": "15px", "right": "20px", "bottom": "15px", "left": "20px" } }
+			"default": {
+				"desktop": {
+					"top": "15px",
+					"right": "20px",
+					"bottom": "15px",
+					"left": "20px"
+				}
+			}
 		},
 		"tabsNormalBgType": {
 			"type": "string",
@@ -160,7 +222,12 @@
 		},
 		"tabsTransitionDuration": {
 			"type": "object",
-			"default": { "desktop": { "size": 0.3, "unit": "s" } }
+			"default": {
+				"desktop": {
+					"size": 0.3,
+					"unit": "s"
+				}
+			}
 		},
 		"tabsActiveBgType": {
 			"type": "string",
@@ -228,15 +295,21 @@
 		},
 		"iconPosition": {
 			"type": "object",
-			"default": { "desktop": "inline-start" }
+			"default": {
+				"desktop": "inline-start"
+			}
 		},
 		"iconSize": {
 			"type": "object",
-			"default": { "desktop": "16px" }
+			"default": {
+				"desktop": "16px"
+			}
 		},
 		"iconSpacing": {
 			"type": "object",
-			"default": { "desktop": "8px" }
+			"default": {
+				"desktop": "8px"
+			}
 		},
 		"iconNormalColor": {
 			"type": "string",
@@ -298,7 +371,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

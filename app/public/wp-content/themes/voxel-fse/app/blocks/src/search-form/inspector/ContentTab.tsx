@@ -123,11 +123,11 @@ export default function ContentTab({
 		})
 	);
 
+	// Show spinner while loading (no text wrapper - matches Voxel)
 	if (isLoading) {
 		return (
-			<div className="voxel-fse-loading">
+			<div style={{ padding: '20px', textAlign: 'center' }}>
 				<Spinner />
-				<span>{__('Loading post types...', 'voxel-fse')}</span>
 			</div>
 		);
 	}

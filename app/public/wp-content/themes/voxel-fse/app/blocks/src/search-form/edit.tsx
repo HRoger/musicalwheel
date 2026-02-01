@@ -9,7 +9,7 @@
 
 // @ts-nocheck - WordPress types incomplete
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { Placeholder, Spinner } from '@wordpress/components';
+import { Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useMemo } from 'react';
@@ -145,6 +145,20 @@ export default function Edit({
 		}
 	}, [attributes.blockId, setAttributes]);
 
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-search-form-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/search-form.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Initialize selectedPostType to first postType if not set
 	// This ensures Post Feed can read the currently selected post type for editor preview
 	useEffect(() => {
@@ -213,59 +227,91 @@ export default function Edit({
 		},
 	], [postTypes, isLoading, clientId]);
 
-	// If loading post types (initial load only), show spinner
-	// We keep the component mounted during background refreshes to avoid popup closing
-	// and state resets when modifying inspector controls
+	// Voxel renders the form structure immediately - no loading placeholders
+	// Evidence: themes/voxel/app/widgets/search-form.php:4007-4126
+	// The form renders even with empty post types - validation is done in inspector
+
+	// If loading post types (initial load only), show Voxel-style loader
+	// Matches Voxel's immediate render philosophy but provides visual feedback
 	if (isLoading && postTypes.length === 0) {
 		return (
 			<div {...blockProps}>
-				<Placeholder
-					icon="search"
-					label={__('Search Form (VX)', 'voxel-fse')}
-				>
-					<Spinner />
-					<p>{__('Loading post types...', 'voxel-fse')}</p>
-				</Placeholder>
+				<div className="ts-form ts-search-widget">
+					<div className="ts-no-posts">
+						<span className="ts-loader"></span>
+					</div>
+				</div>
 			</div>
 		);
 	}
 
-	// If error loading post types, show error message
-	if (error) {
-		return (
-			<div {...blockProps}>
-				<Placeholder icon="warning" label={__('Search Form (VX)', 'voxel-fse')}>
-					<p>
-						{__('Error loading post types: ', 'voxel-fse')}
-						{error}
-					</p>
-				</Placeholder>
-			</div>
-		);
-	}
-
-	// If no post types available, show warning
-	if (postTypes.length === 0) {
+	// If error or no post types available, still render the form structure
+	// Voxel does NOT show error placeholders - it renders the form with empty filters
+	// Show inspector notice for configuration guidance
+	if (error || postTypes.length === 0) {
 		return (
 			<div {...blockProps}>
 				<InspectorControls>
-					<div className="voxel-fse-inspector-notice">
-						<p>
-							{__(
-								'No Voxel post types found. Make sure the Voxel theme is active and post types are configured.',
-								'voxel-fse'
-							)}
+					<InspectorTabs
+						tabs={[
+							{
+								id: 'content',
+								label: __('Content', 'voxel-fse'),
+								icon: '\ue92c',
+								render: () => (
+									<ContentTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										postTypes={postTypes}
+										isLoading={isLoading}
+										clientId={clientId}
+									/>
+								),
+							},
+							{
+								id: 'general',
+								label: __('General', 'voxel-fse'),
+								icon: '\ue921',
+								render: () => (
+									<GeneralTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										clientId={clientId}
+									/>
+								),
+							},
+							{
+								id: 'inline',
+								label: __('Inline', 'voxel-fse'),
+								icon: '\ue921',
+								render: () => (
+									<InlineTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+									/>
+								),
+							},
+						]}
+						includeAdvancedTab={true}
+						includeVoxelTab={true}
+						attributes={attributes}
+						setAttributes={setAttributes}
+						defaultTab="content"
+						activeTabAttribute="inspectorActiveTab"
+					/>
+				</InspectorControls>
+				{/* Render empty form structure - matches Voxel behavior */}
+				<div className="ts-form ts-search-widget">
+					<div className="ts-filter-wrapper flexify">
+						{/* Empty filter area - user needs to select post types in inspector */}
+						<p style={{ padding: '20px', color: '#666', textAlign: 'center' }}>
+							{error
+								? __('Select post types in the sidebar to configure the search form.', 'voxel-fse')
+								: __('No Voxel post types found. Configure post types in Voxel settings.', 'voxel-fse')
+							}
 						</p>
 					</div>
-				</InspectorControls>
-				<Placeholder
-					icon="warning"
-					label={__('Search Form (VX)', 'voxel-fse')}
-					instructions={__(
-						'No Voxel post types found. Please configure post types in Voxel theme settings.',
-						'voxel-fse'
-					)}
-				/>
+				</div>
 			</div>
 		);
 	}
@@ -277,7 +323,8 @@ export default function Edit({
 	// The flickering is caused by WordPress's slot system, not React re-renders.
 	// Our state persistence handles preserving expanded states across remounts.
 
-	// If no post types selected, show placeholder with instructions
+	// If no post types selected, render empty form structure (Voxel behavior)
+	// Show inspector for configuration - matches Elementor widget pattern
 	if (!attributes.postTypes || attributes.postTypes.length === 0) {
 		return (
 			<div {...blockProps}>
@@ -330,14 +377,14 @@ export default function Edit({
 						activeTabAttribute="inspectorActiveTab"
 					/>
 				</InspectorControls>
-				<Placeholder
-					icon="search"
-					label={__('Search Form (VX)', 'voxel-fse')}
-					instructions={__(
-						'Select post types in the sidebar to configure the search form.',
-						'voxel-fse'
-					)}
-				/>
+				{/* Render empty form structure - Voxel renders form even without post types */}
+				<div className="ts-form ts-search-widget">
+					<div className="ts-filter-wrapper flexify">
+						<p style={{ padding: '20px', color: '#666', textAlign: 'center' }}>
+							{__('Select post types in the sidebar to configure the search form.', 'voxel-fse')}
+						</p>
+					</div>
+				</div>
 			</div>
 		);
 	}

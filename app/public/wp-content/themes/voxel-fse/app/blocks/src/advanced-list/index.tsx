@@ -14,8 +14,7 @@ import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
 
-// Import editor styles
-import './editor.css';
+
 
 /**
  * Register the Advanced List block

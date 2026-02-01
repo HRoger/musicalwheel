@@ -242,6 +242,7 @@ async function initBlocks(): Promise<void> {
 					attributes={attributes}
 					config={null}
 					context="frontend"
+					containerElement={container}
 				/>
 			);
 

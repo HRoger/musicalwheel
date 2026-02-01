@@ -111,12 +111,22 @@ export interface WorkHoursData {
   localTime: string;
 }
 
+/**
+ * Time slot with both raw and formatted times
+ *
+ * PARITY: Server formats times using \Voxel\time_format() which respects WP site settings
+ * Reference: themes/voxel/templates/widgets/work-hours.php:63-68
+ */
+export interface TimeSlot {
+  from: string;        // Raw time (HH:MM)
+  to: string;          // Raw time (HH:MM)
+  fromFormatted: string; // Formatted via WP site time_format setting
+  toFormatted: string;   // Formatted via WP site time_format setting
+}
+
 export interface ScheduleDay {
   status: 'hours' | 'open' | 'closed' | 'appointments_only' | null;
-  hours?: Array<{
-    from: string;
-    to: string;
-  }>;
+  hours?: TimeSlot[];
 }
 
 export interface VxConfig {

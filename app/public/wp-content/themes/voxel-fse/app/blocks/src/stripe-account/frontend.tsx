@@ -265,14 +265,14 @@ function getRestNonce(): string {
 }
 
 /**
- * Get nonce for AJAX requests (Voxel's custom AJAX endpoint)
+ * NOTE: AJAX nonce is now fetched via REST API and included in config.nonce
+ * This ensures the nonce is fresh for each request and doesn't require
+ * inline script injection.
+ *
+ * The vx_vendor_dashboard nonce is generated in:
+ * - FSE Controller: themes/voxel-fse/app/controllers/fse-stripe-account-api-controller.php
+ * - Voxel Widget: themes/voxel/app/modules/stripe-connect/widgets/stripe-account-widget.php:2656
  */
-function getAjaxNonce(): string {
-	if (typeof window !== 'undefined' && window.voxelStripeAccount?.nonce) {
-		return window.voxelStripeAccount.nonce;
-	}
-	return '';
-}
 
 /**
  * VxConfig structure from save.tsx
@@ -452,11 +452,23 @@ async function fetchConfig(): Promise<StripeAccountConfig | null> {
 }
 
 /**
- * Save shipping configuration via AJAX
+ * Save shipping configuration via Voxel AJAX
+ *
+ * Uses the nonce from REST API config (vx_vendor_dashboard)
+ * Voxel source: themes/voxel/app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:49
+ *
+ * @param zones - Shipping zones configuration
+ * @param rates - Shipping rates configuration
+ * @param nonce - The vx_vendor_dashboard nonce from config
  */
-async function saveShipping(zones: ShippingZone[], rates: ShippingRate[]): Promise<{ success: boolean; message: string }> {
+async function saveShipping(
+	zones: ShippingZone[],
+	rates: ShippingRate[],
+	nonce: string
+): Promise<{ success: boolean; message: string }> {
+	// Voxel AJAX endpoint: getSiteBaseUrl() already returns URL with ?vx=1
+	// e.g., "http://example.com/?vx=1" or "http://example.com/subsite/?vx=1"
 	const ajaxUrl = getAjaxUrl();
-	const nonce = getAjaxNonce();
 
 	const formData = new FormData();
 	formData.append('action', 'stripe_connect.account.save_shipping');
@@ -538,14 +550,29 @@ function FrontendWrapper({ attributes }: FrontendWrapperProps) {
 	}, []);
 
 	// Handle save shipping
+	// Uses nonce from config (vx_vendor_dashboard) for Voxel AJAX authentication
 	const handleSaveShipping = async (zones: ShippingZone[], rates: ShippingRate[]) => {
-		const result = await saveShipping(zones, rates);
+		if (!config?.nonce) {
+			alert('Security nonce missing. Please refresh the page.');
+			throw new Error('Missing nonce');
+		}
+
+		const result = await saveShipping(zones, rates, config.nonce);
 		if (!result.success) {
-			alert(result.message || 'Failed to save shipping configuration');
+			// Use Voxel.alert if available, fallback to browser alert
+			if (typeof window !== 'undefined' && (window as any).Voxel?.alert) {
+				(window as any).Voxel.alert(result.message || 'Failed to save shipping configuration');
+			} else {
+				alert(result.message || 'Failed to save shipping configuration');
+			}
 			throw new Error(result.message);
 		}
-		// Optionally show success message
-		alert(result.message || 'Shipping configuration saved successfully');
+		// Show success message using Voxel's notification system if available
+		if (typeof window !== 'undefined' && (window as any).Voxel?.alert) {
+			(window as any).Voxel.alert(result.message || 'Shipping configuration saved successfully');
+		} else {
+			alert(result.message || 'Shipping configuration saved successfully');
+		}
 	};
 
 	// Loading state

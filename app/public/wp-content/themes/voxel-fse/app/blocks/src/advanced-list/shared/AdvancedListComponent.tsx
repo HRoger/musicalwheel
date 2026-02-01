@@ -17,7 +17,7 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import type {
 	AdvancedListAttributes,
 	AdvancedListComponentProps,
@@ -27,6 +27,244 @@ import type {
 	VxConfig,
 } from '../types';
 import { POST_DEPENDENT_ACTIONS, ACTIVE_STATE_ACTIONS } from '../types';
+
+/**
+ * Share configuration from Voxel's share.js
+ * Based on themes/voxel/assets/dist/js/share.js
+ */
+interface ShareItem {
+	type: string;
+	label: string;
+	icon: string;
+	link: string;
+}
+
+const DEFAULT_SHARE_LIST: Omit<ShareItem, 'link'>[] = [
+	{ type: 'facebook', label: 'Facebook', icon: '<i class="fab fa-facebook"></i>' },
+	{ type: 'twitter', label: 'Twitter', icon: '<i class="fab fa-twitter"></i>' },
+	{ type: 'linkedin', label: 'LinkedIn', icon: '<i class="fab fa-linkedin"></i>' },
+	{ type: 'pinterest', label: 'Pinterest', icon: '<i class="fab fa-pinterest"></i>' },
+	{ type: 'whatsapp', label: 'WhatsApp', icon: '<i class="fab fa-whatsapp"></i>' },
+	{ type: 'email', label: 'Email', icon: '<i class="las la-envelope"></i>' },
+	{ type: 'copy', label: 'Copy link', icon: '<i class="las la-link"></i>' },
+];
+
+/**
+ * Generate share URLs for social platforms
+ */
+function getShareLink(type: string, title: string, url: string): string {
+	const encodedTitle = encodeURIComponent(title);
+	const encodedUrl = encodeURIComponent(url);
+
+	switch (type) {
+		case 'facebook':
+			return `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+		case 'twitter':
+			return `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`;
+		case 'linkedin':
+			return `https://www.linkedin.com/shareArticle?mini=true&url=${encodedUrl}&title=${encodedTitle}`;
+		case 'pinterest':
+			return `https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedTitle}`;
+		case 'whatsapp':
+			return `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`;
+		case 'email':
+			return `mailto:?subject=${encodedTitle}&body=${encodedUrl}`;
+		case 'copy':
+			return '#';
+		default:
+			return '#';
+	}
+}
+
+/**
+ * Edit Steps Popup Component
+ * Matches edit-post-action.php:16-50 structure
+ */
+interface EditStepsPopupProps {
+	editSteps: Array<{ key: string; label: string; link: string }>;
+	icon: IconValue | null;
+	text: string;
+	closeIcon: IconValue;
+	onClose: () => void;
+	isOpen: boolean;
+	targetRef: React.RefObject<HTMLElement>;
+}
+
+function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
+	const popupRef = useRef<HTMLDivElement>(null);
+
+	// Close popup on outside click
+	useEffect(() => {
+		if (!isOpen) return;
+
+		const handleClickOutside = (e: MouseEvent) => {
+			if (
+				popupRef.current &&
+				!popupRef.current.contains(e.target as Node) &&
+				targetRef.current &&
+				!targetRef.current.contains(e.target as Node)
+			) {
+				onClose();
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [isOpen, onClose, targetRef]);
+
+	if (!isOpen) return null;
+
+	return (
+		<div ref={popupRef} className="ts-popup ts-popup--edit-steps">
+			<div className="ts-popup-head ts-sticky-top flexify hide-d">
+				<div className="ts-popup-name flexify">
+					{renderIcon(icon)}
+					<span>Edit</span>
+				</div>
+				<ul className="flexify simplify-ul">
+					<li className="flexify ts-popup-close">
+						<a
+							role="button"
+							href="#"
+							className="ts-icon-btn"
+							onClick={(e) => {
+								e.preventDefault();
+								onClose();
+							}}
+						>
+							{renderIcon(closeIcon)}
+						</a>
+					</li>
+				</ul>
+			</div>
+			<div className="ts-term-dropdown ts-md-group">
+				<ul className="simplify-ul ts-term-dropdown-list min-scroll">
+					{editSteps.map((step) => (
+						<li key={step.key}>
+							<a href={step.link} className="flexify">
+								<span>{step.label}</span>
+							</a>
+						</li>
+					))}
+				</ul>
+			</div>
+		</div>
+	);
+}
+
+/**
+ * Share Popup Component
+ * Matches share-post-action.php:18-62 structure
+ */
+interface SharePopupProps {
+	title: string;
+	link: string;
+	icon: IconValue | null;
+	closeIcon: IconValue;
+	onClose: () => void;
+	isOpen: boolean;
+	targetRef: React.RefObject<HTMLElement>;
+}
+
+function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }: SharePopupProps) {
+	const popupRef = useRef<HTMLDivElement>(null);
+	const [copied, setCopied] = useState(false);
+
+	// Close popup on outside click
+	useEffect(() => {
+		if (!isOpen) return;
+
+		const handleClickOutside = (e: MouseEvent) => {
+			if (
+				popupRef.current &&
+				!popupRef.current.contains(e.target as Node) &&
+				targetRef.current &&
+				!targetRef.current.contains(e.target as Node)
+			) {
+				onClose();
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [isOpen, onClose, targetRef]);
+
+	const handleShare = async (item: ShareItem, e: React.MouseEvent) => {
+		if (item.type === 'copy') {
+			e.preventDefault();
+			try {
+				await navigator.clipboard.writeText(link);
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			} catch (err) {
+				// Fallback for older browsers
+				const textarea = document.createElement('textarea');
+				textarea.value = link;
+				document.body.appendChild(textarea);
+				textarea.select();
+				document.execCommand('copy');
+				document.body.removeChild(textarea);
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			}
+			return;
+		}
+		// For social links, let them open normally
+	};
+
+	if (!isOpen) return null;
+
+	const shareList: ShareItem[] = DEFAULT_SHARE_LIST.map((item) => ({
+		...item,
+		link: getShareLink(item.type, title, link),
+	}));
+
+	return (
+		<div ref={popupRef} className="ts-popup ts-popup--share">
+			<div className="ts-popup-head ts-sticky-top flexify hide-d">
+				<div className="ts-popup-name flexify">
+					{renderIcon(icon)}
+					<span>Share post</span>
+				</div>
+				<ul className="flexify simplify-ul">
+					<li className="flexify ts-popup-close">
+						<a
+							role="button"
+							href="#"
+							className="ts-icon-btn"
+							onClick={(e) => {
+								e.preventDefault();
+								onClose();
+							}}
+						>
+							{renderIcon(closeIcon)}
+						</a>
+					</li>
+				</ul>
+			</div>
+			<div className="ts-term-dropdown ts-md-group">
+				<ul className="simplify-ul ts-term-dropdown-list min-scroll ts-social-share">
+					{shareList.map((item) => (
+						<li key={item.type} className={`ts-share-${item.type}`}>
+							<a
+								href={item.link}
+								target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
+								className="flexify"
+								rel="nofollow"
+								onClick={(e) => handleShare(item, e)}
+							>
+								<div className="ts-term-icon">
+									<span dangerouslySetInnerHTML={{ __html: item.icon }} />
+								</div>
+								<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
+							</a>
+						</li>
+					))}
+				</ul>
+			</div>
+		</div>
+	);
+}
 
 /**
  * Render icon from IconValue
@@ -201,6 +439,10 @@ interface ActionItemProps {
 }
 
 function ActionItemComponent({ item, index, attributes, context, postContext }: ActionItemProps) {
+	// State for popups
+	const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
+	const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
+	const targetRef = useRef<HTMLAnchorElement>(null);
 	const isPostDependent = POST_DEPENDENT_ACTIONS.includes(item.actionType);
 	const hasActiveState = ACTIVE_STATE_ACTIONS.includes(item.actionType);
 
@@ -249,7 +491,56 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		return true;
 	}, [context, isPostDependent, postContext, item.actionType, item.rowVisibility, item.visibilityRules]);
 
-	if (!shouldRender) {
+	// Check visibility based on permissions
+	// (Replaces PHP early returns in each action template)
+	const canRender = useMemo(() => {
+		if (context === 'editor') return true;
+		if (!shouldRender) return false;
+
+		// delete-post-action.php:3 - is_deletable_by_current_user()
+		if (item.actionType === 'delete_post') {
+			return postContext?.permissions?.delete ?? false;
+		}
+
+		// publish-post-action.php - requires editable + unpublished status
+		if (item.actionType === 'publish_post') {
+			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'unpublished';
+		}
+
+		// unpublish-post-action.php - requires editable + publish status
+		if (item.actionType === 'unpublish_post') {
+			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'publish';
+		}
+
+		// add-to-cart-action.php:16-20 - requires valid product
+		if (item.actionType === 'add_to_cart') {
+			return postContext?.product?.isEnabled ?? false;
+		}
+
+		// show-post-on-map.php:7-11 - requires location with lat/lng
+		if (item.actionType === 'show_post_on_map') {
+			return postContext?.location?.mapLink != null;
+		}
+
+		// view-post-stats-action.php:3-8 - requires editable + tracking enabled
+		if (item.actionType === 'view_post_stats') {
+			return postContext?.postStatsLink != null;
+		}
+
+		// promote-post-action.php:6-9 - requires is_promotable_by_user()
+		if (item.actionType === 'promote_post') {
+			return postContext?.promote?.isPromotable ?? false;
+		}
+
+		// follow-user-action.php:10-12 - requires author exists
+		if (item.actionType === 'action_follow') {
+			return postContext?.authorId != null;
+		}
+
+		return true;
+	}, [context, shouldRender, item.actionType, postContext]);
+
+	if (!canRender) {
 		return null;
 	}
 
@@ -266,7 +557,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	// Get tooltip data
 	const tooltipText = item.enableTooltip ? item.tooltipText : undefined;
 
-	// Determine active state for follow/save actions
+	// Determine active state for follow/save actions (follow-post-action.php:21, promote-post-action.php:12)
 	const isActive = useMemo(() => {
 		if (!hasActiveState || !postContext) {
 			return false;
@@ -280,11 +571,58 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			return postContext.isAuthorFollowed;
 		}
 
+		if (item.actionType === 'promote_post') {
+			return postContext.promote?.isActive ?? false;
+		}
+
 		return false;
 	}, [hasActiveState, postContext, item.actionType]);
 
+	// Determine intermediate state for pending follow requests (follow-post-action.php:22, follow-user-action.php:14)
+	const isIntermediate = useMemo(() => {
+		if (!postContext) return false;
+
+		if (item.actionType === 'action_follow_post') {
+			return postContext.isFollowRequested;
+		}
+
+		if (item.actionType === 'action_follow') {
+			return postContext.isAuthorFollowRequested;
+		}
+
+		return false;
+	}, [postContext, item.actionType]);
+
+	// Helper to construct Voxel Action URLs
+	const getVoxelActionUrl = (actionName: string, args: Record<string, string | number> = {}) => {
+		if (!postContext) return '#';
+		const params = new URLSearchParams();
+		params.set('vx', '1');
+		params.set('action', actionName);
+		Object.entries(args).forEach(([k, v]) => params.set(k, String(v)));
+
+		// Add nonce if available
+		const nonceMap: Record<string, string> = {
+			'user.posts.delete_post': postContext.nonces?.delete_post || '',
+			'user.posts.republish_post': postContext.nonces?.modify_post || '',
+			'user.posts.unpublish_post': postContext.nonces?.modify_post || '',
+			'user.follow_post': postContext.nonces?.follow || '',
+			'user.follow_user': postContext.nonces?.follow || '',
+		};
+
+		if (nonceMap[actionName]) {
+			params.set('_wpnonce', nonceMap[actionName]);
+		}
+
+		return `${window.wpApiSettings?.root || '/'}?${params.toString()}`;
+	};
+
 	// Build action link/behavior
 	const getActionProps = useCallback(() => {
+		if (!postContext && context === 'frontend' && isPostDependent) {
+			return { tag: 'div' };
+		}
+
 		switch (item.actionType) {
 			case 'action_link':
 				return {
@@ -293,6 +631,142 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					target: item.link?.isExternal ? '_blank' : undefined,
 					rel: item.link?.nofollow ? 'nofollow' : undefined,
 				};
+
+			case 'delete_post':
+				// delete-post-action.php:8-18 - Uses data-confirm attribute for Voxel AJAX
+				if (!postContext) return { tag: 'div' };
+				return {
+					tag: 'a',
+					href: getVoxelActionUrl('user.posts.delete_post', { post_id: postContext.postId }),
+					className: 'ts-action-con',
+					'vx-action': '', // Voxel directive (empty string = boolean attr)
+					rel: 'nofollow',
+					'data-confirm': postContext.confirmMessages?.delete || 'Are you sure?',
+				};
+
+			case 'publish_post':
+				// publish-post-action.php - Uses vx-action for Voxel AJAX
+				if (!postContext) return { tag: 'div' };
+				return {
+					tag: 'a',
+					href: getVoxelActionUrl('user.posts.republish_post', { post_id: postContext.postId }),
+					className: 'ts-action-con',
+					'vx-action': '',
+					rel: 'nofollow',
+				};
+
+			case 'unpublish_post':
+				// unpublish-post-action.php - Uses vx-action for Voxel AJAX
+				if (!postContext) return { tag: 'div' };
+				return {
+					tag: 'a',
+					href: getVoxelActionUrl('user.posts.unpublish_post', { post_id: postContext.postId }),
+					className: 'ts-action-con',
+					'vx-action': '',
+					rel: 'nofollow',
+				};
+
+			case 'add_to_cart':
+				if (!postContext) return { tag: 'div' };
+				if (postContext.product?.oneClick) {
+					return {
+						tag: 'a',
+						href: '#',
+						target: '_blank',
+						rel: 'nofollow',
+						'data-product-id': postContext.product.productId,
+						onClick: (e: React.MouseEvent) => {
+							// Call global Voxel handler if available
+							// @ts-ignore
+							if (typeof window.Voxel !== 'undefined' && window.Voxel.addToCartAction) {
+								// @ts-ignore
+								window.Voxel.addToCartAction(e, e.currentTarget);
+							}
+						}
+					};
+				}
+				// Default to linking to the post
+				return {
+					tag: 'a',
+					href: postContext.postLink,
+				};
+
+			case 'select_addition':
+				return {
+					tag: 'a',
+					href: '#',
+					role: 'button',
+					className: 'ts-action-con ts-use-addition', // Voxel JS likely binds to this class
+					'data-id': item.additionId,
+					onClick: (e: React.MouseEvent) => {
+						// Prevent default jump, let Voxel JS handle it
+						e.preventDefault();
+					}
+				};
+
+			case 'action_follow_post':
+				// follow-post-action.php:32-47 - Uses ts-action-follow class with active/intermediate states
+				if (!postContext) return { tag: 'div' };
+				return {
+					tag: 'a',
+					href: getVoxelActionUrl('user.follow_post', { post_id: postContext.postId }),
+					rel: 'nofollow',
+					role: 'button',
+				};
+
+			case 'action_follow':
+				// follow-user-action.php:24-41 - Follow post author
+				if (!postContext) return { tag: 'div' };
+				return {
+					tag: 'a',
+					href: getVoxelActionUrl('user.follow_user', { user_id: postContext.authorId || 0 }),
+					rel: 'nofollow',
+					role: 'button',
+				};
+
+			case 'show_post_on_map':
+				// show-post-on-map.php:24-29 - Links to archive with location filter
+				if (postContext?.location?.mapLink) {
+					return {
+						tag: 'a',
+						href: postContext.location.mapLink,
+						rel: 'nofollow',
+						className: 'ts-action-con ts-action-show-on-map',
+						'data-post-id': postContext.postId,
+					};
+				}
+				return { tag: 'div' };
+
+			case 'view_post_stats':
+				// view-post-stats-action.php:11-16 - Links to post stats page
+				if (postContext?.postStatsLink) {
+					return {
+						tag: 'a',
+						href: postContext.postStatsLink,
+						rel: 'nofollow',
+					};
+				}
+				return { tag: 'div' };
+
+			case 'promote_post':
+				// promote-post-action.php:12-40 - Promote or view active promotion
+				if (postContext?.promote?.isPromotable) {
+					if (postContext.promote.isActive && postContext.promote.orderLink) {
+						return {
+							tag: 'a',
+							href: postContext.promote.orderLink,
+							rel: 'nofollow',
+						};
+					} else if (postContext.promote.promoteLink) {
+						return {
+							tag: 'a',
+							href: postContext.promote.promoteLink,
+							rel: 'nofollow',
+							role: 'button',
+						};
+					}
+				}
+				return { tag: 'div' };
 
 			case 'back_to_top':
 				return {
@@ -328,7 +802,22 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				};
 
 			case 'edit_post':
+				// edit-post-action.php:16-56 - Multi-step popup or direct link
 				if (postContext?.editLink) {
+					// If multiple edit steps, show popup (edit-post-action.php:16-50)
+					if (postContext.editSteps && postContext.editSteps.length > 1) {
+						return {
+							tag: 'a',
+							href: '#',
+							ref: targetRef,
+							role: 'button',
+							onClick: (e: React.MouseEvent) => {
+								e.preventDefault();
+								setIsEditPopupOpen(true);
+							},
+						};
+					}
+					// Single step - direct link (edit-post-action.php:51-55)
 					return {
 						tag: 'a',
 						href: postContext.editLink,
@@ -337,41 +826,22 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				return { tag: 'div' };
 
 			case 'share_post':
-				// Share functionality would need popup implementation
+				// share-post-action.php:10-63 - Voxel share popup
 				return {
 					tag: 'a',
 					href: '#',
+					ref: targetRef,
+					role: 'button',
 					onClick: (e: React.MouseEvent) => {
 						e.preventDefault();
-						// TODO: Implement share popup
-						if (typeof window !== 'undefined' && navigator.share && postContext) {
-							navigator.share({
-								title: postContext.postTitle,
-								url: postContext.postLink,
-							}).catch(() => {
-								// Fallback to copy link
-								navigator.clipboard?.writeText(postContext.postLink);
-							});
-						}
-					},
-				};
-
-			case 'action_follow_post':
-			case 'action_follow':
-				// Follow functionality would need AJAX implementation
-				return {
-					tag: 'a',
-					href: '#',
-					onClick: (e: React.MouseEvent) => {
-						e.preventDefault();
-						// TODO: Implement follow AJAX
+						setIsSharePopupOpen(true);
 					},
 				};
 
 			default:
 				return { tag: 'div' };
 		}
-	}, [item, postContext]);
+	}, [item, postContext, context, isPostDependent]);
 
 	const actionProps = getActionProps();
 	const Tag = actionProps.tag as keyof JSX.IntrinsicElements;
@@ -416,27 +886,57 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		'ts-action',
 	].join(' ');
 
+	// Merge action classes with existing props className
+	// Includes intermediate class for pending follow requests (follow-post-action.php:40, follow-user-action.php:31)
 	const actionClasses = [
-		'ts-action-con',
+		(actionProps as any).className || 'ts-action-con',
+		// Add ts-action-follow for follow actions
+		['action_follow_post', 'action_follow'].includes(item.actionType) ? 'ts-action-follow' : '',
 		isActive ? 'active' : '',
+		isIntermediate ? 'intermediate' : '',
 	].filter(Boolean).join(' ');
 
-	// Wrapper for items that need it
-	const needsWrapper = ['edit_post', 'share_post'].includes(item.actionType);
+	// Tooltip attributes (follow-post-action.php:25-30)
+	// For follow actions, use tooltip-inactive and tooltip-active attributes
+	// For other actions, use data-tooltip
+	const isFollowAction = ['action_follow_post', 'action_follow'].includes(item.actionType);
+	const tooltipAttrs: Record<string, string | undefined> = {};
+
+	if (isFollowAction) {
+		// Use tooltip-inactive for normal state and tooltip-active for active state
+		if (item.enableTooltip && item.tooltipText) {
+			tooltipAttrs['tooltip-inactive'] = item.tooltipText;
+		}
+		if (item.activeEnableTooltip && item.activeTooltipText) {
+			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		}
+	} else {
+		// Regular data-tooltip for non-follow actions
+		if (tooltipText) {
+			tooltipAttrs['data-tooltip'] = tooltipText;
+		}
+	}
+
+	// Wrapper for items that need popups (edit_post, share_post)
+	const isEditAction = item.actionType === 'edit_post' && postContext?.editSteps && postContext.editSteps.length > 1;
+	const isShareAction = item.actionType === 'share_post';
+	const needsWrapper = isEditAction || isShareAction;
 
 	if (needsWrapper) {
+		// Wrapper class varies by action type (edit-post-action.php:17, share-post-action.php:10)
+		const wrapperClass = isShareAction
+			? 'ts-action-wrap ts-share-post'
+			: 'ts-action-wrap ts-popup-component';
+
 		return (
 			<li
 				className={itemClasses}
 				style={itemWidthStyle}
-				data-tooltip={tooltipText}
+				{...tooltipAttrs}
 			>
-				<div className="ts-action-wrap">
+				<div className={wrapperClass}>
 					<Tag
-						{...(Tag === 'a' ? { href: (actionProps as { href?: string }).href } : {})}
-						{...(actionProps.onClick ? { onClick: actionProps.onClick } : {})}
-						{...(Tag === 'a' && (actionProps as { target?: string }).target ? { target: (actionProps as { target?: string }).target } : {})}
-						{...(Tag === 'a' && (actionProps as { rel?: string }).rel ? { rel: (actionProps as { rel?: string }).rel } : {})}
+						{...actionProps}
 						className={actionClasses}
 						style={itemStyles}
 						aria-label={item.text || tooltipText}
@@ -444,6 +944,30 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					>
 						{renderContent()}
 					</Tag>
+					{/* Edit steps popup (edit-post-action.php:22-49) */}
+					{isEditAction && postContext && (
+						<EditStepsPopup
+							editSteps={postContext.editSteps}
+							icon={item.icon}
+							text={item.text}
+							closeIcon={attributes.closeIcon}
+							isOpen={isEditPopupOpen}
+							onClose={() => setIsEditPopupOpen(false)}
+							targetRef={targetRef as React.RefObject<HTMLElement>}
+						/>
+					)}
+					{/* Share popup (share-post-action.php:18-62) */}
+					{isShareAction && postContext && (
+						<SharePopup
+							title={postContext.postTitle}
+							link={postContext.postLink}
+							icon={item.icon}
+							closeIcon={attributes.closeIcon}
+							isOpen={isSharePopupOpen}
+							onClose={() => setIsSharePopupOpen(false)}
+							targetRef={targetRef as React.RefObject<HTMLElement>}
+						/>
+					)}
 				</div>
 			</li>
 		);
@@ -453,13 +977,10 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		<li
 			className={itemClasses}
 			style={itemWidthStyle}
-			data-tooltip={tooltipText}
+			{...tooltipAttrs}
 		>
 			<Tag
-				{...(Tag === 'a' ? { href: (actionProps as { href?: string }).href } : {})}
-				{...(actionProps.onClick ? { onClick: actionProps.onClick } : {})}
-				{...(Tag === 'a' && (actionProps as { target?: string }).target ? { target: (actionProps as { target?: string }).target } : {})}
-				{...(Tag === 'a' && (actionProps as { rel?: string }).rel ? { rel: (actionProps as { rel?: string }).rel } : {})}
+				{...actionProps}
 				className={actionClasses}
 				style={itemStyles}
 				aria-label={item.text || tooltipText}

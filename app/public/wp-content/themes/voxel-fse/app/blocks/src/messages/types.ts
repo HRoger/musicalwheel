@@ -6,7 +6,23 @@
  * @package VoxelFSE
  */
 
-import type { IconValue, TypographyValue, BoxShadowValue, BoxValues } from '../shared/controls';
+import type { IconValue } from '../../shared/types';
+import type { TypographyValue } from '../../shared/controls/TypographyPopup';
+import type { BoxValues } from '../../shared/controls/BoxControl';
+
+// Re-export shared types for use in this module
+export type { IconValue, TypographyValue, BoxValues };
+
+// BoxShadowValue type (define locally since not exported from shared)
+export interface BoxShadowValue {
+	enable?: boolean;
+	horizontal?: number;
+	vertical?: number;
+	blur?: number;
+	spread?: number;
+	color?: string;
+	position?: 'inset' | 'outset';
+}
 
 /**
  * Icon set for the messages widget
@@ -221,6 +237,8 @@ export interface VoxelChat {
 	time: string;
 	seen: boolean;
 	is_new: boolean;
+	autoload?: boolean;
+	last_id?: number;
 	follow_status: {
 		author: number;
 		target: number;
@@ -285,10 +303,9 @@ export interface FileData {
 	type: string;
 	size: number;
 	preview: string;
-	item: File;
-	_id: string;
+	item?: File;
+	_id?: string;
 	id?: number;
-	url?: string;
 }
 
 /**
@@ -300,6 +317,7 @@ export interface MessagesState {
 		loadingMore: boolean;
 		list: VoxelChat[];
 		hasMore: boolean;
+		page: number;
 	};
 	activeChat: VoxelChat | null;
 	search: {

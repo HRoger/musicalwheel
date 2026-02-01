@@ -99,7 +99,7 @@ const deprecatedSaveV1 = ({ attributes }: { attributes: any }) => {
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 			/>
-			<div className="ts-review-bars vxfse-loading" style={styleVars as React.CSSProperties}>
+			<div className="ts-review-bars" style={styleVars as React.CSSProperties}>
 				<div className="ts-percentage-bar excellent">
 					<div className="ts-bar-data">
 						<p>

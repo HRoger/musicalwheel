@@ -373,6 +373,7 @@ export interface AdvancedListComponentProps {
 
 /**
  * Post context for post-dependent actions
+ * Matches API response from fse-advanced-list-api-controller.php
  */
 export interface PostContext {
 	postId: number;
@@ -384,7 +385,42 @@ export interface PostContext {
 	isFollowRequested: boolean;
 	isAuthorFollowed: boolean;
 	isAuthorFollowRequested: boolean;
+	authorId: number | null;
 	editSteps: EditStep[];
+	permissions: {
+		delete: boolean;
+		publish: boolean;
+	};
+	status: string;
+	product: {
+		isEnabled: boolean;
+		oneClick: boolean;
+		productId: number;
+		error?: string;
+	} | null;
+	location: {
+		latitude: number;
+		longitude: number;
+		address: string;
+		mapLink: string | null;
+	} | null;
+	postStatsLink: string | null;
+	promote: {
+		isPromotable: boolean;
+		isActive?: boolean;
+		orderLink?: string;
+		promoteLink?: string;
+	} | null;
+	nonces?: {
+		follow?: string;
+		delete_post?: string;
+		modify_post?: string;
+		[key: string]: string | undefined;
+	};
+	confirmMessages?: {
+		delete?: string;
+		[key: string]: string | undefined;
+	};
 }
 
 /**

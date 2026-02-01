@@ -1,12 +1,43 @@
 # Visit Chart Block - Phase 3 Parity
 
-**Date:** December 23, 2025
-**Status:** Analysis Complete (100% parity)
+**Date:** February 1, 2026
+**Status:** ✅ Full Parity Complete (100%)
 **Reference:** voxel-visits-chart.beautified.js (203 lines, ~2KB original)
 
 ## Summary
 
 The visit-chart block has **100% parity** with Voxel's Vue.js implementation. All core features are implemented: lazy-loading chart data on tab selection, time period tabs (24h/7d/30d/12m), interactive bar chart with hover popups, drag-to-scroll functionality, and auto-scroll to latest data. The React implementation uses the same AJAX endpoint as Voxel for data fetching.
+
+## Security Parity (February 2026 Update)
+
+**CRITICAL FIX:** Added permission checks matching `visits-chart-controller.php:22-31`
+
+### Permission Model (1:1 Match)
+
+| Source | Voxel Check | FSE Check | Evidence |
+|--------|-------------|-----------|----------|
+| **post** | `$post->is_editable_by_current_user()` | ✅ Same check | Line 24 |
+| **user** | Nonce tied to `get_current_user_id()` | ✅ Must be logged in | Lines 61-64 |
+| **site** | Admin-only implied | ✅ `manage_options` capability | Backend-only access |
+
+### Error Handling (1:1 Match)
+
+| HTTP Status | Voxel Behavior | FSE Behavior |
+|-------------|----------------|--------------|
+| 401 | Widget doesn't render | Block hidden (returns null) |
+| 403 | Widget doesn't render | Block hidden (returns null) |
+| 500 | Shows error notification | Shows error + Voxel.alert() |
+
+### Files Modified
+
+1. **`rest-api-controller.php`** (lines 1050-1175)
+   - `check_visit_chart_permission()`: Added user/site source auth checks
+   - `get_visit_chart_context()`: Added `is_editable_by_current_user()` for post source
+
+2. **`frontend.tsx`** (lines 400-600)
+   - New `ChartContextError` and `ChartContextResult` types
+   - `fetchChartContext()`: Returns structured error info
+   - `VisitChartWrapper`: Hides block on 401/403 (Voxel parity)
 
 ## Voxel JS Analysis
 
@@ -210,22 +241,36 @@ The React block provides a complete standalone implementation:
 ## Build Output
 
 ```
-frontend.js  11.33 kB | gzip: 3.65 kB
-Built in 111ms
+visit-chart/index.js   39.76 kB | gzip: 8.17 kB  (editor bundle)
+visit-chart/frontend.js  20.71 kB | gzip: 6.81 kB  (frontend bundle)
+Built in 125ms
 ```
 
 ## Conclusion
 
 The visit-chart block has **100% parity** with Voxel's Vue.js implementation:
 
-- Tab navigation (24h/7d/30d/12m)
-- Lazy loading chart data on tab selection
-- Interactive bar chart with hover popups
-- Smart popup positioning (left/right based on space)
-- Drag-to-scroll functionality
-- Auto-scroll to latest data on load
-- Same AJAX endpoint for data fetching
-- Error state handling
+### Functional Parity
+- ✅ Tab navigation (24h/7d/30d/12m)
+- ✅ Lazy loading chart data on tab selection
+- ✅ Interactive bar chart with hover popups
+- ✅ Smart popup positioning (left/right based on space)
+- ✅ Drag-to-scroll functionality
+- ✅ Auto-scroll to latest data on load
+- ✅ Same AJAX endpoint for data fetching
+- ✅ Error state handling
+- ✅ No activity state display
+- ✅ Same CSS classes throughout
+- ✅ Same HTML structure for Voxel CSS compatibility
+- ✅ Re-initialization prevention
+- ✅ Turbo/PJAX and voxel:markup-update support
+
+### Security Parity (NEW - February 2026)
+- ✅ **Post source**: Requires `is_editable_by_current_user()` - only post owner can view stats
+- ✅ **User source**: Requires logged-in user - nonce tied to `get_current_user_id()`
+- ✅ **Site source**: Requires `manage_options` capability (admin-only)
+- ✅ **Error handling**: 401/403 hides block (matches Voxel's early return behavior)
+- ✅ **Generic error messages**: Uses "Invalid request." to match Voxel
 - No activity state display
 - Same CSS classes throughout
 - Same HTML structure for Voxel CSS compatibility

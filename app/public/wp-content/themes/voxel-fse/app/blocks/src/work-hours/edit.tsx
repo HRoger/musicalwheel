@@ -7,7 +7,7 @@ import { InspectorTabs, EmptyPlaceholder } from '@shared/controls';
 import { ContentTab } from './inspector';
 import { generateWorkHoursResponsiveCSS } from './styles';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
-import './editor.css';
+
 
 interface EditProps {
   attributes: WorkHoursAttributes;
@@ -24,6 +24,20 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
       setAttributes({ blockId: clientId });
     }
   }, [attributes.blockId, clientId, setAttributes]);
+
+  // Inject Voxel Editor Styles
+  useEffect(() => {
+    const cssId = 'voxel-work-hours-css';
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      const voxelConfig = (window as any).Voxel_Config;
+      const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+      link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/work-hours.css?ver=1.7.5.2`;
+      document.head.appendChild(link);
+    }
+  }, []);
 
   // Use shared utility for AdvancedTab + VoxelTab wiring
   const advancedProps = getAdvancedVoxelTabProps(attributes, {

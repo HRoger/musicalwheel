@@ -32,6 +32,7 @@
 
 import { useState, useCallback, useRef, useEffect, type ChangeEvent, type MouseEvent } from 'react';
 import type { FeedFilters as FeedFiltersType } from '../hooks';
+import { useFilteringOptions } from '../hooks';
 import type { OrderingOption } from '../types';
 import { DropdownList } from './DropdownList';
 
@@ -103,11 +104,10 @@ export function FeedFilters({
 	// Current filter tab
 	const currentFilter = filters.filter ?? 'all';
 
-	// Filter options (matches Voxel's filtering_options)
-	const filteringOptions: Record<string, string> = {
-		all: 'All',
-		liked: 'Liked',
-	};
+	// Filter options from post-context endpoint (1:1 Voxel parity)
+	// Returns dynamic options based on user permissions (e.g., "pending" only for moderators)
+	// See: timeline.php:529-535
+	const filteringOptions = useFilteringOptions();
 
 	// Handle search input change (debounced)
 	const handleSearchChange = useCallback(

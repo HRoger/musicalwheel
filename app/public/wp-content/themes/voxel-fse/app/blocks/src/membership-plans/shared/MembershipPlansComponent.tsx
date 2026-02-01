@@ -493,6 +493,26 @@ export default function MembershipPlansComponent({
 		}
 	}, [activeGroup, attributes.priceGroups]);
 
+	/**
+	 * Inject Voxel Pricing Plan CSS for both Editor and Frontend
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-pricing-plan-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/pricing-plan.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Handle tab change
 	const handleTabClick = useCallback(
 		(e: React.MouseEvent<HTMLAnchorElement>, groupId: string) => {

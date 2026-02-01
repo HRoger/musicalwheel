@@ -32,6 +32,20 @@ import { ContentTab, StyleTab, FieldStyleTab } from './inspector';
 import { generateStyleTabResponsiveCSS, generateFieldStyleTabResponsiveCSS } from './styles';
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-create-post-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/create-post.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Generate blockId if missing
 	useEffect(() => {
 		if (!attributes.blockId) {

@@ -6,17 +6,25 @@
 	"title": "Print Template (VX)",
 	"category": "voxel-fse",
 	"description": "Render a WordPress Reusable Block or Block Pattern. FSE equivalent of Voxel's Print Template widget.",
-	"keywords": ["template", "reusable", "pattern", "embed", "voxel"],
+	"keywords": [
+		"template",
+		"reusable",
+		"pattern",
+		"embed",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
@@ -41,7 +49,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

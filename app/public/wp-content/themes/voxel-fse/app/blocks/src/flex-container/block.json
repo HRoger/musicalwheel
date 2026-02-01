@@ -10,7 +10,10 @@
     "supports": {
         "html": false,
         "anchor": true,
-        "align": ["full", "wide"]
+        "align": [
+            "full",
+            "wide"
+        ]
     },
     "attributes": {
         "align": {
@@ -435,97 +438,293 @@
             "type": "number",
             "default": 0.3
         },
-
         "_comment_extended_background": "Extended Background attributes (Video + Slideshow)",
-        "bgVideoLink": { "type": "string" },
-        "bgVideoStartTime": { "type": "number" },
-        "bgVideoEndTime": { "type": "number" },
-        "bgVideoPlayOnce": { "type": "boolean", "default": false },
-        "bgVideoPlayOnMobile": { "type": "boolean", "default": false },
-        "bgVideoPrivacyMode": { "type": "boolean", "default": false },
-        "bgVideoFallback": { "type": "object" },
-        "bgSlideshowGallery": { "type": "array", "default": [] },
-        "bgSlideshowInfiniteLoop": { "type": "boolean", "default": true },
-        "bgSlideshowDuration": { "type": "number", "default": 5000 },
-        "bgSlideshowTransition": { "type": "string", "default": "fade" },
-        "bgSlideshowTransitionDuration": { "type": "number", "default": 500 },
-        "bgSlideshowSize": { "type": "string" },
-        "bgSlideshowSize_tablet": { "type": "string" },
-        "bgSlideshowSize_mobile": { "type": "string" },
-        "bgSlideshowPosition": { "type": "string" },
-        "bgSlideshowPosition_tablet": { "type": "string" },
-        "bgSlideshowPosition_mobile": { "type": "string" },
-        "bgSlideshowLazyload": { "type": "boolean", "default": false },
-        "bgSlideshowKenBurns": { "type": "boolean", "default": false },
-
+        "bgVideoLink": {
+            "type": "string"
+        },
+        "bgVideoStartTime": {
+            "type": "number"
+        },
+        "bgVideoEndTime": {
+            "type": "number"
+        },
+        "bgVideoPlayOnce": {
+            "type": "boolean",
+            "default": false
+        },
+        "bgVideoPlayOnMobile": {
+            "type": "boolean",
+            "default": false
+        },
+        "bgVideoPrivacyMode": {
+            "type": "boolean",
+            "default": false
+        },
+        "bgVideoFallback": {
+            "type": "object"
+        },
+        "bgSlideshowGallery": {
+            "type": "array",
+            "default": []
+        },
+        "bgSlideshowInfiniteLoop": {
+            "type": "boolean",
+            "default": true
+        },
+        "bgSlideshowDuration": {
+            "type": "number",
+            "default": 5000
+        },
+        "bgSlideshowTransition": {
+            "type": "string",
+            "default": "fade"
+        },
+        "bgSlideshowTransitionDuration": {
+            "type": "number",
+            "default": 500
+        },
+        "bgSlideshowSize": {
+            "type": "string"
+        },
+        "bgSlideshowSize_tablet": {
+            "type": "string"
+        },
+        "bgSlideshowSize_mobile": {
+            "type": "string"
+        },
+        "bgSlideshowPosition": {
+            "type": "string"
+        },
+        "bgSlideshowPosition_tablet": {
+            "type": "string"
+        },
+        "bgSlideshowPosition_mobile": {
+            "type": "string"
+        },
+        "bgSlideshowLazyload": {
+            "type": "boolean",
+            "default": false
+        },
+        "bgSlideshowKenBurns": {
+            "type": "boolean",
+            "default": false
+        },
         "_comment_background_overlay": "BackgroundOverlayControl attributes",
-        "bgOverlayActiveTab": { "type": "string", "default": "normal" },
-        "bgOverlayType": { "type": "string", "default": "classic" },
-        "bgOverlayTypeHover": { "type": "string", "default": "classic" },
-        "bgOverlayColor": { "type": "string" },
-        "bgOverlayColorHover": { "type": "string" },
-        "bgOverlayImage": { "type": "object" },
-        "bgOverlayImage_tablet": { "type": "object" },
-        "bgOverlayImage_mobile": { "type": "object" },
-        "bgOverlayImageHover": { "type": "object" },
-        "bgOverlayImageHover_tablet": { "type": "object" },
-        "bgOverlayImageHover_mobile": { "type": "object" },
-        "bgOverlayImagePosition": { "type": "string" },
-        "bgOverlayImagePosition_tablet": { "type": "string" },
-        "bgOverlayImagePosition_mobile": { "type": "string" },
-        "bgOverlayImagePositionHover": { "type": "string" },
-        "bgOverlayImagePositionHover_tablet": { "type": "string" },
-        "bgOverlayImagePositionHover_mobile": { "type": "string" },
-        "bgOverlayImageAttachment": { "type": "string" },
-        "bgOverlayImageAttachmentHover": { "type": "string" },
-        "bgOverlayImageRepeat": { "type": "string" },
-        "bgOverlayImageRepeat_tablet": { "type": "string" },
-        "bgOverlayImageRepeat_mobile": { "type": "string" },
-        "bgOverlayImageRepeatHover": { "type": "string" },
-        "bgOverlayImageRepeatHover_tablet": { "type": "string" },
-        "bgOverlayImageRepeatHover_mobile": { "type": "string" },
-        "bgOverlayImageSize": { "type": "string" },
-        "bgOverlayImageSize_tablet": { "type": "string" },
-        "bgOverlayImageSize_mobile": { "type": "string" },
-        "bgOverlayImageSizeHover": { "type": "string" },
-        "bgOverlayImageSizeHover_tablet": { "type": "string" },
-        "bgOverlayImageSizeHover_mobile": { "type": "string" },
-        "bgOverlayOpacity": { "type": "number", "default": 0.5 },
-        "bgOverlayOpacityHover": { "type": "number" },
-        "bgOverlayGradientColor": { "type": "string" },
-        "bgOverlayGradientColorHover": { "type": "string" },
-        "bgOverlayGradientLocation": { "type": "number", "default": 0 },
-        "bgOverlayGradientLocation_tablet": { "type": "number" },
-        "bgOverlayGradientLocation_mobile": { "type": "number" },
-        "bgOverlayGradientLocationHover": { "type": "number", "default": 0 },
-        "bgOverlayGradientLocationHover_tablet": { "type": "number" },
-        "bgOverlayGradientLocationHover_mobile": { "type": "number" },
-        "bgOverlayGradientSecondColor": { "type": "string" },
-        "bgOverlayGradientSecondColorHover": { "type": "string" },
-        "bgOverlayGradientSecondLocation": { "type": "number", "default": 100 },
-        "bgOverlayGradientSecondLocation_tablet": { "type": "number" },
-        "bgOverlayGradientSecondLocation_mobile": { "type": "number" },
-        "bgOverlayGradientSecondLocationHover": { "type": "number", "default": 100 },
-        "bgOverlayGradientSecondLocationHover_tablet": { "type": "number" },
-        "bgOverlayGradientSecondLocationHover_mobile": { "type": "number" },
-        "bgOverlayGradientType": { "type": "string", "default": "linear" },
-        "bgOverlayGradientTypeHover": { "type": "string", "default": "linear" },
-        "bgOverlayGradientAngle": { "type": "number", "default": 180 },
-        "bgOverlayGradientAngle_tablet": { "type": "number" },
-        "bgOverlayGradientAngle_mobile": { "type": "number" },
-        "bgOverlayGradientAngleHover": { "type": "number", "default": 180 },
-        "bgOverlayGradientAngleHover_tablet": { "type": "number" },
-        "bgOverlayGradientAngleHover_mobile": { "type": "number" },
-        "bgOverlayGradientPosition": { "type": "string", "default": "center center" },
-        "bgOverlayGradientPosition_tablet": { "type": "string" },
-        "bgOverlayGradientPosition_mobile": { "type": "string" },
-        "bgOverlayGradientPositionHover": { "type": "string", "default": "center center" },
-        "bgOverlayGradientPositionHover_tablet": { "type": "string" },
-        "bgOverlayGradientPositionHover_mobile": { "type": "string" },
-        "bgOverlayCssFilters": { "type": "object", "default": {} },
-        "bgOverlayCssFiltersHover": { "type": "object", "default": {} },
-        "bgOverlayTransitionDuration": { "type": "number", "default": 0.3 },
-
+        "bgOverlayActiveTab": {
+            "type": "string",
+            "default": "normal"
+        },
+        "bgOverlayType": {
+            "type": "string",
+            "default": "classic"
+        },
+        "bgOverlayTypeHover": {
+            "type": "string",
+            "default": "classic"
+        },
+        "bgOverlayColor": {
+            "type": "string"
+        },
+        "bgOverlayColorHover": {
+            "type": "string"
+        },
+        "bgOverlayImage": {
+            "type": "object"
+        },
+        "bgOverlayImage_tablet": {
+            "type": "object"
+        },
+        "bgOverlayImage_mobile": {
+            "type": "object"
+        },
+        "bgOverlayImageHover": {
+            "type": "object"
+        },
+        "bgOverlayImageHover_tablet": {
+            "type": "object"
+        },
+        "bgOverlayImageHover_mobile": {
+            "type": "object"
+        },
+        "bgOverlayImagePosition": {
+            "type": "string"
+        },
+        "bgOverlayImagePosition_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImagePosition_mobile": {
+            "type": "string"
+        },
+        "bgOverlayImagePositionHover": {
+            "type": "string"
+        },
+        "bgOverlayImagePositionHover_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImagePositionHover_mobile": {
+            "type": "string"
+        },
+        "bgOverlayImageAttachment": {
+            "type": "string"
+        },
+        "bgOverlayImageAttachmentHover": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeat": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeat_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeat_mobile": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeatHover": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeatHover_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImageRepeatHover_mobile": {
+            "type": "string"
+        },
+        "bgOverlayImageSize": {
+            "type": "string"
+        },
+        "bgOverlayImageSize_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImageSize_mobile": {
+            "type": "string"
+        },
+        "bgOverlayImageSizeHover": {
+            "type": "string"
+        },
+        "bgOverlayImageSizeHover_tablet": {
+            "type": "string"
+        },
+        "bgOverlayImageSizeHover_mobile": {
+            "type": "string"
+        },
+        "bgOverlayOpacity": {
+            "type": "number",
+            "default": 0.5
+        },
+        "bgOverlayOpacityHover": {
+            "type": "number"
+        },
+        "bgOverlayGradientColor": {
+            "type": "string"
+        },
+        "bgOverlayGradientColorHover": {
+            "type": "string"
+        },
+        "bgOverlayGradientLocation": {
+            "type": "number",
+            "default": 0
+        },
+        "bgOverlayGradientLocation_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientLocation_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientLocationHover": {
+            "type": "number",
+            "default": 0
+        },
+        "bgOverlayGradientLocationHover_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientLocationHover_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientSecondColor": {
+            "type": "string"
+        },
+        "bgOverlayGradientSecondColorHover": {
+            "type": "string"
+        },
+        "bgOverlayGradientSecondLocation": {
+            "type": "number",
+            "default": 100
+        },
+        "bgOverlayGradientSecondLocation_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientSecondLocation_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientSecondLocationHover": {
+            "type": "number",
+            "default": 100
+        },
+        "bgOverlayGradientSecondLocationHover_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientSecondLocationHover_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientType": {
+            "type": "string",
+            "default": "linear"
+        },
+        "bgOverlayGradientTypeHover": {
+            "type": "string",
+            "default": "linear"
+        },
+        "bgOverlayGradientAngle": {
+            "type": "number",
+            "default": 180
+        },
+        "bgOverlayGradientAngle_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientAngle_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientAngleHover": {
+            "type": "number",
+            "default": 180
+        },
+        "bgOverlayGradientAngleHover_tablet": {
+            "type": "number"
+        },
+        "bgOverlayGradientAngleHover_mobile": {
+            "type": "number"
+        },
+        "bgOverlayGradientPosition": {
+            "type": "string",
+            "default": "center center"
+        },
+        "bgOverlayGradientPosition_tablet": {
+            "type": "string"
+        },
+        "bgOverlayGradientPosition_mobile": {
+            "type": "string"
+        },
+        "bgOverlayGradientPositionHover": {
+            "type": "string",
+            "default": "center center"
+        },
+        "bgOverlayGradientPositionHover_tablet": {
+            "type": "string"
+        },
+        "bgOverlayGradientPositionHover_mobile": {
+            "type": "string"
+        },
+        "bgOverlayCssFilters": {
+            "type": "object",
+            "default": {}
+        },
+        "bgOverlayCssFiltersHover": {
+            "type": "object",
+            "default": {}
+        },
+        "bgOverlayTransitionDuration": {
+            "type": "number",
+            "default": 0.3
+        },
         "_comment_border": "Border control attributes with Normal/Hover states",
         "borderActiveTab": {
             "type": "string",
@@ -600,9 +799,7 @@
             "type": "string",
             "default": "px"
         },
-
         "_comment_voxel_tab": "VoxelTab attributes for sticky, visibility, and loop features",
-
         "stickyEnabled": {
             "type": "boolean",
             "default": false
@@ -671,7 +868,6 @@
             "type": "string",
             "default": "px"
         },
-
         "visibilityBehavior": {
             "type": "string",
             "default": "show"
@@ -680,7 +876,6 @@
             "type": "array",
             "default": []
         },
-
         "loopEnabled": {
             "type": "boolean",
             "default": false
@@ -701,7 +896,6 @@
             "type": "string",
             "default": ""
         },
-
         "_comment_container_options": "Container Options - Inline Flex, Calc Height, Backdrop Blur (matches container-controller.php)",
         "enableInlineFlex": {
             "type": "boolean",
@@ -758,7 +952,6 @@
         "backdropBlurStrength_mobile": {
             "type": "number"
         },
-
         "_comment_shape_divider": "ShapeDividerControl attributes for section dividers",
         "shapeDividerActiveTab": {
             "type": "string",
@@ -772,7 +965,6 @@
             "type": "object",
             "default": {}
         },
-
         "_comment_advanced_tab": "AdvancedTab attributes for margin, padding, visibility, position, etc.",
         "blockMargin": {
             "type": "object",
@@ -910,7 +1102,6 @@
             "type": "number",
             "default": 0.3
         },
-
         "_comment_transform": "Transform attributes for rotate, translate, scale, skew",
         "transformRotateZ": {
             "type": "number"
@@ -1009,7 +1200,6 @@
             "type": "boolean",
             "default": false
         },
-
         "_comment_mask": "CSS Mask attributes",
         "maskSwitch": {
             "type": "boolean",
@@ -1100,7 +1290,6 @@
         "maskRepeat_mobile": {
             "type": "string"
         },
-
         "_comment_motion": "Motion effects attributes",
         "motionFxScrollingEnabled": {
             "type": "boolean",
@@ -1126,24 +1315,20 @@
             "type": "number",
             "default": 1
         },
-
         "_comment_ken_burns": "Ken Burns slideshow direction",
         "bgSlideshowKenBurnsDir": {
             "type": "string",
             "default": "in"
         },
-
         "_comment_video_color": "Video Color attribute (applies color filter to video background)",
         "bgVideoColor": {
             "type": "string"
         },
-
         "_comment_layout_preset": "Layout preset selection state",
         "layoutPreset": {
             "type": "string",
             "default": ""
         },
-
         "_comment_inspector_state": "Inspector panel state persistence",
         "inspectorActiveTab": {
             "type": "string",
@@ -1167,7 +1352,6 @@
         }
     },
     "editorScript": "file:./index.js",
-    "editorStyle": "file:./editor.css",
     "viewScript": "file:./frontend.js",
     "render": "file:./render.php"
 }

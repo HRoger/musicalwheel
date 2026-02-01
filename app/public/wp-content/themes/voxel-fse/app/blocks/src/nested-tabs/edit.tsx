@@ -30,7 +30,7 @@ import {
 import { ContentTab, StyleTab } from './inspector';
 import { generateNestedTabsResponsiveCSS } from './styles';
 
-import './editor.css';
+
 
 // Default tab template
 const createDefaultTab = (index: number): TabItemData => ({
@@ -87,6 +87,26 @@ export default function Edit({
 			setAttributes({ blockId: clientId });
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
+
+	/**
+	 * Inject Voxel Template Tabs CSS for Editor
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-template-tabs-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/template-tabs.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
 
 	// Initialize inner blocks when component mounts or tabs change
 	useEffect(() => {

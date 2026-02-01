@@ -1,12 +1,33 @@
 # Sales Chart Block - Phase 3 Parity
 
-**Date:** December 23, 2025
-**Status:** Analysis Complete (100% parity)
-**Reference:** voxel-vendor-stats.beautified.js (179 lines, ~1.8KB original)
+**Date:** February 1, 2026
+**Status:** Analysis Complete (100% parity) ✅
+**Reference:**
+- voxel-vendor-stats.beautified.js (179 lines, ~1.8KB original)
+- themes/voxel/app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php
 
 ## Summary
 
-The sales-chart block has **100% parity** with Voxel's Vue.js implementation. All core features are implemented: tab navigation for time periods (week/month/year/all-time), prev/next navigation with AJAX data loading, interactive bar chart with hover popups, and drag-to-scroll functionality. The React implementation uses REST API for data fetching, matching Voxel's AJAX patterns.
+The sales-chart block has **100% parity** with Voxel's Stripe Connect module. All core features are implemented: tab navigation for time periods (week/month/year/all-time), prev/next navigation with AJAX data loading, interactive bar chart with hover popups, and drag-to-scroll functionality. The React implementation uses REST API for data fetching, matching Voxel's AJAX patterns exactly.
+
+## Stripe Connect Module Parity
+
+The FSE REST API endpoints match Voxel's `connect-frontend-controller.php` AJAX handlers exactly:
+
+| Voxel AJAX Action | FSE REST Endpoint | Status |
+|-------------------|-------------------|--------|
+| `stripe_connect.sales_chart.get_data` | `/voxel-fse/v1/sales-chart/load-more` | ✅ |
+| Widget initial render | `/voxel-fse/v1/sales-chart` | ✅ |
+
+### Date Calculation Parity (Fixed Feb 2026)
+
+| Chart Type | Voxel Logic | FSE Logic | Status |
+|------------|-------------|-----------|--------|
+| this-week | `date('Y-m-d', strtotime($change, $date))` | Identical | ✅ |
+| this-month | `date('Y-m-01', strtotime($change, $date))` | Identical | ✅ |
+| this-year | `(int) date('Y', strtotime($change, $date))` | Identical (with int cast) | ✅ |
+
+**Key Fix (Feb 2026):** Year chart now casts to `(int)` for array key lookup in `Vendor_Stats::get_year_chart()`.
 
 ## Voxel JS Analysis
 

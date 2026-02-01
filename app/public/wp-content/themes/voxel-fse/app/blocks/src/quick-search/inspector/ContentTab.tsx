@@ -88,7 +88,6 @@ export default function ContentTab({
                 {isLoading ? (
                     <div style={{ padding: '20px', textAlign: 'center' }}>
                         <Spinner />
-                        <p>{__('Loading post types...', 'voxel-fse')}</p>
                     </div>
                 ) : (
                     <>

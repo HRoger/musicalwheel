@@ -396,11 +396,36 @@ function getCurrentPostId(): number | null {
 }
 
 /**
+ * Error response from REST API
+ */
+interface ChartContextError {
+	code: string;
+	message: string;
+	status: number;
+}
+
+/**
+ * Result of context fetch - either success or error
+ */
+interface ChartContextResult {
+	success: boolean;
+	data?: { nonce: string; postId?: number };
+	error?: ChartContextError;
+}
+
+/**
  * Fetch nonce and post context from server
+ *
+ * PARITY: Handles permission errors matching Voxel's visits-chart-controller.php
+ * - 401: User not logged in (user/post sources require auth)
+ * - 403: User doesn't have permission (post ownership, site admin)
+ * - 400: Invalid request (missing post_id, tracking disabled)
+ *
+ * Evidence: themes/voxel/app/controllers/frontend/statistics/visits-chart-controller.php:22-31
  */
 async function fetchChartContext(
 	source: StatsSource
-): Promise<{ nonce: string; postId?: number } | null> {
+): Promise<ChartContextResult> {
 	try {
 		// MULTISITE FIX: Use getRestBaseUrl() for multisite subdirectory support
 		const restUrl = getRestBaseUrl();
@@ -418,24 +443,64 @@ async function fetchChartContext(
 			}
 		);
 
+		// Handle error responses with proper error extraction
 		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}`);
+			let errorData: { code?: string; message?: string } = {};
+			try {
+				errorData = await response.json();
+			} catch {
+				// JSON parse failed, use status text
+			}
+
+			const error: ChartContextError = {
+				code: errorData.code || `http_${response.status}`,
+				message: errorData.message || response.statusText || 'Request failed',
+				status: response.status,
+			};
+
+			// PARITY: Don't show Voxel.alert for permission errors
+			// Voxel's widget silently fails if user doesn't have permission
+			// Only show alert for unexpected errors
+			if (response.status >= 500) {
+				const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'Failed to load chart context';
+				if (window.Voxel?.alert) {
+					window.Voxel.alert(errorMessage, 'error');
+				}
+			}
+
+			return { success: false, error };
 		}
 
 		const data = await response.json();
-		return data as { nonce: string; postId?: number };
+		return {
+			success: true,
+			data: data as { nonce: string; postId?: number },
+		};
 	} catch {
-		// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
+		// Network error or other unexpected failure
 		const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'Failed to load chart context';
 		if (window.Voxel?.alert) {
 			window.Voxel.alert(errorMessage, 'error');
 		}
-		return null;
+		return {
+			success: false,
+			error: {
+				code: 'network_error',
+				message: 'Network error',
+				status: 0,
+			},
+		};
 	}
 }
 
 /**
  * Wrapper component that handles context fetching
+ *
+ * PARITY: Matches Voxel's behavior for permission errors
+ * - 401/403: Widget is hidden (Voxel doesn't render widget if user lacks permission)
+ * - Other errors: Shows error state with generic message
+ *
+ * Evidence: visits-chart.php:1043-1047 - Widget returns early if conditions not met
  */
 interface VisitChartWrapperProps {
 	config: VisitChartVxConfig;
@@ -445,7 +510,7 @@ interface VisitChartWrapperProps {
 function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
 	const [vxconfig, setVxconfig] = React.useState<VisitChartVxConfig>(config);
 	const [isLoading, setIsLoading] = React.useState(true);
-	const [error, setError] = React.useState<string | null>(null);
+	const [error, setError] = React.useState<ChartContextError | null>(null);
 
 	React.useEffect(() => {
 		let cancelled = false;
@@ -454,25 +519,21 @@ function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
 			setIsLoading(true);
 			setError(null);
 
-			try {
-				const context = await fetchChartContext(config.source);
+			const result = await fetchChartContext(config.source);
 
-				if (!cancelled && context) {
-					setVxconfig({
-						...config,
-						nonce: context.nonce,
-						postId: context.postId,
-					});
-				}
-			} catch (err) {
-				if (!cancelled) {
-					setError(err instanceof Error ? err.message : 'Failed to load');
-				}
-			} finally {
-				if (!cancelled) {
-					setIsLoading(false);
-				}
+			if (cancelled) return;
+
+			if (result.success && result.data) {
+				setVxconfig({
+					...config,
+					nonce: result.data.nonce,
+					postId: result.data.postId,
+				});
+			} else if (result.error) {
+				setError(result.error);
 			}
+
+			setIsLoading(false);
 		}
 
 		loadContext();
@@ -485,7 +546,7 @@ function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
 	// Loading state
 	if (isLoading) {
 		return (
-			<div className="ts-visits-chart voxel-fse-loading">
+			<div className="ts-visits-chart vx-pending">
 				<div className="ts-no-posts">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -505,11 +566,32 @@ function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
 		);
 	}
 
-	// Error state
+	// Permission error state (401/403)
+	// PARITY: Voxel's widget simply doesn't render if user lacks permission
+	// We render nothing to match this behavior - the block becomes invisible
+	if (error && (error.status === 401 || error.status === 403)) {
+		// Return empty fragment - widget is hidden for unauthorized users
+		// This matches Voxel's behavior where the widget returns early
+		return null;
+	}
+
+	// Other error state (500, network errors, etc.)
 	if (error) {
 		return (
 			<div className="ts-visits-chart voxel-fse-error">
 				<div className="ts-no-posts">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 24 24"
+						width="48"
+						height="48"
+						fill="currentColor"
+						style={{ opacity: 0.4 }}
+					>
+						<rect x="4" y="12" width="4" height="8" rx="0.5" />
+						<rect x="10" y="8" width="4" height="12" rx="0.5" />
+						<rect x="16" y="4" width="4" height="16" rx="0.5" />
+					</svg>
 					<p>Error loading chart</p>
 				</div>
 			</div>

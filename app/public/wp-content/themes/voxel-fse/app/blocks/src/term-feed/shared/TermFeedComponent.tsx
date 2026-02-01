@@ -227,7 +227,7 @@ export default function TermFeedComponent({
 		.filter(Boolean)
 		.join(' ');
 
-	// Loading state
+	// Loading state - matches Voxel's ts-no-posts pattern
 	if (isLoading) {
 		return (
 			<div className="term-feed-content">
@@ -236,16 +236,7 @@ export default function TermFeedComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<div
-					className="term-feed-loading"
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						padding: '48px',
-						backgroundColor: '#f5f5f5',
-					}}
-				>
+				<div className="ts-no-posts">
 					<span className="ts-loader" />
 				</div>
 			</div>

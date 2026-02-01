@@ -6,7 +6,7 @@
  * Ensures 1:1 matching between editor preview and frontend display
  */
 import { useState, useEffect, useRef } from 'react';
-import type { CreatePostAttributes, FormData, SubmissionState, VoxelField, SubmissionResult, FieldValue } from '../types';
+import type { CreatePostAttributes, FormData, SubmissionState, VoxelField, SubmissionResult, FieldValue, PostContext } from '../types';
 
 /**
  * FileObject interface for file field values
@@ -119,8 +119,9 @@ function getVoxelAjaxUrl(): string {
 }
 
 /**
- * CreatePostForm Props Interface
+ * CreatePostFormProps Interface
  * NEW: Added context and onSubmit for injectable behavior
+ * Plan C+ Parity: Added postContext for permission-gated rendering
  */
 export interface CreatePostFormProps {
 	attributes: CreatePostAttributes;
@@ -130,6 +131,7 @@ export interface CreatePostFormProps {
 	postId?: number | null;
 	postStatus?: string | null; // Post status from REST API (Plan C+ pattern)
 	isAdminMode?: boolean;
+	postContext?: PostContext | null; // Plan C+ parity: Server-side permission state
 }
 
 
@@ -145,7 +147,8 @@ export const CreatePostForm = ({
 	onSubmit,
 	postId,
 	postStatus: postStatusProp,
-	isAdminMode
+	isAdminMode,
+	postContext
 }: CreatePostFormProps) => {
 	// Form state
 	const [formData, setFormData] = useState<FormData>({});
@@ -1400,7 +1403,11 @@ export const CreatePostForm = ({
 									<p>{currentStep.label || 'Form'}</p>
 								</div>
 								<div className="step-nav flexify">
-									{(attributes.enableDraftSaving ?? true) && !isAdminMode && (
+									{/* Draft button visibility - Plan C+ parity
+									    Evidence: themes/voxel/app/widgets/create-post.php:4999
+									    canSaveDraft = (post_status === 'draft') for existing posts
+									    For new posts, always allow draft saving */}
+									{(attributes.enableDraftSaving ?? true) && !isAdminMode && (postContext?.canSaveDraft ?? true) && (
 										<a
 											href="#"
 											onClick={handleSaveDraft}
