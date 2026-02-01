@@ -168,6 +168,7 @@ export interface BoxDimensions {
  * Complete type definition for all Userbar block attributes
  */
 export interface UserbarAttributes {
+	[key: string]: unknown;
 	/** Block instance ID */
 	blockId: string;
 	/** Userbar items (repeater) */

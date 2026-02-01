@@ -47,6 +47,65 @@ export async function getTimelineConfig(): Promise<TimelineConfig> {
 }
 
 /**
+ * Post context response type
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ * Contains visibility checks, composer config, and review config
+ */
+export interface PostContextResponse {
+	visible: boolean;
+	reason: 'no_post_context' | 'no_author_context' | 'login_required' | 'followers_only' | 'customers_only' | 'private' | null;
+	composer: {
+		feed: string;
+		can_post: boolean;
+		post_as?: 'current_user' | 'current_post';
+		placeholder?: string;
+		reviews_post_type?: string;
+	} | null;
+	reviews: Record<string, unknown> | null;
+	current_post: {
+		exists: boolean;
+		id: number;
+		display_name: string;
+		avatar_url: string;
+		link: string;
+		author_id: number;
+		post_type: string | null;
+	} | null;
+	current_author: {
+		exists: boolean;
+		id: number;
+		display_name: string;
+		avatar_url: string;
+		link: string;
+	} | null;
+	filtering_options: Record<string, string>;
+	show_usernames: boolean;
+}
+
+/**
+ * Get post context for timeline
+ *
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ * This function fetches visibility checks, composer config, and review config
+ * based on the timeline mode and post context.
+ *
+ * Evidence: themes/voxel/app/widgets/timeline.php lines 316-384, 555-626
+ *
+ * @param mode - Timeline display mode (user_feed, post_wall, post_reviews, etc.)
+ * @param postId - Optional post ID for post-related modes
+ */
+export async function getPostContext(
+	mode: string,
+	postId?: number
+): Promise<PostContextResponse> {
+	const params: Record<string, string | number> = { mode };
+	if (postId) {
+		params.post_id = postId;
+	}
+	return voxelGet<PostContextResponse>(`${API_NAMESPACE}/post-context`, params);
+}
+
+/**
  * ============================================================================
  * STATUS OPERATIONS (9 endpoints)
  * ============================================================================

@@ -14,7 +14,7 @@ import metadata from './block.json';
 import type { SliderBlockAttributes } from './types';
 
 // Import editor styles
-import './editor.css';
+
 
 /**
  * Slider block icon - gallery/carousel representation
@@ -34,9 +34,9 @@ const icon = (
 /**
  * Register the Slider block
  */
-registerBlockType<SliderBlockAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...metadata,
 	icon,
 	edit: Edit,
 	save,
-} as Parameters<typeof registerBlockType>[1]);
+} as any);

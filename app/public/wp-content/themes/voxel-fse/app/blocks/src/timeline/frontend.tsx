@@ -106,6 +106,46 @@ interface BlockConfig {
 }
 
 /**
+ * Global Voxel config structure (from window.Voxel_Config or vxconfig script)
+ */
+interface VoxelGlobalConfig {
+	post?: {
+		id?: number;
+		post_type?: string;
+	};
+	author?: {
+		id?: number;
+	};
+}
+
+/**
+ * Get current post ID from Voxel's global config
+ * Matches how Voxel passes post context to frontend components
+ */
+function getCurrentPostId(): number | undefined {
+	// Try window.Voxel_Config first (standard Voxel approach)
+	const voxelConfig = (window as unknown as { Voxel_Config?: VoxelGlobalConfig }).Voxel_Config;
+	if (voxelConfig?.post?.id) {
+		return voxelConfig.post.id;
+	}
+
+	// Try to find vxconfig script on page (alternative method)
+	const vxconfigScript = document.querySelector<HTMLScriptElement>('script.vxconfig[type="text/json"]');
+	if (vxconfigScript?.textContent) {
+		try {
+			const pageConfig = JSON.parse(vxconfigScript.textContent) as VoxelGlobalConfig;
+			if (pageConfig?.post?.id) {
+				return pageConfig.post.id;
+			}
+		} catch {
+			// Ignore parse errors
+		}
+	}
+
+	return undefined;
+}
+
+/**
  * Normalize config for both vxconfig (snake_case) and REST API (camelCase) compatibility
  * This enables seamless Next.js migration where API responses use camelCase
  *
@@ -253,6 +293,9 @@ function initTimelineBlock(container: HTMLElement): void {
 	// Convert to TimelineAttributes
 	const attributes = configToAttributes(blockConfig);
 
+	// Get current post ID for post-context endpoint (1:1 Voxel parity)
+	const postId = getCurrentPostId();
+
 	// Remove placeholder and scripts
 	const placeholder = container.querySelector('.voxel-fse-timeline-placeholder');
 	placeholder?.remove();
@@ -267,7 +310,12 @@ function initTimelineBlock(container: HTMLElement): void {
 	timelineRoots.set(container, root);
 
 	root.render(
-		<Timeline attributes={attributes} context="frontend" className="voxel-fse-timeline-mounted" />
+		<Timeline
+			attributes={attributes}
+			postId={postId}
+			context="frontend"
+			className="voxel-fse-timeline-mounted"
+		/>
 	);
 
 	console.log('[Timeline] React component mounted:', container);

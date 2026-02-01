@@ -6,10 +6,17 @@
 	"title": "Timeline (VX)",
 	"category": "voxel-fse",
 	"description": "Social timeline feed with posts, comments, likes, and reposts. Converted from Voxel Timeline widget.",
-	"keywords": ["timeline", "feed", "social", "posts", "voxel", "newsfeed", "activity"],
+	"keywords": [
+		"timeline",
+		"feed",
+		"social",
+		"posts",
+		"voxel",
+		"newsfeed",
+		"activity"
+	],
 	"textdomain": "voxel-fse",
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./frontend.css",
@@ -107,7 +114,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

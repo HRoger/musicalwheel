@@ -97,6 +97,26 @@ export default function Edit({
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
+	/**
+	 * Inject Voxel Template Accordion CSS for Editor
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-template-accordion-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/template-accordion.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Sync inner blocks with accordion items when items change
 	useEffect(() => {
 		if (!hasInnerBlocks && attributes.items.length > 0) {
@@ -378,143 +398,143 @@ export default function Edit({
 
 	return (
 		<>
-		<div {...blockProps}>
-			<InspectorControls>
-				<InspectorTabs
-					tabs={[
-						{
-							id: 'content',
-							label: __('Content', 'voxel-fse'),
-							icon: '\ue92c',
-							render: () => (
-								<ContentTab
-									attributes={attributes}
-									setAttributes={setAttributes}
-									itemsRepeater={itemsRepeater}
-								/>
-							),
-						},
-						{
-							id: 'style',
-							label: __('Style', 'voxel-fse'),
-							icon: '\ue921',
-							render: () => (
-								<StyleTab
-									attributes={attributes}
-									setAttributes={setAttributes}
-									clientId={clientId}
-								/>
-							),
-						},
-					]}
-					includeAdvancedTab={true}
-					includeVoxelTab={true}
-					attributes={attributes}
-					setAttributes={setAttributes}
-				/>
-			</InspectorControls>
-
-			{/* Responsive CSS for Content tab and Style tab controls */}
-			{combinedResponsiveCSS && (
-				<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
-			)}
-
-			{/* Editor Preview */}
-			<div
-				className="e-n-accordion"
-				aria-label={__(
-					'Accordion. Open links with Enter or Space, close with Escape, and navigate with Arrow Keys',
-					'voxel-fse'
-				)}
-				style={{
-					'--n-accordion-item-title-space-between': `${attributes.itemSpacing ?? 0}px`,
-					'--n-accordion-padding': attributes.accordionPadding?.desktop
-						? `${attributes.accordionPadding.desktop.top || '10px'} ${attributes.accordionPadding.desktop.right || '10px'} ${attributes.accordionPadding.desktop.bottom || '10px'} ${attributes.accordionPadding.desktop.left || '10px'}`
-						: '10px',
-					'--n-accordion-title-normal-color': attributes.titleNormalColor || '#1f2124',
-					'--n-accordion-icon-size': `${attributes.iconSize ?? 15}px`,
-				} as React.CSSProperties}
-			>
-				{attributes.items.map((item, index) => {
-					const isOpen = openItems.has(index);
-					const itemId = item.cssId || `e-n-accordion-item-${attributes.blockId}-${index}`;
-
-					return (
-						<details
-							key={item.id}
-							id={itemId}
-							className="e-n-accordion-item"
-							open={isOpen}
-						>
-							<summary
-								className="e-n-accordion-item-title"
-								data-accordion-index={index + 1}
-								tabIndex={0}
-								aria-expanded={isOpen ? 'true' : 'false'}
-								aria-controls={`${itemId}-content`}
-								onClick={(e) => {
-									const target = e.target as HTMLElement;
-
-									// Allow clicking on RichText for editing
-									if (target.closest('[contenteditable="true"]')) {
-										e.preventDefault(); // Prevent toggle
-										return;
-									}
-
-									// Prevent native toggle and handle with React state
-									e.preventDefault();
-									toggleItem(index);
-								}}
-							>
-								<span className="e-n-accordion-item-title-header">
-									<TitleTag className="e-n-accordion-item-title-text">
-										<RichText
-											tagName="span"
-											value={item.title}
-											onChange={(title) => updateItem(index, { title })}
-											placeholder={__('Item Title', 'voxel-fse')}
-											allowedFormats={[]}
-										/>
-									</TitleTag>
-								</span>
-								{(attributes.expandIcon?.value || attributes.collapseIcon?.value) && (
-									<span className="e-n-accordion-item-title-icon">
-										<span className="e-opened">
-											<i
-												className={attributes.collapseIcon?.value || 'fas fa-minus'}
-												aria-hidden="true"
-											></i>
-										</span>
-										<span className="e-closed">
-											<i
-												className={attributes.expandIcon?.value || 'fas fa-plus'}
-												aria-hidden="true"
-											></i>
-										</span>
-									</span>
-								)}
-							</summary>
-
-							<div
-								id={`${itemId}-content`}
-								className="e-n-accordion-item-content e-con"
-								role="region"
-								aria-labelledby={itemId}
-							>
-								{innerBlocks[index] && BlockListBlock && (
-									<BlockListBlock
-										key={innerBlocks[index].clientId}
-										clientId={innerBlocks[index].clientId}
-										rootClientId={clientId}
+			<div {...blockProps}>
+				<InspectorControls>
+					<InspectorTabs
+						tabs={[
+							{
+								id: 'content',
+								label: __('Content', 'voxel-fse'),
+								icon: '\ue92c',
+								render: () => (
+									<ContentTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										itemsRepeater={itemsRepeater}
 									/>
-								)}
-							</div>
-						</details>
-					);
-				})}
-			</div>
+								),
+							},
+							{
+								id: 'style',
+								label: __('Style', 'voxel-fse'),
+								icon: '\ue921',
+								render: () => (
+									<StyleTab
+										attributes={attributes}
+										setAttributes={setAttributes}
+										clientId={clientId}
+									/>
+								),
+							},
+						]}
+						includeAdvancedTab={true}
+						includeVoxelTab={true}
+						attributes={attributes}
+						setAttributes={setAttributes}
+					/>
+				</InspectorControls>
 
-		</div>
+				{/* Responsive CSS for Content tab and Style tab controls */}
+				{combinedResponsiveCSS && (
+					<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
+				)}
+
+				{/* Editor Preview */}
+				<div
+					className="e-n-accordion"
+					aria-label={__(
+						'Accordion. Open links with Enter or Space, close with Escape, and navigate with Arrow Keys',
+						'voxel-fse'
+					)}
+					style={{
+						'--n-accordion-item-title-space-between': `${attributes.itemSpacing ?? 0}px`,
+						'--n-accordion-padding': attributes.accordionPadding?.desktop
+							? `${attributes.accordionPadding.desktop.top || '10px'} ${attributes.accordionPadding.desktop.right || '10px'} ${attributes.accordionPadding.desktop.bottom || '10px'} ${attributes.accordionPadding.desktop.left || '10px'}`
+							: '10px',
+						'--n-accordion-title-normal-color': attributes.titleNormalColor || '#1f2124',
+						'--n-accordion-icon-size': `${attributes.iconSize ?? 15}px`,
+					} as React.CSSProperties}
+				>
+					{attributes.items.map((item, index) => {
+						const isOpen = openItems.has(index);
+						const itemId = item.cssId || `e-n-accordion-item-${attributes.blockId}-${index}`;
+
+						return (
+							<details
+								key={item.id}
+								id={itemId}
+								className="e-n-accordion-item"
+								open={isOpen}
+							>
+								<summary
+									className="e-n-accordion-item-title"
+									data-accordion-index={index + 1}
+									tabIndex={0}
+									aria-expanded={isOpen ? 'true' : 'false'}
+									aria-controls={`${itemId}-content`}
+									onClick={(e) => {
+										const target = e.target as HTMLElement;
+
+										// Allow clicking on RichText for editing
+										if (target.closest('[contenteditable="true"]')) {
+											e.preventDefault(); // Prevent toggle
+											return;
+										}
+
+										// Prevent native toggle and handle with React state
+										e.preventDefault();
+										toggleItem(index);
+									}}
+								>
+									<span className="e-n-accordion-item-title-header">
+										<TitleTag className="e-n-accordion-item-title-text">
+											<RichText
+												tagName="span"
+												value={item.title}
+												onChange={(title) => updateItem(index, { title })}
+												placeholder={__('Item Title', 'voxel-fse')}
+												allowedFormats={[]}
+											/>
+										</TitleTag>
+									</span>
+									{(attributes.expandIcon?.value || attributes.collapseIcon?.value) && (
+										<span className="e-n-accordion-item-title-icon">
+											<span className="e-opened">
+												<i
+													className={attributes.collapseIcon?.value || 'fas fa-minus'}
+													aria-hidden="true"
+												></i>
+											</span>
+											<span className="e-closed">
+												<i
+													className={attributes.expandIcon?.value || 'fas fa-plus'}
+													aria-hidden="true"
+												></i>
+											</span>
+										</span>
+									)}
+								</summary>
+
+								<div
+									id={`${itemId}-content`}
+									className="e-n-accordion-item-content e-con"
+									role="region"
+									aria-labelledby={itemId}
+								>
+									{innerBlocks[index] && BlockListBlock && (
+										<BlockListBlock
+											key={innerBlocks[index].clientId}
+											clientId={innerBlocks[index].clientId}
+											rootClientId={clientId}
+										/>
+									)}
+								</div>
+							</details>
+						);
+					})}
+				</div>
+
+			</div>
 
 			{/* Loop Element Modal - Rendered via portal to .voxel-fse-tab-content */}
 			{isLoopModalOpen && (() => {
@@ -551,6 +571,6 @@ export default function Edit({
 					portalTarget
 				);
 			})()}
-	</>
+		</>
 	);
 }

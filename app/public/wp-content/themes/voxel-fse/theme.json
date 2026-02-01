@@ -13,17 +13,17 @@
 			"palette": [
 				{
 					"slug": "primary",
-					"color": "#2563eb",
+					"color": "var(--e-global-color-primary)",
 					"name": "Primary"
 				},
 				{
 					"slug": "secondary",
-					"color": "#7c3aed",
+					"color": "var(--e-global-color-secondary)",
 					"name": "Secondary"
 				},
 				{
 					"slug": "accent",
-					"color": "#f59e0b",
+					"color": "var(--e-global-color-accent)",
 					"name": "Accent"
 				},
 				{
@@ -33,7 +33,7 @@
 				},
 				{
 					"slug": "contrast",
-					"color": "#0f172a",
+					"color": "var(--e-global-color-text)",
 					"name": "Contrast"
 				},
 				{
@@ -274,7 +274,7 @@
 		"elements": {
 			"link": {
 				"color": {
-					"text": "var(--wp--preset--color--primary)"
+					"text": "var(--e-global-color-accent)"
 				},
 				":hover": {
 					"color": {

@@ -15,7 +15,7 @@ import metadata from './block.json';
 import type { QuickSearchAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
-import './editor.css';
+
 
 /**
  * Deprecated block versions for migration

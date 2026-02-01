@@ -130,6 +130,20 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 		}
 	}, [attributes.blockId, setAttributes]);
 
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-map-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/map.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Find all search form blocks on the page for RelationControl
 	const searchFormBlocks = useSelect(
 		(select) => {

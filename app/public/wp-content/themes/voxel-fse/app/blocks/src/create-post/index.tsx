@@ -16,7 +16,7 @@ import metadata from './block.json';
 import type { CreatePostAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
-import './editor.css';
+
 
 /**
  * Deprecated block versions for migration
@@ -27,7 +27,7 @@ const deprecated = [
 	{
 		attributes: metadata.attributes,
 		save({ attributes }: { attributes: CreatePostAttributes }) {
-			const blockProps = useBlockProps.save({
+			const blockProps = {
 				className: [
 					'ts-form',
 					'ts-create-post',
@@ -35,7 +35,7 @@ const deprecated = [
 					'voxel-fse-create-post-frontend',
 				].join(' '),
 				'data-post-type': attributes.postTypeKey || '',
-			});
+			};
 
 			const vxConfig = {
 				postTypeKey: attributes.postTypeKey || '',
@@ -91,7 +91,7 @@ const deprecated = [
 ];
 
 // Register the block
-registerBlockType<CreatePostAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Create Post (VX)', 'voxel-fse'),
@@ -99,4 +99,4 @@ registerBlockType<CreatePostAttributes>(metadata.name, {
 	edit: Edit,
 	save, // Plan C+ - saves vxconfig for frontend hydration
 	deprecated,
-} as Parameters<typeof registerBlockType<CreatePostAttributes>>[1]);
+} as any);

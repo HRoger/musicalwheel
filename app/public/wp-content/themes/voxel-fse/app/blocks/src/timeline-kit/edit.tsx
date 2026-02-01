@@ -10,7 +10,7 @@
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useSelect } from '@wordpress/data';
 import { InspectorTabs } from '@shared/controls';
 import { generateTimelineCSS } from './generateCSS';
@@ -19,6 +19,20 @@ import Demofeed from './Demofeed';
 import { StyleTab } from './inspector';
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-social-feed-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/social-feed.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	const blockProps = useBlockProps({
 		className: 'voxel-fse-timeline-kit-editor',
 	});

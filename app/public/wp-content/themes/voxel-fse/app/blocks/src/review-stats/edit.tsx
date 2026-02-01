@@ -22,7 +22,7 @@ import type {
 } from './types';
 
 
-import './editor.css';
+
 
 /**
  * Get REST API base URL
@@ -120,6 +120,20 @@ export default function Edit({
 			setAttributes({ blockId: generateBlockId() });
 		}
 	}, [attributes.blockId, setAttributes]);
+
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-review-stats-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/review-stats.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
 
 	// Fetch stats data when postId changes
 	useEffect(() => {

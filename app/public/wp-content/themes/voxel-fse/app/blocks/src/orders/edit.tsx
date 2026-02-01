@@ -8,7 +8,6 @@
 
 import { useEffect, useMemo } from 'react';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 import { InspectorTabs } from '@shared/controls';
@@ -60,6 +59,20 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-orders-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/orders.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	return (
 		<>
 			<InspectorControls>
@@ -102,9 +115,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				)}
 
 				{isLoading && (
-					<div className="voxel-fse-loading">
-						<Spinner />
-						<span>{__('Loading orders configuration...', 'voxel-fse')}</span>
+					<div className="ts-no-posts">
+						<span className="ts-loader"></span>
 					</div>
 				)}
 

@@ -30,6 +30,20 @@ export default function Edit({ attributes, setAttributes }: EditProps): JSX.Elem
 	// Get blockId or use default
 	const blockId = attributes.blockId || 'countdown';
 
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-countdown-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/countdown.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Use shared utility for AdvancedTab + VoxelTab wiring
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
 		blockId,

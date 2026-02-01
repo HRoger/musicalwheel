@@ -7,7 +7,6 @@
 import { useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { Spinner } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 import { InspectorTabs } from '@shared/controls';
@@ -64,6 +63,20 @@ export default function Edit({
 			setAttributes({ blockId: generateBlockId() });
 		}
 	}, [attributes.blockId, setAttributes]);
+
+	// Inject Voxel Editor Styles
+	useEffect(() => {
+		const cssId = 'voxel-post-feed-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+			const voxelConfig = (window as any).Voxel_Config;
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
 
 	// Get search form blocks on the page for RelationControl
 	const searchFormBlocks = useSelect(
@@ -268,12 +281,7 @@ export default function Edit({
 
 			{/* BLOCK PREVIEW */}
 			<div {...blockProps}>
-				{isLoading ? (
-					<div className="voxel-fse-loading">
-						<Spinner />
-						<span>{__('Loading configuration...', 'voxel-fse')}</span>
-					</div>
-				) : error ? (
+				{error ? (
 					<div className="voxel-fse-error">
 						<span>{error}</span>
 					</div>

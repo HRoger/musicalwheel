@@ -205,6 +205,26 @@ export default function QuickSearchComponent({
 	const popupRef = useRef<HTMLDivElement>(null);
 	const lastQueryRef = useRef<string>(''); // Track last query to skip duplicate requests (Voxel parity: line 296)
 
+	/**
+	 * Inject Voxel Quick Search CSS for both Editor and Frontend
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-quick-search-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/quick-search.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Get config
 	const config = vxConfig || {
 		postTypes: {},
@@ -594,9 +614,8 @@ export default function QuickSearchComponent({
 
 				{/* Results Dropdown */}
 				<div
-					className={`ts-term-dropdown ts-md-group ts-multilevel-dropdown ${
-						isLoading ? 'vx-pending' : ''
-					}`}
+					className={`ts-term-dropdown ts-md-group ts-multilevel-dropdown ${isLoading ? 'vx-pending' : ''
+						}`}
 				>
 					{/* No Recent Searches */}
 					{showNoRecent && (

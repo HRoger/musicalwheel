@@ -270,13 +270,14 @@ function QuickSearchWrapper({ vxConfig, attributes }: QuickSearchWrapperProps) {
 		};
 	}, [vxConfig]);
 
-	// Loading state
+	// Loading state - matches Voxel's centered spinner pattern
+	// Reference: Voxel uses .ts-no-posts > .ts-loader for loading states
 	if (isLoading) {
 		return (
-			<div className="ts-form-group quick-search-keyword voxel-fse-loading">
-				<button type="button" className="ts-filter ts-popup-target" disabled>
-					<span className="ts-loader" />
-				</button>
+			<div className="ts-form-group">
+				<div className="ts-no-posts">
+					<span className="ts-loader" aria-label="Loading..." />
+				</div>
 			</div>
 		);
 	}

@@ -54,6 +54,14 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 			'permission_callback' => '__return_true',
 		] );
 
+		// Post context - visibility checks, composer config, review config
+		// This is CRITICAL for 1:1 Voxel parity
+		register_rest_route( self::REST_NAMESPACE, '/timeline/post-context', [
+			'methods'             => 'GET',
+			'callback'            => [ $this, 'get_post_context' ],
+			'permission_callback' => '__return_true',
+		] );
+
 		// Status feed
 		register_rest_route( self::REST_NAMESPACE, '/timeline/feed', [
 			'methods'             => 'GET',
@@ -193,6 +201,342 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 	 */
 	public function check_logged_in() {
 		return is_user_logged_in();
+	}
+
+	/**
+	 * Get post context for timeline
+	 *
+	 * CRITICAL FOR 1:1 VOXEL PARITY
+	 * This method replicates the visibility logic from Voxel's timeline.php render() method.
+	 * Evidence: themes/voxel/app/widgets/timeline.php lines 316-384, 555-626
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response
+	 */
+	public function get_post_context( $request ) {
+		if ( ! $this->is_voxel_available() ) {
+			return $this->get_fallback_post_context( $request );
+		}
+
+		$mode    = $request->get_param( 'mode' ) ?? 'user_feed';
+		$post_id = $request->get_param( 'post_id' );
+
+		$current_user   = \Voxel\get_current_user();
+		$current_post   = null;
+		$current_author = null;
+
+		// Get current post if post_id provided
+		if ( $post_id ) {
+			$current_post = \Voxel\Post::get( (int) $post_id );
+		}
+
+		// Get author from post
+		if ( $current_post ) {
+			$current_author = $current_post->get_author();
+		}
+
+		// =====================================================
+		// VISIBILITY CHECKS - Matches Voxel timeline.php:316-384
+		// =====================================================
+		$visibility_result = $this->check_visibility( $mode, $current_user, $current_post, $current_author );
+
+		if ( ! $visibility_result['allowed'] ) {
+			return new \WP_REST_Response( [
+				'success' => true,
+				'data'    => [
+					'visible'     => false,
+					'reason'      => $visibility_result['reason'],
+					'composer'    => null,
+					'reviews'     => null,
+					'current_post' => null,
+					'current_author' => null,
+				],
+			] );
+		}
+
+		// =====================================================
+		// COMPOSER CONFIG - Matches Voxel timeline.php:555-626
+		// =====================================================
+		$composer = $this->get_composer_config( $mode, $current_user, $current_post );
+
+		// =====================================================
+		// REVIEW CONFIG - Matches Voxel timeline.php:555-566
+		// =====================================================
+		$reviews = [];
+		if ( $mode === 'post_reviews' && $current_post && $current_post->post_type && $current_post->post_type->reviews ) {
+			ob_start();
+			$review_config = $current_post->post_type->reviews->get_timeline_config();
+			ob_end_clean();
+			$reviews[ $current_post->post_type->get_key() ] = $review_config;
+		}
+
+		// Build current_post data
+		$current_post_data = null;
+		if ( $current_post ) {
+			$current_post_data = [
+				'exists'       => true,
+				'id'           => $current_post->get_id(),
+				'display_name' => $current_post->get_display_name(),
+				'avatar_url'   => $current_post->get_avatar_url(),
+				'link'         => $current_post->get_link(),
+				'author_id'    => $current_post->get_author_id(),
+				'post_type'    => $current_post->post_type ? $current_post->post_type->get_key() : null,
+			];
+		}
+
+		// Build current_author data
+		$current_author_data = null;
+		if ( $current_author ) {
+			$current_author_data = [
+				'exists'       => true,
+				'id'           => $current_author->get_id(),
+				'display_name' => $current_author->get_display_name(),
+				'avatar_url'   => $current_author->get_avatar_url(),
+				'link'         => $current_author->get_link(),
+			];
+		}
+
+		// Build filtering options - matches Voxel timeline.php:529-535
+		$filtering_options = [
+			'all' => _x( 'All', 'timeline filters', 'voxel' ),
+		];
+		if ( $current_user ) {
+			$filtering_options['liked'] = _x( 'Liked', 'timeline filters', 'voxel' );
+		}
+		if ( $current_user && $current_user->can_moderate_timeline_feed( (string) $mode, [ 'post' => $current_post ] ) ) {
+			$filtering_options['pending'] = _x( 'Pending', 'timeline filters', 'voxel' );
+		}
+
+		return new \WP_REST_Response( [
+			'success' => true,
+			'data'    => [
+				'visible'           => true,
+				'reason'            => null,
+				'composer'          => $composer,
+				'reviews'           => $reviews,
+				'current_post'      => $current_post_data,
+				'current_author'    => $current_author_data,
+				'filtering_options' => $filtering_options,
+				'show_usernames'    => \Voxel\get( 'settings.timeline.author.show_username', true ),
+			],
+		] );
+	}
+
+	/**
+	 * Check visibility for timeline based on mode
+	 *
+	 * CRITICAL: Replicates Voxel timeline.php:316-384 EXACTLY
+	 *
+	 * @param string $mode
+	 * @param \Voxel\User|null $current_user
+	 * @param \Voxel\Post|null $current_post
+	 * @param \Voxel\User|null $current_author
+	 * @return array ['allowed' => bool, 'reason' => string|null]
+	 */
+	protected function check_visibility( $mode, $current_user, $current_post, $current_author ) {
+		// Post-related modes: post_reviews, post_wall, post_timeline
+		// Evidence: timeline.php:316-331
+		if ( in_array( $mode, [ 'post_reviews', 'post_wall', 'post_timeline' ], true ) ) {
+			if ( ! ( $current_post && $current_post->post_type ) ) {
+				return [ 'allowed' => false, 'reason' => 'no_post_context' ];
+			}
+
+			$visibility_key = ( $mode === 'post_wall' ? 'wall_visibility' : ( $mode === 'post_reviews' ? 'review_visibility' : 'visibility' ) );
+			$visibility     = $current_post->post_type->get_setting( 'timeline.' . $visibility_key );
+
+			if ( $visibility === 'logged_in' && ! is_user_logged_in() ) {
+				return [ 'allowed' => false, 'reason' => 'login_required' ];
+			}
+
+			if ( $visibility === 'followers_only' ) {
+				if ( ! is_user_logged_in() ) {
+					return [ 'allowed' => false, 'reason' => 'followers_only' ];
+				}
+				if ( ! ( \Voxel\current_user()->follows_post( $current_post->get_id() ) || $current_post->get_author_id() === get_current_user_id() ) ) {
+					return [ 'allowed' => false, 'reason' => 'followers_only' ];
+				}
+			}
+
+			if ( $visibility === 'customers_only' ) {
+				if ( ! is_user_logged_in() ) {
+					return [ 'allowed' => false, 'reason' => 'customers_only' ];
+				}
+				if ( ! ( \Voxel\current_user()->has_bought_product( $current_post->get_id() ) || $current_post->get_author_id() === get_current_user_id() ) ) {
+					return [ 'allowed' => false, 'reason' => 'customers_only' ];
+				}
+			}
+
+			if ( $visibility === 'private' && ! $current_post->is_editable_by_current_user() ) {
+				return [ 'allowed' => false, 'reason' => 'private' ];
+			}
+		}
+
+		// Author timeline mode
+		// Evidence: timeline.php:332-373
+		if ( $mode === 'author_timeline' ) {
+			if ( ! $current_author ) {
+				return [ 'allowed' => false, 'reason' => 'no_author_context' ];
+			}
+
+			$visibility = \Voxel\get( 'settings.timeline.user_timeline.visibility', 'public' );
+
+			if ( $visibility === 'logged_in' && ! is_user_logged_in() ) {
+				return [ 'allowed' => false, 'reason' => 'login_required' ];
+			}
+
+			if ( $visibility === 'followers_only' ) {
+				if ( ! is_user_logged_in() ) {
+					return [ 'allowed' => false, 'reason' => 'followers_only' ];
+				}
+				if ( ! ( $current_user->get_id() === $current_author->get_id() || $current_user->follows_user( $current_author->get_id() ) ) ) {
+					return [ 'allowed' => false, 'reason' => 'followers_only' ];
+				}
+			}
+
+			if ( $visibility === 'customers_only' ) {
+				if ( ! is_user_logged_in() ) {
+					return [ 'allowed' => false, 'reason' => 'customers_only' ];
+				}
+
+				$is_allowed = $current_user->get_id() === $current_author->get_id()
+					|| (
+						$current_author->has_cap( 'administrator' )
+						&& apply_filters( 'voxel/stripe_connect/enable_onboarding_for_admins', false ) !== true
+						&& $current_user->has_bought_product_from_platform()
+					) || (
+						$current_user->has_bought_product_from_vendor( $current_author->get_id() )
+					);
+
+				if ( ! $is_allowed ) {
+					return [ 'allowed' => false, 'reason' => 'customers_only' ];
+				}
+			}
+
+			if ( $visibility === 'private' ) {
+				if ( ! ( is_user_logged_in() && $current_user->get_id() === $current_author->get_id() ) ) {
+					return [ 'allowed' => false, 'reason' => 'private' ];
+				}
+			}
+		}
+
+		// User feed mode
+		// Evidence: timeline.php:374-377
+		if ( $mode === 'user_feed' && ! is_user_logged_in() ) {
+			return [ 'allowed' => false, 'reason' => 'login_required' ];
+		}
+
+		// Global feed - always allowed
+		// Evidence: timeline.php:378-379
+
+		return [ 'allowed' => true, 'reason' => null ];
+	}
+
+	/**
+	 * Get composer configuration based on mode
+	 *
+	 * CRITICAL: Replicates Voxel timeline.php:555-626 EXACTLY
+	 *
+	 * @param string $mode
+	 * @param \Voxel\User|null $current_user
+	 * @param \Voxel\Post|null $current_post
+	 * @return array|null
+	 */
+	protected function get_composer_config( $mode, $current_user, $current_post ) {
+		$composer = [
+			'feed'     => 'user_timeline', // default
+			'can_post' => false,
+		];
+
+		if ( $mode === 'post_reviews' ) {
+			$composer['feed'] = 'post_reviews';
+
+			if ( $current_user && $current_post && $current_user->can_review_post( $current_post->get_id() ) ) {
+				$composer['can_post']          = true;
+				$composer['post_as']           = 'current_user';
+				$composer['placeholder']       = sprintf( _x( 'Write a review for %s', 'timeline', 'voxel' ), $current_post->get_display_name() );
+				$composer['reviews_post_type'] = $current_post->post_type->get_key();
+			}
+		} elseif ( $mode === 'post_wall' ) {
+			$composer['feed'] = 'post_wall';
+
+			if ( $current_user && $current_post && $current_user->can_post_to_wall( $current_post->get_id() ) ) {
+				$composer['can_post']    = true;
+				$composer['post_as']     = 'current_user';
+				$composer['placeholder'] = sprintf( _x( 'What\'s on your mind, %s?', 'timeline', 'voxel' ), $current_user->get_display_name() );
+			}
+		} elseif ( $mode === 'post_timeline' ) {
+			$composer['feed'] = 'post_timeline';
+
+			if ( $current_user && $current_post && $current_post->is_editable_by_user( $current_user ) ) {
+				$composer['can_post']    = true;
+				$composer['post_as']     = 'current_post';
+				$composer['placeholder'] = _x( 'What\'s on your mind?', 'timeline', 'voxel' );
+			}
+		} elseif ( $mode === 'author_timeline' ) {
+			$composer['feed'] = 'user_timeline';
+
+			if ( $current_user && $current_post && $current_post->get_author_id() === $current_user->get_id() ) {
+				$composer['can_post']    = true;
+				$composer['post_as']     = 'current_user';
+				$composer['placeholder'] = sprintf( _x( 'What\'s on your mind, %s?', 'timeline', 'voxel' ), $current_user->get_display_name() );
+			}
+		} elseif ( $mode === 'user_feed' || $mode === 'global_feed' ) {
+			$composer['feed'] = 'user_timeline';
+
+			if ( $current_user ) {
+				$composer['can_post']    = true;
+				$composer['post_as']     = 'current_user';
+				$composer['placeholder'] = sprintf( _x( 'What\'s on your mind, %s?', 'timeline', 'voxel' ), $current_user->get_display_name() );
+			}
+		}
+
+		return $composer;
+	}
+
+	/**
+	 * Fallback post context when Voxel is unavailable
+	 */
+	protected function get_fallback_post_context( $request ) {
+		$mode    = $request->get_param( 'mode' ) ?? 'user_feed';
+		$post_id = $request->get_param( 'post_id' );
+
+		// For non-user modes, require login
+		if ( $mode === 'user_feed' && ! is_user_logged_in() ) {
+			return new \WP_REST_Response( [
+				'success' => true,
+				'data'    => [
+					'visible'  => false,
+					'reason'   => 'login_required',
+					'composer' => null,
+					'reviews'  => null,
+				],
+			] );
+		}
+
+		$composer = [
+			'feed'     => 'user_timeline',
+			'can_post' => is_user_logged_in(),
+		];
+
+		if ( is_user_logged_in() ) {
+			$wp_user                  = wp_get_current_user();
+			$composer['post_as']      = 'current_user';
+			$composer['placeholder']  = sprintf( "What's on your mind, %s?", $wp_user->display_name );
+		}
+
+		return new \WP_REST_Response( [
+			'success' => true,
+			'data'    => [
+				'visible'           => true,
+				'reason'            => null,
+				'composer'          => $composer,
+				'reviews'           => [],
+				'filtering_options' => [
+					'all' => 'All',
+				],
+				'show_usernames'    => true,
+			],
+		] );
 	}
 
 	/**

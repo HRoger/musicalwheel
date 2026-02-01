@@ -5,9 +5,8 @@
   "category": "voxel-fse",
   "description": "Display work hours for a business",
   "editorScript": "file:./index.js",
-  "editorStyle": "file:./editor.css",
   "viewScript": "file:./frontend.js",
-	"render": "file:./render.php",
+  "render": "file:./render.php",
   "attributes": {
     "blockId": {
       "type": "string",
@@ -341,7 +340,10 @@
     "visibilityBehavior": {
       "type": "string",
       "default": "show",
-      "enum": ["show", "hide"]
+      "enum": [
+        "show",
+        "hide"
+      ]
     },
     "visibilityRules": {
       "type": "array",

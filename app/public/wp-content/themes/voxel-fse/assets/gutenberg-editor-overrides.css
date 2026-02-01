@@ -11,50 +11,47 @@
 
 .edit-post-sidebar,
 .interface-interface-skeleton__sidebar {
-	transition: none !important;
+    transition: none !important;
 }
 
 
 .interface-complementary-area {
-	background: #fff;
-	color: #1e1e1e;
-	height: 100%;
-	overflow-y: scroll!important;
+    background: #fff;
+    color: #1e1e1e;
+    height: 100%;
+    overflow-y: scroll !important;
 }
-
 
 
 /* Input field width */
 body .components-number-control .components-input-control__container {
-	width: calc(64px);
+    width: calc(64px);
 }
 
 /* Input field height and font size */
 body .components-number-control .components-input-control__container [id^="inspector-input-control-"].components-input-control__input {
-	font-size: 13px;
-	height: 26px;
-	min-height:26px;
-	padding-right: 0;
+    font-size: 13px;
+    height: 26px;
+    min-height: 26px;
+    padding-right: 0;
 }
-
-
 
 
 /* ============================================
  *FIX VOXEL BLOCKS STYLING
  * ============================================ */
 
-body.block-editor-page .block-editor-block-list__layout  a.ts-btn-2:focus,
-body.block-editor-page .block-editor-block-list__layout  a.ts-btn-2:focus .media-icon img,
-body.block-editor-page .block-editor-block-list__layout  a.ts-btn-2:focus .plugin-icon {
-	  color: white!important;
-	  box-shadow: none!important;
-	  outline: none!important;
+body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus,
+body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus .media-icon img,
+body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus .plugin-icon {
+    color: white !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 
-body.block-editor-page #vx-alert .alert-msg{
-	font-size: 16px!important;
+body.block-editor-page #vx-alert .alert-msg {
+    font-size: 16px !important;
 }
 
 /* ============================================
@@ -63,38 +60,38 @@ body.block-editor-page #vx-alert .alert-msg{
 
 /* Editor canvas styles */
 .editor-styles-wrapper {
-	font-family: var(--wp--preset--font-family--system);
-	font-size: var(--wp--preset--font-size--base);
-	line-height: 1.6;
+    font-family: var(--wp--preset--font-family--system);
+    font-size: var(--wp--preset--font-size--base);
+    line-height: 1.6;
 }
 
 /* Block toolbar enhancements */
 .block-editor-block-toolbar {
-	border-radius: var(--wp--custom--border-radius--base);
+    border-radius: var(--wp--custom--border-radius--base);
 }
 
 /* Custom block category icon */
 .block-editor-inserter__panel-header .components-panel__body-title {
-	/* MusicalWheel FSE category styling */
+    /* MusicalWheel FSE category styling */
 }
 
 /* DynamicTag input styling in editor */
 .mw-dynamic-tag-input {
-	font-family: var(--wp--preset--font-family--monospace);
-	background: var(--wp--preset--color--neutral-50);
-	border: 1px solid var(--wp--preset--color--neutral-200);
-	border-radius: var(--wp--custom--border-radius--base);
-	padding: var(--wp--preset--spacing--2);
+    font-family: var(--wp--preset--font-family--monospace);
+    background: var(--wp--preset--color--neutral-50);
+    border: 1px solid var(--wp--preset--color--neutral-200);
+    border-radius: var(--wp--custom--border-radius--base);
+    padding: var(--wp--preset--spacing--2);
 }
 
 /* FSE block previews */
 .block-editor-block-preview__content {
-	border-radius: var(--wp--custom--border-radius--md);
+    border-radius: var(--wp--custom--border-radius--md);
 }
 
 /* Fix sidebar panel header overlapping DynamicTagBuilder modal */
 .interface-complementary-area .components-panel__header {
-	z-index: 0 !important;
+    z-index: 0 !important;
 }
 
 /**
@@ -113,16 +110,18 @@ body.block-editor-page #vx-alert .alert-msg{
  * This prevents editor styles from overriding Voxel's button styling.
  * Using 'body' prefix increases specificity to override WP defaults.
  */
-body :where(.editor-styles-wrapper) a:where(:not(.wp-element-button)) ,
+body :where(.editor-styles-wrapper) a:where(:not(.wp-element-button)),
 body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
     text-decoration: none;
 }
 
 
+
 body .vxf-create-post {
-	flex-wrap: nowrap!important;
+    flex-wrap: nowrap !important;
 
 }
+
 /**
  * VoxelFSE Metabox Styles for Gutenberg
  *
@@ -133,60 +132,60 @@ body .vxf-create-post {
  * Create Post Fields iframe wrapper (CRITICAL)
  * ============================================ */
 #vx-fields-wrapper-fse {
-	display: flex;
-	justify-content: center;
-	overflow: hidden;
-	min-height: 200px;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    min-height: 200px;
 }
 
 #vx-fields-wrapper-fse iframe {
-	width: 100%;
-	display: block;
-	min-height: 400px;
-	border: none;
+    width: 100%;
+    display: block;
+    min-height: 400px;
+    border: none;
 }
 
 /* Ensure the metabox inside has proper display */
 #voxel_fse_post_fields .inside {
-	padding: 0;
-	margin: 0;
+    padding: 0;
+    margin: 0;
 }
 
 /* ============================================
  * Fix link styling for Gutenberg interface
  * ============================================ */
 body.block-editor-page .edit-post-meta-boxes-area a {
-	color: #2271b1;
-	text-decoration: underline;
-	transition-property: border, background, color;
-	transition-duration: .05s;
-	transition-timing-function: ease-in-out;
+    color: #2271b1;
+    text-decoration: underline;
+    transition-property: border, background, color;
+    transition-duration: .05s;
+    transition-timing-function: ease-in-out;
 }
 
-body.block-editor-page .ts-form  a.ts-btn-2:active,
-body.block-editor-page .ts-form  a.ts-btn-2:hover {
-	color: var(--ts-shade-7, #797a88);
+body.block-editor-page .ts-form a.ts-btn-2:active,
+body.block-editor-page .ts-form a.ts-btn-2:hover {
+    color: var(--ts-shade-7, #797a88);
 }
 
-body.block-editor-page .ts-form  .ts-form-group input:focus {
+body.block-editor-page .ts-form .ts-form-group input:focus {
 
-	border: 1px solid var(--ts-shade-3);
-	border-radius: .375rem;
-	background: #fff;
+    border: 1px solid var(--ts-shade-3);
+    border-radius: .375rem;
+    background: #fff;
 }
 
-body.block-editor-page .ts-form  input[type=checkbox].disabled,
-body.block-editor-page .ts-form  input[type=checkbox].disabled:checked:before,
-body.block-editor-page .ts-form  input[type=checkbox]:disabled,
-body.block-editor-page .ts-form  input[type=checkbox]:disabled:checked:before,
-body.block-editor-page .ts-form  input[type=checkbox][aria-disabled=true],
-body.block-editor-page .ts-form  input[type=radio].disabled,
-body.block-editor-page .ts-form  input[type=radio].disabled:checked:before,
-body.block-editor-page .ts-form  input[type=radio]:disabled,
-body.block-editor-page .ts-form  input[type=radio]:disabled:checked:before,
-body.block-editor-page .ts-form  input[type=radio][aria-disabled=true] {
-	opacity: 0;
-	cursor: default;
+body.block-editor-page .ts-form input[type=checkbox].disabled,
+body.block-editor-page .ts-form input[type=checkbox].disabled:checked:before,
+body.block-editor-page .ts-form input[type=checkbox]:disabled,
+body.block-editor-page .ts-form input[type=checkbox]:disabled:checked:before,
+body.block-editor-page .ts-form input[type=checkbox][aria-disabled=true],
+body.block-editor-page .ts-form input[type=radio].disabled,
+body.block-editor-page .ts-form input[type=radio].disabled:checked:before,
+body.block-editor-page .ts-form input[type=radio]:disabled,
+body.block-editor-page .ts-form input[type=radio]:disabled:checked:before,
+body.block-editor-page .ts-form input[type=radio][aria-disabled=true] {
+    opacity: 0;
+    cursor: default;
 }
 
 /* Preserve Voxel link color inside metaboxes */
@@ -194,82 +193,82 @@ body.block-editor-page .edit-post-meta-boxes-are #vx-post-author a,
 body.block-editor-page .edit-post-meta-boxes-are #vx-post-expiry a,
 body.block-editor-page .edit-post-meta-boxes-are #vx-post-priority a,
 body.block-editor-page .edit-post-meta-boxes-are #vx-verification-status a {
-	/*color: var(--ts-accent-1, #e8315f);*/
-	text-decoration: none;
+    /*color: var(--ts-accent-1, #e8315f);*/
+    text-decoration: none;
 }
 
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-higher,
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-lower {
-	display: none;
+    display: none;
 }
 
 /* ============================================
  * Author metabox styles (from backend.css)
  * ============================================ */
 #vx-post-author .change-author {
-	display: inline-block;
-	margin-top: 0;
+    display: inline-block;
+    margin-top: 0;
 }
 
 #vx-post-author .author-details img {
-	width: 30px;
-	height: 30px;
-	object-fit: contain;
-	border-radius: 50px;
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    border-radius: 50px;
 }
 
 #vx-post-author .author-details {
-	display: flex;
-	grid-gap: 10px;
-	gap: 10px;
-	align-items: center;
+    display: flex;
+    grid-gap: 10px;
+    gap: 10px;
+    align-items: center;
 }
 
 #vx-post-author .author-details a {
-	text-decoration: none;
-	font-weight: 600;
+    text-decoration: none;
+    font-weight: 600;
 }
 
 #vx-post-author .author-avatar {
-	display: flex;
+    display: flex;
 }
 
 #vx-post-author .author-name {
-	display: flex;
-	grid-gap: 5px;
-	gap: 5px;
+    display: flex;
+    grid-gap: 5px;
+    gap: 5px;
 }
 
 #vx-post-author input {
-	width: 100%;
-	margin-bottom: 10px;
+    width: 100%;
+    margin-bottom: 10px;
 }
 
 #vx-post-author .search-results {
-	display: flex;
-	flex-direction: column;
-	margin-top: 10px;
-	border: 1px solid #ddd;
-	border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
 #vx-post-author a.single-result {
-	text-decoration: none;
-	color: #000;
-	padding: 6px 10px;
+    text-decoration: none;
+    color: #000;
+    padding: 6px 10px;
 }
 
 #vx-post-author a.single-result:not(:first-child) {
-	border-top: 1px solid #ddd;
+    border-top: 1px solid #ddd;
 }
 
 #vx-post-author a.single-result:hover {
-	background: #f6f7f7;
+    background: #f6f7f7;
 }
 
 #vx-post-author p.search-status {
-	text-align: center;
-	margin: 10px 0 0;
+    text-align: center;
+    margin: 10px 0 0;
 }
 
 /* ============================================
@@ -277,138 +276,138 @@ body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-lower {
  * ============================================ */
 
 body.block-editor-page .edit-post-meta-boxes-area #vx-post-expiry {
-	margin-top: 0;
-	margin-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 #vx-post-expiry .expiry-options {
-	border: 1px solid #ddd;
-	border-radius: 5px;
-	overflow: hidden;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 #vx-post-expiry .expiry-option:not(:first-child) {
-	border-top: 1px solid #ddd;
+    border-top: 1px solid #ddd;
 }
 
 #vx-post-expiry .expiry-option > label {
-	display: block;
-	padding: 10px 15px;
-	background: #f6f7f7;
+    display: block;
+    padding: 10px 15px;
+    background: #f6f7f7;
 }
 
 #vx-post-expiry .expiry-mode-details {
-	border-top: 1px solid #ddd;
-	padding: 10px 8px;
+    border-top: 1px solid #ddd;
+    padding: 10px 8px;
 }
 
 /* ============================================
  * Priority metabox styles (from backend.css)
  * ============================================ */
 body.block-editor-page .edit-post-meta-boxes-area #vx-post-priority {
-	margin-top: 0;
-	margin-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 #vx-post-priority .priority-options {
-	border: 1px solid #ddd;
-	border-radius: 5px;
-	overflow: hidden;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 #vx-post-priority .priority-option:not(:first-child) {
-	border-top: 1px solid #ddd;
+    border-top: 1px solid #ddd;
 }
 
 #vx-post-priority .priority-option > label {
-	display: block;
-	padding: 10px 15px;
-	background: #f6f7f7;
+    display: block;
+    padding: 10px 15px;
+    background: #f6f7f7;
 }
 
 #vx-post-priority .priority-custom {
-	display: none;
-	float: right;
-	height: 21px;
-	min-height: 21px;
-	width: 60px;
-	padding: 3px 5px;
+    display: none;
+    float: right;
+    height: 21px;
+    min-height: 21px;
+    width: 60px;
+    padding: 3px 5px;
 }
 
 #vx-post-priority .priority-option input[type=radio]:checked ~ .priority-custom {
-	display: inline-block;
+    display: inline-block;
 }
 
 /* ============================================
  * Promotion metabox styles (from backend.css)
  * ============================================ */
 body.block-editor-page .edit-post-meta-boxes-area #vx-post-promotion {
-	margin-top: 0;
-	margin-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 #vx-post-promotion .promotion-wrapper {
-	border: 1px solid #ddd;
-	border-radius: 5px;
-	overflow: hidden;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 #vx-post-promotion .promotion-title > strong {
-	display: block;
-	padding: 10px 15px;
-	background: #f6f7f7;
+    display: block;
+    padding: 10px 15px;
+    background: #f6f7f7;
 }
 
 #vx-post-promotion .promotion-details {
-	border-top: 1px solid #ddd;
-	padding: 10px 8px;
+    border-top: 1px solid #ddd;
+    padding: 10px 8px;
 }
 
 /* ============================================
  * Postbox styling fixes
  * ============================================ */
 body.block-editor-page .postbox-container .meta-box-sortables h2 {
-	white-space: nowrap;
-	min-width: 0;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 /* ============================================
  * Meta-box resize handle
  * ============================================ */
 body.block-editor-page .edit-post-meta-boxes-area__container {
-	display: flex;
-	flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 body.block-editor-page .components-resizable-box__handle,
 body.block-editor-page .edit-post-meta-boxes-area .components-resizable-box__handle {
-	display: block !important;
-	visibility: visible !important;
-	opacity: 1 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 body.block-editor-page .edit-post-meta-boxes-area .components-resizable-box__handle-top {
-	height: 12px;
-	cursor: ns-resize;
-	background: #f0f0f1;
-	border-bottom: 1px solid #c3c4c7;
-	position: relative;
+    height: 12px;
+    cursor: ns-resize;
+    background: #f0f0f1;
+    border-bottom: 1px solid #c3c4c7;
+    position: relative;
 }
 
 body.block-editor-page .edit-post-meta-boxes-area .components-resizable-box__handle-top::after {
-	content: '';
-	position: absolute;
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-	width: 50px;
-	height: 4px;
-	background: #c3c4c7;
-	border-radius: 2px;
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 4px;
+    background: #c3c4c7;
+    border-radius: 2px;
 }
 
 body.block-editor-page .edit-post-meta-boxes-area .components-resizable-box__handle-top:hover::after {
-	background: #2271b1;
+    background: #2271b1;
 }
 
 /* ============================================
@@ -416,20 +415,20 @@ body.block-editor-page .edit-post-meta-boxes-area .components-resizable-box__han
  * ============================================ */
 body.block-editor-page .edit-post-sidebar .postbox,
 body.block-editor-page .interface-interface-skeleton__sidebar .postbox {
-	margin: 0;
-	border: none;
-	box-shadow: none;
+    margin: 0;
+    border: none;
+    box-shadow: none;
 }
 
 body.block-editor-page .edit-post-sidebar #vx-post-plan a,
 body.block-editor-page .edit-post-sidebar #vx-verification-status a {
-	color: #2271b1;
+    color: #2271b1;
 }
 
 body.block-editor-page .edit-post-sidebar .inside,
 body.block-editor-page .interface-interface-skeleton__sidebar .inside {
-	padding: 0 24px 24px;
-	margin: 0;
+    padding: 0 24px 24px;
+    margin: 0;
 }
 
 /* ============================================
@@ -440,23 +439,59 @@ body.block-editor-page .interface-interface-skeleton__sidebar .inside {
 
 /* Prevent sidebar collapse during viewport switch */
 .interface-interface-skeleton__sidebar {
-	min-height: 100%;
+    min-height: 100%;
 }
 
 /* Smooth fade-in for inspector content after remount */
 .block-editor-block-inspector {
-	animation: vxfse-inspector-fade-in 0.15s ease-out;
+    animation: vxfse-inspector-fade-in 0.15s ease-out;
 }
 
 @keyframes vxfse-inspector-fade-in {
-	from {
-		opacity: 0.5;
-	}
-	to {
-		opacity: 1;
-	}
+    from {
+        opacity: 0.5;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
+
+
+
+/* ============================================
+ * Fix: viewport width
+ * ============================================ */
+
+
+body :root :where(.editor-styles-wrapper)::after {
+    content: "";
+    display: block;
+    height: 40vh;
+}
+
+body :where(.block-editor-iframe__body) {
+    display: flow-root;
+}
+
+.is-root-container {
+    display: flow-root;
+}
+
+
+body .block-editor-block-list__layout.is-root-container > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+    max-width: none;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+body .block-editor-block-list__layout.is-root-container > .alignwide {
+    /*max-width: 1300px;*/
+}
+
+body .block-editor-block-list__layout.is-root-container > .alignfull {
+    max-width: none;
+}
 
 
 

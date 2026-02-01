@@ -285,7 +285,9 @@ export default function GalleryComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				<li style={{ listStyle: 'none', width: '100%' }}>
+					<EmptyPlaceholder />
+				</li>
 			</>
 		);
 	}
@@ -308,6 +310,7 @@ export default function GalleryComponent({
 					gridTemplateColumns: `repeat(${attributes.columnCount}, 1fr)`,
 					gap: `${attributes.columnGap || 10}px`,
 					gridAutoRows: !attributes.useAspectRatio ? `${attributes.rowHeight}px` : 'auto',
+					width: '100%',
 				}}
 			>
 				{/* Visible images */}

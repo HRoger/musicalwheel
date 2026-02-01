@@ -89,13 +89,12 @@ export default function ReviewStatsComponent({
 		chartRadius: attributes.chartRadius,
 	};
 
-	// Loading state
+	// Loading state - matches Voxel standard (ts-no-posts + ts-loader)
 	if (isLoading) {
 		return (
-			<div className="ts-review-bars vxfse-loading" style={styleVars as React.CSSProperties}>
-				<div className="vxfse-loading-state">
+			<div className="ts-review-bars" style={styleVars as React.CSSProperties}>
+				<div className="ts-no-posts">
 					<span className="ts-loader"></span>
-					<span>{__('Loading review stats...', 'voxel-fse')}</span>
 				</div>
 			</div>
 		);

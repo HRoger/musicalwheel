@@ -6,17 +6,25 @@
 	"title": "Current role (VX)",
 	"category": "voxel-fse",
 	"description": "Display current user role with role switching functionality. FSE equivalent of Voxel's Current role widget.",
-	"keywords": ["role", "user", "switch", "membership", "voxel"],
+	"keywords": [
+		"role",
+		"user",
+		"switch",
+		"membership",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -160,7 +168,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

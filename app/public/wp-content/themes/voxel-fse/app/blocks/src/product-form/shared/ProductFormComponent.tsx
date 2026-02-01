@@ -231,69 +231,89 @@ export default function ProductFormComponent({
 	productConfig,
 }: ProductFormComponentProps): React.ReactElement {
 	// State for form values and pricing
-	const [addonValues, setAddonValues] = useState<Record<string, AddonValue>>( {} );
-	const [quantity, setQuantity] = useState<number>( 1 );
-	const [variationsValue, setVariationsValue] = useState<VariationsValue>( {
+	const [addonValues, setAddonValues] = useState<Record<string, AddonValue>>({});
+	const [quantity, setQuantity] = useState<number>(1);
+	const [variationsValue, setVariationsValue] = useState<VariationsValue>({
 		variation_id: null,
 		quantity: 1,
-	} );
-	const [bookingValue, setBookingValue] = useState<BookingValue>( DEFAULT_BOOKING_VALUE );
-	const [dataInputValues, setDataInputValues] = useState<Record<string, DataInputValue>>( {} );
+	});
+	const [bookingValue, setBookingValue] = useState<BookingValue>(DEFAULT_BOOKING_VALUE);
+	const [dataInputValues, setDataInputValues] = useState<Record<string, DataInputValue>>({});
 	const [isLoading, setIsLoading] = useState(context === 'frontend');
 
+	/**
+	 * Inject Voxel Product Form CSS for both Editor and Frontend
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-product-form-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/product-form.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Cart hook for add to cart / checkout operations
-	const { isProcessing, addToCart, directCheckout } = useCart( {
+	const { isProcessing, addToCart, directCheckout } = useCart({
 		config: productConfig ?? null,
 		addonValues,
 		quantity,
 		variationsValue,
 		bookingValue,
 		dataInputValues,
-	} );
+	});
 
 	// Ref for FieldAddons to access getPricingSummary
-	const fieldAddonsRef = useRef<FieldAddonsRef>( null );
+	const fieldAddonsRef = useRef<FieldAddonsRef>(null);
 
 	// Get quantity field config
-	const quantityField = productConfig?.props?.fields?.[ 'form-quantity' ];
+	const quantityField = productConfig?.props?.fields?.['form-quantity'];
 	const maxQuantity = quantityField?.props?.quantity ?? 999;
 
 	// Calculate booking range length for date_range mode
 	// Evidence: voxel-product-form.beautified.js lines 1118-1150
-	const bookingRangeLength = useMemo( () => {
-		const bookingField = productConfig?.props?.fields?.[ 'form-booking' ];
-		if ( ! bookingField || bookingField.props?.mode !== 'date_range' ) {
+	const bookingRangeLength = useMemo(() => {
+		const bookingField = productConfig?.props?.fields?.['form-booking'];
+		if (!bookingField || bookingField.props?.mode !== 'date_range') {
 			return 0;
 		}
-		if ( ! bookingValue.start_date || ! bookingValue.end_date ) {
+		if (!bookingValue.start_date || !bookingValue.end_date) {
 			return 0;
 		}
 
-		const startDate = new Date( bookingValue.start_date + 'T00:00:00Z' );
-		const endDate = new Date( bookingValue.end_date + 'T00:00:00Z' );
+		const startDate = new Date(bookingValue.start_date + 'T00:00:00Z');
+		const endDate = new Date(bookingValue.end_date + 'T00:00:00Z');
 		const diffTime = endDate.getTime() - startDate.getTime();
-		const diffDays = Math.ceil( diffTime / ( 1000 * 60 * 60 * 24 ) );
+		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
 		// For 'nights' mode, return days between (exclusive end)
 		// For 'days' mode, return days + 1 (inclusive end)
 		const countMode = bookingField.props?.count_mode ?? 'nights';
 		return countMode === 'nights' ? diffDays : diffDays + 1;
-	}, [ productConfig, bookingValue.start_date, bookingValue.end_date ] );
+	}, [productConfig, bookingValue.start_date, bookingValue.end_date]);
 
 	// Get addon pricing summary via ref
-	const getAddonsPricingSummary = useCallback( (): AddonPricingSummary[] | null => {
+	const getAddonsPricingSummary = useCallback((): AddonPricingSummary[] | null => {
 		return fieldAddonsRef.current?.getPricingSummary() ?? null;
-	}, [] );
+	}, []);
 
 	// Get variation pricing summary using static method
-	const getVariationsPricingSummary = useCallback( (): VariationPricingSummary | null => {
-		const variationsField = productConfig?.props?.fields?.[ 'form-variations' ];
-		if ( ! variationsField ) return null;
-		return FieldVariations.getPricingSummary( variationsField, variationsValue );
-	}, [ productConfig, variationsValue ] );
+	const getVariationsPricingSummary = useCallback((): VariationPricingSummary | null => {
+		const variationsField = productConfig?.props?.fields?.['form-variations'];
+		if (!variationsField) return null;
+		return FieldVariations.getPricingSummary(variationsField, variationsValue);
+	}, [productConfig, variationsValue]);
 
 	// Use pricing summary hook
-	const { summary: pricingSummary } = usePricingSummary( {
+	const { summary: pricingSummary } = usePricingSummary({
 		config: productConfig ?? null,
 		quantity,
 		addonValues,
@@ -301,34 +321,34 @@ export default function ProductFormComponent({
 		bookingValue,
 		getAddonsPricingSummary,
 		getVariationsPricingSummary,
-	} );
+	});
 
 	// Handle addon value change
-	const handleAddonValueChange = useCallback( ( addonKey: string, value: AddonValue ) => {
-		setAddonValues( ( prev ) => ( {
+	const handleAddonValueChange = useCallback((addonKey: string, value: AddonValue) => {
+		setAddonValues((prev) => ({
 			...prev,
-			[ addonKey ]: value,
-		} ) );
-	}, [] );
+			[addonKey]: value,
+		}));
+	}, []);
 
 	// Handle data input value change
-	const handleDataInputValueChange = useCallback( ( key: string, value: DataInputValue ) => {
-		setDataInputValues( ( prev ) => ( {
+	const handleDataInputValueChange = useCallback((key: string, value: DataInputValue) => {
+		setDataInputValues((prev) => ({
 			...prev,
-			[ key ]: value,
-		} ) );
-	}, [] );
+			[key]: value,
+		}));
+	}, []);
 
 	// External addons hook (for .ts-use-addition buttons outside the form)
 	const {
 		externalChoice,
 		closeExternalChoice,
 		updateExternalChoiceQuantity,
-	} = useExternalAddons( {
+	} = useExternalAddons({
 		config: productConfig ?? null,
 		addonValues,
 		onAddonValueChange: handleAddonValueChange,
-	} );
+	});
 
 	// Merge config with attributes
 	const icons = config?.icons || attributes.icons || DEFAULT_PRODUCT_FORM_ICONS;
@@ -361,11 +381,11 @@ export default function ProductFormComponent({
 
 	// Get product mode
 	const productMode = productConfig?.settings?.product_mode ?? 'regular';
-	const hasAddons = !! productConfig?.props?.fields?.[ 'form-addons' ];
-	const hasQuantity = !! quantityField;
-	const hasVariations = !! productConfig?.props?.fields?.[ 'form-variations' ];
-	const hasBooking = !! productConfig?.props?.fields?.[ 'form-booking' ];
-	const hasDataInputs = !! productConfig?.props?.fields?.[ 'form-data-inputs' ];
+	const hasAddons = !!productConfig?.props?.fields?.['form-addons'];
+	const hasQuantity = !!quantityField;
+	const hasVariations = !!productConfig?.props?.fields?.['form-variations'];
+	const hasBooking = !!productConfig?.props?.fields?.['form-booking'];
+	const hasDataInputs = !!productConfig?.props?.fields?.['form-data-inputs'];
 
 	return (
 		<>
@@ -384,57 +404,57 @@ export default function ProductFormComponent({
 
 			<div className="ts-product-main">
 				{/* Addons Field */}
-				{ hasAddons && productConfig && (
+				{hasAddons && productConfig && (
 					<FieldAddons
-						ref={ fieldAddonsRef }
-						config={ productConfig }
-						values={ addonValues }
-						onValueChange={ handleAddonValueChange }
-						bookingValue={ bookingValue }
-						bookingRangeLength={ bookingRangeLength }
-						searchContext={ productConfig.settings?.search_context }
+						ref={fieldAddonsRef}
+						config={productConfig}
+						values={addonValues}
+						onValueChange={handleAddonValueChange}
+						bookingValue={bookingValue}
+						bookingRangeLength={bookingRangeLength}
+						searchContext={productConfig.settings?.search_context}
 					/>
-				) }
+				)}
 
 				{/* Variations Field (for variable products) */}
-				{ hasVariations && productMode === 'variable' && productConfig?.props?.fields?.[ 'form-variations' ] && (
+				{hasVariations && productMode === 'variable' && productConfig?.props?.fields?.['form-variations'] && (
 					<FieldVariations
-						field={ productConfig.props.fields[ 'form-variations' ] }
-						value={ variationsValue }
-						onChange={ setVariationsValue }
+						field={productConfig.props.fields['form-variations']}
+						value={variationsValue}
+						onChange={setVariationsValue}
 					/>
-				) }
+				)}
 
 				{/* Booking Field (for booking products) */}
-				{ hasBooking && productMode === 'booking' && productConfig?.props?.fields?.[ 'form-booking' ] && (
+				{hasBooking && productMode === 'booking' && productConfig?.props?.fields?.['form-booking'] && (
 					<FieldBooking
-						field={ productConfig.props.fields[ 'form-booking' ] }
-						value={ bookingValue }
-						onChange={ setBookingValue }
-						config={ productConfig }
-						initialAvailability={ productConfig.settings?.search_context?.availability }
+						field={productConfig.props.fields['form-booking']}
+						value={bookingValue}
+						onChange={setBookingValue}
+						config={productConfig}
+						initialAvailability={productConfig.settings?.search_context?.availability}
 					/>
-				) }
+				)}
 
 				{/* Quantity Field (for regular products) */}
-				{ hasQuantity && productMode === 'regular' && (
+				{hasQuantity && productMode === 'regular' && (
 					<FieldQuantity
-						maxQuantity={ maxQuantity }
-						value={ quantity }
-						onChange={ setQuantity }
-						label={ productConfig?.l10n?.quantity ?? 'Quantity' }
+						maxQuantity={maxQuantity}
+						value={quantity}
+						onChange={setQuantity}
+						label={productConfig?.l10n?.quantity ?? 'Quantity'}
 					/>
-				) }
+				)}
 
 				{/* Data Inputs Field */}
-				{ hasDataInputs && productConfig?.props?.fields?.[ 'form-data-inputs' ] && (
+				{hasDataInputs && productConfig?.props?.fields?.['form-data-inputs'] && (
 					<FieldDataInputs
-						field={ productConfig.props.fields[ 'form-data-inputs' ] }
-						values={ dataInputValues }
-						onValueChange={ handleDataInputValueChange }
-						icons={ icons }
+						field={productConfig.props.fields['form-data-inputs']}
+						values={dataInputValues}
+						onValueChange={handleDataInputValueChange}
+						icons={icons}
 					/>
-				) }
+				)}
 
 				{/* Action buttons */}
 				<div className="ts-form-group product-actions">
@@ -444,7 +464,7 @@ export default function ProductFormComponent({
 							className={`ts-btn form-btn ts-btn-2 ${isProcessing ? 'ts-loading-btn' : ''}`}
 							onClick={(e) => {
 								e.preventDefault();
-								if ( ! isProcessing ) {
+								if (!isProcessing) {
 									addToCart();
 								}
 							}}
@@ -464,7 +484,7 @@ export default function ProductFormComponent({
 							className={`ts-btn form-btn ts-btn-2 ${isProcessing ? 'ts-loading-btn' : ''}`}
 							onClick={(e) => {
 								e.preventDefault();
-								if ( ! isProcessing ) {
+								if (!isProcessing) {
 									directCheckout();
 								}
 							}}
@@ -492,12 +512,12 @@ export default function ProductFormComponent({
 
 			{/* External choice popup for quantity selection */}
 			<ExternalChoicePopup
-				active={ externalChoice.active }
-				element={ externalChoice.element }
-				choice={ externalChoice.choice }
-				onClose={ closeExternalChoice }
-				onConfirm={ updateExternalChoiceQuantity }
-				icons={ icons }
+				active={externalChoice.active}
+				element={externalChoice.element}
+				choice={externalChoice.choice}
+				onClose={closeExternalChoice}
+				onConfirm={updateExternalChoiceQuantity}
+				icons={icons}
 			/>
 		</>
 	);

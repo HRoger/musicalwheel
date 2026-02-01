@@ -354,6 +354,11 @@ export interface PostFeedComponentProps {
 	 * Used for editor preview sync when filters change
 	 */
 	editorFilters?: Record<string, unknown>;
+
+	/**
+	 * Container element for scrolling and asset injection (frontend)
+	 */
+	containerElement?: HTMLElement;
 }
 
 /**

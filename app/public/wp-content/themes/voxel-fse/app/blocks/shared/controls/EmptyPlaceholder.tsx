@@ -45,6 +45,7 @@ export function EmptyPlaceholder({
 				color: '#666',
 				fontSize: '13px',
 				height: '45px',
+				width: '100%',
 				...style,
 			}}
 		>

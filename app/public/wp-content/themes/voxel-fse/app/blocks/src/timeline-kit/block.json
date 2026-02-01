@@ -304,6 +304,5 @@
 		}
 	},
 	"editorScript": "file:./index.tsx",
-	"editorStyle": "file:./editor.css",
 	"render": "file:./render.php"
 }

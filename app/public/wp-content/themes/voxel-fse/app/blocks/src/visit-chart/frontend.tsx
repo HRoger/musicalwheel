@@ -485,7 +485,7 @@ function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
 	// Loading state
 	if (isLoading) {
 		return (
-			<div className="ts-visits-chart voxel-fse-loading">
+			<div className="ts-visits-chart vx-pending">
 				<div className="ts-no-posts">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

@@ -6,17 +6,26 @@
 	"title": "Visit Chart (VX)",
 	"category": "voxel-fse",
 	"description": "Displays a bar chart of Views and Unique Views for Current User, Current Post, or Sitewide stats.",
-	"keywords": ["chart", "visits", "stats", "analytics", "voxel", "bar chart"],
+	"keywords": [
+		"chart",
+		"visits",
+		"stats",
+		"analytics",
+		"voxel",
+		"bar chart"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -27,17 +36,29 @@
 		"source": {
 			"type": "string",
 			"default": "post",
-			"enum": ["post", "user", "site"]
+			"enum": [
+				"post",
+				"user",
+				"site"
+			]
 		},
 		"activeChart": {
 			"type": "string",
 			"default": "7d",
-			"enum": ["24h", "7d", "30d", "12m"]
+			"enum": [
+				"24h",
+				"7d",
+				"30d",
+				"12m"
+			]
 		},
 		"viewType": {
 			"type": "string",
 			"default": "views",
-			"enum": ["views", "unique_views"]
+			"enum": [
+				"views",
+				"unique_views"
+			]
 		},
 		"chartIcon": {
 			"type": "object",
@@ -359,7 +380,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

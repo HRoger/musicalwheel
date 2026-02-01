@@ -373,6 +373,26 @@ function initSearchFormMap(
 		}) as EventListener);
 	}
 
+	// Listen for post feed markers (extracted from DOM)
+	// This is how the Map block gets marker data after Post Feed loads search results
+	// Reference: voxel-search-form.beautified.js:2501-2518 (_updateMarkers reads from feed DOM)
+	// The Post Feed extracts markers from .ts-marker-wrapper elements and sends them here
+	window.addEventListener('voxel-fse:post-feed-markers', ((event: CustomEvent<{
+		sourceBlockId: string;
+		markers: Array<{
+			postId: string;
+			lat: number;
+			lng: number;
+			template: string;
+		}>;
+	}>) => {
+		const { markers } = event.detail;
+		if (markers.length > 0) {
+			console.log('[Map Block] Received', markers.length, 'markers from Post Feed');
+			displayMarkersFromFeed(mapContainer, markers);
+		}
+	}) as EventListener);
+
 	// Set up drag search handlers
 	if (dragUI) {
 		setupDragSearchHandlers(dragUI, mapContainer, config);
@@ -551,6 +571,17 @@ async function initializeVoxelMap(
 		}
 
 		console.log('[Map Block] Map initialized successfully with all features');
+
+		// Show geolocation button now that map is ready
+		// In Voxel, this is done by FilterLocation component (search-form.beautified.js:630-632)
+		// We do it here since the Map block is independent
+		const geolocateBtn = wrapper.querySelector('.vx-geolocate-me');
+		if (geolocateBtn) {
+			geolocateBtn.classList.remove('hidden');
+			console.log('[Map Block] Geolocate button shown');
+		} else {
+			console.warn('[Map Block] Geolocate button not found in wrapper');
+		}
 	} catch (error) {
 		console.error('[Map Block] Failed to initialize map:', error);
 	}
@@ -723,6 +754,169 @@ export async function updateMapMarkers(
 }
 
 /**
+ * Display markers from Post Feed DOM extraction
+ * Called when Post Feed emits voxel-fse:post-feed-markers event
+ *
+ * Reference: voxel-search-form.beautified.js:2501-2518 (_updateMarkers)
+ * This mirrors Voxel's approach of reading markers from feed DOM
+ */
+async function displayMarkersFromFeed(
+	mapContainer: HTMLElement,
+	markers: Array<{
+		postId: string;
+		lat: number;
+		lng: number;
+		template: string;
+	}>
+): Promise<void> {
+	const instanceData = mapInstances.get(mapContainer);
+	if (!instanceData) {
+		console.warn('[Map Block] displayMarkersFromFeed: No map instance found');
+		return;
+	}
+
+	console.log('[Map Block] Displaying', markers.length, 'markers from feed');
+
+	// Clear existing markers (matches Voxel pattern)
+	if (instanceData.clusterer) {
+		instanceData.clusterer.clearMarkers();
+	} else {
+		instanceData.markers.forEach((m) => m.remove());
+	}
+	instanceData.markers = [];
+	instanceData.popup?.hide();
+
+	if (markers.length === 0) {
+		console.log('[Map Block] No markers to display');
+		return;
+	}
+
+	// Convert to marker configs
+	const markerConfigs = markers.map((m) => ({
+		lat: m.lat,
+		lng: m.lng,
+		template: m.template,
+		uriencoded: false,
+	}));
+
+	// Add markers to map
+	const newMarkers = await addMarkersToMap(
+		instanceData.map,
+		markerConfigs,
+		instanceData.popup!,
+		instanceData.clusterer
+	);
+
+	instanceData.markers = newMarkers;
+
+	// Render clusters or fit bounds
+	if (instanceData.clusterer && newMarkers.length > 0) {
+		instanceData.clusterer.render();
+	} else if (newMarkers.length > 0) {
+		fitBoundsToMarkers(instanceData.map, newMarkers);
+	}
+
+	console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers from feed');
+}
+
+/**
+ * Fetch markers from API and display them on the map
+ * Called when Post Feed emits search results with post IDs
+ *
+ * Reference: voxel-search-form.beautified.js:2488-2600 (_updateMarkers)
+ * Voxel reads markers from feed DOM, we fetch via REST API
+ */
+async function fetchAndDisplayMarkers(
+	mapContainer: HTMLElement,
+	postIds: number[]
+): Promise<void> {
+	const instanceData = mapInstances.get(mapContainer);
+	if (!instanceData) {
+		console.warn('[Map Block] fetchAndDisplayMarkers: No map instance found');
+		return;
+	}
+
+	console.log('[Map Block] Fetching markers for', postIds.length, 'posts');
+
+	// Clear existing markers
+	if (instanceData.clusterer) {
+		instanceData.clusterer.clearMarkers();
+	} else {
+		instanceData.markers.forEach((m) => m.remove());
+	}
+	instanceData.markers = [];
+	instanceData.popup?.hide();
+
+	if (postIds.length === 0) {
+		console.log('[Map Block] No posts to display markers for');
+		return;
+	}
+
+	try {
+		// Fetch markers from REST API
+		const restUrl = getRestUrl();
+		const response = await fetch(`${restUrl}voxel-fse/v1/map/markers`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ post_ids: postIds }),
+		});
+
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}`);
+		}
+
+		const data = await response.json() as {
+			success: boolean;
+			markers: Array<{
+				postId: number;
+				lat: number;
+				lng: number;
+				template: string;
+				uriencoded?: boolean;
+			}>;
+		};
+
+		if (!data.success || !data.markers || data.markers.length === 0) {
+			console.log('[Map Block] No markers returned from API');
+			return;
+		}
+
+		console.log('[Map Block] Received', data.markers.length, 'markers from API');
+
+		// Convert to marker configs
+		const markerConfigs = data.markers.map((m) => ({
+			lat: m.lat,
+			lng: m.lng,
+			template: m.template,
+			uriencoded: m.uriencoded ?? false,
+		}));
+
+		// Add markers to map
+		const newMarkers = await addMarkersToMap(
+			instanceData.map,
+			markerConfigs,
+			instanceData.popup!,
+			instanceData.clusterer
+		);
+
+		instanceData.markers = newMarkers;
+
+		// Render clusters or fit bounds
+		if (instanceData.clusterer && newMarkers.length > 0) {
+			instanceData.clusterer.render();
+		} else if (newMarkers.length > 0) {
+			fitBoundsToMarkers(instanceData.map, newMarkers);
+		}
+
+		console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers');
+	} catch (error) {
+		console.error('[Map Block] Failed to fetch markers:', error);
+	}
+}
+
+/**
  * Show radius circle on map
  */
 export function showRadiusCircle(
@@ -827,6 +1021,21 @@ function getPostIdFromContext(): number | null {
 }
 
 /**
+ * Render loading placeholder for map
+ * Matches Voxel's spinner pattern: .ts-no-posts > .ts-loader
+ */
+function renderMapLoading(container: HTMLElement): void {
+	const loadingDiv = document.createElement('div');
+	loadingDiv.className = 'ts-map ts-map-loading';
+	loadingDiv.innerHTML = `
+		<div class="ts-no-posts">
+			<span class="ts-loader" aria-label="Loading map..."></span>
+		</div>
+	`;
+	container.appendChild(loadingDiv);
+}
+
+/**
  * Initialize all map blocks on the page
  */
 function initMapBlocks(): void {
@@ -853,6 +1062,11 @@ function initMapBlocks(): void {
 
 		// Apply custom styles
 		applyMapStyles(container, config);
+
+		// Show loading placeholder while waiting for Voxel.Maps
+		// Clear any server-side placeholder first
+		container.innerHTML = '';
+		renderMapLoading(container);
 
 		// Initialize based on source mode
 		if (config.source === 'current-post') {

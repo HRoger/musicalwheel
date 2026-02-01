@@ -8,14 +8,30 @@
  */
 
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
-import { getTimelineConfig } from '../api';
+import { getTimelineConfig, getPostContext, type PostContextResponse } from '../api';
 import type { TimelineConfig, TimelineAttributes } from '../types';
+
+/**
+ * Post context for visibility and composer config
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ */
+interface PostContext {
+	visible: boolean;
+	reason: string | null;
+	composer: PostContextResponse['composer'];
+	reviews: PostContextResponse['reviews'];
+	current_post: PostContextResponse['current_post'];
+	current_author: PostContextResponse['current_author'];
+	filtering_options: Record<string, string>;
+	show_usernames: boolean;
+}
 
 /**
  * Timeline context value
  */
 interface TimelineContextValue {
 	config: TimelineConfig | null;
+	postContext: PostContext | null;
 	attributes: TimelineAttributes;
 	context: 'editor' | 'frontend';
 	isLoading: boolean;
@@ -28,6 +44,7 @@ interface TimelineContextValue {
  */
 const defaultContextValue: TimelineContextValue = {
 	config: null,
+	postContext: null,
 	attributes: {} as TimelineAttributes,
 	context: 'frontend',
 	isLoading: true,
@@ -45,6 +62,7 @@ const TimelineContext = createContext<TimelineContextValue>(defaultContextValue)
  */
 interface TimelineProviderProps {
 	attributes: TimelineAttributes;
+	postId?: number;
 	context?: 'editor' | 'frontend';
 	children: ReactNode;
 }
@@ -56,57 +74,103 @@ let configCache: TimelineConfig | null = null;
 let configPromise: Promise<TimelineConfig> | null = null;
 
 /**
- * Timeline context provider
+ * Cache for post context (keyed by mode+postId)
  */
-export function TimelineProvider({ attributes, context = 'frontend', children }: TimelineProviderProps): JSX.Element {
+const postContextCache: Map<string, PostContext> = new Map();
+
+/**
+ * Timeline context provider
+ *
+ * CRITICAL FOR 1:1 VOXEL PARITY:
+ * This provider now fetches BOTH:
+ * 1. Timeline config (nonces, features, strings)
+ * 2. Post context (visibility, composer, reviews)
+ */
+export function TimelineProvider({
+	attributes,
+	postId,
+	context = 'frontend',
+	children,
+}: TimelineProviderProps): JSX.Element {
 	const [config, setConfig] = useState<TimelineConfig | null>(configCache);
-	const [isLoading, setIsLoading] = useState(!configCache);
+	const [postContext, setPostContext] = useState<PostContext | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
+	// Generate cache key for post context
+	const postContextCacheKey = `${attributes.mode}:${postId ?? 'none'}`;
+
 	const fetchConfig = useCallback(async () => {
-		// Return cached config if available
-		if (configCache) {
-			setConfig(configCache);
-			setIsLoading(false);
-			return;
-		}
-
-		// Wait for existing request if in progress
-		if (configPromise) {
-			try {
-				const result = await configPromise;
-				setConfig(result);
-				setIsLoading(false);
-			} catch (err) {
-				setError(err instanceof Error ? err.message : 'Failed to load configuration');
-				setIsLoading(false);
-			}
-			return;
-		}
-
-		// Start new request
 		setIsLoading(true);
 		setError(null);
 
 		try {
-			configPromise = getTimelineConfig();
-			const result = await configPromise;
-			configCache = result;
-			setConfig(result);
+			// Fetch config (cached globally)
+			let fetchedConfig = configCache;
+			if (!fetchedConfig) {
+				if (configPromise) {
+					fetchedConfig = await configPromise;
+				} else {
+					configPromise = getTimelineConfig();
+					fetchedConfig = await configPromise;
+					configCache = fetchedConfig;
+					configPromise = null;
+				}
+			}
+			setConfig(fetchedConfig);
+
+			// Fetch post context (cached by mode+postId)
+			// Skip in editor context - use mock data instead
+			if (context === 'editor') {
+				// In editor, provide default post context for preview
+				setPostContext({
+					visible: true,
+					reason: null,
+					composer: {
+						feed: attributes.mode === 'post_reviews' ? 'post_reviews' : 'user_timeline',
+						can_post: true,
+						post_as: 'current_user',
+						placeholder: "What's on your mind?",
+					},
+					reviews: null,
+					current_post: null,
+					current_author: null,
+					filtering_options: { all: 'All' },
+					show_usernames: true,
+				});
+			} else {
+				// In frontend, fetch real post context
+				let fetchedPostContext = postContextCache.get(postContextCacheKey);
+				if (!fetchedPostContext) {
+					const response = await getPostContext(attributes.mode, postId);
+					fetchedPostContext = {
+						visible: response.visible,
+						reason: response.reason,
+						composer: response.composer,
+						reviews: response.reviews,
+						current_post: response.current_post,
+						current_author: response.current_author,
+						filtering_options: response.filtering_options,
+						show_usernames: response.show_usernames,
+					};
+					postContextCache.set(postContextCacheKey, fetchedPostContext);
+				}
+				setPostContext(fetchedPostContext);
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to load configuration');
 		} finally {
 			setIsLoading(false);
-			configPromise = null;
 		}
-	}, []);
+	}, [attributes.mode, postId, postContextCacheKey, context]);
 
 	const refetch = useCallback(async () => {
-		// Clear cache and refetch
+		// Clear caches and refetch
 		configCache = null;
 		configPromise = null;
+		postContextCache.delete(postContextCacheKey);
 		await fetchConfig();
-	}, [fetchConfig]);
+	}, [fetchConfig, postContextCacheKey]);
 
 	useEffect(() => {
 		fetchConfig();
@@ -114,6 +178,7 @@ export function TimelineProvider({ attributes, context = 'frontend', children }:
 
 	const value: TimelineContextValue = {
 		config,
+		postContext,
 		attributes,
 		context,
 		isLoading,
@@ -187,6 +252,104 @@ export function usePermissions(): TimelineConfig['permissions'] {
 		can_moderate: false,
 		is_logged_in: false,
 	};
+}
+
+/**
+ * Hook to access post context (visibility, composer, reviews)
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ */
+export function usePostContext(): PostContext | null {
+	const { postContext } = useTimelineContext();
+	return postContext;
+}
+
+/**
+ * Hook to check if timeline is visible based on mode/permissions
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ *
+ * Returns:
+ * - visible: true if timeline should be shown
+ * - reason: null if visible, otherwise reason code ('login_required', 'followers_only', etc.)
+ */
+export function useVisibility(): { visible: boolean; reason: string | null } {
+	const { postContext, context } = useTimelineContext();
+
+	// In editor, always visible
+	if (context === 'editor') {
+		return { visible: true, reason: null };
+	}
+
+	// Use post context if available
+	if (postContext) {
+		return {
+			visible: postContext.visible,
+			reason: postContext.reason,
+		};
+	}
+
+	// Default to visible while loading
+	return { visible: true, reason: null };
+}
+
+/**
+ * Hook to access composer configuration
+ * CRITICAL FOR 1:1 VOXEL PARITY
+ *
+ * Returns composer config including:
+ * - feed: which feed to post to
+ * - can_post: whether user can post
+ * - post_as: 'current_user' or 'current_post'
+ * - placeholder: dynamic placeholder text
+ * - reviews_post_type: for review mode
+ */
+export function useComposerConfig(): PostContextResponse['composer'] | null {
+	const { postContext, context } = useTimelineContext();
+
+	// In editor, return default composer config
+	if (context === 'editor') {
+		return {
+			feed: 'user_timeline',
+			can_post: true,
+			post_as: 'current_user',
+			placeholder: "What's on your mind?",
+		};
+	}
+
+	return postContext?.composer ?? null;
+}
+
+/**
+ * Hook to access review configuration
+ * Used for post_reviews mode
+ */
+export function useReviewConfig(postType?: string): Record<string, unknown> | null {
+	const { postContext } = useTimelineContext();
+
+	if (!postContext?.reviews) {
+		return null;
+	}
+
+	// If post type specified, return that config
+	if (postType && postContext.reviews[postType]) {
+		return postContext.reviews[postType] as Record<string, unknown>;
+	}
+
+	// Otherwise return first available config
+	const keys = Object.keys(postContext.reviews);
+	if (keys.length > 0) {
+		return postContext.reviews[keys[0]] as Record<string, unknown>;
+	}
+
+	return null;
+}
+
+/**
+ * Hook to access filtering options
+ * Returns available filter options based on user permissions
+ */
+export function useFilteringOptions(): Record<string, string> {
+	const { postContext } = useTimelineContext();
+	return postContext?.filtering_options ?? { all: 'All' };
 }
 
 /**

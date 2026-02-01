@@ -1335,6 +1335,7 @@ export interface FieldIcons {
  * CreatePostForm Props Interface (Shared Component)
  * Used by both editor and frontend to render the same form
  * Phase 2: Added for shared component architecture
+ * Plan C+ Parity: Added postContext for permission-gated rendering
  */
 export interface CreatePostFormProps {
 	attributes: CreatePostAttributes;
@@ -1342,7 +1343,9 @@ export interface CreatePostFormProps {
 	context: 'editor' | 'frontend';  // Determines rendering context
 	onSubmit?: (data: FormData) => Promise<SubmissionResult>; // Injectable submission handler
 	postId?: number | null;
+	postStatus?: string | null; // Post status from REST API (Plan C+ pattern)
 	isAdminMode?: boolean;
+	postContext?: PostContext | null; // Plan C+ parity: Server-side permission state
 }
 
 /**
@@ -1864,4 +1867,104 @@ export interface PricingCondition {
 		from: string | null;  // 'YYYY-MM-DD'
 		to: string | null;  // 'YYYY-MM-DD'
 	};
+}
+
+/**
+ * =====================================================
+ * POST CONTEXT TYPES (Plan C+ Parity)
+ * Phase: Full Parity Implementation
+ *
+ * PostContext provides server-side state from the API
+ * for permission-gated UI rendering.
+ *
+ * Evidence: themes/voxel/app/widgets/create-post.php:4955-5058
+ * =====================================================
+ */
+
+/**
+ * Post Context Permissions
+ * Determines what actions the current user can perform
+ *
+ * Evidence:
+ * - themes/voxel/templates/widgets/create-post.php:11 (create permission)
+ * - themes/voxel/app/widgets/create-post.php:4985-4987 (edit permission)
+ */
+export interface PostContextPermissions {
+	create: boolean;  // Can create posts of this type
+	edit: boolean;    // Can edit the current post
+}
+
+/**
+ * No Permission Screen Content
+ * Content displayed when user lacks permission
+ *
+ * Evidence: themes/voxel/templates/widgets/create-post/no-permission.php:6-10
+ */
+export interface NoPermissionContent {
+	title: string;
+}
+
+/**
+ * Post Type Info
+ * Basic post type information from context
+ */
+export interface PostTypeInfo {
+	key: string;
+	label: string;
+	singularName: string;
+}
+
+/**
+ * Form Step Info
+ * UI Step field information for multi-step navigation
+ *
+ * Evidence: themes/voxel/app/widgets/create-post.php:5029-5031
+ */
+export interface FormStepInfo {
+	key: string;
+	label: string;
+}
+
+/**
+ * Post Context Response
+ * Full context data returned from /create-post/post-context endpoint
+ *
+ * This is the main interface for the Plan C+ post-context endpoint.
+ * Used to hydrate the React component with server-side state.
+ *
+ * Evidence: FSE_Create_Post_Controller::get_post_context()
+ */
+export interface PostContext {
+	// User state
+	isLoggedIn: boolean;
+	userId: number | null;
+
+	// Permissions (critical for button visibility)
+	permissions: PostContextPermissions;
+	hasPermission: boolean;  // Combined: can create or edit
+
+	// No permission content
+	noPermission: NoPermissionContent;
+
+	// Post state (null for new posts)
+	postId: number | null;
+	postStatus: string | null;  // 'draft', 'publish', 'pending', etc.
+	postTitle: string | null;
+	editLink: string | null;
+	createLink: string | null;
+
+	// Form state
+	canSaveDraft: boolean;
+	steps: FormStepInfo[];
+
+	// Validation messages (i18n-ready)
+	validationErrors: Record<string, string>;
+
+	// Nonces for form submission
+	nonces: {
+		create_post: string;
+	};
+
+	// Post type info
+	postType: PostTypeInfo;
 }

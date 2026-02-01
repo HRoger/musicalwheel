@@ -9,6 +9,7 @@ import {
     SectionHeading,
     AccordionPanelGroup,
     AccordionPanel,
+    BoxControl,
 } from '@shared/controls';
 import type { MapComponentProps, MapAttributes } from '../types';
 

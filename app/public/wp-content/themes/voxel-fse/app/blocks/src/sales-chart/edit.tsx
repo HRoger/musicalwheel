@@ -12,7 +12,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
-import { Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import type { BlockEditProps } from '@wordpress/blocks';
@@ -42,6 +41,20 @@ export default function Edit({
       setAttributes({ blockId: clientId });
     }
   }, [attributes.blockId, clientId, setAttributes]);
+
+  // Inject Voxel Editor Styles
+  useEffect(() => {
+    const cssId = 'voxel-bar-chart-css';
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      const voxelConfig = (window as any).Voxel_Config;
+      const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+      link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/bar-chart.css?ver=1.7.5.2`;
+      document.head.appendChild(link);
+    }
+  }, []);
 
   // State for API data
   const [config, setConfig] = useState<SalesChartApiConfig | null>(null);
@@ -136,20 +149,13 @@ export default function Edit({
           <style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
         )}
 
-        {isLoading && (
-          <div className="voxel-fse-loading">
-            <Spinner />
-            <p>{__('Loading chart data...', 'voxel-fse')}</p>
-          </div>
-        )}
-
         {error && (
           <div className="voxel-fse-error">
             <p>{error}</p>
           </div>
         )}
 
-        {!isLoading && !error && (
+        {!error && (
           <SalesChartComponent
             attributes={attributes}
             config={config}

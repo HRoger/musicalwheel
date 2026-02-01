@@ -3608,16 +3608,13 @@ export default function LoginComponent({
 		}
 	};
 
-	// Loading state
+	// Loading state - matches Voxel's spinner pattern
+	// Reference: Voxel uses .ts-no-posts > .ts-loader for loading states
 	if (isLoading) {
 		return (
 			<div className="ts-auth">
-				<div className="ts-form ts-login">
-					<div className="login-section">
-						<div className="ts-form-group">
-							<span>{__('Loading...', 'voxel-fse')}</span>
-						</div>
-					</div>
+				<div className="ts-no-posts">
+					<span className="ts-loader" aria-label={__('Loading...', 'voxel-fse')}></span>
 				</div>
 			</div>
 		);

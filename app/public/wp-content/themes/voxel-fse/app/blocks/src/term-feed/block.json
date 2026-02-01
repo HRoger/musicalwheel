@@ -6,18 +6,26 @@
 	"title": "Term Feed (VX)",
 	"category": "voxel-fse",
 	"description": "Display taxonomy terms in a grid or carousel layout. FSE equivalent of Voxel's Term Feed widget.",
-	"keywords": ["term", "taxonomy", "feed", "carousel", "grid", "voxel"],
+	"keywords": [
+		"term",
+		"taxonomy",
+		"feed",
+		"carousel",
+		"grid",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
-	"style": "file:./style.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -40,7 +48,10 @@
 		"source": {
 			"type": "string",
 			"default": "filters",
-			"enum": ["filters", "manual"]
+			"enum": [
+				"filters",
+				"manual"
+			]
 		},
 		"manualTerms": {
 			"type": "array",
@@ -65,7 +76,10 @@
 		"order": {
 			"type": "string",
 			"default": "default",
-			"enum": ["default", "name"]
+			"enum": [
+				"default",
+				"name"
+			]
 		},
 		"perPage": {
 			"type": "number",
@@ -86,7 +100,10 @@
 		"layoutMode": {
 			"type": "string",
 			"default": "ts-feed-grid-default",
-			"enum": ["ts-feed-grid-default", "ts-feed-nowrap"]
+			"enum": [
+				"ts-feed-grid-default",
+				"ts-feed-nowrap"
+			]
 		},
 		"carouselItemWidth": {
 			"type": "number",
@@ -275,11 +292,13 @@
 				"value": ""
 			}
 		},
-		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

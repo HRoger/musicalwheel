@@ -28,7 +28,7 @@ import { generateAdvancedStyles, combineBlockClasses } from '../../shared/utils/
 import { renderBackgroundElements } from '../../shared/utils/backgroundElements';
 
 // Import editor styles
-import './editor.css';
+
 
 interface EditProps {
 	attributes: Record<string, any>;
@@ -331,15 +331,15 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	// Slideshow drag props
 	const slideshowDragProps = isSlideshowEnabled
 		? {
-				onMouseDown,
-				onMouseMove,
-				onMouseUp,
-				onMouseLeave,
-				onTouchStart,
-				onTouchMove,
-				onTouchEnd,
-				style: { cursor: isDragging ? 'grabbing' : 'grab' } as React.CSSProperties,
-			}
+			onMouseDown,
+			onMouseMove,
+			onMouseUp,
+			onMouseLeave,
+			onTouchStart,
+			onTouchMove,
+			onTouchEnd,
+			style: { cursor: isDragging ? 'grabbing' : 'grab' } as React.CSSProperties,
+		}
 		: {};
 
 	// Generate OUTER container styles from attributes (position, min-height, backdrop, etc.)

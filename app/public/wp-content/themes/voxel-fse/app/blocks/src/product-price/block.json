@@ -123,7 +123,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",
@@ -154,7 +157,6 @@
 		}
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php"
 }

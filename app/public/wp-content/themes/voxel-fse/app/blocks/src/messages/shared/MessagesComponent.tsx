@@ -197,6 +197,26 @@ export default function MessagesComponent({
 		dragActive: false,
 	});
 
+	/**
+	 * Inject Voxel Messages CSS for both Editor and Frontend
+	 */
+	useEffect(() => {
+		const cssId = 'voxel-messages-css';
+		if (!document.getElementById(cssId)) {
+			const link = document.createElement('link');
+			link.id = cssId;
+			link.rel = 'stylesheet';
+
+			// Get site URL from Voxel config or fallback to origin
+			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
+			// Ensure no trailing slash for consistency
+			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+
+			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/messages.css?ver=1.7.5.2`;
+			document.head.appendChild(link);
+		}
+	}, []);
+
 	// Refs
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -1436,9 +1456,9 @@ export default function MessagesComponent({
 			...prev,
 			activeChat: prev.activeChat
 				? {
-						...prev.activeChat,
-						state: { ...prev.activeChat.state, content },
-				  }
+					...prev.activeChat,
+					state: { ...prev.activeChat.state, content },
+				}
 				: null,
 		}));
 		setTimeout(resizeComposer, 10);
@@ -1500,12 +1520,12 @@ export default function MessagesComponent({
 	const vxConfigData = config
 		? JSON.stringify(config)
 		: JSON.stringify({
-				icons: attributes.icons,
-				settings: {
-					enableCalcHeight: attributes.enableCalcHeight,
-					calcHeight: attributes.calcHeight,
-				},
-		  });
+			icons: attributes.icons,
+			settings: {
+				enableCalcHeight: attributes.enableCalcHeight,
+				calcHeight: attributes.calcHeight,
+			},
+		});
 
 	return (
 		<>
@@ -1586,9 +1606,8 @@ export default function MessagesComponent({
 
 							{/* Chat list */}
 							<ul
-								className={`ts-convo-list simplify-ul min-scroll ${
-									state.search.loading ? 'vx-disabled' : ''
-								}`}
+								className={`ts-convo-list simplify-ul min-scroll ${state.search.loading ? 'vx-disabled' : ''
+									}`}
 							>
 								{(state.search.term.trim() ? state.search.list : state.chats.list).map(
 									(chat) => (
@@ -1641,9 +1660,8 @@ export default function MessagesComponent({
 													e.preventDefault();
 													loadMoreChats();
 												}}
-												className={`ts-btn ts-btn-4 ${
-													state.chats.loadingMore ? 'vx-pending' : ''
-												}`}
+												className={`ts-btn ts-btn-4 ${state.chats.loadingMore ? 'vx-pending' : ''
+													}`}
 											>
 												<span
 													dangerouslySetInnerHTML={{
@@ -1662,9 +1680,8 @@ export default function MessagesComponent({
 
 				{/* Right side - message body */}
 				<div
-					className={`ts-message-body ${
-						state.activeChat?.processing ? 'vx-disabled' : ''
-					} ${!state.activeChat ? 'ts-no-chat' : ''}`}
+					className={`ts-message-body ${state.activeChat?.processing ? 'vx-disabled' : ''
+						} ${!state.activeChat ? 'ts-no-chat' : ''}`}
 				>
 					{state.activeChat ? (
 						<>
@@ -1801,9 +1818,8 @@ export default function MessagesComponent({
 													e.preventDefault();
 													loadMoreMessages();
 												}}
-												className={`ts-btn ts-btn-4 ${
-													state.activeChat.messages.loadingMore ? 'vx-pending' : ''
-												}`}
+												className={`ts-btn ts-btn-4 ${state.activeChat.messages.loadingMore ? 'vx-pending' : ''
+													}`}
 											>
 												{state.activeChat.messages.loadingMore
 													? __('Loading...', 'voxel-fse')

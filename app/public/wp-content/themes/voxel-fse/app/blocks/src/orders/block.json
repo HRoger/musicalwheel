@@ -6,17 +6,25 @@
 	"title": "Orders (VX)",
 	"category": "voxel-fse",
 	"description": "Display and manage product orders related to a user account. Converted from Voxel Orders widget.",
-	"keywords": ["orders", "voxel", "products", "e-commerce", "shop"],
+	"keywords": [
+		"orders",
+		"voxel",
+		"products",
+		"e-commerce",
+		"shop"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -419,7 +427,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

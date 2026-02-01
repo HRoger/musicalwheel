@@ -6,17 +6,27 @@
 	"title": "Messages (VX)",
 	"category": "voxel-fse",
 	"description": "Direct messages inbox with real-time chat functionality. FSE equivalent of Voxel's Messages widget.",
-	"keywords": ["messages", "inbox", "chat", "direct messages", "dm", "conversation", "voxel"],
+	"keywords": [
+		"messages",
+		"inbox",
+		"chat",
+		"direct messages",
+		"dm",
+		"conversation",
+		"voxel"
+	],
 	"textdomain": "voxel-fse",
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"],
+		"align": [
+			"wide",
+			"full"
+		],
 		"anchor": true,
 		"className": true,
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"editorStyle": "file:./editor.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -27,19 +37,58 @@
 		"icons": {
 			"type": "object",
 			"default": {
-				"search": { "library": "", "value": "" },
-				"chat": { "library": "", "value": "" },
-				"loadMore": { "library": "", "value": "" },
-				"back": { "library": "", "value": "" },
-				"more": { "library": "", "value": "" },
-				"user": { "library": "", "value": "" },
-				"clear": { "library": "", "value": "" },
-				"ban": { "library": "", "value": "" },
-				"trash": { "library": "", "value": "" },
-				"upload": { "library": "", "value": "" },
-				"gallery": { "library": "", "value": "" },
-				"emoji": { "library": "", "value": "" },
-				"send": { "library": "", "value": "" }
+				"search": {
+					"library": "",
+					"value": ""
+				},
+				"chat": {
+					"library": "",
+					"value": ""
+				},
+				"loadMore": {
+					"library": "",
+					"value": ""
+				},
+				"back": {
+					"library": "",
+					"value": ""
+				},
+				"more": {
+					"library": "",
+					"value": ""
+				},
+				"user": {
+					"library": "",
+					"value": ""
+				},
+				"clear": {
+					"library": "",
+					"value": ""
+				},
+				"ban": {
+					"library": "",
+					"value": ""
+				},
+				"trash": {
+					"library": "",
+					"value": ""
+				},
+				"upload": {
+					"library": "",
+					"value": ""
+				},
+				"gallery": {
+					"library": "",
+					"value": ""
+				},
+				"emoji": {
+					"library": "",
+					"value": ""
+				},
+				"send": {
+					"library": "",
+					"value": ""
+				}
 			}
 		},
 		"generalHeight": {
@@ -100,7 +149,12 @@
 		},
 		"inboxMessagePadding": {
 			"type": "object",
-			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+			"default": {
+				"top": "",
+				"right": "",
+				"bottom": "",
+				"left": ""
+			}
 		},
 		"inboxMessageContentGap": {
 			"type": "number"
@@ -242,7 +296,12 @@
 		},
 		"conversationBodyMessagePadding": {
 			"type": "object",
-			"default": { "top": "", "right": "", "bottom": "", "left": "" }
+			"default": {
+				"top": "",
+				"right": "",
+				"bottom": "",
+				"left": ""
+			}
 		},
 		"conversationBodyMessageTypography": {
 			"type": "object",
@@ -446,7 +505,10 @@
 		"visibilityBehavior": {
 			"type": "string",
 			"default": "show",
-			"enum": ["show", "hide"]
+			"enum": [
+				"show",
+				"hide"
+			]
 		},
 		"visibilityRules": {
 			"type": "array",

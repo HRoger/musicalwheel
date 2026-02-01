@@ -16,7 +16,7 @@ import save from './save';
 import metadata from './block.json';
 import type { SalesChartAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
-import './editor.css';
+
 
 // Register the block
 registerBlockType(metadata.name, {
