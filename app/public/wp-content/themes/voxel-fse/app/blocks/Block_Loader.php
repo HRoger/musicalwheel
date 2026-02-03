@@ -921,23 +921,14 @@ CSS;
      */
     public static function enqueue_pikaday_styles()
     {
-        // Check if we're in admin area (covers both post editor and FSE template editor)
+        // NOTE: This method is hooked to 'enqueue_block_editor_assets' which ONLY fires in block editor contexts
+        // (post editor, FSE site-editor, template editor). No additional screen checks needed.
+        // Previous screen checks caused Pikaday to NOT load in FSE template editor because
+        // get_current_screen() returns null or has unexpected values in those contexts.
+
+        // Simple admin check is sufficient since enqueue_block_editor_assets won't fire on frontend
         if (!is_admin()) {
             return;
-        }
-
-        // Additional check: Only run in block editor contexts
-        // This includes both post editor and FSE template editor
-        if (function_exists('get_current_screen')) {
-            $screen = get_current_screen();
-            // is_block_editor() returns true for post editor, but false for FSE template editor
-            // So we also check for 'site-editor' which is the FSE template editor
-            $is_block_editor_context = ($screen && $screen->is_block_editor()) ||
-                    ($screen && $screen->id === 'site-editor');
-
-            if (!$is_block_editor_context) {
-                return;
-            }
         }
 
         // Pikaday is registered by Voxel's Assets_Controller
@@ -1012,20 +1003,14 @@ CSS;
      */
     public static function enqueue_nouislider_assets()
     {
-        // Check if we're in admin area (covers both post editor and FSE template editor)
+        // NOTE: This method is hooked to 'enqueue_block_editor_assets' which ONLY fires in block editor contexts
+        // (post editor, FSE site-editor, template editor). No additional screen checks needed.
+        // Previous screen checks caused noUiSlider to NOT load in FSE template editor because
+        // get_current_screen() returns null or has unexpected values in those contexts.
+
+        // Simple admin check is sufficient since enqueue_block_editor_assets won't fire on frontend
         if (!is_admin()) {
             return;
-        }
-
-        // Additional check: Only run in block editor contexts
-        if (function_exists('get_current_screen')) {
-            $screen = get_current_screen();
-            $is_block_editor_context = ($screen && $screen->is_block_editor()) ||
-                    ($screen && $screen->id === 'site-editor');
-
-            if (!$is_block_editor_context) {
-                return;
-            }
         }
 
         // noUiSlider is registered by Voxel's Assets_Controller (admin_enqueue_scripts priority 10)
@@ -1085,20 +1070,14 @@ CSS;
      */
     public static function enqueue_code_editor_assets()
     {
-        // Check if we're in admin area (covers both post editor and FSE template editor)
+        // NOTE: This method is hooked to 'enqueue_block_editor_assets' which ONLY fires in block editor contexts
+        // (post editor, FSE site-editor, template editor). No additional screen checks needed.
+        // Previous screen checks caused CodeMirror to NOT load in FSE template editor because
+        // get_current_screen() returns null or has unexpected values in those contexts.
+
+        // Simple admin check is sufficient since enqueue_block_editor_assets won't fire on frontend
         if (!is_admin()) {
             return;
-        }
-
-        // Additional check: Only run in block editor contexts
-        if (function_exists('get_current_screen')) {
-            $screen = get_current_screen();
-            $is_block_editor_context = ($screen && $screen->is_block_editor()) ||
-                    ($screen && $screen->id === 'site-editor');
-
-            if (!$is_block_editor_context) {
-                return;
-            }
         }
 
         // Enqueue WordPress code editor (wraps CodeMirror)
@@ -1209,6 +1188,26 @@ CSS;
         // Only load child theme's global CSS variables
         // Parent theme styles are loaded via block dependencies when blocks are used
         add_editor_style('assets/css/voxel-fse-commons.css');
+
+        // CRITICAL: Load vendor and Voxel CSS into FSE iframe
+        // enqueue_block_editor_assets / wp_enqueue_style loads styles into parent document, but FSE uses an iframe
+        // add_editor_style() is the only way to load styles into the FSE iframe
+        // We use absolute URL because add_editor_style() with relative path looks in child theme
+        $vendor_suffix = function_exists('\Voxel\is_dev_mode') && \Voxel\is_dev_mode() ? '' : '.prod';
+        $parent_theme_url = get_template_directory_uri();
+
+        // Vendor CSS
+        $pikaday_url = $parent_theme_url . '/assets/vendor/pikaday/pikaday' . $vendor_suffix . '.css';
+        add_editor_style($pikaday_url);
+
+        $nouislider_url = $parent_theme_url . '/assets/vendor/nouislider/nouislider' . $vendor_suffix . '.css';
+        add_editor_style($nouislider_url);
+
+        // Voxel parent theme CSS that contains .pika-tooltip and other popup styling
+        // product-form.css contains .pika-tooltip styles needed for date picker tooltips
+        $dist_suffix = is_rtl() ? '-rtl.css' : '.css';
+        $product_form_url = $parent_theme_url . '/assets/dist/product-form' . $dist_suffix;
+        add_editor_style($product_form_url);
     }
 
     /**
@@ -4647,25 +4646,57 @@ JAVASCRIPT;
      * and enqueues it globally on all pages
      */
     public static function enqueue_popup_kit_global_styles() {
+        // PERF: Only load on frontend or block editor, NEVER on generic admin pages
+        if (is_admin()) {
+            $screen = get_current_screen();
+            if (!$screen || !$screen->is_block_editor()) {
+                return;
+            }
+        }
+
         // NOTE: Voxel forms.css is loaded via add_editor_style() in add_editor_styles_for_fse()
         // Do NOT enqueue it here via wp_enqueue_style() - causes duplicates and breaks CSS cascade
         
         // Get kit_popups template ID
-        $template_id = \Voxel\get('templates.kit_popups');
-        if (!$template_id) {
-            return;
-        }
+        $content = '';
+
+        // 1. Try to find the FSE customized template (saved in DB)
+        // Slug found via debug: 'voxel-kit_popups'
+        // We try both the raw slug and the FSE-style prefixed slug just in case.
+        $possible_slugs = ['voxel-kit_popups', 'voxel-fse//voxel-kit_popups'];
         
-        // Get template content
-        $post = get_post($template_id);
-        if (!$post) {
+        $query = new \WP_Query([
+            'post_type' => 'wp_template',
+            'post_status' => 'any',
+            'post_name__in' => $possible_slugs, // Use post_name__in for multiple slugs
+            'posts_per_page' => 1,
+            'no_found_rows' => true,
+            'ignore_sticky_posts' => true,
+        ]);
+        
+        if (!empty($query->posts)) {
+            $content = $query->posts[0]->post_content;
+        } 
+        
+        // 2. Fallback: Check Voxel settings (Legacy/Elementor support)
+        if (empty($content)) {
+            $template_id = \Voxel\get('templates.kit_popups');
+            if ($template_id) {
+                $post = get_post($template_id);
+                if ($post) {
+                    $content = $post->post_content;
+                }
+            }
+        }
+
+        if (empty($content)) {
             return;
         }
         
         // Extract <style> tags with data-voxel-popup-kit-styles attribute
         preg_match_all(
             '/<style[^>]*data-voxel-popup-kit-styles[^>]*>(.*?)<\/style>/s',
-            $post->post_content,
+            $content,
             $matches
         );
         
@@ -4676,10 +4707,22 @@ JAVASCRIPT;
         // Combine all CSS
         $css = implode("\n", $matches[1]);
         
-        // Enqueue inline
-        // Attach to vx:commons.css which is always loaded
-        if (wp_style_is('vx:commons.css', 'registered')) {
-            wp_add_inline_style('vx:commons.css', $css);
+        // Enqueue as a DEPENDENT style to ensure it loads AFTER the static CSS
+        // This fixes the priority/cascade issue
+        if (wp_style_is('vx:popup-kit.css', 'registered')) {
+            wp_register_style('vx:popup-kit-custom', false, ['vx:popup-kit.css']);
+            wp_add_inline_style('vx:popup-kit-custom', $css);
+            wp_enqueue_style('vx:popup-kit-custom');
+            
+            // Ensure base style is enqueued if it wasn't already
+            if (!wp_style_is('vx:popup-kit.css', 'enqueued')) {
+                wp_enqueue_style('vx:popup-kit.css');
+            }
+        } else {
+             // Fallback if base style isn't registered (should happen rarely)
+             wp_register_style('vx-popup-kit-global', false);
+             wp_add_inline_style('vx-popup-kit-global', $css);
+             wp_enqueue_style('vx-popup-kit-global');
         }
     }
 }

@@ -8,10 +8,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import {
-	ToggleControl,
-	TextControl,
-} from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
 import {
 	ResponsiveRangeControlWithDropdown,
 	TypographyPopup,
@@ -80,14 +77,23 @@ export function StyleTab({
 						borderColor: attributes.pgBorder?.color || '',
 					}}
 					onChange={(value) => {
-						setAttributes({
-							pgBorder: {
-								...attributes.pgBorder,
-								type: value.borderType,
-								width: value.borderWidth?.top as number | undefined,
-								color: value.borderColor,
-							},
-						});
+						// When "Default" (empty) is selected, clear the attribute entirely
+						// so no CSS is generated and base Voxel styles are inherited
+						if (!value.borderType || value.borderType === '') {
+							setAttributes({ pgBorder: undefined });
+						} else if (value.borderType === 'none') {
+							// For 'none', we still need to store the type so CSS can output 'border: none'
+							setAttributes({ pgBorder: { type: 'none' } });
+						} else {
+							// For actual border types, store all values
+							setAttributes({
+								pgBorder: {
+									type: value.borderType,
+									width: value.borderWidth?.top ? parseFloat(String(value.borderWidth.top)) : 1,
+									color: value.borderColor || 'var(--ts-shade-3)',
+								},
+							});
+						}
 					}}
 					hideRadius={true}
 				/>
@@ -120,14 +126,6 @@ export function StyleTab({
 					label={__('Separator color', 'voxel-fse')}
 					value={attributes.pgTitleSeparator}
 					onChange={(value) => setAttributes({ pgTitleSeparator: value })}
-				/>
-
-				<h4>{__('Global Typography', 'voxel-fse')}</h4>
-				<TextControl
-					label={__('Font family', 'voxel-fse')}
-					value={attributes.elementorFontFamily || ''}
-					onChange={(value: string) => setAttributes({ elementorFontFamily: value })}
-					help={__('Leave empty to use WordPress Global Styles font (var(--wp--preset--font-family--system)). Enter custom font family to override.', 'voxel-fse')}
 				/>
 			</AccordionPanel>
 
@@ -264,14 +262,20 @@ export function StyleTab({
 											borderColor: attributes.pbButton1Border?.color || '',
 										}}
 										onChange={(value) => {
-											setAttributes({
-												pbButton1Border: {
-													...attributes.pbButton1Border,
-													type: value.borderType,
-													width: value.borderWidth?.top as number | undefined,
-													color: value.borderColor,
-												},
-											});
+											// When "Default" (empty) is selected, clear the attribute entirely
+											if (!value.borderType || value.borderType === '') {
+												setAttributes({ pbButton1Border: undefined });
+											} else if (value.borderType === 'none') {
+												setAttributes({ pbButton1Border: { type: 'none' } });
+											} else {
+												setAttributes({
+													pbButton1Border: {
+														type: value.borderType,
+														width: value.borderWidth?.top ? parseFloat(String(value.borderWidth.top)) : 1,
+														color: value.borderColor || 'var(--ts-shade-3)',
+													},
+												});
+											}
 										}}
 										hideRadius={true}
 									/>
@@ -299,14 +303,20 @@ export function StyleTab({
 											borderColor: attributes.pbButton2Border?.color || '',
 										}}
 										onChange={(value) => {
-											setAttributes({
-												pbButton2Border: {
-													...attributes.pbButton2Border,
-													type: value.borderType,
-													width: value.borderWidth?.top as number | undefined,
-													color: value.borderColor,
-												},
-											});
+											// When "Default" (empty) is selected, clear the attribute entirely
+											if (!value.borderType || value.borderType === '') {
+												setAttributes({ pbButton2Border: undefined });
+											} else if (value.borderType === 'none') {
+												setAttributes({ pbButton2Border: { type: 'none' } });
+											} else {
+												setAttributes({
+													pbButton2Border: {
+														type: value.borderType,
+														width: value.borderWidth?.top ? parseFloat(String(value.borderWidth.top)) : 1,
+														color: value.borderColor || 'var(--ts-shade-3)',
+													},
+												});
+											}
 										}}
 										hideRadius={true}
 									/>
@@ -735,22 +745,28 @@ export function StyleTab({
 
 				<BorderGroupControl
 					value={{
-						borderType: attributes.pcCheckboxBorder?.type || 'solid',
+						borderType: attributes.pcCheckboxBorder?.type || '',
 						borderWidth: attributes.pcCheckboxBorderWidth ? { top: attributes.pcCheckboxBorderWidth, right: attributes.pcCheckboxBorderWidth, bottom: attributes.pcCheckboxBorderWidth, left: attributes.pcCheckboxBorderWidth } : {},
 						borderColor: attributes.pcCheckboxBorder?.color || '',
 					}}
 					onChange={(value) => {
-						const updates: Record<string, any> = {
-							pcCheckboxBorder: {
-								...attributes.pcCheckboxBorder,
-								type: value.borderType,
-								color: value.borderColor,
-							},
-						};
-						if (value.borderWidth?.top !== undefined) {
-							updates.pcCheckboxBorderWidth = value.borderWidth.top;
+						// When "Default" (empty) is selected, clear the attributes entirely
+						if (!value.borderType || value.borderType === '') {
+							setAttributes({ pcCheckboxBorder: undefined, pcCheckboxBorderWidth: undefined });
+						} else if (value.borderType === 'none') {
+							setAttributes({ pcCheckboxBorder: { type: 'none' }, pcCheckboxBorderWidth: undefined });
+						} else {
+							const updates: Record<string, any> = {
+								pcCheckboxBorder: {
+									type: value.borderType,
+									color: value.borderColor || 'var(--ts-shade-3)',
+								},
+							};
+							if (value.borderWidth?.top !== undefined) {
+								updates.pcCheckboxBorderWidth = parseFloat(String(value.borderWidth.top));
+							}
+							setAttributes(updates);
 						}
-						setAttributes(updates);
 					}}
 					hideRadius={true}
 				/>
@@ -800,22 +816,28 @@ export function StyleTab({
 
 				<BorderGroupControl
 					value={{
-						borderType: attributes.prRadioBorder?.type || 'solid',
+						borderType: attributes.prRadioBorder?.type || '',
 						borderWidth: attributes.prRadioBorderWidth ? { top: attributes.prRadioBorderWidth, right: attributes.prRadioBorderWidth, bottom: attributes.prRadioBorderWidth, left: attributes.prRadioBorderWidth } : {},
 						borderColor: attributes.prRadioBorder?.color || '',
 					}}
 					onChange={(value) => {
-						const updates: Record<string, any> = {
-							prRadioBorder: {
-								...attributes.prRadioBorder,
-								type: value.borderType,
-								color: value.borderColor,
-							},
-						};
-						if (value.borderWidth?.top !== undefined) {
-							updates.prRadioBorderWidth = value.borderWidth.top;
+						// When "Default" (empty) is selected, clear the attributes entirely
+						if (!value.borderType || value.borderType === '') {
+							setAttributes({ prRadioBorder: undefined, prRadioBorderWidth: undefined });
+						} else if (value.borderType === 'none') {
+							setAttributes({ prRadioBorder: { type: 'none' }, prRadioBorderWidth: undefined });
+						} else {
+							const updates: Record<string, any> = {
+								prRadioBorder: {
+									type: value.borderType,
+									color: value.borderColor || 'var(--ts-shade-3)',
+								},
+							};
+							if (value.borderWidth?.top !== undefined) {
+								updates.prRadioBorderWidth = parseFloat(String(value.borderWidth.top));
+							}
+							setAttributes(updates);
 						}
-						setAttributes(updates);
 					}}
 					hideRadius={true}
 				/>
@@ -978,7 +1000,7 @@ export function StyleTab({
 
 									<BorderGroupControl
 										value={{
-											borderType: attributes.pfBorder?.type || 'solid',
+											borderType: attributes.pfBorder?.type || '',
 											borderWidth: attributes.pfBorderWidth ? { top: attributes.pfBorderWidth, right: attributes.pfBorderWidth, bottom: attributes.pfBorderWidth, left: attributes.pfBorderWidth } : {},
 											borderColor: attributes.pfBorder?.color || '',
 										}}
@@ -991,7 +1013,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pfBorderWidth = value.borderWidth.top;
+												updates.pfBorderWidth = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1253,7 +1275,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.prRangeHandleBorderWidth = value.borderWidth.top;
+							updates.prRangeHandleBorderWidth = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}
@@ -1332,7 +1354,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pibBorderWidth = value.borderWidth.top;
+												updates.pibBorderWidth = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1760,7 +1782,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pnotUnseenBorderWidth = value.borderWidth.top;
+												updates.pnotUnseenBorderWidth = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1904,7 +1926,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.ptextBorderWidth = value.borderWidth.top;
+												updates.ptextBorderWidth = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1955,7 +1977,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.palertBorderWidth = value.borderWidth.top;
+							updates.palertBorderWidth = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}
