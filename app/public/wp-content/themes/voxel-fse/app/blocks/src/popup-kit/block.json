@@ -88,12 +88,7 @@
 			"type": "object"
 		},
 		"pgBorder": {
-			"type": "object",
-			"default": {
-				"type": "default",
-				"width": 1,
-				"color": ""
-			}
+			"type": "object"
 		},
 		"pgRadius": {
 			"type": "number"
@@ -235,7 +230,8 @@
 			"type": "object"
 		},
 		"pbButton2Bg": {
-			"type": "string"
+			"type": "string",
+			"default": ""
 		},
 		"pbButton2Text": {
 			"type": "string"

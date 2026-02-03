@@ -16,7 +16,8 @@ import { __ } from '@wordpress/i18n';
 interface ColorPickerControlProps {
 	label: string;
 	value?: string;
-	onChange: (value: string | undefined) => void;
+	/** Called with color string when selected, empty string when reset/cleared */
+	onChange: (value: string) => void;
 	colors?: Array<{ name: string; color: string }>;
 	/** Whether to show the full color picker with custom colors (default: true) */
 	enableCustomColors?: boolean;
@@ -199,7 +200,18 @@ export default function ColorPickerControl({
 					{value && (
 						<button
 							type="button"
-							onClick={() => onChange(undefined)}
+							onClick={(e) => {
+								e.stopPropagation();
+								e.preventDefault();
+								// Use empty string to reset - Gutenberg properly serializes this
+								// and hasValue('') returns false in generateCSS
+								// NOTE: undefined is ignored by Gutenberg's setAttributes merge
+								onChange('');
+							}}
+							onMouseDown={(e) => {
+								// Prevent mousedown from triggering parent popup close handlers
+								e.stopPropagation();
+							}}
 							aria-label={__('Reset', 'voxel-fse')}
 							className="components-button is-small has-icon"
 							style={{
@@ -267,7 +279,9 @@ export default function ColorPickerControl({
 						colors={colors}
 						value={value}
 						onChange={(newColor) => {
-							onChange(newColor);
+							// When color is cleared (undefined from ColorPalette), use empty string
+							// Gutenberg properly serializes empty strings, hasValue('') returns false
+							onChange(newColor ?? '');
 						}}
 						clearable
 						disableCustomColors={!enableCustomColors}

@@ -23,7 +23,7 @@ export interface PopupKitAttributes {
     pgTopMargin?: number;
     pgTopMargin_tablet?: number;
     pgTopMargin_mobile?: number;
-    pgShadow?: object;
+    pgShadow?: any;
     pgBorder?: {
         type: string;
         width: number;
@@ -54,9 +54,9 @@ export interface PopupKitAttributes {
     phIconColor: string;
     phTitleColor: string;
     phTitleFontFamily: string;
-    phTitleFontSize?: object;
+    phTitleFontSize?: any;
     phTitleFontWeight: string;
-    phTitleLineHeight?: object;
+    phTitleLineHeight?: any;
     phAvatarSize?: number;
     phAvatarSize_tablet?: number;
     phAvatarSize_mobile?: number;
@@ -66,7 +66,7 @@ export interface PopupKitAttributes {
     phAvatarRadiusUnit: string;
 
     // Buttons
-    pbTypo?: object;
+    pbTypo?: any;
     pbRadius?: number;
     pbRadius_tablet?: number;
     pbRadius_mobile?: number;
@@ -75,13 +75,13 @@ export interface PopupKitAttributes {
     pbButton1Icon?: string;
     pbButton1Icon_tablet?: string;
     pbButton1Icon_mobile?: string;
-    pbButton1Border?: object;
+    pbButton1Border?: any;
     pbButton2Bg?: string;
     pbButton2Text?: string;
     pbButton2Icon?: string;
     pbButton2Icon_tablet?: string;
     pbButton2Icon_mobile?: string;
-    pbButton2Border?: object;
+    pbButton2Border?: any;
     pbButton1HoverBg?: string;
     pbButton1HoverText?: string;
     pbButton1HoverBorder?: string;
@@ -97,24 +97,24 @@ export interface PopupKitAttributes {
     pbButton3HoverText?: string;
 
     // Labels
-    plLabelTypo?: object;
+    plLabelTypo?: any;
     plLabelColor?: string;
     plLabelColor_tablet?: string;
     plLabelColor_mobile?: string;
-    plDescTypo?: object;
+    plDescTypo?: any;
     plDescColor?: string;
     plDescColor_tablet?: string;
     plDescColor_mobile?: string;
 
     // Menu
-    pmItemPadding?: object;
+    pmItemPadding?: any;
     pmItemPaddingLinked: boolean;
     pmItemHeight?: number;
     pmItemHeight_tablet?: number;
     pmItemHeight_mobile?: number;
     pmSeparatorColor?: string;
     pmTitleColor?: string;
-    pmTitleTypo?: object;
+    pmTitleTypo?: any;
     pmIconColor?: string;
     pmIconSize?: number;
     pmIconSize_tablet?: number;
@@ -126,10 +126,10 @@ export interface PopupKitAttributes {
     pmHoverBg?: string;
     pmHoverTitleColor?: string;
     pmHoverIconColor?: string;
-    pmSelectedTitleTypo?: object;
+    pmSelectedTitleTypo?: any;
     pmSelectedTitleColor?: string;
     pmSelectedIconColor?: string;
-    pmParentTitleTypo?: object;
+    pmParentTitleTypo?: any;
 
     // Choices
     pcItemSpacing?: number;
@@ -144,24 +144,58 @@ export interface PopupKitAttributes {
     pcPictureRadius?: number;
     pcPictureRadius_tablet?: number;
     pcPictureRadius_mobile?: number;
-    pcTitleTypo?: object;
+    pcTitleTypo?: any;
     pcTitleColor?: string;
-    pcSubtitleTypo?: object;
+    pcSubtitleTypo?: any;
     pcSubtitleColor?: string;
 
     // Subtotal
-    psSubtotalTypo?: object;
+    psSubtotalTypo?: any;
     psSubtotalTypoFontFamily?: string;
     psSubtotalColor?: string;
 
-    // Notifications
+    // No Results (pn prefix)
     pnIconSize: number;
     pnIconSize_tablet?: number;
     pnIconSize_mobile?: number;
     pnIconColor?: string;
     pnTitleColor?: string;
-    pnTitleTypo?: object;
+    pnTitleTypo?: any;
     pnTitleTypoFontFamily?: string;
+
+    // Notifications (pnot prefix)
+    pnotTitleColor?: string;
+    pnotTitleTypo?: any;
+    pnotSubtitleColor?: string;
+    pnotSubtitleTypo?: any;
+    pnotIconColor?: string;
+    pnotIconBg?: string;
+    pnotIconSize?: number;
+    pnotIconSize_tablet?: number;
+    pnotIconSize_mobile?: number;
+    pnotIconSizeUnit?: string;
+    pnotIconContainerSize?: number;
+    pnotIconContainerSize_tablet?: number;
+    pnotIconContainerSize_mobile?: number;
+    pnotIconContainerSizeUnit?: string;
+    pnotBorderRadius?: number;
+    pnotBorderRadius_tablet?: number;
+    pnotBorderRadius_mobile?: number;
+    pnotBorderRadiusUnit?: string;
+    pnotUnvisitedTitleTypo?: any;
+    pnotUnvisitedTitleColor?: string;
+    pnotUnseenIconColor?: string;
+    pnotUnseenIconBg?: string;
+    pnotUnseenBorder?: any;
+    pnotUnseenBorderWidth?: number;
+    pnotUnseenBorderWidth_tablet?: number;
+    pnotUnseenBorderWidth_mobile?: number;
+    pnotBgHover?: string;
+    pnotTitleColorHover?: string;
+    pnotSubtitleColorHover?: string;
+    pnotIconColorHover?: string;
+    pnotIconBgHover?: string;
+    pnotIconBorderHover?: string;
 
     // Checkboxes
     pcCheckboxSize?: number;
@@ -170,7 +204,7 @@ export interface PopupKitAttributes {
     pcCheckboxRadius?: number;
     pcCheckboxRadius_tablet?: number;
     pcCheckboxRadius_mobile?: number;
-    pcCheckboxBorder?: object;
+    pcCheckboxBorder?: any;
     pcCheckboxBorderWidth?: number;
     pcCheckboxBorderWidth_tablet?: number;
     pcCheckboxBorderWidth_mobile?: number;
@@ -185,7 +219,7 @@ export interface PopupKitAttributes {
     prRadioRadius?: number;
     prRadioRadius_tablet?: number;
     prRadioRadius_mobile?: number;
-    prRadioBorder?: object;
+    prRadioBorder?: any;
     prRadioBorderWidth?: number;
     prRadioBorderWidth_tablet?: number;
     prRadioBorderWidth_mobile?: number;
@@ -198,11 +232,11 @@ export interface PopupKitAttributes {
     piInputHeight_tablet?: number;
     piInputHeight_mobile?: number;
     piInputHeightUnit: string;
-    piInputTypo?: object;
+    piInputTypo?: any;
     piInputTypoFontFamily?: string;
-    piInputPadding?: object;
+    piInputPadding?: any;
     piInputPaddingLinked: boolean;
-    piInputPaddingIcon?: object;
+    piInputPaddingIcon?: any;
     piInputPaddingIconLinked: boolean;
     piInputValueColor?: string;
     piInputPlaceholderColor?: string;
@@ -225,7 +259,7 @@ export interface PopupKitAttributes {
     pfIconSize_tablet?: number;
     pfIconSize_mobile?: number;
     pfBackground?: string;
-    pfBorder?: object;
+    pfBorder?: any;
     pfBorderWidth?: number;
     pfBorderWidth_tablet?: number;
     pfBorderWidth_mobile?: number;
@@ -233,7 +267,7 @@ export interface PopupKitAttributes {
     pfBorderRadius_tablet?: number;
     pfBorderRadius_mobile?: number;
     pfBorderRadiusUnit: string;
-    pfTypo?: object;
+    pfTypo?: any;
     pfTypoFontFamily?: string;
     pfTextColor?: string;
     pfAddedBorderRadius?: number;
@@ -246,7 +280,7 @@ export interface PopupKitAttributes {
     pfAddedIconSize_tablet?: number;
     pfAddedIconSize_mobile?: number;
     pfAddedIconSizeUnit: string;
-    pfAddedTypo?: object;
+    pfAddedTypo?: any;
     pfAddedTypoFontFamily?: string;
     pfAddedTextColor?: string;
     pfRemoveBackground?: string;
@@ -284,20 +318,23 @@ export interface PopupKitAttributes {
     prRangeBg?: string;
     prRangeBgSelected?: string;
     prRangeHandleBg?: string;
-    prRangeHandleBorder?: object;
+    prRangeHandleBorder?: any;
+    prRangeHandleBorderWidth?: number;
+    prRangeHandleBorderWidth_tablet?: number;
+    prRangeHandleBorderWidth_mobile?: number;
 
     // Textarea
     ptextHeight?: number;
     ptextHeight_tablet?: number;
     ptextHeight_mobile?: number;
     ptextHeightUnit: string;
-    ptextTypo?: object;
+    ptextTypo?: any;
     ptextTypoFontFamily?: string;
     ptextValueColor?: string;
     ptextPlaceholderColor?: string;
-    ptextPadding?: object;
+    ptextPadding?: any;
     ptextPaddingLinked: boolean;
-    ptextBorder?: object;
+    ptextBorder?: any;
     ptextBorderWidth?: number;
     ptextBorderWidth_tablet?: number;
     ptextBorderWidth_mobile?: number;
@@ -305,21 +342,102 @@ export interface PopupKitAttributes {
     ptextBorderRadius_tablet?: number;
     ptextBorderRadius_mobile?: number;
     ptextBorderRadiusUnit: string;
+    ptextBg?: string;
+    ptextBgFocus?: string;
+    ptextTextColor?: string;
+    ptextBgHover?: string;
 
     // Alerts
+    palertShadow?: any;
+    palertBorder?: any;
+    palertBorderWidth?: number;
+    palertBorderWidth_tablet?: number;
+    palertBorderWidth_mobile?: number;
+    palertBg?: string;
+    palertDividerColor?: string;
+    palertInfoColor?: string;
+    palertErrorColor?: string;
+    palertSuccessColor?: string;
+    palertRadius?: number;
+    palertRadius_tablet?: number;
+    palertRadius_mobile?: number;
+    palertRadiusUnit?: string;
     palertIconSize?: number;
     palertIconSize_tablet?: number;
     palertIconSize_mobile?: number;
     palertIconSizeUnit: string;
     palertIconColor?: string;
     palertTextColor?: string;
-    palertTextTypo?: object;
+    palertTypo?: any;
+    palertTextTypo?: any;
     palertTextTypoFontFamily?: string;
-    palertLinkTypo?: object;
+    palertLinkTypo?: any;
     palertLinkTypoFontFamily?: string;
     palertLinkColor?: string;
     palertLinkColorHover?: string;
     palertLinkBgHover?: string;
+
+    // Datepicker Head
+    pdhIconSize?: number;
+    pdhIconSize_tablet?: number;
+    pdhIconSize_mobile?: number;
+    pdhIconSizeUnit?: string;
+    pdhIconColor?: string;
+    pdhIconSpacing?: number;
+    pdhIconSpacing_tablet?: number;
+    pdhIconSpacing_mobile?: number;
+    pdhIconSpacingUnit?: string;
+    pdhTitleColor?: string;
+    pdhTitleTypo?: any;
+    pdhSubtitleColor?: string;
+    pdhSubtitleTypo?: any;
+
+    // Datepicker Tooltips
+    pdtBgColor?: string;
+    pdtTextColor?: string;
+    pdtRadius?: number;
+    pdtRadius_tablet?: number;
+    pdtRadius_mobile?: number;
+    pdtRadiusUnit?: string;
+
+    // Calendar
+    pcalMonthsTypo?: any;
+    pcalMonthsColor?: string;
+    pcalDaysTypo?: any;
+    pcalDaysColor?: string;
+    pcalAvailableTypo?: any;
+    pcalAvailableColor?: string;
+    pcalAvailableColorHover?: string;
+    pcalAvailableBgHover?: string;
+    pcalAvailableBorderHover?: string;
+    pcalRangeColor?: string;
+    pcalRangeBg?: string;
+    pcalRangeStartEndColor?: string;
+    pcalRangeStartEndBg?: string;
+    pcalSelectedColor?: string;
+    pcalSelectedBg?: string;
+    pcalDisabledTypo?: any;
+    pcalDisabledColor?: string;
+
+    // Switch
+    psSwitchBgInactive?: string;
+    psSwitchBgActive?: string;
+    psSwitchHandleBg?: string;
+
+    // Icon Button
+    pibIconColor?: string;
+    pibBg?: string;
+    pibBorder?: any;
+    pibBorderWidth?: number;
+    pibBorderWidth_tablet?: number;
+    pibBorderWidth_mobile?: number;
+    pibRadius?: number;
+    pibRadius_tablet?: number;
+    pibRadius_mobile?: number;
+    pibRadiusUnit?: string;
+    pibIconColorHover?: string;
+    pibBgHover?: string;
+    pibBorderColorHover?: string;
 
     // Additional properties
     [key: string]: any; // Allow index signature for dynamic access

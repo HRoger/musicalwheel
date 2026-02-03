@@ -11,6 +11,16 @@
 import { Attributes } from './types';
 
 /**
+ * Safely parse a numeric value from a string that might already contain a unit
+ */
+function safeValue(value: string | number | undefined): string {
+	if (value === undefined || value === null || value === '') return '0';
+	const str = String(value);
+	const match = str.match(/^([\d.]+)/);
+	return match ? match[1] : '0';
+}
+
+/**
  * Get responsive value based on device type
  */
 function getResponsiveValue(
@@ -31,7 +41,7 @@ function getResponsiveValue(
 	}
 
 	const unit = attributes[`${baseName}Unit`] || defaultUnit;
-	return value !== undefined ? `${value}${unit}` : undefined;
+	return value !== undefined ? `${safeValue(value)}${unit}` : undefined;
 }
 
 /**
@@ -69,10 +79,10 @@ function generateBorderCSS(
 	const width = borderWidth;
 	if (!width) return '';
 
-	const top = width.top ?? 1;
-	const right = width.right ?? 1;
-	const bottom = width.bottom ?? 1;
-	const left = width.left ?? 1;
+	const top = safeValue(width.top ?? 1);
+	const right = safeValue(width.right ?? 1);
+	const bottom = safeValue(width.bottom ?? 1);
+	const left = safeValue(width.left ?? 1);
 	const unit = width.unit || 'px';
 
 	return `border: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit} ${borderType} ${borderColor || '#000'};`;

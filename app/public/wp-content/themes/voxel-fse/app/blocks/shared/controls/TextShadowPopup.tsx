@@ -16,7 +16,7 @@
  * - Based on: BoxShadowPopup.tsx
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import UndoIcon from '../icons/UndoIcon';
@@ -236,7 +236,7 @@ export default function TextShadowPopup({
 					<RangeControl
 						label={__('Horizontal', 'voxel-fse')}
 						value={shadow.horizontal ?? defaultShadow.horizontal}
-						onChange={(value) => {
+						onChange={(value: number | undefined) => {
 							setAttributes({
 								[shadowAttributeName]: {
 									...shadow,
@@ -253,7 +253,7 @@ export default function TextShadowPopup({
 					<RangeControl
 						label={__('Vertical', 'voxel-fse')}
 						value={shadow.vertical ?? defaultShadow.vertical}
-						onChange={(value) => {
+						onChange={(value: number | undefined) => {
 							setAttributes({
 								[shadowAttributeName]: {
 									...shadow,
@@ -270,7 +270,7 @@ export default function TextShadowPopup({
 					<RangeControl
 						label={__('Blur', 'voxel-fse')}
 						value={shadow.blur ?? defaultShadow.blur}
-						onChange={(value) => {
+						onChange={(value: number | undefined) => {
 							setAttributes({
 								[shadowAttributeName]: {
 									...shadow,
@@ -282,6 +282,18 @@ export default function TextShadowPopup({
 						max={100}
 						step={1}
 					/>
+
+					{/* Reset styling button */}
+					<div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
+						<Button
+							variant="link"
+							isDestructive
+							onClick={resetShadow}
+							style={{ textDecoration: 'none', fontSize: '12px' }}
+						>
+							{__('Reset Text Shadow', 'voxel-fse')}
+						</Button>
+					</div>
 				</div>
 			)}
 		</div>

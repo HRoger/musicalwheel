@@ -13,7 +13,7 @@
  * - Gutenberg Popover: @wordpress/components
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import UndoIcon from '../icons/UndoIcon';
@@ -47,13 +47,16 @@ export default function BoxShadowPopup({
 	const [isOpen, setIsOpen] = useState(false);
 	const popoverRef = useRef<HTMLDivElement>(null);
 
-	// Default shadow values matching Elementor
+	// Default shadow values matching Voxel's .ts-field-popup CSS
+	// Evidence: box-shadow: 0 2px 8px 0 rgba(99,99,99,.2);
+	// These are ONLY used as initial values when user first opens the popup
+	// When reset, we clear to {} so Voxel's CSS defaults apply
 	const defaultShadow = {
 		horizontal: 0,
-		vertical: 0,
-		blur: 10,
+		vertical: 2,
+		blur: 8,
 		spread: 0,
-		color: 'rgba(0, 0, 0, 0.5)',
+		color: 'rgba(99, 99, 99, 0.2)',
 		position: 'outline',
 	};
 
@@ -62,10 +65,19 @@ export default function BoxShadowPopup({
 	// Check if shadow has any custom values (not empty)
 	const hasValue = Object.keys(shadow).length > 0;
 
-	const resetShadow = () => {
-		setAttributes({
-			[shadowAttributeName]: {},
-		});
+	const resetShadow = (resetToDefaults = false) => {
+		if (resetToDefaults === true) {
+			// Internal button: Reset to default values and keep popup open
+			setAttributes({
+				[shadowAttributeName]: { ...defaultShadow },
+			});
+		} else {
+			// Header button: Clear values and close popup (User requested behavior: button disappears)
+			setIsOpen(false);
+			setAttributes({
+				[shadowAttributeName]: {},
+			});
+		}
 	};
 
 	// Apply default values when opening popup (Elementor behavior)
@@ -164,156 +176,178 @@ export default function BoxShadowPopup({
 		};
 	}, [isOpen]);
 
-const handleChange = (field: string, value: any) => {
-	setAttributes({
-		[shadowAttributeName]: { ...shadow, [field]: value }
-	});
-};
+	const handleChange = (field: string, value: any) => {
+		if (value === undefined || value === '' || value === null) {
+			// Remove the field entirely when reset (undefined, empty string, or null)
+			// This allows CSS defaults to apply
+			const newShadow = { ...shadow };
+			delete newShadow[field];
+			setAttributes({
+				[shadowAttributeName]: newShadow
+			});
+		} else {
+			setAttributes({
+				[shadowAttributeName]: { ...shadow, [field]: value }
+			});
+		}
+	};
 
-return (
-	<div className="elementor-control elementor-control-type-box-shadow" style={{ position: 'relative' }}>
-		<div className="elementor-control-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-			<span className="elementor-control-title" style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize', color: 'rgb(30, 30, 30)', margin: 0 }}>{label}</span>
-			<div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-				{/* Reset button - only shows when values are set */}
-				{hasValue && (
+	return (
+		<div className="elementor-control elementor-control-type-box-shadow" style={{ position: 'relative' }}>
+			<div className="elementor-control-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+				<span className="elementor-control-title" style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize', color: 'rgb(30, 30, 30)', margin: 0 }}>{label}</span>
+				<div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+					{/* Reset button - only shows when values are set */}
+					{hasValue && (
+						<Button
+							icon={<UndoIcon />}
+							label={__('Reset', 'voxel-fse')}
+							onClick={resetShadow}
+							variant="tertiary"
+							size="small"
+							style={{ minWidth: 'auto', padding: '4px', width: '24px', height: '24px' }}
+						/>
+					)}
+					{/* Edit icon button - opens popup */}
 					<Button
-						icon={<UndoIcon />}
-						label={__('Reset', 'voxel-fse')}
-						onClick={resetShadow}
-						variant="tertiary"
+						ref={buttonRef}
+						icon={<EditIcon />}
 						size="small"
-						style={{ minWidth: 'auto', padding: '4px', width: '24px', height: '24px' }}
+						variant="tertiary"
+						onClick={handleOpenPopup}
+						style={{
+							minWidth: 'auto',
+							padding: '4px',
+							width: '24px',
+							height: '24px',
+							// Light blue background when value is set (Elementor pattern)
+							backgroundColor: hasValue
+								? 'color-mix(in srgb, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)) 4%, #0000)'
+								: undefined,
+							borderRadius: hasValue ? '2px' : undefined,
+						}}
 					/>
-				)}
-				{/* Edit icon button - opens popup */}
-				<Button
-					ref={buttonRef}
-					icon={<EditIcon />}
-					size="small"
-					variant="tertiary"
-					onClick={handleOpenPopup}
-					style={{
-						minWidth: 'auto',
-						padding: '4px',
-						width: '24px',
-						height: '24px',
-						// Light blue background when value is set (Elementor pattern)
-						backgroundColor: hasValue
-							? 'color-mix(in srgb, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)) 4%, #0000)'
-							: undefined,
-						borderRadius: hasValue ? '2px' : undefined,
-					}}
-				/>
-			</div>
-		</div>
-		{isOpen && (
-			<div
-				ref={popoverRef}
-				className="voxel-fse-box-shadow-popup"
-				style={{
-					position: 'fixed',
-					zIndex: 999999,
-					backgroundColor: '#fff',
-					border: '1px solid #ddd',
-					borderRadius: '4px',
-					boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
-					minWidth: '280px',
-					maxWidth: '320px',
-					maxHeight: '80vh',
-					overflowY: 'auto',
-					overflowX: 'hidden',
-				}}
-			>
-				{/* Arrow pointing right (towards the sidebar) */}
-				<div
-					style={{
-						position: 'absolute',
-						right: '-8px',
-						top: '50%',
-						transform: 'translateY(-50%)',
-						width: 0,
-						height: 0,
-						borderTop: '8px solid transparent',
-						borderBottom: '8px solid transparent',
-						borderLeft: '8px solid #fff',
-						filter: 'drop-shadow(2px 0 1px rgba(0,0,0,0.1))',
-					}}
-				/>
-				<div style={{ padding: '16px' }}>
-					{/* Color - using reusable ColorPickerControl */}
-					<ColorPickerControl
-						label={__('Color', 'voxel-fse')}
-						value={shadow.color !== undefined ? shadow.color : defaultShadow.color}
-						onChange={(value) => handleChange('color', value)}
-					/>
-
-					{/* Horizontal Offset - with RangeControl like Elementor */}
-					<RangeControl
-						label={__('Horizontal', 'voxel-fse')}
-						value={shadow.horizontal !== undefined ? shadow.horizontal : defaultShadow.horizontal}
-						onChange={(value: number | undefined) => handleChange('horizontal', value)}
-						min={-100}
-						max={100}
-						step={1}
-					/>
-
-					{/* Vertical Offset - with RangeControl like Elementor */}
-					<RangeControl
-						label={__('Vertical', 'voxel-fse')}
-						value={shadow.vertical !== undefined ? shadow.vertical : defaultShadow.vertical}
-						onChange={(value: number | undefined) => handleChange('vertical', value)}
-						min={-100}
-						max={100}
-						step={1}
-					/>
-
-					{/* Blur - with RangeControl like Elementor */}
-					<RangeControl
-						label={__('Blur', 'voxel-fse')}
-						value={shadow.blur !== undefined ? shadow.blur : defaultShadow.blur}
-						onChange={(value: number | undefined) => handleChange('blur', value)}
-						min={0}
-						max={100}
-						step={1}
-					/>
-
-					{/* Spread - with RangeControl like Elementor */}
-					<RangeControl
-						label={__('Spread', 'voxel-fse')}
-						value={shadow.spread !== undefined ? shadow.spread : defaultShadow.spread}
-						onChange={(value: number | undefined) => handleChange('spread', value)}
-						min={-100}
-						max={100}
-						step={1}
-					/>
-
-					{/* Position (Outline/Inset) - Elementor style inline layout */}
-					<div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '80px 1fr', gap: '12px', alignItems: 'center' }}>
-						<label style={{ fontWeight: 500, fontSize: '12px', margin: 0 }}>
-							{__('Position', 'voxel-fse')}
-						</label>
-						<select
-							value={shadow.position !== undefined ? shadow.position : defaultShadow.position}
-							onChange={(e) => handleChange('position', e.target.value)}
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								border: '1px solid #d5dadf',
-								borderRadius: '2px',
-								fontSize: '13px',
-								backgroundColor: '#fff',
-								cursor: 'pointer',
-							}}
-						>
-							<option value="outline">{__('Outline', 'voxel-fse')}</option>
-							<option value="inset">{__('Inset', 'voxel-fse')}</option>
-						</select>
-					</div>
 				</div>
 			</div>
-		)}
-	</div>
-);
+			{isOpen && (
+				<div
+					ref={popoverRef}
+					className="voxel-fse-box-shadow-popup"
+					style={{
+						position: 'fixed',
+						zIndex: 999999,
+						backgroundColor: '#fff',
+						border: '1px solid #ddd',
+						borderRadius: '4px',
+						boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+						minWidth: '280px',
+						maxWidth: '320px',
+						maxHeight: '80vh',
+						overflowY: 'auto',
+						overflowX: 'hidden',
+					}}
+				>
+					{/* Arrow pointing right (towards the sidebar) */}
+					<div
+						style={{
+							position: 'absolute',
+							right: '-8px',
+							top: '50%',
+							transform: 'translateY(-50%)',
+							width: 0,
+							height: 0,
+							borderTop: '8px solid transparent',
+							borderBottom: '8px solid transparent',
+							borderLeft: '8px solid #fff',
+							filter: 'drop-shadow(2px 0 1px rgba(0,0,0,0.1))',
+						}}
+					/>
+					<div style={{ padding: '16px' }}>
+						{/* Color - using reusable ColorPickerControl */}
+						<ColorPickerControl
+							label={__('Color', 'voxel-fse')}
+							value={shadow.color !== undefined ? shadow.color : defaultShadow.color}
+							onChange={(value) => handleChange('color', value)}
+						/>
+
+						{/* Horizontal Offset - with RangeControl like Elementor */}
+						<RangeControl
+							label={__('Horizontal', 'voxel-fse')}
+							value={shadow.horizontal !== undefined ? shadow.horizontal : defaultShadow.horizontal}
+							onChange={(value: number | undefined) => handleChange('horizontal', value)}
+							min={-100}
+							max={100}
+							step={1}
+						/>
+
+						{/* Vertical Offset - with RangeControl like Elementor */}
+						<RangeControl
+							label={__('Vertical', 'voxel-fse')}
+							value={shadow.vertical !== undefined ? shadow.vertical : defaultShadow.vertical}
+							onChange={(value: number | undefined) => handleChange('vertical', value)}
+							min={-100}
+							max={100}
+							step={1}
+						/>
+
+						{/* Blur - with RangeControl like Elementor */}
+						<RangeControl
+							label={__('Blur', 'voxel-fse')}
+							value={shadow.blur !== undefined ? shadow.blur : defaultShadow.blur}
+							onChange={(value: number | undefined) => handleChange('blur', value)}
+							min={0}
+							max={100}
+							step={1}
+						/>
+
+						{/* Spread - with RangeControl like Elementor */}
+						<RangeControl
+							label={__('Spread', 'voxel-fse')}
+							value={shadow.spread !== undefined ? shadow.spread : defaultShadow.spread}
+							onChange={(value: number | undefined) => handleChange('spread', value)}
+							min={-100}
+							max={100}
+							step={1}
+						/>
+
+						{/* Position (Outline/Inset) - Elementor style inline layout */}
+						<div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '80px 1fr', gap: '12px', alignItems: 'center' }}>
+							<label style={{ fontWeight: 500, fontSize: '12px', margin: 0 }}>
+								{__('Position', 'voxel-fse')}
+							</label>
+							<select
+								value={shadow.position !== undefined ? shadow.position : defaultShadow.position}
+								onChange={(e) => handleChange('position', e.target.value)}
+								style={{
+									width: '100%',
+									padding: '6px 8px',
+									border: '1px solid #d5dadf',
+									borderRadius: '2px',
+									fontSize: '13px',
+									backgroundColor: '#fff',
+									cursor: 'pointer',
+								}}
+							>
+								<option value="outline">{__('Outline', 'voxel-fse')}</option>
+								<option value="inset">{__('Inset', 'voxel-fse')}</option>
+							</select>
+						</div>
+
+						{/* Reset styling button */}
+						<div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end' }}>
+							<Button
+								variant="link"
+								isDestructive
+								onClick={() => resetShadow(true)}
+								style={{ textDecoration: 'none', fontSize: '12px' }}
+							>
+								{__('Reset Box Shadow', 'voxel-fse')}
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
+	);
 }
 

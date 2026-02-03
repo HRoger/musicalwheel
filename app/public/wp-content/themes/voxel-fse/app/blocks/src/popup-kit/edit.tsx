@@ -35,6 +35,16 @@ export default function Edit({ attributes, setAttributes }: PopupKitEditProps) {
 		}
 	}, []);
 
+	// FIX: Clean up global styles injected by PHP/Block Loader to prevent conflicts with editor preview
+	// The server injects a style tag with ID 'vx:popup-kit-custom-inline-css' that persists even after
+	// block attributes are reset, causing stale styles to remain.
+	useEffect(() => {
+		const globalStyle = document.getElementById('vx:popup-kit-custom-inline-css');
+		if (globalStyle) {
+			globalStyle.remove();
+		}
+	}, []);
+
 	// Generate CSS for preview
 	const previewCSS = generatePopupKitCSS(attributes);
 

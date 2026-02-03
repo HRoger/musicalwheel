@@ -1,15 +1,26 @@
 /**
  * Popup Kit CSS Generation
- * 
+ *
  * Generates global CSS from block attributes that applies to ALL popups sitewide.
  * This matches the functionality of Voxel's popup-kit widget render.php.
- * 
+ *
  * Evidence: themes/voxel/app/blocks/src/_popup-kit_old/render.php:1-2000
- * 
+ *
  * @package VoxelFSE
  */
 
 import type { PopupKitAttributes } from '../types';
+
+/**
+ * Check if a value should generate CSS output
+ * Returns false for undefined, null, empty string, or whitespace-only string
+ * This ensures reset values don't generate CSS rules
+ */
+function hasValue(value: unknown): boolean {
+    if (value === undefined || value === null) return false;
+    if (typeof value === 'string' && value.trim() === '') return false;
+    return true;
+}
 
 /**
  * Generate complete CSS from popup-kit attributes
@@ -63,28 +74,29 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Top/Bottom margin - responsive
-    const topMarginDesktop = attributes.pgTopMargin || 0;
+    // Generate CSS if a value is explicitly set (including 0)
+    const topMarginDesktop = attributes.pgTopMargin;
     const topMarginTablet = attributes.pgTopMargin_tablet;
     const topMarginMobile = attributes.pgTopMargin_mobile;
 
-    if (topMarginDesktop > 0) {
+    if (topMarginDesktop !== undefined && topMarginDesktop !== null) {
         css += `.ts-field-popup-container { margin: ${topMarginDesktop}px 0; }\n`;
     }
-    if (topMarginTablet !== undefined && topMarginTablet !== topMarginDesktop) {
+    if (topMarginTablet !== undefined && topMarginTablet !== null) {
         css += `@media (max-width: 1024px) { .ts-field-popup-container { margin: ${topMarginTablet}px 0; } }\n`;
     }
-    if (topMarginMobile !== undefined && topMarginMobile !== topMarginTablet && topMarginMobile !== topMarginDesktop) {
+    if (topMarginMobile !== undefined && topMarginMobile !== null) {
         css += `@media (max-width: 768px) { .ts-field-popup-container { margin: ${topMarginMobile}px 0; } }\n`;
     }
 
     // Box Shadow
     if (attributes.pgShadow) {
-        const shadow = attributes.pgShadow;
-        const horizontal = shadow.horizontal || 0;
-        const vertical = shadow.vertical || 0;
-        const blur = shadow.blur || 10;
-        const spread = shadow.spread || 0;
-        const color = shadow.color || 'rgba(0,0,0,0.5)';
+        const shadow = attributes.pgShadow as any;
+        const horizontal = shadow.horizontal !== undefined ? shadow.horizontal : 0;
+        const vertical = shadow.vertical !== undefined ? shadow.vertical : 2;
+        const blur = shadow.blur !== undefined ? shadow.blur : 8;
+        const spread = shadow.spread !== undefined ? shadow.spread : 0;
+        const color = shadow.color || 'rgba(99, 99, 99, 0.2)';
         const position = shadow.position === 'inset' ? 'inset' : '';
 
         let boxShadow = `${horizontal}px ${vertical}px ${blur}px ${spread}px ${color}`;
@@ -95,16 +107,19 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Border
+    // Generate CSS when border type is explicitly set (not empty string which means "inherit")
     if (attributes.pgBorder) {
-        const border = attributes.pgBorder;
-        const borderType = border.type || 'default';
+        const border = attributes.pgBorder as any;
+        const borderType = border.type;
 
-        if (borderType !== 'default' && borderType !== 'none') {
-            const borderWidth = border.width || 1;
-            const borderColor = border.color || '#000000';
-            css += `.ts-field-popup { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
-        } else if (borderType === 'none') {
+        // Empty string '' means "Default/Inherit" - don't generate CSS
+        // Valid border types: 'solid', 'dashed', 'dotted', 'double', 'groove'
+        if (borderType === 'none') {
             css += '.ts-field-popup { border: none; }\n';
+        } else if (borderType && borderType !== '') {
+            const borderWidth = (border.width !== undefined && border.width !== '') ? parseFloat(String(border.width)) : 1;
+            const borderColor = border.color || 'var(--ts-shade-3)';
+            css += `.ts-field-popup { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
         }
     }
 
@@ -123,7 +138,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         css += `@media (max-width: 768px) { .ts-field-popup { border-radius: ${radiusMobile}px; } }\n`;
     }
 
-    if (attributes.pgScrollColor) {
+    if (hasValue(attributes.pgScrollColor)) {
         css += `.ts-field-popup .min-scroll { --ts-scroll-color: ${attributes.pgScrollColor}; }\n`;
     }
 
@@ -170,12 +185,12 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Icon color
-    if (attributes.phIconColor) {
+    if (hasValue(attributes.phIconColor)) {
         css += `.ts-popup-name { --ts-icon-color: ${attributes.phIconColor}; }\n`;
     }
 
     // Title color
-    if (attributes.phTitleColor) {
+    if (hasValue(attributes.phTitleColor)) {
         css += `.ts-popup-name > span, .ts-popup-name > span a { color: ${attributes.phTitleColor}; }\n`;
     }
 
@@ -266,86 +281,91 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Primary button - Normal
-    if (attributes.pbButton1Bg) {
-        css += `.ts-field-popup .ts-btn-1 { background: ${attributes.pbButton1Bg}; }\n`;
+    if (hasValue(attributes.pbButton1Bg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1 { background: ${attributes.pbButton1Bg}; }\n`;
     }
-    if (attributes.pbButton1Text) {
-        css += `.ts-field-popup .ts-btn-1 { color: ${attributes.pbButton1Text}; }\n`;
+    if (hasValue(attributes.pbButton1Text)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1 { color: ${attributes.pbButton1Text}; }\n`;
     }
-    if (attributes.pbButton1Icon) {
-        css += `.ts-field-popup .ts-btn-1 { --ts-icon-color: ${attributes.pbButton1Icon}; }\n`;
+    if (hasValue(attributes.pbButton1Icon)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1 { --ts-icon-color: ${attributes.pbButton1Icon}; }\n`;
     }
     if (attributes.pbButton1Border) {
-        const border = attributes.pbButton1Border;
+        const border = attributes.pbButton1Border as any;
         const borderType = border.type || 'default';
         if (borderType !== 'default' && borderType !== 'none') {
-            const borderWidth = border.width || 1;
-            const borderColor = border.color || '#000000';
-            css += `.ts-field-popup .ts-btn-1 { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
+            const borderWidth = (border.width !== undefined && border.width !== '') ? parseFloat(String(border.width)) : 1;
+            const borderColor = border.color || 'var(--ts-shade-3)';
+            css += `.ts-field-popup .ts-popup-controller .ts-btn-1 { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
         } else if (borderType === 'none') {
-            css += '.ts-field-popup .ts-btn-1 { border: none; }\n';
+            css += '.ts-field-popup .ts-popup-controller .ts-btn-1 { border: none; }\n';
         }
+
+        // 'default' or empty type = no CSS output, inherit from commons.css
     }
 
     // Secondary button - Normal
-    if (attributes.pbButton2Bg) {
-        css += `.ts-field-popup .ts-btn-2 { background: ${attributes.pbButton2Bg}; }\n`;
+    // Use hasValue() to ensure reset/empty values don't generate CSS
+    if (hasValue(attributes.pbButton2Bg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2 { background: ${attributes.pbButton2Bg}; }\n`;
     }
-    if (attributes.pbButton2Text) {
-        css += `.ts-field-popup .ts-btn-2 { color: ${attributes.pbButton2Text}; }\n`;
+    if (hasValue(attributes.pbButton2Text)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2 { color: ${attributes.pbButton2Text}; }\n`;
     }
-    if (attributes.pbButton2Icon) {
-        css += `.ts-field-popup .ts-btn-2 { --ts-icon-color: ${attributes.pbButton2Icon}; }\n`;
+    if (hasValue(attributes.pbButton2Icon)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2 { --ts-icon-color: ${attributes.pbButton2Icon}; }\n`;
     }
     if (attributes.pbButton2Border) {
-        const border = attributes.pbButton2Border;
+        const border = attributes.pbButton2Border as any;
         const borderType = border.type || 'default';
         if (borderType !== 'default' && borderType !== 'none') {
-            const borderWidth = border.width || 1;
-            const borderColor = border.color || '#000000';
-            css += `.ts-field-popup .ts-btn-2 { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
+            const borderWidth = (border.width !== undefined && border.width !== '') ? parseFloat(String(border.width)) : 1;
+            const borderColor = border.color || 'var(--ts-shade-3)';
+            css += `.ts-field-popup .ts-popup-controller .ts-btn-2 { border-style: ${borderType}; border-width: ${borderWidth}px; border-color: ${borderColor}; }\n`;
         } else if (borderType === 'none') {
-            css += '.ts-field-popup .ts-btn-2 { border: none; }\n';
+            css += '.ts-field-popup .ts-popup-controller .ts-btn-2 { border: none; }\n';
         }
+
+        // 'default' or empty type = no CSS output, inherit from commons.css
     }
 
     // Tertiary button - Normal
-    if (attributes.pbButton3Bg) {
-        css += `.ts-field-popup .ts-btn-4 { background: ${attributes.pbButton3Bg}; }\n`;
+    if (hasValue(attributes.pbButton3Bg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-4 { background: ${attributes.pbButton3Bg}; }\n`;
     }
-    if (attributes.pbButton3Text) {
-        css += `.ts-field-popup .ts-btn-4 { color: ${attributes.pbButton3Text}; }\n`;
+    if (hasValue(attributes.pbButton3Text)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-4 { color: ${attributes.pbButton3Text}; }\n`;
     }
-    if (attributes.pbButton3Icon) {
-        css += `.ts-field-popup .ts-btn-4 { --ts-icon-color: ${attributes.pbButton3Icon}; }\n`;
+    if (hasValue(attributes.pbButton3Icon)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-4 { --ts-icon-color: ${attributes.pbButton3Icon}; }\n`;
     }
 
     // Button hover states
-    if (attributes.pbButton1HoverBg) {
-        css += `.ts-field-popup .ts-btn-1:hover { background: ${attributes.pbButton1HoverBg}; }\n`;
+    if (hasValue(attributes.pbButton1HoverBg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1:hover { background: ${attributes.pbButton1HoverBg}; }\n`;
     }
-    if (attributes.pbButton1HoverText) {
-        css += `.ts-field-popup .ts-btn-1:hover { color: ${attributes.pbButton1HoverText}; }\n`;
+    if (hasValue(attributes.pbButton1HoverText)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1:hover { color: ${attributes.pbButton1HoverText}; }\n`;
     }
     if (attributes.pbButton1HoverBorder) {
-        css += `.ts-field-popup .ts-btn-1:hover { border-color: ${attributes.pbButton1HoverBorder}; }\n`;
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-1:hover { border-color: ${attributes.pbButton1HoverBorder}; }\n`;
     }
 
-    if (attributes.pbButton2HoverBg) {
-        css += `.ts-field-popup .ts-btn-2:hover { background: ${attributes.pbButton2HoverBg}; }\n`;
+    if (hasValue(attributes.pbButton2HoverBg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2:hover { background: ${attributes.pbButton2HoverBg}; }\n`;
     }
-    if (attributes.pbButton2HoverText) {
-        css += `.ts-field-popup .ts-btn-2:hover { color: ${attributes.pbButton2HoverText}; }\n`;
+    if (hasValue(attributes.pbButton2HoverText)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2:hover { color: ${attributes.pbButton2HoverText}; }\n`;
     }
-    if (attributes.pbButton2HoverBorder) {
-        css += `.ts-field-popup .ts-btn-2:hover { border-color: ${attributes.pbButton2HoverBorder}; }\n`;
+    if (hasValue(attributes.pbButton2HoverBorder)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-2:hover { border-color: ${attributes.pbButton2HoverBorder}; }\n`;
     }
 
-    if (attributes.pbButton3HoverBg) {
-        css += `.ts-field-popup .ts-btn-4:hover { background: ${attributes.pbButton3HoverBg}; }\n`;
+    if (hasValue(attributes.pbButton3HoverBg)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-4:hover { background: ${attributes.pbButton3HoverBg}; }\n`;
     }
-    if (attributes.pbButton3HoverText) {
-        css += `.ts-field-popup .ts-btn-4:hover { color: ${attributes.pbButton3HoverText}; }\n`;
+    if (hasValue(attributes.pbButton3HoverText)) {
+        css += `.ts-field-popup .ts-popup-controller .ts-btn-4:hover { color: ${attributes.pbButton3HoverText}; }\n`;
     }
 
     // ========================================================================
@@ -361,7 +381,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Label color
-    if (attributes.plLabelColor) {
+    if (hasValue(attributes.plLabelColor)) {
         css += `.ts-field-popup .ts-form-group label { color: ${attributes.plLabelColor}; }\n`;
     }
 
@@ -374,7 +394,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Description color
-    if (attributes.plDescColor) {
+    if (hasValue(attributes.plDescColor)) {
         css += `.ts-field-popup .ts-form-group small { color: ${attributes.plDescColor}; }\n`;
     }
 
@@ -412,12 +432,13 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pmItemHeight_tablet !== undefined && pmItemHeight_tablet !== pmItemHeight) css += `@media (max-width: 1024px) { .ts-field-popup .ts-term-dropdown li > a { height: ${pmItemHeight_tablet}px; } }\n`;
     if (pmItemHeight_mobile !== undefined && pmItemHeight_mobile !== pmItemHeight_tablet && pmItemHeight_mobile !== pmItemHeight) css += `@media (max-width: 768px) { .ts-field-popup .ts-term-dropdown li > a { height: ${pmItemHeight_mobile}px; } }\n`;
 
-    if (attributes.pmSeparatorColor) {
+    // Separator color
+    if (hasValue(attributes.pmSeparatorColor)) {
         css += `.ts-field-popup .ts-term-dropdown li { border-color: ${attributes.pmSeparatorColor}; }\n`;
     }
 
     // Title color
-    if (attributes.pmTitleColor) {
+    if (hasValue(attributes.pmTitleColor)) {
         css += `.ts-field-popup .ts-term-dropdown li > a span { color: ${attributes.pmTitleColor}; }\n`;
     }
 
@@ -428,7 +449,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Icon color
-    if (attributes.pmIconColor) {
+    if (hasValue(attributes.pmIconColor)) {
         css += `.ts-field-popup .ts-term-icon { --ts-icon-color: ${attributes.pmIconColor}; }\n`;
     }
 
@@ -451,23 +472,23 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pmIconSpacing_mobile !== undefined && pmIconSpacing_mobile !== pmIconSpacing_tablet && pmIconSpacing_mobile !== pmIconSpacing) css += `@media (max-width: 768px) { .ts-field-popup .ts-term-dropdown li > a { grid-gap: ${pmIconSpacing_mobile}px; } }\n`;
 
     // Chevron color
-    if (attributes.pmChevronColor) {
+    if (hasValue(attributes.pmChevronColor)) {
         css += `.ts-field-popup .ts-right-icon, .ts-field-popup .ts-left-icon { border-color: ${attributes.pmChevronColor}; }\n`;
         css += `.ts-field-popup .pika-label:after { border-color: ${attributes.pmChevronColor}; }\n`;
     }
 
     // Hover state
-    if (attributes.pmHoverBg) css += `.ts-field-popup .ts-term-dropdown li > a:hover, .ts-field-popup .ts-term-dropdown li > a:focus { background: ${attributes.pmHoverBg}; }\n`;
-    if (attributes.pmHoverTitleColor) css += `.ts-field-popup .ts-term-dropdown li > a:hover span { color: ${attributes.pmHoverTitleColor}; }\n`;
-    if (attributes.pmHoverIconColor) css += `.ts-field-popup .ts-term-dropdown li > a:hover .ts-term-icon { --ts-icon-color: ${attributes.pmHoverIconColor}; }\n`;
+    if (hasValue(attributes.pmHoverBg)) css += `.ts-field-popup .ts-term-dropdown li > a:hover, .ts-field-popup .ts-term-dropdown li > a:focus { background: ${attributes.pmHoverBg}; }\n`;
+    if (hasValue(attributes.pmHoverTitleColor)) css += `.ts-field-popup .ts-term-dropdown li > a:hover span { color: ${attributes.pmHoverTitleColor}; }\n`;
+    if (hasValue(attributes.pmHoverIconColor)) css += `.ts-field-popup .ts-term-dropdown li > a:hover .ts-term-icon { --ts-icon-color: ${attributes.pmHoverIconColor}; }\n`;
 
     // Selected state
     if (attributes.pmSelectedTitleTypo) {
         const typoCSS = generateTypographyCSS(attributes.pmSelectedTitleTypo);
         if (typoCSS) css += `.ts-field-popup .ts-term-dropdown li.ts-selected > a span { ${typoCSS} }\n`;
     }
-    if (attributes.pmSelectedTitleColor) css += `.ts-field-popup .ts-term-dropdown li.ts-selected > a span { color: ${attributes.pmSelectedTitleColor}; }\n`;
-    if (attributes.pmSelectedIconColor) css += `.ts-field-popup .ts-term-dropdown li.ts-selected > a .ts-term-icon { --ts-icon-color: ${attributes.pmSelectedIconColor}; }\n`;
+    if (hasValue(attributes.pmSelectedTitleColor)) css += `.ts-field-popup .ts-term-dropdown li.ts-selected > a span { color: ${attributes.pmSelectedTitleColor}; }\n`;
+    if (hasValue(attributes.pmSelectedIconColor)) css += `.ts-field-popup .ts-term-dropdown li.ts-selected > a .ts-term-icon { --ts-icon-color: ${attributes.pmSelectedIconColor}; }\n`;
 
     // Parent state
     if (attributes.pmParentTitleTypo) {
@@ -520,20 +541,20 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         const typoCSS = generateTypographyCSS(attributes.pcTitleTypo);
         if (typoCSS) css += `.ts-field-popup .cart-item-details a { ${typoCSS} }\n`;
     }
-    if (attributes.pcTitleColor) css += `.ts-field-popup .cart-item-details a { color: ${attributes.pcTitleColor}; }\n`;
+    if (hasValue(attributes.pcTitleColor)) css += `.ts-field-popup .cart-item-details a { color: ${attributes.pcTitleColor}; }\n`;
 
     if (attributes.pcSubtitleTypo) {
         const typoCSS = generateTypographyCSS(attributes.pcSubtitleTypo);
         if (typoCSS) css += `.ts-field-popup .cart-item-details span { ${typoCSS} }\n`;
     }
-    if (attributes.pcSubtitleColor) css += `.ts-field-popup .cart-item-details span { color: ${attributes.pcSubtitleColor}; }\n`;
+    if (hasValue(attributes.pcSubtitleColor)) css += `.ts-field-popup .cart-item-details span { color: ${attributes.pcSubtitleColor}; }\n`;
 
     // Subtotal
     if (attributes.psSubtotalTypo) {
         const typoCSS = generateTypographyCSS(attributes.psSubtotalTypo);
         if (typoCSS) css += `.ts-field-popup .cart-subtotal span { ${typoCSS} }\n`;
     }
-    if (attributes.psSubtotalColor) css += `.ts-field-popup .cart-subtotal span { color: ${attributes.psSubtotalColor}; }\n`;
+    if (hasValue(attributes.psSubtotalColor)) css += `.ts-field-popup .cart-subtotal span { color: ${attributes.psSubtotalColor}; }\n`;
 
     // ========================================================================
     // POPUP: NO RESULTS STYLES
@@ -546,8 +567,8 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pnIconSize_tablet !== undefined && pnIconSize_tablet !== pnIconSize) css += `@media (max-width: 1024px) { .ts-field-popup .ts-empty-user-tab { --ts-icon-size: ${pnIconSize_tablet}px; } }\n`;
     if (pnIconSize_mobile !== undefined && pnIconSize_mobile !== pnIconSize_tablet && pnIconSize_mobile !== pnIconSize) css += `@media (max-width: 768px) { .ts-field-popup .ts-empty-user-tab { --ts-icon-size: ${pnIconSize_mobile}px; } }\n`;
 
-    if (attributes.pnIconColor) css += `.ts-field-popup .ts-empty-user-tab { --ts-icon-color: ${attributes.pnIconColor}; }\n`;
-    if (attributes.pnTitleColor) css += `.ts-field-popup .ts-empty-user-tab p { color: ${attributes.pnTitleColor}; }\n`;
+    if (hasValue(attributes.pnIconColor)) css += `.ts-field-popup .ts-empty-user-tab { --ts-icon-color: ${attributes.pnIconColor}; }\n`;
+    if (hasValue(attributes.pnTitleColor)) css += `.ts-field-popup .ts-empty-user-tab p { color: ${attributes.pnTitleColor}; }\n`;
     if (attributes.pnTitleTypo) {
         const typoCSS = generateTypographyCSS(attributes.pnTitleTypo);
         if (typoCSS) css += `.ts-field-popup .ts-empty-user-tab p { ${typoCSS} }\n`;
@@ -578,7 +599,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     // Border
     if (attributes.pcCheckboxBorder && (attributes.pcCheckboxBorder as any).type !== 'none') {
         const border = attributes.pcCheckboxBorder as any;
-        const width = attributes.pcCheckboxBorderWidth || 1;
+        const width = (attributes.pcCheckboxBorderWidth !== undefined && (attributes.pcCheckboxBorderWidth as any) !== '') ? parseFloat(String(attributes.pcCheckboxBorderWidth)) : 1;
         const color = border.color || '#000';
         css += `.ts-field-popup .container-checkbox .checkmark { border: ${width}px ${border.type} ${color}; }\n`;
 
@@ -618,7 +639,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     // Border
     if (attributes.prRadioBorder && (attributes.prRadioBorder as any).type !== 'none') {
         const border = attributes.prRadioBorder as any;
-        const width = attributes.prRadioBorderWidth || 1;
+        const width = (attributes.prRadioBorderWidth !== undefined && (attributes.prRadioBorderWidth as any) !== '') ? parseFloat(String(attributes.prRadioBorderWidth)) : 1;
         const color = border.color || '#000';
         css += `.ts-field-popup .container-radio .checkmark { border: ${width}px ${border.type} ${color}; }\n`;
 
@@ -673,7 +694,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Padding (Icon)
-    if (attributes.piInputPaddingIcon) {
+    if (hasValue(attributes.piInputPaddingIcon)) {
         const padding = attributes.piInputPaddingIcon as any;
         const top = parseValue(padding.top);
         const right = parseValue(padding.right);
@@ -690,15 +711,15 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         }
     }
 
-    if (attributes.piInputValueColor) css += `.ts-field-popup input { color: ${attributes.piInputValueColor}; }\n`;
-    if (attributes.piInputPlaceholderColor) {
+    if (hasValue(attributes.piInputValueColor)) css += `.ts-field-popup input { color: ${attributes.piInputValueColor}; }\n`;
+    if (hasValue(attributes.piInputPlaceholderColor)) {
         css += `.ts-field-popup input::-webkit-input-placeholder { color: ${attributes.piInputPlaceholderColor}; }\n`;
         css += `.ts-field-popup input:-moz-placeholder { color: ${attributes.piInputPlaceholderColor}; }\n`;
         css += `.ts-field-popup input::-moz-placeholder { color: ${attributes.piInputPlaceholderColor}; }\n`;
         css += `.ts-field-popup input:-ms-input-placeholder { color: ${attributes.piInputPlaceholderColor}; }\n`;
     }
 
-    if (attributes.piIconColor) css += `.ts-field-popup .ts-input-icon { --ts-icon-color: ${attributes.piIconColor}; }\n`;
+    if (hasValue(attributes.piIconColor)) css += `.ts-field-popup .ts-input-icon { --ts-icon-color: ${attributes.piIconColor}; }\n`;
 
     // Icon size
     const piIconSize = attributes.piIconSize;
@@ -725,7 +746,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     // ========================================================================
 
     // Title color
-    if (attributes.pnotTitleColor) css += `.ts-notification-list li a .notification-details b { color: ${attributes.pnotTitleColor}; }\n`;
+    if (hasValue(attributes.pnotTitleColor)) css += `.ts-notification-list li a .notification-details b { color: ${attributes.pnotTitleColor}; }\n`;
 
     // Title typography
     if (attributes.pnotTitleTypo) {
@@ -734,7 +755,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Subtitle color
-    if (attributes.pnotSubtitleColor) css += `.ts-notification-list li a .notification-details span { color: ${attributes.pnotSubtitleColor}; }\n`;
+    if (hasValue(attributes.pnotSubtitleColor)) css += `.ts-notification-list li a .notification-details span { color: ${attributes.pnotSubtitleColor}; }\n`;
 
     // Subtitle typography
     if (attributes.pnotSubtitleTypo) {
@@ -743,13 +764,13 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Icon color
-    if (attributes.pnotIconColor) {
+    if (hasValue(attributes.pnotIconColor)) {
         css += `.ts-notification-list li a .notification-image i { color: ${attributes.pnotIconColor}; }\n`;
         css += `.ts-notification-list li a .notification-image svg { fill: ${attributes.pnotIconColor}; }\n`;
     }
 
     // Icon background
-    if (attributes.pnotIconBg) {
+    if (hasValue(attributes.pnotIconBg)) {
         css += `.ts-notification-list li a .notification-image { background-color: ${attributes.pnotIconBg}; }\n`;
     }
 
@@ -795,14 +816,14 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         const typoCSS = generateTypographyCSS(attributes.pnotUnvisitedTitleTypo);
         if (typoCSS) css += `li.ts-unread-notification a .notification-details b { ${typoCSS} }\n`;
     }
-    if (attributes.pnotUnvisitedTitleColor) css += `li.ts-unread-notification a .notification-details b { color: ${attributes.pnotUnvisitedTitleColor}; }\n`;
+    if (hasValue(attributes.pnotUnvisitedTitleColor)) css += `li.ts-unread-notification a .notification-details b { color: ${attributes.pnotUnvisitedTitleColor}; }\n`;
 
     // Unseen icon
-    if (attributes.pnotUnseenIconColor) {
+    if (hasValue(attributes.pnotUnseenIconColor)) {
         css += `.ts-notification-list li.ts-new-notification a .notification-image i { color: ${attributes.pnotUnseenIconColor}; }\n`;
         css += `.ts-notification-list li.ts-new-notification a .notification-image svg { fill: ${attributes.pnotUnseenIconColor}; }\n`;
     }
-    if (attributes.pnotUnseenIconBg) css += `.ts-notification-list li.ts-new-notification a .notification-image { background: ${attributes.pnotUnseenIconBg}; }\n`;
+    if (hasValue(attributes.pnotUnseenIconBg)) css += `.ts-notification-list li.ts-new-notification a .notification-image { background: ${attributes.pnotUnseenIconBg}; }\n`;
 
     // Unseen border
     if (attributes.pnotUnseenBorder && (attributes.pnotUnseenBorder as any).type !== 'none') {
@@ -840,41 +861,41 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         const typoCSS = generateTypographyCSS(attributes.pcalMonthsTypo);
         if (typoCSS) css += `.ts-field-popup .pika-label { ${typoCSS} }\n`;
     }
-    if (attributes.pcalMonthsColor) css += `.ts-field-popup .pika-label { color: ${attributes.pcalMonthsColor}; }\n`;
+    if (hasValue(attributes.pcalMonthsColor)) css += `.ts-field-popup .pika-label { color: ${attributes.pcalMonthsColor}; }\n`;
 
     // Days
     if (attributes.pcalDaysTypo) {
         const typoCSS = generateTypographyCSS(attributes.pcalDaysTypo);
         if (typoCSS) css += `.ts-field-popup .pika-table abbr[title] { ${typoCSS} }\n`;
     }
-    if (attributes.pcalDaysColor) css += `.ts-field-popup .pika-table abbr[title] { color: ${attributes.pcalDaysColor}; }\n`;
+    if (hasValue(attributes.pcalDaysColor)) css += `.ts-field-popup .pika-table abbr[title] { color: ${attributes.pcalDaysColor}; }\n`;
 
     // Available dates
     if (attributes.pcalAvailableTypo) {
         const typoCSS = generateTypographyCSS(attributes.pcalAvailableTypo);
         if (typoCSS) css += `.ts-field-popup td:not(.is-disabled) .pika-button { ${typoCSS} }\n`;
     }
-    if (attributes.pcalAvailableColor) css += `.ts-field-popup td:not(.is-disabled) .pika-button { color: ${attributes.pcalAvailableColor}; }\n`;
+    if (hasValue(attributes.pcalAvailableColor)) css += `.ts-field-popup td:not(.is-disabled) .pika-button { color: ${attributes.pcalAvailableColor}; }\n`;
     if (attributes.pcalAvailableColorHover) css += `.ts-field-popup td:not(.is-disabled) .pika-button:hover { color: ${attributes.pcalAvailableColorHover}; }\n`;
     if (attributes.pcalAvailableBgHover) css += `.ts-field-popup td:not(.is-disabled) .pika-button:hover { background-color: ${attributes.pcalAvailableBgHover}; }\n`;
     if (attributes.pcalAvailableBorderHover) css += `.ts-field-popup td:not(.is-disabled) .pika-button:hover { border-color: ${attributes.pcalAvailableBorderHover}; }\n`;
 
     // Range
-    if (attributes.pcalRangeColor) css += `.ts-field-popup .is-inrange:not(.is-disabled) .pika-button { color: ${attributes.pcalRangeColor} !important; }\n`;
-    if (attributes.pcalRangeBg) css += `.ts-field-popup .is-inrange:not(.is-disabled) .pika-button { background-color: ${attributes.pcalRangeBg} !important; }\n`;
-    if (attributes.pcalRangeStartEndColor) css += `.ts-field-popup .ts-booking-date .is-startrange .pika-button, .ts-field-popup .ts-booking-date .is-endrange .pika-button { color: ${attributes.pcalRangeStartEndColor} !important; }\n`;
-    if (attributes.pcalRangeStartEndBg) css += `.ts-field-popup .ts-booking-date .is-startrange .pika-button, .ts-field-popup .ts-booking-date .is-endrange .pika-button { background-color: ${attributes.pcalRangeStartEndBg} !important; }\n`;
+    if (hasValue(attributes.pcalRangeColor)) css += `.ts-field-popup .is-inrange:not(.is-disabled) .pika-button { color: ${attributes.pcalRangeColor} !important; }\n`;
+    if (hasValue(attributes.pcalRangeBg)) css += `.ts-field-popup .is-inrange:not(.is-disabled) .pika-button { background-color: ${attributes.pcalRangeBg} !important; }\n`;
+    if (hasValue(attributes.pcalRangeStartEndColor)) css += `.ts-field-popup .ts-booking-date .is-startrange .pika-button, .ts-field-popup .ts-booking-date .is-endrange .pika-button { color: ${attributes.pcalRangeStartEndColor} !important; }\n`;
+    if (hasValue(attributes.pcalRangeStartEndBg)) css += `.ts-field-popup .ts-booking-date .is-startrange .pika-button, .ts-field-popup .ts-booking-date .is-endrange .pika-button { background-color: ${attributes.pcalRangeStartEndBg} !important; }\n`;
 
     // Selected (Single)
-    if (attributes.pcalSelectedColor) css += `.ts-field-popup .pika-single:not(.pika-range) .is-selected .pika-button { color: ${attributes.pcalSelectedColor} !important; }\n`;
-    if (attributes.pcalSelectedBg) css += `.ts-field-popup .pika-single:not(.pika-range) .is-selected .pika-button { background-color: ${attributes.pcalSelectedBg} !important; }\n`;
+    if (hasValue(attributes.pcalSelectedColor)) css += `.ts-field-popup .pika-single:not(.pika-range) .is-selected .pika-button { color: ${attributes.pcalSelectedColor} !important; }\n`;
+    if (hasValue(attributes.pcalSelectedBg)) css += `.ts-field-popup .pika-single:not(.pika-range) .is-selected .pika-button { background-color: ${attributes.pcalSelectedBg} !important; }\n`;
 
     // Disabled
     if (attributes.pcalDisabledTypo) {
         const typoCSS = generateTypographyCSS(attributes.pcalDisabledTypo);
         if (typoCSS) css += `.ts-field-popup td.is-disabled .pika-button { ${typoCSS} }\n`;
     }
-    if (attributes.pcalDisabledColor) css += `.ts-field-popup td.is-disabled .pika-button { color: ${attributes.pcalDisabledColor}; }\n`;
+    if (hasValue(attributes.pcalDisabledColor)) css += `.ts-field-popup td.is-disabled .pika-button { color: ${attributes.pcalDisabledColor}; }\n`;
 
     // ========================================================================
     // POPUP: TEXTAREA STYLES
@@ -897,11 +918,11 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     }
 
     // Colors
-    if (attributes.ptextBg) css += `.ts-field-popup textarea { background: ${attributes.ptextBg}; }\n`;
+    if (hasValue(attributes.ptextBg)) css += `.ts-field-popup textarea { background: ${attributes.ptextBg}; }\n`;
     if (attributes.ptextBgFocus) css += `.ts-field-popup textarea:focus { background-color: ${attributes.ptextBgFocus}; }\n`;
-    if (attributes.ptextTextColor) css += `.ts-field-popup textarea { color: ${attributes.ptextTextColor}; }\n`;
+    if (hasValue(attributes.ptextTextColor)) css += `.ts-field-popup textarea { color: ${attributes.ptextTextColor}; }\n`;
 
-    if (attributes.ptextPlaceholderColor) {
+    if (hasValue(attributes.ptextPlaceholderColor)) {
         css += `.ts-field-popup textarea::-webkit-input-placeholder { color: ${attributes.ptextPlaceholderColor}; }\n`;
         css += `.ts-field-popup textarea:-moz-placeholder { color: ${attributes.ptextPlaceholderColor}; }\n`;
         css += `.ts-field-popup textarea::-moz-placeholder { color: ${attributes.ptextPlaceholderColor}; }\n`;
@@ -985,27 +1006,27 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (palertRadius_mobile !== undefined && palertRadius_mobile !== palertRadius_tablet && palertRadius_mobile !== palertRadius) css += `@media (max-width: 768px) { .ts-notice { border-radius: ${palertRadius_mobile}${palertRadiusUnit}; } }\n`;
 
     // Colors
-    if (attributes.palertBg) css += `.ts-notice { background-color: ${attributes.palertBg}; }\n`;
-    if (attributes.palertDividerColor) css += `.a-btn { --alert-divider: ${attributes.palertDividerColor}; }\n`;
+    if (hasValue(attributes.palertBg)) css += `.ts-notice { background-color: ${attributes.palertBg}; }\n`;
+    if (hasValue(attributes.palertDividerColor)) css += `.a-btn { --alert-divider: ${attributes.palertDividerColor}; }\n`;
 
     // Typo & text color
     if (attributes.palertTypo) {
         const typoCSS = generateTypographyCSS(attributes.palertTypo);
         if (typoCSS) css += `.ts-notice .alert-msg { ${typoCSS} }\n`;
     }
-    if (attributes.palertTextColor) css += `.ts-notice .alert-msg { color: ${attributes.palertTextColor}; }\n`;
+    if (hasValue(attributes.palertTextColor)) css += `.ts-notice .alert-msg { color: ${attributes.palertTextColor}; }\n`;
 
     // Icons
-    if (attributes.palertInfoColor) css += `.ts-notice { --al-info: ${attributes.palertInfoColor}; }\n`;
-    if (attributes.palertErrorColor) css += `.ts-notice { --al-error: ${attributes.palertErrorColor}; }\n`;
-    if (attributes.palertSuccessColor) css += `.ts-notice { --al-success: ${attributes.palertSuccessColor}; }\n`;
+    if (hasValue(attributes.palertInfoColor)) css += `.ts-notice { --al-info: ${attributes.palertInfoColor}; }\n`;
+    if (hasValue(attributes.palertErrorColor)) css += `.ts-notice { --al-error: ${attributes.palertErrorColor}; }\n`;
+    if (hasValue(attributes.palertSuccessColor)) css += `.ts-notice { --al-success: ${attributes.palertSuccessColor}; }\n`;
 
     // Link
     if (attributes.palertLinkTypo) {
         const typoCSS = generateTypographyCSS(attributes.palertLinkTypo);
         if (typoCSS) css += `.a-btn a { ${typoCSS} }\n`;
     }
-    if (attributes.palertLinkColor) css += `.a-btn a { color: ${attributes.palertLinkColor}; }\n`;
+    if (hasValue(attributes.palertLinkColor)) css += `.a-btn a { color: ${attributes.palertLinkColor}; }\n`;
     if (attributes.palertLinkColorHover) css += `.a-btn a:hover { color: ${attributes.palertLinkColorHover}; }\n`;
     if (attributes.palertLinkBgHover) css += `.a-btn a:hover { background-color: ${attributes.palertLinkBgHover}; }\n`;
 
@@ -1024,7 +1045,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pdhIconSize_mobile !== undefined && pdhIconSize_mobile !== pdhIconSize_tablet && pdhIconSize_mobile !== pdhIconSize) css += `@media (max-width: 768px) { .datepicker-head h3 { --ts-icon-size: ${pdhIconSize_mobile}${pdhIconSizeUnit}; } }\n`;
 
     // Icon color
-    if (attributes.pdhIconColor) css += `.datepicker-head h3 { --ts-icon-color: ${attributes.pdhIconColor}; }\n`;
+    if (hasValue(attributes.pdhIconColor)) css += `.datepicker-head h3 { --ts-icon-color: ${attributes.pdhIconColor}; }\n`;
 
     // Icon spacing
     const pdhIconSpacing = attributes.pdhIconSpacing;
@@ -1037,14 +1058,14 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pdhIconSpacing_mobile !== undefined && pdhIconSpacing_mobile !== pdhIconSpacing_tablet && pdhIconSpacing_mobile !== pdhIconSpacing) css += `@media (max-width: 768px) { .datepicker-head h3 { gap: ${pdhIconSpacing_mobile}${pdhIconSpacingUnit}; } }\n`;
 
     // Title color & typo
-    if (attributes.pdhTitleColor) css += `.datepicker-head h3 { color: ${attributes.pdhTitleColor}; }\n`;
+    if (hasValue(attributes.pdhTitleColor)) css += `.datepicker-head h3 { color: ${attributes.pdhTitleColor}; }\n`;
     if (attributes.pdhTitleTypo) {
         const typoCSS = generateTypographyCSS(attributes.pdhTitleTypo);
         if (typoCSS) css += `.datepicker-head h3 { ${typoCSS} }\n`;
     }
 
     // Subtitle color & typo
-    if (attributes.pdhSubtitleColor) css += `.datepicker-head p { color: ${attributes.pdhSubtitleColor}; }\n`;
+    if (hasValue(attributes.pdhSubtitleColor)) css += `.datepicker-head p { color: ${attributes.pdhSubtitleColor}; }\n`;
     if (attributes.pdhSubtitleTypo) {
         const typoCSS = generateTypographyCSS(attributes.pdhSubtitleTypo);
         if (typoCSS) css += `.datepicker-head p { ${typoCSS} }\n`;
@@ -1054,8 +1075,8 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     // POPUP: DATEPICKER TOOLTIPS
     // ========================================================================
 
-    if (attributes.pdtBgColor) css += `.pika-tooltip { background-color: ${attributes.pdtBgColor}; }\n`;
-    if (attributes.pdtTextColor) css += `.pika-tooltip { color: ${attributes.pdtTextColor}; }\n`;
+    if (hasValue(attributes.pdtBgColor)) css += `.pika-tooltip { background-color: ${attributes.pdtBgColor}; }\n`;
+    if (hasValue(attributes.pdtTextColor)) css += `.pika-tooltip { color: ${attributes.pdtTextColor}; }\n`;
 
     // Radius
     const pdtRadius = attributes.pdtRadius;
@@ -1095,22 +1116,37 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (prRangeValueSize_tablet !== undefined && prRangeValueSize_tablet !== prRangeValueSize) css += `@media (max-width: 1024px) { .ts-field-popup .range-slider-wrapper .range-value { font-size: ${prRangeValueSize_tablet}${prRangeValueSizeUnit}; } }\n`;
     if (prRangeValueSize_mobile !== undefined && prRangeValueSize_mobile !== prRangeValueSize_tablet && prRangeValueSize_mobile !== prRangeValueSize) css += `@media (max-width: 768px) { .ts-field-popup .range-slider-wrapper .range-value { font-size: ${prRangeValueSize_mobile}${prRangeValueSizeUnit}; } }\n`;
 
-    if (attributes.prRangeValueColor) css += `.ts-field-popup .range-slider-wrapper .range-value { color: ${attributes.prRangeValueColor}; }\n`;
-    if (attributes.prRangeBg) css += `.ts-field-popup .noUi-target { background-color: ${attributes.prRangeBg}; }\n`;
+    if (hasValue(attributes.prRangeValueColor)) css += `.ts-field-popup .range-slider-wrapper .range-value { color: ${attributes.prRangeValueColor}; }\n`;
+    if (hasValue(attributes.prRangeBg)) css += `.ts-field-popup .noUi-target { background-color: ${attributes.prRangeBg}; }\n`;
     if (attributes.prRangeBgSelected) css += `.ts-field-popup .noUi-connect { background-color: ${attributes.prRangeBgSelected}; }\n`;
-    if (attributes.prRangeHandleBg) css += `.ts-field-popup .noUi-handle { background-color: ${attributes.prRangeHandleBg}; }\n`;
+    if (hasValue(attributes.prRangeHandleBg)) css += `.ts-field-popup .noUi-handle { background-color: ${attributes.prRangeHandleBg}; }\n`;
 
     // Handle border
-    if (attributes.prRangeHandleBorder && (attributes.prRangeHandleBorder as any).type !== 'none') {
+    if (attributes.prRangeHandleBorder && (attributes.prRangeHandleBorder as any).type) {
         const border = attributes.prRangeHandleBorder as any;
-        const width = attributes.prRangeHandleBorderWidth || 1;
-        const color = border.color || '#000';
-        css += `.ts-field-popup .noUi-handle { border: ${width}px ${border.type} ${color}; }\n`;
 
-        if (attributes.prRangeHandleBorderWidth_tablet !== undefined && attributes.prRangeHandleBorderWidth_tablet !== width) {
+        if (border.type === 'none') {
+            css += `.ts-field-popup .noUi-handle { border: none; }\n`;
+        } else {
+            css += `.ts-field-popup .noUi-handle { border-style: ${border.type}; }\n`;
+
+            const width = attributes.prRangeHandleBorderWidth;
+            if (width !== undefined && width !== null && (width as any) !== '') {
+                css += `.ts-field-popup .noUi-handle { border-width: ${width}px; }\n`;
+            }
+
+            const color = border.color;
+            if (color) {
+                css += `.ts-field-popup .noUi-handle { border-color: ${color}; }\n`;
+            }
+        }
+        css += `/* Voxel FSE Range Fix */\n`;
+
+        // Responsive border width
+        if (attributes.prRangeHandleBorderWidth_tablet !== undefined && attributes.prRangeHandleBorderWidth_tablet !== attributes.prRangeHandleBorderWidth) {
             css += `@media (max-width: 1024px) { .ts-field-popup .noUi-handle { border-width: ${attributes.prRangeHandleBorderWidth_tablet}px; } }\n`;
         }
-        if (attributes.prRangeHandleBorderWidth_mobile !== undefined && attributes.prRangeHandleBorderWidth_mobile !== attributes.prRangeHandleBorderWidth_tablet && attributes.prRangeHandleBorderWidth_mobile !== width) {
+        if (attributes.prRangeHandleBorderWidth_mobile !== undefined && attributes.prRangeHandleBorderWidth_mobile !== attributes.prRangeHandleBorderWidth_tablet && attributes.prRangeHandleBorderWidth_mobile !== attributes.prRangeHandleBorderWidth) {
             css += `@media (max-width: 768px) { .ts-field-popup .noUi-handle { border-width: ${attributes.prRangeHandleBorderWidth_mobile}px; } }\n`;
         }
     }
@@ -1121,18 +1157,18 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
 
     if (attributes.psSwitchBgInactive) css += `.ts-field-popup .onoffswitch .onoffswitch-label { background-color: ${attributes.psSwitchBgInactive}; }\n`;
     if (attributes.psSwitchBgActive) css += `.ts-field-popup .onoffswitch .onoffswitch-checkbox:checked + .onoffswitch-label { background-color: ${attributes.psSwitchBgActive}; }\n`;
-    if (attributes.psSwitchHandleBg) css += `.ts-field-popup .onoffswitch .onoffswitch-label:before { background-color: ${attributes.psSwitchHandleBg}; }\n`;
+    if (hasValue(attributes.psSwitchHandleBg)) css += `.ts-field-popup .onoffswitch .onoffswitch-label:before { background-color: ${attributes.psSwitchHandleBg}; }\n`;
 
     // ========================================================================
     // POPUP: ICON BUTTON
     // ========================================================================
 
     // Normal state
-    if (attributes.pibIconColor) {
+    if (hasValue(attributes.pibIconColor)) {
         css += `.ts-field-popup .ts-icon-btn i { color: ${attributes.pibIconColor}; }\n`;
         css += `.ts-field-popup .ts-icon-btn svg { fill: ${attributes.pibIconColor}; }\n`;
     }
-    if (attributes.pibBg) css += `.ts-field-popup .ts-icon-btn { background-color: ${attributes.pibBg}; }\n`;
+    if (hasValue(attributes.pibBg)) css += `.ts-field-popup .ts-icon-btn { background-color: ${attributes.pibBg}; }\n`;
 
     // Button border
     if (attributes.pibBorder && (attributes.pibBorder as any).type !== 'none') {
@@ -1181,7 +1217,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (pfItemGap_mobile !== undefined && pfItemGap_mobile !== pfItemGap_tablet && pfItemGap_mobile !== pfItemGap) css += `@media (max-width: 768px) { .ts-field-popup .ts-file-list { grid-gap: ${pfItemGap_mobile}px; } }\n`;
 
     // Uploader: Icon Color
-    if (attributes.pfIconColor) {
+    if (hasValue(attributes.pfIconColor)) {
         css += `.ts-field-popup .ts-file-upload i { color: ${attributes.pfIconColor}; }\n`;
         css += `.ts-field-popup .ts-file-upload svg { fill: ${attributes.pfIconColor}; }\n`;
     }
@@ -1235,7 +1271,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         const typoCSS = generateTypographyCSS(attributes.pfTypo);
         if (typoCSS) css += `.ts-field-popup .ts-file-upload .ts-upload-text { ${typoCSS} }\n`;
     }
-    if (attributes.pfTextColor) css += `.ts-field-popup .ts-file-upload .ts-upload-text { color: ${attributes.pfTextColor}; }\n`;
+    if (hasValue(attributes.pfTextColor)) css += `.ts-field-popup .ts-file-upload .ts-upload-text { color: ${attributes.pfTextColor}; }\n`;
 
     // Uploader: Hover
     if (attributes.pfBackgroundHover) css += `.ts-field-popup .ts-file-upload:hover { background-color: ${attributes.pfBackgroundHover}; }\n`;
@@ -1260,7 +1296,7 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
     if (attributes.pfAddedBackground) css += `.ts-field-popup .ts-file-list li { background-color: ${attributes.pfAddedBackground}; }\n`;
 
     // Added File: Icon Color
-    if (attributes.pfAddedIconColor) {
+    if (hasValue(attributes.pfAddedIconColor)) {
         css += `.ts-field-popup .ts-file-list li .ts-file-icon i { color: ${attributes.pfAddedIconColor}; }\n`;
         css += `.ts-field-popup .ts-file-list li .ts-file-icon svg { fill: ${attributes.pfAddedIconColor}; }\n`;
     }
@@ -1287,14 +1323,14 @@ export function generatePopupKitCSS(attributes: PopupKitAttributes): string {
         const typoCSS = generateTypographyCSS(attributes.pfAddedTypo);
         if (typoCSS) css += `.ts-field-popup .ts-file-list li .ts-file-info { ${typoCSS} }\n`;
     }
-    if (attributes.pfAddedTextColor) css += `.ts-field-popup .ts-file-list li .ts-file-info { color: ${attributes.pfAddedTextColor}; }\n`;
+    if (hasValue(attributes.pfAddedTextColor)) css += `.ts-field-popup .ts-file-list li .ts-file-info { color: ${attributes.pfAddedTextColor}; }\n`;
 
     // Remove Button: Background
     if (attributes.pfRemoveBackground) css += `.ts-field-popup .ts-remove-file { background-color: ${attributes.pfRemoveBackground}; }\n`;
     if (attributes.pfRemoveBackgroundHover) css += `.ts-field-popup .ts-file-list li:hover .ts-remove-file { background-color: ${attributes.pfRemoveBackgroundHover}; }\n`;
 
     // Remove Button: Color
-    if (attributes.pfRemoveColor) {
+    if (hasValue(attributes.pfRemoveColor)) {
         css += `.ts-field-popup .ts-remove-file i { color: ${attributes.pfRemoveColor}; }\n`;
         css += `.ts-field-popup .ts-remove-file svg { fill: ${attributes.pfRemoveColor}; }\n`;
     }
