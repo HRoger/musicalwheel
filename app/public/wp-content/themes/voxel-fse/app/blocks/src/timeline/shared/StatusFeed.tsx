@@ -38,6 +38,7 @@ interface StatusFeedProps {
 	showSearch?: boolean;
 	emptyMessage?: string;
 	className?: string;
+	onLoadingChange?: (isLoading: boolean) => void;
 }
 
 /**
@@ -92,6 +93,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 	showSearch = true,
 	emptyMessage,
 	className = '',
+	onLoadingChange,
 }, ref): JSX.Element {
 	const attributes = useTimelineAttributes();
 	const strings = useStrings();
@@ -146,9 +148,10 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		initialFilters.authorId = authorId;
 	}
 
-	// Get first ordering option as default
+	// Get first ordering option as default (use _id for Voxel parity)
 	if (attributes.orderingOptions?.length > 0) {
 		const firstOption = attributes.orderingOptions[0];
+		initialFilters.orderId = firstOption._id;
 		initialFilters.order = firstOption.order;
 		initialFilters.time = firstOption.time;
 		if (firstOption.time === 'custom') {
@@ -172,6 +175,29 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		removeStatus,
 		filters,
 	} = useStatusFeed(feedMode, initialFilters);
+
+	// Sync active filter to first ordering option when ordering options change in inspector.
+	// This ensures the dropdown default follows the repeater item order.
+	// Uses _id for stable comparison (matches Voxel's Vue implementation).
+	const firstOrderingId = attributes.orderingOptions?.[0]?._id ?? null;
+	const prevFirstOrderingIdRef = useRef(firstOrderingId);
+	useEffect(() => {
+		if (firstOrderingId && firstOrderingId !== prevFirstOrderingIdRef.current) {
+			prevFirstOrderingIdRef.current = firstOrderingId;
+			const first = attributes.orderingOptions[0];
+			setFilters({
+				orderId: first._id,
+				order: first.order,
+				time: first.time,
+				timeCustom: first.time === 'custom' ? first.timeCustom : undefined,
+			});
+		}
+	}, [firstOrderingId, attributes.orderingOptions, setFilters]);
+
+	// Notify parent of loading state changes (for preloading opacity)
+	useEffect(() => {
+		onLoadingChange?.(isLoading);
+	}, [isLoading, onLoadingChange]);
 
 	// Expose addStatus and refresh to parent via ref
 	useImperativeHandle(ref, () => ({
@@ -272,11 +298,12 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 							status={status}
 							onStatusUpdate={handleStatusUpdate}
 							onStatusDelete={handleStatusDelete}
+							onQuote={addStatus}
 						/>
 					))}
 
 					{/* Load More - matches Voxel's ts-load-more ts-btn ts-btn-1 */}
-					{hasMore && (
+					{hasMore && !isLoading && (
 						<a
 							ref={loadMoreRef}
 							href="#"

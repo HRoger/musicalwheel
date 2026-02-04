@@ -32,6 +32,7 @@ interface FeedState {
  */
 export interface FeedFilters {
 	mode: string; // Kept for backwards compat but controlled by prop
+	orderId?: string; // _id of the active ordering option (Voxel uses _id for comparison)
 	order: string;
 	time: string;
 	timeCustom?: number;
@@ -108,7 +109,7 @@ export function useStatusFeed(
 		statuses: [],
 		isLoading: true,
 		isLoadingMore: false,
-		hasMore: true,
+		hasMore: false, // Start false; set to true only after API confirms more pages
 		error: null,
 		page: 1,
 	});

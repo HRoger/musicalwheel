@@ -1,0 +1,42 @@
+/**
+ * VoxelLightbox Style Overrides
+ *
+ * YARL's default dark theme is close to Elementor's lightbox.
+ * These overrides fine-tune the appearance for Voxel parity.
+ *
+ * @package VoxelFSE
+ */
+
+/* Dark overlay matching Elementor's lightbox */
+.yarl__root {
+	--yarl__color_backdrop: rgba(0, 0, 0, 0.9);
+}
+
+/* Ensure lightbox sits above all Voxel popups (z-index: 99999) */
+.yarl__root {
+	z-index: 100000;
+}
+
+/* Navigation arrows */
+.yarl__navigation_prev,
+.yarl__navigation_next {
+	color: #fff;
+	opacity: 0.8;
+	transition: opacity 0.2s;
+}
+
+.yarl__navigation_prev:hover,
+.yarl__navigation_next:hover {
+	opacity: 1;
+}
+
+/* Toolbar buttons (close, zoom, fullscreen) */
+.yarl__button {
+	color: #fff;
+	opacity: 0.8;
+	transition: opacity 0.2s;
+}
+
+.yarl__button:hover {
+	opacity: 1;
+}

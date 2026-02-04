@@ -200,6 +200,11 @@ class Block_Loader
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_popup_kit_global_styles'], 100);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_popup_kit_global_styles'], 100);
 
+        // Enqueue timeline-kit global styles
+        // Extracts CSS from timeline-kit block in kit_timeline template and enqueues it globally
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_timeline_kit_global_styles'], 100);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_timeline_kit_global_styles'], 100);
+
         // GLOBAL ABSTRACTION: Handle Visibility, Loop, and VoxelScript for all voxel-fse blocks
         // Priority 10 ensures it runs for all blocks, including those without render_callback
         add_filter('render_block', [__CLASS__, 'apply_voxel_tab_features'], 10, 2);
@@ -4015,10 +4020,23 @@ JAVASCRIPT;
                         } elseif ($block_name === 'timeline') {
                             // Timeline needs Voxel social feed CSS for matching parent theme styles
                             self::ensure_voxel_styles_registered();
+
+                            // Register YARL lightbox CSS (extracted by Vite from yet-another-react-lightbox)
+                            $lightbox_css_path = $block_dir . '/voxel-fse.css';
+                            if (file_exists($lightbox_css_path)) {
+                                wp_register_style(
+                                    'mw-block-timeline-lightbox',
+                                    get_stylesheet_directory_uri() . '/app/blocks/src/timeline/voxel-fse.css',
+                                    [],
+                                    filemtime($lightbox_css_path)
+                                );
+                            }
+
                             $style_deps = [
                                     'vx:commons.css',
                                     'vx:forms.css',
-                                    'vx:social-feed.css'
+                                    'vx:social-feed.css',
+                                    'mw-block-timeline-lightbox'
                             ];
                         } elseif ($block_name === 'timeline-kit') {
                             // Timeline-kit needs Voxel social feed CSS for matching parent theme styles
@@ -4723,6 +4741,102 @@ JAVASCRIPT;
              wp_register_style('vx-popup-kit-global', false);
              wp_add_inline_style('vx-popup-kit-global', $css);
              wp_enqueue_style('vx-popup-kit-global');
+        }
+    }
+
+    /**
+     * Enqueue timeline-kit global styles from kit_timeline template
+     *
+     * Pattern: css-priority-and-admin-integrity.md
+     * - Extracts CSS from timeline-kit block via data-voxel-timeline-kit-styles attribute
+     * - Enqueues with dependency on vx:social-feed.css for proper cascade
+     * - Only loads on frontend or block editor (prevents admin styling leaks)
+     */
+    public static function enqueue_timeline_kit_global_styles() {
+        // PERF: Only load on frontend or block editor, NEVER on generic admin pages
+        if (is_admin()) {
+            $screen = get_current_screen();
+            if (!$screen || !$screen->is_block_editor()) {
+                return;
+            }
+        }
+
+        // Get kit_timeline template content
+        $content = '';
+
+        // 1. Try to find the FSE customized template (saved in DB)
+        // Check for both raw slug and FSE-prefixed slug
+        $possible_slugs = ['voxel-kit_timeline', 'voxel-fse//voxel-kit_timeline'];
+
+        $query = new \WP_Query([
+            'post_type' => 'wp_template',
+            'post_status' => 'any',
+            'post_name__in' => $possible_slugs,
+            'posts_per_page' => 1,
+            'no_found_rows' => true,
+            'ignore_sticky_posts' => true,
+        ]);
+
+        if (!empty($query->posts)) {
+            $content = $query->posts[0]->post_content;
+        }
+
+        // 2. Fallback: Check Voxel settings (Legacy/Elementor support)
+        if (empty($content)) {
+            $template_id = \Voxel\get('templates.kit_timeline');
+            if ($template_id) {
+                $post = get_post($template_id);
+                if ($post) {
+                    $content = $post->post_content;
+                }
+            }
+        }
+
+        if (empty($content)) {
+            return;
+        }
+
+        // Extract <style> tags with data-voxel-timeline-kit-styles attribute
+        preg_match_all(
+            '/<style[^>]*data-voxel-timeline-kit-styles[^>]*>(.*?)<\/style>/s',
+            $content,
+            $matches
+        );
+
+        if (empty($matches[1])) {
+            return;
+        }
+
+        // Combine all CSS
+        $css = implode("\n", $matches[1]);
+
+        // CSS Priority Strategy:
+        // 1. Timeline-kit custom CSS loads FIRST (lower priority in cascade)
+        // 2. Voxel's social-feed.css loads AFTER (higher priority = appears at top of DevTools)
+        // This ensures Voxel's base styles (like .rs-num) take effect when no custom value is set,
+        // while custom styles with same specificity still override when explicitly set.
+        
+        // Register timeline-kit-custom WITHOUT dependency so it loads early
+        wp_register_style('vx:timeline-kit-custom', false, []);
+        wp_add_inline_style('vx:timeline-kit-custom', $css);
+        wp_enqueue_style('vx:timeline-kit-custom');
+        
+        // Make social-feed.css depend on timeline-kit-custom so it loads AFTER
+        // This gives social-feed.css higher priority in the cascade
+        if (wp_style_is('vx:social-feed.css', 'registered')) {
+            // Add timeline-kit-custom as a dependency of social-feed.css
+            global $wp_styles;
+            if (isset($wp_styles->registered['vx:social-feed.css'])) {
+                $existing_deps = $wp_styles->registered['vx:social-feed.css']->deps;
+                if (!in_array('vx:timeline-kit-custom', $existing_deps)) {
+                    $wp_styles->registered['vx:social-feed.css']->deps[] = 'vx:timeline-kit-custom';
+                }
+            }
+            
+            // Ensure base style is enqueued
+            if (!wp_style_is('vx:social-feed.css', 'enqueued')) {
+                wp_enqueue_style('vx:social-feed.css');
+            }
         }
     }
 }

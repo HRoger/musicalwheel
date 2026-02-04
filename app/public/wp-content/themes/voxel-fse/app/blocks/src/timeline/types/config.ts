@@ -301,7 +301,7 @@ export interface OrderingOption {
 	_id: string;
 	order: 'latest' | 'earliest' | 'most_liked' | 'most_discussed' | 'popular' | 'best_rated' | 'worst_rated';
 	time: 'all_time' | 'today' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-	timeCustom: number;
+	timeCustom: number | string;
 	label: string;
 }
 

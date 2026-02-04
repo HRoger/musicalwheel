@@ -116,7 +116,6 @@ body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
 }
 
 
-
 body .vxf-create-post {
     flex-wrap: nowrap !important;
 
@@ -200,6 +199,28 @@ body.block-editor-page .edit-post-meta-boxes-are #vx-verification-status a {
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-higher,
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-lower {
     display: none;
+}
+
+
+body.block-editor-page [class*="wp-block-voxel-"] input[type=color]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=date]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=datetime-local]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=datetime]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=email]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=month]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=number]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=password]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=search]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=tel]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=text]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=time]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=url]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=week]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] select,
+body.block-editor-page [class*="wp-block-voxel-"] textarea:focus {
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
 }
 
 /* ============================================
@@ -455,8 +476,6 @@ body.block-editor-page .interface-interface-skeleton__sidebar .inside {
         opacity: 1;
     }
 }
-
-
 
 
 /* ============================================

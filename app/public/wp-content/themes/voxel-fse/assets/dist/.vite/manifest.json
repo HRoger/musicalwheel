@@ -14,23 +14,23 @@
       "_GalleryUploadControl-DMafjsl2.js"
     ]
   },
-  "_CssFiltersPopup-DFm4QQ5N.js": {
-    "file": "CssFiltersPopup-DFm4QQ5N.js",
+  "_CssFiltersPopup-EQIcXcLW.js": {
+    "file": "CssFiltersPopup-EQIcXcLW.js",
     "name": "CssFiltersPopup",
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_DatePicker-NCeMpzfF.js": {
-    "file": "DatePicker-NCeMpzfF.js",
+  "_DatePicker-wjQv0Nm2.js": {
+    "file": "DatePicker-wjQv0Nm2.js",
     "name": "DatePicker"
   },
   "_EmptyPlaceholder-BsL18qxN.js": {
     "file": "EmptyPlaceholder-BsL18qxN.js",
     "name": "EmptyPlaceholder"
   },
-  "_FormPopup-DDYHzYWU.js": {
-    "file": "FormPopup-DDYHzYWU.js",
+  "_FormPopup-jN8spfqy.js": {
+    "file": "FormPopup-jN8spfqy.js",
     "name": "FormPopup"
   },
   "_GalleryUploadControl-DMafjsl2.js": {
@@ -58,19 +58,19 @@
     "file": "LoopElementModal-CaevVMh1.js",
     "name": "LoopElementModal"
   },
-  "_MediaPopup-CXePoOCG.js": {
-    "file": "MediaPopup-CXePoOCG.js",
+  "_MediaPopup-CdtMdouF.js": {
+    "file": "MediaPopup-CdtMdouF.js",
     "name": "MediaPopup",
     "imports": [
-      "_FormPopup-DDYHzYWU.js"
+      "_FormPopup-jN8spfqy.js"
     ]
   },
-  "_PopupCustomStyleControl-XQPXOL9P.js": {
-    "file": "PopupCustomStyleControl-XQPXOL9P.js",
+  "_PopupCustomStyleControl-CqrYAaTh.js": {
+    "file": "PopupCustomStyleControl-CqrYAaTh.js",
     "name": "PopupCustomStyleControl",
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
-      "_RepeaterControl-C7JnAhZL.js"
+      "_RepeaterControl-BnF4Wtgt.js"
     ],
     "css": [
       "enable-tags-button.css"
@@ -83,29 +83,29 @@
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_RelationControl-D8hRYr3b.js": {
-    "file": "RelationControl-D8hRYr3b.js",
+  "_RelationControl-Defl_3gr.js": {
+    "file": "RelationControl-Defl_3gr.js",
     "name": "RelationControl",
     "imports": [
-      "_RepeaterControl-C7JnAhZL.js"
+      "_RepeaterControl-BnF4Wtgt.js"
     ]
   },
-  "_RepeaterControl-B_ulBkEL.js": {
-    "file": "RepeaterControl-B_ulBkEL.js",
-    "name": "RepeaterControl",
-    "imports": [
-      "_TypographyPopup-CAcEJ5NA.js",
-      "_RepeaterControl-C7JnAhZL.js"
-    ]
-  },
-  "_RepeaterControl-C7JnAhZL.js": {
-    "file": "RepeaterControl-C7JnAhZL.js",
+  "_RepeaterControl-BnF4Wtgt.js": {
+    "file": "RepeaterControl-BnF4Wtgt.js",
     "name": "RepeaterControl",
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js"
     ],
     "css": [
       "RepeaterControl.css"
+    ]
+  },
+  "_RepeaterControl-Dbi7c87C.js": {
+    "file": "RepeaterControl-Dbi7c87C.js",
+    "name": "RepeaterControl",
+    "imports": [
+      "_TypographyPopup-CAcEJ5NA.js",
+      "_RepeaterControl-BnF4Wtgt.js"
     ]
   },
   "_RepeaterControl.css": {
@@ -126,16 +126,16 @@
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_SearchFormComponent-LE9uDL09.js": {
-    "file": "SearchFormComponent-LE9uDL09.js",
+  "_SearchFormComponent-Bpt-qS4l.js": {
+    "file": "SearchFormComponent-Bpt-qS4l.js",
     "name": "SearchFormComponent",
     "imports": [
       "_siteUrl-7x5eJEvc.js",
       "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
-      "_MediaPopup-CXePoOCG.js",
-      "_DatePicker-NCeMpzfF.js"
+      "_MediaPopup-CdtMdouF.js",
+      "_DatePicker-wjQv0Nm2.js"
     ]
   },
   "_StyleTabPanel-BnA2rBs5.js": {
@@ -213,6 +213,15 @@
     "file": "voxelShim-DB_Ue-9R.js",
     "name": "voxelShim"
   },
+  "app/blocks/shared/components/Lightbox/VoxelLightbox.tsx": {
+    "file": "VoxelLightbox-n8iTWunW.js",
+    "name": "VoxelLightbox",
+    "src": "app/blocks/shared/components/Lightbox/VoxelLightbox.tsx",
+    "isDynamicEntry": true,
+    "css": [
+      "VoxelLightbox.css"
+    ]
+  },
   "app/blocks/shared/controls/shared-styles.ts": {
     "file": "shared-controls.js",
     "name": "shared-controls",
@@ -237,13 +246,13 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
       "_LoopElementModal-CaevVMh1.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
@@ -260,7 +269,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_renderIcon-BvG46iB6.js",
       "_siteUrl-7x5eJEvc.js",
       "_IconPickerControl-Lep6knGI.js",
@@ -285,7 +294,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -303,18 +312,18 @@
     "src": "app/blocks/src/create-post/index.tsx",
     "isEntry": true,
     "imports": [
-      "_DatePicker-NCeMpzfF.js",
+      "_DatePicker-wjQv0Nm2.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
-      "_MediaPopup-CXePoOCG.js",
-      "_FormPopup-DDYHzYWU.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_MediaPopup-CdtMdouF.js",
+      "_FormPopup-jN8spfqy.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_siteUrl-7x5eJEvc.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
       "_IconPickerControl-Lep6knGI.js",
-      "_PopupCustomStyleControl-XQPXOL9P.js",
+      "_PopupCustomStyleControl-CqrYAaTh.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
@@ -331,7 +340,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_backgroundElements-Ui-iCrLV.js"
@@ -348,7 +357,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_generateAdvancedStyles-CRpLcHXt.js"
     ],
@@ -364,9 +373,9 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_BackgroundControl-DZvfeWxy.js",
-      "_CssFiltersPopup-DFm4QQ5N.js",
+      "_CssFiltersPopup-EQIcXcLW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_GalleryUploadControl-DMafjsl2.js"
@@ -383,7 +392,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_GalleryUploadControl-DMafjsl2.js",
       "_ResponsiveSelectControl-CNx5OPeI.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
@@ -408,9 +417,9 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_TextShadowPopup-C90vsC-P.js",
-      "_CssFiltersPopup-DFm4QQ5N.js",
+      "_CssFiltersPopup-EQIcXcLW.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_VoxelGridIcon-D5dF5acW.js"
@@ -427,13 +436,13 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
       "_StyleTabPanel-BnA2rBs5.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -454,7 +463,7 @@
       "_InspectorTabs-Bq2wAh4W.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_renderIcon-BvG46iB6.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
       "_StyleTabPanel-BnA2rBs5.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -474,9 +483,9 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_EmptyPlaceholder-BsL18qxN.js",
-      "_RelationControl-D8hRYr3b.js",
+      "_RelationControl-Defl_3gr.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -496,9 +505,9 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
       "_StyleTabPanel-BnA2rBs5.js",
       "_EmptyPlaceholder-BsL18qxN.js",
@@ -518,17 +527,17 @@
     "src": "app/blocks/src/messages/index.tsx",
     "isEntry": true,
     "imports": [
-      "_MediaPopup-CXePoOCG.js",
+      "_MediaPopup-CdtMdouF.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_IconPickerControl-Lep6knGI.js",
       "_BackgroundControl-DZvfeWxy.js",
       "_VoxelGridIcon-D5dF5acW.js",
-      "_FormPopup-DDYHzYWU.js",
+      "_FormPopup-jN8spfqy.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js",
       "_GalleryUploadControl-DMafjsl2.js"
@@ -543,20 +552,20 @@
     "src": "app/blocks/src/navbar/index.tsx",
     "isEntry": true,
     "imports": [
-      "_FormPopup-DDYHzYWU.js",
+      "_FormPopup-jN8spfqy.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_iconDefaults-4kDCIhgb.js",
-      "_MediaPopup-CXePoOCG.js",
+      "_MediaPopup-CdtMdouF.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
-      "_RepeaterControl-B_ulBkEL.js",
-      "_RelationControl-D8hRYr3b.js",
+      "_RepeaterControl-Dbi7c87C.js",
+      "_RelationControl-Defl_3gr.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
-      "_PopupCustomStyleControl-XQPXOL9P.js",
+      "_PopupCustomStyleControl-CqrYAaTh.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
@@ -573,9 +582,9 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_LoopElementModal-CaevVMh1.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_IconPickerControl-Lep6knGI.js",
       "_TextShadowPopup-C90vsC-P.js",
       "_voxelShim-DB_Ue-9R.js",
@@ -597,11 +606,11 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_ResponsiveSelectControl-CNx5OPeI.js",
       "_LoopElementModal-CaevVMh1.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_TextShadowPopup-C90vsC-P.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
@@ -622,7 +631,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -644,7 +653,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_VoxelGridIcon-D5dF5acW.js"
     ],
     "css": [
@@ -659,13 +668,13 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_IconPickerControl-Lep6knGI.js",
-      "_RelationControl-D8hRYr3b.js",
+      "_RelationControl-Defl_3gr.js",
       "_StyleTabPanel-BnA2rBs5.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -683,19 +692,19 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_PostSelectControl-DfkHxd67.js",
       "_siteUrl-7x5eJEvc.js",
       "_EmptyPlaceholder-BsL18qxN.js",
-      "_SearchFormComponent-LE9uDL09.js",
+      "_SearchFormComponent-Bpt-qS4l.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_voxelIcons-gVyOSQ_B.js",
-      "_MediaPopup-CXePoOCG.js",
-      "_FormPopup-DDYHzYWU.js",
-      "_DatePicker-NCeMpzfF.js",
+      "_MediaPopup-CdtMdouF.js",
+      "_FormPopup-jN8spfqy.js",
+      "_DatePicker-wjQv0Nm2.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
@@ -711,7 +720,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_voxelShim-DB_Ue-9R.js",
@@ -734,7 +743,7 @@
       "_EmptyPlaceholder-BsL18qxN.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -758,11 +767,11 @@
       "_backgroundElements-Ui-iCrLV.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_PostSelectControl-DfkHxd67.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
-      "_PopupCustomStyleControl-XQPXOL9P.js",
+      "_PopupCustomStyleControl-CqrYAaTh.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
@@ -779,7 +788,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -818,7 +827,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
       "_BackgroundControl-DZvfeWxy.js",
       "_voxelShim-DB_Ue-9R.js",
@@ -840,14 +849,14 @@
     "src": "app/blocks/src/search-form/index.tsx",
     "isEntry": true,
     "imports": [
-      "_SearchFormComponent-LE9uDL09.js",
+      "_SearchFormComponent-Bpt-qS4l.js",
       "_TypographyPopup-CAcEJ5NA.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
-      "_RelationControl-D8hRYr3b.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RelationControl-Defl_3gr.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_StyleTabPanel-BnA2rBs5.js",
-      "_PopupCustomStyleControl-XQPXOL9P.js",
+      "_PopupCustomStyleControl-CqrYAaTh.js",
       "_InspectorTabs-Bq2wAh4W.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js",
@@ -856,9 +865,9 @@
       "_voxelIcons-gVyOSQ_B.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
-      "_MediaPopup-CXePoOCG.js",
-      "_FormPopup-DDYHzYWU.js",
-      "_DatePicker-NCeMpzfF.js"
+      "_MediaPopup-CdtMdouF.js",
+      "_FormPopup-jN8spfqy.js",
+      "_DatePicker-wjQv0Nm2.js"
     ],
     "css": [
       "enable-tags-button.css"
@@ -872,7 +881,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
       "_GalleryUploadControl-DMafjsl2.js",
       "_ResponsiveSelectControl-CNx5OPeI.js",
@@ -896,7 +905,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
       "_css-generators-C6r5Gcv6.js",
       "_voxelShim-DB_Ue-9R.js",
@@ -917,7 +926,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -940,7 +949,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -960,21 +969,23 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js",
-      "_RepeaterControl-B_ulBkEL.js",
+      "_RepeaterControl-Dbi7c87C.js",
       "_siteUrl-7x5eJEvc.js",
-      "_MediaPopup-CXePoOCG.js",
+      "_MediaPopup-CdtMdouF.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_VoxelGridIcon-D5dF5acW.js",
-      "_FormPopup-DDYHzYWU.js",
+      "_FormPopup-jN8spfqy.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
+    "dynamicImports": [
+      "app/blocks/shared/components/Lightbox/VoxelLightbox.tsx"
+    ],
     "css": [
-      "index.css",
       "enable-tags-button.css"
     ]
   },
@@ -986,15 +997,15 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
       "_LoopElementModal-CaevVMh1.js",
-      "_RepeaterControl-B_ulBkEL.js",
-      "_PopupCustomStyleControl-XQPXOL9P.js",
-      "_FormPopup-DDYHzYWU.js",
+      "_RepeaterControl-Dbi7c87C.js",
+      "_PopupCustomStyleControl-CqrYAaTh.js",
+      "_FormPopup-jN8spfqy.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_VoxelGridIcon-D5dF5acW.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
@@ -1012,7 +1023,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -1035,7 +1046,7 @@
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
       "_InspectorTabs-Bq2wAh4W.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_EmptyPlaceholder-BsL18qxN.js",
       "_AdvancedIconControl-CJ_DCTeD.js",
       "_ResponsiveDimensionsControl-BXd6ZjaD.js",
@@ -1057,7 +1068,7 @@
     "isEntry": true,
     "imports": [
       "_TypographyPopup-CAcEJ5NA.js",
-      "_RepeaterControl-C7JnAhZL.js",
+      "_RepeaterControl-BnF4Wtgt.js",
       "_IconPickerControl-Lep6knGI.js"
     ],
     "css": [

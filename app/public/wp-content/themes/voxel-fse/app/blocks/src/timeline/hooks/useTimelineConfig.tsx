@@ -7,7 +7,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext, type ReactNode } from 'react';
 import { getTimelineConfig, getPostContext, type PostContextResponse } from '../api';
 import type { TimelineConfig, TimelineAttributes } from '../types';
 
@@ -97,10 +97,26 @@ export function TimelineProvider({
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	// Generate cache key for post context
-	const postContextCacheKey = `${attributes.mode}:${postId ?? 'none'}`;
+	// Stabilize primitive dependencies to prevent useCallback recreation
+	const mode = attributes.mode;
+	const postContextCacheKey = `${mode}:${postId ?? 'none'}`;
+
+	// Stable serialization key for attributes.
+	// WordPress editor creates a new attributes object reference on every render,
+	// which would cause all context consumers to re-render if used directly in useMemo deps.
+	// JSON.stringify gives a stable string that only changes when actual data changes.
+	const attributesKey = JSON.stringify(attributes);
+	const attributesRef = useRef(attributes);
+	attributesRef.current = attributes;
+
+	// Use ref to prevent re-triggering effect when fetch is already in progress
+	const isFetchingRef = useRef(false);
 
 	const fetchConfig = useCallback(async () => {
+		// Prevent concurrent fetches that cause re-render cascades
+		if (isFetchingRef.current) return;
+		isFetchingRef.current = true;
+
 		setIsLoading(true);
 		setError(null);
 
@@ -127,7 +143,7 @@ export function TimelineProvider({
 					visible: true,
 					reason: null,
 					composer: {
-						feed: attributes.mode === 'post_reviews' ? 'post_reviews' : 'user_timeline',
+						feed: mode === 'post_reviews' ? 'post_reviews' : 'user_timeline',
 						can_post: true,
 						post_as: 'current_user',
 						placeholder: "What's on your mind?",
@@ -142,7 +158,7 @@ export function TimelineProvider({
 				// In frontend, fetch real post context
 				let fetchedPostContext = postContextCache.get(postContextCacheKey);
 				if (!fetchedPostContext) {
-					const response = await getPostContext(attributes.mode, postId);
+					const response = await getPostContext(mode, postId);
 					fetchedPostContext = {
 						visible: response.visible,
 						reason: response.reason,
@@ -161,14 +177,16 @@ export function TimelineProvider({
 			setError(err instanceof Error ? err.message : 'Failed to load configuration');
 		} finally {
 			setIsLoading(false);
+			isFetchingRef.current = false;
 		}
-	}, [attributes.mode, postId, postContextCacheKey, context]);
+	}, [mode, postId, postContextCacheKey, context]);
 
 	const refetch = useCallback(async () => {
 		// Clear caches and refetch
 		configCache = null;
 		configPromise = null;
 		postContextCache.delete(postContextCacheKey);
+		isFetchingRef.current = false; // Allow refetch
 		await fetchConfig();
 	}, [fetchConfig, postContextCacheKey]);
 
@@ -176,15 +194,19 @@ export function TimelineProvider({
 		fetchConfig();
 	}, [fetchConfig]);
 
-	const value: TimelineContextValue = {
+	// Memoize context value to prevent unnecessary consumer re-renders.
+	// Uses attributesKey (JSON string) as dependency so context only updates when
+	// actual attribute data changes, not on every WordPress editor render cycle.
+	const value: TimelineContextValue = useMemo(() => ({
 		config,
 		postContext,
-		attributes,
+		attributes: attributesRef.current,
 		context,
 		isLoading,
 		error,
 		refetch,
-	};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}), [config, postContext, context, isLoading, error, refetch, attributesKey]);
 
 	return (
 		<TimelineContext.Provider value={value}>
@@ -214,7 +236,7 @@ export function useTimelineConfig(): {
 	refetch: () => Promise<void>;
 } {
 	const { config, isLoading, error, refetch } = useTimelineContext();
-	return { config, isLoading, error, refetch };
+	return useMemo(() => ({ config, isLoading, error, refetch }), [config, isLoading, error, refetch]);
 }
 
 /**
@@ -244,14 +266,16 @@ export function useCurrentUser(): TimelineConfig['current_user'] | null {
 /**
  * Hook to access permissions
  */
+const defaultPermissions: TimelineConfig['permissions'] = {
+	can_post: false,
+	can_upload: false,
+	can_moderate: false,
+	is_logged_in: false,
+};
+
 export function usePermissions(): TimelineConfig['permissions'] {
 	const { config } = useTimelineContext();
-	return config?.permissions ?? {
-		can_post: false,
-		can_upload: false,
-		can_moderate: false,
-		is_logged_in: false,
-	};
+	return config?.permissions ?? defaultPermissions;
 }
 
 /**
@@ -274,21 +298,23 @@ export function usePostContext(): PostContext | null {
 export function useVisibility(): { visible: boolean; reason: string | null } {
 	const { postContext, context } = useTimelineContext();
 
-	// In editor, always visible
-	if (context === 'editor') {
+	return useMemo(() => {
+		// In editor, always visible
+		if (context === 'editor') {
+			return { visible: true, reason: null };
+		}
+
+		// Use post context if available
+		if (postContext) {
+			return {
+				visible: postContext.visible,
+				reason: postContext.reason,
+			};
+		}
+
+		// Default to visible while loading
 		return { visible: true, reason: null };
-	}
-
-	// Use post context if available
-	if (postContext) {
-		return {
-			visible: postContext.visible,
-			reason: postContext.reason,
-		};
-	}
-
-	// Default to visible while loading
-	return { visible: true, reason: null };
+	}, [postContext, context]);
 }
 
 /**
@@ -305,17 +331,19 @@ export function useVisibility(): { visible: boolean; reason: string | null } {
 export function useComposerConfig(): PostContextResponse['composer'] | null {
 	const { postContext, context } = useTimelineContext();
 
-	// In editor, return default composer config
-	if (context === 'editor') {
-		return {
-			feed: 'user_timeline',
-			can_post: true,
-			post_as: 'current_user',
-			placeholder: "What's on your mind?",
-		};
-	}
+	return useMemo(() => {
+		// In editor, return default composer config
+		if (context === 'editor') {
+			return {
+				feed: 'user_timeline' as const,
+				can_post: true,
+				post_as: 'current_user' as const,
+				placeholder: "What's on your mind?",
+			};
+		}
 
-	return postContext?.composer ?? null;
+		return postContext?.composer ?? null;
+	}, [postContext, context]);
 }
 
 /**
@@ -347,9 +375,11 @@ export function useReviewConfig(postType?: string): Record<string, unknown> | nu
  * Hook to access filtering options
  * Returns available filter options based on user permissions
  */
+const defaultFilteringOptions: Record<string, string> = { all: 'All' };
+
 export function useFilteringOptions(): Record<string, string> {
 	const { postContext } = useTimelineContext();
-	return postContext?.filtering_options ?? { all: 'All' };
+	return postContext?.filtering_options ?? defaultFilteringOptions;
 }
 
 /**
