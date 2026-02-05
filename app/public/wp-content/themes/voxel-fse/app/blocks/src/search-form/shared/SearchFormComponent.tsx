@@ -523,7 +523,7 @@ export default function SearchFormComponent({
 	// Render the Map/Feed Switcher button
 	// Evidence: themes/voxel/templates/widgets/search-form.php:200-221
 	const renderMapFeedSwitcher = () => {
-		if (!isSwitcherEnabled || context === 'editor') {
+		if (!isSwitcherEnabled) {
 			return null;
 		}
 
@@ -534,7 +534,7 @@ export default function SearchFormComponent({
 			!attributes.mfSwitcherMobile ? 'vx-hidden-mobile' : '',
 		].filter(Boolean).join(' ');
 
-		return createPortal(
+		const switcherContent = (
 			<div className={`ts-switcher-btn ${containerClasses}`}>
 				{/* List View toggle - visible when map is active */}
 				<a
@@ -542,7 +542,7 @@ export default function SearchFormComponent({
 					className={`ts-btn ts-btn-1 ${currentView === 'feed' ? `vx-hidden-${deviceType}` : ''}`}
 					onClick={(e) => {
 						e.preventDefault();
-						toggleListView();
+						if (context !== 'editor') toggleListView();
 					}}
 					role="button"
 				>
@@ -555,13 +555,27 @@ export default function SearchFormComponent({
 					className={`ts-btn ts-btn-1 ${currentView === 'map' ? `vx-hidden-${deviceType}` : ''}`}
 					onClick={(e) => {
 						e.preventDefault();
-						toggleMapView();
+						if (context !== 'editor') toggleMapView();
 					}}
 					role="button"
 				>
 					{VoxelIcons.marker}
 					Map view
 				</a>
+			</div>
+		);
+
+		// In editor: render inline preview (can't portal outside editor iframe)
+		// On frontend: portal to document.body as floating button, wrapped in a
+		// scoping div so CSS selectors from styles.ts can match
+		// (same pattern as the search portal at line 744)
+		if (context === 'editor') {
+			return switcherContent;
+		}
+
+		return createPortal(
+			<div className={`voxel-fse-search-form-${attributes.blockId}`} data-voxel-id={attributes.blockId}>
+				{switcherContent}
 			</div>,
 			document.body
 		);

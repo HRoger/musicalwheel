@@ -142,6 +142,15 @@ export function generatePostFeedStyles(
 	const selector = `[data-block-id="${blockId}"]`;
 
 	// ============================================
+	// CONTAINER POSITIONING
+	// Evidence: themes/voxel/assets/dist/post-feed.css - .post-feed-nav uses position:absolute
+	// The carousel nav is position:absolute and expects its container to be position:relative
+	// In Voxel, this is provided by .elementor-element ancestor
+	// In FSE, we add it to the block container itself
+	// ============================================
+	cssRules.push(`${selector} { position: relative; }`);
+
+	// ============================================
 	// COUNTER STYLES
 	// Evidence: post-feed.php:488-535
 	// ============================================

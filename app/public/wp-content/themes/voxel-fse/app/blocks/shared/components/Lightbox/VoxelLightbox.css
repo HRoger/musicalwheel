@@ -4,6 +4,11 @@
  * YARL's default dark theme is close to Elementor's lightbox.
  * These overrides fine-tune the appearance for Voxel parity.
  *
+ * This file is concatenated with YARL's styles.css by the build:yarl
+ * script and output to assets/dist/yarl-lightbox.css. WordPress loads
+ * it AFTER vx:commons.css so cascade order naturally wins over
+ * Voxel's :where(path) { fill: inherit } rule.
+ *
  * @package VoxelFSE
  */
 
@@ -35,8 +40,38 @@
 	color: #fff;
 	opacity: 0.8;
 	transition: opacity 0.2s;
+	background: none;
 }
 
 .yarl__button:hover {
 	opacity: 1;
+	background: none;
+}
+
+/**
+ * Fix for Voxel's :where(path) { fill: inherit } rule in commons.css
+ * which causes gray backgrounds on YARL button icons.
+ * 
+ * YARL icons use two paths:
+ * 1. A bounding box path with fill="none" (d="M0 0h24v24H0z") - must stay invisible
+ * 2. The actual icon path - should inherit button's text color (white)
+ * 
+ * We use attribute selectors to target paths with fill="none" and preserve them,
+ * while setting other paths to currentColor.
+ */
+
+/* Preserve transparent bounding box paths */
+.yarl__button svg path[fill="none"],
+.yarl__icon path[fill="none"],
+.yarl__navigation_prev svg path[fill="none"],
+.yarl__navigation_next svg path[fill="none"] {
+	fill: none !important;
+}
+
+/* Set icon paths to inherit button's text color */
+.yarl__button svg path:not([fill="none"]),
+.yarl__icon path:not([fill="none"]),
+.yarl__navigation_prev svg path:not([fill="none"]),
+.yarl__navigation_next svg path:not([fill="none"]) {
+	fill: currentColor;
 }

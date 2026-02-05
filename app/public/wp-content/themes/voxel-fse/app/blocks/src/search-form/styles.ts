@@ -243,6 +243,7 @@ export function generateInlineTabResponsiveCSS(
 	const cssRules: string[] = [];
 	const tabletRules: string[] = [];
 	const mobileRules: string[] = [];
+
 	// Use :is() to target either the class (frontend) or data attribute (editor) for robustness
 	const selector = `:is(.voxel-fse-search-form-${blockId}, [data-voxel-id="${blockId}"])`;
 
@@ -1432,80 +1433,89 @@ export function generateInlineTabResponsiveCSS(
 	// Source: search-form.php:3426-3770
 	// CSS Target: .ts-switcher-btn (container), .ts-switcher-btn .ts-btn (button)
 	// ============================================
+	// SPECIFICITY FIX: The switcher is portaled to document.body wrapped in a scoping div.
+	// commons.css uses `.ts-switcher-btn .ts-btn` (specificity 0,2,0)
+	// Voxel/Elementor uses `.elementor-{id} .elementor-element.elementor-element-{id} .ts-switcher-btn .ts-btn` (0,5,0)
+	// We need higher specificity to override commons.css defaults.
+	// Using doubled class selector: `.voxel-fse-search-form-{id}.voxel-fse-search-form-{id}` (0,2,0)
+	// Combined with `.ts-switcher-btn .ts-btn` = (0,4,0) which beats commons.css (0,2,0)
+	// NOTE: Switcher CSS is now ALSO generated server-side in PHP (style-generator.php)
+	// for frontend rendering. This JS version is used in Gutenberg editor preview.
+	const switcherSelector = `.voxel-fse-search-form-${blockId}.voxel-fse-search-form-${blockId}`;
 
 	// Alignment (justify-content on container)
 	if (attributes.mapSwitcherAlign) {
-		cssRules.push(`${selector} .ts-switcher-btn { justify-content: ${attributes.mapSwitcherAlign}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { justify-content: ${attributes.mapSwitcherAlign}; }`);
 	}
 
 	// Bottom margin (distance from bottom)
 	if (attributes.mapSwitcherBottomMargin !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin)}px; }`);
 	}
 	if (attributes.mapSwitcherBottomMargin_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherBottomMargin_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_mobile)}px; }`);
 	}
 
 	// Side margin (padding-left/right on container)
 	if (attributes.mapSwitcherSideMargin !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin)}px; }`);
 	}
 	if (attributes.mapSwitcherSideMargin_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherSideMargin_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; }`);
 	}
 
 	// Typography
 	if (attributes.mapSwitcherTypography) {
 		const typo = generateTypographyCSS(attributes.mapSwitcherTypography);
 		if (typo) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { ${typo} }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${typo} }`);
 		}
 	}
 
 	// Text color
 	if (attributes.mapSwitcherColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { color: ${attributes.mapSwitcherColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { color: ${attributes.mapSwitcherColor}; }`);
 	}
 
 	// Background color
 	if (attributes.mapSwitcherBackgroundColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { background: ${attributes.mapSwitcherBackgroundColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { background: ${attributes.mapSwitcherBackgroundColor}; }`);
 	}
 
 	// Height
 	if (attributes.mapSwitcherHeight !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight)}px; }`);
 	}
 	if (attributes.mapSwitcherHeight_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherHeight_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_mobile)}px; }`);
 	}
 
 	// Padding
 	if (attributes.mapSwitcherPadding) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding, 'padding');
 		if (padding) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 	if (attributes.mapSwitcherPadding_tablet) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding_tablet, 'padding');
 		if (padding) {
-			tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 	if (attributes.mapSwitcherPadding_mobile) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding_mobile, 'padding');
 		if (padding) {
-			mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 
@@ -1513,74 +1523,74 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.mapSwitcherBorder) {
 		const border = generateBorderCSS(attributes.mapSwitcherBorder);
 		if (border) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { border: ${border}; }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border: ${border}; }`);
 		}
 	}
 
 	// Border radius
 	if (attributes.mapSwitcherBorderRadius !== undefined) {
 		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius)}${unit}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_tablet !== undefined) {
 		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_tablet)}${unit}; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_mobile !== undefined) {
 		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_mobile)}${unit}; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_mobile)}${unit}; }`);
 	}
 
 	// Box shadow
 	if (attributes.mapSwitcherBoxShadow) {
 		const shadow = generateBoxShadowCSS(attributes.mapSwitcherBoxShadow);
 		if (shadow) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { box-shadow: ${shadow}; }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { box-shadow: ${shadow}; }`);
 		}
 	}
 
 	// Icon spacing (grid-gap)
 	if (attributes.mapSwitcherIconSpacing !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing)}px; }`);
 	}
 	if (attributes.mapSwitcherIconSpacing_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherIconSpacing_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_mobile)}px; }`);
 	}
 
 	// Icon size (--ts-icon-size CSS variable)
 	if (attributes.mapSwitcherIconSize !== undefined) {
 		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize)}${unit}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_tablet !== undefined) {
 		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_tablet)}${unit}; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_mobile !== undefined) {
 		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_mobile)}${unit}; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_mobile)}${unit}; }`);
 	}
 
 	// Icon color (--ts-icon-color CSS variable)
 	if (attributes.mapSwitcherIconColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-color: ${attributes.mapSwitcherIconColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-color: ${attributes.mapSwitcherIconColor}; }`);
 	}
 
 	// Hover state
 	if (attributes.mapSwitcherColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { color: ${attributes.mapSwitcherColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { color: ${attributes.mapSwitcherColorHover}; }`);
 	}
 	if (attributes.mapSwitcherBackgroundColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { background: ${attributes.mapSwitcherBackgroundColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { background: ${attributes.mapSwitcherBackgroundColorHover}; }`);
 	}
 	if (attributes.mapSwitcherBorderColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { border-color: ${attributes.mapSwitcherBorderColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { border-color: ${attributes.mapSwitcherBorderColorHover}; }`);
 	}
 	if (attributes.mapSwitcherIconColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { --ts-icon-color: ${attributes.mapSwitcherIconColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { --ts-icon-color: ${attributes.mapSwitcherIconColorHover}; }`);
 	}
 
 	// ============================================

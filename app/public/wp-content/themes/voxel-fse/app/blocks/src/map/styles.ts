@@ -34,6 +34,28 @@ export function generateMapResponsiveCSS(
     const selector = `.voxel-fse-map-${blockId}`;
 
     // ============================================
+    // CRITICAL: Elementor CSS Variable Fallbacks (GLOBAL)
+    // ============================================
+    // Voxel's map.css uses Elementor CSS variables like --e-global-typography-text-font-size
+    // On FSE/Gutenberg pages without Elementor, these are undefined causing:
+    // - font-size: 0 on markers (making text invisible)
+    // - broken typography throughout the map
+    //
+    // IMPORTANT: Markers are rendered in Google Maps overlay pane, NOT inside the block DOM!
+    // They are appended to: .gm-style > div > div > div[style*="z-index"] (overlayImage pane)
+    // So we MUST use GLOBAL selectors, not block-scoped selectors.
+    //
+    // Set CSS variables on :root for global inheritance
+    cssRules.push(`:root { --e-global-typography-text-font-size: 14px; --e-global-typography-secondary-font-weight: 500; --ts-shade-1: #1a1a1a; --ts-shade-2: #4a4a4a; --ts-shade-5: #999; --ts-accent-1: #3b82f6; }`);
+    // Also set on block for specificity
+    cssRules.push(`${selector} { --e-global-typography-text-font-size: 14px; --e-global-typography-secondary-font-weight: 500; }`);
+    // GLOBAL marker styling - targets markers in Google Maps overlay pane
+    // These are NOT children of the block, so we use global selectors
+    cssRules.push(`.marker-type-text { font-size: 14px !important; color: #4a4a4a !important; }`);
+    cssRules.push(`.marker-wrapper { position: absolute; z-index: 10; transform: translate(-50%, -50%); }`);
+    cssRules.push(`.map-marker { display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }`);
+
+    // ============================================
     // ACCORDION: Clusters
     // ============================================
 

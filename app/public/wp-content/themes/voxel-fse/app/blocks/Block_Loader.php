@@ -75,6 +75,8 @@ class Block_Loader
         add_action('init', [__CLASS__, 'load_blocks']);
         add_filter('block_categories_all', [__CLASS__, 'add_block_categories']);
         add_action('rest_api_init', [__CLASS__, 'register_rest_endpoints']);
+        add_action('init', [__CLASS__, 'register_yarl_assets']);
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_frontend_shims_patched'], 20);
 
         // CRITICAL: Add import map BEFORE any scripts are printed
         // Using wp_print_scripts with priority -9999 ensures import map loads BEFORE modules
@@ -114,7 +116,7 @@ class Block_Loader
         // Priority 15 ensures Voxel's register_scripts (on admin_enqueue_scripts:10) completes first
         // We use admin_enqueue_scripts (not enqueue_block_editor_assets) because we need scripts
         // to be registered before we enqueue them. The method has is_block_editor() checks.
-        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_voxel_core_scripts'], 15);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_voxel_core_scripts'], 20);
 
         // CRITICAL: Dequeue Vue/commons.js in block editor to prevent Vue errors
         // enqueue_block_editor_assets only fires in block editor, so no need for screen checks
@@ -2157,14 +2159,32 @@ CSS;
 
         // Enqueue our React-compatible voxel-commons.js instead
         // Provides the same Voxel.* APIs without Vue dependencies
-        $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        // Enqueue our Compatibility Shim (// updated filename)
+        // This patches Voxel.mixins.base to prevent 'dataset' errors in FSE context
+        // We favor the source file in assets/js/ over dist/ to ensure we get the latest patches
+        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+        $commons_url = file_exists($commons_path) 
+            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
+            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+
         wp_enqueue_script(
             'voxel-fse-commons',
             $commons_url,
             [], // No dependencies - standalone vanilla JS
-            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0',
-            true // In footer
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : time(), // Force cache bust
+            false // In HEAD to race common.js
         );
+
+        // Force 'vx:commons.js' to depend on 'voxel-fse-commons'
+        // This guarantees that our shim loads BEFORE Voxel core, preventing the "dataset" error
+        global $wp_scripts;
+        $commons_handle = 'vx:commons.js';
+        if (wp_script_is($commons_handle, 'registered')) {
+            $script = $wp_scripts->query($commons_handle, 'registered');
+            if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                $script->deps[] = 'voxel-fse-commons';
+            }
+        }
 
         // Add script AFTER our commons to define GoogleMaps callback
         $post_commons_script = <<<'JAVASCRIPT'
@@ -2219,16 +2239,22 @@ JAVASCRIPT;
      * dynamic-data.js, vue-draggable.js) runs on the same admin page and needs Vue.
      * WordPress doesn't have separate script queues for the main admin page vs editor iframe.
      *
-     * Instead, we use the voxel-fse-compat.js shim to intercept and suppress errors
+     * Instead, we use the voxel-fse-shim.js shim to intercept and suppress errors
      * from render_static_popups() when it tries to access .elementor-element.
      *
      * @since 1.0.0
      */
     public static function dequeue_vue_commons_in_block_editor()
     {
-        // DISABLED - breaks Voxel admin UI
-        // The shim approach (voxel-fse-compat.js) handles the error instead
-        return;
+        // Only dequeue frontend commons, KEEP vue for backend metaboxes
+        wp_dequeue_script('vx:commons');
+        wp_dequeue_script('vx:commons.js');
+        
+        // Ensure footer scripts are also dequeued
+        add_action('admin_print_footer_scripts', function() {
+            wp_dequeue_script('vx:commons');
+            wp_dequeue_script('vx:commons.js');
+        }, 11);
     }
 
     /**
@@ -2240,8 +2266,9 @@ JAVASCRIPT;
      */
     public static function dequeue_vue_commons_in_editor()
     {
-        // DISABLED - breaks Voxel admin UI
-        return;
+        // Only dequeue frontend commons, KEEP vue for backend metaboxes
+        wp_dequeue_script('vx:commons');
+        wp_dequeue_script('vx:commons.js');
     }
 
     /**
@@ -2781,7 +2808,7 @@ JAVASCRIPT;
         }
 
         // Read the compatibility script
-        $compat_file = 'voxel-fse-compat.js';
+        $compat_file = 'voxel-fse-shim.js';
         $compat_path = get_stylesheet_directory() . '/assets/js/' . $compat_file;
 
         if (file_exists($compat_path)) {
@@ -2876,14 +2903,54 @@ JAVASCRIPT;
             $has_react_block = true;
         }
 
+        // Fallback: Check for custom pages (like stays-grid) that may not be detected above
+        // If we haven't found a block yet and we're on a page, check page content directly
+        if (!$has_react_block && is_page()) {
+            global $post;
+            if ($post && $post->post_content) {
+                // Quick check if any voxel-fse block exists in the content
+                if (strpos($post->post_content, '<!-- wp:voxel-fse/') !== false) {
+                    $has_react_block = true;
+                }
+            }
+        }
+
+        // Final fallback: For FSE themes, always ensure React is available
+        // FSE templates may contain React blocks that are hard to detect at this point
+        if (!$has_react_block && function_exists('wp_is_block_theme') && wp_is_block_theme()) {
+            // Conservative approach: check if any template part might have our blocks
+            // For performance, we just enable it if we're in a block theme
+            $has_react_block = true;
+        }
+
         // If any React block is found, ensure React scripts are enqueued
         if ($has_react_block) {
             // WordPress 6.0+ has react and react-dom as registered scripts
             // They provide window.React and window.ReactDOM globals
+            //
+            // CRITICAL: Load React in <head> NOT footer to ensure it executes
+            // BEFORE block IIFE scripts. When an IIFE runs, it immediately
+            // evaluates `React` and `ReactDOM` globals - if they don't exist
+            // yet, the script fails with "Cannot read properties of undefined".
+            //
+            // By setting $in_footer=false, WordPress will output React scripts
+            // in <head> which guarantees they execute before any footer scripts.
+            global $wp_scripts;
+
             if (wp_script_is('react', 'registered')) {
+                // Move react to head by re-registering with in_footer=false
+                $react_script = $wp_scripts->registered['react'] ?? null;
+                if ($react_script) {
+                    $react_script->args = null; // null = load in head, 1 = footer
+                }
                 wp_enqueue_script('react');
             }
             if (wp_script_is('react-dom', 'registered')) {
+                // Move react-dom to head by re-registering with in_footer=false
+                $react_dom_script = $wp_scripts->registered['react-dom'] ?? null;
+                if ($react_dom_script) {
+                    $react_dom_script->args = null; // null = load in head, 1 = footer
+                }
                 wp_enqueue_script('react-dom');
             }
         }
@@ -3686,6 +3753,37 @@ JAVASCRIPT;
                                 });
                             }
 
+                            // Shared YARL Lightbox Enqueue (frontend + editor)
+                            // See docs/shared-yarl-lightbox-architecture.md
+                            // Note: post-feed removed - it uses native CSS scroll-snap carousel, not YARL lightbox
+                            // YARL has a carousel feature (https://yet-another-react-lightbox.com/examples/carousel)
+                            // that could be integrated later if needed
+                            $lightbox_blocks = ['timeline', 'gallery', 'slider', 'image'/* , 'post-feed' */];
+                            if (in_array($block_name, $lightbox_blocks, true)) {
+                                // Frontend: enqueue via wp_enqueue_scripts
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_script_is('mw-yarl-lightbox', 'registered')) {
+                                        wp_enqueue_script('mw-yarl-lightbox');
+                                    }
+                                    if (wp_style_is('mw-yarl-lightbox', 'registered')) {
+                                        wp_enqueue_style('mw-yarl-lightbox');
+                                    }
+                                });
+
+                                // Editor: enqueue via enqueue_block_editor_assets
+                                // Provides window.VoxelLightbox global in Gutenberg so
+                                // clicking images in the editor opens the lightbox
+                                add_action('enqueue_block_editor_assets', function () {
+                                    if (wp_script_is('mw-yarl-lightbox', 'registered') && !wp_script_is('mw-yarl-lightbox', 'enqueued')) {
+                                        wp_enqueue_script('mw-yarl-lightbox');
+                                    }
+                                    if (wp_style_is('mw-yarl-lightbox', 'registered') && !wp_style_is('mw-yarl-lightbox', 'enqueued')) {
+                                        wp_enqueue_style('mw-yarl-lightbox');
+                                    }
+                                }, 25);
+                            }
+
                             // product-form needs Voxel's product-form.css
                             if ($block_name === 'product-form') {
                                 add_action('wp_enqueue_scripts', function () {
@@ -3870,9 +3968,15 @@ JAVASCRIPT;
                                         wp_enqueue_script('pikaday');
                                     }
 
-                                    // Enqueue nouislider for range filter
+                                    // Enqueue nouislider for range filter (CSS + JavaScript)
+                                    // CRITICAL: Both CSS and JS are required for FilterRange component
+                                    // CSS provides slider styling, JS provides window.noUiSlider API
+                                    // Evidence: themes/voxel/app/controllers/assets-controller.php:141,184-186
                                     if (wp_style_is('nouislider', 'registered')) {
                                         wp_enqueue_style('nouislider');
+                                    }
+                                    if (wp_script_is('nouislider', 'registered')) {
+                                        wp_enqueue_script('nouislider');
                                     }
                                 }, 100);
                             }
@@ -4021,22 +4125,13 @@ JAVASCRIPT;
                             // Timeline needs Voxel social feed CSS for matching parent theme styles
                             self::ensure_voxel_styles_registered();
 
-                            // Register YARL lightbox CSS (extracted by Vite from yet-another-react-lightbox)
-                            $lightbox_css_path = $block_dir . '/voxel-fse.css';
-                            if (file_exists($lightbox_css_path)) {
-                                wp_register_style(
-                                    'mw-block-timeline-lightbox',
-                                    get_stylesheet_directory_uri() . '/app/blocks/src/timeline/voxel-fse.css',
-                                    [],
-                                    filemtime($lightbox_css_path)
-                                );
-                            }
-
+                            // Use Shared YARL Lightbox (see docs/shared-yarl-lightbox-architecture.md)
+                            // NOTE: Do NOT add 'mw-yarl-lightbox' as a dependency here.
+                            // It is enqueued via wp_enqueue_scripts hook below.
                             $style_deps = [
                                     'vx:commons.css',
                                     'vx:forms.css',
-                                    'vx:social-feed.css',
-                                    'mw-block-timeline-lightbox'
+                                    'vx:social-feed.css'
                             ];
                         } elseif ($block_name === 'timeline-kit') {
                             // Timeline-kit needs Voxel social feed CSS for matching parent theme styles
@@ -4422,6 +4517,14 @@ JAVASCRIPT;
         // 4. Apply Styles (Sticky, Advanced Tab CSS, Visibility Classes)
         $block_content = self::apply_block_styles($block_content, $attributes);
 
+        // 4b. Apply block-specific styles (search-form switcher, etc.)
+        $block_name = str_replace('voxel-fse/', '', $block['blockName']);
+        $block_id = $attributes['blockId'] ?? null;
+
+        if ($block_name === 'search-form' && $block_id) {
+            $block_content = self::apply_search_form_styles($block_content, $attributes, $block_id);
+        }
+
         // 5. Final step: Process Voxel dynamic tags (VoxelScript)
         // This ensures tags like @post(title) work inside static blocks.
         if (function_exists('\Voxel\render')) {
@@ -4484,6 +4587,31 @@ JAVASCRIPT;
         // Prepend responsive CSS as a style tag
         if (!empty($styles['responsive_css'])) {
             $style_tag = '<style>' . $styles['responsive_css'] . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply search-form specific styles
+     *
+     * This is called separately from apply_block_styles because search-form
+     * has special CSS requirements (portal-rendered elements like switcher).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_search_form_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_search_form_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Search Form Inline Styles */' . $css . '</style>';
             $block_content = $style_tag . $block_content;
         }
 
@@ -4836,6 +4964,120 @@ JAVASCRIPT;
             // Ensure base style is enqueued
             if (!wp_style_is('vx:social-feed.css', 'enqueued')) {
                 wp_enqueue_style('vx:social-feed.css');
+            }
+        }
+    }
+
+    /**
+     * Register Shared YARL Lightbox assets
+     * 
+     * Loaded as shared global dependency.
+     * See docs/shared-yarl-lightbox-architecture.md
+     */
+    public static function register_yarl_assets()
+    {
+        // Style Registration
+        if (!wp_style_is('mw-yarl-lightbox', 'registered')) {
+            $yarl_css_path = get_stylesheet_directory() . '/assets/dist/yarl-lightbox.css';
+            if (file_exists($yarl_css_path)) {
+                wp_register_style('mw-yarl-lightbox',
+                    get_stylesheet_directory_uri() . '/assets/dist/yarl-lightbox.css',
+                    // loading vx:commons.css here ensures cascade order override
+                    ['vx:commons.css'],
+                    filemtime($yarl_css_path)
+                );
+            }
+        }
+
+        // Script Registration
+        if (!wp_script_is('mw-yarl-lightbox', 'registered')) {
+            $yarl_js_path = get_stylesheet_directory() . '/assets/dist/yarl-lightbox.js';
+            if (file_exists($yarl_js_path)) {
+                wp_register_script('mw-yarl-lightbox',
+                    get_stylesheet_directory_uri() . '/assets/dist/yarl-lightbox.js',
+                    ['react', 'react-dom'],
+                    filemtime($yarl_js_path),
+                    true
+                );
+            }
+        }
+    }
+
+    /**
+     * Enqueue global frontend shims
+     * 
+     * Loads voxel-fse-shim.js to patch Voxel mixins for FSE environment.
+     * Prevents "Cannot read properties of null (reading 'dataset')" errors.
+     */
+    public static function enqueue_frontend_shims()
+    {
+        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+        $commons_url = file_exists($commons_path) 
+            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
+            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+
+        if (!wp_script_is('voxel-fse-commons', 'registered')) {
+             wp_register_script(
+                'voxel-fse-commons',
+                $commons_url,
+                [], 
+                defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($commons_path),
+                false // In HEAD
+            );
+        }
+        
+        wp_enqueue_script('voxel-fse-commons');
+
+        // Force 'vx:commons' to depend on 'voxel-fse-commons'
+        // This guarantees that our shim loads BEFORE Voxel core, preventing the "dataset" error
+        global $wp_scripts;
+        $commons_handle = 'vx:commons'; // Frontend handle is usually vx:commons
+        if (wp_script_is($commons_handle, 'registered')) {
+            $script = $wp_scripts->query($commons_handle, 'registered');
+            if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                $script->deps[] = 'voxel-fse-commons';
+            }
+        }
+    }
+
+
+    /**
+     * Enqueue frontend shims with cache busting (PATCHED)
+     * 
+     * Replaces enqueue_frontend_shims to ensure time()-based versioning
+     */
+    public static function enqueue_frontend_shims_patched()
+    {
+        // Check if we're on the frontend
+        if (is_admin()) {
+            return;
+        }
+
+        self::ensure_voxel_styles_registered();
+
+        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+        $commons_url = file_exists($commons_path)
+            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
+            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+
+        // Enqueue the shim script with time() to force cache update
+        wp_enqueue_script(
+            'voxel-fse-commons',
+            $commons_url,
+            [], // No dependencies - standalone vanilla JS
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : time(),
+            false // In Head
+        );
+        
+        // Force dependencies
+        global $wp_scripts;
+        $handles = ['vx:commons.js', 'vx:commons'];
+        foreach ($handles as $handle) {
+            if (wp_script_is($handle, 'registered')) {
+                $script = $wp_scripts->query($handle, 'registered');
+                if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                    $script->deps[] = 'voxel-fse-commons';
+                }
             }
         }
     }

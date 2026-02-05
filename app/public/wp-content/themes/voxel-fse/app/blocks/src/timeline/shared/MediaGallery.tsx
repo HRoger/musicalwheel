@@ -13,25 +13,24 @@
  *   </li>
  * </ul>
  *
- * Lightbox: On FSE pages Elementor's frontend JS is not loaded, so we use
- * yet-another-react-lightbox (YARL) via the shared VoxelLightbox component.
+ * Lightbox: Uses the shared window.VoxelLightbox global API (YARL-based).
+ * Loaded once via WordPress dependency system (mw-yarl-lightbox handle),
+ * same pattern as Voxel's Swiper.
  * The data-elementor-open-lightbox attributes are kept for HTML parity only.
  *
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import type { MediaFile, IconValue } from '../types';
-import type { LightboxSlide } from '@shared/components';
 
-// Lazy-load YARL lightbox: prevents yet-another-react-lightbox from being
-// bundled into the editor's ESM entry, where it crashes during init.
-// In the IIFE frontend build Vite inlines the dynamic import automatically.
-const LazyVoxelLightbox = lazy(() =>
-	import('@shared/components/Lightbox/VoxelLightbox').then((m) => ({
-		default: m.VoxelLightbox,
-	}))
-);
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 /**
  * Props
@@ -53,11 +52,7 @@ export function MediaGallery({
 	statusId,
 	className = '',
 }: MediaGalleryProps): JSX.Element | null {
-	// Hooks must be called unconditionally (before any early returns)
-	const [lightboxOpen, setLightboxOpen] = useState(false);
-	const [lightboxIndex, setLightboxIndex] = useState(0);
-
-	const slides: LightboxSlide[] = useMemo(
+	const slides = useMemo(
 		() => files.map((file) => ({
 			src: file.url,
 			alt: file.alt || '',
@@ -68,10 +63,12 @@ export function MediaGallery({
 	const handleImageClick = useCallback(
 		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
 			e.preventDefault();
-			setLightboxIndex(index);
-			setLightboxOpen(true);
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(slides, index);
+			}
 		},
-		[]
+		[slides]
 	);
 
 	if (files.length === 0) {
@@ -81,37 +78,24 @@ export function MediaGallery({
 	const slideshowId = statusId && files.length > 1 ? `vxtl_${statusId}` : null;
 
 	return (
-		<>
-			<ul className={`vxf-gallery simplify-ul ${className}`}>
-				{files.map((file, index) => (
-					<li key={file.id || index}>
-						<a
-							href={file.url}
-							data-elementor-open-lightbox="yes"
-							data-elementor-lightbox-slideshow={slideshowId}
-							onClick={(e) => handleImageClick(e, index)}
-						>
-							<img
-								src={file.preview || file.url}
-								alt={file.alt || ''}
-								loading="lazy"
-							/>
-						</a>
-					</li>
-				))}
-			</ul>
-
-			{lightboxOpen && (
-				<Suspense fallback={null}>
-					<LazyVoxelLightbox
-						open={lightboxOpen}
-						close={() => setLightboxOpen(false)}
-						slides={slides}
-						index={lightboxIndex}
-					/>
-				</Suspense>
-			)}
-		</>
+		<ul className={`vxf-gallery simplify-ul ${className}`}>
+			{files.map((file, index) => (
+				<li key={file.id || index}>
+					<a
+						href={file.url}
+						data-elementor-open-lightbox="yes"
+						data-elementor-lightbox-slideshow={slideshowId}
+						onClick={(e) => handleImageClick(e, index)}
+					>
+						<img
+							src={file.preview || file.url}
+							alt={file.alt || ''}
+							loading="lazy"
+						/>
+					</a>
+				</li>
+			))}
+		</ul>
 	);
 }
 
