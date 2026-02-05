@@ -21,13 +21,15 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-// noUiSlider is loaded as external from Voxel parent theme
-// Evidence: themes/voxel/app/controllers/assets-controller.php:134,141
-// Import map in Block_Loader.php maps 'nouislider' to window.noUiSlider
-import noUiSlider from 'nouislider';
 import type { FilterComponentProps } from '../types';
 
-// Type definition for noUiSlider API (since we're using external, not npm types)
+// noUiSlider is loaded from Voxel parent theme's vendor folder via wp_enqueue_script
+// Accessed via window.noUiSlider at runtime (NOT as IIFE parameter)
+// This avoids ReferenceError if the script loads after our IIFE
+// Evidence: themes/voxel/app/controllers/assets-controller.php:141
+const getNoUiSlider = () => (window as any).noUiSlider;
+
+// Type definition for noUiSlider API (since we're using window global, not npm types)
 interface NoUiSliderAPI {
 	destroy: () => void;
 	set: (values: (number | string)[], fireSetEvent?: boolean) => void;
@@ -183,6 +185,11 @@ export default function FilterRange({
 			}
 		}
 
+		const noUiSlider = getNoUiSlider();
+		if (!noUiSlider) {
+			console.error('noUiSlider not loaded - window.noUiSlider is undefined');
+			return;
+		}
 		noUiSlider.create(sliderRef.current, {
 			start: startValues,
 			connect: connectValue,

@@ -96,10 +96,10 @@ export function FeedFilters({
 	const filterBtnRef = useRef<HTMLAnchorElement>(null);
 	const orderBtnRef = useRef<HTMLAnchorElement>(null);
 
-	// Get current ordering option
-	const currentOrdering = orderingOptions.find(
-		(opt) => opt.order === filters.order && opt.time === filters.time
-	) ?? orderingOptions[0];
+	// Get current ordering option - use _id for comparison (matches Voxel's Vue implementation)
+	const currentOrdering = filters.orderId
+		? (orderingOptions.find((opt) => opt._id === filters.orderId) ?? orderingOptions[0])
+		: orderingOptions[0];
 
 	// Current filter tab
 	const currentFilter = filters.filter ?? 'all';
@@ -140,11 +140,12 @@ export function FeedFilters({
 		[onFiltersChange]
 	);
 
-	// Handle ordering selection (matches Voxel's setActiveOrder)
+	// Handle ordering selection (matches Voxel's setActiveOrder - uses _id)
 	const handleOrderSelect = useCallback(
 		(e: MouseEvent<HTMLAnchorElement>, option: OrderingOption) => {
 			e.preventDefault();
 			onFiltersChange({
+				orderId: option._id,
 				order: option.order,
 				time: option.time,
 				timeCustom: option.time === 'custom' ? option.timeCustom : undefined,
@@ -181,7 +182,7 @@ export function FeedFilters({
 
 	return (
 		<div className={`vxf-filters ${className}`}>
-			{/* Search - matches Voxel's ts-form structure exactly */}
+			{/* Search - matches Voxel: shown unconditionally when search is enabled */}
 			{showSearch && (
 				<div className="ts-form">
 					<div className="ts-input-icon flexify">
@@ -198,7 +199,7 @@ export function FeedFilters({
 				</div>
 			)}
 
-			{/* Filter dropdown - matches Voxel's filtering_options structure */}
+			{/* Filter dropdown - matches Voxel: shown when 2+ filtering options exist */}
 			{showFilterTabs && Object.keys(filteringOptions).length >= 2 && (
 				<>
 					<a
@@ -231,7 +232,7 @@ export function FeedFilters({
 				</>
 			)}
 
-			{/* Ordering dropdown - matches Voxel's ordering_options structure exactly */}
+			{/* Ordering dropdown - matches Voxel: shown when 1+ ordering options exist */}
 			{orderingOptions.length > 0 && currentOrdering && (
 				<>
 					<a

@@ -350,7 +350,8 @@ export default function FilterAvailability({
 					{...(!isRangeMode && { onSelect: handleSave })}
 					pickerConfig={{
 						minDate: new Date(), // CRITICAL: Disable past dates
-						...(isRangeMode ? { theme: 'pika-range' } : {}), // Apply theme only if range mode
+						...(isRangeMode ? { numberOfMonths: 2, theme: 'pika-range' } : {}),
+						// Evidence: voxel-search-form.beautified.js - rangePicker uses numberOfMonths:2, theme:'pika-range'
 					}}
 					onPickerReady={(picker) => {
 						pickerInstanceRef.current = picker;

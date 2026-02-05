@@ -21,8 +21,8 @@
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_DatePicker-NCeMpzfF.js": {
-    "file": "DatePicker-NCeMpzfF.js",
+  "_DatePicker-pD2Z7qly.js": {
+    "file": "DatePicker-pD2Z7qly.js",
     "name": "DatePicker"
   },
   "_EmptyPlaceholder-BsL18qxN.js": {
@@ -126,8 +126,8 @@
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_SearchFormComponent-LE9uDL09.js": {
-    "file": "SearchFormComponent-LE9uDL09.js",
+  "_SearchFormComponent-DFTl_94f.js": {
+    "file": "SearchFormComponent-DFTl_94f.js",
     "name": "SearchFormComponent",
     "imports": [
       "_siteUrl-7x5eJEvc.js",
@@ -135,7 +135,7 @@
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_MediaPopup-CXePoOCG.js",
-      "_DatePicker-NCeMpzfF.js"
+      "_DatePicker-pD2Z7qly.js"
     ]
   },
   "_StyleTabPanel-BnA2rBs5.js": {
@@ -303,7 +303,7 @@
     "src": "app/blocks/src/create-post/index.tsx",
     "isEntry": true,
     "imports": [
-      "_DatePicker-NCeMpzfF.js",
+      "_DatePicker-pD2Z7qly.js",
       "_voxelShim-DB_Ue-9R.js",
       "_backgroundElements-Ui-iCrLV.js",
       "_MediaPopup-CXePoOCG.js",
@@ -687,7 +687,7 @@
       "_PostSelectControl-DfkHxd67.js",
       "_siteUrl-7x5eJEvc.js",
       "_EmptyPlaceholder-BsL18qxN.js",
-      "_SearchFormComponent-LE9uDL09.js",
+      "_SearchFormComponent-DFTl_94f.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -695,7 +695,7 @@
       "_voxelIcons-gVyOSQ_B.js",
       "_MediaPopup-CXePoOCG.js",
       "_FormPopup-DDYHzYWU.js",
-      "_DatePicker-NCeMpzfF.js",
+      "_DatePicker-pD2Z7qly.js",
       "_generateAdvancedStyles-CRpLcHXt.js",
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
@@ -840,7 +840,7 @@
     "src": "app/blocks/src/search-form/index.tsx",
     "isEntry": true,
     "imports": [
-      "_SearchFormComponent-LE9uDL09.js",
+      "_SearchFormComponent-DFTl_94f.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_RepeaterControl-C7JnAhZL.js",
       "_IconPickerControl-Lep6knGI.js",
@@ -858,7 +858,7 @@
       "_backgroundElements-Ui-iCrLV.js",
       "_MediaPopup-CXePoOCG.js",
       "_FormPopup-DDYHzYWU.js",
-      "_DatePicker-NCeMpzfF.js"
+      "_DatePicker-pD2Z7qly.js"
     ],
     "css": [
       "enable-tags-button.css"
@@ -974,7 +974,6 @@
       "_generateVoxelStyles-oZeaeuKH.js"
     ],
     "css": [
-      "index.css",
       "enable-tags-button.css"
     ]
   },

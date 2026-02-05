@@ -91,9 +91,10 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 	const blockId = attributes.blockId || 'map';
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
+	// Include 'elementor-widget-ts-map' for Voxel CSS compatibility (geolocate button visibility)
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
 		blockId,
-		baseClass: 'voxel-fse-map-editor ts-map-widget',
+		baseClass: 'voxel-fse-map-editor ts-map-widget elementor-widget-ts-map',
 		selectorPrefix: 'voxel-fse-map',
 	});
 
@@ -225,6 +226,34 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 				mapContainerRef.current.classList.add('ts-map-loaded');
 				mapInitializedRef.current = true;
 				setIsMapLoaded(true);
+
+				// CRITICAL: Hide Map/Satellite and Street View controls in editor
+				// Access the native Google Maps instance via getSourceObject()
+				// Voxel.Maps.Map stores the google.maps.Map in this.map, accessible via getSourceObject()
+				const googleMap = (mapInstanceRef.current as any)?.getSourceObject?.();
+				if (googleMap && typeof window.google !== 'undefined') {
+					// Force hide these controls for cleaner FSE editor experience
+					googleMap.setOptions({
+						mapTypeControl: false,
+						streetViewControl: false,
+					});
+
+					// DOM fallback: hide control elements after a short delay
+					setTimeout(() => {
+						if (mapContainerRef.current) {
+							// Hide Map/Satellite toggle
+							const mapTypeElements = mapContainerRef.current.querySelectorAll('.gm-style-mtc, .gm-style-mtc-bbw');
+							mapTypeElements.forEach((el: Element) => {
+								(el as HTMLElement).style.display = 'none';
+							});
+							// Hide Street View pegman
+							const streetViewElements = mapContainerRef.current.querySelectorAll('.gm-svpc');
+							streetViewElements.forEach((el: Element) => {
+								(el as HTMLElement).style.display = 'none';
+							});
+						}
+					}, 100);
+				}
 
 				console.log('[Map Block] Interactive map initialized in editor');
 			} catch (error) {
@@ -552,6 +581,114 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 						)}
 					</div>
 				)}
+
+				{/* Geolocate button - matches Voxel's map.php:55 */}
+			{/* FUNCTIONAL: Triggers real browser geolocation, matching Voxel's Elementor editor behavior */}
+				<a
+					href="#"
+					rel="nofollow"
+					role="button"
+					className="vx-geolocate-me"
+					aria-label={__('Share your location', 'voxel-fse')}
+					onClick={(e) => {
+						e.preventDefault();
+						const btn = e.currentTarget as HTMLAnchorElement;
+
+						// Add loading state
+						btn.classList.add('loading');
+
+						// Check if geolocation is available
+						if (!navigator.geolocation) {
+							btn.classList.remove('loading');
+							const errorMsg = (window as any).Voxel_Config?.l10n?.positionFail || 'Geolocation is not supported by your browser.';
+							// Use Voxel.alert if available (Voxel scripts are loaded in editor)
+							if (typeof (window as any).Voxel?.alert === 'function') {
+								(window as any).Voxel.alert(errorMsg, 'error');
+							} else {
+								// Fallback to console warning
+								console.warn('[Map Block]', errorMsg);
+							}
+							return;
+						}
+
+						// Request user's location
+						navigator.geolocation.getCurrentPosition(
+							// Success callback
+							(position) => {
+								btn.classList.remove('loading');
+								const { latitude, longitude } = position.coords;
+
+								// Update map center if map is loaded
+								if (mapInstanceRef.current && typeof Voxel !== 'undefined' && Voxel.Maps) {
+									const newCenter = new Voxel.Maps.LatLng(latitude, longitude);
+									mapInstanceRef.current.setCenter(newCenter);
+									mapInstanceRef.current.setZoom(15); // Zoom in to user's location
+								}
+
+								// Update block attributes so it persists
+								setAttributes({
+									defaultLat: latitude,
+									defaultLng: longitude,
+									defaultZoom: 15,
+								});
+
+								console.log('[Map Block] Geolocation success:', latitude, longitude);
+							},
+							// Error callback
+							(error) => {
+								btn.classList.remove('loading');
+								// PARITY: Use Voxel's exact localized message (voxel-map.beautified.js:516)
+								const errorMsg = (window as any).Voxel_Config?.l10n?.positionFail || 'Could not determine your location.';
+
+								// Use Voxel.alert if available
+								if (typeof (window as any).Voxel?.alert === 'function') {
+									(window as any).Voxel.alert(errorMsg, 'error');
+								} else {
+									console.warn('[Map Block]', errorMsg);
+								}
+							},
+							// Options
+							{
+								enableHighAccuracy: true,
+								timeout: 10000,
+								maximumAge: 0,
+							}
+						);
+					}}
+					style={{
+						display: 'flex',
+						position: 'absolute',
+						top: '8px',
+						left: '8px',
+						width: '32px',
+						height: '32px',
+						backgroundColor: '#fff',
+						boxShadow: '0 1px 4px -1px rgba(0,0,0,.3)',
+						padding: '5px',
+						borderRadius: '2px',
+						alignItems: 'center',
+						justifyContent: 'center',
+						zIndex: 5,
+					}}
+				>
+					<svg
+						width="22"
+						height="22"
+						viewBox="0 0 25 25"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						style={{ opacity: 0.6 }}
+					>
+						<path
+							d="M12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z"
+							fill="currentColor"
+						/>
+						<path
+							d="M13.1523 2.19141C13.1523 1.77719 12.8166 1.44141 12.4023 1.44141C11.9881 1.44141 11.6523 1.77719 11.6523 2.19141V3.72405C7.5566 4.0822 4.29367 7.34575 3.93549 11.4414H2.40234C1.98813 11.4414 1.65234 11.7772 1.65234 12.1914C1.65234 12.6056 1.98813 12.9414 2.40234 12.9414H3.93545C4.29344 17.0373 7.55645 20.301 11.6523 20.6592V22.1914C11.6523 22.6056 11.9881 22.9414 12.4023 22.9414C12.8166 22.9414 13.1523 22.6056 13.1523 22.1914V20.6592C17.2482 20.301 20.5113 17.0373 20.8692 12.9414H22.4023C22.8166 12.9414 23.1523 12.6056 23.1523 12.1914C23.1523 11.7772 22.8166 11.4414 22.4023 11.4414H20.8692C20.511 7.34575 17.2481 4.0822 13.1523 3.72405V2.19141ZM12.4025 7.94141C14.7496 7.94141 16.6522 9.84446 16.6522 12.1914C16.6522 14.5383 14.7496 16.4414 12.4025 16.4414C10.0554 16.4414 8.15283 14.5384 8.15283 12.1914C8.15283 9.84446 10.0554 7.94141 12.4025 7.94141ZM12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z"
+							fill="currentColor"
+						/>
+					</svg>
+				</a>
 
 				{/* Map wrapper with relative positioning for placeholder overlay */}
 				<div style={{ position: 'relative' }}>

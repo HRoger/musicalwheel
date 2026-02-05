@@ -16,10 +16,14 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import noUiSlider from 'nouislider';
 import type { FilterComponentProps } from '../types';
 
-// Type definition for noUiSlider API (external via Voxel parent theme, not npm types)
+// noUiSlider is loaded from Voxel parent theme's vendor folder via wp_enqueue_script
+// Accessed via window.noUiSlider at runtime (NOT as IIFE parameter)
+// Evidence: themes/voxel/app/controllers/assets-controller.php:141
+const getNoUiSlider = () => (window as any).noUiSlider;
+
+// Type definition for noUiSlider API (window global, not npm types)
 interface NoUiSliderAPI {
 	destroy: () => void;
 	set: ( values: ( number | string )[], fireSetEvent?: boolean ) => void;
@@ -178,6 +182,11 @@ export default function FilterLocation( {
 	const initSlider = useCallback( () => {
 		if ( ! sliderRef.current || sliderInstanceRef.current ) return;
 
+		const noUiSlider = getNoUiSlider();
+		if ( ! noUiSlider ) {
+			console.error( 'noUiSlider not loaded - window.noUiSlider is undefined' );
+			return;
+		}
 		noUiSlider.create( sliderRef.current, {
 			start: localRadius,
 			connect: [ true, false ], // Fill from left to handle

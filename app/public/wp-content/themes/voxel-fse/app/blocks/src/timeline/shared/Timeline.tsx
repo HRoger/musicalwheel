@@ -48,8 +48,8 @@
  * @package VoxelFSE
  */
 
-import { useRef, useMemo } from 'react';
-import { TimelineProvider, useTimelineConfig, useVisibility, useComposerConfig } from '../hooks';
+import { useRef, useMemo, useState, useCallback } from 'react';
+import { TimelineProvider, useTimelineContext } from '../hooks';
 import { StatusComposer } from './StatusComposer';
 import { StatusFeed, type StatusFeedHandle } from './StatusFeed';
 import type { TimelineAttributes, OrderingOption, Status } from '../types';
@@ -98,17 +98,32 @@ function TimelineInner({
 	context,
 	className = '',
 }: TimelineProps): JSX.Element {
-	// Config is optional - we render with defaults while it loads
-	const { config } = useTimelineConfig();
+	// Single context subscription to avoid multiple re-render triggers
+	const { config, postContext, context: ctxContext } = useTimelineContext();
 
-	// CRITICAL FOR 1:1 VOXEL PARITY: Check visibility from post-context endpoint
-	const { visible, reason } = useVisibility();
+	// Derive visibility from postContext (avoids separate hook/context subscription)
+	const visible = ctxContext === 'editor' ? true : (postContext?.visible ?? true);
+	const reason = ctxContext === 'editor' ? null : (postContext?.reason ?? null);
 
-	// CRITICAL FOR 1:1 VOXEL PARITY: Get composer config from post-context endpoint
-	const composerConfig = useComposerConfig();
+	// Derive composer config from postContext (avoids separate hook/context subscription)
+	const composerConfig = ctxContext === 'editor'
+		? { feed: 'user_timeline' as const, can_post: true, post_as: 'current_user' as const, placeholder: "What's on your mind?" }
+		: (postContext?.composer ?? null);
 
 	// Ref to StatusFeed for adding new statuses without remounting
 	const feedRef = useRef<StatusFeedHandle>(null);
+
+	// Track feed loading state for preloading opacity
+	const [isFeedLoading, setIsFeedLoading] = useState(false);
+	const hasMountedRef = useRef(false);
+	const handleFeedLoadingChange = useCallback((loading: boolean) => {
+		// Only show loading opacity after initial mount (not on first load)
+		if (hasMountedRef.current) {
+			setIsFeedLoading(loading);
+		} else if (!loading) {
+			hasMountedRef.current = true;
+		}
+	}, []);
 
 	// Ensure orderingOptions is always an array - extract first to prevent issues in useMemo dependency
 	const rawOrderingOptions = attributes?.orderingOptions;
@@ -195,7 +210,7 @@ function TimelineInner({
 				</>
 			)}
 
-			<div className={`vxfeed ${className}`}>
+			<div className={`vxfeed ${isFeedLoading ? 'vxfeed--loading' : ''} ${className}`}>
 				{/* Status Composer - uses composerConfig for 1:1 Voxel parity */}
 				{showComposer && (
 					<StatusComposer
@@ -209,9 +224,10 @@ function TimelineInner({
 				<StatusFeed
 					ref={feedRef}
 					mode={attributes.mode}
-					showFilters={orderingOptions.length > 1 || attributes.searchEnabled}
+					showFilters={orderingOptions.length > 0 || attributes.searchEnabled}
 					showSearch={attributes.searchEnabled}
 					emptyMessage={attributes.noStatusText}
+					onLoadingChange={handleFeedLoadingChange}
 				/>
 			</div>
 		</>

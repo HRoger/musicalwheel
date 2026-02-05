@@ -30,7 +30,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
 import type {
 	PostFeedAttributes,
@@ -47,7 +47,9 @@ import { Loader } from '@shared/components/Loader';
  * Default icons (matches Voxel defaults)
  */
 const DEFAULT_ICONS = {
-	loadMore: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
+	// Evidence: themes/voxel/assets/images/svgs/reload.svg
+	// Evidence: themes/voxel/templates/widgets/post-feed/pagination.php:16 - ?: \Voxel\svg( 'reload.svg' )
+	loadMore: `<svg fill="none" viewBox="0 0 25 24" xmlns="http://www.w3.org/2000/svg"><path d="M21.6009 10.4593C22.001 10.3521 22.2384 9.94088 22.1312 9.54078C21.59 7.52089 20.3974 5.73603 18.7384 4.46302C17.0793 3.19001 15.0466 2.5 12.9555 2.5C10.8644 2.5 8.83164 3.19001 7.17262 4.46302C6.12405 5.26762 5.26179 6.2767 4.63257 7.42036L2.86504 6.92617C2.76093 6.89707 2.65423 6.89133 2.55153 6.9068C2.46222 6.91962 2.37374 6.94889 2.29039 6.99582C1.92945 7.19903 1.80158 7.65636 2.00479 8.0173L3.73942 11.0983C3.83701 11.2717 3.99946 11.3991 4.19104 11.4527C4.30333 11.4841 4.42023 11.4886 4.53266 11.4673C4.61373 11.4524 4.69254 11.4242 4.7657 11.383L7.84641 9.64831C8.11073 9.49948 8.25936 9.20608 8.22302 8.90493C8.18668 8.60378 7.9725 8.35417 7.68037 8.27249L6.1241 7.83737C6.6343 6.99996 7.29751 6.2579 8.08577 5.65305C9.48282 4.58106 11.1946 4 12.9555 4C14.7164 4 16.4282 4.58106 17.8252 5.65305C19.2223 6.72504 20.2266 8.22807 20.6823 9.92901C20.7895 10.3291 21.2008 10.5665 21.6009 10.4593Z" fill="currentColor"/><path d="M4.30739 13.5387C3.90729 13.6459 3.66985 14.0572 3.77706 14.4573C4.31829 16.4771 5.51089 18.262 7.16991 19.535C8.82892 20.808 10.8616 21.498 12.9528 21.498C15.0439 21.498 17.0766 20.808 18.7356 19.535C19.7859 18.7291 20.6493 17.7181 21.2787 16.5722L23.0083 17.0557C23.1218 17.0961 23.2447 17.1091 23.3661 17.0917C23.5554 17.0658 23.7319 16.968 23.8546 16.8116C24.0419 16.573 24.0669 16.245 23.9181 15.9807L22.1835 12.8996C22.0859 12.7263 21.9234 12.5988 21.7319 12.5453C21.64 12.5196 21.5451 12.5119 21.4521 12.5216C21.3493 12.5317 21.2488 12.5629 21.1571 12.6146L18.0764 14.3493C17.7155 14.5525 17.5876 15.0099 17.7909 15.3708C17.9016 15.5675 18.0879 15.695 18.2929 15.7373L19.7875 16.1552C19.2768 16.9949 18.6125 17.7388 17.8225 18.345C16.4255 19.417 14.7137 19.998 12.9528 19.998C11.1918 19.998 9.4801 19.417 8.08305 18.345C6.686 17.273 5.68171 15.77 5.22595 14.069C5.11874 13.6689 4.70749 13.4315 4.30739 13.5387Z" fill="currentColor"/></svg>`,
 	// Voxel uses keyword-research.svg (magnifying glass) for no results
 	// Evidence: themes/voxel/templates/widgets/post-feed/no-results.php:2
 	noResults: `<svg viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z" fill="currentColor"/></svg>`,
@@ -165,6 +167,64 @@ function getIconHtml(icon: { library?: string; value?: string } | undefined, def
 }
 
 /**
+ * Parse AJAX HTML response into individual card HTML strings.
+ * Voxel wraps each post card in a div.ts-preview element.
+ * Evidence: themes/voxel/app/utils/post-utils.php:324
+ */
+/**
+ * Parse card innerHTML from server-rendered HTML
+ *
+ * The server wraps each card in <div class="ts-preview">. We extract the INNER HTML
+ * so we can wrap it ourselves with proper React keys and inline styles.
+ * This avoids nested .ts-preview divs which breaks Voxel's CSS selectors.
+ *
+ * Evidence: themes/voxel/app/utils/post-utils.php:324
+ */
+/**
+ * Parse cards from server-rendered HTML for carousel mode
+ *
+ * Voxel wraps each post card in <div class="ts-preview">.
+ * We extract the INNER content so we can wrap with our own styled .ts-preview.
+ *
+ * @param html - Raw HTML from Voxel's search_posts AJAX response
+ * @returns Array of card innerHTML strings (to be wrapped in our own .ts-preview)
+ */
+function parseCardsFromHtml(html: string): string[] {
+	if (!html || !html.trim()) {
+		return [];
+	}
+
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(`<div class="parse-wrapper">${html}</div>`, 'text/html');
+
+	// Primary: Find .ts-preview elements (Voxel's standard wrapper)
+	const cards = doc.querySelectorAll<HTMLElement>('.ts-preview');
+
+	if (cards.length > 0) {
+		// Return innerHTML so we can add our own .ts-preview wrapper with custom styles
+		return Array.from(cards).map(card => card.innerHTML);
+	}
+
+	// Fallback: Use direct children of wrapper (excluding scripts, links, styles, etc.)
+	const wrapper = doc.querySelector('.parse-wrapper');
+	if (wrapper) {
+		const validTags = new Set(['div', 'article', 'section', 'li']);
+		const children = Array.from(wrapper.children).filter(child => {
+			const tag = child.tagName.toLowerCase();
+			// Only include content elements, not metadata
+			return validTags.has(tag);
+		});
+		if (children.length > 0) {
+			// For fallback elements, return outerHTML since they're the actual cards
+			return children.map(child => (child as HTMLElement).outerHTML);
+		}
+	}
+
+	// Last resort: return empty - grid mode will render the HTML directly
+	return [];
+}
+
+/**
  * Generate responsive CSS for layout controls
  * Handles columns, itemGap, carouselItemWidth, scrollPadding, itemPadding
  * with tablet (max-width: 1024px) and mobile (max-width: 767px) breakpoints
@@ -210,9 +270,9 @@ function generateResponsiveLayoutCSS(attributes: PostFeedAttributes, blockId: st
 
 		// Item width - responsive
 		// Evidence: post-feed.php:253-271 - width and min-width selector
-		if (attributes.carouselItemWidth) {
-			rules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth}${unit}; min-width: ${attributes.carouselItemWidth}${unit}; flex: 0 0 ${attributes.carouselItemWidth}${unit}; scroll-snap-align: start; }`);
-		}
+		// Default to 300px if no width is set (matches normalizeConfig default)
+		const itemWidth = attributes.carouselItemWidth || 300;
+		rules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${itemWidth}${unit}; min-width: ${itemWidth}${unit}; flex: 0 0 ${itemWidth}${unit}; scroll-snap-align: start; }`);
 		if (attributes.carouselItemWidth_tablet) {
 			tabletRules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth_tablet}${unit}; min-width: ${attributes.carouselItemWidth_tablet}${unit}; flex: 0 0 ${attributes.carouselItemWidth_tablet}${unit}; }`);
 		}
@@ -325,6 +385,10 @@ export default function PostFeedComponent({
 	const gridRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const initialFetchDoneRef = useRef(false);
+	// Track whether a Map widget is connected (set by search-form event)
+	// Evidence: voxel-search-form.beautified.js:2086-2091 — Voxel adds __load_markers=yes when mapWidget !== null
+	const hasMapWidgetRef = useRef(false);
+	const mapAdditionalMarkersRef = useRef(0);
 
 	// State for post feed - both editor and frontend start in loading state
 	const [state, setState] = useState<PostFeedState>({
@@ -470,33 +534,14 @@ export default function PostFeedComponent({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [context, editorFilters, attributes.postType, attributes.postsPerPage, attributes.displayDetails]);
 
-	// Build CSS classes
-	const layoutClass = attributes.layoutMode === 'carousel' ? 'ts-feed-nowrap' : 'ts-feed-grid-default';
+	// Build CSS classes (grid mode only — carousel mode uses YARL Inline plugin)
 	const loadingClass = state.loading ? `vx-${attributes.loadingStyle}` : '';
 
 	// Evidence: themes/voxel/templates/widgets/post-feed.php:18-19
 	// Grid classes: post-feed-grid, layout class, loading class, vx-opacity for opacity transition,
 	// sf-post-feed when connected to search form, vx-event-scroll for scroll tracking
-	const gridClasses = `post-feed-grid ${layoutClass} ${loadingClass} vx-opacity ${attributes.source === 'search-form' ? 'sf-post-feed vx-event-scroll' : ''}`.trim();
-
-	// Build inline styles for grid layout (minimal - responsive values handled by CSS)
-	// Note: Display mode and scroll properties are inline, responsive values (columns, gap, etc.) handled by generateResponsiveLayoutCSS
-	// Evidence: themes/voxel/app/widgets/post-feed.php:308 - uses selectors for grid-template-columns
-	const gridStyle: React.CSSProperties = attributes.layoutMode === 'carousel'
-		? {
-			// Carousel mode: flex layout with horizontal scroll
-			display: 'flex',
-			flexWrap: 'nowrap',
-			overflowX: 'auto',
-			scrollSnapType: 'x mandatory',
-			WebkitOverflowScrolling: 'touch',
-			// Note: gap, padding, scrollPadding handled by generateResponsiveLayoutCSS for responsive support
-		}
-		: {
-			// Grid mode: CSS grid layout
-			display: 'grid',
-			// Note: gridTemplateColumns, gap handled by generateResponsiveLayoutCSS for responsive support
-		};
+	// CRITICAL: vx-event-autoslide and vx-event-scroll prevent Voxel's commons.js from double-binding
+	const gridClasses = `post-feed-grid ts-feed-grid-default ${loadingClass} vx-opacity ${attributes.source === 'search-form' ? 'sf-post-feed vx-event-scroll' : ''}`.trim();
 
 	// Generate responsive layout CSS
 	const responsiveLayoutCSS = generateResponsiveLayoutCSS(attributes, attributes.blockId);
@@ -513,11 +558,14 @@ export default function PostFeedComponent({
 		overrideFilters?: Record<string, unknown>,
 		overridePostType?: string
 	) => {
+		console.log('[PostFeed] fetchPosts called - page:', page, 'overridePostType:', overridePostType, 'dynamicPostType:', dynamicPostType, 'attributes.postType:', attributes.postType);
+		console.log('[PostFeed] fetchPosts caller stack:', new Error().stack);
 		setState(prev => ({ ...prev, loading: true }));
 
 		try {
 			// Use override post type if provided, otherwise use dynamic or attribute
 			const postType = overridePostType || dynamicPostType || attributes.postType || '';
+			console.log('[PostFeed] fetchPosts using postType:', postType);
 
 			// For search-form source without linked form or postType, show placeholder in editor
 			if (context === 'editor' && attributes.source === 'search-form' && !postType) {
@@ -565,6 +613,19 @@ export default function PostFeedComponent({
 			// Add card template (for server-side rendering)
 			if (attributes.cardTemplate && attributes.cardTemplate !== 'main') {
 				params.set('template', attributes.cardTemplate);
+			}
+
+			// Add __load_markers=yes when a Map widget is connected
+			// Evidence: voxel-search-form.beautified.js:2086-2091
+			// Evidence: voxel/app/controllers/frontend/search/search-controller.php:28
+			// Without this param, Voxel's get_search_results() won't render .ts-marker-wrapper elements
+			console.log('[PostFeed] hasMapWidgetRef.current:', hasMapWidgetRef.current);
+			if (hasMapWidgetRef.current) {
+				params.set('__load_markers', 'yes');
+				console.log('[PostFeed] Added __load_markers=yes to request');
+				if (mapAdditionalMarkersRef.current > 0) {
+					params.set('__load_additional_markers', String(mapAdditionalMarkersRef.current));
+				}
 			}
 
 			// Use override filters if provided, otherwise merge dynamic and static filters
@@ -622,6 +683,7 @@ export default function PostFeedComponent({
 			}
 
 			const html = await response.text();
+			console.log('[PostFeed] fetchPosts response length:', html.length, 'first 500 chars:', html.substring(0, 500));
 
 			// Parse the response to extract metadata
 			const parser = new DOMParser();
@@ -633,6 +695,7 @@ export default function PostFeedComponent({
 			const hasResults = infoScript?.getAttribute('data-has-results') === 'true';
 			const totalCount = parseInt(infoScript?.getAttribute('data-total-count') || '0', 10);
 			const displayCount = infoScript?.getAttribute('data-display-count') || '0';
+			console.log('[PostFeed] fetchPosts parsed - hasResults:', hasResults, 'totalCount:', totalCount, 'hasPrev:', hasPrev, 'hasNext:', hasNext);
 
 			// VOXEL PARITY: Inject CSS assets to #vx-assets-cache and wait for load
 			// Reference: voxel-post-feed.beautified.js:143-174
@@ -689,9 +752,16 @@ export default function PostFeedComponent({
 					// Voxel reads from: feed.find(".post-feed-grid:first").find(".ts-marker-wrapper > .map-marker")
 					if (context === 'frontend' && attributes.source === 'search-form') {
 						const feedContainer = containerElement || containerRef.current;
+						console.log('[PostFeed] MAP INTEGRATION: feedContainer:', feedContainer);
 						if (feedContainer) {
+							// Debug: log the full HTML to see what's in the response
+							console.log('[PostFeed] Feed HTML (first 2000 chars):', feedContainer.innerHTML.substring(0, 2000));
+
 							// Extract marker data from .ts-marker-wrapper elements (Voxel embeds these in preview cards)
 							const markerEls = feedContainer.querySelectorAll('.post-feed-grid .ts-marker-wrapper > .map-marker');
+							console.log('[PostFeed] Found marker elements:', markerEls.length);
+							console.log('[PostFeed] All .ts-marker-wrapper elements:', feedContainer.querySelectorAll('.ts-marker-wrapper').length);
+							console.log('[PostFeed] All .map-marker elements:', feedContainer.querySelectorAll('.map-marker').length);
 							const markers: Array<{
 								postId: string;
 								lat: number;
@@ -765,6 +835,8 @@ export default function PostFeedComponent({
 				targetId: string;
 				postType: string;
 				filters: Record<string, unknown>;
+				hasMapWidget?: boolean;
+				mapAdditionalMarkers?: number;
 			}>;
 
 			// Only respond to events targeting this block
@@ -773,6 +845,15 @@ export default function PostFeedComponent({
 			}
 
 			const { postType, filters } = customEvent.detail;
+
+			// Track map widget connection for __load_markers param
+			// Evidence: voxel-search-form.beautified.js:2086-2091
+			if (customEvent.detail.hasMapWidget !== undefined) {
+				hasMapWidgetRef.current = customEvent.detail.hasMapWidget;
+			}
+			if (customEvent.detail.mapAdditionalMarkers !== undefined) {
+				mapAdditionalMarkersRef.current = customEvent.detail.mapAdditionalMarkers;
+			}
 
 			// Update dynamic state
 			setDynamicFilters(filters);
@@ -808,47 +889,166 @@ export default function PostFeedComponent({
 			// Don't set ref for editor - allow re-fetches when postType changes
 			fetchPosts(1);
 		} else if (context === 'frontend' && attributes.source === 'search-form') {
-			// In frontend with search-form source, check URL params for initial state
-			const url = new URL(window.location.href);
-			const urlPostType = url.searchParams.get('post_type');
-
-			// Collect filter params from URL
-			const urlFilters: Record<string, unknown> = {};
-			url.searchParams.forEach((value, key) => {
-				if (key.startsWith('filter_')) {
-					const filterKey = key.replace('filter_', '');
-					// Try to parse JSON for complex values
-					try {
-						urlFilters[filterKey] = JSON.parse(value);
-					} catch {
-						urlFilters[filterKey] = value;
-					}
-				}
-			});
+			// Detect if a Map block exists on the page for __load_markers param
+			// Evidence: voxel-search-form.beautified.js:2086-2091
+			const mapElement = document.querySelector('.voxel-fse-map');
+			console.log('[PostFeed] Looking for .voxel-fse-map element:', mapElement);
+			if (mapElement) {
+				hasMapWidgetRef.current = true;
+				console.log('[PostFeed] Map element found! hasMapWidgetRef set to true');
+			} else {
+				console.log('[PostFeed] No map element found. All elements with voxel-fse class:', document.querySelectorAll('[class*="voxel-fse"]'));
+			}
 
 			// Mark initial fetch as done BEFORE calling fetchPosts
 			initialFetchDoneRef.current = true;
 
-			// If URL has post_type, fetch with URL params
-			if (urlPostType) {
-				setDynamicPostType(urlPostType);
-				setDynamicFilters(urlFilters);
-				fetchPosts(1, false, urlFilters, urlPostType);
+			// VOXEL PARITY FIX: In Voxel, PHP renders initial posts server-side.
+			// The searchOn='filter_update' setting only affects SUBSEQUENT filter changes.
+			// PHP always calls get_search_results() with the default post type on page load.
+			//
+			// Evidence: voxel/app/widgets/post-feed.php:1567-1587
+			// Evidence: voxel-search-form.beautified.js:1991 - previousQueryString = currentQueryString
+			//
+			// Since we can't do server-side rendering, we MUST fetch on mount.
+			// This matches what the EDITOR does (line 876) - just call fetchPosts(1)
+
+			// Check URL for post type and filters (VOXEL PARITY format)
+			const url = new URL(window.location.href);
+			const urlPostType = url.searchParams.get('type') || url.searchParams.get('post_type');
+
+			// Collect filter params from URL (Voxel format: keys directly, no prefix)
+			const urlFilters: Record<string, unknown> = {};
+			url.searchParams.forEach((value, key) => {
+				// Skip known non-filter params
+				if (key === 'type' || key === 'post_type' || key === 'pg' || key === 'page') return;
+				// Legacy format: filter_* prefix
+				if (key.startsWith('filter_')) {
+					const filterKey = key.replace('filter_', '');
+					try { urlFilters[filterKey] = JSON.parse(value); } catch { urlFilters[filterKey] = value; }
+				} else {
+					// Voxel format: key directly
+					try { urlFilters[key] = JSON.parse(value); } catch { urlFilters[key] = value; }
+				}
+			});
+
+			// Determine post type: URL param takes precedence, then attributes.postType from vxconfig
+			// If attributes.postType is empty (common when source='search-form'), get it from linked Search Form
+			let postTypeToUse = urlPostType || attributes.postType;
+
+			// CRITICAL FIX: In the editor, postType is derived from linked Search Form via useSelect.
+			// But this derived value is NOT saved to attributes. So on frontend, attributes.postType is empty.
+			// Solution: Look up the linked Search Form and get its first postType.
+			if (!postTypeToUse && attributes.searchFormId) {
+				// Try multiple selectors to find the Search Form
+				// Evidence: search-form/save.tsx:68 - id: attributes.elementId || attributes.blockId
+				// Evidence: search-form/save.tsx:69 - className includes voxel-fse-search-form-${blockId}
+				// Evidence: search-form/save.tsx:79 - data-id: attributes.blockId
+				const selectors = [
+					`#${attributes.searchFormId}`,
+					`[data-id="${attributes.searchFormId}"]`,
+					`.voxel-fse-search-form-${attributes.searchFormId}`,
+				];
+
+				let linkedSearchForm: Element | null = null;
+				for (const selector of selectors) {
+					try {
+						linkedSearchForm = document.querySelector(selector);
+						if (linkedSearchForm) {
+							console.log('[PostFeed] Found Search Form with selector:', selector);
+							break;
+						}
+					} catch (e) {
+						// Invalid selector, skip
+					}
+				}
+
+				if (linkedSearchForm) {
+					// Method 1: Try data-post-types attribute (simpler, directly on element)
+					// Evidence: search-form/save.tsx:71 - 'data-post-types': JSON.stringify(attributes.postTypes || [])
+					const postTypesAttr = linkedSearchForm.getAttribute('data-post-types');
+					if (postTypesAttr) {
+						try {
+							const postTypesArray = JSON.parse(postTypesAttr);
+							if (Array.isArray(postTypesArray) && postTypesArray.length > 0) {
+								postTypeToUse = postTypesArray[0];
+								console.log('[PostFeed] Got default postType from data-post-types:', postTypeToUse);
+							}
+						} catch (e) {
+							console.error('[PostFeed] Failed to parse data-post-types:', e);
+						}
+					}
+
+					// Method 2: Fallback to vxconfig if data-post-types didn't work
+					if (!postTypeToUse) {
+						const searchFormVxConfigScript = linkedSearchForm.querySelector('script.vxconfig');
+						if (searchFormVxConfigScript?.textContent) {
+							try {
+								const searchFormVxConfig = JSON.parse(searchFormVxConfigScript.textContent);
+								// Evidence: search-form/save.tsx:98 - postTypes: [...].map(key => ({ key, label: '', filters: [] }))
+								if (searchFormVxConfig.postTypes && searchFormVxConfig.postTypes.length > 0) {
+									postTypeToUse = searchFormVxConfig.postTypes[0].key;
+									console.log('[PostFeed] Got default postType from vxconfig:', postTypeToUse);
+								}
+							} catch (e) {
+								console.error('[PostFeed] Failed to parse Search Form vxconfig:', e);
+							}
+						}
+					}
+				} else {
+					console.warn('[PostFeed] Could not find linked Search Form. searchFormId:', attributes.searchFormId, 'Tried selectors:', selectors);
+				}
+			}
+
+			console.log('[PostFeed] Frontend initial fetch - postTypeToUse:', postTypeToUse, 'attributes.postType:', attributes.postType);
+
+			if (postTypeToUse) {
+				// Update state for subsequent filter changes
+				if (urlPostType) {
+					setDynamicPostType(urlPostType);
+				}
+				if (Object.keys(urlFilters).length > 0) {
+					setDynamicFilters(urlFilters);
+				}
+
+				// CRITICAL: Pass postTypeToUse explicitly because React state updates are async
+				// If we just called fetchPosts(1), dynamicPostType would still be empty
+				fetchPosts(1, false, Object.keys(urlFilters).length > 0 ? urlFilters : undefined, postTypeToUse);
 			} else {
-				// No URL params - dispatch "ready" event for Search Form to respond
-				// The Search Form will send its initial values when it receives this
-				const readyEvent = new CustomEvent('voxel-fse:post-feed-ready', {
-					detail: {
-						blockId: attributes.blockId,
-						searchFormId: attributes.searchFormId,
-					},
-					bubbles: true,
-				});
-				window.dispatchEvent(readyEvent);
+				console.warn('[PostFeed] No post type available. attributes.postType:', attributes.postType, 'searchFormId:', attributes.searchFormId);
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded to prevent infinite loop
 	}, [context, attributes.source, attributes.postType, attributes.blockId, attributes.searchFormId]);
+
+	// Editor live update: refetch when postsPerPage, pagination, displayDetails, or cardTemplate change
+	// These attributes affect the AJAX query but are NOT in the initial fetch deps (to prevent infinite loop)
+	// Track previous values to detect actual changes (not initial mount)
+	const prevPostsPerPageRef = useRef(attributes.postsPerPage);
+	const prevPaginationRef = useRef(attributes.pagination);
+	const prevDisplayDetailsRef = useRef(attributes.displayDetails);
+	const prevCardTemplateRef = useRef(attributes.cardTemplate);
+
+	useEffect(() => {
+		if (context !== 'editor') return;
+
+		const changed =
+			prevPostsPerPageRef.current !== attributes.postsPerPage ||
+			prevPaginationRef.current !== attributes.pagination ||
+			prevDisplayDetailsRef.current !== attributes.displayDetails ||
+			prevCardTemplateRef.current !== attributes.cardTemplate;
+
+		// Update refs
+		prevPostsPerPageRef.current = attributes.postsPerPage;
+		prevPaginationRef.current = attributes.pagination;
+		prevDisplayDetailsRef.current = attributes.displayDetails;
+		prevCardTemplateRef.current = attributes.cardTemplate;
+
+		if (changed && attributes.postType) {
+			fetchPosts(1);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [context, attributes.postsPerPage, attributes.pagination, attributes.displayDetails, attributes.cardTemplate, attributes.postType]);
 
 	// Pagination handlers
 	const handleLoadMore = useCallback(() => {
@@ -885,20 +1085,189 @@ export default function PostFeedComponent({
 		}
 	}, [state.loading, state.hasNext, state.page, fetchPosts, scrollToTop]);
 
-	// Carousel navigation handlers
-	const handleCarouselPrev = useCallback(() => {
-		if (gridRef.current) {
-			const scrollAmount = gridRef.current.clientWidth * 0.8;
-			gridRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+	// Carousel: Parse cards from HTML for native scroll carousel
+	const carouselCards = useMemo(() => {
+		if (attributes.layoutMode !== 'carousel' || !state.results) {
+			return [];
+		}
+		return parseCardsFromHtml(state.results);
+	}, [attributes.layoutMode, state.results]);
+
+	/**
+	 * Carousel scroll state & handlers
+	 *
+	 * VOXEL PARITY: themes/voxel/assets/dist/commons.js
+	 * PATTERN FROM WORKING SLIDER BLOCK: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx
+	 *
+	 * Key differences from broken implementation:
+	 * - Use canScrollPrev/canScrollNext (like slider) not isScrollable
+	 * - Listen to scroll events to update button states
+	 * - Initial state: canScrollPrev=false (at start), canScrollNext=true (assume overflow)
+	 */
+	const carouselRef = useRef<HTMLDivElement>(null);
+	const [canScrollPrev, setCanScrollPrev] = useState(false);
+	const [canScrollNext, setCanScrollNext] = useState(true);
+
+	/**
+	 * Update scroll state for nav button disabled states
+	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:142-153
+	 *
+	 * Voxel's commons.js uses wrap-around navigation, meaning:
+	 * - At start: prev wraps to end
+	 * - At end: next wraps to start
+	 * So both buttons should ALWAYS be enabled when there's scrollable content.
+	 */
+	const updateScrollState = useCallback(() => {
+		const container = carouselRef.current;
+		if (!container) return;
+
+		// Calculate if there's any overflow (content wider than container)
+		const hasOverflow = container.scrollWidth > container.clientWidth + 5; // 5px threshold
+
+		// Debug logging - also measure first card width to understand layout
+		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
+		console.log('[PostFeed] updateScrollState:', {
+			scrollWidth: container.scrollWidth,
+			clientWidth: container.clientWidth,
+			hasOverflow,
+			cardCount: container.querySelectorAll('.ts-preview').length,
+			firstCardWidth: firstCard?.offsetWidth,
+			firstCardComputedWidth: firstCard ? getComputedStyle(firstCard).width : null,
+			containerGap: getComputedStyle(container).gap,
+			containerDisplay: getComputedStyle(container).display,
+		});
+
+		// With wrap-around navigation, both buttons are always enabled when there's scrollable content
+		if (hasOverflow) {
+			setCanScrollPrev(true);
+			setCanScrollNext(true);
+		} else {
+			setCanScrollPrev(false);
+			setCanScrollNext(false);
 		}
 	}, []);
 
-	const handleCarouselNext = useCallback(() => {
-		if (gridRef.current) {
-			const scrollAmount = gridRef.current.clientWidth * 0.8;
-			gridRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+	/**
+	 * Handle carousel prev click
+	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:177-200
+	 */
+	const handleCarouselPrev = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const container = carouselRef.current;
+		if (!container) return;
+
+		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
+		if (!firstCard) return;
+
+		let scrollAmount = -firstCard.scrollWidth;
+
+		// At start - wrap to end
+		if (Math.abs(container.scrollLeft) <= 10) {
+			scrollAmount = container.scrollWidth - container.clientWidth - container.scrollLeft;
 		}
+
+		container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
 	}, []);
+
+	/**
+	 * Handle carousel next click
+	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:206-229
+	 */
+	const handleCarouselNext = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const container = carouselRef.current;
+		if (!container) return;
+
+		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
+		if (!firstCard) return;
+
+		let scrollAmount = firstCard.scrollWidth;
+
+		// At end - wrap to start
+		if (container.clientWidth + Math.abs(container.scrollLeft) + 10 >= container.scrollWidth) {
+			scrollAmount = -container.scrollLeft;
+		}
+
+		container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+	}, []);
+
+	/**
+	 * Scroll event listener for updating nav button states
+	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:265-278
+	 *
+	 * CRITICAL: Must wait for cards to be laid out before checking scroll state.
+	 * Cards are rendered via dangerouslySetInnerHTML with inline styles, which requires
+	 * the browser to parse and lay them out before scrollWidth is accurate.
+	 *
+	 * FIX: Use requestAnimationFrame to ensure ref is attached after render completes.
+	 * The issue was that useEffect runs synchronously after render but before the DOM
+	 * is fully updated, so carouselRef.current could be null.
+	 */
+	useEffect(() => {
+		if (attributes.layoutMode !== 'carousel' || carouselCards.length === 0) {
+			setCanScrollPrev(false);
+			setCanScrollNext(false);
+			return;
+		}
+
+		const timeoutIds: number[] = [];
+		let rafId: number | null = null;
+		let ro: ResizeObserver | null = null;
+
+		// Use RAF to wait for DOM to be fully painted, then check ref
+		const setupListeners = () => {
+			const container = carouselRef.current;
+			if (!container) {
+				// Ref not ready yet, try again on next frame
+				console.log('[PostFeed] carouselRef not ready, retrying...');
+				rafId = requestAnimationFrame(setupListeners);
+				return;
+			}
+
+			console.log('[PostFeed] carouselRef attached, setting up scroll listeners');
+
+			// Initial state check with escalating delays for layout to settle
+			// The cards use dangerouslySetInnerHTML so we need to wait for DOM parsing
+			const checkTimes = [0, 50, 100, 200, 500, 1000];
+
+			checkTimes.forEach((delay) => {
+				const id = window.setTimeout(() => {
+					updateScrollState();
+				}, delay);
+				timeoutIds.push(id);
+			});
+
+			// Also check when images inside cards load (can affect card dimensions)
+			const handleImageLoad = () => {
+				updateScrollState();
+			};
+			container.addEventListener('load', handleImageLoad, true);
+
+			// Listen for scroll events
+			container.addEventListener('scroll', updateScrollState);
+
+			// Also observe resize changes
+			ro = new ResizeObserver(() => {
+				// Debounce resize observer updates
+				window.setTimeout(updateScrollState, 50);
+			});
+			ro.observe(container);
+		};
+
+		// Start the setup on next animation frame
+		rafId = requestAnimationFrame(setupListeners);
+
+		return () => {
+			if (rafId) cancelAnimationFrame(rafId);
+			timeoutIds.forEach((id) => clearTimeout(id));
+			const container = carouselRef.current;
+			if (container) {
+				container.removeEventListener('load', () => {}, true);
+				container.removeEventListener('scroll', updateScrollState);
+			}
+			if (ro) ro.disconnect();
+		};
+	}, [attributes.layoutMode, carouselCards.length, updateScrollState]);
 
 	// Render vxconfig for DevTools visibility (CRITICAL for Plan C+)
 	const vxConfig: PostFeedVxConfig = {
@@ -950,6 +1319,11 @@ export default function PostFeedComponent({
 		},
 	};
 
+	// Build carousel grid classes to match Voxel exactly (used in both editor and frontend)
+	// Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
+	// Classes: post-feed-grid, ts-feed-nowrap, min-scroll, min-scroll-h, vx-opacity, vx-event-autoslide, vx-event-scroll
+	const carouselGridClasses = `post-feed-grid ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`.trim();
+
 	// Editor preview - shows actual data or placeholder while loading
 	if (context === 'editor') {
 		// Determine if we should show empty placeholder (NO data source configured)
@@ -987,20 +1361,56 @@ export default function PostFeedComponent({
 					</div>
 				)}
 
-				{/* Post grid - actual content or loading spinner */}
+				{/* Post content - carousel or grid */}
+				{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
 				{(!isUnconfigured && !showSkeletonCards && state.results) ? (
-					/* Actual post cards from Voxel - rendered directly in grid container */
-					<div
-						className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
-						style={gridStyle}
-						dangerouslySetInnerHTML={{ __html: state.results }}
-					/>
+					attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
+						/* Native scroll carousel (matches Voxel's ts-feed-nowrap pattern)
+						 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
+						 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
+						 * data-auto-slide: carousel autoplay interval (0 = disabled)
+						 * CSS: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap styles
+						 */
+						<div
+							ref={carouselRef}
+							className={carouselGridClasses}
+							data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
+							style={{
+								gap: `${attributes.itemGap || 25}px`,
+								scrollPadding: `${attributes.scrollPadding || 0}px`,
+								padding: `0 ${attributes.scrollPadding || 0}px`,
+							}}
+						>
+							{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
+							{carouselCards.map((html, i) => {
+								const cardWidth = `${attributes.carouselItemWidth || 300}${attributes.carouselItemWidthUnit || 'px'}`;
+								return (
+									<div
+										key={i}
+										className="ts-preview"
+										style={{
+											width: cardWidth,
+											minWidth: cardWidth,
+											maxWidth: cardWidth, // Prevent cards from growing
+											flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
+											boxSizing: 'border-box', // Include padding in width calculation
+										}}
+										dangerouslySetInnerHTML={{ __html: html }}
+									/>
+								);
+							})}
+						</div>
+					) : (
+						/* Grid mode - render directly in grid container */
+						<div
+							ref={gridRef}
+							className={gridClasses}
+							dangerouslySetInnerHTML={{ __html: state.results }}
+						/>
+					)
 				) : isUnconfigured ? (
 					/* Empty placeholder when NO data source configured */
-					<div
-						className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
-						style={gridStyle}
-					>
+					<div ref={gridRef} className={gridClasses}>
 						<EmptyPlaceholder />
 					</div>
 				) : null}
@@ -1073,37 +1483,34 @@ export default function PostFeedComponent({
 					</div>
 				)}
 
-				{/* Carousel navigation */}
+				{/* Carousel navigation - rendered AFTER pagination as a SIBLING (not nested) */}
+				{/* Evidence: themes/voxel/templates/widgets/post-feed.php:32 - carousel-nav.php is last include */}
 				{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
-				{/* VOXEL PARITY: ul.simplify-ul.flexify > li > a structure */}
-				{attributes.layoutMode === 'carousel' && (
+				{/* STRICT 1:1 PARITY: .post-feed-nav uses position:absolute relative to parent container */}
+				{attributes.layoutMode === 'carousel' && carouselCards.length > 0 && (
 					<ul className="simplify-ul flexify post-feed-nav">
 						<li>
 							<a
 								href="#"
-								className="ts-icon-btn ts-prev-page disabled"
-								aria-label="Previous"
-								onClick={(e) => e.preventDefault()}
+								className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
+								aria-label={__('Previous', 'voxel-fse')}
+								onClick={handleCarouselPrev}
 							>
-								<span
-									dangerouslySetInnerHTML={{
-										__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
-									}}
-								/>
+								<span dangerouslySetInnerHTML={{
+									__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+								}} />
 							</a>
 						</li>
 						<li>
 							<a
 								href="#"
-								className="ts-icon-btn ts-next-page disabled"
-								aria-label="Next"
-								onClick={(e) => e.preventDefault()}
+								className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
+								aria-label={__('Next', 'voxel-fse')}
+								onClick={handleCarouselNext}
 							>
-								<span
-									dangerouslySetInnerHTML={{
-										__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
-									}}
-								/>
+								<span dangerouslySetInnerHTML={{
+									__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+								}} />
 							</a>
 						</li>
 					</ul>
@@ -1114,12 +1521,16 @@ export default function PostFeedComponent({
 
 	// Frontend render
 	// Evidence: themes/voxel/templates/widgets/post-feed.php
-	// Voxel renders direct children without a wrapper div (header, grid, no-results, pagination)
-	// The container .voxel-fse-post-feed-frontend already has the necessary wrapper classes
+	// Voxel renders direct children without a wrapper div (header, grid, no-results, pagination, carousel-nav)
+	// The container .voxel-fse-post-feed-frontend already has position:relative for nav arrow positioning
 	// Note: responsiveLayoutCSS is generated above (line 348) and handles all responsive styles
 
-	// STRICT PARITY: Use Fragment to avoid extra wrapper div
-	// The parent container in save.tsx (voxel-fse-post-feed-frontend) mimics elementor-widget-container
+	// STRICT 1:1 PARITY: Use Fragment to avoid extra wrapper div
+	// The parent container in save.tsx (voxel-fse-post-feed-frontend) provides position:relative
+	// Carousel nav (.post-feed-nav) uses position:absolute and is a SIBLING to the grid, NOT inside a wrapper
+	// Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php renders AFTER pagination.php
+	// Note: carouselGridClasses is defined above before editor section (used by both)
+
 	return (
 		<>
 			{/* Re-render vxconfig for DevTools visibility */}
@@ -1149,15 +1560,52 @@ export default function PostFeedComponent({
 				</div>
 			)}
 
-			{/* Post grid */}
+			{/* Post content — carousel or grid */}
 			{/* Evidence: themes/voxel/templates/widgets/post-feed.php:17-28 */}
-			<div
-				ref={gridRef}
-				className={`${gridClasses} ${attributes.layoutMode === 'carousel' ? 'min-scroll min-scroll-h' : ''}`}
-				style={gridStyle}
-				data-auto-slide={attributes.carouselAutoSlide ? '3000' : '0'}
-				dangerouslySetInnerHTML={{ __html: state.results }}
-			/>
+			{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
+			{attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
+				/* Native scroll carousel (matches Voxel's ts-feed-nowrap pattern)
+				 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
+				 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
+				 * data-auto-slide: carousel autoplay interval (0 = disabled)
+				 * CSS: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap styles
+				 */
+				<div
+					ref={carouselRef}
+					className={carouselGridClasses}
+					data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
+					style={{
+						gap: `${attributes.itemGap || 25}px`,
+						scrollPadding: `${attributes.scrollPadding || 0}px`,
+						padding: `0 ${attributes.scrollPadding || 0}px`,
+					}}
+				>
+					{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
+					{carouselCards.map((html, i) => {
+						const cardWidth = `${attributes.carouselItemWidth || 300}${attributes.carouselItemWidthUnit || 'px'}`;
+						return (
+							<div
+								key={i}
+								className="ts-preview"
+								style={{
+									width: cardWidth,
+									minWidth: cardWidth,
+									maxWidth: cardWidth, // Prevent cards from growing
+									flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
+									boxSizing: 'border-box', // Include padding in width calculation
+								}}
+								dangerouslySetInnerHTML={{ __html: html }}
+							/>
+						);
+					})}
+				</div>
+			) : (
+				<div
+					ref={gridRef}
+					className={gridClasses}
+					dangerouslySetInnerHTML={{ __html: state.results }}
+				/>
+			)}
 
 			{/* No results placeholder - always rendered, shown/hidden via CSS */}
 			{/* Evidence: themes/voxel/templates/widgets/post-feed/no-results.php */}
@@ -1176,8 +1624,6 @@ export default function PostFeedComponent({
 								className="ts-feed-reset"
 								onClick={(e) => {
 									e.preventDefault();
-									// Dispatch reset event for Search Form to handle
-									// Evidence: voxel search-form.js uses this.clearAll()
 									const resetEvent = new CustomEvent('voxel-search-clear', {
 										detail: {
 											postType: dynamicPostType || attributes.postType,
@@ -1202,7 +1648,6 @@ export default function PostFeedComponent({
 				<div className={`feed-pagination flexify ${!state.hasPrev && !state.hasNext ? 'hidden' : ''}`}>
 					{attributes.pagination === 'prev_next' && (
 						<>
-							{/* Evidence: pagination.php:4 - ts-btn-large class */}
 							<a
 								href="#"
 								className={`ts-btn ts-btn-1 ts-btn-large ts-load-prev ${!state.hasPrev ? 'disabled' : ''}`}
@@ -1218,7 +1663,6 @@ export default function PostFeedComponent({
 								/>
 								<span>{__('Previous', 'voxel-fse')}</span>
 							</a>
-							{/* Evidence: pagination.php:8 - btn-icon-right class on next */}
 							<a
 								href="#"
 								className={`ts-btn ts-btn-1 ts-btn-large btn-icon-right ts-load-next ${!state.hasNext ? 'disabled' : ''}`}
@@ -1256,43 +1700,37 @@ export default function PostFeedComponent({
 				</div>
 			)}
 
-			{/* Carousel navigation */}
+			{/* Carousel navigation - rendered AFTER pagination as a SIBLING (not nested) */}
+			{/* Evidence: themes/voxel/templates/widgets/post-feed.php:32 - carousel-nav.php is last include */}
 			{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
-			{/* VOXEL PARITY: ul.simplify-ul.flexify > li > a structure */}
-			{attributes.layoutMode === 'carousel' && (
-				<ul className={`simplify-ul flexify post-feed-nav ${!state.hasResults ? 'hidden' : ''}`}>
+			{/* STRICT 1:1 PARITY: .post-feed-nav uses position:absolute relative to parent container */}
+			{/* The parent .voxel-fse-post-feed-frontend (save.tsx) provides position:relative */}
+			{attributes.layoutMode === 'carousel' && carouselCards.length > 0 && (
+				<ul className="simplify-ul flexify post-feed-nav">
 					<li>
 						<a
 							href="#"
-							className="ts-icon-btn ts-prev-page"
-							aria-label="Previous"
-							onClick={(e) => {
-								e.preventDefault();
-								handleCarouselPrev();
-							}}
+							className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
+							aria-label={__('Previous', 'voxel-fse')}
+							onClick={handleCarouselPrev}
 						>
-							<span
-								dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
-								}}
-							/>
+							{/* Icon rendered directly without wrapper span (matches Voxel) */}
+							<span dangerouslySetInnerHTML={{
+								__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+							}} />
 						</a>
 					</li>
 					<li>
 						<a
 							href="#"
-							className="ts-icon-btn ts-next-page"
-							aria-label="Next"
-							onClick={(e) => {
-								e.preventDefault();
-								handleCarouselNext();
-							}}
+							className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
+							aria-label={__('Next', 'voxel-fse')}
+							onClick={handleCarouselNext}
 						>
-							<span
-								dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
-								}}
-							/>
+							{/* Icon rendered directly without wrapper span (matches Voxel) */}
+							<span dangerouslySetInnerHTML={{
+								__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+							}} />
 						</a>
 					</li>
 				</ul>
