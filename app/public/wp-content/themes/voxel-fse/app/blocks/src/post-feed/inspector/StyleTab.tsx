@@ -114,6 +114,14 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 						step={0.1}
 					/>
 				)}
+
+				{attributes.loadingStyle === 'skeleton' && (
+					<ColorControl
+						label={__('Skeleton background', 'voxel-fse')}
+						value={attributes.skeletonBackgroundColor}
+						onChange={(value) => setAttributes({ skeletonBackgroundColor: value })}
+					/>
+				)}
 			</AccordionPanel>
 
 			{/* NO RESULTS ACCORDION */}
@@ -200,6 +208,8 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 										{ label: __('Start', 'voxel-fse'), value: 'flex-start' },
 										{ label: __('Center', 'voxel-fse'), value: 'center' },
 										{ label: __('End', 'voxel-fse'), value: 'flex-end' },
+										{ label: __('Space between', 'voxel-fse'), value: 'space-between' },
+										{ label: __('Space around', 'voxel-fse'), value: 'space-around' },
 									]}
 
 									onChange={(value: string) => setAttributes({ paginationJustify: value })}
@@ -339,6 +349,24 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 					]}
 					onChange={(value: string) => setAttributes({ paginationBorderType: value })}
 				/>
+
+				{attributes.paginationBorderType && (
+					<>
+						<SliderControl
+							label={__('Border width', 'voxel-fse')}
+							value={attributes.paginationBorderWidth}
+							onChange={(value) => setAttributes({ paginationBorderWidth: value })}
+							min={0}
+							max={10}
+						/>
+
+						<ColorControl
+							label={__('Border color', 'voxel-fse')}
+							value={attributes.paginationBorderColor}
+							onChange={(value) => setAttributes({ paginationBorderColor: value })}
+						/>
+					</>
+				)}
 			</AccordionPanel>
 
 			{/* CAROUSEL NAVIGATION ACCORDION */}
@@ -480,6 +508,24 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 					]}
 					onChange={(value: string) => setAttributes({ carouselNavBorderType: value })}
 				/>
+
+				{attributes.carouselNavBorderType && (
+					<>
+						<SliderControl
+							label={__('Border width', 'voxel-fse')}
+							value={attributes.carouselNavBorderWidth}
+							onChange={(value) => setAttributes({ carouselNavBorderWidth: value })}
+							min={0}
+							max={10}
+						/>
+
+						<ColorControl
+							label={__('Border color', 'voxel-fse')}
+							value={attributes.carouselNavBorderColor}
+							onChange={(value) => setAttributes({ carouselNavBorderColor: value })}
+						/>
+					</>
+				)}
 			</AccordionPanel>
 		</AccordionPanelGroup>
 	);

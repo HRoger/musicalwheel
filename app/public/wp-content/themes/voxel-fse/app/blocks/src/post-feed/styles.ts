@@ -316,9 +316,18 @@ export function generatePostFeedStyles(
 	// Pagination border type - Evidence: post-feed.php:919-923
 	if (attributes.paginationBorderType) {
 		cssRules.push(`${selector} .feed-pagination .ts-btn { border-style: ${attributes.paginationBorderType}; }`);
-		if (attributes.paginationBorderType !== 'none') {
-			cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: 1px; }`); // Default width if type set?
-		}
+	}
+
+	// Pagination border width - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.paginationBorderWidth !== undefined) {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: ${attributes.paginationBorderWidth}px; }`);
+	} else if (attributes.paginationBorderType && attributes.paginationBorderType !== 'none') {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: 1px; }`); // Default width if type set
+	}
+
+	// Pagination border color (Normal) - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.paginationBorderColor) {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-color: ${attributes.paginationBorderColor}; }`);
 	}
 
 	// Pagination justify - Evidence: post-feed.php:837-856
@@ -464,9 +473,18 @@ export function generatePostFeedStyles(
 	// Carousel nav border type - Evidence: post-feed.php:1241-1250
 	if (attributes.carouselNavBorderType) {
 		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-style: ${attributes.carouselNavBorderType}; }`);
-		if (attributes.carouselNavBorderType !== 'none') {
-			cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: 1px; }`); // Default width
-		}
+	}
+
+	// Carousel nav border width - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.carouselNavBorderWidth !== undefined) {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: ${attributes.carouselNavBorderWidth}px; }`);
+	} else if (attributes.carouselNavBorderType && attributes.carouselNavBorderType !== 'none') {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: 1px; }`); // Default width
+	}
+
+	// Carousel nav border color (Normal) - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.carouselNavBorderColor) {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-color: ${attributes.carouselNavBorderColor}; }`);
 	}
 
 	// Carousel nav border radius - Evidence: post-feed.php:1252-1277
@@ -526,6 +544,12 @@ export function generatePostFeedStyles(
 	// Loading opacity - Evidence: post-feed.php:611-621
 	if (attributes.loadingStyle === 'opacity' && attributes.loadingOpacity !== undefined) {
 		cssRules.push(`${selector} .post-feed-grid.vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+	}
+
+	// Skeleton background color - Evidence: post-feed.php:633-642
+	// Selector: {{WRAPPER}}.vx-loading .vx-skeleton .ts-preview
+	if (attributes.loadingStyle === 'skeleton' && attributes.skeletonBackgroundColor) {
+		cssRules.push(`${selector}.vx-loading .vx-skeleton .ts-preview { background-color: ${attributes.skeletonBackgroundColor}; }`);
 	}
 
 	// ============================================

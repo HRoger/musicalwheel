@@ -1110,7 +1110,7 @@ export default function PostFeedComponent({
 		dragFree: true,
 	}, [
 		Autoplay({
-			delay: attributes.carouselAutoSlide ? (parseInt(String(attributes.carouselAutoSlide)) || 3000) : 3000,
+			delay: attributes.carouselAutoSlideInterval || 3000,
 			stopOnInteraction: true,
 			active: !!attributes.carouselAutoSlide,
 		})
@@ -1121,7 +1121,7 @@ export default function PostFeedComponent({
 		if (!emblaApi) return;
 
 		const autoplayEnabled = !!attributes.carouselAutoSlide;
-		const autoplayDelay = attributes.carouselAutoSlide ? (parseInt(String(attributes.carouselAutoSlide)) || 3000) : 3000;
+		const autoplayDelay = attributes.carouselAutoSlideInterval || 3000;
 
 		// Re-initialize Embla with updated options and plugins
 		emblaApi.reInit({
@@ -1139,6 +1139,7 @@ export default function PostFeedComponent({
 	}, [
 		emblaApi,
 		attributes.carouselAutoSlide,
+		attributes.carouselAutoSlideInterval,
 		attributes.itemGap,
 		attributes.carouselItemWidth,
 		attributes.carouselItemWidthUnit,
@@ -1300,7 +1301,7 @@ export default function PostFeedComponent({
 								className={carouselGridClasses}
 								data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
 								style={{
-									gap: `${attributes.itemGap || 25}px`,
+									gap: `${attributes.itemGap || 20}px`,
 									scrollPadding: `${attributes.scrollPadding || 0}px`,
 									padding: `0 ${attributes.scrollPadding || 0}px`,
 									backfaceVisibility: 'hidden',
@@ -1315,7 +1316,7 @@ export default function PostFeedComponent({
 									// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
 									// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
 									// APPLIED TO EDITOR RENDER LOOP
-									const gap = attributes.itemGap || 25;
+									const gap = attributes.itemGap || 20;
 									const cols = attributes.columns || 3;
 
 									// Check if we should use fixed width:
@@ -1528,7 +1529,7 @@ export default function PostFeedComponent({
 						className={carouselGridClasses}
 						data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
 						style={{
-							gap: `${attributes.itemGap || 25}px`,
+							gap: `${attributes.itemGap || 20}px`,
 							scrollPadding: `${attributes.scrollPadding || 0}px`,
 							padding: `0 ${attributes.scrollPadding || 0}px`,
 							backfaceVisibility: 'hidden',
@@ -1542,7 +1543,7 @@ export default function PostFeedComponent({
 						{carouselCards.map((html, i) => {
 							// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
 							// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
-							const gap = attributes.itemGap || 25;
+							const gap = attributes.itemGap || 20;
 							const cols = attributes.columns || 3;
 
 							// Check if we should use fixed width:

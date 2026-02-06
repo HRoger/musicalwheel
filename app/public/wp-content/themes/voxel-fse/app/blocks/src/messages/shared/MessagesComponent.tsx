@@ -2045,12 +2045,13 @@ export default function MessagesComponent({
 																	))}
 																</div>
 															) : (
-																/* Emoji categories */
+																/* Emoji categories - use translated labels from l10n.emoji_groups */
+																/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 320 */
 																state.emojis.list &&
 																Object.entries(state.emojis.list as EmojiCategory).map(
 																	([category, emojis]) => (
 																		<div key={category} className="ts-emoji-category">
-																			<span>{category}</span>
+																			<span>{messagesConfig?.l10n?.emoji_groups?.[category] || category}</span>
 																			<div className="ts-emoji-grid">
 																				{emojis.map((emoji: { emoji: string }, i: number) => (
 																					<button
@@ -2072,47 +2073,53 @@ export default function MessagesComponent({
 										</div>
 
 										{/* Attach file button (upload new files) */}
-										<button
-											onClick={() => fileInputRef.current?.click()}
-											className="ts-icon-btn ts-attach-btn"
-											title={__('Upload file', 'voxel-fse')}
-										>
-											<span
-												dangerouslySetInnerHTML={{
-													__html: getIcon(attributes.icons.upload, DEFAULT_ICONS.attach),
-												}}
-											/>
-										</button>
-
-										{/* Media library button (select existing files) */}
-										<MediaPopup
-											multiple={true}
-											saveLabel={__('Add files', 'voxel-fse')}
-											onSave={(files) => {
-												// Convert MediaPopup files to FileData format
-												const fileDataList: FileData[] = files.map((file) => ({
-													source: (file.source || 'existing') as 'existing' | 'new_upload',
-													id: file.id,
-													_id: file.id ? String(file.id) : undefined,
-													name: file.name,
-													type: file.type || '',
-													size: 0,
-													preview: file.preview || '',
-												}));
-												onMediaPopupSave(fileDataList);
-											}}
-										>
+										{/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 269 */}
+										{(messagesConfig?.files?.enabled !== false) && (
 											<button
-												className="ts-icon-btn ts-gallery-btn"
-												title={__('Media library', 'voxel-fse')}
+												onClick={() => fileInputRef.current?.click()}
+												className="ts-icon-btn ts-attach-btn"
+												title={__('Upload file', 'voxel-fse')}
 											>
 												<span
 													dangerouslySetInnerHTML={{
-														__html: getIcon(attributes.icons.gallery, DEFAULT_ICONS.gallery),
+														__html: getIcon(attributes.icons.upload, DEFAULT_ICONS.attach),
 													}}
 												/>
 											</button>
-										</MediaPopup>
+										)}
+
+										{/* Media library button (select existing files) */}
+										{/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 272 */}
+										{(messagesConfig?.files?.enabled !== false) && (
+											<MediaPopup
+												multiple={true}
+												saveLabel={__('Add files', 'voxel-fse')}
+												onSave={(files) => {
+													// Convert MediaPopup files to FileData format
+													const fileDataList: FileData[] = files.map((file) => ({
+														source: (file.source || 'existing') as 'existing' | 'new_upload',
+														id: file.id,
+														_id: file.id ? String(file.id) : undefined,
+														name: file.name,
+														type: file.type || '',
+														size: 0,
+														preview: file.preview || '',
+													}));
+													onMediaPopupSave(fileDataList);
+												}}
+											>
+												<button
+													className="ts-icon-btn ts-gallery-btn"
+													title={__('Media library', 'voxel-fse')}
+												>
+													<span
+														dangerouslySetInnerHTML={{
+															__html: getIcon(attributes.icons.gallery, DEFAULT_ICONS.gallery),
+														}}
+													/>
+												</button>
+											</MediaPopup>
+										)}
 
 										<div className="compose-message min-scroll">
 											<textarea

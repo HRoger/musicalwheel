@@ -178,10 +178,67 @@ export function getResponsiveValueClient<T>(
 }
 
 
+/**
+ * Default checkmark SVG (fallback when no icon is configured)
+ * Matches Voxel's checkmark-circle.svg
+ */
+const DEFAULT_CHECKMARK_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
 
+/**
+ * Default search SVG (fallback when no icon is configured)
+ * Matches Voxel's search.svg
+ */
+const DEFAULT_SEARCH_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
 
+/**
+ * Default geolocation SVG (fallback when no icon is configured)
+ * Matches Voxel's current-location-icon.svg
+ */
+const DEFAULT_GEOLOCATION_SVG = `<svg width="24" height="24" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z" fill="currentColor"/><path d="M13.1523 2.19141C13.1523 1.77719 12.8166 1.44141 12.4023 1.44141C11.9881 1.44141 11.6523 1.77719 11.6523 2.19141V3.72405C7.5566 4.0822 4.29367 7.34575 3.93549 11.4414H2.40234C1.98813 11.4414 1.65234 11.7772 1.65234 12.1914C1.65234 12.6056 1.98813 12.9414 2.40234 12.9414H3.93545C4.29344 17.0373 7.55645 20.301 11.6523 20.6592V22.1914C11.6523 22.6056 11.9881 22.9414 12.4023 22.9414C12.8166 22.9414 13.1523 22.6056 13.1523 22.1914V20.6592C17.2482 20.301 20.5113 17.0373 20.8692 12.9414H22.4023C22.8166 12.9414 23.1523 12.6056 23.1523 12.1914C23.1523 11.7772 22.8166 11.4414 22.4023 11.4414H20.8692C20.511 7.34575 17.2481 4.0822 13.1523 3.72405V2.19141ZM12.4025 7.94141C14.7496 7.94141 16.6522 9.84446 16.6522 12.1914C16.6522 14.5383 14.7496 16.4414 12.4025 16.4414C10.0554 16.4414 8.15283 14.5384 8.15283 12.1914C8.15283 9.84446 10.0554 7.94141 12.4025 7.94141ZM12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z" fill="currentColor"/></svg>`;
 
+/**
+ * Render an IconValue to HTML string
+ * Implements 1:1 parity with Voxel's \Voxel\get_icon_markup() function
+ *
+ * @param icon - The icon configuration (library + value)
+ * @param fallbackHtml - Fallback HTML if icon is empty/invalid
+ * @returns HTML string for the icon
+ */
+function renderIconToHtml(
+	icon: { library?: string; value?: string } | undefined,
+	fallbackHtml: string = ''
+): string {
+	// No icon configured - use fallback
+	if (!icon || !icon.value) {
+		return fallbackHtml;
+	}
 
+	// Icon font library (Line Awesome, Font Awesome, etc.)
+	// library values: 'icon', 'fa-solid', 'fa-regular', 'fa-brands', 'line-awesome', ''
+	if (icon.library === 'icon' || !icon.library || icon.library === '' ||
+		icon.library === 'fa-solid' || icon.library === 'fa-regular' ||
+		icon.library === 'fa-brands' || icon.library === 'line-awesome') {
+		return `<i class="${icon.value}"></i>`;
+	}
+
+	// SVG library - can be inline SVG or URL
+	if (icon.library === 'svg' && icon.value) {
+		// Inline SVG (starts with <svg or <?xml)
+		if (icon.value.startsWith('<svg') || icon.value.startsWith('<?xml')) {
+			return `<span class="ts-icon-svg">${icon.value}</span>`;
+		}
+		// SVG URL
+		return `<img src="${icon.value}" alt="" class="ts-icon-svg" />`;
+	}
+
+	// Dynamic library - treat as icon class
+	if (icon.library === 'dynamic') {
+		return `<i class="${icon.value}"></i>`;
+	}
+
+	// Fallback for unknown library types
+	return fallbackHtml;
+}
 
 /**
  * Render drag search UI
@@ -199,20 +256,26 @@ function renderDragSearchUI(
 
 	if (config.dragSearchMode === 'automatic') {
 		const isChecked = config.dragSearchDefault === 'checked';
+		// Get custom checkmark icon from config, fallback to default SVG
+		// Implements 1:1 parity with Voxel's map.php:33
+		const checkmarkIcon = config.styles?.searchBtn?.checkmarkIcon;
+		const checkmarkHtml = renderIconToHtml(checkmarkIcon, DEFAULT_CHECKMARK_SVG);
+
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-map-btn ts-drag-toggle ${isChecked ? 'active' : ''}">
-				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon">
-					<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-				</svg>
+				${checkmarkHtml}
 				Search as I move the map
 			</a>
 		`;
 	} else {
+		// Get custom search icon from config, fallback to default SVG
+		// Implements 1:1 parity with Voxel's map.php:38
+		const searchIcon = config.styles?.searchBtn?.searchIcon;
+		const searchHtml = renderIconToHtml(searchIcon, DEFAULT_SEARCH_SVG);
+
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-search-area hidden ts-map-btn">
-				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon">
-					<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-				</svg>
+				${searchHtml}
 				Search this area
 			</a>
 		`;
@@ -225,7 +288,7 @@ function renderDragSearchUI(
 /**
  * Render geolocation button
  */
-function renderGeolocateButton(container: HTMLElement): HTMLElement {
+function renderGeolocateButton(container: HTMLElement, config: MapVxConfig): HTMLElement {
 	const geoBtn = document.createElement('a');
 	geoBtn.href = '#';
 	geoBtn.rel = 'nofollow';
@@ -233,10 +296,11 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 	// PARITY FIX: Voxel starts with 'hidden' class (templates/widgets/map.php:55)
 	geoBtn.className = 'vx-geolocate-me hidden';
 	geoBtn.setAttribute('aria-label', 'Share your location');
-	// PARITY FIX: Use Voxel's exact geolocation SVG (voxel/assets/images/svgs/current-location-icon.svg)
-	geoBtn.innerHTML = `
-		<svg width="24" height="24" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z" fill="currentColor"/><path d="M13.1523 2.19141C13.1523 1.77719 12.8166 1.44141 12.4023 1.44141C11.9881 1.44141 11.6523 1.77719 11.6523 2.19141V3.72405C7.5566 4.0822 4.29367 7.34575 3.93549 11.4414H2.40234C1.98813 11.4414 1.65234 11.7772 1.65234 12.1914C1.65234 12.6056 1.98813 12.9414 2.40234 12.9414H3.93545C4.29344 17.0373 7.55645 20.301 11.6523 20.6592V22.1914C11.6523 22.6056 11.9881 22.9414 12.4023 22.9414C12.8166 22.9414 13.1523 22.6056 13.1523 22.1914V20.6592C17.2482 20.301 20.5113 17.0373 20.8692 12.9414H22.4023C22.8166 12.9414 23.1523 12.6056 23.1523 12.1914C23.1523 11.7772 22.8166 11.4414 22.4023 11.4414H20.8692C20.511 7.34575 17.2481 4.0822 13.1523 3.72405V2.19141ZM12.4025 7.94141C14.7496 7.94141 16.6522 9.84446 16.6522 12.1914C16.6522 14.5383 14.7496 16.4414 12.4025 16.4414C10.0554 16.4414 8.15283 14.5384 8.15283 12.1914C8.15283 9.84446 10.0554 7.94141 12.4025 7.94141ZM12.4025 9.44141C10.884 9.44141 9.65283 10.6727 9.65283 12.1914C9.65283 13.7101 10.884 14.9414 12.4025 14.9414C13.921 14.9414 15.1522 13.7101 15.1522 12.1914C15.1522 10.6727 13.921 9.44141 12.4025 9.44141Z" fill="currentColor"/></svg>
-	`;
+	// Get custom geolocation icon from config, fallback to default SVG
+	// Implements 1:1 parity with Voxel's map.php:56
+	const geolocationIcon = config.styles?.geolocationIcon;
+	const geolocationHtml = renderIconToHtml(geolocationIcon, DEFAULT_GEOLOCATION_SVG);
+	geoBtn.innerHTML = geolocationHtml;
 
 	// Add click handler using VxGeocoder
 	// PARITY: Voxel's geolocation flow (voxel-map.beautified.js:492-524)
@@ -401,7 +465,7 @@ function initSearchFormMap(
 	const mapContainer = renderMapContainer(container, config, dataConfig);
 
 	// Render geolocation button
-	renderGeolocateButton(container);
+	renderGeolocateButton(container, config);
 
 	// Queue for markers that arrive before map is ready
 	let pendingMarkers: Array<{

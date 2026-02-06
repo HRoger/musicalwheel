@@ -106,7 +106,7 @@
 		},
 		"noResultsLabel": {
 			"type": "string",
-			"default": "No results available"
+			"default": "There are no results matching your search"
 		},
 		"layoutMode": {
 			"type": "string",
@@ -128,7 +128,7 @@
 		},
 		"itemGap": {
 			"type": "number",
-			"default": 25
+			"default": 20
 		},
 		"itemGap_tablet": {
 			"type": "number"
@@ -152,6 +152,10 @@
 		"carouselAutoSlide": {
 			"type": "boolean",
 			"default": false
+		},
+		"carouselAutoSlideInterval": {
+			"type": "number",
+			"default": 3000
 		},
 		"scrollPadding": {
 			"type": "number"
@@ -241,6 +245,10 @@
 			"type": "number",
 			"default": 0.5
 		},
+		"skeletonBackgroundColor": {
+			"type": "string",
+			"default": ""
+		},
 		"noResultsHideScreen": {
 			"type": "boolean",
 			"default": false
@@ -327,6 +335,13 @@
 			"type": "number"
 		},
 		"paginationBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"paginationBorderWidth": {
+			"type": "number"
+		},
+		"paginationBorderColor": {
 			"type": "string",
 			"default": ""
 		},
@@ -421,6 +436,13 @@
 			"type": "number"
 		},
 		"carouselNavBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"carouselNavBorderWidth": {
+			"type": "number"
+		},
+		"carouselNavBorderColor": {
 			"type": "string",
 			"default": ""
 		},

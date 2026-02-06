@@ -232,10 +232,12 @@ const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
 		(day) => !allUsedDays.includes(day) || group.days.includes(day)
 	);
 
+	// Voxel JS: days.map(d => this.field.props.weekdays[d]).filter(Boolean).join(", ")
+	// Evidence: voxel-create-post.beautified.js:1180
 	const displayDays = (days: string[]): string => {
 		if (days.length === 0) return 'Select day(s)';
 		if (days.length === Object.keys(weekdays).length) return 'Every day';
-		return days.map((d) => weekdays[d]).join(', ');
+		return days.map((d) => weekdays[d]).filter(Boolean).join(', ');
 	};
 
 	const handleToggleDay = useCallback((day: string) => {

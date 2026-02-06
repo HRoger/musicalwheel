@@ -11,7 +11,9 @@ import {
     ResponsiveRangeControl,
     PopupCustomStyleControl,
     AccordionPanelGroup,
-    AccordionPanel
+    AccordionPanel,
+    DimensionsControl,
+    BoxShadowPopup
 } from '@shared/controls';
 import type { UserbarAttributes } from '../types';
 
@@ -112,6 +114,38 @@ export default function StyleTab({
                             attributeBaseName="itemBorderRadius"
                             min={0}
                             max={100}
+                        />
+
+                        {/* Item Margin - user-bar.php:584-594 */}
+                        <DimensionsControl
+                            label={__('Margin', 'voxel-fse')}
+                            values={attributes.itemMargin || { top: '', right: '', bottom: '', left: '' }}
+                            onChange={(values) => setAttributes({ itemMargin: { ...values, unit: 'px' } })}
+                            availableUnits={['px', '%', 'em']}
+                        />
+
+                        {/* Item Padding - user-bar.php:596-606 */}
+                        <DimensionsControl
+                            label={__('Padding', 'voxel-fse')}
+                            values={attributes.itemPadding || { top: '', right: '', bottom: '', left: '' }}
+                            onChange={(values) => setAttributes({ itemPadding: { ...values, unit: 'px' } })}
+                            availableUnits={['px', '%', 'em']}
+                        />
+
+                        {/* Item Box Shadow - user-bar.php:642-649 */}
+                        <BoxShadowPopup
+                            label={__('Box shadow', 'voxel-fse')}
+                            attributes={attributes}
+                            setAttributes={setAttributes}
+                            shadowAttributeName="itemBoxShadow"
+                        />
+
+                        {/* Item Box Shadow Hover - user-bar.php:1005-1012 */}
+                        <BoxShadowPopup
+                            label={__('Box shadow (hover)', 'voxel-fse')}
+                            attributes={attributes}
+                            setAttributes={setAttributes}
+                            shadowAttributeName="itemBoxShadowHover"
                         />
 
                         <ResponsiveRangeControl
