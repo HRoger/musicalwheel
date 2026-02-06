@@ -57,15 +57,22 @@ interface LocationValue {
 function serializeLocationValue( loc: LocationValue | null ): string | null {
 	if ( ! loc || ! loc.address ) return null;
 
-	// If we have viewport bounds (area method), use that format
+	// Evidence: voxel-search-form.beautified.js lines 738-756 (saveValue)
+	// Voxel serializes based on the explicit `method` field, not by checking which coords exist.
+	// When method is 'radius', use lat,lng,radius format even if bounds exist.
+	if ( loc.method === 'radius' && loc.lat !== undefined && loc.lng !== undefined ) {
+		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 10 }`;
+	}
+
+	// Area method: use viewport bounds format
 	if ( loc.swlat !== undefined && loc.swlng !== undefined &&
 		 loc.nelat !== undefined && loc.nelng !== undefined ) {
 		return `${ loc.address };${ loc.swlat },${ loc.swlng }..${ loc.nelat },${ loc.nelng }`;
 	}
 
-	// Otherwise use radius format (requires lat/lng)
+	// Fallback to radius format if we have lat/lng
 	if ( loc.lat !== undefined && loc.lng !== undefined ) {
-		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 25 }`;
+		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 10 }`;
 	}
 
 	// Just address without coordinates (shouldn't happen in normal flow)
@@ -100,6 +107,7 @@ function parseLocationValue( value: unknown, defaultRadius: number ): LocationVa
 			const ne = parts[ 1 ].split( ',' );
 			return {
 				address,
+				method: 'area',
 				swlat: Number( sw[ 0 ] ),
 				swlng: Number( sw[ 1 ] ),
 				nelat: Number( ne[ 0 ] ),
@@ -111,6 +119,7 @@ function parseLocationValue( value: unknown, defaultRadius: number ): LocationVa
 		const parts = coords.split( ',' );
 		return {
 			address,
+			method: 'radius',
 			lat: Number( parts[ 0 ] ),
 			lng: Number( parts[ 1 ] ),
 			radius: parts[ 2 ] ? Number( parts[ 2 ] ) : defaultRadius,
@@ -145,15 +154,22 @@ export default function FilterLocation( {
 
 	const props = filterData.props || {};
 	// Radius configuration from Voxel
-	// Evidence: voxel-search-form.beautified.js lines 669-679
+	// Evidence: location-filter.php:422-428 (frontend_props returns radius object)
+	// Evidence: location-filter.php:16-20 (class $props defaults)
 	const radiusConfig = props.radius || {};
-	const defaultRadius = radiusConfig.default ?? 25;
-	const radiusMin = radiusConfig.min ?? 1;
+	const defaultRadius = radiusConfig.default ?? 10;
+	const radiusMin = radiusConfig.min ?? 0;
 	const radiusMax = radiusConfig.max ?? 100;
 	const radiusStep = radiusConfig.step ?? 1;
-	const units = props.units || 'km';
+	// Evidence: location-filter.php:426 — units is nested inside radius object, not top-level
+	const units = radiusConfig.units || 'km';
 	const displayProximityAs = props.display_proximity_as || 'popup';
 	const placeholder = props.placeholder || filterData.label || 'Location';
+	// Evidence: location-filter.php:432 — default search method (radius or area)
+	const defaultSearchMethod = props.default_search_method || 'area';
+	// Evidence: location-filter.php:433-435 — localization strings
+	const l10n = props.l10n || {};
+	const visibleAreaLabel = l10n.visibleArea || 'Visible map area';
 	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
 
 	// Get filter icon - from API data (HTML markup) or fallback
@@ -288,8 +304,11 @@ export default function FilterLocation( {
 						const sw = result.viewport.getSouthWest();
 						const ne = result.viewport.getNorthEast();
 
+						// Evidence: voxel-search-form.beautified.js lines 676-686 (usePlaceData)
+						// Voxel stores ALL coordinates (bounds + center) and uses `method` to decide format
 						const newValue: LocationValue = {
 							address: result.address,
+							method: defaultSearchMethod as 'radius' | 'area',
 							swlat: shortenPoint( sw.getLatitude() ),
 							swlng: shortenPoint( sw.getLongitude() ),
 							nelat: shortenPoint( ne.getLatitude() ),
@@ -316,7 +335,7 @@ export default function FilterLocation( {
 				autocompleteConfig
 			);
 		} );
-	}, [ config.autocomplete, onChange, displayAs, defaultRadius, locationValue.radius, shortenPoint ] );
+	}, [ config.autocomplete, onChange, displayAs, defaultRadius, defaultSearchMethod, locationValue.radius, shortenPoint ] );
 
 	// Sync local state when popup opens OR when in inline mode
 	useEffect( () => {
@@ -364,8 +383,10 @@ export default function FilterLocation( {
 		if ( 'geolocation' in navigator ) {
 			navigator.geolocation.getCurrentPosition(
 				( position ) => {
+					// Geolocation provides center point only, so always use radius method
 					const newValue: LocationValue = {
 						address: 'Current Location',
+						method: 'radius',
 						lat: position.coords.latitude,
 						lng: position.coords.longitude,
 						radius: defaultRadius,

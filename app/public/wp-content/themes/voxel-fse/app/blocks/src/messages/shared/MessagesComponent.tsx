@@ -596,10 +596,16 @@ export default function MessagesComponent({
 		formData.append('_wpnonce', messagesConfig.nonce);
 
 		// Update UI
+		// Reference: voxel-messages.beautified.js line 801-805
+		// blur_on_send is a WebKit iOS bug workaround
 		setTimeout(() => {
 			updateScroll();
 			resizeComposer();
-			composerRef.current?.focus();
+			if (messagesConfig.blur_on_send) {
+				composerRef.current?.blur();
+			} else {
+				composerRef.current?.focus();
+			}
 		}, 10);
 
 		try {
@@ -1206,10 +1212,25 @@ export default function MessagesComponent({
 
 	/**
 	 * Handle file selection
-	 * Reference: voxel-messages.beautified.js line 326-359
+	 * Reference: voxel-messages.beautified.js line 326-359, 433-462
 	 */
 	const pushFile = useCallback((file: File) => {
 		const maxCount = messagesConfig?.files?.max_count || 5;
+		const maxSize = messagesConfig?.files?.max_size; // in KB
+
+		// Validate file size (Reference: voxel-messages.beautified.js line 452-462)
+		if (maxSize && file.size > maxSize * 1000) {
+			const limitKb = maxSize;
+			const limitMb = (maxSize / 1000).toFixed(1);
+			showAlert(
+				__('File "%s" exceeds the maximum size limit (%s KB / %s MB)', 'voxel-fse')
+					.replace('%s', file.name)
+					.replace('%s', String(limitKb))
+					.replace('%s', limitMb),
+				'error'
+			);
+			return;
+		}
 
 		const fileData: FileData = {
 			source: 'new_upload',

@@ -146,22 +146,27 @@ interface FileFieldProps {
 export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, onBlur, icons }) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [dragActive, setDragActive] = useState(false);
+	// Drag-reorder state for sortable files
+	const [dragReorderIndex, setDragReorderIndex] = useState<number | null>(null);
 
 	// Normalize value to FileObject array
 	const files: FileObject[] = Array.isArray(value) ? value : [];
 
 	// Field configuration from Voxel props
 	const maxCount = field.props?.['max-count'] || field.props?.['maxCount'] || 1;
+	// Evidence: file-field-trait.php:145 — sortable flag enables drag-and-drop reordering
+	const sortable = field.props?.['sortable'] === true;
 	const isImageField = field.type === 'image' || field.type === 'profile-avatar' || field.type === 'logo' || field.type === 'cover-image' || field.type === 'gallery';
 
 	// Preview images - always true (Voxel backend always returns previews)
 	const previewImages = true;
 
 	// Get allowed file types
+	// Evidence: file-field-trait.php:144 returns 'allowedTypes' (camelCase)
 	const getAllowedTypes = () => {
 		if (isImageField) return 'image/*';
-		const allowedTypes = field.props?.['allowed-types'] || [];
-		return allowedTypes.length > 0 ? allowedTypes.join(',') : '*';
+		const allowedTypes = field.props?.['allowedTypes'] || field.props?.['allowed-types'] || [];
+		return Array.isArray(allowedTypes) && allowedTypes.length > 0 ? allowedTypes.join(',') : '*';
 	};
 
 	// Get validation error
@@ -232,6 +237,27 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		const newFiles = [...files];
 		newFiles.splice(index, 1);
 		onChange(newFiles);
+	};
+
+	// Drag-reorder handlers for sortable files
+	// Evidence: file-field-trait.php:136-137 — Voxel enqueues 'sortable' and 'vue-draggable' when sortable=true
+	const handleDragReorderStart = (index: number) => {
+		setDragReorderIndex(index);
+	};
+
+	const handleDragReorderOver = (e: React.DragEvent, index: number) => {
+		e.preventDefault();
+		if (dragReorderIndex === null || dragReorderIndex === index) return;
+
+		const reordered = [...files];
+		const [moved] = reordered.splice(dragReorderIndex, 1);
+		reordered.splice(index, 0, moved);
+		onChange(reordered);
+		setDragReorderIndex(index);
+	};
+
+	const handleDragReorderEnd = () => {
+		setDragReorderIndex(null);
 	};
 
 	// Handle media library file selection - matches Voxel file-field.php line 63 @save callback
@@ -351,8 +377,14 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 				{files.map((file, index) => (
 					<div
 						key={index}
-						className={`ts-file ${previewImages && file.type.startsWith('image/') ? 'ts-file-img' : ''}`}
+						className={`ts-file ${previewImages && file.type.startsWith('image/') ? 'ts-file-img' : ''} ${dragReorderIndex === index ? 'ts-dragging' : ''}`}
 						style={getStyle(file)}
+						{...(sortable ? {
+							draggable: true,
+							onDragStart: () => handleDragReorderStart(index),
+							onDragOver: (e: React.DragEvent) => handleDragReorderOver(e, index),
+							onDragEnd: handleDragReorderEnd,
+						} : {})}
 					>
 						<div className="ts-file-info">
 							<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

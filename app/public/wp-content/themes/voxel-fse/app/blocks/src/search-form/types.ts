@@ -955,6 +955,22 @@ export interface FilterComponentProps {
 	blockId?: string;
 	/** Context: 'editor' or 'frontend' - determines value source of truth */
 	context?: 'editor' | 'frontend';
+	/**
+	 * All current filter values - for cross-filter access
+	 * Evidence: Voxel's $root.getLocationFilter() lets order-by access location filter
+	 * Only passed to filters that need cross-filter communication (order-by)
+	 */
+	allFilterValues?: Record<string, unknown>;
+	/**
+	 * All filter data for current post type - for cross-filter access
+	 * Used to find the location filter's key by type
+	 */
+	allFiltersData?: FilterData[];
+	/**
+	 * Post feed element ID for post-feed display mode teleport
+	 * Evidence: order-by-filter.php:31 teleports to postFeedId element
+	 */
+	postFeedId?: string;
 }
 
 // Extend Window interface for global variables

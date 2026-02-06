@@ -149,6 +149,9 @@ export default function save({ attributes }: SaveProps) {
 		<div {...blockProps}>
 			{/* Responsive CSS is now generated server-side in PHP (Block_Loader.php) */}
 			{/* This avoids Gutenberg block validation issues with dynamic CSS content */}
+			{responsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
+			)}
 			{/* Voxel vxconfig pattern - configuration stored in JSON script */}
 			<script
 				type="text/json"

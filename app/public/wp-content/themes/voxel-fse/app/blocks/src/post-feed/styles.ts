@@ -147,8 +147,11 @@ export function generatePostFeedStyles(
 	// The carousel nav is position:absolute and expects its container to be position:relative
 	// In Voxel, this is provided by .elementor-element ancestor
 	// In FSE, we add it to the block container itself
-	// ============================================
-	cssRules.push(`${selector} { position: relative; }`);
+	// FIX: Add layout constraints to prevent carousel from expanding parent
+	// Evidence: Browser inspection showed container expanding to content width (1134px) instead of parent (400px)
+	// causing scrollWidth == clientWidth and breaking carousel functionality
+	cssRules.push(`${selector} { position: relative; max-width: 100%; min-width: 0; }`);
+	cssRules.push(`${selector} .post-feed-grid { max-width: 100%; }`);
 
 	// ============================================
 	// COUNTER STYLES

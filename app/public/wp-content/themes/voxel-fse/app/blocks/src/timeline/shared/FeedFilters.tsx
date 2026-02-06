@@ -32,7 +32,7 @@
 
 import { useState, useCallback, useRef, useEffect, type ChangeEvent, type MouseEvent } from 'react';
 import type { FeedFilters as FeedFiltersType } from '../hooks';
-import { useFilteringOptions } from '../hooks';
+import { useFilteringOptions, useTimelineConfig } from '../hooks';
 import type { OrderingOption } from '../types';
 import { DropdownList } from './DropdownList';
 
@@ -83,6 +83,10 @@ export function FeedFilters({
 }: FeedFiltersProps): JSX.Element {
 	// Ensure orderingOptions is always an array
 	const orderingOptions = Array.isArray(rawOrderingOptions) ? rawOrderingOptions : [];
+
+	// Get search maxlength from config - Evidence: timeline.php L482
+	const { config } = useTimelineConfig();
+	const searchMaxlength = config?.search?.maxlength ?? 128;
 
 	// Search input state (debounced)
 	const [searchInput, setSearchInput] = useState(filters.search ?? '');
@@ -193,7 +197,7 @@ export function FeedFilters({
 							onChange={handleSearchChange}
 							placeholder="Search"
 							className="autofocus"
-							maxLength={128}
+							maxLength={searchMaxlength}
 						/>
 					</div>
 				</div>

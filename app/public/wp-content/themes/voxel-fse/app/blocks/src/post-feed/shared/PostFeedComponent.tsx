@@ -42,6 +42,8 @@ import type {
 import { generatePostFeedStyles } from '../styles';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { Loader } from '@shared/components/Loader';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 
 /**
  * Default icons (matches Voxel defaults)
@@ -1094,180 +1096,98 @@ export default function PostFeedComponent({
 	}, [attributes.layoutMode, state.results]);
 
 	/**
-	 * Carousel scroll state & handlers
-	 *
-	 * VOXEL PARITY: themes/voxel/assets/dist/commons.js
-	 * PATTERN FROM WORKING SLIDER BLOCK: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx
-	 *
-	 * Key differences from broken implementation:
-	 * - Use canScrollPrev/canScrollNext (like slider) not isScrollable
-	 * - Listen to scroll events to update button states
-	 * - Initial state: canScrollPrev=false (at start), canScrollNext=true (assume overflow)
+	 * Embla Carousel Configuration
+	 * 
+	 * Replaces manual scroll logic with robust library solution.
+	 * Maintains Voxel 1:1 parity by using the same classes and structure.
 	 */
-	const carouselRef = useRef<HTMLDivElement>(null);
+	// CRITICAL: Initialize Embla with stable options, but update dynamically via useEffect below
+	// This ensures Editor controls (Autoplay, etc.) work in real-time
+	const [emblaRef, emblaApi] = useEmblaCarousel({
+		loop: false,
+		align: 'start',
+		containScroll: 'trimSnaps',
+		dragFree: true,
+	}, [
+		Autoplay({
+			delay: attributes.carouselAutoSlide ? (parseInt(String(attributes.carouselAutoSlide)) || 3000) : 3000,
+			stopOnInteraction: true,
+			active: !!attributes.carouselAutoSlide,
+		})
+	]);
+
+	// React to attribute changes (Editor wiring)
+	useEffect(() => {
+		if (!emblaApi) return;
+
+		const autoplayEnabled = !!attributes.carouselAutoSlide;
+		const autoplayDelay = attributes.carouselAutoSlide ? (parseInt(String(attributes.carouselAutoSlide)) || 3000) : 3000;
+
+		// Re-initialize Embla with updated options and plugins
+		emblaApi.reInit({
+			loop: false,
+			align: 'start',
+			containScroll: 'trimSnaps',
+			dragFree: true,
+		}, [
+			Autoplay({
+				delay: autoplayDelay,
+				stopOnInteraction: true,
+				active: autoplayEnabled,
+			})
+		]);
+	}, [
+		emblaApi,
+		attributes.carouselAutoSlide,
+		attributes.itemGap,
+		attributes.carouselItemWidth,
+		attributes.carouselItemWidthUnit,
+		// Re-run if layout mode or data changes
+		attributes.layoutMode,
+		carouselCards.length
+	]);
+
+	// Track scroll state for button enable/disable
 	const [canScrollPrev, setCanScrollPrev] = useState(false);
-	const [canScrollNext, setCanScrollNext] = useState(true);
+	const [canScrollNext, setCanScrollNext] = useState(false);
 
-	/**
-	 * Update scroll state for nav button disabled states
-	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:142-153
-	 *
-	 * Voxel's commons.js uses wrap-around navigation, meaning:
-	 * - At start: prev wraps to end
-	 * - At end: next wraps to start
-	 * So both buttons should ALWAYS be enabled when there's scrollable content.
-	 */
-	const updateScrollState = useCallback(() => {
-		const container = carouselRef.current;
-		if (!container) return;
-
-		// Calculate if there's any overflow (content wider than container)
-		const hasOverflow = container.scrollWidth > container.clientWidth + 5; // 5px threshold
-
-		// Debug logging - also measure first card width to understand layout
-		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
-		console.log('[PostFeed] updateScrollState:', {
-			scrollWidth: container.scrollWidth,
-			clientWidth: container.clientWidth,
-			hasOverflow,
-			cardCount: container.querySelectorAll('.ts-preview').length,
-			firstCardWidth: firstCard?.offsetWidth,
-			firstCardComputedWidth: firstCard ? getComputedStyle(firstCard).width : null,
-			containerGap: getComputedStyle(container).gap,
-			containerDisplay: getComputedStyle(container).display,
-		});
-
-		// With wrap-around navigation, both buttons are always enabled when there's scrollable content
-		if (hasOverflow) {
-			setCanScrollPrev(true);
-			setCanScrollNext(true);
-		} else {
-			setCanScrollPrev(false);
-			setCanScrollNext(false);
-		}
+	const onSelect = useCallback((api: any) => {
+		setCanScrollPrev(api.canScrollPrev());
+		setCanScrollNext(api.canScrollNext());
 	}, []);
+
+	// Attach listeners to Embla API
+	useEffect(() => {
+		if (!emblaApi) return;
+
+		onSelect(emblaApi);
+		emblaApi.on('reInit', onSelect);
+		emblaApi.on('select', onSelect);
+
+		// Force re-init when cards change to recalculate bounds
+		emblaApi.reInit();
+
+		return () => {
+			emblaApi.off('reInit', onSelect);
+			emblaApi.off('select', onSelect);
+		};
+	}, [emblaApi, onSelect, carouselCards.length]);
 
 	/**
 	 * Handle carousel prev click
-	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:177-200
 	 */
 	const handleCarouselPrev = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		const container = carouselRef.current;
-		if (!container) return;
-
-		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
-		if (!firstCard) return;
-
-		let scrollAmount = -firstCard.scrollWidth;
-
-		// At start - wrap to end
-		if (Math.abs(container.scrollLeft) <= 10) {
-			scrollAmount = container.scrollWidth - container.clientWidth - container.scrollLeft;
-		}
-
-		container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-	}, []);
+		if (emblaApi) emblaApi.scrollPrev();
+	}, [emblaApi]);
 
 	/**
 	 * Handle carousel next click
-	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:206-229
 	 */
 	const handleCarouselNext = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		const container = carouselRef.current;
-		if (!container) return;
-
-		const firstCard = container.querySelector('.ts-preview') as HTMLElement | null;
-		if (!firstCard) return;
-
-		let scrollAmount = firstCard.scrollWidth;
-
-		// At end - wrap to start
-		if (container.clientWidth + Math.abs(container.scrollLeft) + 10 >= container.scrollWidth) {
-			scrollAmount = -container.scrollLeft;
-		}
-
-		container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-	}, []);
-
-	/**
-	 * Scroll event listener for updating nav button states
-	 * Evidence: themes/voxel-fse/app/blocks/src/slider/shared/SliderComponent.tsx:265-278
-	 *
-	 * CRITICAL: Must wait for cards to be laid out before checking scroll state.
-	 * Cards are rendered via dangerouslySetInnerHTML with inline styles, which requires
-	 * the browser to parse and lay them out before scrollWidth is accurate.
-	 *
-	 * FIX: Use requestAnimationFrame to ensure ref is attached after render completes.
-	 * The issue was that useEffect runs synchronously after render but before the DOM
-	 * is fully updated, so carouselRef.current could be null.
-	 */
-	useEffect(() => {
-		if (attributes.layoutMode !== 'carousel' || carouselCards.length === 0) {
-			setCanScrollPrev(false);
-			setCanScrollNext(false);
-			return;
-		}
-
-		const timeoutIds: number[] = [];
-		let rafId: number | null = null;
-		let ro: ResizeObserver | null = null;
-
-		// Use RAF to wait for DOM to be fully painted, then check ref
-		const setupListeners = () => {
-			const container = carouselRef.current;
-			if (!container) {
-				// Ref not ready yet, try again on next frame
-				console.log('[PostFeed] carouselRef not ready, retrying...');
-				rafId = requestAnimationFrame(setupListeners);
-				return;
-			}
-
-			console.log('[PostFeed] carouselRef attached, setting up scroll listeners');
-
-			// Initial state check with escalating delays for layout to settle
-			// The cards use dangerouslySetInnerHTML so we need to wait for DOM parsing
-			const checkTimes = [0, 50, 100, 200, 500, 1000];
-
-			checkTimes.forEach((delay) => {
-				const id = window.setTimeout(() => {
-					updateScrollState();
-				}, delay);
-				timeoutIds.push(id);
-			});
-
-			// Also check when images inside cards load (can affect card dimensions)
-			const handleImageLoad = () => {
-				updateScrollState();
-			};
-			container.addEventListener('load', handleImageLoad, true);
-
-			// Listen for scroll events
-			container.addEventListener('scroll', updateScrollState);
-
-			// Also observe resize changes
-			ro = new ResizeObserver(() => {
-				// Debounce resize observer updates
-				window.setTimeout(updateScrollState, 50);
-			});
-			ro.observe(container);
-		};
-
-		// Start the setup on next animation frame
-		rafId = requestAnimationFrame(setupListeners);
-
-		return () => {
-			if (rafId) cancelAnimationFrame(rafId);
-			timeoutIds.forEach((id) => clearTimeout(id));
-			const container = carouselRef.current;
-			if (container) {
-				container.removeEventListener('load', () => {}, true);
-				container.removeEventListener('scroll', updateScrollState);
-			}
-			if (ro) ro.disconnect();
-		};
-	}, [attributes.layoutMode, carouselCards.length, updateScrollState]);
+		if (emblaApi) emblaApi.scrollNext();
+	}, [emblaApi]);
 
 	// Render vxconfig for DevTools visibility (CRITICAL for Plan C+)
 	const vxConfig: PostFeedVxConfig = {
@@ -1365,40 +1285,69 @@ export default function PostFeedComponent({
 				{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
 				{(!isUnconfigured && !showSkeletonCards && state.results) ? (
 					attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
-						/* Native scroll carousel (matches Voxel's ts-feed-nowrap pattern)
+						/* Embla Carousel (matches Voxel's ts-feed-nowrap pattern visually)
+						 * Wrapper acts as Embla Viewport
+						 * Grid acts as Embla Container
 						 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
 						 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
-						 * data-auto-slide: carousel autoplay interval (0 = disabled)
-						 * CSS: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap styles
 						 */
 						<div
-							ref={carouselRef}
-							className={carouselGridClasses}
-							data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
-							style={{
-								gap: `${attributes.itemGap || 25}px`,
-								scrollPadding: `${attributes.scrollPadding || 0}px`,
-								padding: `0 ${attributes.scrollPadding || 0}px`,
-							}}
+							className={`ts-post-feed-carousel-view ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`}
+							ref={emblaRef}
+							style={{ overflow: 'hidden' }}
 						>
-							{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
-							{carouselCards.map((html, i) => {
-								const cardWidth = `${attributes.carouselItemWidth || 300}${attributes.carouselItemWidthUnit || 'px'}`;
-								return (
-									<div
-										key={i}
-										className="ts-preview"
-										style={{
-											width: cardWidth,
-											minWidth: cardWidth,
-											maxWidth: cardWidth, // Prevent cards from growing
-											flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
-											boxSizing: 'border-box', // Include padding in width calculation
-										}}
-										dangerouslySetInnerHTML={{ __html: html }}
-									/>
-								);
-							})}
+							<div
+								className={carouselGridClasses}
+								data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
+								style={{
+									gap: `${attributes.itemGap || 25}px`,
+									scrollPadding: `${attributes.scrollPadding || 0}px`,
+									padding: `0 ${attributes.scrollPadding || 0}px`,
+									backfaceVisibility: 'hidden',
+									display: 'flex',
+									touchAction: 'pan-y',
+									overflowX: 'visible', // Override Voxel's overflow-x: scroll
+									scrollSnapType: 'none', // Override Voxel's scroll-snap-type
+								}}
+							>
+								{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
+								{carouselCards.map((html, i) => {
+									// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
+									// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
+									// APPLIED TO EDITOR RENDER LOOP
+									const gap = attributes.itemGap || 25;
+									const cols = attributes.columns || 3;
+
+									// Check if we should use fixed width:
+									// 1. Must have a width value
+									// 2. AND (Width is NOT 300 OR Columns is NOT set)
+									// This treats '300' as a soft default that yields to 'columns' configuration
+									// SAFETY: Cast to Number to prevent string/number mismatch issues
+									const widthVal = Number(attributes.carouselItemWidth);
+									const useFixedWidth = widthVal && (widthVal !== 300 || !attributes.columns);
+
+									const cardWidth = useFixedWidth
+										? `${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`
+										: `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
+
+									return (
+										<div
+											key={i}
+											className="ts-preview"
+											style={{
+												width: cardWidth,
+												minWidth: cardWidth,
+												maxWidth: cardWidth, // Prevent cards from growing
+												flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
+												boxSizing: 'border-box', // Include padding in width calculation
+												position: 'relative',
+												scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
+											}}
+											dangerouslySetInnerHTML={{ __html: html }}
+										/>
+									);
+								})}
+							</div>
 						</div>
 					) : (
 						/* Grid mode - render directly in grid container */
@@ -1564,40 +1513,68 @@ export default function PostFeedComponent({
 			{/* Evidence: themes/voxel/templates/widgets/post-feed.php:17-28 */}
 			{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
 			{attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
-				/* Native scroll carousel (matches Voxel's ts-feed-nowrap pattern)
+				/* Embla Carousel (matches Voxel's ts-feed-nowrap pattern visually)
+				 * Wrapper acts as Embla Viewport
+				 * Grid acts as Embla Container
 				 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
 				 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
-				 * data-auto-slide: carousel autoplay interval (0 = disabled)
-				 * CSS: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap styles
 				 */
 				<div
-					ref={carouselRef}
-					className={carouselGridClasses}
-					data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
-					style={{
-						gap: `${attributes.itemGap || 25}px`,
-						scrollPadding: `${attributes.scrollPadding || 0}px`,
-						padding: `0 ${attributes.scrollPadding || 0}px`,
-					}}
+					className={`ts-post-feed-carousel-view ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`}
+					ref={emblaRef}
+					style={{ overflow: 'hidden' }}
 				>
-					{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
-					{carouselCards.map((html, i) => {
-						const cardWidth = `${attributes.carouselItemWidth || 300}${attributes.carouselItemWidthUnit || 'px'}`;
-						return (
-							<div
-								key={i}
-								className="ts-preview"
-								style={{
-									width: cardWidth,
-									minWidth: cardWidth,
-									maxWidth: cardWidth, // Prevent cards from growing
-									flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
-									boxSizing: 'border-box', // Include padding in width calculation
-								}}
-								dangerouslySetInnerHTML={{ __html: html }}
-							/>
-						);
-					})}
+					<div
+						className={carouselGridClasses}
+						data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
+						style={{
+							gap: `${attributes.itemGap || 25}px`,
+							scrollPadding: `${attributes.scrollPadding || 0}px`,
+							padding: `0 ${attributes.scrollPadding || 0}px`,
+							backfaceVisibility: 'hidden',
+							display: 'flex',
+							touchAction: 'pan-y',
+							overflowX: 'visible', // Override Voxel's overflow-x: scroll
+							scrollSnapType: 'none', // Override Voxel's scroll-snap-type
+						}}
+					>
+						{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
+						{carouselCards.map((html, i) => {
+							// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
+							// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
+							const gap = attributes.itemGap || 25;
+							const cols = attributes.columns || 3;
+
+							// Check if we should use fixed width:
+							// 1. Must have a width value
+							// 2. AND (Width is NOT 300 OR Columns is NOT set)
+							// This treats '300' as a soft default that yields to 'columns' configuration
+							// SAFETY: Cast to Number to prevent string/number mismatch issues
+							const widthVal = Number(attributes.carouselItemWidth);
+							const useFixedWidth = widthVal && (widthVal !== 300 || !attributes.columns);
+
+							const cardWidth = useFixedWidth
+								? `${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`
+								: `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
+
+							return (
+								<div
+									key={i}
+									className="ts-preview"
+									style={{
+										width: cardWidth,
+										minWidth: cardWidth,
+										maxWidth: cardWidth, // Prevent cards from growing
+										flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
+										boxSizing: 'border-box', // Include padding in width calculation
+										position: 'relative',
+										scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
+									}}
+									dangerouslySetInnerHTML={{ __html: html }}
+								/>
+							);
+						})}
+					</div>
 				</div>
 			) : (
 				<div

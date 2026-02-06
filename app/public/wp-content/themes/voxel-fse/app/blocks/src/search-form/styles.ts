@@ -148,12 +148,27 @@ function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined):
 			const bottomW = parseVal(borderWidth.bottom);
 			const leftW = parseVal(borderWidth.left);
 
+			// Check if all widths are effectively zero or empty
+			// If so, return empty string to avoid overriding default styles with "0px" or "1px" defaults
+			const isZero = (v: string | number | undefined) => !v || v === '0' || v === 0 || v === '';
+			if (
+				isZero(borderWidth.top) &&
+				isZero(borderWidth.right) &&
+				isZero(borderWidth.bottom) &&
+				isZero(borderWidth.left)
+			) {
+				return '';
+			}
+
 			// If all same, use single value; otherwise use 4-value shorthand
 			if (topW === rightW && rightW === bottomW && bottomW === leftW) {
 				widthValue = `${topW}${unit}`;
 			} else {
 				widthValue = `${topW}${unit} ${rightW}${unit} ${bottomW}${unit} ${leftW}${unit}`;
 			}
+		} else {
+			// No borderWidth object provided - avoid default 1px override
+			return '';
 		}
 
 		const colorValue = borderColor || '#000';
@@ -336,7 +351,7 @@ export function generateInlineTabResponsiveCSS(
 	// Show labels - ts_sf_input_label
 	// When showLabels is false, hide all filter labels
 	if (attributes.showLabels === false) {
-		cssRules.push(`${selector} .ts-form-group > label { display: none; }`);
+		cssRules.push(`${selector} .ts-form-group > label:not(.ts-keep-visible) { display: none; }`);
 	}
 
 	// Label color - ts_sf_input_label_col
@@ -359,13 +374,16 @@ export function generateInlineTabResponsiveCSS(
 
 	// Height - ts_sf_input_height
 	if (attributes.commonHeight !== undefined) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight)}px; }`);
+		const val = safeValue(attributes.commonHeight);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 	if (attributes.commonHeight_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight_tablet)}px; }`);
+		const val = safeValue(attributes.commonHeight_tablet);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 	if (attributes.commonHeight_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight_mobile)}px; }`);
+		const val = safeValue(attributes.commonHeight_mobile);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 
 	// Icon size - ts_sf_input_icon_size
@@ -386,22 +404,22 @@ export function generateInlineTabResponsiveCSS(
 	// Border radius - ts_sf_input_radius
 	if (attributes.commonBorderRadius !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		cssRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius)}${unit}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius)}${unit}; }`);
 	}
 	if (attributes.commonBorderRadius_tablet !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		tabletRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius_tablet)}${unit}; }`);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius_tablet)}${unit}; }`);
 	}
 	if (attributes.commonBorderRadius_mobile !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		mobileRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius_mobile)}${unit}; }`);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius_mobile)}${unit}; }`);
 	}
 
 	// Box shadow - ts_sf_input_shadow
 	if (attributes.commonBoxShadow) {
 		const shadow = generateBoxShadowCSS(attributes.commonBoxShadow);
 		if (shadow) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter { box-shadow: ${shadow}; }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { box-shadow: ${shadow}; }`);
 		}
 	}
 
@@ -409,13 +427,15 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.commonBorder) {
 		const border = generateBorderCSS(attributes.commonBorder);
 		if (border) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter { border: ${border}; }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border: ${border}; }`);
+			// Ensure it overrides focus styles if needed
+			cssRules.push(`${selector} input.inline-input:focus { border: ${border}; }`);
 		}
 	}
 
 	// Background color - ts_sf_input_bg
 	if (attributes.commonBackgroundColor) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter { background-color: ${attributes.commonBackgroundColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { background-color: ${attributes.commonBackgroundColor}; }`);
 	}
 
 	// Icon color - ts_sf_input_icon_col
@@ -426,7 +446,7 @@ export function generateInlineTabResponsiveCSS(
 
 	// Text color - ts_sf_input_value_col
 	if (attributes.commonTextColor) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text { color: ${attributes.commonTextColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text, ${selector} input.inline-input { color: ${attributes.commonTextColor}; }`);
 	}
 
 	// Hover states
@@ -437,7 +457,7 @@ export function generateInlineTabResponsiveCSS(
 		}
 	}
 	if (attributes.commonBorderColorHover) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter:hover { border-color: ${attributes.commonBorderColorHover}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter:hover, ${selector} input.inline-input:hover, ${selector} input.inline-input:focus { border-color: ${attributes.commonBorderColorHover}; }`);
 	}
 	if (attributes.commonBackgroundColorHover) {
 		cssRules.push(`${selector} .ts-form-group .ts-filter:hover { background-color: ${attributes.commonBackgroundColorHover}; }`);
@@ -453,7 +473,7 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.commonTypography) {
 		const typo = generateTypographyCSS(attributes.commonTypography);
 		if (typo) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text { ${typo} }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text, ${selector} input.inline-input { ${typo} }`);
 		}
 	}
 
