@@ -663,6 +663,7 @@ export interface CartConfig {
 	auth_link: string;
 	multivendor: {
 		enabled: boolean;
+		charge_type?: string;
 	};
 	shipping: {
 		responsibility: 'platform' | 'vendor';

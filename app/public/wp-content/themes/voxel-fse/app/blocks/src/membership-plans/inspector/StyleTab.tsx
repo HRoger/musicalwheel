@@ -21,6 +21,7 @@ import {
 	ColorControl,
 	TypographyControl,
 	BorderGroupControl,
+	BoxShadowPopup,
 	StyleTabPanel,
 	AdvancedIconControl,
 } from '@shared/controls';
@@ -69,6 +70,44 @@ export function StyleTab({
 					attributeBaseName="plansBorderRadius"
 					min={0}
 					max={50}
+				/>
+
+				<BorderGroupControl
+					label={__('Border', 'voxel-fse')}
+					value={{
+						borderType: attributes.plansBorderType || '',
+						borderWidth: attributes.plansBorderWidth || {},
+						borderColor: attributes.plansBorderColor || '',
+					}}
+					onChange={(value) => {
+						const updates: Partial<MembershipPlansAttributes> = {};
+						if (value.borderType !== undefined) {
+							updates.plansBorderType = value.borderType;
+						}
+						if (value.borderWidth !== undefined) {
+							updates.plansBorderWidth = value.borderWidth as any;
+						}
+						if (value.borderColor !== undefined) {
+							updates.plansBorderColor = value.borderColor;
+						}
+						setAttributes(updates);
+					}}
+					hideRadius={true}
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Background', 'voxel-fse')}
+						value={attributes.plansBg}
+						onChange={(value) => setAttributes({ plansBg: value })}
+					/>
+				</div>
+
+				<BoxShadowPopup
+					label={__('Box Shadow', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					shadowAttributeName="plansShadow"
 				/>
 
 				<SectionHeading label={__('Plan body', 'voxel-fse')} />
@@ -126,6 +165,36 @@ export function StyleTab({
 					}
 				/>
 
+				<TypographyControl
+					label={__('Price typography', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					typographyAttributeName="priceTypography"
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Price color', 'voxel-fse')}
+						value={attributes.priceColor}
+						onChange={(value) => setAttributes({ priceColor: value })}
+					/>
+				</div>
+
+				<TypographyControl
+					label={__('Period typography', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					typographyAttributeName="periodTypography"
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Period color', 'voxel-fse')}
+						value={attributes.periodColor}
+						onChange={(value) => setAttributes({ periodColor: value })}
+					/>
+				</div>
+
 				<SectionHeading label={__('Plan name', 'voxel-fse')} />
 
 				<SelectControl
@@ -142,6 +211,21 @@ export function StyleTab({
 						})
 					}
 				/>
+
+				<TypographyControl
+					label={__('Name typography', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					typographyAttributeName="nameTypography"
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Name color', 'voxel-fse')}
+						value={attributes.nameColor}
+						onChange={(value) => setAttributes({ nameColor: value })}
+					/>
+				</div>
 
 				<SectionHeading label={__('Plan description', 'voxel-fse')} />
 
@@ -160,6 +244,21 @@ export function StyleTab({
 					}
 				/>
 
+				<TypographyControl
+					label={__('Description typography', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					typographyAttributeName="descTypography"
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Description color', 'voxel-fse')}
+						value={attributes.descColor}
+						onChange={(value) => setAttributes({ descColor: value })}
+					/>
+				</div>
+
 				<SectionHeading label={__('Plan features', 'voxel-fse')} />
 
 				<SelectControl
@@ -176,6 +275,29 @@ export function StyleTab({
 						})
 					}
 				/>
+
+				<TypographyControl
+					label={__('Feature typography', 'voxel-fse')}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+					typographyAttributeName="listTypography"
+				/>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Feature text color', 'voxel-fse')}
+						value={attributes.listColor}
+						onChange={(value) => setAttributes({ listColor: value })}
+					/>
+				</div>
+
+				<div className="voxel-fse-control-row">
+					<ColorControl
+						label={__('Feature icon color', 'voxel-fse')}
+						value={attributes.listIconColor}
+						onChange={(value) => setAttributes({ listIconColor: value })}
+					/>
+				</div>
 
 				<ResponsiveRangeControl
 					label={__('Item gap', 'voxel-fse')}

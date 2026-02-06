@@ -119,6 +119,14 @@
 				"left": ""
 			}
 		},
+		"itemBoxShadow": {
+			"type": "object",
+			"default": {}
+		},
+		"itemBoxShadowHover": {
+			"type": "object",
+			"default": {}
+		},
 		"itemBackground": {
 			"type": "string",
 			"default": ""

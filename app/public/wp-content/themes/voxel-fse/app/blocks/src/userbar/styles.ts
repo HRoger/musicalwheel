@@ -69,8 +69,10 @@ export function generateUserbarResponsiveCSS(
 	// ============================================
 
 	// Desktop vertical orientation
+	// Reference: user-bar.php:568-573 - Voxel applies flex-direction to `li > a`, not `ul`
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a' => 'flex-direction: column'
 	if (attributes.verticalOrientation) {
-		cssRules.push(`${selector} .ts-user-area > ul { flex-direction: column; }`);
+		cssRules.push(`${selector} .ts-user-area > ul > li > a { flex-direction: column; }`);
 		// Apply item content align when vertical
 		if (attributes.itemContentAlign) {
 			cssRules.push(`${selector} .ts-user-area > ul > li > a { justify-content: ${attributes.itemContentAlign}; }`);
@@ -79,7 +81,7 @@ export function generateUserbarResponsiveCSS(
 
 	// Tablet vertical orientation
 	if (attributes.verticalOrientationTablet) {
-		tabletRules.push(`${selector} .ts-user-area > ul { flex-direction: column; }`);
+		tabletRules.push(`${selector} .ts-user-area > ul > li > a { flex-direction: column; }`);
 		// Apply item content align when vertical
 		if (attributes.itemContentAlign) {
 			tabletRules.push(`${selector} .ts-user-area > ul > li > a { justify-content: ${attributes.itemContentAlign}; }`);
@@ -88,7 +90,7 @@ export function generateUserbarResponsiveCSS(
 
 	// Mobile vertical orientation
 	if (attributes.verticalOrientationMobile) {
-		mobileRules.push(`${selector} .ts-user-area > ul { flex-direction: column; }`);
+		mobileRules.push(`${selector} .ts-user-area > ul > li > a { flex-direction: column; }`);
 		// Apply item content align when vertical
 		if (attributes.itemContentAlign) {
 			mobileRules.push(`${selector} .ts-user-area > ul > li > a { justify-content: ${attributes.itemContentAlign}; }`);
@@ -110,6 +112,64 @@ export function generateUserbarResponsiveCSS(
 	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a:hover' => 'background-color: {{VALUE}}'
 	if (attributes.itemBackgroundHover) {
 		cssRules.push(`${selector} .ts-user-area > ul > li > a:hover { background-color: ${attributes.itemBackgroundHover}; }`);
+	}
+
+	// ============================================
+	// SECTION: Item Margin & Padding
+	// Source: user-bar.php:584-606
+	// ============================================
+
+	// Item margin - user-bar.php:584-594
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'
+	if (attributes.itemMargin) {
+		const m = attributes.itemMargin;
+		const unit = m.unit || 'px';
+		// Only apply if at least one value is set
+		if (m.top || m.right || m.bottom || m.left) {
+			cssRules.push(`${selector} .ts-user-area > ul > li > a { margin: ${m.top || 0}${unit} ${m.right || 0}${unit} ${m.bottom || 0}${unit} ${m.left || 0}${unit}; }`);
+		}
+	}
+
+	// Item padding - user-bar.php:596-606
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'
+	if (attributes.itemPadding) {
+		const p = attributes.itemPadding;
+		const unit = p.unit || 'px';
+		// Only apply if at least one value is set
+		if (p.top || p.right || p.bottom || p.left) {
+			cssRules.push(`${selector} .ts-user-area > ul > li > a { padding: ${p.top || 0}${unit} ${p.right || 0}${unit} ${p.bottom || 0}${unit} ${p.left || 0}${unit}; }`);
+		}
+	}
+
+	// ============================================
+	// SECTION: Item Box Shadow
+	// Source: user-bar.php:642-649
+	// ============================================
+
+	// Item box shadow - user-bar.php:642-649
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a'
+	if (attributes.itemBoxShadow && Object.keys(attributes.itemBoxShadow).length > 0) {
+		const bs = attributes.itemBoxShadow;
+		const inset = bs.position === 'inset' ? 'inset ' : '';
+		const h = bs.horizontal ?? 0;
+		const v = bs.vertical ?? 0;
+		const blur = bs.blur ?? 0;
+		const spread = bs.spread ?? 0;
+		const color = bs.color ?? 'rgba(0,0,0,0.5)';
+		cssRules.push(`${selector} .ts-user-area > ul > li > a { box-shadow: ${inset}${h}px ${v}px ${blur}px ${spread}px ${color}; }`);
+	}
+
+	// Item box shadow (hover) - user-bar.php:1005-1012
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a:hover'
+	if (attributes.itemBoxShadowHover && Object.keys(attributes.itemBoxShadowHover).length > 0) {
+		const bs = attributes.itemBoxShadowHover;
+		const inset = bs.position === 'inset' ? 'inset ' : '';
+		const h = bs.horizontal ?? 0;
+		const v = bs.vertical ?? 0;
+		const blur = bs.blur ?? 0;
+		const spread = bs.spread ?? 0;
+		const color = bs.color ?? 'rgba(0,0,0,0.5)';
+		cssRules.push(`${selector} .ts-user-area > ul > li > a:hover { box-shadow: ${inset}${h}px ${v}px ${blur}px ${spread}px ${color}; }`);
 	}
 
 	// Item border radius - user-bar.php:636

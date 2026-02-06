@@ -247,6 +247,7 @@ export function StatusComposer({
 	// Refs
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const emojiButtonRef = useRef<HTMLAnchorElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	// Character count
@@ -506,6 +507,18 @@ export function StatusComposer({
 		return reviewsConfig[postType];
 	}, [feed, isEditMode, status, config?.review_config, config?.current_post]);
 
+	// Build placeholder text - matches Voxel format
+	// MUST be before early returns to comply with React Rules of Hooks
+	const currentUser = config?.current_user;
+	const placeholderText = useMemo(() => {
+		const defaultText = strings.compose_placeholder ?? "What's on your mind?";
+		let text = placeholder ?? defaultText;
+		if (text === "What's on your mind?" && currentUser?.display_name) {
+			text = `What's on your mind, ${currentUser.display_name}?`;
+		}
+		return text;
+	}, [placeholder, strings.compose_placeholder, currentUser?.display_name]);
+
 	// Don't render if user can't post (in create mode) or can't edit (in edit mode)
 	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
 	if (isEditMode && !hasEditPermission) {
@@ -515,13 +528,13 @@ export function StatusComposer({
 		return null;
 	}
 
-	// Get current user for avatar
-	const currentUser = config?.current_user;
-	const avatarUrl = currentUser?.avatar_url ?? '';
-	const displayName = currentUser?.display_name ?? '';
+	// Don't render if current user is not loaded yet (prevents undefined avatar_url errors in editor)
+	if (!currentUser) {
+		return null;
+	}
 
-	// Build placeholder text - matches Voxel format
-	const placeholderText = placeholder ?? strings.compose_placeholder ?? "What's on your mind?";
+	const avatarUrl = currentUser.avatar_url ?? '';
+	const displayName = currentUser.display_name ?? '';
 
 	return (
 		<div style={{ minHeight: '61px' }}>
@@ -555,7 +568,7 @@ export function StatusComposer({
 
 				{/* Footer wrapper - only shown when expanded (matches Voxel's transition-height) */}
 				{isExpanded && (
-					<div className="vxf-footer-wrapper">
+					<div className="vxf-footer-wrapper" style={{ height: 'auto' }}>
 						{/* Review score input - shown for post_reviews feed (matches Voxel's review-score component) */}
 						{reviewConfig && (
 							<div className="vxf-review-score-section">
@@ -646,11 +659,23 @@ export function StatusComposer({
 											saveLabel="Insert"
 											target={wrapperRef.current}
 											onSave={(files) => {
-												// Convert media library files to uploads
-												// For existing files, we'd need to fetch them as blobs
-												// For now, just log (MediaPopup returns file info)
-												console.log('[StatusComposer] Media selected:', files);
-												// TODO: Handle selected media files
+												// Convert media library files (from MediaPopup) to StatusMedia format (for StatusComposer)
+												// MediaPopup returns its own MediaFile format which differs slightly from types.MediaFile
+												const mappedFiles: MediaFile[] = files.map(f => ({
+													id: f.id,
+													url: f.preview || '', // Use preview as URL for existing files
+													preview: f.preview || '',
+													alt: f.name
+												}));
+
+												setExistingFiles(prev => {
+													// Avoid duplicates by ID
+													const existingIds = new Set(prev.map(p => p.id));
+													const uniqueNew = mappedFiles.filter(f => !existingIds.has(f.id));
+													return [...prev, ...uniqueNew];
+												});
+
+												console.log('[StatusComposer] Media added:', mappedFiles);
 											}}
 										>
 											<a
@@ -667,14 +692,15 @@ export function StatusComposer({
 										</a>
 									</>
 								)}
-								<a href="#" className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
+								<a href="#" ref={emojiButtonRef} className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
 									<EmojiIcon />
 								</a>
 								<EmojiPicker
 									isOpen={showEmojiPicker}
 									onClose={() => setShowEmojiPicker(false)}
 									onSelect={insertEmoji}
-									target={wrapperRef.current}
+									target={emojiButtonRef.current}
+									widthElement={wrapperRef.current}
 								/>
 							</div>
 

@@ -293,6 +293,7 @@ interface VxConfig {
 		save?: string;
 		handle?: string;
 		zone?: string;
+		rate?: string;
 		trash?: string;
 		down?: string;
 		search?: string;
@@ -354,6 +355,7 @@ function normalizeConfig(raw: Record<string, unknown>): VxConfig {
 			save: normalizeString(obj['save'] ?? obj['save_icon'], ''),
 			handle: normalizeString(obj['handle'] ?? obj['handle_icon'], ''),
 			zone: normalizeString(obj['zone'] ?? obj['ts_zone_ico'], ''),
+			rate: normalizeString(obj['rate'] ?? obj['box_icon'], ''),
 			trash: normalizeString(obj['trash'] ?? obj['trash_icon'], ''),
 			down: normalizeString(obj['down'] ?? obj['down_icon'], ''),
 			search: normalizeString(obj['search'] ?? obj['ts_search_icon'], ''),

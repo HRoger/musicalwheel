@@ -127,6 +127,26 @@ export interface MembershipPlansAttributes {
 	listIconRightPad_tablet?: number;
 	listIconRightPad_mobile?: number;
 
+	// Typography & color controls
+	priceTypography: Record<string, any>;
+	priceColor: string;
+	periodTypography: Record<string, any>;
+	periodColor: string;
+	nameTypography: Record<string, any>;
+	nameColor: string;
+	descTypography: Record<string, any>;
+	descColor: string;
+	listTypography: Record<string, any>;
+	listColor: string;
+	listIconColor: string;
+
+	// Card container
+	plansBorderType: string;
+	plansBorderWidth: Record<string, string>;
+	plansBorderColor: string;
+	plansBg: string;
+	plansShadow: Record<string, any>;
+
 	// Tabs
 	tabsDisabled: boolean;
 	tabsJustify: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
@@ -410,6 +430,24 @@ export const defaultAttributes: Partial<MembershipPlansAttributes> = {
 	listGap: 10,
 	listIconSize: 18,
 	listIconRightPad: 8,
+	// Typography & color
+	priceTypography: {},
+	priceColor: '',
+	periodTypography: {},
+	periodColor: '',
+	nameTypography: {},
+	nameColor: '',
+	descTypography: {},
+	descColor: '',
+	listTypography: {},
+	listColor: '',
+	listIconColor: '',
+	// Card container
+	plansBorderType: '',
+	plansBorderWidth: {},
+	plansBorderColor: '',
+	plansBg: '',
+	plansShadow: {},
 	// Tabs
 	tabsDisabled: false,
 	tabsJustify: 'flex-start',

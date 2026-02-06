@@ -486,10 +486,63 @@ export class VxMap {
             // Also attach instance to element (matches Voxel behavior: el.__vx_map__ = this)
             (this._el as any).__vx_map__ = this._native;
 
+            // CRITICAL: Force-hide map controls for FSE blocks
+            // Even if Voxel_Config has mapTypeControl: true, we force-hide for cleaner FSE experience
+            // This matches what users typically expect from the Voxel map widget appearance
+
+            // Access the native Google Maps instance via getSourceObject()
+            // Voxel.Maps.Map stores the google.maps.Map in this.map, accessible via getSourceObject()
+            const googleMap = this._native?.getSourceObject();
+            const voxelConfig = getVoxelWindow().Voxel_Config;
+            if (googleMap && typeof google !== 'undefined') {
+                // Log what config says for debugging
+                const configMapTypeControl = !!voxelConfig?.google_maps?.mapTypeControl;
+                const configStreetViewControl = !!voxelConfig?.google_maps?.streetViewControl;
+                console.log('[VxMap] Voxel_Config control settings:', { configMapTypeControl, configStreetViewControl });
+                console.log('[VxMap] Full Voxel_Config.google_maps:', voxelConfig?.google_maps);
+
+                // Log the CURRENT map options BEFORE our setOptions call
+                console.log('[VxMap] googleMap BEFORE setOptions - mapTypeControl:', (googleMap as any).mapTypeControl);
+                console.log('[VxMap] googleMap BEFORE setOptions - streetViewControl:', (googleMap as any).streetViewControl);
+
+                // FORCE hide these controls - FSE blocks should have clean map appearance
+                // If users want these controls, they can enable via block settings (future feature)
+                googleMap.setOptions({
+                    mapTypeControl: false,
+                    streetViewControl: false,
+                });
+                console.log('[VxMap] setOptions called with mapTypeControl: false, streetViewControl: false');
+
+                // Log AFTER to verify the change
+                setTimeout(() => {
+                    console.log('[VxMap] googleMap AFTER setOptions (after 100ms) - mapTypeControl:', (googleMap as any).mapTypeControl);
+                    console.log('[VxMap] googleMap AFTER setOptions (after 100ms) - streetViewControl:', (googleMap as any).streetViewControl);
+
+                    // If still showing, force remove the control elements from DOM as last resort
+                    const mapContainer = this._el;
+                    const mapTypeElements = mapContainer.querySelectorAll('.gm-style-mtc, .gm-style-mtc-bbw');
+                    console.log('[VxMap] Found map type control elements in DOM:', mapTypeElements.length);
+                    if (mapTypeElements.length > 0) {
+                        console.log('[VxMap] Hiding map type control elements from DOM...');
+                        mapTypeElements.forEach(el => {
+                            (el as HTMLElement).style.display = 'none';
+                        });
+                    }
+
+                    // Also hide street view pegman if present
+                    const streetViewElements = mapContainer.querySelectorAll('.gm-svpc');
+                    if (streetViewElements.length > 0) {
+                        console.log('[VxMap] Hiding street view control elements from DOM...');
+                        streetViewElements.forEach(el => {
+                            (el as HTMLElement).style.display = 'none';
+                        });
+                    }
+                }, 100);
+            }
+
             // CRITICAL: Trigger resize event to force Google Maps to render tiles
             // Google Maps v3.62+ uses lazy rendering and may not render tiles until
             // the map is visible and has proper dimensions
-            const googleMap = this._native?.map;
             if (googleMap && typeof google !== 'undefined' && google.maps?.event) {
                 console.log('[VxMap] Triggering resize event sequence...');
 

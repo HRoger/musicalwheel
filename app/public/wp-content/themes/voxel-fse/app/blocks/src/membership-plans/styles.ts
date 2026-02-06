@@ -156,6 +156,24 @@ function parseDimensions(
 }
 
 /**
+ * Generate box-shadow CSS value from BoxShadowPopup config
+ */
+function generateBoxShadowValue(
+	shadow: Record<string, any> | undefined
+): string | undefined {
+	if (!shadow || Object.keys(shadow).length === 0) return undefined;
+
+	const h = shadow['horizontal'] ?? 0;
+	const v = shadow['vertical'] ?? 0;
+	const blur = shadow['blur'] ?? 10;
+	const spread = shadow['spread'] ?? 0;
+	const color = shadow['color'] ?? 'rgba(0,0,0,0.5)';
+	const position = shadow['position'] === 'inset' ? 'inset ' : '';
+
+	return `${position}${h}px ${v}px ${blur}px ${spread}px ${color}`;
+}
+
+/**
  * Generate inline styles for edit.tsx (desktop only)
  * These styles are applied directly to the wrapper element.
  */
@@ -234,6 +252,37 @@ export function generateBlockResponsiveCSS(
 		mobileRules.push(
 			`${selector} .ts-plan-container { border-radius: ${attributes.plansBorderRadius_mobile}px; }`
 		);
+	}
+
+	// Card border - pricing-plans-widget.php:130-137
+	// Selector: '{{WRAPPER}} .ts-plan-container'
+	if (attributes.plansBorderType) {
+		const cardBorderCSS = generateBorderCSS(
+			{
+				borderType: attributes.plansBorderType,
+				borderWidth: attributes.plansBorderWidth,
+				borderColor: attributes.plansBorderColor,
+			},
+			`${selector} .ts-plan-container`
+		);
+		if (cardBorderCSS) cssRules.push(cardBorderCSS);
+	}
+
+	// Card background - pricing-plans-widget.php:163-173
+	// Selector: '{{WRAPPER}} .ts-plan-container' => 'background-color: {{VALUE}}'
+	if (attributes.plansBg) {
+		cssRules.push(
+			`${selector} .ts-plan-container { background-color: ${attributes.plansBg}; }`
+		);
+	}
+
+	// Card box shadow - pricing-plans-widget.php:175-182
+	// Selector: '{{WRAPPER}} .ts-plan-container' => 'box-shadow: ...'
+	if (attributes.plansShadow && Object.keys(attributes.plansShadow).length > 0) {
+		const shadowVal = generateBoxShadowValue(attributes.plansShadow);
+		if (shadowVal) {
+			cssRules.push(`${selector} .ts-plan-container { box-shadow: ${shadowVal}; }`);
+		}
 	}
 
 	// ============================================
@@ -323,6 +372,42 @@ export function generateBlockResponsiveCSS(
 		);
 	}
 
+	// Price typography - pricing-plans-widget.php:297-304
+	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-amount'
+	if (attributes.priceTypography) {
+		const priceTypoCSS = applyTypographyStyles(
+			attributes.priceTypography,
+			`${selector} .ts-plan-pricing .ts-price-amount`
+		);
+		if (priceTypoCSS) cssRules.push(priceTypoCSS);
+	}
+
+	// Price color - pricing-plans-widget.php:306-316
+	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-amount' => 'color: {{VALUE}}'
+	if (attributes.priceColor) {
+		cssRules.push(
+			`${selector} .ts-plan-pricing .ts-price-amount { color: ${attributes.priceColor}; }`
+		);
+	}
+
+	// Period typography - pricing-plans-widget.php:318-325
+	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-period'
+	if (attributes.periodTypography) {
+		const periodTypoCSS = applyTypographyStyles(
+			attributes.periodTypography,
+			`${selector} .ts-plan-pricing .ts-price-period`
+		);
+		if (periodTypoCSS) cssRules.push(periodTypoCSS);
+	}
+
+	// Period color - pricing-plans-widget.php:327-337
+	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-period' => 'color: {{VALUE}}'
+	if (attributes.periodColor) {
+		cssRules.push(
+			`${selector} .ts-plan-pricing .ts-price-period { color: ${attributes.periodColor}; }`
+		);
+	}
+
 	// ============================================
 	// GENERAL TAB - Plan Name
 	// Source: pricing-plans-widget.php:348-364
@@ -334,6 +419,24 @@ export function generateBlockResponsiveCSS(
 	if (attributes.contentAlign) {
 		cssRules.push(
 			`${selector} .ts-plan-details { justify-content: ${attributes.contentAlign}; }`
+		);
+	}
+
+	// Name typography - pricing-plans-widget.php:366-373
+	// Selector: '{{WRAPPER}} .ts-plan-details .ts-plan-name'
+	if (attributes.nameTypography) {
+		const nameTypoCSS = applyTypographyStyles(
+			attributes.nameTypography,
+			`${selector} .ts-plan-details .ts-plan-name`
+		);
+		if (nameTypoCSS) cssRules.push(nameTypoCSS);
+	}
+
+	// Name color - pricing-plans-widget.php:375-385
+	// Selector: '{{WRAPPER}} .ts-plan-details .ts-plan-name' => 'color: {{VALUE}}'
+	if (attributes.nameColor) {
+		cssRules.push(
+			`${selector} .ts-plan-details .ts-plan-name { color: ${attributes.nameColor}; }`
 		);
 	}
 
@@ -349,6 +452,22 @@ export function generateBlockResponsiveCSS(
 		cssRules.push(`${selector} .ts-plan-desc p { text-align: ${attributes.descAlign}; }`);
 	}
 
+	// Description typography - pricing-plans-widget.php:414-421
+	// Selector: '{{WRAPPER}} .ts-plan-desc p'
+	if (attributes.descTypography) {
+		const descTypoCSS = applyTypographyStyles(
+			attributes.descTypography,
+			`${selector} .ts-plan-desc p`
+		);
+		if (descTypoCSS) cssRules.push(descTypoCSS);
+	}
+
+	// Description color - pricing-plans-widget.php:423-433
+	// Selector: '{{WRAPPER}} .ts-plan-desc p' => 'color: {{VALUE}}'
+	if (attributes.descColor) {
+		cssRules.push(`${selector} .ts-plan-desc p { color: ${attributes.descColor}; }`);
+	}
+
 	// ============================================
 	// GENERAL TAB - Plan Features
 	// Source: pricing-plans-widget.php:444-557
@@ -360,6 +479,34 @@ export function generateBlockResponsiveCSS(
 	if (attributes.listAlign) {
 		cssRules.push(
 			`${selector} .ts-plan-features ul { align-items: ${attributes.listAlign}; }`
+		);
+	}
+
+	// List typography - pricing-plans-widget.php:485-492
+	// Selector: '{{WRAPPER}} .ts-plan-features ul li'
+	if (attributes.listTypography) {
+		const listTypoCSS = applyTypographyStyles(
+			attributes.listTypography,
+			`${selector} .ts-plan-features ul li`
+		);
+		if (listTypoCSS) cssRules.push(listTypoCSS);
+	}
+
+	// List text color - pricing-plans-widget.php:494-504
+	// Selector: '{{WRAPPER}} .ts-plan-features ul li' => 'color: {{VALUE}}'
+	if (attributes.listColor) {
+		cssRules.push(`${selector} .ts-plan-features ul li { color: ${attributes.listColor}; }`);
+	}
+
+	// List icon color - pricing-plans-widget.php:506-517
+	// Selector: '{{WRAPPER}} .ts-plan-features ul li i' => 'color: {{VALUE}}'
+	// Selector: '{{WRAPPER}} .ts-plan-features ul li svg' => 'fill: {{VALUE}}'
+	if (attributes.listIconColor) {
+		cssRules.push(
+			`${selector} .ts-plan-features ul li i { color: ${attributes.listIconColor}; }`
+		);
+		cssRules.push(
+			`${selector} .ts-plan-features ul li svg { fill: ${attributes.listIconColor}; }`
 		);
 	}
 

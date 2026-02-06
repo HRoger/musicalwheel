@@ -118,17 +118,20 @@ export function ContentTab({
 
 							{/* Time Custom (conditional) - maps to: timeline.php:L79-84 */}
 							{item.time === 'custom' && (
-								<TextControl
-									type="number"
+								<DynamicTagTextControl
 									label={__('Show items from the past number of days', 'voxel-fse')}
-									value={String(item.timeCustom)}
-									onChange={(value: string) =>
-										onUpdate({
-											timeCustom: Math.max(1, Math.min(365, parseInt(value, 10) || 7)),
-										})
-									}
-									min={1}
-									max={365}
+									value={String(item.timeCustom ?? 7)}
+									onChange={(value: string) => {
+										// If dynamic tag, store as string; otherwise clamp as number
+										if (value.startsWith('@tags()')) {
+											onUpdate({ timeCustom: value });
+										} else {
+											const num = parseInt(value, 10);
+											onUpdate({
+												timeCustom: isNaN(num) ? 7 : Math.max(1, Math.min(365, num)),
+											});
+										}
+									}}
 								/>
 							)}
 

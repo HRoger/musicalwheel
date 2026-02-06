@@ -106,9 +106,19 @@ export default function FilterTerms({
 
 	const props = (filterData.props || {}) as Record<string, any>;
 	const multiple = props['multiple'] ?? true; // Voxel default is true
-	const placeholder = props['placeholder'] || filterData.label || 'Select';
+	// Evidence: controller line 667 extracts taxonomy_label from frontend_props() taxonomy.label
+	// Wired for 1:1 parity with Voxel's frontend_props() taxonomy object {key, label}
+	const taxonomyLabel = (props['taxonomy_label'] as string) ?? '';
+	const placeholder = props['placeholder'] || filterData.label || taxonomyLabel || 'Select';
 	const displayAs = config.displayAs || props['display_as'] || 'popup';
 	const hideEmptyTerms = config.hideEmptyTerms ?? props['hide_empty_terms'] ?? false;
+	// Evidence: terms-filter.php:191 returns per_page (default 20 via filter)
+	// Used by Voxel's TermList and inline mode for "Load more" pagination
+	const perPage = props['per_page'] ?? 20;
+
+	// Pagination state for "Load more" (matches Voxel's TermList page state)
+	// Evidence: search-form.js TermList data() { perPage: this.main.filter.props.per_page, page: 1 }
+	const [page, setPage] = useState(1);
 
 	// Get filter icon - from API data (HTML markup)
 	const filterIcon = filterData.icon || '';
@@ -219,12 +229,22 @@ export default function FilterTerms({
 		return flattenedTerms.filter(opt => opt.slug && selectedSlugs.includes(opt.slug));
 	}, [flattenedTerms, selectedSlugs]);
 
+	// Visible terms for inline/popup modes — limited by per_page pagination
+	// Evidence: Voxel search-form.js visibleFlatTerms computed paginates to perPage * page + 1
+	const visibleFlatTerms = useMemo(() => {
+		const limit = perPage * page;
+		return flattenedTerms.slice(0, limit);
+	}, [flattenedTerms, perPage, page]);
+
+	const hasMoreTerms = flattenedTerms.length > perPage * page;
+
 	// Filter options based on search query
 	const filteredOptions = useMemo(() => {
-		if (!searchQuery) return flattenedTerms;
+		if (!searchQuery) return visibleFlatTerms;
+		// When searching, search ALL terms (not just visible page), matching Voxel behavior
 		const query = searchQuery.toLowerCase();
 		return flattenedTerms.filter((opt) => opt.label.toLowerCase().includes(query));
-	}, [flattenedTerms, searchQuery]);
+	}, [flattenedTerms, visibleFlatTerms, searchQuery]);
 
 	// Init search when popup opens
 	useEffect(() => {
@@ -350,6 +370,7 @@ export default function FilterTerms({
 	const additionalCount = selectedOptions.length > 1 ? selectedOptions.length - 1 : 0;
 
 	// Inline mode - display terms directly without popup
+	// Evidence: terms-filter.php template lines 2-42 (inline with Load more pagination)
 	if (displayAs === 'inline') {
 		const { style, className } = getFilterWrapperStyles(config, 'ts-form-group inline-terms-wrapper ts-inline-filter min-scroll');
 		return (
@@ -357,7 +378,7 @@ export default function FilterTerms({
 				{!config.hideLabel && <label>{filterData.label}</label>}
 				<div className="ts-term-dropdown ts-multilevel-dropdown inline-multilevel">
 					<ul className="simplify-ul ts-term-dropdown-list">
-						{flattenedTerms.map((option) => {
+						{visibleFlatTerms.map((option) => {
 							const isSelected = isTermSelected(option);
 							const termCount = getTermCount(option);
 							const isDisabled = termCount === 0;
@@ -397,6 +418,17 @@ export default function FilterTerms({
 								</li>
 							);
 						})}
+						{/* Load more button - matches Voxel template line 31-38 */}
+						{hasMoreTerms && (
+							<li className="ts-term-centered">
+								<a href="#" onClick={(e) => { e.preventDefault(); setPage(p => p + 1); }} className="flexify">
+									<div className="ts-term-icon">
+										{VoxelIcons.reload || <span>&#x21bb;</span>}
+									</div>
+									<span>Load more</span>
+								</a>
+							</li>
+						)}
 					</ul>
 				</div>
 			</div>
@@ -534,6 +566,17 @@ export default function FilterTerms({
 								</li>
 							);
 						})}
+						{/* Load more button for popup mode — matches Voxel TermList template line 165-172 */}
+						{!searchQuery && hasMoreTerms && (
+							<li className="ts-term-centered">
+								<a href="#" onClick={(e) => { e.preventDefault(); setPage(p => p + 1); }} className="flexify">
+									<div className="ts-term-icon">
+										{VoxelIcons.reload || <span>&#x21bb;</span>}
+									</div>
+									<span>Load more</span>
+								</a>
+							</li>
+						)}
 					</ul>
 					{filteredOptions.length === 0 && (
 						<div className="ts-empty-user-tab">
