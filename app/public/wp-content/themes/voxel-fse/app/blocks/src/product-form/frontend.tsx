@@ -259,11 +259,17 @@ async function fetchProductConfig(postId: number): Promise<ProductFormConfig | n
 	const endpoint = `${restUrl}voxel-fse/v1/product-form/config?post_id=${postId}`;
 
 	try {
+		const headers: HeadersInit = {
+			'Content-Type': 'application/json',
+		};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(endpoint, {
 			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers,
 		});
 
 		if (!response.ok) {

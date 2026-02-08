@@ -89,7 +89,85 @@ For consistency, also add to Windows hosts file:
 3. Add entries at the end
 4. Save and close
 
-### Step 5: Configure Claude Code Environment
+### Step 5: Configure Windows WSL Settings (.wslconfig)
+
+Configure your Windows-side WSL settings for optimal networking and performance. This file is located on Windows, not in WSL.
+
+**Edit Windows WSL configuration:**
+```
+C:\Users\{your-username}\.wslconfig
+```
+
+**Add or update these sections:**
+```ini
+[wsl2]
+dnsProxy=false
+networkingMode=Mirrored
+
+[experimental]
+sparseVhd=true
+```
+
+**Explanation:**
+- `[wsl2] dnsProxy=false` - Disable WSL's DNS proxy to use Windows DNS directly (improves DNS resolution stability)
+- `[wsl2] networkingMode=Mirrored` - **CRITICAL:** Enable Mirrored Networking Mode so WSL can reach Windows localhost
+- `[experimental] sparseVhd=true` - Use sparse virtual disk format for better storage efficiency
+
+**Why Mirrored Mode?** Default WSL uses a virtual NAT that isolates WSL from Windows. Mirrored mode bridges the gap, allowing agent-browser in WSL to access your LocalWP site on Windows.
+
+**After editing, restart WSL:**
+```powershell
+# From PowerShell (as Administrator)
+wsl --shutdown
+```
+
+Then reopen WSL - changes take effect on next boot.
+
+### Step 6: Configure WSL Interop & File Access (CRITICAL for VSCode)
+
+WSL filesystem mounting can cause permission and file access issues in VSCode. Configure `/etc/wsl.conf` to optimize interoperability:
+
+**Edit WSL configuration:**
+```bash
+sudo nano /etc/wsl.conf
+```
+
+**Add or update these sections:**
+```ini
+[boot]
+systemd=true
+
+[automount]
+enabled = true
+options = "metadata,umask=22,fmask=11,noatime"
+mountFsTab = true
+
+[interop]
+enabled = true
+appendWindowsPath = true
+```
+
+**Explanation:**
+- `[boot] systemd=true` - Enable systemd for service management
+- `[automount] enabled=true` - Auto-mount Windows drives at startup
+- `options="metadata,umask=22,fmask=11,noatime"` - **CRITICAL for VSCode:**
+  - `metadata` - Preserves Windows NTFS metadata
+  - `umask=22` - Default directory permissions (755)
+  - `fmask=11` - Default file permissions (644) - allows VSCode to write files
+  - `noatime` - Improves performance by skipping access time updates
+- `mountFsTab=true` - Use /etc/fstab for mount configuration
+- `[interop] enabled=true` - Allow calling Windows programs from WSL
+- `[interop] appendWindowsPath=true` - Include Windows PATH in WSL
+
+**After editing, restart WSL:**
+```bash
+# From PowerShell (as Administrator)
+wsl --shutdown
+```
+
+Then reopen WSL - changes take effect on next boot.
+
+### Step 7: Configure Claude Code Environment
 
 Add agent-browser configuration to your `.claude/settings.local.json`:
 
@@ -114,7 +192,7 @@ Add agent-browser configuration to your `.claude/settings.local.json`:
 - `AGENT_BROWSER_STREAM_PORT="9223"` - WebSocket port for browser streaming
 - `LIBGL_ALWAYS_INDIRECT="0"` - OpenGL rendering (prevents blurry graphics)
 
-### Step 6: Update ~/.bashrc (Optional)
+### Step 8: Update ~/.bashrc (Optional)
 
 For convenient command execution, add these to your `~/.bashrc`:
 
@@ -137,25 +215,41 @@ claude() {
 
 ## 3. Quick Start
 
-### Launch Browser to Your Site
+### Launch Browser to Your Site (Standard Command)
 
+**Recommended single-line command:**
 ```bash
-agent-browser --args "--no-sandbox" --headed open http://musicalwheel.local/
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH" && /usr/bin/agent-browser close 2>/dev/null && /usr/bin/agent-browser --args "--no-sandbox" --headed --ignore-https-errors open [website url] && /usr/bin/agent-browser set viewport 1892 899 && /usr/bin/agent-browser wait --load networkidle 2>&1
 ```
 
-**Flags explained:**
-- `--args "--no-sandbox"` - **REQUIRED for WSL** (Chromium needs this in WSL environment)
-- `--headed` - Show browser window visually
-- `http://musicalwheel.local/` - Target URL
+**Replace `[website url]` with your target URL, e.g.:**
+```bash
+export PATH="/usr/local/bin:/usr/bin:/bin:$PATH" && /usr/bin/agent-browser close 2>/dev/null && /usr/bin/agent-browser --args "--no-sandbox" --headed --ignore-https-errors open "https://musicalwheel.local/vx-stays/stays-grid/" && /usr/bin/agent-browser set viewport 1892 899 && /usr/bin/agent-browser wait --load networkidle 2>&1
+```
 
-### Set Viewport Size
+**Command breakdown:**
+- `export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"` - Ensure agent-browser is in PATH
+- `/usr/bin/agent-browser close 2>/dev/null` - Close any existing browser session
+- `--args "--no-sandbox"` - **REQUIRED for WSL** (Chromium needs this)
+- `--headed` - Show browser window visually
+- `--ignore-https-errors` - Allow self-signed certificates (LocalWP uses HTTPS)
+- `set viewport 1892 899` - Set inner viewport to achieve outer window 1900x1032
+- `wait --load networkidle` - Wait for page to fully load before returning
+
+**Why viewport 1892x899?**
+- **Outer window target**: 1900x1032 (user preference)
+- **Browser chrome offset**: 8px width, 133px height (title bar + address bar + bookmarks)
+- **Inner viewport calculation**: 1900 - 8 = 1892, 1032 - 133 = 899
+
+### Set Viewport Size (Manual)
 
 ```bash
-agent-browser set viewport 1920 1080
+agent-browser set viewport 1892 899
 ```
 
 **Common sizes:**
 ```bash
+agent-browser set viewport 1892 899     # Default (outer: 1900x1032)
 agent-browser set viewport 1920 1080    # 1080p
 agent-browser set viewport 2560 1440    # 1440p (QHD)
 agent-browser set viewport 1366 768     # 768p laptop

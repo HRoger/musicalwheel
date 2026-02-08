@@ -497,10 +497,17 @@ export default function PostFeedComponent({
 
 					try {
 						setState(prev => ({ ...prev, loading: true }));
+
+						const headers: HeadersInit = { 'Accept': 'text/html' };
+						const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+						if (nonce) {
+							headers['X-WP-Nonce'] = nonce;
+						}
+
 						const response = await fetch(fetchUrl, {
 							method: 'GET',
 							credentials: 'same-origin',
-							headers: { 'Accept': 'text/html' },
+							headers,
 						});
 
 						if (!response.ok) {
@@ -683,12 +690,16 @@ export default function PostFeedComponent({
 			const fetchUrl = `${homeUrl}/?vx=1&${params.toString()}`;
 
 			// Include credentials for WordPress admin context (cookies needed for auth)
+			const headers: HeadersInit = { 'Accept': 'text/html' };
+			const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+			if (nonce) {
+				headers['X-WP-Nonce'] = nonce;
+			}
+
 			const response = await fetch(fetchUrl, {
 				method: 'GET',
 				credentials: 'same-origin',
-				headers: {
-					'Accept': 'text/html',
-				},
+				headers,
 			});
 
 			if (!response.ok) {

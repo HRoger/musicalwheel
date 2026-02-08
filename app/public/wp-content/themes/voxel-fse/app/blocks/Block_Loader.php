@@ -160,7 +160,7 @@ class Block_Loader
         // Set CSS variable for font-family BEFORE commons.css loads (priority 1, before Voxel's priority 5)
         // This ensures --e-global-typography-text-font-family is set to WordPress system font
         // before commons.css applies font-family: var(--e-global-typography-text-font-family), sans-serif;
-        add_action('wp_enqueue_scripts', [__CLASS__, 'set_font_family_css_variable'], 1);
+//        add_action('wp_enqueue_scripts', [__CLASS__, 'set_font_family_css_variable'], 1);
 
         // Set popup block CSS variables on main document body (priority 1, before Voxel's priority 5)
         // This ensures CSS variables are available for parent theme's commons.css
@@ -2290,7 +2290,19 @@ JAVASCRIPT;
         // Ensure commons.css is registered (Voxel will register it, but we need it registered now)
         self::ensure_voxel_styles_registered();
 
-        $css = ':root, body { --e-global-typography-text-font-family: var(--wp--preset--font-family--system, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif); }';
+        // Elementor CSS variable fallbacks for FSE pages
+        // On Elementor pages, these are set by Elementor's global settings. On FSE/Gutenberg
+        // pages without Elementor, they're undefined — causing broken typography and colors
+        // across 40+ Voxel CSS files that consume var(--ts-shade-*), var(--ts-accent-*), etc.
+        $css = ':root, body {'
+            . ' --e-global-typography-text-font-family: var(--wp--preset--font-family--system, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);'
+            . ' --e-global-typography-text-font-size: 14px;'
+            . ' --e-global-typography-secondary-font-weight: 500;'
+            . ' --ts-shade-1: #1a1a1a;'
+            . ' --ts-shade-2: #4a4a4a;'
+            . ' --ts-shade-5: #999;'
+            . ' --ts-accent-1: var(--e-global-color-accent);'
+            . ' }';
 
         // Method 1: Add inline CSS to vx:commons.css (WordPress will add it when the style is enqueued)
         if (wp_style_is('vx:commons.css', 'registered')) {
@@ -2298,9 +2310,9 @@ JAVASCRIPT;
         }
 
         // Method 2: Also output directly in wp_head at very early priority as fallback
-        // This ensures the CSS variable is set even if wp_add_inline_style doesn't work
+        // This ensures the CSS variables are set even if wp_add_inline_style doesn't work
         add_action('wp_head', function () use ($css) {
-            echo '<style type="text/css" id="voxel-fse-font-family-variable">' . wp_strip_all_tags($css) . '</style>' . "\n";
+            echo '<style type="text/css" id="voxel-fse-elementor-fallback-variables">' . wp_strip_all_tags($css) . '</style>' . "\n";
         }, 0); // Priority 0 to run as early as possible
     }
 
@@ -2855,6 +2867,7 @@ JAVASCRIPT;
                 'voxel-fse/userbar',
                 'voxel-fse/quick-search',
                 'voxel-fse/current-plan',
+                'voxel-fse/current-role',
                 'voxel-fse/cart-summary',
                 'voxel-fse/post-feed',
                 'voxel-fse/login',
@@ -3674,6 +3687,7 @@ JAVASCRIPT;
                                 'userbar',
                                 'quick-search',
                                 'current-plan',
+                                'current-role',
                                 'cart-summary',
                                 'post-feed',
                                 'login',
@@ -4537,6 +4551,12 @@ JAVASCRIPT;
             $block_content = self::apply_create_post_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'product-form' && $block_id) {
             $block_content = self::apply_product_form_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'login' && $block_id) {
+            $block_content = self::apply_login_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'stripe-account' && $block_id) {
+            $block_content = self::apply_stripe_account_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'review-stats' && $block_id) {
+            $block_content = self::apply_review_stats_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'cart-summary' && $block_id) {
             $block_content = self::apply_cart_summary_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'term-feed' && $block_id) {
@@ -4555,6 +4575,26 @@ JAVASCRIPT;
             $block_content = self::apply_current_role_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'work-hours' && $block_id) {
             $block_content = self::apply_work_hours_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'ring-chart' && $block_id) {
+            $block_content = self::apply_ring_chart_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'nested-accordion' && $block_id) {
+            $block_content = self::apply_nested_accordion_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'nested-tabs' && $block_id) {
+            $block_content = self::apply_nested_tabs_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'orders' && $block_id) {
+            $block_content = self::apply_orders_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'quick-search' && $block_id) {
+            $block_content = self::apply_quick_search_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'listing-plans' && $block_id) {
+            $block_content = self::apply_listing_plans_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'membership-plans' && $block_id) {
+            $block_content = self::apply_membership_plans_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'flex-container' && $block_id) {
+            $block_content = self::apply_flex_container_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'visit-chart' && $block_id) {
+            $block_content = self::apply_visit_chart_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'sales-chart' && $block_id) {
+            $block_content = self::apply_sales_chart_styles($block_content, $attributes, $block_id);
         }
 
         // 5. Final step: Process Voxel dynamic tags (VoxelScript)
@@ -4786,6 +4826,48 @@ JAVASCRIPT;
         return $block_content;
     }
 
+    private static function apply_login_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_login_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Login Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_stripe_account_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_stripe_account_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Stripe Account Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_review_stats_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_review_stats_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Review Stats Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
     private static function apply_cart_summary_styles($block_content, $attributes, $block_id)
     {
         require_once __DIR__ . '/shared/style-generator.php';
@@ -4949,6 +5031,116 @@ JAVASCRIPT;
             $block_content = $style_tag . $block_content;
         }
 
+        return $block_content;
+    }
+
+    private static function apply_ring_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_ring_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Ring Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_nested_accordion_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_nested_accordion_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Nested Accordion Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_nested_tabs_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_nested_tabs_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Nested Tabs Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_orders_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_orders_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Orders Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_quick_search_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_quick_search_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Quick Search Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_listing_plans_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_listing_plans_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Listing Plans Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_membership_plans_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_membership_plans_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Membership Plans Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_flex_container_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_flex_container_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Flex Container Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_visit_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_visit_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Visit Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_sales_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_sales_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Sales Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
         return $block_content;
     }
 

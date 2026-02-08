@@ -1268,9 +1268,11 @@ class Style_Generator {
             }
         }
 
-        // Show labels
-        if ( isset( $attributes['showLabels'] ) && $attributes['showLabels'] === false ) {
-            $css_rules[] = "{$selector} .ts-form-group > label { display: none; }";
+        // Show labels (default is false in block.json — labels hidden by default)
+        // Note: $attributes may not include defaults from block.json, so use ?? false
+        $show_labels = $attributes['showLabels'] ?? false;
+        if ( $show_labels === false ) {
+            $css_rules[] = "{$selector} .ts-form-group > label:not(.ts-keep-visible) { display: none; }";
         }
 
         // Label color
@@ -2427,15 +2429,11 @@ class Style_Generator {
         $mobile_rules = [];
 
         // ============================================
-        // CRITICAL: Elementor CSS Variable Fallbacks (GLOBAL)
+        // GLOBAL marker styling - targets markers in Google Maps overlay pane
         // ============================================
-        // Voxel's map.css uses Elementor CSS variables. On FSE pages without Elementor,
-        // these are undefined, causing broken typography (font-size: 0 on markers).
         // Markers render in Google Maps overlay pane (NOT inside block DOM), so we use
-        // global selectors.
-        $css_rules[] = ':root { --e-global-typography-text-font-size: 14px; --e-global-typography-secondary-font-weight: 500; --ts-shade-1: #1a1a1a; --ts-shade-2: #4a4a4a; --ts-shade-5: #999; --ts-accent-1: #3b82f6; }';
-        $css_rules[] = "{$selector} { --e-global-typography-text-font-size: 14px; --e-global-typography-secondary-font-weight: 500; }";
-        // Global marker styling
+        // global selectors. Elementor CSS variable fallbacks (--e-global-typography-*,
+        // --ts-shade-*, --ts-accent-1) are set GLOBALLY in Block_Loader.php, NOT per-block.
         $css_rules[] = '.marker-type-text { font-size: 14px !important; color: #4a4a4a !important; }';
         $css_rules[] = '.marker-wrapper { position: absolute; z-index: 10; transform: translate(-50%, -50%); }';
         $css_rules[] = '.map-marker { display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }';
@@ -4822,77 +4820,13 @@ class Style_Generator {
     }
 
     /**
-     * Generate CSS for Create Post Block
+     * Generate product-form block CSS
      *
-     * Handles both Style Tab and Field Style Tab CSS generation.
-     * NOTE: This block has extensive styling (~2400 lines in JS) covering form elements,
-     * buttons, progress indicators, field types, and validation states.
+     * CSS generation for product-form block.
      *
-     * @param array  $attributes Block attributes
-     * @param string $block_id   Unique block ID
-     * @return string Generated CSS
-     */
-    public static function generate_create_post_css( $attributes, $block_id ) {
-        if ( empty( $block_id ) ) {
-            return '';
-        }
-
-        $css_rules = [];
-        $tablet_rules = [];
-        $mobile_rules = [];
-
-        $selector = '.voxel-fse-create-post-' . $block_id;
-
-        // ============================================
-        // STYLE TAB - Section 1: FORM HEAD (Progress Bar)
-        // Source: create-post.php:387-587
-        // ============================================
-
-        // Hide form head
-        if ( ! empty( $attributes['headHide'] ) ) {
-            $css_rules[] = "{$selector} .ts-form-progres { display: none !important; }";
-        }
-
-        // Head spacing (margin-bottom)
-        if ( isset( $attributes['headSpacing'] ) && $attributes['headSpacing'] !== '' ) {
-            $css_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing']}px; }";
-        }
-        if ( isset( $attributes['headSpacing_tablet'] ) && $attributes['headSpacing_tablet'] !== '' ) {
-            $tablet_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing_tablet']}px; }";
-        }
-        if ( isset( $attributes['headSpacing_mobile'] ) && $attributes['headSpacing_mobile'] !== '' ) {
-            $mobile_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing_mobile']}px; }";
-        }
-
-        // TODO: Remaining create-post CSS sections will be added incrementally
-        // This is a placeholder for the ~2400 lines of CSS generation logic
-        // covering: Form Head, Form Body, Form Footer, Buttons, Field Types, Validation, etc.
-
-        // ============================================
-        // Combine CSS with media queries
-        // ============================================
-        $final_css = '';
-        if ( ! empty( $css_rules ) ) {
-            $final_css .= implode( "\n", $css_rules );
-        }
-        if ( ! empty( $tablet_rules ) ) {
-            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
-        }
-        if ( ! empty( $mobile_rules ) ) {
-            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
-        }
-
-        return $final_css;
-    }
-
-    /**
-     * Generate CSS for Product Form Block
-     *
-     * Handles product form styling including fields, dropdowns, buttons, and validation.
-     *
-     * @param array  $attributes Block attributes
-     * @param string $block_id   Unique block ID
-     * @return string Generated CSS
+     * @param array  $attributes Block attributes from inspector controls
+     * @param string $block_id   Unique block identifier
+     * @return string Generated CSS rules
      */
     public static function generate_product_form_css( $attributes, $block_id ) {
         if ( empty( $block_id ) ) {
@@ -4921,9 +4855,758 @@ class Style_Generator {
             $mobile_rules[] = "{$selector} .ts-form-group { margin-bottom: {$attributes['fieldSpacingMobile']}px; }";
         }
 
-        // TODO: Remaining product-form CSS sections will be added incrementally
-        // This is a placeholder for the ~1200 lines of CSS generation logic
-        // covering: Field Labels, Input Fields, Dropdowns, Buttons, Validation, etc.
+        // Field label typography
+        if ( ! empty( $attributes['fieldLabelTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldLabelTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .ts-form label { {$typo_css} }";
+            }
+        }
+
+        // Field label color
+        if ( ! empty( $attributes['fieldLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form label { color: {$attributes['fieldLabelColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Primary Button (Normal + Hover States)
+        // Source: product-form.php:278-510
+        // ============================================
+
+        // Primary button typography
+        if ( ! empty( $attributes['primaryButtonTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['primaryButtonTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .ts-btn.form-btn { {$typo_css} }";
+            }
+        }
+
+        // Primary button border
+        if ( ! empty( $attributes['primaryButtonBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['primaryButtonBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} .ts-btn.form-btn { {$border_css} }";
+            }
+        }
+
+        // Primary button border radius
+        if ( isset( $attributes['primaryButtonBorderRadius'] ) && $attributes['primaryButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn { border-radius: {$attributes['primaryButtonBorderRadius']}px; }";
+        }
+
+        // Primary button box shadow
+        if ( ! empty( $attributes['primaryButtonBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['primaryButtonBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .ts-btn.form-btn { {$shadow_css} }";
+            }
+        }
+
+        // Primary button text color
+        if ( ! empty( $attributes['primaryButtonTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn { color: {$attributes['primaryButtonTextColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn svg { fill: {$attributes['primaryButtonTextColor']}; }";
+        }
+
+        // Primary button background
+        if ( ! empty( $attributes['primaryButtonBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn { background-color: {$attributes['primaryButtonBackground']}; }";
+        }
+
+        // Primary button icon size
+        if ( isset( $attributes['primaryButtonIconSize'] ) && $attributes['primaryButtonIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn i { font-size: {$attributes['primaryButtonIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn svg { width: {$attributes['primaryButtonIconSize']}px; height: {$attributes['primaryButtonIconSize']}px; }";
+        }
+
+        // Primary button icon color
+        if ( ! empty( $attributes['primaryButtonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn i { color: {$attributes['primaryButtonIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn svg { fill: {$attributes['primaryButtonIconColor']}; }";
+        }
+
+        // Primary button icon/text spacing
+        if ( isset( $attributes['primaryButtonIconTextSpacing'] ) && $attributes['primaryButtonIconTextSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn i { margin-right: {$attributes['primaryButtonIconTextSpacing']}px; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn svg { margin-right: {$attributes['primaryButtonIconTextSpacing']}px; }";
+        }
+
+        // Primary button hover states
+
+        // Text color hover
+        if ( ! empty( $attributes['primaryButtonTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover { color: {$attributes['primaryButtonTextColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover svg { fill: {$attributes['primaryButtonTextColorHover']}; }";
+        }
+
+        // Background hover
+        if ( ! empty( $attributes['primaryButtonBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover { background-color: {$attributes['primaryButtonBackgroundHover']}; }";
+        }
+
+        // Border color hover
+        if ( ! empty( $attributes['primaryButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover { border-color: {$attributes['primaryButtonBorderColorHover']}; }";
+        }
+
+        // Box shadow hover
+        if ( ! empty( $attributes['primaryButtonBoxShadowHover'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['primaryButtonBoxShadowHover'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .ts-btn.form-btn:hover { {$shadow_css} }";
+            }
+        }
+
+        // Icon color hover
+        if ( ! empty( $attributes['primaryButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover i { color: {$attributes['primaryButtonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn.form-btn:hover svg { fill: {$attributes['primaryButtonIconColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION: Price Calculator
+        // ============================================
+
+        // List spacing
+        if ( isset( $attributes['priceCalculatorListSpacing'] ) && $attributes['priceCalculatorListSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator li { margin-bottom: {$attributes['priceCalculatorListSpacing']}px; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['priceCalculatorTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['priceCalculatorTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .ts-cost-calculator { {$typo_css} }";
+            }
+        }
+
+        // Text color
+        if ( ! empty( $attributes['priceCalculatorTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator { color: {$attributes['priceCalculatorTextColor']}; }";
+        }
+
+        // Total typography
+        if ( ! empty( $attributes['priceCalculatorTotalTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['priceCalculatorTotalTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .ts-cost-calculator .ts-total { {$typo_css} }";
+            }
+        }
+
+        // Total text color
+        if ( ! empty( $attributes['priceCalculatorTotalTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator .ts-total { color: {$attributes['priceCalculatorTotalTextColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Loading / Out of Stock
+        // Source: product-form.php:585-710
+        // ============================================
+
+        // Loading color 1
+        if ( ! empty( $attributes['loadingColor1'] ) ) {
+            $css_rules[] = "{$selector} .ts-loader::before { border-top-color: {$attributes['loadingColor1']}; }";
+        }
+
+        // Loading color 2
+        if ( ! empty( $attributes['loadingColor2'] ) ) {
+            $css_rules[] = "{$selector} .ts-loader::before { border-bottom-color: {$attributes['loadingColor2']}; }";
+        }
+
+        // Out of stock content gap
+        if ( isset( $attributes['outOfStockContentGap'] ) && $attributes['outOfStockContentGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts { gap: {$attributes['outOfStockContentGap']}px; }";
+        }
+
+        // Out of stock icon size
+        if ( isset( $attributes['outOfStockIconSize'] ) && $attributes['outOfStockIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['outOfStockIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['outOfStockIconSize']}px; height: {$attributes['outOfStockIconSize']}px; }";
+        }
+
+        // Out of stock icon color
+        if ( ! empty( $attributes['outOfStockIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { color: {$attributes['outOfStockIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { fill: {$attributes['outOfStockIconColor']}; }";
+        }
+
+        // Out of stock typography
+        if ( ! empty( $attributes['outOfStockTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['outOfStockTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .ts-no-posts p { {$typo_css} }";
+            }
+        }
+
+        // Out of stock text color
+        if ( ! empty( $attributes['outOfStockTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts p { color: {$attributes['outOfStockTextColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Number Stepper (Normal + Hover)
+        // Source: product-form.php:709-869
+        // ============================================
+
+        // Stepper input value size
+        if ( isset( $attributes['stepperInputSize'] ) && $attributes['stepperInputSize'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-stepper-number { font-size: {$attributes['stepperInputSize']}px; }";
+        }
+
+        // Stepper button icon color
+        if ( ! empty( $attributes['stepperButtonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn i { color: {$attributes['stepperButtonIconColor']}; }";
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn svg { fill: {$attributes['stepperButtonIconColor']}; }";
+        }
+
+        // Stepper button background
+        if ( ! empty( $attributes['stepperButtonBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn { background-color: {$attributes['stepperButtonBackground']}; }";
+        }
+
+        // Stepper button border
+        if ( ! empty( $attributes['stepperButtonBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['stepperButtonBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn { {$border_css} }";
+            }
+        }
+
+        // Stepper button border radius
+        if ( isset( $attributes['stepperButtonBorderRadius'] ) && $attributes['stepperButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn { border-radius: {$attributes['stepperButtonBorderRadius']}px; }";
+        }
+
+        // Stepper hover states
+
+        // Button icon color hover
+        if ( ! empty( $attributes['stepperButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn:hover i { color: {$attributes['stepperButtonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn:hover svg { fill: {$attributes['stepperButtonIconColorHover']}; }";
+        }
+
+        // Button background hover
+        if ( ! empty( $attributes['stepperButtonBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn:hover { background-color: {$attributes['stepperButtonBackgroundHover']}; }";
+        }
+
+        // Button border color hover
+        if ( ! empty( $attributes['stepperButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-number-input .ts-icon-btn:hover { border-color: {$attributes['stepperButtonBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION: Cards (Normal + Selected)
+        // Source: product-form.php:869-1149
+        // ============================================
+
+        // Cards gap
+        if ( isset( $attributes['cardsGap'] ) && $attributes['cardsGap'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-card-choices { gap: {$attributes['cardsGap']}px; }";
+        }
+
+        // Cards background
+        if ( ! empty( $attributes['cardsBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice { background-color: {$attributes['cardsBackground']}; }";
+        }
+
+        // Cards border
+        if ( ! empty( $attributes['cardsBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['cardsBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice { {$border_css} }";
+            }
+        }
+
+        // Cards border radius
+        if ( isset( $attributes['cardsBorderRadius'] ) && $attributes['cardsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-card-choice { border-radius: {$attributes['cardsBorderRadius']}px; }";
+        }
+
+        // Cards primary typography
+        if ( ! empty( $attributes['cardsPrimaryTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['cardsPrimaryTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice .pf-cc-title { {$typo_css} }";
+            }
+        }
+
+        // Cards primary color
+        if ( ! empty( $attributes['cardsPrimaryColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice .pf-cc-title { color: {$attributes['cardsPrimaryColor']}; }";
+        }
+
+        // Cards secondary typography
+        if ( ! empty( $attributes['cardsSecondaryTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['cardsSecondaryTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice .pf-cc-description { {$typo_css} }";
+            }
+        }
+
+        // Cards secondary color
+        if ( ! empty( $attributes['cardsSecondaryColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice .pf-cc-description { color: {$attributes['cardsSecondaryColor']}; }";
+        }
+
+        // Cards price typography
+        if ( ! empty( $attributes['cardsPriceTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['cardsPriceTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice .pf-cc-price { {$typo_css} }";
+            }
+        }
+
+        // Cards price color
+        if ( ! empty( $attributes['cardsPriceColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice .pf-cc-price { color: {$attributes['cardsPriceColor']}; }";
+        }
+
+        // Cards image border radius
+        if ( isset( $attributes['cardsImageBorderRadius'] ) && $attributes['cardsImageBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-card-choice .pf-cc-image { border-radius: {$attributes['cardsImageBorderRadius']}px; }";
+        }
+
+        // Cards image size
+        if ( isset( $attributes['cardsImageSize'] ) && $attributes['cardsImageSize'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-card-choice .pf-cc-image { width: {$attributes['cardsImageSize']}px; height: {$attributes['cardsImageSize']}px; }";
+        }
+
+        // Cards selected state
+
+        // Selected background
+        if ( ! empty( $attributes['cardsSelectedBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice.pf-selected { background-color: {$attributes['cardsSelectedBackground']}; }";
+        }
+
+        // Selected border color
+        if ( ! empty( $attributes['cardsSelectedBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-card-choice.pf-selected { border-color: {$attributes['cardsSelectedBorderColor']}; }";
+        }
+
+        // Selected box shadow
+        if ( ! empty( $attributes['cardsSelectedBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['cardsSelectedBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice.pf-selected { {$shadow_css} }";
+            }
+        }
+
+        // Selected primary typography
+        if ( ! empty( $attributes['cardsSelectedPrimaryTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['cardsSelectedPrimaryTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-card-choice.pf-selected .pf-cc-title { {$typo_css} }";
+            }
+        }
+
+        // ============================================
+        // SECTION: Buttons (Normal + Selected)
+        // Source: product-form.php:1149-1315
+        // ============================================
+
+        // Buttons gap
+        if ( isset( $attributes['buttonsGap'] ) && $attributes['buttonsGap'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-btn-choices { gap: {$attributes['buttonsGap']}px; }";
+        }
+
+        // Buttons background
+        if ( ! empty( $attributes['buttonsBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-btn-choice { background-color: {$attributes['buttonsBackground']}; }";
+        }
+
+        // Buttons border
+        if ( ! empty( $attributes['buttonsBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['buttonsBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} .pf-btn-choice { {$border_css} }";
+            }
+        }
+
+        // Buttons border radius
+        if ( isset( $attributes['buttonsBorderRadius'] ) && $attributes['buttonsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-btn-choice { border-radius: {$attributes['buttonsBorderRadius']}px; }";
+        }
+
+        // Buttons text typography
+        if ( ! empty( $attributes['buttonsTextTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['buttonsTextTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-btn-choice { {$typo_css} }";
+            }
+        }
+
+        // Buttons text color
+        if ( ! empty( $attributes['buttonsTextColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-btn-choice { color: {$attributes['buttonsTextColor']}; }";
+        }
+
+        // Buttons selected state
+
+        // Selected background
+        if ( ! empty( $attributes['buttonsSelectedBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-btn-choice.pf-selected { background-color: {$attributes['buttonsSelectedBackground']}; }";
+        }
+
+        // Selected border color
+        if ( ! empty( $attributes['buttonsSelectedBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-btn-choice.pf-selected { border-color: {$attributes['buttonsSelectedBorderColor']}; }";
+        }
+
+        // Selected box shadow
+        if ( ! empty( $attributes['buttonsSelectedBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['buttonsSelectedBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-btn-choice.pf-selected { {$shadow_css} }";
+            }
+        }
+
+        // ============================================
+        // SECTION: Dropdown (Normal + Hover + Filled)
+        // Source: product-form.php:1315-1520
+        // ============================================
+
+        // Dropdown typography - normal state
+        if ( ! empty( $attributes['dropdownTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['dropdownTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-select { {$typo_css} }";
+            }
+        }
+
+        // Dropdown box shadow - normal
+        if ( ! empty( $attributes['dropdownBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['dropdownBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-select { {$shadow_css} }";
+            }
+        }
+
+        // Dropdown background - normal
+        if ( ! empty( $attributes['dropdownBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-select { background-color: {$attributes['dropdownBackground']}; }";
+        }
+
+        // Dropdown text color - normal
+        if ( ! empty( $attributes['dropdownTextColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select { color: {$attributes['dropdownTextColor']}; }";
+        }
+
+        // Dropdown border - normal
+        if ( ! empty( $attributes['dropdownBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['dropdownBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} .pf-select { {$border_css} }";
+            }
+        }
+
+        // Dropdown border radius - normal
+        if ( isset( $attributes['dropdownBorderRadius'] ) && $attributes['dropdownBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-select { border-radius: {$attributes['dropdownBorderRadius']}px; }";
+        }
+
+        // Dropdown icon color - normal
+        if ( ! empty( $attributes['dropdownIconColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select i { color: {$attributes['dropdownIconColor']}; }";
+            $css_rules[] = "{$selector} .pf-select svg { fill: {$attributes['dropdownIconColor']}; }";
+        }
+
+        // Dropdown icon size
+        if ( isset( $attributes['dropdownIconSize'] ) && $attributes['dropdownIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-select i { font-size: {$attributes['dropdownIconSize']}px; }";
+            $css_rules[] = "{$selector} .pf-select svg { width: {$attributes['dropdownIconSize']}px; height: {$attributes['dropdownIconSize']}px; }";
+        }
+
+        // Dropdown icon/text spacing
+        if ( isset( $attributes['dropdownIconTextSpacing'] ) && $attributes['dropdownIconTextSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-select i { margin-right: {$attributes['dropdownIconTextSpacing']}px; }";
+            $css_rules[] = "{$selector} .pf-select svg { margin-right: {$attributes['dropdownIconTextSpacing']}px; }";
+        }
+
+        // Dropdown chevron visibility
+        if ( ! empty( $attributes['dropdownHideChevron'] ) ) {
+            $css_rules[] = "{$selector} .pf-select .ts-down-icon { display: none; }";
+        }
+
+        // Dropdown chevron color
+        if ( ! empty( $attributes['dropdownChevronColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select .ts-down-icon { color: {$attributes['dropdownChevronColor']}; }";
+            $css_rules[] = "{$selector} .pf-select .ts-down-icon svg { fill: {$attributes['dropdownChevronColor']}; }";
+        }
+
+        // Dropdown hover states
+
+        // Background hover
+        if ( ! empty( $attributes['dropdownBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-select:hover { background-color: {$attributes['dropdownBackgroundHover']}; }";
+        }
+
+        // Text color hover
+        if ( ! empty( $attributes['dropdownTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-select:hover { color: {$attributes['dropdownTextColorHover']}; }";
+        }
+
+        // Border color hover
+        if ( ! empty( $attributes['dropdownBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-select:hover { border-color: {$attributes['dropdownBorderColorHover']}; }";
+        }
+
+        // Icon color hover
+        if ( ! empty( $attributes['dropdownIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pf-select:hover i { color: {$attributes['dropdownIconColorHover']}; }";
+            $css_rules[] = "{$selector} .pf-select:hover svg { fill: {$attributes['dropdownIconColorHover']}; }";
+        }
+
+        // Box shadow hover
+        if ( ! empty( $attributes['dropdownBoxShadowHover'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['dropdownBoxShadowHover'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-select:hover { {$shadow_css} }";
+            }
+        }
+
+        // Dropdown filled state (when value selected)
+
+        // Filled typography
+        if ( ! empty( $attributes['dropdownFilledTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['dropdownFilledTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-select.pf-filled { {$typo_css} }";
+            }
+        }
+
+        // Filled background
+        if ( ! empty( $attributes['dropdownFilledBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-select.pf-filled { background-color: {$attributes['dropdownFilledBackground']}; }";
+        }
+
+        // Filled text color
+        if ( ! empty( $attributes['dropdownFilledTextColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select.pf-filled { color: {$attributes['dropdownFilledTextColor']}; }";
+        }
+
+        // Filled icon color
+        if ( ! empty( $attributes['dropdownFilledIconColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select.pf-filled i { color: {$attributes['dropdownFilledIconColor']}; }";
+            $css_rules[] = "{$selector} .pf-select.pf-filled svg { fill: {$attributes['dropdownFilledIconColor']}; }";
+        }
+
+        // Filled border color
+        if ( ! empty( $attributes['dropdownFilledBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-select.pf-filled { border-color: {$attributes['dropdownFilledBorderColor']}; }";
+        }
+
+        // Filled border width
+        if ( isset( $attributes['dropdownFilledBorderWidth'] ) && $attributes['dropdownFilledBorderWidth'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-select.pf-filled { border-width: {$attributes['dropdownFilledBorderWidth']}px; }";
+        }
+
+        // Filled box shadow
+        if ( ! empty( $attributes['dropdownFilledBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['dropdownFilledBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-select.pf-filled { {$shadow_css} }";
+            }
+        }
+
+        // ============================================
+        // SECTION: Radio/Checkboxes (Normal + Selected)
+        // ============================================
+
+        // Radio/checkbox border color - normal
+        if ( ! empty( $attributes['radioCheckboxBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-radio-choice, {$selector} .pf-checkbox-choice { border-color: {$attributes['radioCheckboxBorderColor']}; }";
+        }
+
+        // Radio/checkbox text typography - normal
+        if ( ! empty( $attributes['radioCheckboxTextTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['radioCheckboxTextTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-radio-choice, {$selector} .pf-checkbox-choice { {$typo_css} }";
+            }
+        }
+
+        // Radio/checkbox text color - normal
+        if ( ! empty( $attributes['radioCheckboxTextColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-radio-choice, {$selector} .pf-checkbox-choice { color: {$attributes['radioCheckboxTextColor']}; }";
+        }
+
+        // Radio/checkbox selected state
+
+        // Selected background
+        if ( ! empty( $attributes['radioCheckboxSelectedBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-radio-choice.pf-selected, {$selector} .pf-checkbox-choice.pf-selected { background-color: {$attributes['radioCheckboxSelectedBackground']}; }";
+        }
+
+        // Selected text typography
+        if ( ! empty( $attributes['radioCheckboxSelectedTextTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['radioCheckboxSelectedTextTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .pf-radio-choice.pf-selected, {$selector} .pf-checkbox-choice.pf-selected { {$typo_css} }";
+            }
+        }
+
+        // Selected text color
+        if ( ! empty( $attributes['radioCheckboxSelectedTextColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-radio-choice.pf-selected, {$selector} .pf-checkbox-choice.pf-selected { color: {$attributes['radioCheckboxSelectedTextColor']}; }";
+        }
+
+        // Selected box shadow
+        if ( ! empty( $attributes['radioCheckboxSelectedBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['radioCheckboxSelectedBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$selector} .pf-radio-choice.pf-selected, {$selector} .pf-checkbox-choice.pf-selected { {$shadow_css} }";
+            }
+        }
+
+        // ============================================
+        // SECTION: Switcher
+        // ============================================
+
+        // Switcher background inactive
+        if ( ! empty( $attributes['switcherBackgroundInactive'] ) ) {
+            $css_rules[] = "{$selector} .pf-switcher .ts-switcher { background-color: {$attributes['switcherBackgroundInactive']}; }";
+        }
+
+        // Switcher background active
+        if ( ! empty( $attributes['switcherBackgroundActive'] ) ) {
+            $css_rules[] = "{$selector} .pf-switcher input:checked + .ts-switcher { background-color: {$attributes['switcherBackgroundActive']}; }";
+        }
+
+        // Switcher handle background
+        if ( ! empty( $attributes['switcherHandleBackground'] ) ) {
+            $css_rules[] = "{$selector} .pf-switcher .ts-switcher:before { background-color: {$attributes['switcherHandleBackground']}; }";
+        }
+
+        // ============================================
+        // SECTION: Images (Normal + Selected)
+        // ============================================
+
+        // Images gap - normal
+        if ( isset( $attributes['imagesGap'] ) && $attributes['imagesGap'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-image-choices { gap: {$attributes['imagesGap']}px; }";
+        }
+
+        // Images border radius - normal
+        if ( isset( $attributes['imagesBorderRadius'] ) && $attributes['imagesBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-image-choice { border-radius: {$attributes['imagesBorderRadius']}px; }";
+        }
+
+        // Images selected border color
+        if ( ! empty( $attributes['imagesSelectedBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-image-choice.pf-selected { border-color: {$attributes['imagesSelectedBorderColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Colors
+        // ============================================
+
+        // Colors gap
+        if ( isset( $attributes['colorsGap'] ) && $attributes['colorsGap'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-color-choices { gap: {$attributes['colorsGap']}px; }";
+        }
+
+        // Colors size
+        if ( isset( $attributes['colorsSize'] ) && $attributes['colorsSize'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-color-choice { width: {$attributes['colorsSize']}px; height: {$attributes['colorsSize']}px; }";
+        }
+
+        // Colors border radius
+        if ( isset( $attributes['colorsBorderRadius'] ) && $attributes['colorsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .pf-color-choice { border-radius: {$attributes['colorsBorderRadius']}px; }";
+        }
+
+        // Colors inset color
+        if ( ! empty( $attributes['colorsInsetColor'] ) ) {
+            $css_rules[] = "{$selector} .pf-color-choice { box-shadow: inset 0 0 0 2px {$attributes['colorsInsetColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Input and Textarea (Normal + Hover + Active)
+        // ============================================
+
+        // Input placeholder color - normal
+        if ( ! empty( $attributes['inputPlaceholderColor'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input::placeholder, {$selector} textarea.pf-input::placeholder { color: {$attributes['inputPlaceholderColor']}; }";
+        }
+
+        // Input placeholder typography - normal
+        if ( ! empty( $attributes['inputPlaceholderTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inputPlaceholderTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} input.pf-input::placeholder, {$selector} textarea.pf-input::placeholder { {$typo_css} }";
+            }
+        }
+
+        // Input value color - normal
+        if ( ! empty( $attributes['inputValueColor'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input, {$selector} textarea.pf-input { color: {$attributes['inputValueColor']}; }";
+        }
+
+        // Input value typography - normal
+        if ( ! empty( $attributes['inputValueTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inputValueTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} input.pf-input, {$selector} textarea.pf-input { {$typo_css} }";
+            }
+        }
+
+        // Input background - normal
+        if ( ! empty( $attributes['inputBackground'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input, {$selector} textarea.pf-input { background-color: {$attributes['inputBackground']}; }";
+        }
+
+        // Input border - normal
+        if ( ! empty( $attributes['inputBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['inputBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$selector} input.pf-input, {$selector} textarea.pf-input { {$border_css} }";
+            }
+        }
+
+        // Input border radius - normal
+        if ( isset( $attributes['inputBorderRadius'] ) && $attributes['inputBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} input.pf-input, {$selector} textarea.pf-input { border-radius: {$attributes['inputBorderRadius']}px; }";
+        }
+
+        // Input hover states
+
+        // Background hover
+        if ( ! empty( $attributes['inputBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:hover, {$selector} textarea.pf-input:hover { background-color: {$attributes['inputBackgroundHover']}; }";
+        }
+
+        // Border color hover
+        if ( ! empty( $attributes['inputBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:hover, {$selector} textarea.pf-input:hover { border-color: {$attributes['inputBorderColorHover']}; }";
+        }
+
+        // Placeholder color hover
+        if ( ! empty( $attributes['inputPlaceholderColorHover'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:hover::placeholder, {$selector} textarea.pf-input:hover::placeholder { color: {$attributes['inputPlaceholderColorHover']}; }";
+        }
+
+        // Text color hover
+        if ( ! empty( $attributes['inputTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:hover, {$selector} textarea.pf-input:hover { color: {$attributes['inputTextColorHover']}; }";
+        }
+
+        // Input active states (focus)
+
+        // Background active
+        if ( ! empty( $attributes['inputBackgroundActive'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:focus, {$selector} textarea.pf-input:focus { background-color: {$attributes['inputBackgroundActive']}; }";
+        }
+
+        // Border color active
+        if ( ! empty( $attributes['inputBorderColorActive'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:focus, {$selector} textarea.pf-input:focus { border-color: {$attributes['inputBorderColorActive']}; }";
+        }
+
+        // Text color active
+        if ( ! empty( $attributes['inputTextColorActive'] ) ) {
+            $css_rules[] = "{$selector} input.pf-input:focus, {$selector} textarea.pf-input:focus { color: {$attributes['inputTextColorActive']}; }";
+        }
 
         // ============================================
         // Combine CSS with media queries
@@ -4935,6 +5618,3013 @@ class Style_Generator {
         if ( ! empty( $tablet_rules ) ) {
             $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
         }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Login Block
+     * Source: app/blocks/src/login/styles.ts (lines 26-1012)
+     * Verified: themes/voxel/app/widgets/login.php
+     *
+     * Sections: 16 total
+     * 1. Layout (Content Spacing, Title)
+     * 2. Field Label
+     * 3. Input (Normal + Hover + Active)
+     * 4. Input With Icon
+     * 5. Textarea
+     * 6. Popup Button (Normal + Hover + Filled)
+     * 7. Switcher
+     * 8. Checkbox
+     * 9. Role Selection
+     * 10. Primary Button
+     * 11. Secondary Button
+     * 12. Google Button
+     * 13. Section Divider
+     * 14. Welcome Message
+     * 15. Form: File/Gallery Upload
+     * 16. Form: Dialog
+     *
+     * @param array  $attributes Block attributes
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS rules
+     */
+    public static function generate_login_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = '.voxel-fse-login-' . $block_id;
+
+        // ==================== LAYOUT ====================
+
+        // Content Spacing
+        if ( isset( $attributes['contentSpacing'] ) && $attributes['contentSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .login-section { gap: {$attributes['contentSpacing']}px; }";
+        }
+        if ( isset( $attributes['contentSpacing_tablet'] ) && $attributes['contentSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .login-section { gap: {$attributes['contentSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['contentSpacing_mobile'] ) && $attributes['contentSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .login-section { gap: {$attributes['contentSpacing_mobile']}px; }";
+        }
+
+        // Title Typography
+        if ( ! empty( $attributes['titleTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['titleTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$selector} .vx-step-title { {$typo_css} }";
+            }
+        }
+
+        // Title Color
+        if ( ! empty( $attributes['titleColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-step-title { color: {$attributes['titleColor']}; }";
+        }
+
+        // ==================== FIELD LABEL ====================
+
+        $label_selector = "{$selector} .ts-form-group > label";
+
+        // Label Typography
+        if ( ! empty( $attributes['fieldLabelTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldLabelTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$label_selector} { {$typo_css} }";
+            }
+        }
+
+        // Label Color
+        if ( ! empty( $attributes['fieldLabelColor'] ) ) {
+            $css_rules[] = "{$label_selector} { color: {$attributes['fieldLabelColor']}; }";
+        }
+
+        // Label Link Color
+        if ( ! empty( $attributes['fieldLabelLinkColor'] ) ) {
+            $css_rules[] = "{$label_selector} a { color: {$attributes['fieldLabelLinkColor']}; }";
+        }
+
+        // Label Padding
+        if ( ! empty( $attributes['fieldLabelPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['fieldLabelPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$label_selector} { {$dims_css} }";
+            }
+        }
+
+        // Optional Label Typography
+        if ( ! empty( $attributes['fieldOptionalLabelTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldOptionalLabelTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$label_selector} small { {$typo_css} }";
+            }
+        }
+
+        // Optional Label Color
+        if ( ! empty( $attributes['fieldOptionalLabelColor'] ) ) {
+            $css_rules[] = "{$label_selector} small { color: {$attributes['fieldOptionalLabelColor']}; }";
+        }
+
+        // ==================== INPUT ====================
+
+        $input_selector = "{$selector} .ts-filter";
+
+        // Placeholder Color
+        if ( ! empty( $attributes['fieldInputPlaceholderColor'] ) ) {
+            $css_rules[] = "{$input_selector}::placeholder { color: {$attributes['fieldInputPlaceholderColor']}; opacity: 1; }";
+        }
+        if ( ! empty( $attributes['fieldInputPlaceholderColorHover'] ) ) {
+            $css_rules[] = "{$input_selector}:hover::placeholder { color: {$attributes['fieldInputPlaceholderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputPlaceholderColorActive'] ) ) {
+            $css_rules[] = "{$input_selector}:focus::placeholder { color: {$attributes['fieldInputPlaceholderColorActive']}; }";
+        }
+
+        // Placeholder Typography
+        if ( ! empty( $attributes['fieldInputPlaceholderTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldInputPlaceholderTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$input_selector}::placeholder { {$typo_css} }";
+            }
+        }
+
+        // Input Typography
+        if ( ! empty( $attributes['fieldInputTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldInputTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$input_selector} { {$typo_css} }";
+            }
+        }
+
+        // Input Text Color
+        if ( ! empty( $attributes['fieldInputTextColor'] ) ) {
+            $css_rules[] = "{$input_selector} { color: {$attributes['fieldInputTextColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputTextColorHover'] ) ) {
+            $css_rules[] = "{$input_selector}:hover { color: {$attributes['fieldInputTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputTextColorActive'] ) ) {
+            $css_rules[] = "{$input_selector}:focus { color: {$attributes['fieldInputTextColorActive']}; }";
+        }
+
+        // Input Background Color
+        if ( ! empty( $attributes['fieldInputBackgroundColor'] ) ) {
+            $css_rules[] = "{$input_selector} { background-color: {$attributes['fieldInputBackgroundColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$input_selector}:hover { background-color: {$attributes['fieldInputBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputBackgroundColorActive'] ) ) {
+            $css_rules[] = "{$input_selector}:focus { background-color: {$attributes['fieldInputBackgroundColorActive']}; }";
+        }
+
+        // Input Border
+        if ( ! empty( $attributes['fieldInputBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['fieldInputBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$input_selector} { {$border_css} }";
+            }
+        }
+
+        if ( ! empty( $attributes['fieldInputBorderColorHover'] ) ) {
+            $css_rules[] = "{$input_selector}:hover { border-color: {$attributes['fieldInputBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputBorderColorActive'] ) ) {
+            $css_rules[] = "{$input_selector}:focus { border-color: {$attributes['fieldInputBorderColorActive']}; }";
+        }
+
+        // Input Padding
+        if ( ! empty( $attributes['fieldInputPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['fieldInputPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$input_selector} { {$dims_css} }";
+            }
+        }
+
+        // Input Border Radius
+        if ( isset( $attributes['fieldInputBorderRadius'] ) && $attributes['fieldInputBorderRadius'] !== '' ) {
+            $css_rules[] = "{$input_selector} { border-radius: {$attributes['fieldInputBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['fieldInputBorderRadius_tablet'] ) && $attributes['fieldInputBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$input_selector} { border-radius: {$attributes['fieldInputBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldInputBorderRadius_mobile'] ) && $attributes['fieldInputBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$input_selector} { border-radius: {$attributes['fieldInputBorderRadius_mobile']}px; }";
+        }
+
+        // ==================== INPUT WITH ICON ====================
+
+        $input_group_selector = "{$selector} .ts-input-icon";
+
+        // Icon Input Padding
+        if ( ! empty( $attributes['fieldInputIconPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['fieldInputIconPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$input_group_selector}.flexify {$input_selector} { {$dims_css} }";
+            }
+        }
+
+        // Icon Color
+        if ( ! empty( $attributes['fieldInputIconColor'] ) ) {
+            $css_rules[] = "{$input_group_selector} > i { color: {$attributes['fieldInputIconColor']}; }";
+            $css_rules[] = "{$input_group_selector} > svg { fill: {$attributes['fieldInputIconColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldInputIconColorHover'] ) ) {
+            $css_rules[] = "{$input_group_selector}:hover > i { color: {$attributes['fieldInputIconColorHover']}; }";
+            $css_rules[] = "{$input_group_selector}:hover > svg { fill: {$attributes['fieldInputIconColorHover']}; }";
+        }
+
+        // Icon Size
+        if ( isset( $attributes['fieldInputIconSize'] ) && $attributes['fieldInputIconSize'] !== '' ) {
+            $css_rules[] = "{$input_group_selector} > i { font-size: {$attributes['fieldInputIconSize']}px; }";
+            $css_rules[] = "{$input_group_selector} > svg { width: {$attributes['fieldInputIconSize']}px; height: {$attributes['fieldInputIconSize']}px; }";
+        }
+        if ( isset( $attributes['fieldInputIconSize_tablet'] ) && $attributes['fieldInputIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$input_group_selector} > i { font-size: {$attributes['fieldInputIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$input_group_selector} > svg { width: {$attributes['fieldInputIconSize_tablet']}px; height: {$attributes['fieldInputIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldInputIconSize_mobile'] ) && $attributes['fieldInputIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$input_group_selector} > i { font-size: {$attributes['fieldInputIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$input_group_selector} > svg { width: {$attributes['fieldInputIconSize_mobile']}px; height: {$attributes['fieldInputIconSize_mobile']}px; }";
+        }
+
+        // Icon Side Padding
+        if ( isset( $attributes['fieldInputIconSidePadding'] ) && $attributes['fieldInputIconSidePadding'] !== '' ) {
+            $css_rules[] = "{$input_group_selector} > i, {$input_group_selector} > svg { left: {$attributes['fieldInputIconSidePadding']}px; }";
+        }
+        if ( isset( $attributes['fieldInputIconSidePadding_tablet'] ) && $attributes['fieldInputIconSidePadding_tablet'] !== '' ) {
+            $tablet_rules[] = "{$input_group_selector} > i, {$input_group_selector} > svg { left: {$attributes['fieldInputIconSidePadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldInputIconSidePadding_mobile'] ) && $attributes['fieldInputIconSidePadding_mobile'] !== '' ) {
+            $mobile_rules[] = "{$input_group_selector} > i, {$input_group_selector} > svg { left: {$attributes['fieldInputIconSidePadding_mobile']}px; }";
+        }
+
+        // ==================== TEXTAREA ====================
+
+        $textarea_selector = "{$selector} textarea.ts-filter";
+
+        // Textarea Padding
+        if ( ! empty( $attributes['fieldTextareaPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['fieldTextareaPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$textarea_selector} { {$dims_css} }";
+            }
+        }
+
+        // Textarea Height
+        if ( isset( $attributes['fieldTextareaHeight'] ) && $attributes['fieldTextareaHeight'] !== '' ) {
+            $css_rules[] = "{$textarea_selector} { height: {$attributes['fieldTextareaHeight']}px; min-height: {$attributes['fieldTextareaHeight']}px; }";
+        }
+        if ( isset( $attributes['fieldTextareaHeight_tablet'] ) && $attributes['fieldTextareaHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$textarea_selector} { height: {$attributes['fieldTextareaHeight_tablet']}px; min-height: {$attributes['fieldTextareaHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldTextareaHeight_mobile'] ) && $attributes['fieldTextareaHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$textarea_selector} { height: {$attributes['fieldTextareaHeight_mobile']}px; min-height: {$attributes['fieldTextareaHeight_mobile']}px; }";
+        }
+
+        // Textarea Border Radius
+        if ( isset( $attributes['fieldTextareaBorderRadius'] ) && $attributes['fieldTextareaBorderRadius'] !== '' ) {
+            $css_rules[] = "{$textarea_selector} { border-radius: {$attributes['fieldTextareaBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['fieldTextareaBorderRadius_tablet'] ) && $attributes['fieldTextareaBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$textarea_selector} { border-radius: {$attributes['fieldTextareaBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldTextareaBorderRadius_mobile'] ) && $attributes['fieldTextareaBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$textarea_selector} { border-radius: {$attributes['fieldTextareaBorderRadius_mobile']}px; }";
+        }
+
+        // ==================== POPUP BUTTON ====================
+
+        $popup_btn_selector = "{$selector} .ts-filter.ts-popup-target";
+
+        // Popup Button Typography
+        if ( ! empty( $attributes['fieldPopupBtnTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldPopupBtnTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$popup_btn_selector} { {$typo_css} }";
+            }
+        }
+
+        // Popup Button Padding
+        if ( ! empty( $attributes['fieldPopupBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['fieldPopupBtnPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$popup_btn_selector} { {$dims_css} }";
+            }
+        }
+
+        // Popup Button Height
+        if ( isset( $attributes['fieldPopupBtnHeight'] ) && $attributes['fieldPopupBtnHeight'] !== '' ) {
+            $css_rules[] = "{$popup_btn_selector} { height: {$attributes['fieldPopupBtnHeight']}px; line-height: {$attributes['fieldPopupBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnHeight_tablet'] ) && $attributes['fieldPopupBtnHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$popup_btn_selector} { height: {$attributes['fieldPopupBtnHeight_tablet']}px; line-height: {$attributes['fieldPopupBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnHeight_mobile'] ) && $attributes['fieldPopupBtnHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$popup_btn_selector} { height: {$attributes['fieldPopupBtnHeight_mobile']}px; line-height: {$attributes['fieldPopupBtnHeight_mobile']}px; }";
+        }
+
+        // Popup Button Box Shadow
+        if ( ! empty( $attributes['fieldPopupBtnBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['fieldPopupBtnBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$popup_btn_selector} { {$shadow_css} }";
+            }
+        }
+
+        // Popup Button Colors
+        if ( ! empty( $attributes['fieldPopupBtnBackgroundColor'] ) ) {
+            $css_rules[] = "{$popup_btn_selector} { background-color: {$attributes['fieldPopupBtnBackgroundColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnTextColor'] ) ) {
+            $css_rules[] = "{$popup_btn_selector} { color: {$attributes['fieldPopupBtnTextColor']}; }";
+        }
+
+        // Popup Button Border
+        if ( ! empty( $attributes['fieldPopupBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['fieldPopupBtnBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$popup_btn_selector} { {$border_css} }";
+            }
+        }
+
+        // Popup Button Border Radius
+        if ( isset( $attributes['fieldPopupBtnBorderRadius'] ) && $attributes['fieldPopupBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$popup_btn_selector} { border-radius: {$attributes['fieldPopupBtnBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnBorderRadius_tablet'] ) && $attributes['fieldPopupBtnBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$popup_btn_selector} { border-radius: {$attributes['fieldPopupBtnBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnBorderRadius_mobile'] ) && $attributes['fieldPopupBtnBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$popup_btn_selector} { border-radius: {$attributes['fieldPopupBtnBorderRadius_mobile']}px; }";
+        }
+
+        // Popup Button Icon
+        $popup_icon_selector = "{$popup_btn_selector} i, {$popup_btn_selector} svg";
+
+        if ( ! empty( $attributes['fieldPopupBtnIconColor'] ) ) {
+            $css_rules[] = "{$popup_icon_selector} { color: {$attributes['fieldPopupBtnIconColor']}; fill: {$attributes['fieldPopupBtnIconColor']}; }";
+        }
+
+        if ( isset( $attributes['fieldPopupBtnIconSize'] ) && $attributes['fieldPopupBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$popup_icon_selector} { font-size: {$attributes['fieldPopupBtnIconSize']}px; width: {$attributes['fieldPopupBtnIconSize']}px; height: {$attributes['fieldPopupBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnIconSize_tablet'] ) && $attributes['fieldPopupBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$popup_icon_selector} { font-size: {$attributes['fieldPopupBtnIconSize_tablet']}px; width: {$attributes['fieldPopupBtnIconSize_tablet']}px; height: {$attributes['fieldPopupBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnIconSize_mobile'] ) && $attributes['fieldPopupBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$popup_icon_selector} { font-size: {$attributes['fieldPopupBtnIconSize_mobile']}px; width: {$attributes['fieldPopupBtnIconSize_mobile']}px; height: {$attributes['fieldPopupBtnIconSize_mobile']}px; }";
+        }
+
+        // Icon Spacing
+        if ( isset( $attributes['fieldPopupBtnIconSpacing'] ) && $attributes['fieldPopupBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$popup_btn_selector} { gap: {$attributes['fieldPopupBtnIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnIconSpacing_tablet'] ) && $attributes['fieldPopupBtnIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$popup_btn_selector} { gap: {$attributes['fieldPopupBtnIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnIconSpacing_mobile'] ) && $attributes['fieldPopupBtnIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$popup_btn_selector} { gap: {$attributes['fieldPopupBtnIconSpacing_mobile']}px; }";
+        }
+
+        // Chevron
+        if ( ! empty( $attributes['fieldPopupBtnHideChevron'] ) ) {
+            $css_rules[] = "{$popup_btn_selector} .ts-down-icon { display: none; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnChevronColor'] ) ) {
+            $css_rules[] = "{$popup_btn_selector} .ts-down-icon { color: {$attributes['fieldPopupBtnChevronColor']}; }";
+        }
+
+        // Popup Button Hover State
+        if ( ! empty( $attributes['fieldPopupBtnBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$popup_btn_selector}:hover { background-color: {$attributes['fieldPopupBtnBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$popup_btn_selector}:hover { color: {$attributes['fieldPopupBtnTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$popup_btn_selector}:hover { border-color: {$attributes['fieldPopupBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$popup_btn_selector}:hover i { color: {$attributes['fieldPopupBtnIconColorHover']}; }";
+            $css_rules[] = "{$popup_btn_selector}:hover svg { fill: {$attributes['fieldPopupBtnIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnBoxShadowHover'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['fieldPopupBtnBoxShadowHover'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$popup_btn_selector}:hover { {$shadow_css} }";
+            }
+        }
+
+        // Popup Button Filled State
+        $popup_filled_selector = "{$selector} .ts-filter.ts-popup-target.ts-filled";
+
+        if ( ! empty( $attributes['fieldPopupBtnFilledTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldPopupBtnFilledTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$popup_filled_selector} { {$typo_css} }";
+            }
+        }
+
+        if ( ! empty( $attributes['fieldPopupBtnFilledBackground'] ) ) {
+            $css_rules[] = "{$popup_filled_selector} { background-color: {$attributes['fieldPopupBtnFilledBackground']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnFilledTextColor'] ) ) {
+            $css_rules[] = "{$popup_filled_selector} { color: {$attributes['fieldPopupBtnFilledTextColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnFilledIconColor'] ) ) {
+            $css_rules[] = "{$popup_filled_selector} i { color: {$attributes['fieldPopupBtnFilledIconColor']}; }";
+            $css_rules[] = "{$popup_filled_selector} svg { fill: {$attributes['fieldPopupBtnFilledIconColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnFilledBorderColor'] ) ) {
+            $css_rules[] = "{$popup_filled_selector} { border-color: {$attributes['fieldPopupBtnFilledBorderColor']}; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnFilledBorderWidth'] ) && $attributes['fieldPopupBtnFilledBorderWidth'] !== '' ) {
+            $css_rules[] = "{$popup_filled_selector} { border-width: {$attributes['fieldPopupBtnFilledBorderWidth']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnFilledBorderWidth_tablet'] ) && $attributes['fieldPopupBtnFilledBorderWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$popup_filled_selector} { border-width: {$attributes['fieldPopupBtnFilledBorderWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldPopupBtnFilledBorderWidth_mobile'] ) && $attributes['fieldPopupBtnFilledBorderWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$popup_filled_selector} { border-width: {$attributes['fieldPopupBtnFilledBorderWidth_mobile']}px; }";
+        }
+        if ( ! empty( $attributes['fieldPopupBtnFilledBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['fieldPopupBtnFilledBoxShadow'] );
+            if ( ! empty( $shadow_css ) ) {
+                $css_rules[] = "{$popup_filled_selector} { {$shadow_css} }";
+            }
+        }
+
+        // ==================== SWITCHER ====================
+
+        $switch_label_selector = "{$selector} .onoffswitch-label";
+        $switch_checkbox_selector = "{$selector} .onoffswitch-checkbox";
+
+        if ( ! empty( $attributes['fieldSwitcherBackgroundColor'] ) ) {
+            $css_rules[] = "{$switch_label_selector} { background-color: {$attributes['fieldSwitcherBackgroundColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldSwitcherBackgroundColorActive'] ) ) {
+            $css_rules[] = "{$switch_checkbox_selector}:checked + {$switch_label_selector} { background-color: {$attributes['fieldSwitcherBackgroundColorActive']}; }";
+        }
+        if ( ! empty( $attributes['fieldSwitcherHandleColor'] ) ) {
+            $css_rules[] = "{$switch_label_selector}:before { background-color: {$attributes['fieldSwitcherHandleColor']}; }";
+        }
+
+        // ==================== CHECKBOX ====================
+
+        $checkbox_selector = "{$selector} .container-checkbox .checkmark";
+        $checkbox_checked_selector = "{$selector} .container-checkbox input:checked ~ .checkmark";
+
+        // Checkbox Size
+        if ( isset( $attributes['fieldCheckboxSize'] ) && $attributes['fieldCheckboxSize'] !== '' ) {
+            $css_rules[] = "{$checkbox_selector} { width: {$attributes['fieldCheckboxSize']}px; height: {$attributes['fieldCheckboxSize']}px; }";
+        }
+        if ( isset( $attributes['fieldCheckboxSize_tablet'] ) && $attributes['fieldCheckboxSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$checkbox_selector} { width: {$attributes['fieldCheckboxSize_tablet']}px; height: {$attributes['fieldCheckboxSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldCheckboxSize_mobile'] ) && $attributes['fieldCheckboxSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$checkbox_selector} { width: {$attributes['fieldCheckboxSize_mobile']}px; height: {$attributes['fieldCheckboxSize_mobile']}px; }";
+        }
+
+        // Checkbox Border Radius
+        if ( isset( $attributes['fieldCheckboxBorderRadius'] ) && $attributes['fieldCheckboxBorderRadius'] !== '' ) {
+            $css_rules[] = "{$checkbox_selector} { border-radius: {$attributes['fieldCheckboxBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['fieldCheckboxBorderRadius_tablet'] ) && $attributes['fieldCheckboxBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$checkbox_selector} { border-radius: {$attributes['fieldCheckboxBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fieldCheckboxBorderRadius_mobile'] ) && $attributes['fieldCheckboxBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$checkbox_selector} { border-radius: {$attributes['fieldCheckboxBorderRadius_mobile']}px; }";
+        }
+
+        // Checkbox Border
+        if ( ! empty( $attributes['fieldCheckboxBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['fieldCheckboxBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$checkbox_selector} { {$border_css} }";
+            }
+        }
+
+        // Checkbox Colors
+        if ( ! empty( $attributes['fieldCheckboxBackgroundColor'] ) ) {
+            $css_rules[] = "{$checkbox_selector} { background-color: {$attributes['fieldCheckboxBackgroundColor']}; }";
+        }
+        if ( ! empty( $attributes['fieldCheckboxBackgroundColorChecked'] ) ) {
+            $css_rules[] = "{$checkbox_checked_selector} { background-color: {$attributes['fieldCheckboxBackgroundColorChecked']}; }";
+        }
+        if ( ! empty( $attributes['fieldCheckboxBorderColorChecked'] ) ) {
+            $css_rules[] = "{$checkbox_checked_selector} { border-color: {$attributes['fieldCheckboxBorderColorChecked']}; }";
+        }
+
+        // ==================== ROLE SELECTION ====================
+
+        $role_selector = "{$selector} .ts-role-item";
+
+        // Role Min Width
+        if ( isset( $attributes['roleMinWidth'] ) && $attributes['roleMinWidth'] !== '' ) {
+            $css_rules[] = "{$role_selector} { min-width: {$attributes['roleMinWidth']}px; }";
+        }
+        if ( isset( $attributes['roleMinWidth_tablet'] ) && $attributes['roleMinWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$role_selector} { min-width: {$attributes['roleMinWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['roleMinWidth_mobile'] ) && $attributes['roleMinWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$role_selector} { min-width: {$attributes['roleMinWidth_mobile']}px; }";
+        }
+
+        // Role Border
+        if ( ! empty( $attributes['roleBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['roleBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$role_selector} { {$border_css} }";
+            }
+        }
+
+        // Role Border Radius
+        if ( isset( $attributes['roleBorderRadius'] ) && $attributes['roleBorderRadius'] !== '' ) {
+            $css_rules[] = "{$role_selector} { border-radius: {$attributes['roleBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['roleBorderRadius_tablet'] ) && $attributes['roleBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$role_selector} { border-radius: {$attributes['roleBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['roleBorderRadius_mobile'] ) && $attributes['roleBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$role_selector} { border-radius: {$attributes['roleBorderRadius_mobile']}px; }";
+        }
+
+        // Role Typography
+        if ( ! empty( $attributes['roleTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['roleTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$role_selector} { {$typo_css} }";
+            }
+        }
+
+        // Role Colors
+        if ( ! empty( $attributes['roleSeparatorColor'] ) ) {
+            $css_rules[] = "{$role_selector} { border-color: {$attributes['roleSeparatorColor']}; }";
+        }
+        if ( ! empty( $attributes['roleTextColor'] ) ) {
+            $css_rules[] = "{$role_selector} { color: {$attributes['roleTextColor']}; }";
+        }
+        if ( ! empty( $attributes['roleBackgroundColor'] ) ) {
+            $css_rules[] = "{$role_selector} { background-color: {$attributes['roleBackgroundColor']}; }";
+        }
+
+        // Role Active State
+        $role_active_selector = "{$selector} .ts-role-item.current";
+
+        if ( ! empty( $attributes['roleActiveTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['roleActiveTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$role_active_selector} { {$typo_css} }";
+            }
+        }
+
+        if ( ! empty( $attributes['roleActiveTextColor'] ) ) {
+            $css_rules[] = "{$role_active_selector} { color: {$attributes['roleActiveTextColor']}; }";
+        }
+        if ( ! empty( $attributes['roleActiveBackgroundColor'] ) ) {
+            $css_rules[] = "{$role_active_selector} { background-color: {$attributes['roleActiveBackgroundColor']}; }";
+        }
+
+        // ==================== PRIMARY BUTTON ====================
+
+        $primary_btn_selector = "{$selector} .ts-btn.ts-btn-1";
+
+        if ( ! empty( $attributes['primaryBtnTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['primaryBtnTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$primary_btn_selector} { {$typo_css} }";
+            }
+        }
+
+        if ( isset( $attributes['primaryBtnBorderRadius'] ) && $attributes['primaryBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$primary_btn_selector} { border-radius: {$attributes['primaryBtnBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnBorderRadius_tablet'] ) && $attributes['primaryBtnBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn_selector} { border-radius: {$attributes['primaryBtnBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnBorderRadius_mobile'] ) && $attributes['primaryBtnBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn_selector} { border-radius: {$attributes['primaryBtnBorderRadius_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$primary_btn_selector} { color: {$attributes['primaryBtnTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['primaryBtnPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$primary_btn_selector} { {$dims_css} }";
+            }
+        }
+
+        if ( isset( $attributes['primaryBtnHeight'] ) && $attributes['primaryBtnHeight'] !== '' ) {
+            $css_rules[] = "{$primary_btn_selector} { height: {$attributes['primaryBtnHeight']}px; min-height: {$attributes['primaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_tablet'] ) && $attributes['primaryBtnHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn_selector} { height: {$attributes['primaryBtnHeight_tablet']}px; min-height: {$attributes['primaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_mobile'] ) && $attributes['primaryBtnHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn_selector} { height: {$attributes['primaryBtnHeight_mobile']}px; min-height: {$attributes['primaryBtnHeight_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnBackgroundColor'] ) ) {
+            $css_rules[] = "{$primary_btn_selector} { background-color: {$attributes['primaryBtnBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['primaryBtnBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$primary_btn_selector} { {$border_css} }";
+            }
+        }
+
+        $primary_btn_icon_selector = "{$primary_btn_selector} i, {$primary_btn_selector} svg";
+
+        if ( isset( $attributes['primaryBtnIconSize'] ) && $attributes['primaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$primary_btn_icon_selector} { font-size: {$attributes['primaryBtnIconSize']}px; width: {$attributes['primaryBtnIconSize']}px; height: {$attributes['primaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_tablet'] ) && $attributes['primaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn_icon_selector} { font-size: {$attributes['primaryBtnIconSize_tablet']}px; width: {$attributes['primaryBtnIconSize_tablet']}px; height: {$attributes['primaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_mobile'] ) && $attributes['primaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn_icon_selector} { font-size: {$attributes['primaryBtnIconSize_mobile']}px; width: {$attributes['primaryBtnIconSize_mobile']}px; height: {$attributes['primaryBtnIconSize_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['primaryBtnIconSpacing'] ) && $attributes['primaryBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$primary_btn_selector} { gap: {$attributes['primaryBtnIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSpacing_tablet'] ) && $attributes['primaryBtnIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn_selector} { gap: {$attributes['primaryBtnIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSpacing_mobile'] ) && $attributes['primaryBtnIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn_selector} { gap: {$attributes['primaryBtnIconSpacing_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$primary_btn_icon_selector} { color: {$attributes['primaryBtnIconColor']}; fill: {$attributes['primaryBtnIconColor']}; }";
+        }
+
+        if ( ! empty( $attributes['primaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn_selector}:hover { color: {$attributes['primaryBtnTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn_selector}:hover { background-color: {$attributes['primaryBtnBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn_selector}:hover { border-color: {$attributes['primaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn_selector}:hover i { color: {$attributes['primaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$primary_btn_selector}:hover svg { fill: {$attributes['primaryBtnIconColorHover']}; }";
+        }
+
+        // ==================== SECONDARY BUTTON ====================
+
+        $secondary_btn_selector = "{$selector} .ts-btn.ts-btn-2";
+
+        if ( ! empty( $attributes['secondaryBtnTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['secondaryBtnTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$secondary_btn_selector} { {$typo_css} }";
+            }
+        }
+
+        if ( isset( $attributes['secondaryBtnBorderRadius'] ) && $attributes['secondaryBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$secondary_btn_selector} { border-radius: {$attributes['secondaryBtnBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnBorderRadius_tablet'] ) && $attributes['secondaryBtnBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn_selector} { border-radius: {$attributes['secondaryBtnBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnBorderRadius_mobile'] ) && $attributes['secondaryBtnBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn_selector} { border-radius: {$attributes['secondaryBtnBorderRadius_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector} { color: {$attributes['secondaryBtnTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['secondaryBtnPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$secondary_btn_selector} { {$dims_css} }";
+            }
+        }
+
+        if ( isset( $attributes['secondaryBtnHeight'] ) && $attributes['secondaryBtnHeight'] !== '' ) {
+            $css_rules[] = "{$secondary_btn_selector} { height: {$attributes['secondaryBtnHeight']}px; min-height: {$attributes['secondaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_tablet'] ) && $attributes['secondaryBtnHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn_selector} { height: {$attributes['secondaryBtnHeight_tablet']}px; min-height: {$attributes['secondaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_mobile'] ) && $attributes['secondaryBtnHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn_selector} { height: {$attributes['secondaryBtnHeight_mobile']}px; min-height: {$attributes['secondaryBtnHeight_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnBackgroundColor'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector} { background-color: {$attributes['secondaryBtnBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['secondaryBtnBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$secondary_btn_selector} { {$border_css} }";
+            }
+        }
+
+        $secondary_btn_icon_selector = "{$secondary_btn_selector} i, {$secondary_btn_selector} svg";
+
+        if ( isset( $attributes['secondaryBtnIconSize'] ) && $attributes['secondaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$secondary_btn_icon_selector} { font-size: {$attributes['secondaryBtnIconSize']}px; width: {$attributes['secondaryBtnIconSize']}px; height: {$attributes['secondaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_tablet'] ) && $attributes['secondaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn_icon_selector} { font-size: {$attributes['secondaryBtnIconSize_tablet']}px; width: {$attributes['secondaryBtnIconSize_tablet']}px; height: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_mobile'] ) && $attributes['secondaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn_icon_selector} { font-size: {$attributes['secondaryBtnIconSize_mobile']}px; width: {$attributes['secondaryBtnIconSize_mobile']}px; height: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['secondaryBtnIconSpacing'] ) && $attributes['secondaryBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$secondary_btn_selector} { gap: {$attributes['secondaryBtnIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSpacing_tablet'] ) && $attributes['secondaryBtnIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn_selector} { gap: {$attributes['secondaryBtnIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSpacing_mobile'] ) && $attributes['secondaryBtnIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn_selector} { gap: {$attributes['secondaryBtnIconSpacing_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$secondary_btn_icon_selector} { color: {$attributes['secondaryBtnIconColor']}; fill: {$attributes['secondaryBtnIconColor']}; }";
+        }
+
+        if ( ! empty( $attributes['secondaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector}:hover { color: {$attributes['secondaryBtnTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector}:hover { background-color: {$attributes['secondaryBtnBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector}:hover { border-color: {$attributes['secondaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn_selector}:hover i { color: {$attributes['secondaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$secondary_btn_selector}:hover svg { fill: {$attributes['secondaryBtnIconColorHover']}; }";
+        }
+
+        // ==================== GOOGLE BUTTON ====================
+
+        $google_btn_selector = "{$selector} .ts-btn.ts-google-btn";
+
+        if ( ! empty( $attributes['googleBtnTypography'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['googleBtnTypography'] );
+            if ( ! empty( $typo_css ) ) {
+                $css_rules[] = "{$google_btn_selector} { {$typo_css} }";
+            }
+        }
+
+        if ( isset( $attributes['googleBtnBorderRadius'] ) && $attributes['googleBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$google_btn_selector} { border-radius: {$attributes['googleBtnBorderRadius']}px; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnTextColor'] ) ) {
+            $css_rules[] = "{$google_btn_selector} { color: {$attributes['googleBtnTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['googleBtnPadding'] );
+            if ( ! empty( $dims_css ) ) {
+                $css_rules[] = "{$google_btn_selector} { {$dims_css} }";
+            }
+        }
+
+        if ( isset( $attributes['googleBtnHeight'] ) && $attributes['googleBtnHeight'] !== '' ) {
+            $css_rules[] = "{$google_btn_selector} { height: {$attributes['googleBtnHeight']}px; min-height: {$attributes['googleBtnHeight']}px; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnBackgroundColor'] ) ) {
+            $css_rules[] = "{$google_btn_selector} { background-color: {$attributes['googleBtnBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['googleBtnBorder'] );
+            if ( ! empty( $border_css ) ) {
+                $css_rules[] = "{$google_btn_selector} { {$border_css} }";
+            }
+        }
+
+        $google_btn_icon_selector = "{$google_btn_selector} i, {$google_btn_selector} svg";
+
+        if ( isset( $attributes['googleBtnIconSize'] ) && $attributes['googleBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$google_btn_icon_selector} { font-size: {$attributes['googleBtnIconSize']}px; width: {$attributes['googleBtnIconSize']}px; height: {$attributes['googleBtnIconSize']}px; }";
+        }
+
+        if ( isset( $attributes['googleBtnIconSpacing'] ) && $attributes['googleBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$google_btn_selector} { gap: {$attributes['googleBtnIconSpacing']}px; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnIconColor'] ) ) {
+            $css_rules[] = "{$google_btn_icon_selector} { color: {$attributes['googleBtnIconColor']}; fill: {$attributes['googleBtnIconColor']}; }";
+        }
+
+        if ( ! empty( $attributes['googleBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$google_btn_selector}:hover { color: {$attributes['googleBtnTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['googleBtnBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$google_btn_selector}:hover { background-color: {$attributes['googleBtnBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['googleBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$google_btn_selector}:hover { border-color: {$attributes['googleBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['googleBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$google_btn_selector}:hover i { color: {$attributes['googleBtnIconColorHover']}; }";
+            $css_rules[] = "{$google_btn_selector}:hover svg { fill: {$attributes['googleBtnIconColorHover']}; }";
+        }
+
+        // ============================================
+        // 13. SECTION DIVIDER
+        // Evidence: login/styles.ts:793-814
+        // ============================================
+
+        $divider_selector = "{$selector} .ts-login-separator";
+
+        // Typography (for text inside divider)
+        if ( ! empty( $attributes['dividerTypography'] ) ) {
+            $divider_typography = self::generate_typography_css( $attributes['dividerTypography'] );
+            if ( ! empty( $divider_typography['desktop'] ) ) {
+                $css_rules[] = "{$selector} .ts-separator-text { {$divider_typography['desktop']} }";
+            }
+            if ( ! empty( $divider_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$selector} .ts-separator-text { {$divider_typography['tablet']} }";
+            }
+            if ( ! empty( $divider_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$selector} .ts-separator-text { {$divider_typography['mobile']} }";
+            }
+        }
+
+        // Text Color
+        if ( ! empty( $attributes['dividerTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-separator-text { color: {$attributes['dividerTextColor']}; }";
+        }
+
+        // Divider Color
+        if ( ! empty( $attributes['dividerColor'] ) ) {
+            $css_rules[] = "{$divider_selector}::before, {$divider_selector}::after { background-color: {$attributes['dividerColor']}; }";
+        }
+
+        // Height (Thickness)
+        if ( isset( $attributes['dividerHeight'] ) && $attributes['dividerHeight'] !== '' ) {
+            $css_rules[] = "{$divider_selector}::before, {$divider_selector}::after { height: {$attributes['dividerHeight']}px; }";
+        }
+
+        // ============================================
+        // 14. WELCOME MESSAGE
+        // Evidence: login/styles.ts:817-855
+        // ============================================
+
+        $welcome_selector = "{$selector} .ts-welcome-message";
+
+        // Alignment
+        if ( ! empty( $attributes['welcomeAlignContent'] ) ) {
+            $css_rules[] = "{$welcome_selector} { align-items: {$attributes['welcomeAlignContent']}; }";
+        }
+        if ( ! empty( $attributes['welcomeTextAlign'] ) ) {
+            $css_rules[] = "{$welcome_selector} { text-align: {$attributes['welcomeTextAlign']}; }";
+        }
+
+        // Icon Size
+        if ( isset( $attributes['welcomeIconSize'] ) && $attributes['welcomeIconSize'] !== '' ) {
+            $css_rules[] = "{$welcome_selector} i { font-size: {$attributes['welcomeIconSize']}px; }";
+            $css_rules[] = "{$welcome_selector} svg { width: {$attributes['welcomeIconSize']}px; height: {$attributes['welcomeIconSize']}px; }";
+        }
+
+        // Icon Color
+        if ( ! empty( $attributes['welcomeIconColor'] ) ) {
+            $css_rules[] = "{$welcome_selector} i { color: {$attributes['welcomeIconColor']}; }";
+            $css_rules[] = "{$welcome_selector} svg { fill: {$attributes['welcomeIconColor']}; }";
+        }
+
+        // Heading Typography
+        if ( ! empty( $attributes['welcomeHeadingTypography'] ) ) {
+            $welcome_heading_typography = self::generate_typography_css( $attributes['welcomeHeadingTypography'] );
+            if ( ! empty( $welcome_heading_typography['desktop'] ) ) {
+                $css_rules[] = "{$welcome_selector} h2 { {$welcome_heading_typography['desktop']} }";
+            }
+            if ( ! empty( $welcome_heading_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$welcome_selector} h2 { {$welcome_heading_typography['tablet']} }";
+            }
+            if ( ! empty( $welcome_heading_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$welcome_selector} h2 { {$welcome_heading_typography['mobile']} }";
+            }
+        }
+
+        // Heading Color
+        if ( ! empty( $attributes['welcomeHeadingColor'] ) ) {
+            $css_rules[] = "{$welcome_selector} h2 { color: {$attributes['welcomeHeadingColor']}; }";
+        }
+
+        // Top Margin
+        if ( isset( $attributes['welcomeHeadingTopMargin'] ) && $attributes['welcomeHeadingTopMargin'] !== '' ) {
+            $css_rules[] = "{$welcome_selector} h2 { margin-top: {$attributes['welcomeHeadingTopMargin']}px; }";
+        }
+
+        // ============================================
+        // 15. FORM: FILE/GALLERY UPLOAD
+        // Evidence: login/styles.ts:858-967
+        // ============================================
+
+        $form_file_selector = "{$selector} .ts-form-group.ts-file-upload";
+
+        // Item Gap
+        if ( isset( $attributes['formFileItemGap'] ) && $attributes['formFileItemGap'] !== '' ) {
+            $css_rules[] = "{$form_file_selector} .ts-file-list { gap: {$attributes['formFileItemGap']}px; }";
+        }
+
+        $file_select_selector = "{$form_file_selector} .ts-file-select";
+
+        // Icon Color
+        if ( ! empty( $attributes['formFileSelectIconColor'] ) ) {
+            $css_rules[] = "{$file_select_selector} i { color: {$attributes['formFileSelectIconColor']}; }";
+            $css_rules[] = "{$file_select_selector} svg { fill: {$attributes['formFileSelectIconColor']}; }";
+        }
+
+        // Icon Size
+        if ( isset( $attributes['formFileSelectIconSize'] ) && $attributes['formFileSelectIconSize'] !== '' ) {
+            $css_rules[] = "{$file_select_selector} i { font-size: {$attributes['formFileSelectIconSize']}px; }";
+            $css_rules[] = "{$file_select_selector} svg { width: {$attributes['formFileSelectIconSize']}px; height: {$attributes['formFileSelectIconSize']}px; }";
+        }
+
+        // Background
+        if ( ! empty( $attributes['formFileSelectBackground'] ) ) {
+            $css_rules[] = "{$file_select_selector} { background-color: {$attributes['formFileSelectBackground']}; }";
+        }
+
+        // Border
+        if ( ! empty( $attributes['formFileSelectBorder'] ) ) {
+            $file_select_border = self::generate_border_css( $attributes['formFileSelectBorder'] );
+            if ( ! empty( $file_select_border['desktop'] ) ) {
+                $css_rules[] = "{$file_select_selector} { {$file_select_border['desktop']} }";
+            }
+        }
+
+        // Radius
+        if ( isset( $attributes['formFileSelectBorderRadius'] ) && $attributes['formFileSelectBorderRadius'] !== '' ) {
+            $css_rules[] = "{$file_select_selector} { border-radius: {$attributes['formFileSelectBorderRadius']}px; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['formFileSelectTypography'] ) ) {
+            $file_select_typography = self::generate_typography_css( $attributes['formFileSelectTypography'] );
+            if ( ! empty( $file_select_typography['desktop'] ) ) {
+                $css_rules[] = "{$file_select_selector} { {$file_select_typography['desktop']} }";
+            }
+            if ( ! empty( $file_select_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$file_select_selector} { {$file_select_typography['tablet']} }";
+            }
+            if ( ! empty( $file_select_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$file_select_selector} { {$file_select_typography['mobile']} }";
+            }
+        }
+
+        // Text Color
+        if ( ! empty( $attributes['formFileSelectTextColor'] ) ) {
+            $css_rules[] = "{$file_select_selector} { color: {$attributes['formFileSelectTextColor']}; }";
+        }
+
+        // Hover State
+        if ( ! empty( $attributes['formFileSelectIconColorHover'] ) ) {
+            $css_rules[] = "{$file_select_selector}:hover i { color: {$attributes['formFileSelectIconColorHover']}; }";
+            $css_rules[] = "{$file_select_selector}:hover svg { fill: {$attributes['formFileSelectIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['formFileSelectBackgroundHover'] ) ) {
+            $css_rules[] = "{$file_select_selector}:hover { background-color: {$attributes['formFileSelectBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['formFileSelectBorderColorHover'] ) ) {
+            $css_rules[] = "{$file_select_selector}:hover { border-color: {$attributes['formFileSelectBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['formFileSelectTextColorHover'] ) ) {
+            $css_rules[] = "{$file_select_selector}:hover { color: {$attributes['formFileSelectTextColorHover']}; }";
+        }
+
+        // Added File Section
+        $file_added_selector = "{$form_file_selector} .ts-file-item";
+
+        if ( isset( $attributes['formFileAddedBorderRadius'] ) && $attributes['formFileAddedBorderRadius'] !== '' ) {
+            $css_rules[] = "{$file_added_selector} { border-radius: {$attributes['formFileAddedBorderRadius']}px; }";
+        }
+        if ( ! empty( $attributes['formFileAddedBackground'] ) ) {
+            $css_rules[] = "{$file_added_selector} { background-color: {$attributes['formFileAddedBackground']}; }";
+        }
+        if ( ! empty( $attributes['formFileAddedIconColor'] ) ) {
+            $css_rules[] = "{$file_added_selector} i { color: {$attributes['formFileAddedIconColor']}; }";
+            $css_rules[] = "{$file_added_selector} svg { fill: {$attributes['formFileAddedIconColor']}; }";
+        }
+        if ( isset( $attributes['formFileAddedIconSize'] ) && $attributes['formFileAddedIconSize'] !== '' ) {
+            $css_rules[] = "{$file_added_selector} i { font-size: {$attributes['formFileAddedIconSize']}px; }";
+            $css_rules[] = "{$file_added_selector} svg { width: {$attributes['formFileAddedIconSize']}px; height: {$attributes['formFileAddedIconSize']}px; }";
+        }
+        if ( ! empty( $attributes['formFileAddedTypography'] ) ) {
+            $file_added_typography = self::generate_typography_css( $attributes['formFileAddedTypography'] );
+            if ( ! empty( $file_added_typography['desktop'] ) ) {
+                $css_rules[] = "{$file_added_selector} { {$file_added_typography['desktop']} }";
+            }
+            if ( ! empty( $file_added_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$file_added_selector} { {$file_added_typography['tablet']} }";
+            }
+            if ( ! empty( $file_added_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$file_added_selector} { {$file_added_typography['mobile']} }";
+            }
+        }
+        if ( ! empty( $attributes['formFileAddedTextColor'] ) ) {
+            $css_rules[] = "{$file_added_selector} { color: {$attributes['formFileAddedTextColor']}; }";
+        }
+
+        // Remove Button
+        $file_remove_selector = "{$file_added_selector} .ts-remove-file";
+
+        if ( ! empty( $attributes['formFileRemoveBackground'] ) ) {
+            $css_rules[] = "{$file_remove_selector} { background-color: {$attributes['formFileRemoveBackground']}; }";
+        }
+        if ( ! empty( $attributes['formFileRemoveBackgroundHover'] ) ) {
+            $css_rules[] = "{$file_remove_selector}:hover { background-color: {$attributes['formFileRemoveBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['formFileRemoveColor'] ) ) {
+            $css_rules[] = "{$file_remove_selector} { color: {$attributes['formFileRemoveColor']}; }";
+        }
+        if ( ! empty( $attributes['formFileRemoveColorHover'] ) ) {
+            $css_rules[] = "{$file_remove_selector}:hover { color: {$attributes['formFileRemoveColorHover']}; }";
+        }
+        if ( isset( $attributes['formFileRemoveBorderRadius'] ) && $attributes['formFileRemoveBorderRadius'] !== '' ) {
+            $css_rules[] = "{$file_remove_selector} { border-radius: {$attributes['formFileRemoveBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['formFileRemoveSize'] ) && $attributes['formFileRemoveSize'] !== '' ) {
+            $css_rules[] = "{$file_remove_selector} { width: {$attributes['formFileRemoveSize']}px; height: {$attributes['formFileRemoveSize']}px; }";
+        }
+        if ( isset( $attributes['formFileRemoveIconSize'] ) && $attributes['formFileRemoveIconSize'] !== '' ) {
+            $css_rules[] = "{$file_remove_selector} i { font-size: {$attributes['formFileRemoveIconSize']}px; }";
+            $css_rules[] = "{$file_remove_selector} svg { width: {$attributes['formFileRemoveIconSize']}px; height: {$attributes['formFileRemoveIconSize']}px; }";
+        }
+
+        // ============================================
+        // 16. FORM: DIALOG
+        // Evidence: login/styles.ts:969-997
+        // ============================================
+
+        $dialog_selector = "{$selector} .vx-dialog-content";
+        $dialog_icon_selector = "{$selector} .vx-dialog > i";
+
+        if ( ! empty( $attributes['formDialogIconColor'] ) ) {
+            $css_rules[] = "{$dialog_icon_selector} { color: {$attributes['formDialogIconColor']}; }";
+        }
+        if ( isset( $attributes['formDialogIconSize'] ) && $attributes['formDialogIconSize'] !== '' ) {
+            $css_rules[] = "{$dialog_icon_selector} { font-size: {$attributes['formDialogIconSize']}px; }";
+        }
+        if ( ! empty( $attributes['formDialogTextColor'] ) ) {
+            $css_rules[] = "{$dialog_selector} { color: {$attributes['formDialogTextColor']}; }";
+        }
+
+        // Dialog Typography
+        if ( ! empty( $attributes['formDialogTypography'] ) ) {
+            $dialog_typography = self::generate_typography_css( $attributes['formDialogTypography'] );
+            if ( ! empty( $dialog_typography['desktop'] ) ) {
+                $css_rules[] = "{$dialog_selector} { {$dialog_typography['desktop']} }";
+            }
+            if ( ! empty( $dialog_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$dialog_selector} { {$dialog_typography['tablet']} }";
+            }
+            if ( ! empty( $dialog_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$dialog_selector} { {$dialog_typography['mobile']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['formDialogBackgroundColor'] ) ) {
+            $css_rules[] = "{$dialog_selector} { background-color: {$attributes['formDialogBackgroundColor']}; }";
+        }
+        if ( isset( $attributes['formDialogRadius'] ) && $attributes['formDialogRadius'] !== '' ) {
+            $css_rules[] = "{$dialog_selector} { border-radius: {$attributes['formDialogRadius']}px; }";
+        }
+
+        // Box Shadow
+        if ( ! empty( $attributes['formDialogBoxShadow'] ) ) {
+            $dialog_shadow = self::generate_box_shadow_css( $attributes['formDialogBoxShadow'] );
+            if ( ! empty( $dialog_shadow ) ) {
+                $css_rules[] = "{$dialog_selector} { box-shadow: {$dialog_shadow}; }";
+            }
+        }
+
+        // Border
+        if ( ! empty( $attributes['formDialogBorder'] ) ) {
+            $dialog_border = self::generate_border_css( $attributes['formDialogBorder'] );
+            if ( ! empty( $dialog_border['desktop'] ) ) {
+                $css_rules[] = "{$dialog_selector} { {$dialog_border['desktop']} }";
+            }
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Stripe Account Block
+     * Source: app/blocks/src/stripe-account/styles.ts (lines 25-434)
+     *
+     * Sections: 15 total
+     * - Panel (Border, Radius, Background, Shadow, Body Spacing)
+     * - Form: Fields General (Label, Select/Unselect Color)
+     * - Form: Input & Textarea (Placeholder, Value, States)
+     * - Form: Input Suffix
+     * - Form: Switcher
+     * - Form: Select
+     * - Form: Tabs
+     * - Buttons (Primary, Secondary, Tertiary)
+     * - Form: Heading
+     * - Form: Repeater
+     * - Form: Repeater Head
+     * - Repeater: Icon Button
+     * - Form: Pills
+     * - Buttons Refinement (Icon sizing/spacing)
+     *
+     * @param array  $attributes Block attributes from Gutenberg
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS
+     */
+    public static function generate_stripe_account_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = '.voxel-fse-stripe-account-' . $block_id;
+
+        // ============================================
+        // 1. PANEL
+        // Evidence: stripe-account/styles.ts:40-82
+        // ============================================
+
+        $panel_selector = "{$selector} .ts-panel";
+
+        // Border
+        if ( ! empty( $attributes['panelBorder'] ) ) {
+            $panel_border = self::generate_border_css( $attributes['panelBorder'] );
+            if ( ! empty( $panel_border['desktop'] ) ) {
+                $css_rules[] = "{$panel_selector} { {$panel_border['desktop']} }";
+            }
+            if ( ! empty( $panel_border['tablet'] ) ) {
+                $tablet_rules[] = "{$panel_selector} { {$panel_border['tablet']} }";
+            }
+            if ( ! empty( $panel_border['mobile'] ) ) {
+                $mobile_rules[] = "{$panel_selector} { {$panel_border['mobile']} }";
+            }
+        }
+
+        // Radius
+        if ( isset( $attributes['panelBorderRadius'] ) && $attributes['panelBorderRadius'] !== '' ) {
+            $css_rules[] = "{$panel_selector} { border-radius: {$attributes['panelBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['panelBorderRadius_tablet'] ) && $attributes['panelBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$panel_selector} { border-radius: {$attributes['panelBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['panelBorderRadius_mobile'] ) && $attributes['panelBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$panel_selector} { border-radius: {$attributes['panelBorderRadius_mobile']}px; }";
+        }
+
+        // Background
+        if ( ! empty( $attributes['panelBackground'] ) ) {
+            $css_rules[] = "{$panel_selector} { background-color: {$attributes['panelBackground']}; }";
+        }
+
+        // Box Shadow
+        if ( ! empty( $attributes['panelBoxShadow'] ) ) {
+            $panel_shadow = self::generate_box_shadow_css( $attributes['panelBoxShadow'] );
+            if ( ! empty( $panel_shadow ) ) {
+                $css_rules[] = "{$panel_selector} { box-shadow: {$panel_shadow}; }";
+            }
+        }
+
+        // Panel Body
+        $panel_body_selector = "{$selector} .ac-body";
+
+        // Spacing (Padding)
+        if ( isset( $attributes['panelBodySpacing'] ) && $attributes['panelBodySpacing'] !== '' ) {
+            $css_rules[] = "{$panel_body_selector} { padding: {$attributes['panelBodySpacing']}px; }";
+        }
+        if ( isset( $attributes['panelBodySpacing_tablet'] ) && $attributes['panelBodySpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$panel_body_selector} { padding: {$attributes['panelBodySpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['panelBodySpacing_mobile'] ) && $attributes['panelBodySpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$panel_body_selector} { padding: {$attributes['panelBodySpacing_mobile']}px; }";
+        }
+
+        // Content Gap
+        if ( isset( $attributes['panelBodyContentGap'] ) && $attributes['panelBodyContentGap'] !== '' ) {
+            $css_rules[] = "{$panel_body_selector} { gap: {$attributes['panelBodyContentGap']}px; display: flex; flex-direction: column; }";
+        }
+        if ( isset( $attributes['panelBodyContentGap_tablet'] ) && $attributes['panelBodyContentGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$panel_body_selector} { gap: {$attributes['panelBodyContentGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['panelBodyContentGap_mobile'] ) && $attributes['panelBodyContentGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$panel_body_selector} { gap: {$attributes['panelBodyContentGap_mobile']}px; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['panelTypography'] ) ) {
+            $panel_typography = self::generate_typography_css( $attributes['panelTypography'] );
+            if ( ! empty( $panel_typography['desktop'] ) ) {
+                $css_rules[] = "{$panel_selector} { {$panel_typography['desktop']} }";
+            }
+            if ( ! empty( $panel_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$panel_selector} { {$panel_typography['tablet']} }";
+            }
+            if ( ! empty( $panel_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$panel_selector} { {$panel_typography['mobile']} }";
+            }
+        }
+
+        // Text Color
+        if ( ! empty( $attributes['panelTextColor'] ) ) {
+            $css_rules[] = "{$panel_selector} { color: {$attributes['panelTextColor']}; }";
+        }
+
+        // ============================================
+        // 2. FORM: FIELDS GENERAL
+        // Evidence: stripe-account/styles.ts:84-103
+        // ============================================
+
+        $label_selector = "{$selector} .ts-form-group label";
+
+        // Typography
+        if ( ! empty( $attributes['fieldLabelTypography'] ) ) {
+            $label_typography = self::generate_typography_css( $attributes['fieldLabelTypography'] );
+            if ( ! empty( $label_typography['desktop'] ) ) {
+                $css_rules[] = "{$label_selector} { {$label_typography['desktop']} }";
+            }
+            if ( ! empty( $label_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$label_selector} { {$label_typography['tablet']} }";
+            }
+            if ( ! empty( $label_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$label_selector} { {$label_typography['mobile']} }";
+            }
+        }
+
+        // Color
+        if ( ! empty( $attributes['fieldLabelColor'] ) ) {
+            $css_rules[] = "{$label_selector} { color: {$attributes['fieldLabelColor']}; }";
+        }
+
+        // Select/Unselect Color
+        if ( ! empty( $attributes['fieldSelectColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown li.selected { color: {$attributes['fieldSelectColor']}; }";
+            $css_rules[] = "{$selector} .ts-term-dropdown li.selected:before { border-color: {$attributes['fieldSelectColor']}; background-color: {$attributes['fieldSelectColor']}; }";
+        }
+
+        // ============================================
+        // 3. FORM: INPUT & TEXTAREA
+        // Evidence: stripe-account/styles.ts:105-161
+        // ============================================
+
+        $input_selector = "{$selector} .ts-filter";
+        $input_focus_selector = "{$selector} .ts-filter:focus";
+        $input_hover_selector = "{$selector} .ts-filter:hover";
+
+        // Placeholder
+        if ( ! empty( $attributes['inputPlaceholderColor'] ) ) {
+            $css_rules[] = "{$input_selector}::placeholder { color: {$attributes['inputPlaceholderColor']}; opacity: 1; }";
+        }
+
+        if ( ! empty( $attributes['inputPlaceholderTypography'] ) ) {
+            $placeholder_typography = self::generate_typography_css( $attributes['inputPlaceholderTypography'] );
+            if ( ! empty( $placeholder_typography['desktop'] ) ) {
+                $css_rules[] = "{$input_selector}::placeholder { {$placeholder_typography['desktop']} }";
+            }
+        }
+
+        // Value (Input Text)
+        if ( ! empty( $attributes['inputValueTextColor'] ) ) {
+            $css_rules[] = "{$input_selector} { color: {$attributes['inputValueTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['inputValueTypography'] ) ) {
+            $value_typography = self::generate_typography_css( $attributes['inputValueTypography'] );
+            if ( ! empty( $value_typography['desktop'] ) ) {
+                $css_rules[] = "{$input_selector} { {$value_typography['desktop']} }";
+            }
+        }
+
+        // General Input Styles
+        if ( ! empty( $attributes['inputBackgroundColor'] ) ) {
+            $css_rules[] = "{$input_selector} { background-color: {$attributes['inputBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['inputBorder'] ) ) {
+            $input_border = self::generate_border_css( $attributes['inputBorder'] );
+            if ( ! empty( $input_border['desktop'] ) ) {
+                $css_rules[] = "{$input_selector} { {$input_border['desktop']} }";
+            }
+            if ( ! empty( $input_border['tablet'] ) ) {
+                $tablet_rules[] = "{$input_selector} { {$input_border['tablet']} }";
+            }
+            if ( ! empty( $input_border['mobile'] ) ) {
+                $mobile_rules[] = "{$input_selector} { {$input_border['mobile']} }";
+            }
+        }
+
+        if ( isset( $attributes['inputBorderRadius'] ) && $attributes['inputBorderRadius'] !== '' ) {
+            $css_rules[] = "{$input_selector} { border-radius: {$attributes['inputBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['inputBorderRadius_tablet'] ) && $attributes['inputBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$input_selector} { border-radius: {$attributes['inputBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['inputBorderRadius_mobile'] ) && $attributes['inputBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$input_selector} { border-radius: {$attributes['inputBorderRadius_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['inputHeight'] ) && $attributes['inputHeight'] !== '' ) {
+            $css_rules[] = "{$input_selector} { height: {$attributes['inputHeight']}px; }";
+        }
+        if ( isset( $attributes['inputHeight_tablet'] ) && $attributes['inputHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$input_selector} { height: {$attributes['inputHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['inputHeight_mobile'] ) && $attributes['inputHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$input_selector} { height: {$attributes['inputHeight_mobile']}px; }";
+        }
+
+        // Textarea specific
+        $textarea_selector = "{$selector} textarea.ts-filter";
+        if ( ! empty( $attributes['textareaPadding'] ) ) {
+            $textarea_padding = self::generate_dimensions_css( $attributes['textareaPadding'] );
+            if ( ! empty( $textarea_padding['desktop'] ) ) {
+                $css_rules[] = "{$textarea_selector} { {$textarea_padding['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['textareaHeight'] ) && $attributes['textareaHeight'] !== '' ) {
+            $css_rules[] = "{$textarea_selector} { height: {$attributes['textareaHeight']}px; min-height: {$attributes['textareaHeight']}px; }";
+        }
+        if ( isset( $attributes['textareaHeight_tablet'] ) && $attributes['textareaHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$textarea_selector} { height: {$attributes['textareaHeight_tablet']}px; min-height: {$attributes['textareaHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['textareaHeight_mobile'] ) && $attributes['textareaHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$textarea_selector} { height: {$attributes['textareaHeight_mobile']}px; min-height: {$attributes['textareaHeight_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['textareaBorderRadius'] ) && $attributes['textareaBorderRadius'] !== '' ) {
+            $css_rules[] = "{$textarea_selector} { border-radius: {$attributes['textareaBorderRadius']}px; }";
+        }
+
+        // Input States (Hover/Active)
+        if ( ! empty( $attributes['inputBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$input_hover_selector} { background-color: {$attributes['inputBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['inputBorderColorHover'] ) ) {
+            $css_rules[] = "{$input_hover_selector} { border-color: {$attributes['inputBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['inputPlaceholderColorHover'] ) ) {
+            $css_rules[] = "{$input_hover_selector}::placeholder { color: {$attributes['inputPlaceholderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['inputTextColorHover'] ) ) {
+            $css_rules[] = "{$input_hover_selector} { color: {$attributes['inputTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['inputIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon:hover i { color: {$attributes['inputIconColorHover']}; }";
+        }
+
+        if ( ! empty( $attributes['inputBackgroundColorActive'] ) ) {
+            $css_rules[] = "{$input_focus_selector} { background-color: {$attributes['inputBackgroundColorActive']}; }";
+        }
+        if ( ! empty( $attributes['inputBorderColorActive'] ) ) {
+            $css_rules[] = "{$input_focus_selector} { border-color: {$attributes['inputBorderColorActive']}; }";
+        }
+        if ( ! empty( $attributes['inputPlaceholderColorActive'] ) ) {
+            $css_rules[] = "{$input_focus_selector}::placeholder { color: {$attributes['inputPlaceholderColorActive']}; }";
+        }
+        if ( ! empty( $attributes['inputTextColorActive'] ) ) {
+            $css_rules[] = "{$input_focus_selector} { color: {$attributes['inputTextColorActive']}; }";
+        }
+
+        // ============================================
+        // 4. FORM: INPUT SUFFIX
+        // Evidence: stripe-account/styles.ts:163-180
+        // ============================================
+
+        $suffix_selector = "{$selector} .input-suffix";
+
+        if ( ! empty( $attributes['inputSuffixButtonTypography'] ) ) {
+            $suffix_typography = self::generate_typography_css( $attributes['inputSuffixButtonTypography'] );
+            if ( ! empty( $suffix_typography['desktop'] ) ) {
+                $css_rules[] = "{$suffix_selector} { {$suffix_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['inputSuffixTextColor'] ) ) {
+            $css_rules[] = "{$suffix_selector} { color: {$attributes['inputSuffixTextColor']}; }";
+        }
+        if ( ! empty( $attributes['inputSuffixBackgroundColor'] ) ) {
+            $css_rules[] = "{$suffix_selector} { background-color: {$attributes['inputSuffixBackgroundColor']}; }";
+        }
+
+        if ( isset( $attributes['inputSuffixBorderRadius'] ) && $attributes['inputSuffixBorderRadius'] !== '' ) {
+            $css_rules[] = "{$suffix_selector} { border-radius: {$attributes['inputSuffixBorderRadius']}px; }";
+        }
+
+        if ( ! empty( $attributes['inputSuffixBoxShadow'] ) ) {
+            $suffix_shadow = self::generate_box_shadow_css( $attributes['inputSuffixBoxShadow'] );
+            if ( ! empty( $suffix_shadow ) ) {
+                $css_rules[] = "{$suffix_selector} { box-shadow: {$suffix_shadow}; }";
+            }
+        }
+
+        if ( isset( $attributes['inputSuffixSideMargin'] ) && $attributes['inputSuffixSideMargin'] !== '' ) {
+            $css_rules[] = "{$suffix_selector} { right: {$attributes['inputSuffixSideMargin']}px; }";
+        }
+
+        if ( ! empty( $attributes['inputSuffixIconColor'] ) ) {
+            $css_rules[] = "{$suffix_selector} i { color: {$attributes['inputSuffixIconColor']}; }";
+        }
+
+        // ============================================
+        // 5. FORM: SWITCHER
+        // Evidence: stripe-account/styles.ts:182-191
+        // ============================================
+
+        $switcher_label = "{$selector} .onoffswitch-label";
+        $switcher_checkbox = "{$selector} .onoffswitch-checkbox";
+
+        if ( ! empty( $attributes['switcherBackgroundInactive'] ) ) {
+            $css_rules[] = "{$switcher_label} { background-color: {$attributes['switcherBackgroundInactive']}; }";
+        }
+
+        if ( ! empty( $attributes['switcherBackgroundActive'] ) ) {
+            $css_rules[] = "{$switcher_checkbox}:checked + {$switcher_label} { background-color: {$attributes['switcherBackgroundActive']}; }";
+        }
+
+        if ( ! empty( $attributes['switcherHandleBackground'] ) ) {
+            $css_rules[] = "{$switcher_label}:before { background-color: {$attributes['switcherHandleBackground']}; }";
+        }
+
+        // ============================================
+        // 6. FORM: SELECT
+        // Evidence: stripe-account/styles.ts:193-222
+        // ============================================
+
+        $select_selector = "{$selector} .ts-filter select";
+        $select_wrapper = "{$selector} div.ts-filter";
+
+        if ( ! empty( $attributes['selectBoxShadow'] ) ) {
+            $select_shadow = self::generate_box_shadow_css( $attributes['selectBoxShadow'] );
+            if ( ! empty( $select_shadow ) ) {
+                $css_rules[] = "{$select_wrapper} { box-shadow: {$select_shadow}; }";
+            }
+        }
+
+        if ( ! empty( $attributes['selectBackgroundColor'] ) ) {
+            $css_rules[] = "{$select_wrapper} { background-color: {$attributes['selectBackgroundColor']}; }";
+            $css_rules[] = "{$select_selector} { background-color: {$attributes['selectBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['selectTextColor'] ) ) {
+            $css_rules[] = "{$select_selector} { color: {$attributes['selectTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['selectBorder'] ) ) {
+            $select_border = self::generate_border_css( $attributes['selectBorder'] );
+            if ( ! empty( $select_border['desktop'] ) ) {
+                $css_rules[] = "{$select_wrapper} { {$select_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['selectBorderRadius'] ) && $attributes['selectBorderRadius'] !== '' ) {
+            $css_rules[] = "{$select_wrapper} { border-radius: {$attributes['selectBorderRadius']}px; }";
+        }
+
+        // Chevron
+        if ( ! empty( $attributes['selectHideChevron'] ) ) {
+            $css_rules[] = "{$selector} .ts-down-icon { display: none; }";
+        }
+        if ( ! empty( $attributes['selectChevronColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-down-icon { color: {$attributes['selectChevronColor']}; }";
+        }
+
+        // Select Hover
+        if ( ! empty( $attributes['selectBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$select_wrapper}:hover { background-color: {$attributes['selectBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['selectTextColorHover'] ) ) {
+            $css_rules[] = "{$select_wrapper}:hover select { color: {$attributes['selectTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['selectBorderColorHover'] ) ) {
+            $css_rules[] = "{$select_wrapper}:hover { border-color: {$attributes['selectBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['selectIconColorHover'] ) ) {
+            $css_rules[] = "{$select_wrapper}:hover .ts-down-icon { color: {$attributes['selectIconColorHover']}; }";
+        }
+
+        if ( ! empty( $attributes['selectBoxShadowHover'] ) ) {
+            $select_shadow_hover = self::generate_box_shadow_css( $attributes['selectBoxShadowHover'] );
+            if ( ! empty( $select_shadow_hover ) ) {
+                $css_rules[] = "{$select_wrapper}:hover { box-shadow: {$select_shadow_hover}; }";
+            }
+        }
+
+        // ============================================
+        // 7. FORM: TABS
+        // Evidence: stripe-account/styles.ts:224-251
+        // ============================================
+
+        $tabs_selector = "{$selector} .ts-tabs";
+        $tab_item_selector = "{$selector} .ts-tab";
+
+        if ( isset( $attributes['tabsGap'] ) && $attributes['tabsGap'] !== '' ) {
+            $css_rules[] = "{$tabs_selector} { gap: {$attributes['tabsGap']}px; }";
+        }
+
+        // Tab Item Normal
+        if ( ! empty( $attributes['tabsBackground'] ) ) {
+            $css_rules[] = "{$tab_item_selector} { background-color: {$attributes['tabsBackground']}; }";
+        }
+
+        if ( ! empty( $attributes['tabsBorder'] ) ) {
+            $tabs_border = self::generate_border_css( $attributes['tabsBorder'] );
+            if ( ! empty( $tabs_border['desktop'] ) ) {
+                $css_rules[] = "{$tab_item_selector} { {$tabs_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['tabsBorderRadius'] ) && $attributes['tabsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$tab_item_selector} { border-radius: {$attributes['tabsBorderRadius']}px; }";
+        }
+
+        if ( ! empty( $attributes['tabsTextTypography'] ) ) {
+            $tabs_typography = self::generate_typography_css( $attributes['tabsTextTypography'] );
+            if ( ! empty( $tabs_typography['desktop'] ) ) {
+                $css_rules[] = "{$tab_item_selector} { {$tabs_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['tabsTextColor'] ) ) {
+            $css_rules[] = "{$tab_item_selector} { color: {$attributes['tabsTextColor']}; }";
+        }
+
+        // Tab Item Selected
+        $tab_selected_selector = "{$selector} .ts-tab.active";
+        if ( ! empty( $attributes['tabsBackgroundSelected'] ) ) {
+            $css_rules[] = "{$tab_selected_selector} { background-color: {$attributes['tabsBackgroundSelected']}; }";
+        }
+        if ( ! empty( $attributes['tabsColorSelected'] ) ) {
+            $css_rules[] = "{$tab_selected_selector} { color: {$attributes['tabsColorSelected']}; }";
+        }
+        if ( ! empty( $attributes['tabsBorderColorSelected'] ) ) {
+            $css_rules[] = "{$tab_selected_selector} { border-color: {$attributes['tabsBorderColorSelected']}; }";
+        }
+
+        if ( ! empty( $attributes['tabsBoxShadowSelected'] ) ) {
+            $tabs_shadow = self::generate_box_shadow_css( $attributes['tabsBoxShadowSelected'] );
+            if ( ! empty( $tabs_shadow ) ) {
+                $css_rules[] = "{$tab_selected_selector} { box-shadow: {$tabs_shadow}; }";
+            }
+        }
+
+        // ============================================
+        // 8. BUTTONS (PRIMARY, SECONDARY, TERTIARY)
+        // Evidence: stripe-account/styles.ts:253-317
+        // ============================================
+
+        // Primary
+        $primary_btn = "{$selector} .ts-btn-2";
+        if ( ! empty( $attributes['primaryButtonTypography'] ) ) {
+            $primary_btn_typography = self::generate_typography_css( $attributes['primaryButtonTypography'] );
+            if ( ! empty( $primary_btn_typography['desktop'] ) ) {
+                $css_rules[] = "{$primary_btn} { {$primary_btn_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['primaryButtonBorder'] ) ) {
+            $primary_btn_border = self::generate_border_css( $attributes['primaryButtonBorder'] );
+            if ( ! empty( $primary_btn_border['desktop'] ) ) {
+                $css_rules[] = "{$primary_btn} { {$primary_btn_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['primaryButtonBorderRadius'] ) && $attributes['primaryButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$primary_btn} { border-radius: {$attributes['primaryButtonBorderRadius']}px; }";
+        }
+
+        if ( ! empty( $attributes['primaryButtonBoxShadow'] ) ) {
+            $primary_btn_shadow = self::generate_box_shadow_css( $attributes['primaryButtonBoxShadow'] );
+            if ( ! empty( $primary_btn_shadow ) ) {
+                $css_rules[] = "{$primary_btn} { box-shadow: {$primary_btn_shadow}; }";
+            }
+        }
+
+        if ( ! empty( $attributes['primaryButtonTextColor'] ) ) {
+            $css_rules[] = "{$primary_btn} { color: {$attributes['primaryButtonTextColor']}; }";
+        }
+        if ( ! empty( $attributes['primaryButtonBackgroundColor'] ) ) {
+            $css_rules[] = "{$primary_btn} { background-color: {$attributes['primaryButtonBackgroundColor']}; }";
+        }
+
+        // Hover
+        if ( ! empty( $attributes['primaryButtonTextColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn}:hover { color: {$attributes['primaryButtonTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryButtonBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn}:hover { background-color: {$attributes['primaryButtonBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn}:hover { border-color: {$attributes['primaryButtonBorderColorHover']}; }";
+        }
+
+        // Secondary
+        $secondary_btn = "{$selector} .ts-btn-1";
+        if ( ! empty( $attributes['secondaryButtonTypography'] ) ) {
+            $secondary_btn_typography = self::generate_typography_css( $attributes['secondaryButtonTypography'] );
+            if ( ! empty( $secondary_btn_typography['desktop'] ) ) {
+                $css_rules[] = "{$secondary_btn} { {$secondary_btn_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['secondaryButtonBorder'] ) ) {
+            $secondary_btn_border = self::generate_border_css( $attributes['secondaryButtonBorder'] );
+            if ( ! empty( $secondary_btn_border['desktop'] ) ) {
+                $css_rules[] = "{$secondary_btn} { {$secondary_btn_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['secondaryButtonBorderRadius'] ) && $attributes['secondaryButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$secondary_btn} { border-radius: {$attributes['secondaryButtonBorderRadius']}px; }";
+        }
+        if ( ! empty( $attributes['secondaryButtonTextColor'] ) ) {
+            $css_rules[] = "{$secondary_btn} { color: {$attributes['secondaryButtonTextColor']}; }";
+        }
+
+        if ( ! empty( $attributes['secondaryButtonPadding'] ) ) {
+            $secondary_btn_padding = self::generate_dimensions_css( $attributes['secondaryButtonPadding'] );
+            if ( ! empty( $secondary_btn_padding['desktop'] ) ) {
+                $css_rules[] = "{$secondary_btn} { {$secondary_btn_padding['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['secondaryButtonBackgroundColor'] ) ) {
+            $css_rules[] = "{$secondary_btn} { background-color: {$attributes['secondaryButtonBackgroundColor']}; }";
+        }
+
+        // Hover
+        if ( ! empty( $attributes['secondaryButtonTextColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn}:hover { color: {$attributes['secondaryButtonTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryButtonBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn}:hover { background-color: {$attributes['secondaryButtonBackgroundColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn}:hover { border-color: {$attributes['secondaryButtonBorderColorHover']}; }";
+        }
+
+        // Tertiary
+        $tertiary_btn = "{$selector} .ts-btn-4";
+        if ( ! empty( $attributes['tertiaryButtonIconColor'] ) ) {
+            $css_rules[] = "{$tertiary_btn} i { color: {$attributes['tertiaryButtonIconColor']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryButtonBackground'] ) ) {
+            $css_rules[] = "{$tertiary_btn} { background-color: {$attributes['tertiaryButtonBackground']}; }";
+        }
+
+        if ( ! empty( $attributes['tertiaryButtonBorder'] ) ) {
+            $tertiary_btn_border = self::generate_border_css( $attributes['tertiaryButtonBorder'] );
+            if ( ! empty( $tertiary_btn_border['desktop'] ) ) {
+                $css_rules[] = "{$tertiary_btn} { {$tertiary_btn_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['tertiaryButtonBorderRadius'] ) && $attributes['tertiaryButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$tertiary_btn} { border-radius: {$attributes['tertiaryButtonBorderRadius']}px; }";
+        }
+
+        if ( ! empty( $attributes['tertiaryButtonTypography'] ) ) {
+            $tertiary_btn_typography = self::generate_typography_css( $attributes['tertiaryButtonTypography'] );
+            if ( ! empty( $tertiary_btn_typography['desktop'] ) ) {
+                $css_rules[] = "{$tertiary_btn} { {$tertiary_btn_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['tertiaryButtonTextColor'] ) ) {
+            $css_rules[] = "{$tertiary_btn} { color: {$attributes['tertiaryButtonTextColor']}; }";
+        }
+
+        // Hover
+        if ( ! empty( $attributes['tertiaryButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$tertiary_btn}:hover i { color: {$attributes['tertiaryButtonIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryButtonBackgroundHover'] ) ) {
+            $css_rules[] = "{$tertiary_btn}:hover { background-color: {$attributes['tertiaryButtonBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$tertiary_btn}:hover { border-color: {$attributes['tertiaryButtonBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryButtonTextColorHover'] ) ) {
+            $css_rules[] = "{$tertiary_btn}:hover { color: {$attributes['tertiaryButtonTextColorHover']}; }";
+        }
+
+        // ============================================
+        // 9. FORM: HEADING
+        // Evidence: stripe-account/styles.ts:319-324
+        // ============================================
+
+        $heading_selector = "{$selector} .ui-heading-field label";
+        if ( ! empty( $attributes['headingTypography'] ) ) {
+            $heading_typography = self::generate_typography_css( $attributes['headingTypography'] );
+            if ( ! empty( $heading_typography['desktop'] ) ) {
+                $css_rules[] = "{$heading_selector} { {$heading_typography['desktop']} }";
+            }
+        }
+        if ( ! empty( $attributes['headingColor'] ) ) {
+            $css_rules[] = "{$heading_selector} { color: {$attributes['headingColor']}; }";
+        }
+
+        // ============================================
+        // 10. FORM: REPEATER
+        // Evidence: stripe-account/styles.ts:326-339
+        // ============================================
+
+        $repeater_item_selector = "{$selector} .ts-field-repeater";
+        if ( ! empty( $attributes['repeaterBackground'] ) ) {
+            $css_rules[] = "{$repeater_item_selector} { background-color: {$attributes['repeaterBackground']}; }";
+        }
+
+        if ( ! empty( $attributes['repeaterBorder'] ) ) {
+            $repeater_border = self::generate_border_css( $attributes['repeaterBorder'] );
+            if ( ! empty( $repeater_border['desktop'] ) ) {
+                $css_rules[] = "{$repeater_item_selector} { {$repeater_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['repeaterBorderRadius'] ) && $attributes['repeaterBorderRadius'] !== '' ) {
+            $css_rules[] = "{$repeater_item_selector} { border-radius: {$attributes['repeaterBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['repeaterBorderRadius_tablet'] ) && $attributes['repeaterBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$repeater_item_selector} { border-radius: {$attributes['repeaterBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['repeaterBorderRadius_mobile'] ) && $attributes['repeaterBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$repeater_item_selector} { border-radius: {$attributes['repeaterBorderRadius_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['repeaterBoxShadow'] ) ) {
+            $repeater_shadow = self::generate_box_shadow_css( $attributes['repeaterBoxShadow'] );
+            if ( ! empty( $repeater_shadow ) ) {
+                $css_rules[] = "{$repeater_item_selector} { box-shadow: {$repeater_shadow}; }";
+            }
+        }
+
+        // ============================================
+        // 11. FORM: REPEATER HEAD
+        // Evidence: stripe-account/styles.ts:341-356
+        // ============================================
+
+        $repeater_head_selector = "{$selector} .ts-repeater-head";
+        $repeater_secondary_selector = "{$selector} .ts-repeater-head label span";
+
+        if ( ! empty( $attributes['repeaterHeadSecondaryColor'] ) ) {
+            $css_rules[] = "{$repeater_secondary_selector} { color: {$attributes['repeaterHeadSecondaryColor']}; }";
+        }
+
+        if ( ! empty( $attributes['repeaterHeadSecondaryTypography'] ) ) {
+            $repeater_secondary_typography = self::generate_typography_css( $attributes['repeaterHeadSecondaryTypography'] );
+            if ( ! empty( $repeater_secondary_typography['desktop'] ) ) {
+                $css_rules[] = "{$repeater_secondary_selector} { {$repeater_secondary_typography['desktop']} }";
+            }
+        }
+
+        if ( ! empty( $attributes['repeaterHeadIconColor'] ) ) {
+            $css_rules[] = "{$repeater_head_selector} i { color: {$attributes['repeaterHeadIconColor']}; }";
+        }
+        if ( ! empty( $attributes['repeaterHeadBorderColor'] ) ) {
+            $css_rules[] = "{$repeater_head_selector} { border-bottom: 1px solid {$attributes['repeaterHeadBorderColor']}; }";
+        }
+
+        if ( isset( $attributes['repeaterHeadBorderWidth'] ) && $attributes['repeaterHeadBorderWidth'] !== '' ) {
+            $css_rules[] = "{$repeater_head_selector} { border-bottom-width: {$attributes['repeaterHeadBorderWidth']}px; }";
+        }
+        if ( isset( $attributes['repeaterHeadBorderWidth_tablet'] ) && $attributes['repeaterHeadBorderWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$repeater_head_selector} { border-bottom-width: {$attributes['repeaterHeadBorderWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['repeaterHeadBorderWidth_mobile'] ) && $attributes['repeaterHeadBorderWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$repeater_head_selector} { border-bottom-width: {$attributes['repeaterHeadBorderWidth_mobile']}px; }";
+        }
+
+        // ============================================
+        // 12. REPEATER: ICON BUTTON
+        // Evidence: stripe-account/styles.ts:358-373
+        // ============================================
+
+        $icon_btn_selector = "{$selector} .ts-icon-btn";
+        if ( ! empty( $attributes['repeaterIconButtonColor'] ) ) {
+            $css_rules[] = "{$icon_btn_selector} { color: {$attributes['repeaterIconButtonColor']}; }";
+        }
+        if ( ! empty( $attributes['repeaterIconButtonBackground'] ) ) {
+            $css_rules[] = "{$icon_btn_selector} { background-color: {$attributes['repeaterIconButtonBackground']}; }";
+        }
+
+        if ( ! empty( $attributes['repeaterIconButtonBorder'] ) ) {
+            $icon_btn_border = self::generate_border_css( $attributes['repeaterIconButtonBorder'] );
+            if ( ! empty( $icon_btn_border['desktop'] ) ) {
+                $css_rules[] = "{$icon_btn_selector} { {$icon_btn_border['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['repeaterIconButtonBorderRadius'] ) && $attributes['repeaterIconButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$icon_btn_selector} { border-radius: {$attributes['repeaterIconButtonBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['repeaterIconButtonBorderRadius_tablet'] ) && $attributes['repeaterIconButtonBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$icon_btn_selector} { border-radius: {$attributes['repeaterIconButtonBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['repeaterIconButtonBorderRadius_mobile'] ) && $attributes['repeaterIconButtonBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$icon_btn_selector} { border-radius: {$attributes['repeaterIconButtonBorderRadius_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['repeaterIconButtonColorHover'] ) ) {
+            $css_rules[] = "{$icon_btn_selector}:hover { color: {$attributes['repeaterIconButtonColorHover']}; }";
+        }
+        if ( ! empty( $attributes['repeaterIconButtonBackgroundHover'] ) ) {
+            $css_rules[] = "{$icon_btn_selector}:hover { background-color: {$attributes['repeaterIconButtonBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['repeaterIconButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$icon_btn_selector}:hover { border-color: {$attributes['repeaterIconButtonBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // 13. FORM: PILLS
+        // Evidence: stripe-account/styles.ts:375-389
+        // ============================================
+
+        $pill_selector = "{$selector} .attribute-select a";
+        if ( ! empty( $attributes['pillsTypography'] ) ) {
+            $pill_typography = self::generate_typography_css( $attributes['pillsTypography'] );
+            if ( ! empty( $pill_typography['desktop'] ) ) {
+                $css_rules[] = "{$pill_selector} { {$pill_typography['desktop']} }";
+            }
+        }
+
+        if ( isset( $attributes['pillsBorderRadius'] ) && $attributes['pillsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$pill_selector} { border-radius: {$attributes['pillsBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['pillsBorderRadius_tablet'] ) && $attributes['pillsBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$pill_selector} { border-radius: {$attributes['pillsBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['pillsBorderRadius_mobile'] ) && $attributes['pillsBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$pill_selector} { border-radius: {$attributes['pillsBorderRadius_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['pillsTextColor'] ) ) {
+            $css_rules[] = "{$pill_selector} { color: {$attributes['pillsTextColor']}; }";
+        }
+        if ( ! empty( $attributes['pillsBackgroundColor'] ) ) {
+            $css_rules[] = "{$pill_selector} { background-color: {$attributes['pillsBackgroundColor']}; }";
+        }
+
+        if ( ! empty( $attributes['pillsTextColorHover'] ) ) {
+            $css_rules[] = "{$pill_selector}:hover { color: {$attributes['pillsTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['pillsBackgroundColorHover'] ) ) {
+            $css_rules[] = "{$pill_selector}:hover { background-color: {$attributes['pillsBackgroundColorHover']}; }";
+        }
+
+        // ============================================
+        // 14. BUTTONS REFINEMENT - PRIMARY ICON
+        // Evidence: stripe-account/styles.ts:391-403
+        // ============================================
+
+        if ( ! empty( $attributes['primaryButtonIconColor'] ) ) {
+            $css_rules[] = "{$primary_btn} i { color: {$attributes['primaryButtonIconColor']}; }";
+        }
+        if ( ! empty( $attributes['primaryButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$primary_btn}:hover i { color: {$attributes['primaryButtonIconColorHover']}; }";
+        }
+
+        if ( isset( $attributes['primaryButtonIconSize'] ) && $attributes['primaryButtonIconSize'] !== '' ) {
+            $css_rules[] = "{$primary_btn} i { font-size: {$attributes['primaryButtonIconSize']}px; }";
+        }
+        if ( isset( $attributes['primaryButtonIconSize_tablet'] ) && $attributes['primaryButtonIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn} i { font-size: {$attributes['primaryButtonIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryButtonIconSize_mobile'] ) && $attributes['primaryButtonIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn} i { font-size: {$attributes['primaryButtonIconSize_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['primaryButtonIconTextSpacing'] ) && $attributes['primaryButtonIconTextSpacing'] !== '' ) {
+            $css_rules[] = "{$primary_btn} { gap: {$attributes['primaryButtonIconTextSpacing']}px; }";
+        }
+        if ( isset( $attributes['primaryButtonIconTextSpacing_tablet'] ) && $attributes['primaryButtonIconTextSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$primary_btn} { gap: {$attributes['primaryButtonIconTextSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryButtonIconTextSpacing_mobile'] ) && $attributes['primaryButtonIconTextSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$primary_btn} { gap: {$attributes['primaryButtonIconTextSpacing_mobile']}px; }";
+        }
+
+        // ============================================
+        // 15. BUTTONS REFINEMENT - SECONDARY & TERTIARY
+        // Evidence: stripe-account/styles.ts:405-424
+        // ============================================
+
+        // Secondary Height & Icon
+        if ( isset( $attributes['secondaryButtonHeight'] ) && $attributes['secondaryButtonHeight'] !== '' ) {
+            $css_rules[] = "{$secondary_btn} { height: {$attributes['secondaryButtonHeight']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonHeight_tablet'] ) && $attributes['secondaryButtonHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn} { height: {$attributes['secondaryButtonHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonHeight_mobile'] ) && $attributes['secondaryButtonHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn} { height: {$attributes['secondaryButtonHeight_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['secondaryButtonIconSize'] ) && $attributes['secondaryButtonIconSize'] !== '' ) {
+            $css_rules[] = "{$secondary_btn} i { font-size: {$attributes['secondaryButtonIconSize']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonIconSize_tablet'] ) && $attributes['secondaryButtonIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn} i { font-size: {$attributes['secondaryButtonIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonIconSize_mobile'] ) && $attributes['secondaryButtonIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn} i { font-size: {$attributes['secondaryButtonIconSize_mobile']}px; }";
+        }
+
+        if ( isset( $attributes['secondaryButtonIconRightPadding'] ) && $attributes['secondaryButtonIconRightPadding'] !== '' ) {
+            $css_rules[] = "{$secondary_btn} i { margin-right: {$attributes['secondaryButtonIconRightPadding']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonIconRightPadding_tablet'] ) && $attributes['secondaryButtonIconRightPadding_tablet'] !== '' ) {
+            $tablet_rules[] = "{$secondary_btn} i { margin-right: {$attributes['secondaryButtonIconRightPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryButtonIconRightPadding_mobile'] ) && $attributes['secondaryButtonIconRightPadding_mobile'] !== '' ) {
+            $mobile_rules[] = "{$secondary_btn} i { margin-right: {$attributes['secondaryButtonIconRightPadding_mobile']}px; }";
+        }
+
+        if ( ! empty( $attributes['secondaryButtonIconColor'] ) ) {
+            $css_rules[] = "{$secondary_btn} i { color: {$attributes['secondaryButtonIconColor']}; }";
+        }
+        if ( ! empty( $attributes['secondaryButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$secondary_btn}:hover i { color: {$attributes['secondaryButtonIconColorHover']}; }";
+        }
+
+        // Tertiary Icon
+        if ( isset( $attributes['tertiaryButtonIconSize'] ) && $attributes['tertiaryButtonIconSize'] !== '' ) {
+            $css_rules[] = "{$tertiary_btn} i { font-size: {$attributes['tertiaryButtonIconSize']}px; }";
+        }
+        if ( isset( $attributes['tertiaryButtonIconSize_tablet'] ) && $attributes['tertiaryButtonIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$tertiary_btn} i { font-size: {$attributes['tertiaryButtonIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['tertiaryButtonIconSize_mobile'] ) && $attributes['tertiaryButtonIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$tertiary_btn} i { font-size: {$attributes['tertiaryButtonIconSize_mobile']}px; }";
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Review Stats Block
+     * Source: app/blocks/src/review-stats/styles.ts (lines 78-249)
+     *
+     * Sections: 2 total
+     * - Reviews Grid (Columns, Item Gap)
+     * - Review Stats (Icon Size/Spacing, Label/Score Typography/Color, Chart Background/Height/Radius)
+     *
+     * @param array  $attributes Block attributes from Gutenberg
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS
+     */
+    public static function generate_review_stats_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = '.vxfse-review-stats-' . $block_id;
+
+        // ============================================
+        // 1. REVIEWS GRID
+        // Evidence: review-stats/styles.ts:87-122
+        // ============================================
+
+        // Grid columns
+        if ( isset( $attributes['columns'] ) && $attributes['columns'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-review-bars { grid-template-columns: repeat({$attributes['columns']}, 1fr); }";
+        }
+        if ( isset( $attributes['columns_tablet'] ) && $attributes['columns_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-review-bars { grid-template-columns: repeat({$attributes['columns_tablet']}, 1fr); }";
+        }
+        if ( isset( $attributes['columns_mobile'] ) && $attributes['columns_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-review-bars { grid-template-columns: repeat({$attributes['columns_mobile']}, 1fr); }";
+        }
+
+        // Item gap
+        if ( isset( $attributes['itemGap'] ) && $attributes['itemGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-review-bars { grid-gap: {$attributes['itemGap']}px; }";
+        }
+        if ( isset( $attributes['itemGap_tablet'] ) && $attributes['itemGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-review-bars { grid-gap: {$attributes['itemGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['itemGap_mobile'] ) && $attributes['itemGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-review-bars { grid-gap: {$attributes['itemGap_mobile']}px; }";
+        }
+
+        // ============================================
+        // 2. REVIEW STATS
+        // Evidence: review-stats/styles.ts:124-226
+        // ============================================
+
+        // Icon size
+        if ( isset( $attributes['iconSize'] ) && $attributes['iconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-bar-data i { font-size: {$attributes['iconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-bar-data svg { width: {$attributes['iconSize']}px; height: {$attributes['iconSize']}px; }";
+        }
+        if ( isset( $attributes['iconSize_tablet'] ) && $attributes['iconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-bar-data i { font-size: {$attributes['iconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-bar-data svg { width: {$attributes['iconSize_tablet']}px; height: {$attributes['iconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['iconSize_mobile'] ) && $attributes['iconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-bar-data i { font-size: {$attributes['iconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-bar-data svg { width: {$attributes['iconSize_mobile']}px; height: {$attributes['iconSize_mobile']}px; }";
+        }
+
+        // Icon spacing
+        if ( isset( $attributes['iconSpacing'] ) && $attributes['iconSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-bar-data i { margin-right: {$attributes['iconSpacing']}px; }";
+            $css_rules[] = "{$selector} .ts-bar-data svg { margin-right: {$attributes['iconSpacing']}px; }";
+        }
+
+        // Label typography
+        if ( ! empty( $attributes['labelTypography'] ) ) {
+            $label_typography = self::generate_typography_css( $attributes['labelTypography'] );
+            if ( ! empty( $label_typography['desktop'] ) ) {
+                $css_rules[] = "{$selector} .ts-bar-data p { {$label_typography['desktop']} }";
+            }
+            if ( ! empty( $label_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$selector} .ts-bar-data p { {$label_typography['tablet']} }";
+            }
+            if ( ! empty( $label_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$selector} .ts-bar-data p { {$label_typography['mobile']} }";
+            }
+        }
+
+        // Label color
+        if ( ! empty( $attributes['labelColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-bar-data p { color: {$attributes['labelColor']}; }";
+        }
+
+        // Score typography
+        if ( ! empty( $attributes['scoreTypography'] ) ) {
+            $score_typography = self::generate_typography_css( $attributes['scoreTypography'] );
+            if ( ! empty( $score_typography['desktop'] ) ) {
+                $css_rules[] = "{$selector} .ts-bar-data p span { {$score_typography['desktop']} }";
+            }
+            if ( ! empty( $score_typography['tablet'] ) ) {
+                $tablet_rules[] = "{$selector} .ts-bar-data p span { {$score_typography['tablet']} }";
+            }
+            if ( ! empty( $score_typography['mobile'] ) ) {
+                $mobile_rules[] = "{$selector} .ts-bar-data p span { {$score_typography['mobile']} }";
+            }
+        }
+
+        // Score color
+        if ( ! empty( $attributes['scoreColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-bar-data p span { color: {$attributes['scoreColor']}; }";
+        }
+
+        // Chart background color
+        if ( ! empty( $attributes['chartBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-bar-chart { background-color: {$attributes['chartBgColor']}; }";
+        }
+
+        // Chart height
+        if ( isset( $attributes['chartHeight'] ) && $attributes['chartHeight'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-bar-chart { height: {$attributes['chartHeight']}px; }";
+        }
+        if ( isset( $attributes['chartHeight_tablet'] ) && $attributes['chartHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-bar-chart { height: {$attributes['chartHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['chartHeight_mobile'] ) && $attributes['chartHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-bar-chart { height: {$attributes['chartHeight_mobile']}px; }";
+        }
+
+        // Chart radius
+        if ( isset( $attributes['chartRadius'] ) && $attributes['chartRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-bar-chart { border-radius: {$attributes['chartRadius']}px; }";
+        }
+        if ( isset( $attributes['chartRadius_tablet'] ) && $attributes['chartRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-bar-chart { border-radius: {$attributes['chartRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['chartRadius_mobile'] ) && $attributes['chartRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-bar-chart { border-radius: {$attributes['chartRadius_mobile']}px; }";
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Ring Chart Block
+     *
+     * Evidence: ring-chart/styles.ts
+     * Sections: Animation Duration (Content tab), Typography (Style tab)
+     * Only generates tablet/mobile overrides - desktop values handled as inline styles.
+     *
+     * @param array  $attributes Block attributes from Gutenberg
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS
+     */
+    public static function generate_ring_chart_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules    = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector     = '.voxel-fse-ring-chart-' . $block_id;
+
+        // ============================================
+        // CONTENT TAB - Animation Duration (Responsive)
+        // Evidence: ring-chart/styles.ts:42-58
+        // Selector: .circle-chart__circle
+        // Desktop value handled as inline style in RingChartComponent
+        // ============================================
+
+        // Tablet
+        if ( isset( $attributes['ts_chart_animation_duration_tablet'] ) && $attributes['ts_chart_animation_duration_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .circle-chart__circle { animation-duration: {$attributes['ts_chart_animation_duration_tablet']}s; }";
+        }
+
+        // Mobile
+        if ( isset( $attributes['ts_chart_animation_duration_mobile'] ) && $attributes['ts_chart_animation_duration_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .circle-chart__circle { animation-duration: {$attributes['ts_chart_animation_duration_mobile']}s; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Value Typography (Responsive)
+        // Evidence: ring-chart/styles.ts:60-106
+        // Selector: .circle-chart .chart-value
+        // ============================================
+
+        // Font size - Tablet
+        if ( ! empty( $attributes['chart_value_typography_font_size_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .circle-chart .chart-value { font-size: {$attributes['chart_value_typography_font_size_tablet']}; }";
+        }
+
+        // Font size - Mobile
+        if ( ! empty( $attributes['chart_value_typography_font_size_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .circle-chart .chart-value { font-size: {$attributes['chart_value_typography_font_size_mobile']}; }";
+        }
+
+        // Line height - Tablet
+        if ( ! empty( $attributes['chart_value_typography_line_height_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .circle-chart .chart-value { line-height: {$attributes['chart_value_typography_line_height_tablet']}; }";
+        }
+
+        // Line height - Mobile
+        if ( ! empty( $attributes['chart_value_typography_line_height_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .circle-chart .chart-value { line-height: {$attributes['chart_value_typography_line_height_mobile']}; }";
+        }
+
+        // Letter spacing - Tablet
+        if ( ! empty( $attributes['chart_value_typography_letter_spacing_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .circle-chart .chart-value { letter-spacing: {$attributes['chart_value_typography_letter_spacing_tablet']}; }";
+        }
+
+        // Letter spacing - Mobile
+        if ( ! empty( $attributes['chart_value_typography_letter_spacing_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .circle-chart .chart-value { letter-spacing: {$attributes['chart_value_typography_letter_spacing_mobile']}; }";
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Nested Accordion Block
+     *
+     * Evidence: nested-accordion/styles.ts
+     * Combines Content tab (generateContentTabResponsiveCSS) and Style tab (generateStyleTabResponsiveCSS).
+     *
+     * Content Tab Sections:
+     * - Item Spacing, Content Distance (CSS variables)
+     * - Item Position, Icon Position
+     * - Icon Size, Icon Spacing
+     *
+     * Style Tab Sections:
+     * - Accordion Normal/Hover/Active: background, border, border-radius, padding
+     * - Title Typography, Text Shadow, Text Stroke (Normal/Hover/Active)
+     * - Content: background, border, border-radius, padding
+     *
+     * @param array  $attributes Block attributes from Gutenberg
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS
+     */
+    public static function generate_nested_accordion_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules    = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+
+        // Content tab uses class-based selector
+        $selector = '.vxfse-nested-accordion-' . $block_id;
+
+        // Style tab uses data-attribute selector (matches Elementor pattern)
+        $style_selector = ".vxfse-nested-accordion[data-block-id=\"{$block_id}\"]";
+
+        // ============================================
+        // CONTENT TAB - Layout Section
+        // Evidence: nested-accordion/styles.ts:37-61
+        // ============================================
+
+        // Item Spacing - CSS Variable: --n-accordion-item-title-space-between
+        if ( isset( $attributes['itemSpacing_tablet'] ) && $attributes['itemSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} { --n-accordion-item-title-space-between: {$attributes['itemSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['itemSpacing_mobile'] ) && $attributes['itemSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} { --n-accordion-item-title-space-between: {$attributes['itemSpacing_mobile']}px; }";
+        }
+
+        // Content Distance - CSS Variable: --n-accordion-item-title-distance-from-content
+        if ( isset( $attributes['contentDistance_tablet'] ) && $attributes['contentDistance_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} { --n-accordion-item-title-distance-from-content: {$attributes['contentDistance_tablet']}px; }";
+        }
+        if ( isset( $attributes['contentDistance_mobile'] ) && $attributes['contentDistance_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} { --n-accordion-item-title-distance-from-content: {$attributes['contentDistance_mobile']}px; }";
+        }
+
+        // Item Position - Maps to justify-content
+        // start → initial, center → center, end → flex-end, stretch → space-between
+        $position_map = [
+            'start'   => 'initial',
+            'center'  => 'center',
+            'end'     => 'flex-end',
+            'stretch' => 'space-between',
+        ];
+
+        if ( ! empty( $attributes['itemPosition']['tablet'] ) ) {
+            $pos = $attributes['itemPosition']['tablet'];
+            $val = $position_map[ $pos ] ?? 'initial';
+            $tablet_rules[] = "{$selector} .e-n-accordion-item-title { justify-content: {$val}; }";
+            if ( $pos === 'stretch' ) {
+                $tablet_rules[] = "{$selector} .e-n-accordion-item-title .e-n-accordion-item-title-text { flex-grow: 1; }";
+            }
+        }
+
+        if ( ! empty( $attributes['itemPosition']['mobile'] ) ) {
+            $pos = $attributes['itemPosition']['mobile'];
+            $val = $position_map[ $pos ] ?? 'initial';
+            $mobile_rules[] = "{$selector} .e-n-accordion-item-title { justify-content: {$val}; }";
+            if ( $pos === 'stretch' ) {
+                $mobile_rules[] = "{$selector} .e-n-accordion-item-title .e-n-accordion-item-title-text { flex-grow: 1; }";
+            }
+        }
+
+        // Icon Position - start → order:-1, end → order:initial
+        if ( ! empty( $attributes['iconPosition']['tablet'] ) ) {
+            $order = $attributes['iconPosition']['tablet'] === 'start' ? '-1' : 'initial';
+            $tablet_rules[] = "{$selector} .e-n-accordion-item-title-icon { order: {$order}; }";
+        }
+        if ( ! empty( $attributes['iconPosition']['mobile'] ) ) {
+            $order = $attributes['iconPosition']['mobile'] === 'start' ? '-1' : 'initial';
+            $mobile_rules[] = "{$selector} .e-n-accordion-item-title-icon { order: {$order}; }";
+        }
+
+        // ============================================
+        // CONTENT TAB - Icon Section
+        // Evidence: nested-accordion/styles.ts:128-150
+        // ============================================
+
+        // Icon Size - Responsive
+        if ( isset( $attributes['iconSize_tablet'] ) && $attributes['iconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .e-n-accordion-item-title-icon i { font-size: {$attributes['iconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['iconSize_mobile'] ) && $attributes['iconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .e-n-accordion-item-title-icon i { font-size: {$attributes['iconSize_mobile']}px; }";
+        }
+
+        // Icon Spacing - Responsive
+        if ( isset( $attributes['iconSpacing_tablet'] ) && $attributes['iconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .e-n-accordion-item-title-icon { margin: 0 {$attributes['iconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['iconSpacing_mobile'] ) && $attributes['iconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .e-n-accordion-item-title-icon { margin: 0 {$attributes['iconSpacing_mobile']}px; }";
+        }
+
+        // ============================================
+        // STYLE TAB - SECTION 1: Accordion Styling (Normal/Hover/Active)
+        // Evidence: nested-accordion/styles.ts:204-332
+        // Uses data-attribute selector ($style_selector)
+        // ============================================
+
+        // --- Normal State ---
+
+        // Background
+        if ( ! empty( $attributes['accordionNormalBg'] ) ) {
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-title { background-color: {$attributes['accordionNormalBg']}; }";
+        }
+
+        // Border (uses borderType/borderWidth/borderColor pattern)
+        if ( ! empty( $attributes['accordionNormalBorderType'] ) && $attributes['accordionNormalBorderType'] !== 'none' ) {
+            $border_width = $attributes['accordionNormalBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['accordionNormalBorderColor'] ?? '#d5d8dc';
+
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-title { "
+                . "border-style: {$attributes['accordionNormalBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // --- Hover State ---
+
+        if ( ! empty( $attributes['accordionHoverBg'] ) ) {
+            $css_rules[] = "{$style_selector} .e-n-accordion-item:not([open]):hover > .e-n-accordion-item-title { background-color: {$attributes['accordionHoverBg']}; }";
+        }
+
+        if ( ! empty( $attributes['accordionHoverBorderType'] ) && $attributes['accordionHoverBorderType'] !== 'none' ) {
+            $border_width = $attributes['accordionHoverBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['accordionHoverBorderColor'] ?? '#d5d8dc';
+
+            $css_rules[] = "{$style_selector} .e-n-accordion-item:not([open]):hover > .e-n-accordion-item-title { "
+                . "border-style: {$attributes['accordionHoverBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // --- Active State ---
+
+        if ( ! empty( $attributes['accordionActiveBg'] ) ) {
+            $css_rules[] = "{$style_selector} .e-n-accordion-item[open] > .e-n-accordion-item-title { background-color: {$attributes['accordionActiveBg']}; }";
+        }
+
+        if ( ! empty( $attributes['accordionActiveBorderType'] ) && $attributes['accordionActiveBorderType'] !== 'none' ) {
+            $border_width = $attributes['accordionActiveBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['accordionActiveBorderColor'] ?? '#d5d8dc';
+
+            $css_rules[] = "{$style_selector} .e-n-accordion-item[open] > .e-n-accordion-item-title { "
+                . "border-style: {$attributes['accordionActiveBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Accordion Border Radius (responsive)
+        if ( ! empty( $attributes['accordionBorderRadius']['desktop'] ) ) {
+            $br     = $attributes['accordionBorderRadius']['desktop'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-title { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['accordionBorderRadius']['tablet'] ) ) {
+            $br     = $attributes['accordionBorderRadius']['tablet'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $tablet_rules[] = "{$style_selector} .e-n-accordion-item-title { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['accordionBorderRadius']['mobile'] ) ) {
+            $br     = $attributes['accordionBorderRadius']['mobile'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $mobile_rules[] = "{$style_selector} .e-n-accordion-item-title { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Accordion Padding (responsive)
+        if ( ! empty( $attributes['accordionPadding']['desktop'] ) ) {
+            $p      = $attributes['accordionPadding']['desktop'];
+            $top    = $p['top'] ?? '10px';
+            $right  = $p['right'] ?? '10px';
+            $bottom = $p['bottom'] ?? '10px';
+            $left   = $p['left'] ?? '10px';
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-title { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['accordionPadding']['tablet'] ) ) {
+            $p      = $attributes['accordionPadding']['tablet'];
+            $top    = $p['top'] ?? '10px';
+            $right  = $p['right'] ?? '10px';
+            $bottom = $p['bottom'] ?? '10px';
+            $left   = $p['left'] ?? '10px';
+            $tablet_rules[] = "{$style_selector} .e-n-accordion-item-title { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['accordionPadding']['mobile'] ) ) {
+            $p      = $attributes['accordionPadding']['mobile'];
+            $top    = $p['top'] ?? '10px';
+            $right  = $p['right'] ?? '10px';
+            $bottom = $p['bottom'] ?? '10px';
+            $left   = $p['left'] ?? '10px';
+            $mobile_rules[] = "{$style_selector} .e-n-accordion-item-title { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - SECTION 2: Title Typography & States
+        // Evidence: nested-accordion/styles.ts:334-398
+        // ============================================
+
+        // Typography
+        if ( ! empty( $attributes['titleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['titleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$style_selector} .e-n-accordion-item-title-text { {$typo}; }";
+            }
+        }
+
+        // Title Text Shadow (Normal/Hover/Active states)
+        $title_shadow_states = [
+            'Normal' => "{$style_selector} .e-n-accordion-item-title-text",
+            'Hover'  => "{$style_selector} .e-n-accordion-item:not([open]):hover > .e-n-accordion-item-title .e-n-accordion-item-title-text",
+            'Active' => "{$style_selector} .e-n-accordion-item[open] > .e-n-accordion-item-title .e-n-accordion-item-title-text",
+        ];
+
+        foreach ( $title_shadow_states as $state => $state_selector ) {
+            $attr_key = "title{$state}TextShadow";
+            if ( ! empty( $attributes[ $attr_key ] ) ) {
+                $shadow = $attributes[ $attr_key ];
+                if ( isset( $shadow['horizontal'] ) ) {
+                    $h     = $shadow['horizontal'] ?? 0;
+                    $v     = $shadow['vertical'] ?? 0;
+                    $blur  = $shadow['blur'] ?? 0;
+                    $color = $shadow['color'] ?? 'rgba(0,0,0,0.3)';
+                    $css_rules[] = "{$state_selector} { text-shadow: {$h}px {$v}px {$blur}px {$color}; }";
+                }
+            }
+        }
+
+        // Title Text Stroke (Normal/Hover/Active states)
+        $title_stroke_states = [
+            'Normal' => "{$style_selector} .e-n-accordion-item-title-text",
+            'Hover'  => "{$style_selector} .e-n-accordion-item:not([open]):hover > .e-n-accordion-item-title .e-n-accordion-item-title-text",
+            'Active' => "{$style_selector} .e-n-accordion-item[open] > .e-n-accordion-item-title .e-n-accordion-item-title-text",
+        ];
+
+        foreach ( $title_stroke_states as $state => $state_selector ) {
+            $attr_key = "title{$state}TextStroke";
+            if ( ! empty( $attributes[ $attr_key ] ) ) {
+                $stroke = $attributes[ $attr_key ];
+                if ( isset( $stroke['width'] ) && ! empty( $stroke['color'] ) ) {
+                    $width = $stroke['width'] ?? 0;
+                    $color = $stroke['color'] ?? '#000';
+                    $css_rules[] = "{$state_selector} { -webkit-text-stroke-width: {$width}px; -webkit-text-stroke-color: {$color}; }";
+                }
+            }
+        }
+
+        // ============================================
+        // STYLE TAB - SECTION 3: Content Styling
+        // Evidence: nested-accordion/styles.ts:400-482
+        // ============================================
+
+        // Content Background
+        if ( ! empty( $attributes['contentBg'] ) ) {
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-content { background-color: {$attributes['contentBg']}; }";
+        }
+
+        // Content Border
+        if ( ! empty( $attributes['contentBorderType'] ) && $attributes['contentBorderType'] !== 'none' ) {
+            $border_width = $attributes['contentBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['contentBorderColor'] ?? '#d5d8dc';
+
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-content { "
+                . "border-style: {$attributes['contentBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Content Border Radius (responsive)
+        if ( ! empty( $attributes['contentBorderRadius']['desktop'] ) ) {
+            $br     = $attributes['contentBorderRadius']['desktop'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-content { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['contentBorderRadius']['tablet'] ) ) {
+            $br     = $attributes['contentBorderRadius']['tablet'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $tablet_rules[] = "{$style_selector} .e-n-accordion-item-content { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['contentBorderRadius']['mobile'] ) ) {
+            $br     = $attributes['contentBorderRadius']['mobile'];
+            $top    = $br['top'] ?? '0px';
+            $right  = $br['right'] ?? '0px';
+            $bottom = $br['bottom'] ?? '0px';
+            $left   = $br['left'] ?? '0px';
+            $mobile_rules[] = "{$style_selector} .e-n-accordion-item-content { border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Content Padding (responsive)
+        if ( ! empty( $attributes['contentPadding']['desktop'] ) ) {
+            $p      = $attributes['contentPadding']['desktop'];
+            $top    = $p['top'] ?? '0';
+            $right  = $p['right'] ?? '0';
+            $bottom = $p['bottom'] ?? '0';
+            $left   = $p['left'] ?? '0';
+            $css_rules[] = "{$style_selector} .e-n-accordion-item-content { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['contentPadding']['tablet'] ) ) {
+            $p      = $attributes['contentPadding']['tablet'];
+            $top    = $p['top'] ?? '0';
+            $right  = $p['right'] ?? '0';
+            $bottom = $p['bottom'] ?? '0';
+            $left   = $p['left'] ?? '0';
+            $tablet_rules[] = "{$style_selector} .e-n-accordion-item-content { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+        if ( ! empty( $attributes['contentPadding']['mobile'] ) ) {
+            $p      = $attributes['contentPadding']['mobile'];
+            $top    = $p['top'] ?? '0';
+            $right  = $p['right'] ?? '0';
+            $bottom = $p['bottom'] ?? '0';
+            $left   = $p['left'] ?? '0';
+            $mobile_rules[] = "{$style_selector} .e-n-accordion-item-content { padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Nested Tabs Block
+     *
+     * Evidence: nested-tabs/styles.ts
+     * Sections:
+     * - Tabs: Tab button styling (Normal/Hover/Active) with borders and box shadows
+     * - Titles: Typography and text styling (Normal/Hover/Active) with text shadow/stroke
+     * - Content: Border and box shadow
+     * - Responsive CSS variables for tablet/mobile
+     *
+     * @param array  $attributes Block attributes from Gutenberg
+     * @param string $block_id   Block ID for scoped selector
+     * @return string Generated CSS
+     */
+    public static function generate_nested_tabs_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules    = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector     = '.vxfse-nested-tabs-' . $block_id;
+
+        // ============================================
+        // SECTION 1: Tabs - Tab button styling (Normal/Hover/Active)
+        // Evidence: nested-tabs/styles.ts:88-170
+        // ============================================
+
+        // --- Normal State ---
+        $tab_normal_selector = "{$selector} .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:not(:hover)";
+
+        // Border - Normal
+        if ( ! empty( $attributes['tabsNormalBorderType'] ) && $attributes['tabsNormalBorderType'] !== 'none' ) {
+            $border_width = $attributes['tabsNormalBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['tabsNormalBorderColor'] ?? '#000000';
+
+            $css_rules[] = "{$tab_normal_selector} { "
+                . "border-style: {$attributes['tabsNormalBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Box Shadow - Normal
+        if ( ! empty( $attributes['tabsNormalBoxShadow'] ) && ! empty( $attributes['tabsNormalBoxShadow']['enable'] ) ) {
+            $shadow     = $attributes['tabsNormalBoxShadow'];
+            $h          = $shadow['horizontal'] ?? 0;
+            $v          = $shadow['vertical'] ?? 0;
+            $blur       = $shadow['blur'] ?? 0;
+            $spread     = $shadow['spread'] ?? 0;
+            $color      = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset      = ( ! empty( $shadow['position'] ) && $shadow['position'] === 'inset' ) ? 'inset ' : '';
+            $css_rules[] = "{$tab_normal_selector} { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // --- Hover State ---
+        $tab_hover_selector = "{$selector} .e-n-tabs[data-touch-mode='false'] > .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:hover";
+
+        // Border - Hover
+        if ( ! empty( $attributes['tabsHoverBorderType'] ) && $attributes['tabsHoverBorderType'] !== 'none' ) {
+            $border_width = $attributes['tabsHoverBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['tabsHoverBorderColor'] ?? '#000000';
+
+            $css_rules[] = "{$tab_hover_selector} { "
+                . "border-style: {$attributes['tabsHoverBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Box Shadow - Hover
+        if ( ! empty( $attributes['tabsHoverBoxShadow'] ) && ! empty( $attributes['tabsHoverBoxShadow']['enable'] ) ) {
+            $shadow     = $attributes['tabsHoverBoxShadow'];
+            $h          = $shadow['horizontal'] ?? 0;
+            $v          = $shadow['vertical'] ?? 0;
+            $blur       = $shadow['blur'] ?? 0;
+            $spread     = $shadow['spread'] ?? 0;
+            $color      = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset      = ( ! empty( $shadow['position'] ) && $shadow['position'] === 'inset' ) ? 'inset ' : '';
+            $css_rules[] = "{$tab_hover_selector} { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // --- Active State ---
+        $tab_active_selector       = "{$selector} .e-n-tabs-heading > .e-n-tab-title[aria-selected='true']";
+        $tab_active_touch_selector = "{$selector} .e-n-tabs[data-touch-mode='true'] > .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:hover";
+
+        // Border - Active
+        if ( ! empty( $attributes['tabsActiveBorderType'] ) && $attributes['tabsActiveBorderType'] !== 'none' ) {
+            $border_width = $attributes['tabsActiveBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['tabsActiveBorderColor'] ?? '#000000';
+
+            $css_rules[] = "{$tab_active_selector}, {$tab_active_touch_selector} { "
+                . "border-style: {$attributes['tabsActiveBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Box Shadow - Active
+        if ( ! empty( $attributes['tabsActiveBoxShadow'] ) && ! empty( $attributes['tabsActiveBoxShadow']['enable'] ) ) {
+            $shadow     = $attributes['tabsActiveBoxShadow'];
+            $h          = $shadow['horizontal'] ?? 0;
+            $v          = $shadow['vertical'] ?? 0;
+            $blur       = $shadow['blur'] ?? 0;
+            $spread     = $shadow['spread'] ?? 0;
+            $color      = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset      = ( ! empty( $shadow['position'] ) && $shadow['position'] === 'inset' ) ? 'inset ' : '';
+            $css_rules[] = "{$tab_active_selector}, {$tab_active_touch_selector} { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION 2: Titles - Typography and text styling
+        // Evidence: nested-tabs/styles.ts:172-243
+        // ============================================
+
+        $title_selector = "{$selector} .e-n-tabs-heading > .e-n-tab-title > .e-n-tab-title-text";
+
+        // Typography - applies to all states
+        if ( ! empty( $attributes['titleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['titleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$title_selector} { {$typo}; }";
+            }
+        }
+
+        // Title Normal State
+        $title_normal_selector = "{$selector} .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:not(:hover)";
+
+        // Text Shadow - Normal
+        if ( ! empty( $attributes['titleNormalTextShadow'] ) && ! empty( $attributes['titleNormalTextShadow']['enable'] ) ) {
+            $shadow = $attributes['titleNormalTextShadow'];
+            $h      = $shadow['horizontal'] ?? 0;
+            $v      = $shadow['vertical'] ?? 0;
+            $blur   = $shadow['blur'] ?? 0;
+            $color  = $shadow['color'] ?? 'rgba(0,0,0,0.3)';
+            $css_rules[] = "{$title_normal_selector} { text-shadow: {$h}px {$v}px {$blur}px {$color}; }";
+        }
+
+        // Text Stroke - Normal
+        if ( ! empty( $attributes['titleNormalTextStroke'] ) && ! empty( $attributes['titleNormalTextStroke']['enable'] ) ) {
+            $stroke = $attributes['titleNormalTextStroke'];
+            $width  = $stroke['width'] ?? 1;
+            $color  = $stroke['color'] ?? '#000000';
+            $css_rules[] = "{$title_normal_selector} :is(span, a, i) { -webkit-text-stroke: {$width}px {$color}; text-stroke: {$width}px {$color}; }";
+        }
+
+        // Title Hover State
+        $title_hover_selector = "{$selector} .e-n-tabs[data-touch-mode='false'] > .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:hover";
+
+        // Text Shadow - Hover
+        if ( ! empty( $attributes['titleHoverTextShadow'] ) && ! empty( $attributes['titleHoverTextShadow']['enable'] ) ) {
+            $shadow = $attributes['titleHoverTextShadow'];
+            $h      = $shadow['horizontal'] ?? 0;
+            $v      = $shadow['vertical'] ?? 0;
+            $blur   = $shadow['blur'] ?? 0;
+            $color  = $shadow['color'] ?? 'rgba(0,0,0,0.3)';
+            $css_rules[] = "{$title_hover_selector} { text-shadow: {$h}px {$v}px {$blur}px {$color}; }";
+        }
+
+        // Text Stroke - Hover
+        if ( ! empty( $attributes['titleHoverTextStroke'] ) && ! empty( $attributes['titleHoverTextStroke']['enable'] ) ) {
+            $stroke = $attributes['titleHoverTextStroke'];
+            $width  = $stroke['width'] ?? 1;
+            $color  = $stroke['color'] ?? '#000000';
+            $css_rules[] = "{$title_hover_selector} :is(span, a, i) { -webkit-text-stroke: {$width}px {$color}; text-stroke: {$width}px {$color}; }";
+        }
+
+        // Title Active State
+        $title_active_selector       = "{$selector} .e-n-tabs-heading > .e-n-tab-title[aria-selected='true']";
+        $title_active_touch_selector = "{$selector} .e-n-tabs[data-touch-mode='true'] > .e-n-tabs-heading > .e-n-tab-title[aria-selected='false']:hover";
+
+        // Text Shadow - Active
+        if ( ! empty( $attributes['titleActiveTextShadow'] ) && ! empty( $attributes['titleActiveTextShadow']['enable'] ) ) {
+            $shadow = $attributes['titleActiveTextShadow'];
+            $h      = $shadow['horizontal'] ?? 0;
+            $v      = $shadow['vertical'] ?? 0;
+            $blur   = $shadow['blur'] ?? 0;
+            $color  = $shadow['color'] ?? 'rgba(0,0,0,0.3)';
+            $css_rules[] = "{$title_active_selector}, {$title_active_touch_selector} { text-shadow: {$h}px {$v}px {$blur}px {$color}; }";
+        }
+
+        // Text Stroke - Active
+        if ( ! empty( $attributes['titleActiveTextStroke'] ) && ! empty( $attributes['titleActiveTextStroke']['enable'] ) ) {
+            $stroke = $attributes['titleActiveTextStroke'];
+            $width  = $stroke['width'] ?? 1;
+            $color  = $stroke['color'] ?? '#000000';
+            $css_rules[] = "{$title_active_selector} :is(span, a, i), {$title_active_touch_selector} :is(span, a, i) { -webkit-text-stroke: {$width}px {$color}; text-stroke: {$width}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION 3: Content - Border and box shadow
+        // Evidence: nested-tabs/styles.ts:255-280
+        // ============================================
+
+        $content_selector = "{$selector} .e-n-tabs-content > .e-con";
+
+        // Border - Content
+        if ( ! empty( $attributes['contentBorderType'] ) && $attributes['contentBorderType'] !== 'none' ) {
+            $border_width = $attributes['contentBorderWidth'] ?? [];
+            $top    = floatval( $border_width['top'] ?? 0 );
+            $right  = floatval( $border_width['right'] ?? 0 );
+            $bottom = floatval( $border_width['bottom'] ?? 0 );
+            $left   = floatval( $border_width['left'] ?? 0 );
+            $color  = $attributes['contentBorderColor'] ?? '#000000';
+
+            $css_rules[] = "{$content_selector} { "
+                . "border-style: {$attributes['contentBorderType']}; "
+                . "border-width: {$top}px {$right}px {$bottom}px {$left}px; "
+                . "border-color: {$color}; "
+                . "}";
+        }
+
+        // Box Shadow - Content
+        if ( ! empty( $attributes['contentBoxShadow'] ) && ! empty( $attributes['contentBoxShadow']['enable'] ) ) {
+            $shadow     = $attributes['contentBoxShadow'];
+            $h          = $shadow['horizontal'] ?? 0;
+            $v          = $shadow['vertical'] ?? 0;
+            $blur       = $shadow['blur'] ?? 0;
+            $spread     = $shadow['spread'] ?? 0;
+            $color      = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset      = ( ! empty( $shadow['position'] ) && $shadow['position'] === 'inset' ) ? 'inset ' : '';
+            $css_rules[] = "{$content_selector} { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION 4: Responsive CSS Variables (Tablet)
+        // Evidence: nested-tabs/styles.ts:282-334
+        // ============================================
+
+        // Tabs Gap - Tablet
+        if ( ! empty( $attributes['tabsGap']['tablet'] ) ) {
+            $tablet_rules[] = "{$selector} { --n-tabs-title-gap: {$attributes['tabsGap']['tablet']}; }";
+        }
+
+        // Tabs Content Distance - Tablet
+        if ( ! empty( $attributes['tabsContentDistance']['tablet'] ) ) {
+            $tablet_rules[] = "{$selector} { --n-tabs-gap: {$attributes['tabsContentDistance']['tablet']}; }";
+        }
+
+        // Padding - Tablet
+        if ( ! empty( $attributes['tabsPadding']['tablet'] ) ) {
+            $p   = $attributes['tabsPadding']['tablet'];
+            $top    = $p['top'] ?? '15px';
+            $right  = $p['right'] ?? '20px';
+            $bottom = $p['bottom'] ?? '15px';
+            $left   = $p['left'] ?? '20px';
+            $tablet_rules[] = "{$selector} { --n-tabs-title-padding-top: {$top}; --n-tabs-title-padding-right: {$right}; --n-tabs-title-padding-bottom: {$bottom}; --n-tabs-title-padding-left: {$left}; }";
+        }
+
+        // Border Radius - Tablet
+        if ( ! empty( $attributes['tabsBorderRadius']['tablet'] ) ) {
+            $br     = $attributes['tabsBorderRadius']['tablet'];
+            $top    = $br['top'] ?? '0';
+            $right  = $br['right'] ?? '0';
+            $bottom = $br['bottom'] ?? '0';
+            $left   = $br['left'] ?? '0';
+            $tablet_rules[] = "{$selector} { --n-tabs-title-border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Icon Size - Tablet
+        if ( ! empty( $attributes['iconSize']['tablet'] ) ) {
+            $tablet_rules[] = "{$selector} { --n-tabs-icon-size: {$attributes['iconSize']['tablet']}; }";
+        }
+
+        // Icon Spacing - Tablet
+        if ( ! empty( $attributes['iconSpacing']['tablet'] ) ) {
+            $tablet_rules[] = "{$selector} { --n-tabs-icon-gap: {$attributes['iconSpacing']['tablet']}; }";
+        }
+
+        // Content Padding - Tablet
+        if ( ! empty( $attributes['contentPadding']['tablet'] ) ) {
+            $cp     = $attributes['contentPadding']['tablet'];
+            $top    = $cp['top'] ?? '0';
+            $right  = $cp['right'] ?? '0';
+            $bottom = $cp['bottom'] ?? '0';
+            $left   = $cp['left'] ?? '0';
+            $tablet_rules[] = "{$selector} { --n-tabs-content-padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Content Border Radius - Tablet
+        if ( ! empty( $attributes['contentBorderRadius']['tablet'] ) ) {
+            $cbr    = $attributes['contentBorderRadius']['tablet'];
+            $top    = $cbr['top'] ?? '0';
+            $right  = $cbr['right'] ?? '0';
+            $bottom = $cbr['bottom'] ?? '0';
+            $left   = $cbr['left'] ?? '0';
+            $tablet_rules[] = "{$selector} { --n-tabs-content-border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // ============================================
+        // SECTION 5: Responsive CSS Variables (Mobile)
+        // Evidence: nested-tabs/styles.ts:336-388
+        // ============================================
+
+        // Tabs Gap - Mobile
+        if ( ! empty( $attributes['tabsGap']['mobile'] ) ) {
+            $mobile_rules[] = "{$selector} { --n-tabs-title-gap: {$attributes['tabsGap']['mobile']}; }";
+        }
+
+        // Tabs Content Distance - Mobile
+        if ( ! empty( $attributes['tabsContentDistance']['mobile'] ) ) {
+            $mobile_rules[] = "{$selector} { --n-tabs-gap: {$attributes['tabsContentDistance']['mobile']}; }";
+        }
+
+        // Padding - Mobile
+        if ( ! empty( $attributes['tabsPadding']['mobile'] ) ) {
+            $p   = $attributes['tabsPadding']['mobile'];
+            $top    = $p['top'] ?? '15px';
+            $right  = $p['right'] ?? '20px';
+            $bottom = $p['bottom'] ?? '15px';
+            $left   = $p['left'] ?? '20px';
+            $mobile_rules[] = "{$selector} { --n-tabs-title-padding-top: {$top}; --n-tabs-title-padding-right: {$right}; --n-tabs-title-padding-bottom: {$bottom}; --n-tabs-title-padding-left: {$left}; }";
+        }
+
+        // Border Radius - Mobile
+        if ( ! empty( $attributes['tabsBorderRadius']['mobile'] ) ) {
+            $br     = $attributes['tabsBorderRadius']['mobile'];
+            $top    = $br['top'] ?? '0';
+            $right  = $br['right'] ?? '0';
+            $bottom = $br['bottom'] ?? '0';
+            $left   = $br['left'] ?? '0';
+            $mobile_rules[] = "{$selector} { --n-tabs-title-border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Icon Size - Mobile
+        if ( ! empty( $attributes['iconSize']['mobile'] ) ) {
+            $mobile_rules[] = "{$selector} { --n-tabs-icon-size: {$attributes['iconSize']['mobile']}; }";
+        }
+
+        // Icon Spacing - Mobile
+        if ( ! empty( $attributes['iconSpacing']['mobile'] ) ) {
+            $mobile_rules[] = "{$selector} { --n-tabs-icon-gap: {$attributes['iconSpacing']['mobile']}; }";
+        }
+
+        // Content Padding - Mobile
+        if ( ! empty( $attributes['contentPadding']['mobile'] ) ) {
+            $cp     = $attributes['contentPadding']['mobile'];
+            $top    = $cp['top'] ?? '0';
+            $right  = $cp['right'] ?? '0';
+            $bottom = $cp['bottom'] ?? '0';
+            $left   = $cp['left'] ?? '0';
+            $mobile_rules[] = "{$selector} { --n-tabs-content-padding: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // Content Border Radius - Mobile
+        if ( ! empty( $attributes['contentBorderRadius']['mobile'] ) ) {
+            $cbr    = $attributes['contentBorderRadius']['mobile'];
+            $top    = $cbr['top'] ?? '0';
+            $right  = $cbr['right'] ?? '0';
+            $bottom = $cbr['bottom'] ?? '0';
+            $left   = $cbr['left'] ?? '0';
+            $mobile_rules[] = "{$selector} { --n-tabs-content-border-radius: {$top} {$right} {$bottom} {$left}; }";
+        }
+
+        // ==================== COMBINE CSS ====================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+
         if ( ! empty( $mobile_rules ) ) {
             $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
         }
@@ -8436,6 +12126,7082 @@ class Style_Generator {
         }
 
         // Combine CSS
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate create-post block CSS
+     *
+     * Comprehensive CSS generation for create-post form block.
+     * Covers all Style Tab inspector controls including:
+     * - Form head (progress bar, steps)
+     * - Navigation buttons
+     * - Footer
+     * - Field labels and validation
+     * - Input/textarea fields
+     * - Select/dropdown fields
+     * - Checkboxes and switches
+     * - Radio buttons
+     * - Number fields
+     * - Date/time fields
+     * - File upload
+     * - Recurring date
+     * - Location field
+     * - Work hours
+     * - Product fields
+     * - Primary button (submit)
+     * - Secondary button
+     *
+     * @param array  $attributes Block attributes from inspector controls
+     * @param string $block_id   Unique block identifier
+     * @return string Generated CSS rules
+     */
+    public static function generate_create_post_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $selector = '.voxel-fse-create-post-' . $block_id;
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+
+        // ============================================
+        // 1. FORM: HEAD (Progress Bar)
+        // ============================================
+
+        // Hide form head
+        if ( ! empty( $attributes['headHide'] ) ) {
+            $css_rules[] = "{$selector} .ts-form-progres { display: none !important; }";
+        }
+
+        // Head spacing (bottom)
+        if ( isset( $attributes['headSpacing'] ) ) {
+            $css_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing']}px; }";
+        }
+        if ( isset( $attributes['headSpacing_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['headSpacing_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form-progres { margin-bottom: {$attributes['headSpacing_mobile']}px; }";
+        }
+
+        // Hide steps bar
+        if ( ! empty( $attributes['stepsBarHide'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage { display: none !important; }";
+        }
+
+        // Steps bar height
+        if ( isset( $attributes['stepsBarHeight'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage { height: {$attributes['stepsBarHeight']}px; }";
+        }
+        if ( isset( $attributes['stepsBarHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-percentage { height: {$attributes['stepsBarHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['stepsBarHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-percentage { height: {$attributes['stepsBarHeight_mobile']}px; }";
+        }
+
+        // Steps bar border radius
+        if ( isset( $attributes['stepsBarRadius'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage { border-radius: {$attributes['stepsBarRadius']}px; }";
+        }
+        if ( isset( $attributes['stepsBarRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-percentage { border-radius: {$attributes['stepsBarRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['stepsBarRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-percentage { border-radius: {$attributes['stepsBarRadius_mobile']}px; }";
+        }
+
+        // Percentage spacing (bottom)
+        if ( isset( $attributes['percentageSpacing'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage { margin-bottom: {$attributes['percentageSpacing']}px; }";
+        }
+        if ( isset( $attributes['percentageSpacing_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-percentage { margin-bottom: {$attributes['percentageSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['percentageSpacing_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-percentage { margin-bottom: {$attributes['percentageSpacing_mobile']}px; }";
+        }
+
+        // Progress bar background
+        if ( ! empty( $attributes['stepBarBg'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage { background-color: {$attributes['stepBarBg']}; }";
+        }
+
+        // Progress background (filled)
+        if ( ! empty( $attributes['stepBarDone'] ) ) {
+            $css_rules[] = "{$selector} .step-percentage > div { background-color: {$attributes['stepBarDone']}; }";
+        }
+
+        // Step heading typography
+        if ( ! empty( $attributes['currentStepText'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['currentStepText'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .active-step-details p { {$typo_css} }";
+            }
+        }
+
+        // Step heading color
+        if ( ! empty( $attributes['currentStepCol'] ) ) {
+            $css_rules[] = "{$selector} .active-step-details p { color: {$attributes['currentStepCol']}; }";
+        }
+
+        // ============================================
+        // 2. HEAD: NEXT/PREV BUTTONS
+        // ============================================
+
+        // Button icon color
+        if ( ! empty( $attributes['fnavBtnColor'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn i { color: {$attributes['fnavBtnColor']}; }";
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn svg { fill: {$attributes['fnavBtnColor']}; }";
+        }
+
+        // Button icon size
+        if ( isset( $attributes['fnavBtnIconSize'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn i { font-size: {$attributes['fnavBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn svg { width: {$attributes['fnavBtnIconSize']}px; height: {$attributes['fnavBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-nav .ts-icon-btn i { font-size: {$attributes['fnavBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .step-nav .ts-icon-btn svg { width: {$attributes['fnavBtnIconSize_tablet']}px; height: {$attributes['fnavBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-nav .ts-icon-btn i { font-size: {$attributes['fnavBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .step-nav .ts-icon-btn svg { width: {$attributes['fnavBtnIconSize_mobile']}px; height: {$attributes['fnavBtnIconSize_mobile']}px; }";
+        }
+
+        // Button background
+        if ( ! empty( $attributes['fnavBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn { background-color: {$attributes['fnavBtnBg']}; }";
+        }
+
+        // Button border
+        if ( ! empty( $attributes['fnavBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['fnavBtnBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .step-nav .ts-icon-btn { border: {$border_css}; }";
+            }
+        }
+
+        // Button border radius
+        if ( isset( $attributes['fnavBtnRadius'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn { border-radius: {$attributes['fnavBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-nav .ts-icon-btn { border-radius: {$attributes['fnavBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-nav .ts-icon-btn { border-radius: {$attributes['fnavBtnRadius_mobile']}px; }";
+        }
+
+        // Button size
+        if ( isset( $attributes['fnavBtnSize'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn { width: {$attributes['fnavBtnSize']}px; height: {$attributes['fnavBtnSize']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .step-nav .ts-icon-btn { width: {$attributes['fnavBtnSize_tablet']}px; height: {$attributes['fnavBtnSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fnavBtnSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .step-nav .ts-icon-btn { width: {$attributes['fnavBtnSize_mobile']}px; height: {$attributes['fnavBtnSize_mobile']}px; }";
+        }
+
+        // Button hover states
+        if ( ! empty( $attributes['fnavBtnColorHover'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn:hover i { color: {$attributes['fnavBtnColorHover']}; }";
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn:hover svg { fill: {$attributes['fnavBtnColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fnavBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn:hover { background-color: {$attributes['fnavBtnBgHover']}; }";
+        }
+        if ( ! empty( $attributes['fnavBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .step-nav .ts-icon-btn:hover { border-color: {$attributes['fnavBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // 3. FORM: FOOTER
+        // ============================================
+
+        // Footer top spacing
+        if ( isset( $attributes['footerTopSpacing'] ) ) {
+            $css_rules[] = "{$selector} .ts-form-footer { margin-top: {$attributes['footerTopSpacing']}px; }";
+        }
+        if ( isset( $attributes['footerTopSpacing_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form-footer { margin-top: {$attributes['footerTopSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['footerTopSpacing_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form-footer { margin-top: {$attributes['footerTopSpacing_mobile']}px; }";
+        }
+
+        // ============================================
+        // 4. FIELDS GENERAL (Labels & Validation)
+        // ============================================
+
+        // Field label typography
+        if ( ! empty( $attributes['sf1InputLabelTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['sf1InputLabelTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form-group label { {$typo_css} }";
+            }
+        }
+
+        // Field label color
+        if ( ! empty( $attributes['sf1InputLabelCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-form-group label { color: {$attributes['sf1InputLabelCol']}; }";
+        }
+
+        // Field validation typography
+        if ( ! empty( $attributes['sf1FieldReqTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['sf1FieldReqTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .field-required { {$typo_css} }";
+            }
+        }
+
+        // Field validation default color
+        if ( ! empty( $attributes['sf1FieldReqCol'] ) ) {
+            $css_rules[] = "{$selector} .field-required { color: {$attributes['sf1FieldReqCol']}; }";
+        }
+
+        // Field validation error color
+        if ( ! empty( $attributes['sf1FieldReqColErr'] ) ) {
+            $css_rules[] = "{$selector} .field-required.error { color: {$attributes['sf1FieldReqColErr']}; }";
+        }
+
+        // ============================================
+        // 5. INPUT & TEXTAREA
+        // ============================================
+
+        // Placeholder typography
+        if ( ! empty( $attributes['intxtPlaceholderTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['intxtPlaceholderTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form input.ts-filter::placeholder, {$selector} .ts-form textarea.ts-filter::placeholder { {$typo_css} }";
+            }
+        }
+
+        // Placeholder color
+        if ( ! empty( $attributes['intxtPlaceholderCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter::placeholder, {$selector} .ts-form textarea.ts-filter::placeholder { color: {$attributes['intxtPlaceholderCol']}; }";
+        }
+
+        // Value typography
+        if ( ! empty( $attributes['intxtValueTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['intxtValueTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { {$typo_css} }";
+            }
+        }
+
+        // Value color
+        if ( ! empty( $attributes['intxtValueCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { color: {$attributes['intxtValueCol']}; }";
+        }
+
+        // Background color
+        if ( ! empty( $attributes['intxtBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { background-color: {$attributes['intxtBg']}; }";
+        }
+
+        // Border
+        if ( ! empty( $attributes['intxtBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['intxtBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { border: {$border_css}; }";
+            }
+        }
+
+        // Input border radius
+        if ( isset( $attributes['intxtInputRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['intxtInputRadius']}px; }";
+        }
+        if ( isset( $attributes['intxtInputRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['intxtInputRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtInputRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['intxtInputRadius_mobile']}px; }";
+        }
+
+        // Input height
+        if ( isset( $attributes['intxtInputHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['intxtInputHeight']}px; }";
+        }
+        if ( isset( $attributes['intxtInputHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['intxtInputHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtInputHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['intxtInputHeight_mobile']}px; }";
+        }
+
+        // Input padding
+        if ( isset( $attributes['intxtInputPadding'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter { padding: {$attributes['intxtInputPadding']}px; }";
+        }
+        if ( isset( $attributes['intxtInputPadding_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form input.ts-filter { padding: {$attributes['intxtInputPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtInputPadding_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form input.ts-filter { padding: {$attributes['intxtInputPadding_mobile']}px; }";
+        }
+
+        // Textarea padding
+        if ( isset( $attributes['intxtTextareaPadding'] ) ) {
+            $css_rules[] = "{$selector} .ts-form textarea.ts-filter { padding: {$attributes['intxtTextareaPadding']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaPadding_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form textarea.ts-filter { padding: {$attributes['intxtTextareaPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaPadding_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form textarea.ts-filter { padding: {$attributes['intxtTextareaPadding_mobile']}px; }";
+        }
+
+        // Textarea min height
+        if ( isset( $attributes['intxtTextareaMinHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['intxtTextareaMinHeight']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaMinHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['intxtTextareaMinHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaMinHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['intxtTextareaMinHeight_mobile']}px; }";
+        }
+
+        // Textarea border radius
+        if ( isset( $attributes['intxtTextareaRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['intxtTextareaRadius']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['intxtTextareaRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['intxtTextareaRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['intxtTextareaRadius_mobile']}px; }";
+        }
+
+        // Focus state - placeholder color
+        if ( ! empty( $attributes['intxtPlaceholderColFocus'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus::placeholder, {$selector} .ts-form textarea.ts-filter:focus::placeholder { color: {$attributes['intxtPlaceholderColFocus']}; }";
+        }
+
+        // Focus state - value color
+        if ( ! empty( $attributes['intxtValueColFocus'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { color: {$attributes['intxtValueColFocus']}; }";
+        }
+
+        // Focus state - background
+        if ( ! empty( $attributes['intxtBgFocus'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { background-color: {$attributes['intxtBgFocus']}; }";
+        }
+
+        // Focus state - border color
+        if ( ! empty( $attributes['intxtBorderColorFocus'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { border-color: {$attributes['intxtBorderColorFocus']}; }";
+        }
+
+        // ============================================
+        // 6. PRIMARY BUTTON (Submit)
+        // ============================================
+
+        // Primary button typography
+        if ( ! empty( $attributes['pgBtnTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['pgBtnTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { {$typo_css} }";
+            }
+        }
+
+        // Primary button text color
+        if ( ! empty( $attributes['pgBtnCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { color: {$attributes['pgBtnCol']}; }";
+        }
+
+        // Primary button background
+        if ( ! empty( $attributes['pgBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { background-color: {$attributes['pgBtnBg']}; }";
+        }
+
+        // Primary button border
+        if ( ! empty( $attributes['pgBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['pgBtnBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { border: {$border_css}; }";
+            }
+        }
+
+        // Primary button border radius
+        if ( isset( $attributes['pgBtnRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['pgBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['pgBtnRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['pgBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['pgBtnRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['pgBtnRadius_mobile']}px; }";
+        }
+
+        // Primary button height
+        if ( isset( $attributes['pgBtnHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['pgBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['pgBtnHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['pgBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['pgBtnHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['pgBtnHeight_mobile']}px; }";
+        }
+
+        // Primary button padding
+        if ( ! empty( $attributes['pgBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['pgBtnPadding'], 'padding' );
+            if ( $dims_css ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { {$dims_css} }";
+            }
+        }
+
+        // Primary button hover - text color
+        if ( ! empty( $attributes['pgBtnColHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { color: {$attributes['pgBtnColHover']}; }";
+        }
+
+        // Primary button hover - background
+        if ( ! empty( $attributes['pgBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { background-color: {$attributes['pgBtnBgHover']}; }";
+        }
+
+        // Primary button hover - border color
+        if ( ! empty( $attributes['pgBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { border-color: {$attributes['pgBtnBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // 7. SECONDARY BUTTON
+        // ============================================
+
+        // Secondary button typography
+        if ( ! empty( $attributes['scBtnTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['scBtnTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { {$typo_css} }";
+            }
+        }
+
+        // Secondary button text color
+        if ( ! empty( $attributes['scBtnCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { color: {$attributes['scBtnCol']}; }";
+        }
+
+        // Secondary button background
+        if ( ! empty( $attributes['scBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { background-color: {$attributes['scBtnBg']}; }";
+        }
+
+        // Secondary button border
+        if ( ! empty( $attributes['scBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['scBtnBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { border: {$border_css}; }";
+            }
+        }
+
+        // Secondary button border radius
+        if ( isset( $attributes['scBtnRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['scBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['scBtnRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['scBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['scBtnRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['scBtnRadius_mobile']}px; }";
+        }
+
+        // Secondary button height
+        if ( isset( $attributes['scBtnHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['scBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['scBtnHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['scBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['scBtnHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['scBtnHeight_mobile']}px; }";
+        }
+
+        // Secondary button padding
+        if ( ! empty( $attributes['scBtnPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['scBtnPadding'], 'padding' );
+            if ( $dims_css ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { {$dims_css} }";
+            }
+        }
+
+        // Secondary button hover - text color
+        if ( ! empty( $attributes['scBtnColHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { color: {$attributes['scBtnColHover']}; }";
+        }
+
+        // Secondary button hover - background
+        if ( ! empty( $attributes['scBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { background-color: {$attributes['scBtnBgHover']}; }";
+        }
+
+        // Secondary button hover - border color
+        if ( ! empty( $attributes['scBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { border-color: {$attributes['scBtnBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // 8. INPUT SUFFIX
+        // ============================================
+
+        // Suffix typography
+        if ( ! empty( $attributes['suffixTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['suffixTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .input-container .input-suffix { {$typo_css} }";
+            }
+        }
+
+        // Suffix text color
+        if ( ! empty( $attributes['suffixTextCol'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { color: {$attributes['suffixTextCol']}; }";
+        }
+
+        // Suffix background
+        if ( ! empty( $attributes['suffixBg'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { background-color: {$attributes['suffixBg']}; }";
+        }
+
+        // Suffix border radius
+        if ( isset( $attributes['suffixRadius'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixRadius']}px; }";
+        }
+        if ( isset( $attributes['suffixRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixRadius_mobile']}px; }";
+        }
+
+        // Suffix box shadow
+        if ( ! empty( $attributes['suffixShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['suffixShadow'] );
+            if ( $shadow_css ) {
+                $css_rules[] = "{$selector} .input-container .input-suffix { box-shadow: {$shadow_css}; }";
+            }
+        }
+
+        // Suffix side margin
+        if ( isset( $attributes['suffixMargin'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixMargin']}px; }";
+        }
+        if ( isset( $attributes['suffixMargin_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixMargin_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixMargin_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixMargin_mobile']}px; }";
+        }
+
+        // Suffix icon color
+        if ( ! empty( $attributes['suffixIconCol'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix i { color: {$attributes['suffixIconCol']}; }";
+            $css_rules[] = "{$selector} .input-container .input-suffix svg { fill: {$attributes['suffixIconCol']}; }";
+        }
+
+        // ============================================
+        // 9. POPUP BUTTON (Select fields, date pickers, etc.)
+        // ============================================
+
+        // Typography (normal)
+        if ( ! empty( $attributes['popupBtnTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['popupBtnTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form div.ts-filter { {$typo_css} }";
+            }
+        }
+
+        // Box shadow (normal)
+        if ( ! empty( $attributes['popupBtnShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['popupBtnShadow'] );
+            if ( $shadow_css ) {
+                $css_rules[] = "{$selector} div.ts-filter { box-shadow: {$shadow_css}; }";
+            }
+        }
+
+        // Background color (normal)
+        if ( ! empty( $attributes['popupBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { background: {$attributes['popupBtnBg']}; }";
+        }
+
+        // Text color (normal)
+        if ( ! empty( $attributes['popupBtnValueCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter-text { color: {$attributes['popupBtnValueCol']}; }";
+        }
+
+        // Border (normal)
+        if ( ! empty( $attributes['popupBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['popupBtnBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} div.ts-filter { border: {$border_css}; }";
+            }
+        }
+
+        // Border radius
+        if ( isset( $attributes['popupBtnRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['popupBtnRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupBtnRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBtnRadius_mobile']}px; }";
+        }
+
+        // Height
+        if ( isset( $attributes['popupBtnHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['popupBtnHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupBtnHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupBtnHeight_mobile']}px; }";
+        }
+
+        // Padding
+        if ( isset( $attributes['popupBtnPadding'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { padding: {$attributes['popupBtnPadding']}px; }";
+        }
+        if ( isset( $attributes['popupBtnPadding_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter { padding: {$attributes['popupBtnPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupBtnPadding_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter { padding: {$attributes['popupBtnPadding_mobile']}px; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['popupBtnIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupBtnIconSize']}px; height: {$attributes['popupBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['popupBtnIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupBtnIconSize_tablet']}px; height: {$attributes['popupBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupBtnIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupBtnIconSize_mobile']}px; height: {$attributes['popupBtnIconSize_mobile']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['popupBtnIconCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter i { color: {$attributes['popupBtnIconCol']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter svg { fill: {$attributes['popupBtnIconCol']}; }";
+        }
+
+        // Hover/focus states
+        if ( ! empty( $attributes['popupBtnValueColHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover div.ts-filter-text { color: {$attributes['popupBtnValueColHover']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover { background: {$attributes['popupBtnBgHover']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover { border-color: {$attributes['popupBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnIconColHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover i { color: {$attributes['popupBtnIconColHover']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover svg { fill: {$attributes['popupBtnIconColHover']}; }";
+        }
+
+        // Filled state (when value selected)
+        if ( ! empty( $attributes['popupBtnValueColFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled div.ts-filter-text { color: {$attributes['popupBtnValueColFilled']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnBgFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled { background: {$attributes['popupBtnBgFilled']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnBorderColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled { border-color: {$attributes['popupBtnBorderColorFilled']}; }";
+        }
+        if ( ! empty( $attributes['popupBtnIconColFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled i { color: {$attributes['popupBtnIconColFilled']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled svg { fill: {$attributes['popupBtnIconColFilled']}; }";
+        }
+
+        // ============================================
+        // 10. TERTIARY BUTTON
+        // ============================================
+
+        // Tertiary button icon color
+        if ( ! empty( $attributes['tertiaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 i { color: {$attributes['tertiaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 svg { fill: {$attributes['tertiaryBtnIconColor']}; }";
+        }
+
+        // Tertiary button icon size
+        if ( isset( $attributes['tertiaryBtnIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 i { font-size: {$attributes['tertiaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 svg { width: {$attributes['tertiaryBtnIconSize']}px; height: {$attributes['tertiaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['tertiaryBtnIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn.ts-btn-4 i { font-size: {$attributes['tertiaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn.ts-btn-4 svg { width: {$attributes['tertiaryBtnIconSize_tablet']}px; height: {$attributes['tertiaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['tertiaryBtnIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn.ts-btn-4 i { font-size: {$attributes['tertiaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn.ts-btn-4 svg { width: {$attributes['tertiaryBtnIconSize_mobile']}px; height: {$attributes['tertiaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Tertiary button background
+        if ( ! empty( $attributes['tertiaryBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 { background-color: {$attributes['tertiaryBtnBg']}; }";
+        }
+
+        // Tertiary button border
+        if ( ! empty( $attributes['tertiaryBtnBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['tertiaryBtnBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-btn.ts-btn-4 { border: {$border_css}; }";
+            }
+        }
+
+        // Tertiary button border radius
+        if ( isset( $attributes['tertiaryBtnRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 { border-radius: {$attributes['tertiaryBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['tertiaryBtnRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-btn.ts-btn-4 { border-radius: {$attributes['tertiaryBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['tertiaryBtnRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-btn.ts-btn-4 { border-radius: {$attributes['tertiaryBtnRadius_mobile']}px; }";
+        }
+
+        // Tertiary button typography
+        if ( ! empty( $attributes['tertiaryBtnText'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['tertiaryBtnText'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-btn.ts-btn-4 { {$typo_css} }";
+            }
+        }
+
+        // Tertiary button text color
+        if ( ! empty( $attributes['tertiaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4 { color: {$attributes['tertiaryBtnTextColor']}; }";
+        }
+
+        // Tertiary button hover states
+        if ( ! empty( $attributes['tertiaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4:hover i { color: {$attributes['tertiaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4:hover svg { fill: {$attributes['tertiaryBtnIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4:hover { background-color: {$attributes['tertiaryBtnBgHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryBtnBorderHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4:hover { border-color: {$attributes['tertiaryBtnBorderHover']}; }";
+        }
+        if ( ! empty( $attributes['tertiaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn.ts-btn-4:hover { color: {$attributes['tertiaryBtnTextColorHover']}; }";
+        }
+
+        // ============================================
+        // 11. FILE/GALLERY UPLOAD
+        // ============================================
+
+        // File item gap
+        if ( isset( $attributes['fileColGap'] ) ) {
+            $css_rules[] = "{$selector} .ts-file-upload { gap: {$attributes['fileColGap']}px; }";
+        }
+        if ( isset( $attributes['fileColGap_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-file-upload { gap: {$attributes['fileColGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['fileColGap_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-file-upload { gap: {$attributes['fileColGap_mobile']}px; }";
+        }
+
+        // Select files - icon color
+        if ( ! empty( $attributes['fileIconColor'] ) ) {
+            $css_rules[] = "{$selector} .min-input i { color: {$attributes['fileIconColor']}; }";
+            $css_rules[] = "{$selector} .min-input svg { fill: {$attributes['fileIconColor']}; }";
+        }
+
+        // Select files - icon size
+        if ( isset( $attributes['fileIconSize'] ) ) {
+            $css_rules[] = "{$selector} .min-input i { font-size: {$attributes['fileIconSize']}px; }";
+            $css_rules[] = "{$selector} .min-input svg { width: {$attributes['fileIconSize']}px; height: {$attributes['fileIconSize']}px; }";
+        }
+        if ( isset( $attributes['fileIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .min-input i { font-size: {$attributes['fileIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .min-input svg { width: {$attributes['fileIconSize_tablet']}px; height: {$attributes['fileIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['fileIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .min-input i { font-size: {$attributes['fileIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .min-input svg { width: {$attributes['fileIconSize_mobile']}px; height: {$attributes['fileIconSize_mobile']}px; }";
+        }
+
+        // Select files - background
+        if ( ! empty( $attributes['fileBg'] ) ) {
+            $css_rules[] = "{$selector} .min-input { background-color: {$attributes['fileBg']}; }";
+        }
+
+        // Select files - border
+        if ( ! empty( $attributes['fileBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['fileBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .min-input { border: {$border_css}; }";
+            }
+        }
+
+        // Select files - border radius
+        if ( isset( $attributes['fileRadius'] ) ) {
+            $css_rules[] = "{$selector} .min-input { border-radius: {$attributes['fileRadius']}px; }";
+        }
+        if ( isset( $attributes['fileRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .min-input { border-radius: {$attributes['fileRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['fileRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .min-input { border-radius: {$attributes['fileRadius_mobile']}px; }";
+        }
+
+        // Select files - typography
+        if ( ! empty( $attributes['fileText'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fileText'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .min-input { {$typo_css} }";
+            }
+        }
+
+        // Select files - text color
+        if ( ! empty( $attributes['fileTextColor'] ) ) {
+            $css_rules[] = "{$selector} .min-input { color: {$attributes['fileTextColor']}; }";
+        }
+
+        // Added file/image - border radius
+        if ( isset( $attributes['addedRadius'] ) ) {
+            $css_rules[] = "{$selector} .file-info { border-radius: {$attributes['addedRadius']}px; }";
+        }
+        if ( isset( $attributes['addedRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .file-info { border-radius: {$attributes['addedRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['addedRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .file-info { border-radius: {$attributes['addedRadius_mobile']}px; }";
+        }
+
+        // Added file/image - background
+        if ( ! empty( $attributes['addedBg'] ) ) {
+            $css_rules[] = "{$selector} .file-info { background-color: {$attributes['addedBg']}; }";
+        }
+
+        // Added file/image - icon color
+        if ( ! empty( $attributes['addedIconColor'] ) ) {
+            $css_rules[] = "{$selector} .file-info i { color: {$attributes['addedIconColor']}; }";
+            $css_rules[] = "{$selector} .file-info svg { fill: {$attributes['addedIconColor']}; }";
+        }
+
+        // Added file/image - icon size
+        if ( isset( $attributes['addedIconSize'] ) ) {
+            $css_rules[] = "{$selector} .file-info i { font-size: {$attributes['addedIconSize']}px; }";
+            $css_rules[] = "{$selector} .file-info svg { width: {$attributes['addedIconSize']}px; height: {$attributes['addedIconSize']}px; }";
+        }
+        if ( isset( $attributes['addedIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .file-info i { font-size: {$attributes['addedIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .file-info svg { width: {$attributes['addedIconSize_tablet']}px; height: {$attributes['addedIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['addedIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .file-info i { font-size: {$attributes['addedIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .file-info svg { width: {$attributes['addedIconSize_mobile']}px; height: {$attributes['addedIconSize_mobile']}px; }";
+        }
+
+        // Added file/image - typography
+        if ( ! empty( $attributes['addedText'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['addedText'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .file-info { {$typo_css} }";
+            }
+        }
+
+        // Added file/image - text color
+        if ( ! empty( $attributes['addedTextColor'] ) ) {
+            $css_rules[] = "{$selector} .file-info { color: {$attributes['addedTextColor']}; }";
+        }
+
+        // Remove/Check button - background
+        if ( ! empty( $attributes['rmfBg'] ) ) {
+            $css_rules[] = "{$selector} .remove-file { background-color: {$attributes['rmfBg']}; }";
+        }
+        if ( ! empty( $attributes['rmfBgHover'] ) ) {
+            $css_rules[] = "{$selector} .remove-file:hover { background-color: {$attributes['rmfBgHover']}; }";
+        }
+
+        // Remove/Check button - color
+        if ( ! empty( $attributes['rmfColor'] ) ) {
+            $css_rules[] = "{$selector} .remove-file { color: {$attributes['rmfColor']}; }";
+        }
+        if ( ! empty( $attributes['rmfColorHover'] ) ) {
+            $css_rules[] = "{$selector} .remove-file:hover { color: {$attributes['rmfColorHover']}; }";
+        }
+
+        // Remove/Check button - border radius
+        if ( isset( $attributes['rmfRadius'] ) ) {
+            $css_rules[] = "{$selector} .remove-file { border-radius: {$attributes['rmfRadius']}px; }";
+        }
+        if ( isset( $attributes['rmfRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .remove-file { border-radius: {$attributes['rmfRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['rmfRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .remove-file { border-radius: {$attributes['rmfRadius_mobile']}px; }";
+        }
+
+        // Remove/Check button - size
+        if ( isset( $attributes['rmfSize'] ) ) {
+            $css_rules[] = "{$selector} .remove-file { width: {$attributes['rmfSize']}px; height: {$attributes['rmfSize']}px; }";
+        }
+        if ( isset( $attributes['rmfSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .remove-file { width: {$attributes['rmfSize_tablet']}px; height: {$attributes['rmfSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['rmfSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .remove-file { width: {$attributes['rmfSize_mobile']}px; height: {$attributes['rmfSize_mobile']}px; }";
+        }
+
+        // Remove/Check button - icon size
+        if ( isset( $attributes['rmfIconSize'] ) ) {
+            $css_rules[] = "{$selector} .remove-file i { font-size: {$attributes['rmfIconSize']}px; }";
+            $css_rules[] = "{$selector} .remove-file svg { width: {$attributes['rmfIconSize']}px; height: {$attributes['rmfIconSize']}px; }";
+        }
+        if ( isset( $attributes['rmfIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .remove-file i { font-size: {$attributes['rmfIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .remove-file svg { width: {$attributes['rmfIconSize_tablet']}px; height: {$attributes['rmfIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['rmfIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .remove-file i { font-size: {$attributes['rmfIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .remove-file svg { width: {$attributes['rmfIconSize_mobile']}px; height: {$attributes['rmfIconSize_mobile']}px; }";
+        }
+
+        // Select files - hover states
+        if ( ! empty( $attributes['fileIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .min-input:hover i { color: {$attributes['fileIconColorHover']}; }";
+            $css_rules[] = "{$selector} .min-input:hover svg { fill: {$attributes['fileIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['fileBgHover'] ) ) {
+            $css_rules[] = "{$selector} .min-input:hover { background-color: {$attributes['fileBgHover']}; }";
+        }
+        if ( ! empty( $attributes['fileBorderHover'] ) ) {
+            $css_rules[] = "{$selector} .min-input:hover { border-color: {$attributes['fileBorderHover']}; }";
+        }
+
+        // ============================================
+        // 12. POST SUBMITTED/UPDATED MESSAGE
+        // ============================================
+
+        // Align icon
+        if ( ! empty( $attributes['welcAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success { align-items: {$attributes['welcAlign']}; }";
+        }
+
+        // Text align
+        if ( ! empty( $attributes['welcAlignText'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success { text-align: {$attributes['welcAlignText']}; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['welcIcoSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success > i { font-size: {$attributes['welcIcoSize']}px; }";
+            $css_rules[] = "{$selector} .ts-edit-success > svg { width: {$attributes['welcIcoSize']}px; height: {$attributes['welcIcoSize']}px; }";
+        }
+        if ( isset( $attributes['welcIcoSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-edit-success > i { font-size: {$attributes['welcIcoSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-edit-success > svg { width: {$attributes['welcIcoSize_tablet']}px; height: {$attributes['welcIcoSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['welcIcoSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-edit-success > i { font-size: {$attributes['welcIcoSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-edit-success > svg { width: {$attributes['welcIcoSize_mobile']}px; height: {$attributes['welcIcoSize_mobile']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['welcIcoColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success > i { color: {$attributes['welcIcoColor']}; }";
+            $css_rules[] = "{$selector} .ts-edit-success > svg { fill: {$attributes['welcIcoColor']}; }";
+        }
+
+        // Heading typography
+        if ( ! empty( $attributes['welcHeadingT'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['welcHeadingT'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-edit-success h4 { {$typo_css} }";
+            }
+        }
+
+        // Heading color
+        if ( ! empty( $attributes['welcHeadingCol'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success h4 { color: {$attributes['welcHeadingCol']}; }";
+        }
+
+        // Heading top margin
+        if ( isset( $attributes['welcTopMargin'] ) ) {
+            $css_rules[] = "{$selector} .ts-edit-success h4 { margin-top: {$attributes['welcTopMargin']}px; }";
+        }
+        if ( isset( $attributes['welcTopMargin_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-edit-success h4 { margin-top: {$attributes['welcTopMargin_tablet']}px; }";
+        }
+        if ( isset( $attributes['welcTopMargin_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-edit-success h4 { margin-top: {$attributes['welcTopMargin_mobile']}px; }";
+        }
+
+        // ============================================
+        // 13. TOOLTIPS
+        // ============================================
+
+        // Tooltip text color
+        if ( ! empty( $attributes['tooltipColor'] ) ) {
+            $css_rules[] = "{$selector} .has-tooltip::after { color: {$attributes['tooltipColor']}; }";
+        }
+
+        // Tooltip typography
+        if ( ! empty( $attributes['tooltipTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['tooltipTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .has-tooltip::after { {$typo_css} }";
+            }
+        }
+
+        // Tooltip background
+        if ( ! empty( $attributes['tooltipBg'] ) ) {
+            $css_rules[] = "{$selector} .has-tooltip::after { background-color: {$attributes['tooltipBg']}; }";
+        }
+
+        // Tooltip border radius
+        if ( isset( $attributes['tooltipRadius'] ) ) {
+            $css_rules[] = "{$selector} .has-tooltip::after { border-radius: {$attributes['tooltipRadius']}px; }";
+        }
+        if ( isset( $attributes['tooltipRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .has-tooltip::after { border-radius: {$attributes['tooltipRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['tooltipRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .has-tooltip::after { border-radius: {$attributes['tooltipRadius_mobile']}px; }";
+        }
+
+        // ============================================
+        // 14. DIALOG
+        // ============================================
+
+        // Dialog icon color
+        if ( ! empty( $attributes['dialogIconColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-dialog > svg { fill: {$attributes['dialogIconColor']}; }";
+        }
+
+        // Dialog icon size
+        if ( isset( $attributes['dialogIconSize'] ) ) {
+            $css_rules[] = "{$selector} .vx-dialog > svg { width: {$attributes['dialogIconSize']}px; height: {$attributes['dialogIconSize']}px; }";
+        }
+        if ( isset( $attributes['dialogIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .vx-dialog > svg { width: {$attributes['dialogIconSize_tablet']}px; height: {$attributes['dialogIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['dialogIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .vx-dialog > svg { width: {$attributes['dialogIconSize_mobile']}px; height: {$attributes['dialogIconSize_mobile']}px; }";
+        }
+
+        // Dialog text color
+        if ( ! empty( $attributes['dialogColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-dialog-content { color: {$attributes['dialogColor']}; }";
+        }
+
+        // Dialog typography
+        if ( ! empty( $attributes['dialogTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['dialogTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .vx-dialog-content { {$typo_css} }";
+            }
+        }
+
+        // Dialog background
+        if ( ! empty( $attributes['dialogBg'] ) ) {
+            $css_rules[] = "{$selector} .vx-dialog-content { background-color: {$attributes['dialogBg']}; }";
+        }
+
+        // Dialog border radius
+        if ( isset( $attributes['dialogRadius'] ) ) {
+            $css_rules[] = "{$selector} .vx-dialog-content { border-radius: {$attributes['dialogRadius']}px; }";
+        }
+        if ( isset( $attributes['dialogRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .vx-dialog-content { border-radius: {$attributes['dialogRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['dialogRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .vx-dialog-content { border-radius: {$attributes['dialogRadius_mobile']}px; }";
+        }
+
+        // Dialog box shadow
+        if ( ! empty( $attributes['dialogShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['dialogShadow'] );
+            if ( $shadow_css ) {
+                $css_rules[] = "{$selector} .vx-dialog-content { box-shadow: {$shadow_css}; }";
+            }
+        }
+
+        // Dialog border
+        if ( ! empty( $attributes['dialogBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['dialogBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .vx-dialog-content { border: {$border_css}; }";
+            }
+        }
+
+        // ============================================
+        // FIELD STYLE TAB - 18 Accordions
+        // These provide additional field-specific styling
+        // ============================================
+
+        // ============================================
+        // FST 1. FIELDS GENERAL
+        // ============================================
+
+        // Field label typography
+        if ( ! empty( $attributes['fieldLabelTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldLabelTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form-group:not(.ui-heading-field) label { {$typo_css} }";
+            }
+        }
+
+        // Field label color
+        if ( ! empty( $attributes['fieldLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form-group:not(.ui-heading-field) label { color: {$attributes['fieldLabelColor']}; }";
+        }
+
+        // Field validation typography
+        if ( ! empty( $attributes['fieldValidationTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['fieldValidationTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .field-required { {$typo_css} }";
+            }
+        }
+
+        // Field validation default color
+        if ( ! empty( $attributes['fieldValidationColor'] ) ) {
+            $css_rules[] = "{$selector} .field-required { color: {$attributes['fieldValidationColor']}; }";
+        }
+
+        // Field validation error color
+        if ( ! empty( $attributes['fieldErrorColor'] ) ) {
+            $css_rules[] = "{$selector} .field-required.vx-error { color: {$attributes['fieldErrorColor']}; }";
+        }
+
+        // ============================================
+        // FST 2. INPUT & TEXTAREA (Normal/Hover/Active)
+        // ============================================
+
+        // Placeholder color
+        if ( ! empty( $attributes['inputPlaceholderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter::placeholder, {$selector} .ts-form textarea.ts-filter::placeholder { color: {$attributes['inputPlaceholderColor']}; }";
+        }
+
+        // Placeholder typography
+        if ( ! empty( $attributes['inputPlaceholderTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inputPlaceholderTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form input.ts-filter::placeholder, {$selector} .ts-form textarea.ts-filter::placeholder { {$typo_css} }";
+            }
+        }
+
+        // Value (text) color
+        if ( ! empty( $attributes['inputTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { color: {$attributes['inputTextColor']}; }";
+        }
+
+        // Value typography
+        if ( ! empty( $attributes['inputTextTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inputTextTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { {$typo_css} }";
+            }
+        }
+
+        // Background color
+        if ( ! empty( $attributes['inputBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter, {$selector} .ts-form textarea.ts-filter { background: {$attributes['inputBgColor']}; }";
+        }
+
+        // Border
+        if ( ! empty( $attributes['inputBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['inputBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-form textarea.ts-filter, {$selector} .ts-form input.ts-filter { border: {$border_css}; }";
+            }
+        }
+
+        // Input border radius
+        if ( isset( $attributes['inputBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['inputBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['inputBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['inputBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['inputBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form input.ts-filter { border-radius: {$attributes['inputBorderRadius_mobile']}px; }";
+        }
+
+        // Textarea border radius
+        if ( isset( $attributes['textareaBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['textareaBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['textareaBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['textareaBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['textareaBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form textarea.ts-filter { border-radius: {$attributes['textareaBorderRadius_mobile']}px; }";
+        }
+
+        // Input height
+        if ( isset( $attributes['inputHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['inputHeight']}px; }";
+        }
+        if ( isset( $attributes['inputHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['inputHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['inputHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form input.ts-filter { height: {$attributes['inputHeight_mobile']}px; }";
+        }
+
+        // Textarea min-height
+        if ( isset( $attributes['textareaHeight'] ) ) {
+            $css_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['textareaHeight']}px; }";
+        }
+        if ( isset( $attributes['textareaHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['textareaHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['textareaHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form textarea.ts-filter { min-height: {$attributes['textareaHeight_mobile']}px; }";
+        }
+
+        // Textarea padding
+        if ( ! empty( $attributes['textareaPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['textareaPadding'], 'padding' );
+            if ( $dims_css ) {
+                $css_rules[] = "{$selector} .ts-form textarea.ts-filter { {$dims_css} }";
+            }
+        }
+
+        // Input with icon - padding
+        if ( ! empty( $attributes['inputIconPadding'] ) ) {
+            $dims_css = self::generate_dimensions_css( $attributes['inputIconPadding'], 'padding' );
+            if ( $dims_css ) {
+                $css_rules[] = "{$selector} .ts-input-icon input { {$dims_css} }";
+            }
+        }
+
+        // Input with icon - icon color
+        if ( ! empty( $attributes['inputIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon i { color: {$attributes['inputIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-input-icon svg { fill: {$attributes['inputIconColor']}; }";
+        }
+
+        // Input with icon - icon size
+        if ( isset( $attributes['inputIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['inputIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['inputIconSize']}px; height: {$attributes['inputIconSize']}px; }";
+        }
+        if ( isset( $attributes['inputIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['inputIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['inputIconSize_tablet']}px; height: {$attributes['inputIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['inputIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['inputIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['inputIconSize_mobile']}px; height: {$attributes['inputIconSize_mobile']}px; }";
+        }
+
+        // Hover states - placeholder
+        if ( ! empty( $attributes['inputPlaceholderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:hover::placeholder, {$selector} .ts-form textarea.ts-filter:hover::placeholder { color: {$attributes['inputPlaceholderColorHover']}; }";
+        }
+
+        // Hover states - text color
+        if ( ! empty( $attributes['inputTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:hover, {$selector} .ts-form textarea.ts-filter:hover { color: {$attributes['inputTextColorHover']}; }";
+        }
+
+        // Hover states - background
+        if ( ! empty( $attributes['inputBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:hover, {$selector} .ts-form textarea.ts-filter:hover { background: {$attributes['inputBgColorHover']}; }";
+        }
+
+        // Hover states - border color
+        if ( ! empty( $attributes['inputBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:hover, {$selector} .ts-form textarea.ts-filter:hover { border-color: {$attributes['inputBorderColorHover']}; }";
+        }
+
+        // Hover states - icon color
+        if ( ! empty( $attributes['inputIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon:hover i { color: {$attributes['inputIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-input-icon:hover svg { fill: {$attributes['inputIconColorHover']}; }";
+        }
+
+        // Active/Focus states - placeholder
+        if ( ! empty( $attributes['inputPlaceholderColorActive'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus::placeholder, {$selector} .ts-form textarea.ts-filter:focus::placeholder { color: {$attributes['inputPlaceholderColorActive']}; }";
+        }
+
+        // Active/Focus states - text color
+        if ( ! empty( $attributes['inputTextColorActive'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { color: {$attributes['inputTextColorActive']}; }";
+        }
+
+        // Active/Focus states - background
+        if ( ! empty( $attributes['inputBgColorActive'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { background: {$attributes['inputBgColorActive']}; }";
+        }
+
+        // Active/Focus states - border color
+        if ( ! empty( $attributes['inputBorderColorActive'] ) ) {
+            $css_rules[] = "{$selector} .ts-form input.ts-filter:focus, {$selector} .ts-form textarea.ts-filter:focus { border-color: {$attributes['inputBorderColorActive']}; }";
+        }
+
+        // Active/Focus states - icon color
+        if ( ! empty( $attributes['inputIconColorActive'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon input:focus ~ i { color: {$attributes['inputIconColorActive']}; }";
+            $css_rules[] = "{$selector} .ts-input-icon input:focus ~ svg { fill: {$attributes['inputIconColorActive']}; }";
+        }
+
+        // ============================================
+        // FST 3. INPUT SUFFIX
+        // ============================================
+
+        // Suffix text color
+        if ( ! empty( $attributes['suffixTextColor'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { color: {$attributes['suffixTextColor']}; }";
+        }
+
+        // Suffix typography
+        if ( ! empty( $attributes['suffixTextTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['suffixTextTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .input-container .input-suffix { {$typo_css} }";
+            }
+        }
+
+        // Suffix background
+        if ( ! empty( $attributes['suffixBgColor'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { background-color: {$attributes['suffixBgColor']}; }";
+        }
+
+        // Suffix border radius
+        if ( isset( $attributes['suffixBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['suffixBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .input-container .input-suffix { border-radius: {$attributes['suffixBorderRadius_mobile']}px; }";
+        }
+
+        // Suffix box shadow
+        if ( ! empty( $attributes['suffixBoxShadow'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['suffixBoxShadow'] );
+            if ( $shadow_css ) {
+                $css_rules[] = "{$selector} .input-container .input-suffix { box-shadow: {$shadow_css}; }";
+            }
+        }
+
+        // Suffix margin
+        if ( isset( $attributes['suffixSideMargin'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixSideMargin']}px; }";
+        }
+        if ( isset( $attributes['suffixSideMargin_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixSideMargin_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixSideMargin_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .input-container .input-suffix { right: {$attributes['suffixSideMargin_mobile']}px; }";
+        }
+
+        // Suffix icon color
+        if ( ! empty( $attributes['suffixIconColor'] ) ) {
+            $css_rules[] = "{$selector} .input-container .input-suffix i { color: {$attributes['suffixIconColor']}; }";
+            $css_rules[] = "{$selector} .input-container .input-suffix svg { fill: {$attributes['suffixIconColor']}; }";
+        }
+
+        // ============================================
+        // FST 4. POPUP BUTTON (Select/Date/Time fields)
+        // ============================================
+
+        // Normal state - text color
+        if ( ! empty( $attributes['popupTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter-text { color: {$attributes['popupTextColor']}; }";
+        }
+
+        // Normal state - typography
+        if ( ! empty( $attributes['popupTextTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['popupTextTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-form div.ts-filter { {$typo_css} }";
+            }
+        }
+
+        // Normal state - background
+        if ( ! empty( $attributes['popupBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { background: {$attributes['popupBgColor']}; }";
+        }
+
+        // Normal state - border
+        if ( ! empty( $attributes['popupBorderGroup'] ) ) {
+            $border_css = self::generate_border_css( $attributes['popupBorderGroup'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} div.ts-filter { border: {$border_css}; }";
+            }
+        }
+
+        // Normal state - border radius
+        if ( isset( $attributes['popupBorderRadiusNormal'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBorderRadiusNormal']}px; }";
+        }
+        if ( isset( $attributes['popupBorderRadiusNormal_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBorderRadiusNormal_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupBorderRadiusNormal_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter { border-radius: {$attributes['popupBorderRadiusNormal_mobile']}px; }";
+        }
+
+        // Normal state - height
+        if ( isset( $attributes['popupHeightNormal'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupHeightNormal']}px; }";
+        }
+        if ( isset( $attributes['popupHeightNormal_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupHeightNormal_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupHeightNormal_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter { height: {$attributes['popupHeightNormal_mobile']}px; }";
+        }
+
+        // Normal state - box shadow
+        if ( ! empty( $attributes['popupBoxShadowNormal'] ) ) {
+            $shadow_css = self::generate_box_shadow_css( $attributes['popupBoxShadowNormal'] );
+            if ( $shadow_css ) {
+                $css_rules[] = "{$selector} div.ts-filter { box-shadow: {$shadow_css}; }";
+            }
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['popupIconColorNormal'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter i { color: {$attributes['popupIconColorNormal']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter svg { fill: {$attributes['popupIconColorNormal']}; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['popupIconSizeNormal'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupIconSizeNormal']}px; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupIconSizeNormal']}px; height: {$attributes['popupIconSizeNormal']}px; }";
+        }
+        if ( isset( $attributes['popupIconSizeNormal_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupIconSizeNormal_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupIconSizeNormal_tablet']}px; height: {$attributes['popupIconSizeNormal_tablet']}px; }";
+        }
+        if ( isset( $attributes['popupIconSizeNormal_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter i { font-size: {$attributes['popupIconSizeNormal_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-form div.ts-filter svg { width: {$attributes['popupIconSizeNormal_mobile']}px; height: {$attributes['popupIconSizeNormal_mobile']}px; }";
+        }
+
+        // Hover state - text color
+        if ( ! empty( $attributes['popupTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover div.ts-filter-text { color: {$attributes['popupTextColorHover']}; }";
+        }
+
+        // Hover state - background
+        if ( ! empty( $attributes['popupBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover { background: {$attributes['popupBgColorHover']}; }";
+        }
+
+        // Hover state - border color
+        if ( ! empty( $attributes['popupBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover { border-color: {$attributes['popupBorderColorHover']}; }";
+        }
+
+        // Hover state - icon color
+        if ( ! empty( $attributes['popupIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover i { color: {$attributes['popupIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter:hover svg { fill: {$attributes['popupIconColorHover']}; }";
+        }
+
+        // Filled state - text color
+        if ( ! empty( $attributes['popupTextColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled div.ts-filter-text { color: {$attributes['popupTextColorFilled']}; }";
+        }
+
+        // Filled state - background
+        if ( ! empty( $attributes['popupBgColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled { background: {$attributes['popupBgColorFilled']}; }";
+        }
+
+        // Filled state - border color
+        if ( ! empty( $attributes['popupBorderColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled { border-color: {$attributes['popupBorderColorFilled']}; }";
+        }
+
+        // Filled state - icon color
+        if ( ! empty( $attributes['popupIconColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled i { color: {$attributes['popupIconColorFilled']}; }";
+            $css_rules[] = "{$selector} .ts-form div.ts-filter.ts-filled svg { fill: {$attributes['popupIconColorFilled']}; }";
+        }
+
+        // ============================================
+        // FST 5. INLINE TERMS/LIST (Chips)
+        // ============================================
+
+        // Normal - text color
+        if ( ! empty( $attributes['chipTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term { color: {$attributes['chipTextColor']}; }";
+        }
+
+        // Normal - typography
+        if ( ! empty( $attributes['chipTextTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['chipTextTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-term-dropdown .ts-term { {$typo_css} }";
+            }
+        }
+
+        // Normal - background
+        if ( ! empty( $attributes['chipBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term { background-color: {$attributes['chipBgColor']}; }";
+        }
+
+        // Normal - border
+        if ( ! empty( $attributes['chipBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['chipBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-term-dropdown .ts-term { border: {$border_css}; }";
+            }
+        }
+
+        // Normal - border radius
+        if ( isset( $attributes['chipBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term { border-radius: {$attributes['chipBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['chipBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-term-dropdown .ts-term { border-radius: {$attributes['chipBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['chipBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-term-dropdown .ts-term { border-radius: {$attributes['chipBorderRadius_mobile']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['chipIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term i { color: {$attributes['chipIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term svg { fill: {$attributes['chipIconColor']}; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['chipIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term i { font-size: {$attributes['chipIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term svg { width: {$attributes['chipIconSize']}px; height: {$attributes['chipIconSize']}px; }";
+        }
+        if ( isset( $attributes['chipIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-term-dropdown .ts-term i { font-size: {$attributes['chipIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-term-dropdown .ts-term svg { width: {$attributes['chipIconSize_tablet']}px; height: {$attributes['chipIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['chipIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-term-dropdown .ts-term i { font-size: {$attributes['chipIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-term-dropdown .ts-term svg { width: {$attributes['chipIconSize_mobile']}px; height: {$attributes['chipIconSize_mobile']}px; }";
+        }
+
+        // Hover - text color
+        if ( ! empty( $attributes['chipTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term:hover { color: {$attributes['chipTextColorHover']}; }";
+        }
+
+        // Hover - background
+        if ( ! empty( $attributes['chipBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term:hover { background-color: {$attributes['chipBgColorHover']}; }";
+        }
+
+        // Hover - border color
+        if ( ! empty( $attributes['chipBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term:hover { border-color: {$attributes['chipBorderColorHover']}; }";
+        }
+
+        // Hover - icon color
+        if ( ! empty( $attributes['chipIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term:hover i { color: {$attributes['chipIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term:hover svg { fill: {$attributes['chipIconColorHover']}; }";
+        }
+
+        // Selected - text color
+        if ( ! empty( $attributes['chipTextColorSelected'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term.ts-selected { color: {$attributes['chipTextColorSelected']}; }";
+        }
+
+        // Selected - background
+        if ( ! empty( $attributes['chipBgColorSelected'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term.ts-selected { background-color: {$attributes['chipBgColorSelected']}; }";
+        }
+
+        // Selected - border color
+        if ( ! empty( $attributes['chipBorderColorSelected'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term.ts-selected { border-color: {$attributes['chipBorderColorSelected']}; }";
+        }
+
+        // Selected - icon color
+        if ( ! empty( $attributes['chipIconColorSelected'] ) ) {
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term.ts-selected i { color: {$attributes['chipIconColorSelected']}; }";
+            $css_rules[] = "{$selector} .ts-term-dropdown .ts-term.ts-selected svg { fill: {$attributes['chipIconColorSelected']}; }";
+        }
+
+        // ============================================
+        // FST 6. INLINE CHECKBOX
+        // ============================================
+
+        // Checkbox size
+        if ( isset( $attributes['inlineCheckboxSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox-container { width: {$attributes['inlineCheckboxSize']}px; height: {$attributes['inlineCheckboxSize']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-checkbox-container { width: {$attributes['inlineCheckboxSize_tablet']}px; height: {$attributes['inlineCheckboxSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-checkbox-container { width: {$attributes['inlineCheckboxSize_mobile']}px; height: {$attributes['inlineCheckboxSize_mobile']}px; }";
+        }
+
+        // Checkbox border color
+        if ( ! empty( $attributes['inlineCheckboxBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox-container { border-color: {$attributes['inlineCheckboxBorderColor']}; }";
+        }
+
+        // Checkbox border radius
+        if ( isset( $attributes['inlineCheckboxBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox-container { border-radius: {$attributes['inlineCheckboxBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-checkbox-container { border-radius: {$attributes['inlineCheckboxBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-checkbox-container { border-radius: {$attributes['inlineCheckboxBorderRadius_mobile']}px; }";
+        }
+
+        // Checked background
+        if ( ! empty( $attributes['inlineCheckboxBgChecked'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox:checked + .ts-checkbox-container { background-color: {$attributes['inlineCheckboxBgChecked']}; }";
+        }
+
+        // Checked border color
+        if ( ! empty( $attributes['inlineCheckboxBorderColorChecked'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox:checked + .ts-checkbox-container { border-color: {$attributes['inlineCheckboxBorderColorChecked']}; }";
+        }
+
+        // Check icon color
+        if ( ! empty( $attributes['inlineCheckboxIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox:checked + .ts-checkbox-container i { color: {$attributes['inlineCheckboxIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-checkbox:checked + .ts-checkbox-container svg { fill: {$attributes['inlineCheckboxIconColor']}; }";
+        }
+
+        // Check icon size
+        if ( isset( $attributes['inlineCheckboxIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox-container i { font-size: {$attributes['inlineCheckboxIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-checkbox-container svg { width: {$attributes['inlineCheckboxIconSize']}px; height: {$attributes['inlineCheckboxIconSize']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-checkbox-container i { font-size: {$attributes['inlineCheckboxIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-checkbox-container svg { width: {$attributes['inlineCheckboxIconSize_tablet']}px; height: {$attributes['inlineCheckboxIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['inlineCheckboxIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-checkbox-container i { font-size: {$attributes['inlineCheckboxIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-checkbox-container svg { width: {$attributes['inlineCheckboxIconSize_mobile']}px; height: {$attributes['inlineCheckboxIconSize_mobile']}px; }";
+        }
+
+        // Label typography
+        if ( ! empty( $attributes['inlineCheckboxLabelTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inlineCheckboxLabelTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-checkbox-container ~ p { {$typo_css} }";
+            }
+        }
+
+        // Label color
+        if ( ! empty( $attributes['inlineCheckboxLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-checkbox-container ~ p { color: {$attributes['inlineCheckboxLabelColor']}; }";
+        }
+
+        // ============================================
+        // FST 7. INLINE RADIO
+        // ============================================
+
+        // Radio size
+        if ( isset( $attributes['inlineRadioSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-radio-container { width: {$attributes['inlineRadioSize']}px; height: {$attributes['inlineRadioSize']}px; }";
+        }
+        if ( isset( $attributes['inlineRadioSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-radio-container { width: {$attributes['inlineRadioSize_tablet']}px; height: {$attributes['inlineRadioSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['inlineRadioSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-radio-container { width: {$attributes['inlineRadioSize_mobile']}px; height: {$attributes['inlineRadioSize_mobile']}px; }";
+        }
+
+        // Radio border color
+        if ( ! empty( $attributes['inlineRadioBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-radio-container { border-color: {$attributes['inlineRadioBorderColor']}; }";
+        }
+
+        // Checked background
+        if ( ! empty( $attributes['inlineRadioBgChecked'] ) ) {
+            $css_rules[] = "{$selector} .container-radio:checked + .ts-radio-container::before { background-color: {$attributes['inlineRadioBgChecked']}; }";
+        }
+
+        // Checked border color
+        if ( ! empty( $attributes['inlineRadioBorderColorChecked'] ) ) {
+            $css_rules[] = "{$selector} .container-radio:checked + .ts-radio-container { border-color: {$attributes['inlineRadioBorderColorChecked']}; }";
+        }
+
+        // Label typography
+        if ( ! empty( $attributes['inlineRadioLabelTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['inlineRadioLabelTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-radio-container ~ p { {$typo_css} }";
+            }
+        }
+
+        // Label color
+        if ( ! empty( $attributes['inlineRadioLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-radio-container ~ p { color: {$attributes['inlineRadioLabelColor']}; }";
+        }
+
+        // ============================================
+        // FST 8. SWITCHER
+        // ============================================
+
+        // Switch width
+        if ( isset( $attributes['switchWidth'] ) ) {
+            $css_rules[] = "{$selector} .switch-slider { width: {$attributes['switchWidth']}px; }";
+        }
+        if ( isset( $attributes['switchWidth_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .switch-slider { width: {$attributes['switchWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['switchWidth_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .switch-slider { width: {$attributes['switchWidth_mobile']}px; }";
+        }
+
+        // Switch height
+        if ( isset( $attributes['switchHeight'] ) ) {
+            $css_rules[] = "{$selector} .switch-slider { height: {$attributes['switchHeight']}px; }";
+        }
+        if ( isset( $attributes['switchHeight_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .switch-slider { height: {$attributes['switchHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['switchHeight_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .switch-slider { height: {$attributes['switchHeight_mobile']}px; }";
+        }
+
+        // Switch background (off)
+        if ( ! empty( $attributes['switchBgOff'] ) ) {
+            $css_rules[] = "{$selector} .switch-slider { background-color: {$attributes['switchBgOff']}; }";
+        }
+
+        // Switch background (on)
+        if ( ! empty( $attributes['switchBgOn'] ) ) {
+            $css_rules[] = "{$selector} .onoffswitch-checkbox:checked + .switch-slider { background-color: {$attributes['switchBgOn']}; }";
+        }
+
+        // Slider background
+        if ( ! empty( $attributes['switchSliderBg'] ) ) {
+            $css_rules[] = "{$selector} .switch-slider::before { background-color: {$attributes['switchSliderBg']}; }";
+        }
+
+        // Label typography
+        if ( ! empty( $attributes['switchLabelTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['switchLabelTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .onoffswitch + p { {$typo_css} }";
+            }
+        }
+
+        // Label color
+        if ( ! empty( $attributes['switchLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .onoffswitch + p { color: {$attributes['switchLabelColor']}; }";
+        }
+
+        // ============================================
+        // FST 9. NUMBER STEPPER
+        // ============================================
+
+        // Button size
+        if ( isset( $attributes['stepperButtonSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button { width: {$attributes['stepperButtonSize']}px; height: {$attributes['stepperButtonSize']}px; }";
+        }
+        if ( isset( $attributes['stepperButtonSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-stepper-input button { width: {$attributes['stepperButtonSize_tablet']}px; height: {$attributes['stepperButtonSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['stepperButtonSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-stepper-input button { width: {$attributes['stepperButtonSize_mobile']}px; height: {$attributes['stepperButtonSize_mobile']}px; }";
+        }
+
+        // Button background
+        if ( ! empty( $attributes['stepperButtonBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button { background-color: {$attributes['stepperButtonBg']}; }";
+        }
+
+        // Button border
+        if ( ! empty( $attributes['stepperButtonBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['stepperButtonBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-stepper-input button { border: {$border_css}; }";
+            }
+        }
+
+        // Button border radius
+        if ( isset( $attributes['stepperButtonBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button { border-radius: {$attributes['stepperButtonBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['stepperButtonBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-stepper-input button { border-radius: {$attributes['stepperButtonBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['stepperButtonBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-stepper-input button { border-radius: {$attributes['stepperButtonBorderRadius_mobile']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['stepperIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button i { color: {$attributes['stepperIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-stepper-input button svg { fill: {$attributes['stepperIconColor']}; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['stepperIconSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button i { font-size: {$attributes['stepperIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-stepper-input button svg { width: {$attributes['stepperIconSize']}px; height: {$attributes['stepperIconSize']}px; }";
+        }
+        if ( isset( $attributes['stepperIconSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-stepper-input button i { font-size: {$attributes['stepperIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-stepper-input button svg { width: {$attributes['stepperIconSize_tablet']}px; height: {$attributes['stepperIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['stepperIconSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-stepper-input button i { font-size: {$attributes['stepperIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-stepper-input button svg { width: {$attributes['stepperIconSize_mobile']}px; height: {$attributes['stepperIconSize_mobile']}px; }";
+        }
+
+        // Hover - background
+        if ( ! empty( $attributes['stepperButtonBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button:hover { background-color: {$attributes['stepperButtonBgHover']}; }";
+        }
+
+        // Hover - border color
+        if ( ! empty( $attributes['stepperButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button:hover { border-color: {$attributes['stepperButtonBorderColorHover']}; }";
+        }
+
+        // Hover - icon color
+        if ( ! empty( $attributes['stepperIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-stepper-input button:hover i { color: {$attributes['stepperIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-stepper-input button:hover svg { fill: {$attributes['stepperIconColorHover']}; }";
+        }
+
+        // ============================================
+        // FST 10. REPEATER
+        // ============================================
+
+        // Item background
+        if ( ! empty( $attributes['repeaterItemBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater li { background-color: {$attributes['repeaterItemBg']}; }";
+        }
+
+        // Item border
+        if ( ! empty( $attributes['repeaterItemBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['repeaterItemBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-repeater li { border: {$border_css}; }";
+            }
+        }
+
+        // Item border radius
+        if ( isset( $attributes['repeaterItemBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater li { border-radius: {$attributes['repeaterItemBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['repeaterItemBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-repeater li { border-radius: {$attributes['repeaterItemBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['repeaterItemBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-repeater li { border-radius: {$attributes['repeaterItemBorderRadius_mobile']}px; }";
+        }
+
+        // Remove button background
+        if ( ! empty( $attributes['repeaterRemoveButtonBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove { background-color: {$attributes['repeaterRemoveButtonBg']}; }";
+        }
+
+        // Remove button icon color
+        if ( ! empty( $attributes['repeaterRemoveButtonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove i { color: {$attributes['repeaterRemoveButtonIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove svg { fill: {$attributes['repeaterRemoveButtonIconColor']}; }";
+        }
+
+        // Remove button hover background
+        if ( ! empty( $attributes['repeaterRemoveButtonBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove:hover { background-color: {$attributes['repeaterRemoveButtonBgHover']}; }";
+        }
+
+        // Remove button hover icon color
+        if ( ! empty( $attributes['repeaterRemoveButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove:hover i { color: {$attributes['repeaterRemoveButtonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-repeater .ts-repeater-remove:hover svg { fill: {$attributes['repeaterRemoveButtonIconColorHover']}; }";
+        }
+
+        // ============================================
+        // FST 11. REPEATER HEAD
+        // ============================================
+
+        // Head background
+        if ( ! empty( $attributes['repeaterHeadBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater-head { background-color: {$attributes['repeaterHeadBg']}; }";
+        }
+
+        // Head border
+        if ( ! empty( $attributes['repeaterHeadBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['repeaterHeadBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-repeater-head { border: {$border_css}; }";
+            }
+        }
+
+        // Head border radius
+        if ( isset( $attributes['repeaterHeadBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater-head { border-radius: {$attributes['repeaterHeadBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['repeaterHeadBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-repeater-head { border-radius: {$attributes['repeaterHeadBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['repeaterHeadBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-repeater-head { border-radius: {$attributes['repeaterHeadBorderRadius_mobile']}px; }";
+        }
+
+        // Head typography
+        if ( ! empty( $attributes['repeaterHeadTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['repeaterHeadTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ts-repeater-head { {$typo_css} }";
+            }
+        }
+
+        // Head text color
+        if ( ! empty( $attributes['repeaterHeadTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater-head { color: {$attributes['repeaterHeadTextColor']}; }";
+        }
+
+        // Head icon color
+        if ( ! empty( $attributes['repeaterHeadIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-repeater-head i { color: {$attributes['repeaterHeadIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-repeater-head svg { fill: {$attributes['repeaterHeadIconColor']}; }";
+        }
+
+        // ============================================
+        // FST 13. HEADING FIELD
+        // ============================================
+
+        // Heading typography
+        if ( ! empty( $attributes['headingFieldTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['headingFieldTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .ui-heading-field label { {$typo_css} }";
+            }
+        }
+
+        // Heading color
+        if ( ! empty( $attributes['headingFieldColor'] ) ) {
+            $css_rules[] = "{$selector} .ui-heading-field label { color: {$attributes['headingFieldColor']}; }";
+        }
+
+        // ============================================
+        // FST 14. IMAGE FIELD
+        // ============================================
+
+        // Image border radius
+        if ( isset( $attributes['imageFieldBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .field-image img { border-radius: {$attributes['imageFieldBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['imageFieldBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .field-image img { border-radius: {$attributes['imageFieldBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['imageFieldBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .field-image img { border-radius: {$attributes['imageFieldBorderRadius_mobile']}px; }";
+        }
+
+        // Image border
+        if ( ! empty( $attributes['imageFieldBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['imageFieldBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .field-image img { border: {$border_css}; }";
+            }
+        }
+
+        // ============================================
+        // FST 15. AVAILABILITY CALENDAR
+        // ============================================
+
+        // Calendar background
+        if ( ! empty( $attributes['calendarBg'] ) ) {
+            $css_rules[] = "{$selector} .pika-single { background-color: {$attributes['calendarBg']}; }";
+        }
+
+        // Calendar border
+        if ( ! empty( $attributes['calendarBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['calendarBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .pika-single { border: {$border_css}; }";
+            }
+        }
+
+        // Calendar border radius
+        if ( isset( $attributes['calendarBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .pika-single { border-radius: {$attributes['calendarBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['calendarBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .pika-single { border-radius: {$attributes['calendarBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['calendarBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .pika-single { border-radius: {$attributes['calendarBorderRadius_mobile']}px; }";
+        }
+
+        // Day cell typography
+        if ( ! empty( $attributes['calendarDayTypo'] ) ) {
+            $typo_css = self::generate_typography_css( $attributes['calendarDayTypo'] );
+            if ( $typo_css ) {
+                $css_rules[] = "{$selector} .pika-single .pika-button { {$typo_css} }";
+            }
+        }
+
+        // Day cell color
+        if ( ! empty( $attributes['calendarDayColor'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-button { color: {$attributes['calendarDayColor']}; }";
+        }
+
+        // Day cell background
+        if ( ! empty( $attributes['calendarDayBg'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-button { background-color: {$attributes['calendarDayBg']}; }";
+        }
+
+        // Selected day background
+        if ( ! empty( $attributes['calendarDaySelectedBg'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .is-selected .pika-button { background-color: {$attributes['calendarDaySelectedBg']}; }";
+        }
+
+        // Selected day color
+        if ( ! empty( $attributes['calendarDaySelectedColor'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .is-selected .pika-button { color: {$attributes['calendarDaySelectedColor']}; }";
+        }
+
+        // ============================================
+        // FST 16. CALENDAR BUTTONS
+        // ============================================
+
+        // Button background
+        if ( ! empty( $attributes['calendarButtonBg'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-prev, {$selector} .pika-single .pika-next { background-color: {$attributes['calendarButtonBg']}; }";
+        }
+
+        // Button icon color
+        if ( ! empty( $attributes['calendarButtonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-prev i, {$selector} .pika-single .pika-next i { color: {$attributes['calendarButtonIconColor']}; }";
+            $css_rules[] = "{$selector} .pika-single .pika-prev svg, {$selector} .pika-single .pika-next svg { fill: {$attributes['calendarButtonIconColor']}; }";
+        }
+
+        // Button hover background
+        if ( ! empty( $attributes['calendarButtonBgHover'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-prev:hover, {$selector} .pika-single .pika-next:hover { background-color: {$attributes['calendarButtonBgHover']}; }";
+        }
+
+        // Button hover icon color
+        if ( ! empty( $attributes['calendarButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .pika-single .pika-prev:hover i, {$selector} .pika-single .pika-next:hover i { color: {$attributes['calendarButtonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .pika-single .pika-prev:hover svg, {$selector} .pika-single .pika-next:hover svg { fill: {$attributes['calendarButtonIconColorHover']}; }";
+        }
+
+        // ============================================
+        // FST 17. ATTRIBUTES (Product attributes)
+        // ============================================
+
+        // Attribute button background
+        if ( ! empty( $attributes['attributeButtonBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li { background-color: {$attributes['attributeButtonBg']}; }";
+        }
+
+        // Attribute button border
+        if ( ! empty( $attributes['attributeButtonBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['attributeButtonBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li { border: {$border_css}; }";
+            }
+        }
+
+        // Attribute button text color
+        if ( ! empty( $attributes['attributeButtonTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li { color: {$attributes['attributeButtonTextColor']}; }";
+        }
+
+        // Attribute button hover background
+        if ( ! empty( $attributes['attributeButtonBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li:hover { background-color: {$attributes['attributeButtonBgHover']}; }";
+        }
+
+        // Attribute button hover border color
+        if ( ! empty( $attributes['attributeButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li:hover { border-color: {$attributes['attributeButtonBorderColorHover']}; }";
+        }
+
+        // Attribute button hover text color
+        if ( ! empty( $attributes['attributeButtonTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-term-dropdown li:hover { color: {$attributes['attributeButtonTextColorHover']}; }";
+        }
+
+        // ============================================
+        // FST 18. COLOR FIELD
+        // ============================================
+
+        // Color swatch size
+        if ( isset( $attributes['colorSwatchSize'] ) ) {
+            $css_rules[] = "{$selector} .ts-color-swatch { width: {$attributes['colorSwatchSize']}px; height: {$attributes['colorSwatchSize']}px; }";
+        }
+        if ( isset( $attributes['colorSwatchSize_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-color-swatch { width: {$attributes['colorSwatchSize_tablet']}px; height: {$attributes['colorSwatchSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['colorSwatchSize_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-color-swatch { width: {$attributes['colorSwatchSize_mobile']}px; height: {$attributes['colorSwatchSize_mobile']}px; }";
+        }
+
+        // Color swatch border
+        if ( ! empty( $attributes['colorSwatchBorder'] ) ) {
+            $border_css = self::generate_border_css( $attributes['colorSwatchBorder'] );
+            if ( $border_css ) {
+                $css_rules[] = "{$selector} .ts-color-swatch { border: {$border_css}; }";
+            }
+        }
+
+        // Color swatch border radius
+        if ( isset( $attributes['colorSwatchBorderRadius'] ) ) {
+            $css_rules[] = "{$selector} .ts-color-swatch { border-radius: {$attributes['colorSwatchBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['colorSwatchBorderRadius_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-color-swatch { border-radius: {$attributes['colorSwatchBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['colorSwatchBorderRadius_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-color-swatch { border-radius: {$attributes['colorSwatchBorderRadius_mobile']}px; }";
+        }
+
+        // Combine CSS
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Orders Block
+     *
+     * Handles 16 style sections: General, Primary/Secondary Buttons, Cards,
+     * Order Statuses, Filters (common/dropdown/input), Single Order (event/box/items/table/accordion/notes),
+     * No Results, and Loading Spinner.
+     *
+     * NOTE: This block uses a simplified border pattern (border-style only via borderType select),
+     * inline box-shadow with enable flag, and shorthand dimensions - matching the TS source exactly.
+     *
+     * Source: app/blocks/src/orders/styles.ts
+     * Voxel Reference: themes/voxel/app/widgets/orders.php
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Block unique ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_orders_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = '.voxel-fse-orders-' . $block_id;
+
+        // ============================================
+        // SECTION 1: General
+        // ============================================
+
+        // Title typography (widget-head h2)
+        if ( ! empty( $attributes['generalTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['generalTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .widget-head h2 { {$typo} }";
+            }
+        }
+
+        // Title color
+        if ( ! empty( $attributes['generalTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .widget-head h2 { color: {$attributes['generalTitleColor']}; }";
+        }
+
+        // Subtitle typography (widget-head p)
+        if ( ! empty( $attributes['generalSubtitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['generalSubtitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .widget-head p { {$typo} }";
+            }
+        }
+
+        // Subtitle color
+        if ( ! empty( $attributes['generalSubtitleColor'] ) ) {
+            $css_rules[] = "{$selector} .widget-head p { color: {$attributes['generalSubtitleColor']}; }";
+        }
+
+        // Spacing (desktop/tablet/mobile)
+        if ( isset( $attributes['generalSpacing'] ) && $attributes['generalSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .widget-head { margin-bottom: {$attributes['generalSpacing']}px; }";
+        }
+        if ( isset( $attributes['generalSpacing_tablet'] ) && $attributes['generalSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .widget-head { margin-bottom: {$attributes['generalSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['generalSpacing_mobile'] ) && $attributes['generalSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .widget-head { margin-bottom: {$attributes['generalSpacing_mobile']}px; }";
+        }
+
+        // ============================================
+        // SECTION 2: Primary Button (.ts-btn-2)
+        // ============================================
+
+        // Primary button typography
+        if ( ! empty( $attributes['primaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['primaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { {$typo} }";
+            }
+        }
+
+        // Primary button border type (style only)
+        if ( ! empty( $attributes['primaryBtnBorderType'] ) && $attributes['primaryBtnBorderType'] !== 'Default' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { border-style: " . strtolower( $attributes['primaryBtnBorderType'] ) . "; }";
+        }
+
+        // Primary button border radius (responsive)
+        if ( isset( $attributes['primaryBtnBorderRadius'] ) && $attributes['primaryBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnBorderRadius_tablet'] ) && $attributes['primaryBtnBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnBorderRadius_mobile'] ) && $attributes['primaryBtnBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnBorderRadius_mobile']}px; }";
+        }
+
+        // Primary button box shadow
+        if ( ! empty( $attributes['primaryBtnBoxShadow'] ) && ! empty( $attributes['primaryBtnBoxShadow']['enable'] ) ) {
+            $shadow = $attributes['primaryBtnBoxShadow'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-btn-2 { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Primary button text color
+        if ( ! empty( $attributes['primaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { color: {$attributes['primaryBtnTextColor']}; }";
+        }
+
+        // Primary button background
+        if ( ! empty( $attributes['primaryBtnBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { background-color: {$attributes['primaryBtnBackground']}; }";
+        }
+
+        // Primary button icon size (responsive)
+        if ( isset( $attributes['primaryBtnIconSize'] ) && $attributes['primaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize']}px; height: {$attributes['primaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_tablet'] ) && $attributes['primaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_tablet']}px; height: {$attributes['primaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_mobile'] ) && $attributes['primaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_mobile']}px; height: {$attributes['primaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Primary button icon color
+        if ( ! empty( $attributes['primaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 i { color: {$attributes['primaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn-2 svg { fill: {$attributes['primaryBtnIconColor']}; }";
+        }
+
+        // Primary button icon spacing (responsive)
+        if ( isset( $attributes['primaryBtnIconSpacing'] ) && $attributes['primaryBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 i { margin-right: {$attributes['primaryBtnIconSpacing']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-2 svg { margin-right: {$attributes['primaryBtnIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSpacing_tablet'] ) && $attributes['primaryBtnIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 i { margin-right: {$attributes['primaryBtnIconSpacing_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-2 svg { margin-right: {$attributes['primaryBtnIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSpacing_mobile'] ) && $attributes['primaryBtnIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 i { margin-right: {$attributes['primaryBtnIconSpacing_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-2 svg { margin-right: {$attributes['primaryBtnIconSpacing_mobile']}px; }";
+        }
+
+        // Primary button hover states
+        if ( ! empty( $attributes['primaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { color: {$attributes['primaryBtnTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { background-color: {$attributes['primaryBtnBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { border-color: {$attributes['primaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBoxShadowHover'] ) && ! empty( $attributes['primaryBtnBoxShadowHover']['enable'] ) ) {
+            $shadow = $attributes['primaryBtnBoxShadowHover'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-btn-2:hover { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover i { color: {$attributes['primaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn-2:hover svg { fill: {$attributes['primaryBtnIconColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION 3: Secondary Button (.ts-btn-1)
+        // ============================================
+
+        // Secondary button icon color
+        if ( ! empty( $attributes['secondaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 i { color: {$attributes['secondaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn-1 svg { fill: {$attributes['secondaryBtnIconColor']}; }";
+        }
+
+        // Secondary button icon size (responsive)
+        if ( isset( $attributes['secondaryBtnIconSize'] ) && $attributes['secondaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize']}px; height: {$attributes['secondaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_tablet'] ) && $attributes['secondaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_tablet']}px; height: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_mobile'] ) && $attributes['secondaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_mobile']}px; height: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Secondary button icon spacing (responsive)
+        if ( isset( $attributes['secondaryBtnIconSpacing'] ) && $attributes['secondaryBtnIconSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 i { margin-right: {$attributes['secondaryBtnIconSpacing']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-1 svg { margin-right: {$attributes['secondaryBtnIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSpacing_tablet'] ) && $attributes['secondaryBtnIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 i { margin-right: {$attributes['secondaryBtnIconSpacing_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-1 svg { margin-right: {$attributes['secondaryBtnIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSpacing_mobile'] ) && $attributes['secondaryBtnIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 i { margin-right: {$attributes['secondaryBtnIconSpacing_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-1 svg { margin-right: {$attributes['secondaryBtnIconSpacing_mobile']}px; }";
+        }
+
+        // Secondary button background
+        if ( ! empty( $attributes['secondaryBtnBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { background-color: {$attributes['secondaryBtnBackground']}; }";
+        }
+
+        // Secondary button border type
+        if ( ! empty( $attributes['secondaryBtnBorderType'] ) && $attributes['secondaryBtnBorderType'] !== 'Default' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { border-style: " . strtolower( $attributes['secondaryBtnBorderType'] ) . "; }";
+        }
+
+        // Secondary button border radius (responsive)
+        if ( isset( $attributes['secondaryBtnBorderRadius'] ) && $attributes['secondaryBtnBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnBorderRadius_tablet'] ) && $attributes['secondaryBtnBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnBorderRadius_mobile'] ) && $attributes['secondaryBtnBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnBorderRadius_mobile']}px; }";
+        }
+
+        // Secondary button typography
+        if ( ! empty( $attributes['secondaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['secondaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { {$typo} }";
+            }
+        }
+
+        // Secondary button text color
+        if ( ! empty( $attributes['secondaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { color: {$attributes['secondaryBtnTextColor']}; }";
+        }
+
+        // Secondary button hover states
+        if ( ! empty( $attributes['secondaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover i { color: {$attributes['secondaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn-1:hover svg { fill: {$attributes['secondaryBtnIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { background-color: {$attributes['secondaryBtnBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { border-color: {$attributes['secondaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { color: {$attributes['secondaryBtnTextColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION 4: Cards (.vx-order-card)
+        // ============================================
+
+        // Card background
+        if ( ! empty( $attributes['cardBackground'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card { background-color: {$attributes['cardBackground']}; }";
+        }
+
+        // Card border type
+        if ( ! empty( $attributes['cardBorderType'] ) && $attributes['cardBorderType'] !== 'Default' ) {
+            $css_rules[] = "{$selector} .vx-order-card { border-style: " . strtolower( $attributes['cardBorderType'] ) . "; }";
+        }
+
+        // Card border radius (responsive)
+        if ( isset( $attributes['cardBorderRadius'] ) && $attributes['cardBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .vx-order-card { border-radius: {$attributes['cardBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['cardBorderRadius_tablet'] ) && $attributes['cardBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .vx-order-card { border-radius: {$attributes['cardBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['cardBorderRadius_mobile'] ) && $attributes['cardBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .vx-order-card { border-radius: {$attributes['cardBorderRadius_mobile']}px; }";
+        }
+
+        // Card hover states
+        if ( ! empty( $attributes['cardBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card:hover { background-color: {$attributes['cardBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['cardBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card:hover { border-color: {$attributes['cardBorderColorHover']}; }";
+        }
+
+        // Avatar size (responsive)
+        if ( isset( $attributes['cardAvatarSize'] ) && $attributes['cardAvatarSize'] !== '' ) {
+            $css_rules[] = "{$selector} .vx-order-card .vx-avatar { width: {$attributes['cardAvatarSize']}px; height: {$attributes['cardAvatarSize']}px; }";
+        }
+        if ( isset( $attributes['cardAvatarSize_tablet'] ) && $attributes['cardAvatarSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .vx-order-card .vx-avatar { width: {$attributes['cardAvatarSize_tablet']}px; height: {$attributes['cardAvatarSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['cardAvatarSize_mobile'] ) && $attributes['cardAvatarSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .vx-order-card .vx-avatar { width: {$attributes['cardAvatarSize_mobile']}px; height: {$attributes['cardAvatarSize_mobile']}px; }";
+        }
+
+        // Avatar border radius (responsive)
+        if ( isset( $attributes['cardAvatarBorderRadius'] ) && $attributes['cardAvatarBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .vx-order-card .vx-avatar { border-radius: {$attributes['cardAvatarBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['cardAvatarBorderRadius_tablet'] ) && $attributes['cardAvatarBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .vx-order-card .vx-avatar { border-radius: {$attributes['cardAvatarBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['cardAvatarBorderRadius_mobile'] ) && $attributes['cardAvatarBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .vx-order-card .vx-avatar { border-radius: {$attributes['cardAvatarBorderRadius_mobile']}px; }";
+        }
+
+        // Order ID typography
+        if ( ! empty( $attributes['cardOrderIdTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['cardOrderIdTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .vx-order-card .order-badge { {$typo} }";
+            }
+        }
+
+        // Order ID color
+        if ( ! empty( $attributes['cardOrderIdColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card .order-badge { color: {$attributes['cardOrderIdColor']}; }";
+        }
+
+        // Order ID background
+        if ( ! empty( $attributes['cardOrderIdBackground'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card .order-badge { background-color: {$attributes['cardOrderIdBackground']}; }";
+        }
+
+        // Order ID border radius (responsive)
+        if ( isset( $attributes['cardOrderIdBorderRadius'] ) && $attributes['cardOrderIdBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .vx-order-card .order-badge { border-radius: {$attributes['cardOrderIdBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['cardOrderIdBorderRadius_tablet'] ) && $attributes['cardOrderIdBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .vx-order-card .order-badge { border-radius: {$attributes['cardOrderIdBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['cardOrderIdBorderRadius_mobile'] ) && $attributes['cardOrderIdBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .vx-order-card .order-badge { border-radius: {$attributes['cardOrderIdBorderRadius_mobile']}px; }";
+        }
+
+        // Order title typography
+        if ( ! empty( $attributes['cardOrderTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['cardOrderTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .vx-order-card .vx-order-title b { {$typo} }";
+            }
+        }
+
+        // Order title typography (pending)
+        if ( ! empty( $attributes['cardOrderTitleTypographyPending'] ) ) {
+            $typo = self::generate_typography_css( $attributes['cardOrderTitleTypographyPending'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .vx-order-card.vx-status-pending_payment .vx-order-title b { {$typo} }";
+            }
+        }
+
+        // Order title color
+        if ( ! empty( $attributes['cardOrderTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card .vx-order-title b { color: {$attributes['cardOrderTitleColor']}; }";
+        }
+
+        // Order details typography
+        if ( ! empty( $attributes['cardOrderDetailsTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['cardOrderDetailsTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .vx-order-card .vx-order-meta span { {$typo} }";
+            }
+        }
+
+        // Order details color
+        if ( ! empty( $attributes['cardOrderDetailsColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-order-card .vx-order-meta span { color: {$attributes['cardOrderDetailsColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 5: Order Statuses (.order-status)
+        // ============================================
+
+        // Status padding
+        if ( ! empty( $attributes['statusPadding'] ) ) {
+            $p = $attributes['statusPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .order-status { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Status border radius (responsive)
+        if ( isset( $attributes['statusBorderRadius'] ) && $attributes['statusBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .order-status { border-radius: {$attributes['statusBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['statusBorderRadius_tablet'] ) && $attributes['statusBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .order-status { border-radius: {$attributes['statusBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['statusBorderRadius_mobile'] ) && $attributes['statusBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .order-status { border-radius: {$attributes['statusBorderRadius_mobile']}px; }";
+        }
+
+        // Status typography
+        if ( ! empty( $attributes['statusTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['statusTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-status { {$typo} }";
+            }
+        }
+
+        // Status colors (CSS variables --s-color)
+        if ( ! empty( $attributes['statusOrangeColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-orange { --s-color: {$attributes['statusOrangeColor']}; }";
+        }
+        if ( ! empty( $attributes['statusGreenColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-green { --s-color: {$attributes['statusGreenColor']}; }";
+        }
+        if ( ! empty( $attributes['statusNeutralColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-neutral { --s-color: {$attributes['statusNeutralColor']}; }";
+        }
+        if ( ! empty( $attributes['statusRedColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-red { --s-color: {$attributes['statusRedColor']}; }";
+        }
+        if ( ! empty( $attributes['statusGreyColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-grey { --s-color: {$attributes['statusGreyColor']}; }";
+        }
+        if ( ! empty( $attributes['statusBlueColor'] ) ) {
+            $css_rules[] = "{$selector} .vx-blue { --s-color: {$attributes['statusBlueColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 6: Filters Common (.ts-filter)
+        // ============================================
+
+        // Filter height (responsive)
+        if ( isset( $attributes['filterHeight'] ) && $attributes['filterHeight'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter { height: {$attributes['filterHeight']}px; }";
+        }
+        if ( isset( $attributes['filterHeight_tablet'] ) && $attributes['filterHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter { height: {$attributes['filterHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['filterHeight_mobile'] ) && $attributes['filterHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter { height: {$attributes['filterHeight_mobile']}px; }";
+        }
+
+        // Filter border radius (responsive)
+        if ( isset( $attributes['filterBorderRadius'] ) && $attributes['filterBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter { border-radius: {$attributes['filterBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['filterBorderRadius_tablet'] ) && $attributes['filterBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter { border-radius: {$attributes['filterBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['filterBorderRadius_mobile'] ) && $attributes['filterBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter { border-radius: {$attributes['filterBorderRadius_mobile']}px; }";
+        }
+
+        // Filter box shadow
+        if ( ! empty( $attributes['filterBoxShadow'] ) && ! empty( $attributes['filterBoxShadow']['enable'] ) ) {
+            $shadow = $attributes['filterBoxShadow'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Filter border type
+        if ( ! empty( $attributes['filterBorderType'] ) && $attributes['filterBorderType'] !== 'Default' ) {
+            $css_rules[] = "{$selector} .ts-filter { border-style: " . strtolower( $attributes['filterBorderType'] ) . "; }";
+        }
+
+        // Filter background
+        if ( ! empty( $attributes['filterBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter { background-color: {$attributes['filterBackground']}; }";
+        }
+
+        // Filter text color
+        if ( ! empty( $attributes['filterTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter { color: {$attributes['filterTextColor']}; }";
+        }
+
+        // Filter typography
+        if ( ! empty( $attributes['filterTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['filterTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-filter { {$typo} }";
+            }
+        }
+
+        // Filter chevron color
+        if ( ! empty( $attributes['filterChevronColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter .ts-down-icon i { color: {$attributes['filterChevronColor']}; }";
+            $css_rules[] = "{$selector} .ts-filter .ts-down-icon svg { fill: {$attributes['filterChevronColor']}; }";
+        }
+
+        // Filter hover states
+        if ( ! empty( $attributes['filterBoxShadowHover'] ) && ! empty( $attributes['filterBoxShadowHover']['enable'] ) ) {
+            $shadow = $attributes['filterBoxShadowHover'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter:hover { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+        if ( ! empty( $attributes['filterBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter:hover { border-color: {$attributes['filterBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['filterBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter:hover { background-color: {$attributes['filterBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['filterTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter:hover { color: {$attributes['filterTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['filterChevronColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter:hover .ts-down-icon i { color: {$attributes['filterChevronColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-filter:hover .ts-down-icon svg { fill: {$attributes['filterChevronColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION 7: Filter Dropdown (.ts-filled)
+        // ============================================
+
+        // Filter dropdown typography
+        if ( ! empty( $attributes['filterDropdownTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['filterDropdownTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-filter.ts-filled { {$typo} }";
+            }
+        }
+
+        // Filter dropdown background
+        if ( ! empty( $attributes['filterDropdownBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { background-color: {$attributes['filterDropdownBackground']}; }";
+        }
+
+        // Filter dropdown text color
+        if ( ! empty( $attributes['filterDropdownTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { color: {$attributes['filterDropdownTextColor']}; }";
+        }
+
+        // Filter dropdown border color
+        if ( ! empty( $attributes['filterDropdownBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { border-color: {$attributes['filterDropdownBorderColor']}; }";
+        }
+
+        // Filter dropdown border width (responsive)
+        if ( isset( $attributes['filterDropdownBorderWidth'] ) && $attributes['filterDropdownBorderWidth'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { border-width: {$attributes['filterDropdownBorderWidth']}px; }";
+        }
+        if ( isset( $attributes['filterDropdownBorderWidth_tablet'] ) && $attributes['filterDropdownBorderWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter.ts-filled { border-width: {$attributes['filterDropdownBorderWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['filterDropdownBorderWidth_mobile'] ) && $attributes['filterDropdownBorderWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter.ts-filled { border-width: {$attributes['filterDropdownBorderWidth_mobile']}px; }";
+        }
+
+        // Filter dropdown box shadow
+        if ( ! empty( $attributes['filterDropdownBoxShadow'] ) && ! empty( $attributes['filterDropdownBoxShadow']['enable'] ) ) {
+            $shadow = $attributes['filterDropdownBoxShadow'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Filter dropdown chevron color
+        if ( ! empty( $attributes['filterDropdownChevronColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled .ts-down-icon i { color: {$attributes['filterDropdownChevronColor']}; }";
+            $css_rules[] = "{$selector} .ts-filter.ts-filled .ts-down-icon svg { fill: {$attributes['filterDropdownChevronColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 8: Filter Input (.inline-input)
+        // ============================================
+
+        // Filter input placeholder color
+        if ( ! empty( $attributes['filterInputPlaceholderColor'] ) ) {
+            $css_rules[] = "{$selector} .inline-input::placeholder { color: {$attributes['filterInputPlaceholderColor']}; }";
+        }
+
+        // Filter input icon size (responsive)
+        if ( isset( $attributes['filterInputIconSize'] ) && $attributes['filterInputIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['filterInputIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['filterInputIconSize']}px; height: {$attributes['filterInputIconSize']}px; }";
+        }
+        if ( isset( $attributes['filterInputIconSize_tablet'] ) && $attributes['filterInputIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['filterInputIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['filterInputIconSize_tablet']}px; height: {$attributes['filterInputIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['filterInputIconSize_mobile'] ) && $attributes['filterInputIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-input-icon i { font-size: {$attributes['filterInputIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-input-icon svg { width: {$attributes['filterInputIconSize_mobile']}px; height: {$attributes['filterInputIconSize_mobile']}px; }";
+        }
+
+        // Filter input icon color
+        if ( ! empty( $attributes['filterInputIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-input-icon i { color: {$attributes['filterInputIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-input-icon svg { fill: {$attributes['filterInputIconColor']}; }";
+        }
+
+        // Filter input icon margin (responsive)
+        if ( isset( $attributes['filterInputIconMargin'] ) && $attributes['filterInputIconMargin'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-input-icon i { margin-right: {$attributes['filterInputIconMargin']}px; }";
+            $css_rules[] = "{$selector} .ts-input-icon svg { margin-right: {$attributes['filterInputIconMargin']}px; }";
+        }
+        if ( isset( $attributes['filterInputIconMargin_tablet'] ) && $attributes['filterInputIconMargin_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-input-icon i { margin-right: {$attributes['filterInputIconMargin_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-input-icon svg { margin-right: {$attributes['filterInputIconMargin_tablet']}px; }";
+        }
+        if ( isset( $attributes['filterInputIconMargin_mobile'] ) && $attributes['filterInputIconMargin_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-input-icon i { margin-right: {$attributes['filterInputIconMargin_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-input-icon svg { margin-right: {$attributes['filterInputIconMargin_mobile']}px; }";
+        }
+
+        // Filter input focus states
+        if ( ! empty( $attributes['filterInputBackgroundFocus'] ) ) {
+            $css_rules[] = "{$selector} .inline-input:focus { background-color: {$attributes['filterInputBackgroundFocus']}; }";
+        }
+        if ( ! empty( $attributes['filterInputBorderColorFocus'] ) ) {
+            $css_rules[] = "{$selector} .inline-input:focus { border-color: {$attributes['filterInputBorderColorFocus']}; }";
+        }
+
+        // ============================================
+        // SECTION 9: Single Order Event (.order-event)
+        // ============================================
+
+        // Single event avatar size (responsive)
+        if ( isset( $attributes['singleEventAvatarSize'] ) && $attributes['singleEventAvatarSize'] !== '' ) {
+            $css_rules[] = "{$selector} .order-event .vx-avatar { width: {$attributes['singleEventAvatarSize']}px; height: {$attributes['singleEventAvatarSize']}px; }";
+        }
+        if ( isset( $attributes['singleEventAvatarSize_tablet'] ) && $attributes['singleEventAvatarSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .order-event .vx-avatar { width: {$attributes['singleEventAvatarSize_tablet']}px; height: {$attributes['singleEventAvatarSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleEventAvatarSize_mobile'] ) && $attributes['singleEventAvatarSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .order-event .vx-avatar { width: {$attributes['singleEventAvatarSize_mobile']}px; height: {$attributes['singleEventAvatarSize_mobile']}px; }";
+        }
+
+        // Single event avatar border radius (responsive)
+        if ( isset( $attributes['singleEventAvatarBorderRadius'] ) && $attributes['singleEventAvatarBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .order-event .vx-avatar { border-radius: {$attributes['singleEventAvatarBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['singleEventAvatarBorderRadius_tablet'] ) && $attributes['singleEventAvatarBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .order-event .vx-avatar { border-radius: {$attributes['singleEventAvatarBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleEventAvatarBorderRadius_mobile'] ) && $attributes['singleEventAvatarBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .order-event .vx-avatar { border-radius: {$attributes['singleEventAvatarBorderRadius_mobile']}px; }";
+        }
+
+        // Single event order title typography
+        if ( ! empty( $attributes['singleEventOrderTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleEventOrderTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-event h3 { {$typo} }";
+            }
+        }
+
+        // Single event order title color
+        if ( ! empty( $attributes['singleEventOrderTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .order-event h3 { color: {$attributes['singleEventOrderTitleColor']}; }";
+        }
+
+        // Single event title typography
+        if ( ! empty( $attributes['singleEventTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleEventTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-event > span { {$typo} }";
+            }
+        }
+
+        // Single event title color
+        if ( ! empty( $attributes['singleEventTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .order-event > span { color: {$attributes['singleEventTitleColor']}; }";
+        }
+
+        // Single event details typography
+        if ( ! empty( $attributes['singleEventDetailsTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleEventDetailsTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-event p { {$typo} }";
+            }
+        }
+
+        // Single event details color
+        if ( ! empty( $attributes['singleEventDetailsColor'] ) ) {
+            $css_rules[] = "{$selector} .order-event p { color: {$attributes['singleEventDetailsColor']}; }";
+        }
+
+        // Single event divider color
+        if ( ! empty( $attributes['singleEventDividerColor'] ) ) {
+            $css_rules[] = "{$selector} .order-event:after { background-color: {$attributes['singleEventDividerColor']}; }";
+        }
+
+        // Single event files typography
+        if ( ! empty( $attributes['singleEventFilesTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleEventFilesTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-event .order-files a { {$typo} }";
+            }
+        }
+
+        // Single event files color
+        if ( ! empty( $attributes['singleEventFilesColor'] ) ) {
+            $css_rules[] = "{$selector} .order-event .order-files a { color: {$attributes['singleEventFilesColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 10: Single Event Box (.order-event-box)
+        // ============================================
+
+        // Single event box padding
+        if ( ! empty( $attributes['singleEventBoxPadding'] ) ) {
+            $p = $attributes['singleEventBoxPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .order-event-box { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Single event box border type
+        if ( ! empty( $attributes['singleEventBoxBorderType'] ) && $attributes['singleEventBoxBorderType'] !== 'Default' ) {
+            $css_rules[] = "{$selector} .order-event-box { border-style: " . strtolower( $attributes['singleEventBoxBorderType'] ) . "; }";
+        }
+
+        // Single event box border radius (responsive)
+        if ( isset( $attributes['singleEventBoxBorderRadius'] ) && $attributes['singleEventBoxBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .order-event-box { border-radius: {$attributes['singleEventBoxBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['singleEventBoxBorderRadius_tablet'] ) && $attributes['singleEventBoxBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .order-event-box { border-radius: {$attributes['singleEventBoxBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleEventBoxBorderRadius_mobile'] ) && $attributes['singleEventBoxBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .order-event-box { border-radius: {$attributes['singleEventBoxBorderRadius_mobile']}px; }";
+        }
+
+        // Single event box background
+        if ( ! empty( $attributes['singleEventBoxBackground'] ) ) {
+            $css_rules[] = "{$selector} .order-event-box { background-color: {$attributes['singleEventBoxBackground']}; }";
+        }
+
+        // ============================================
+        // SECTION 11: Single Order Items (.ts-cart-list)
+        // ============================================
+
+        // Single item spacing (responsive)
+        if ( isset( $attributes['singleItemSpacing'] ) && $attributes['singleItemSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-cart-list li { margin-bottom: {$attributes['singleItemSpacing']}px; }";
+        }
+        if ( isset( $attributes['singleItemSpacing_tablet'] ) && $attributes['singleItemSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-cart-list li { margin-bottom: {$attributes['singleItemSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleItemSpacing_mobile'] ) && $attributes['singleItemSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-cart-list li { margin-bottom: {$attributes['singleItemSpacing_mobile']}px; }";
+        }
+
+        // Single item content spacing (responsive)
+        if ( isset( $attributes['singleItemContentSpacing'] ) && $attributes['singleItemContentSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .cart-item-details { gap: {$attributes['singleItemContentSpacing']}px; }";
+        }
+        if ( isset( $attributes['singleItemContentSpacing_tablet'] ) && $attributes['singleItemContentSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .cart-item-details { gap: {$attributes['singleItemContentSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleItemContentSpacing_mobile'] ) && $attributes['singleItemContentSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .cart-item-details { gap: {$attributes['singleItemContentSpacing_mobile']}px; }";
+        }
+
+        // Single item picture size (responsive)
+        if ( isset( $attributes['singleItemPictureSize'] ) && $attributes['singleItemPictureSize'] !== '' ) {
+            $css_rules[] = "{$selector} .cart-image { width: {$attributes['singleItemPictureSize']}px; height: {$attributes['singleItemPictureSize']}px; }";
+        }
+        if ( isset( $attributes['singleItemPictureSize_tablet'] ) && $attributes['singleItemPictureSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .cart-image { width: {$attributes['singleItemPictureSize_tablet']}px; height: {$attributes['singleItemPictureSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleItemPictureSize_mobile'] ) && $attributes['singleItemPictureSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .cart-image { width: {$attributes['singleItemPictureSize_mobile']}px; height: {$attributes['singleItemPictureSize_mobile']}px; }";
+        }
+
+        // Single item picture radius (responsive)
+        if ( isset( $attributes['singleItemPictureRadius'] ) && $attributes['singleItemPictureRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .cart-image { border-radius: {$attributes['singleItemPictureRadius']}px; }";
+        }
+        if ( isset( $attributes['singleItemPictureRadius_tablet'] ) && $attributes['singleItemPictureRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .cart-image { border-radius: {$attributes['singleItemPictureRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleItemPictureRadius_mobile'] ) && $attributes['singleItemPictureRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .cart-image { border-radius: {$attributes['singleItemPictureRadius_mobile']}px; }";
+        }
+
+        // Single item title typography
+        if ( ! empty( $attributes['singleItemTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleItemTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-item-title a { {$typo} }";
+            }
+        }
+
+        // Single item title color
+        if ( ! empty( $attributes['singleItemTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .order-item-title a { color: {$attributes['singleItemTitleColor']}; }";
+        }
+
+        // Single item subtitle typography
+        if ( ! empty( $attributes['singleItemSubtitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleItemSubtitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .cart-item-details > span { {$typo} }";
+            }
+        }
+
+        // Single item subtitle color
+        if ( ! empty( $attributes['singleItemSubtitleColor'] ) ) {
+            $css_rules[] = "{$selector} .cart-item-details > span { color: {$attributes['singleItemSubtitleColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 12: Single Table (.ts-cost-calculator)
+        // ============================================
+
+        // Single table list spacing (responsive)
+        if ( isset( $attributes['singleTableListSpacing'] ) && $attributes['singleTableListSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator li { margin-bottom: {$attributes['singleTableListSpacing']}px; }";
+        }
+        if ( isset( $attributes['singleTableListSpacing_tablet'] ) && $attributes['singleTableListSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-cost-calculator li { margin-bottom: {$attributes['singleTableListSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['singleTableListSpacing_mobile'] ) && $attributes['singleTableListSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-cost-calculator li { margin-bottom: {$attributes['singleTableListSpacing_mobile']}px; }";
+        }
+
+        // Single table typography
+        if ( ! empty( $attributes['singleTableTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleTableTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-cost-calculator li p { {$typo} }";
+            }
+        }
+
+        // Single table text color
+        if ( ! empty( $attributes['singleTableTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator li p { color: {$attributes['singleTableTextColor']}; }";
+        }
+
+        // Single table typography (total)
+        if ( ! empty( $attributes['singleTableTypographyTotal'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleTableTypographyTotal'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-cost-calculator .ts-total p { {$typo} }";
+            }
+        }
+
+        // Single table text color (total)
+        if ( ! empty( $attributes['singleTableTextColorTotal'] ) ) {
+            $css_rules[] = "{$selector} .ts-cost-calculator .ts-total p { color: {$attributes['singleTableTextColorTotal']}; }";
+        }
+
+        // ============================================
+        // SECTION 13: Single Accordion (.order-accordion)
+        // ============================================
+
+        // Single accordion title typography
+        if ( ! empty( $attributes['singleAccordionTitleTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleAccordionTitleTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-accordion summary { {$typo} }";
+            }
+        }
+
+        // Single accordion title color
+        if ( ! empty( $attributes['singleAccordionTitleColor'] ) ) {
+            $css_rules[] = "{$selector} .order-accordion summary { color: {$attributes['singleAccordionTitleColor']}; }";
+        }
+
+        // Single accordion icon color
+        if ( ! empty( $attributes['singleAccordionIconColor'] ) ) {
+            $css_rules[] = "{$selector} .order-accordion summary i { color: {$attributes['singleAccordionIconColor']}; }";
+            $css_rules[] = "{$selector} .order-accordion summary svg { fill: {$attributes['singleAccordionIconColor']}; }";
+        }
+
+        // Single accordion divider color
+        if ( ! empty( $attributes['singleAccordionDividerColor'] ) ) {
+            $css_rules[] = "{$selector} .order-accordion { border-color: {$attributes['singleAccordionDividerColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 14: Single Notes
+        // ============================================
+
+        // Single notes typography
+        if ( ! empty( $attributes['singleNotesTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['singleNotesTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .order-notes p { {$typo} }";
+            }
+        }
+
+        // Single notes text color
+        if ( ! empty( $attributes['singleNotesTextColor'] ) ) {
+            $css_rules[] = "{$selector} .order-notes p { color: {$attributes['singleNotesTextColor']}; }";
+        }
+
+        // Single notes link color
+        if ( ! empty( $attributes['singleNotesLinkColor'] ) ) {
+            $css_rules[] = "{$selector} .order-notes a { color: {$attributes['singleNotesLinkColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 15: No Results (.ts-no-posts)
+        // ============================================
+
+        // No results content gap (responsive)
+        if ( isset( $attributes['noResultsContentGap'] ) && $attributes['noResultsContentGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts { gap: {$attributes['noResultsContentGap']}px; }";
+        }
+        if ( isset( $attributes['noResultsContentGap_tablet'] ) && $attributes['noResultsContentGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-no-posts { gap: {$attributes['noResultsContentGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['noResultsContentGap_mobile'] ) && $attributes['noResultsContentGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-no-posts { gap: {$attributes['noResultsContentGap_mobile']}px; }";
+        }
+
+        // No results icon size (responsive)
+        if ( isset( $attributes['noResultsIconSize'] ) && $attributes['noResultsIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noResultsIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noResultsIconSize']}px; height: {$attributes['noResultsIconSize']}px; }";
+        }
+        if ( isset( $attributes['noResultsIconSize_tablet'] ) && $attributes['noResultsIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noResultsIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noResultsIconSize_tablet']}px; height: {$attributes['noResultsIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['noResultsIconSize_mobile'] ) && $attributes['noResultsIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noResultsIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noResultsIconSize_mobile']}px; height: {$attributes['noResultsIconSize_mobile']}px; }";
+        }
+
+        // No results icon color
+        if ( ! empty( $attributes['noResultsIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { color: {$attributes['noResultsIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { fill: {$attributes['noResultsIconColor']}; }";
+        }
+
+        // No results typography
+        if ( ! empty( $attributes['noResultsTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['noResultsTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-no-posts p { {$typo} }";
+            }
+        }
+
+        // No results text color
+        if ( ! empty( $attributes['noResultsTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts p { color: {$attributes['noResultsTextColor']}; }";
+        }
+
+        // No results link color
+        if ( ! empty( $attributes['noResultsLinkColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts a { color: {$attributes['noResultsLinkColor']}; }";
+        }
+
+        // ============================================
+        // SECTION 16: Loading Spinner (.ts-loader)
+        // ============================================
+
+        // Loading spinner colors
+        if ( ! empty( $attributes['loadingSpinnerColor1'] ) ) {
+            $css_rules[] = "{$selector} .ts-loader:before { border-color: {$attributes['loadingSpinnerColor1']}; }";
+        }
+        if ( ! empty( $attributes['loadingSpinnerColor2'] ) ) {
+            $css_rules[] = "{$selector} .ts-loader:after { border-top-color: {$attributes['loadingSpinnerColor2']}; }";
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Quick Search Block
+     *
+     * Handles 6 style sections: Search Button (normal/hover/filled), Button Suffix,
+     * Popup Tabs, and Popup Custom Style.
+     *
+     * NOTE: This block uses the same simplified patterns as orders:
+     * - Box shadow with enable flag
+     * - Shorthand dimensions for padding/margin
+     *
+     * Source: app/blocks/src/quick-search/styles.ts
+     * Voxel Reference: themes/voxel/app/widgets/quick-search.php
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Block unique ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_quick_search_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = '.voxel-fse-quick-search-' . $block_id;
+
+        // ============================================
+        // SECTION 1: Search Button - Normal State
+        // ============================================
+
+        // Typography
+        if ( ! empty( $attributes['buttonTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['buttonTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-form .ts-filter { {$typo} }";
+            }
+        }
+
+        // Padding (responsive dimensions)
+        if ( ! empty( $attributes['buttonPadding'] ) ) {
+            $p = $attributes['buttonPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-form .ts-filter { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['buttonPadding_tablet'] ) ) {
+            $p = $attributes['buttonPadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-form .ts-filter { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['buttonPadding_mobile'] ) ) {
+            $p = $attributes['buttonPadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-form .ts-filter { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Height (responsive)
+        if ( isset( $attributes['buttonHeight'] ) && $attributes['buttonHeight'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter { height: {$attributes['buttonHeight']}px; }";
+        }
+        if ( isset( $attributes['buttonHeight_tablet'] ) && $attributes['buttonHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter { height: {$attributes['buttonHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['buttonHeight_mobile'] ) && $attributes['buttonHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter { height: {$attributes['buttonHeight_mobile']}px; }";
+        }
+
+        // Box Shadow
+        if ( ! empty( $attributes['buttonBoxShadow'] ) && ! empty( $attributes['buttonBoxShadow']['enable'] ) ) {
+            $shadow = $attributes['buttonBoxShadow'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Background Color
+        if ( ! empty( $attributes['buttonBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter { background: {$attributes['buttonBackground']}; }";
+        }
+
+        // Text Color
+        if ( ! empty( $attributes['buttonTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter-text { color: {$attributes['buttonTextColor']}; }";
+        }
+
+        // Border (type + width + color)
+        if ( ! empty( $attributes['buttonBorderType'] ) && $attributes['buttonBorderType'] !== 'none' ) {
+            $border_type = $attributes['buttonBorderType'];
+            $border_width = $attributes['buttonBorderWidth'] ?? 1;
+            $border_color = $attributes['buttonBorderColor'] ?? '#000000';
+            $css_rules[] = "{$selector} .ts-filter { border-style: {$border_type}; border-width: {$border_width}px; border-color: {$border_color}; }";
+        }
+
+        // Border Radius (responsive)
+        if ( isset( $attributes['buttonBorderRadius'] ) && $attributes['buttonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter { border-radius: {$attributes['buttonBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['buttonBorderRadius_tablet'] ) && $attributes['buttonBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-form .ts-filter { border-radius: {$attributes['buttonBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['buttonBorderRadius_mobile'] ) && $attributes['buttonBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-form .ts-filter { border-radius: {$attributes['buttonBorderRadius_mobile']}px; }";
+        }
+
+        // Icon Color
+        if ( ! empty( $attributes['buttonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter i { color: {$attributes['buttonIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-filter svg { fill: {$attributes['buttonIconColor']}; }";
+        }
+
+        // Icon Size (responsive)
+        if ( isset( $attributes['buttonIconSize'] ) && $attributes['buttonIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter i { font-size: {$attributes['buttonIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-filter svg { min-width: {$attributes['buttonIconSize']}px; width: {$attributes['buttonIconSize']}px; height: {$attributes['buttonIconSize']}px; }";
+        }
+        if ( isset( $attributes['buttonIconSize_tablet'] ) && $attributes['buttonIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter i { font-size: {$attributes['buttonIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-filter svg { min-width: {$attributes['buttonIconSize_tablet']}px; width: {$attributes['buttonIconSize_tablet']}px; height: {$attributes['buttonIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['buttonIconSize_mobile'] ) && $attributes['buttonIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter i { font-size: {$attributes['buttonIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-filter svg { min-width: {$attributes['buttonIconSize_mobile']}px; width: {$attributes['buttonIconSize_mobile']}px; height: {$attributes['buttonIconSize_mobile']}px; }";
+        }
+
+        // Icon/Text Spacing (responsive)
+        if ( isset( $attributes['buttonIconSpacing'] ) && $attributes['buttonIconSpacing'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-filter { grid-gap: {$attributes['buttonIconSpacing']}px; }";
+        }
+        if ( isset( $attributes['buttonIconSpacing_tablet'] ) && $attributes['buttonIconSpacing_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-filter { grid-gap: {$attributes['buttonIconSpacing_tablet']}px; }";
+        }
+        if ( isset( $attributes['buttonIconSpacing_mobile'] ) && $attributes['buttonIconSpacing_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-filter { grid-gap: {$attributes['buttonIconSpacing_mobile']}px; }";
+        }
+
+        // ============================================
+        // SECTION 2: Search Button - Hover State
+        // ============================================
+
+        // Background Color (Hover)
+        if ( ! empty( $attributes['buttonBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter:hover { background: {$attributes['buttonBackgroundHover']}; }";
+        }
+
+        // Text Color (Hover)
+        if ( ! empty( $attributes['buttonTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter:hover .ts-filter-text { color: {$attributes['buttonTextColorHover']}; }";
+        }
+
+        // Border Color (Hover)
+        if ( ! empty( $attributes['buttonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter:hover { border-color: {$attributes['buttonBorderColorHover']}; }";
+        }
+
+        // Icon Color (Hover)
+        if ( ! empty( $attributes['buttonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter:hover i { color: {$attributes['buttonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-filter:hover svg { fill: {$attributes['buttonIconColorHover']}; }";
+        }
+
+        // Box Shadow (Hover)
+        if ( ! empty( $attributes['buttonBoxShadowHover'] ) && ! empty( $attributes['buttonBoxShadowHover']['enable'] ) ) {
+            $shadow = $attributes['buttonBoxShadowHover'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter:hover { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION 3: Search Button - Filled State (.ts-filled)
+        // ============================================
+
+        // Typography (Filled)
+        if ( ! empty( $attributes['buttonTypographyFilled'] ) ) {
+            $typo = self::generate_typography_css( $attributes['buttonTypographyFilled'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-form .ts-filter.ts-filled { {$typo} }";
+            }
+        }
+
+        // Background Color (Filled)
+        if ( ! empty( $attributes['buttonBackgroundFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter.ts-filled { background: {$attributes['buttonBackgroundFilled']}; }";
+        }
+
+        // Text Color (Filled)
+        if ( ! empty( $attributes['buttonTextColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter.ts-filled .ts-filter-text { color: {$attributes['buttonTextColorFilled']}; }";
+        }
+
+        // Icon Color (Filled)
+        if ( ! empty( $attributes['buttonIconColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-filter.ts-filled i { color: {$attributes['buttonIconColorFilled']}; }";
+            $css_rules[] = "{$selector} .ts-filter.ts-filled svg { fill: {$attributes['buttonIconColorFilled']}; }";
+        }
+
+        // Border Color (Filled)
+        if ( ! empty( $attributes['buttonBorderColorFilled'] ) ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter.ts-filled { border-color: {$attributes['buttonBorderColorFilled']}; }";
+        }
+
+        // Border Width (Filled)
+        if ( isset( $attributes['buttonBorderWidthFilled'] ) && $attributes['buttonBorderWidthFilled'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-form .ts-filter.ts-filled { border-width: {$attributes['buttonBorderWidthFilled']}px; }";
+        }
+
+        // Box Shadow (Filled)
+        if ( ! empty( $attributes['buttonBoxShadowFilled'] ) && ! empty( $attributes['buttonBoxShadowFilled']['enable'] ) ) {
+            $shadow = $attributes['buttonBoxShadowFilled'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-filter.ts-filled { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION 4: Button Suffix (.ts-shortcut)
+        // ============================================
+
+        // Hide Suffix (responsive)
+        if ( ! empty( $attributes['suffixHide'] ) ) {
+            $css_rules[] = "{$selector} .ts-shortcut { display: none !important; }";
+        }
+        if ( ! empty( $attributes['suffixHide_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-shortcut { display: none !important; }";
+        }
+        if ( ! empty( $attributes['suffixHide_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-shortcut { display: none !important; }";
+        }
+
+        // Padding (responsive dimensions)
+        if ( ! empty( $attributes['suffixPadding'] ) ) {
+            $p = $attributes['suffixPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-shortcut { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['suffixPadding_tablet'] ) ) {
+            $p = $attributes['suffixPadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-shortcut { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['suffixPadding_mobile'] ) ) {
+            $p = $attributes['suffixPadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-shortcut { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['suffixTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['suffixTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-shortcut { {$typo} }";
+            }
+        }
+
+        // Text Color (responsive)
+        if ( ! empty( $attributes['suffixTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-shortcut { color: {$attributes['suffixTextColor']}; }";
+        }
+        if ( ! empty( $attributes['suffixTextColor_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-shortcut { color: {$attributes['suffixTextColor_tablet']}; }";
+        }
+        if ( ! empty( $attributes['suffixTextColor_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-shortcut { color: {$attributes['suffixTextColor_mobile']}; }";
+        }
+
+        // Background Color (responsive)
+        if ( ! empty( $attributes['suffixBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-shortcut { background: {$attributes['suffixBackground']}; }";
+        }
+        if ( ! empty( $attributes['suffixBackground_tablet'] ) ) {
+            $tablet_rules[] = "{$selector} .ts-shortcut { background: {$attributes['suffixBackground_tablet']}; }";
+        }
+        if ( ! empty( $attributes['suffixBackground_mobile'] ) ) {
+            $mobile_rules[] = "{$selector} .ts-shortcut { background: {$attributes['suffixBackground_mobile']}; }";
+        }
+
+        // Border Radius (responsive)
+        if ( isset( $attributes['suffixBorderRadius'] ) && $attributes['suffixBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-shortcut { border-radius: {$attributes['suffixBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['suffixBorderRadius_tablet'] ) && $attributes['suffixBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-shortcut { border-radius: {$attributes['suffixBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixBorderRadius_mobile'] ) && $attributes['suffixBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-shortcut { border-radius: {$attributes['suffixBorderRadius_mobile']}px; }";
+        }
+
+        // Box Shadow
+        if ( ! empty( $attributes['suffixBoxShadow'] ) && ! empty( $attributes['suffixBoxShadow']['enable'] ) ) {
+            $shadow = $attributes['suffixBoxShadow'];
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 0;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .ts-shortcut { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Side Margin (responsive) - uses 'right' for positioning
+        if ( isset( $attributes['suffixMargin'] ) && $attributes['suffixMargin'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-shortcut { right: {$attributes['suffixMargin']}px; }";
+        }
+        if ( isset( $attributes['suffixMargin_tablet'] ) && $attributes['suffixMargin_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-shortcut { right: {$attributes['suffixMargin_tablet']}px; }";
+        }
+        if ( isset( $attributes['suffixMargin_mobile'] ) && $attributes['suffixMargin_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-shortcut { right: {$attributes['suffixMargin_mobile']}px; }";
+        }
+
+        // ============================================
+        // SECTION 5: Popup Tabs (.ts-generic-tabs)
+        // ============================================
+
+        // Justify
+        if ( ! empty( $attributes['tabsJustify'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs { justify-content: {$attributes['tabsJustify']}; }";
+        }
+
+        // Padding (dimensions)
+        if ( ! empty( $attributes['tabsPadding'] ) ) {
+            $p = $attributes['tabsPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Margin (dimensions)
+        if ( ! empty( $attributes['tabsMargin'] ) ) {
+            $m = $attributes['tabsMargin'];
+            $unit = $m['unit'] ?? 'px';
+            $top = floatval( $m['top'] ?? 0 );
+            $right = floatval( $m['right'] ?? 0 );
+            $bottom = floatval( $m['bottom'] ?? 0 );
+            $left = floatval( $m['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li { margin: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Text Color
+        if ( ! empty( $attributes['tabsTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { color: {$attributes['tabsTextColor']}; }";
+        }
+
+        // Active Text Color
+        if ( ! empty( $attributes['tabsActiveTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { color: {$attributes['tabsActiveTextColor']}; }";
+        }
+
+        // Border Color
+        if ( ! empty( $attributes['tabsBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { border-color: {$attributes['tabsBorderColor']}; }";
+        }
+
+        // Active Border Color
+        if ( ! empty( $attributes['tabsActiveBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { border-color: {$attributes['tabsActiveBorderColor']}; }";
+        }
+
+        // Background
+        if ( ! empty( $attributes['tabsBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { background: {$attributes['tabsBackground']}; }";
+        }
+
+        // Active Background
+        if ( ! empty( $attributes['tabsActiveBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { background: {$attributes['tabsActiveBackground']}; }";
+        }
+
+        // Border Radius
+        if ( isset( $attributes['tabsBorderRadius'] ) && $attributes['tabsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius']}px; }";
+        }
+
+        // Hover State
+        if ( ! empty( $attributes['tabsTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { color: {$attributes['tabsTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { border-color: {$attributes['tabsBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { background: {$attributes['tabsBackgroundHover']}; }";
+        }
+
+        // ============================================
+        // SECTION 6: Popup Custom Style
+        // ============================================
+
+        if ( ! empty( $attributes['popupCustomEnable'] ) ) {
+            // Backdrop background
+            if ( ! empty( $attributes['popupBackdropBackground'] ) ) {
+                $css_rules[] = "{$selector} .ts-popup-overlay::after { content: ''; position: absolute; inset: 0; background-color: {$attributes['popupBackdropBackground']} !important; z-index: -1; }";
+            }
+
+            // Pointer events for backdrop
+            if ( ! empty( $attributes['popupPointerEvents'] ) ) {
+                $css_rules[] = "{$selector} .ts-popup-overlay::after { pointer-events: all; }";
+            }
+
+            // Center position
+            if ( ! empty( $attributes['popupCenterPosition'] ) ) {
+                $css_rules[] = "{$selector} .ts-popup-overlay { position: fixed !important; top: 50%; left: 50%; transform: translate(-50%, -50%); }";
+            }
+
+            // Box Shadow
+            if ( ! empty( $attributes['popupBoxShadow'] ) && ! empty( $attributes['popupBoxShadow']['enable'] ) ) {
+                $shadow = $attributes['popupBoxShadow'];
+                $h = $shadow['horizontal'] ?? 0;
+                $v = $shadow['vertical'] ?? 0;
+                $blur = $shadow['blur'] ?? 0;
+                $spread = $shadow['spread'] ?? 0;
+                $color = $shadow['color'] ?? 'rgba(0,0,0,0.1)';
+                $inset = ( $shadow['position'] ?? '' ) === 'inset' ? 'inset ' : '';
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+            }
+
+            // Border
+            if ( ! empty( $attributes['popupBorder'] ) && ! empty( $attributes['popupBorder']['borderType'] ) && $attributes['popupBorder']['borderType'] !== 'none' ) {
+                $border = $attributes['popupBorder'];
+                $border_type = $border['borderType'];
+                $border_width = $border['borderWidth'] ?? [ 'top' => 1, 'right' => 1, 'bottom' => 1, 'left' => 1 ];
+                $border_color = $border['borderColor'] ?? '#000000';
+                $top = floatval( $border_width['top'] ?? 0 );
+                $right = floatval( $border_width['right'] ?? 0 );
+                $bottom = floatval( $border_width['bottom'] ?? 0 );
+                $left = floatval( $border_width['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { border-style: {$border_type}; border-width: {$top}px {$right}px {$bottom}px {$left}px; border-color: {$border_color}; }";
+            }
+
+            // Top/Bottom margin (responsive)
+            if ( isset( $attributes['popupTopBottomMargin'] ) && $attributes['popupTopBottomMargin'] !== '' ) {
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { margin-top: {$attributes['popupTopBottomMargin']}px; margin-bottom: {$attributes['popupTopBottomMargin']}px; }";
+            }
+            if ( isset( $attributes['popupTopBottomMargin_tablet'] ) && $attributes['popupTopBottomMargin_tablet'] !== '' ) {
+                $tablet_rules[] = "{$selector} .ts-quicksearch-popup { margin-top: {$attributes['popupTopBottomMargin_tablet']}px; margin-bottom: {$attributes['popupTopBottomMargin_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupTopBottomMargin_mobile'] ) && $attributes['popupTopBottomMargin_mobile'] !== '' ) {
+                $mobile_rules[] = "{$selector} .ts-quicksearch-popup { margin-top: {$attributes['popupTopBottomMargin_mobile']}px; margin-bottom: {$attributes['popupTopBottomMargin_mobile']}px; }";
+            }
+
+            // Min width (responsive)
+            if ( isset( $attributes['popupMinWidth'] ) && $attributes['popupMinWidth'] !== '' ) {
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { min-width: {$attributes['popupMinWidth']}px; }";
+            }
+            if ( isset( $attributes['popupMinWidth_tablet'] ) && $attributes['popupMinWidth_tablet'] !== '' ) {
+                $tablet_rules[] = "{$selector} .ts-quicksearch-popup { min-width: {$attributes['popupMinWidth_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMinWidth_mobile'] ) && $attributes['popupMinWidth_mobile'] !== '' ) {
+                $mobile_rules[] = "{$selector} .ts-quicksearch-popup { min-width: {$attributes['popupMinWidth_mobile']}px; }";
+            }
+
+            // Max width (responsive)
+            if ( isset( $attributes['popupMaxWidth'] ) && $attributes['popupMaxWidth'] !== '' ) {
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { max-width: {$attributes['popupMaxWidth']}px; }";
+            }
+            if ( isset( $attributes['popupMaxWidth_tablet'] ) && $attributes['popupMaxWidth_tablet'] !== '' ) {
+                $tablet_rules[] = "{$selector} .ts-quicksearch-popup { max-width: {$attributes['popupMaxWidth_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMaxWidth_mobile'] ) && $attributes['popupMaxWidth_mobile'] !== '' ) {
+                $mobile_rules[] = "{$selector} .ts-quicksearch-popup { max-width: {$attributes['popupMaxWidth_mobile']}px; }";
+            }
+
+            // Max height (responsive)
+            if ( isset( $attributes['popupMaxHeight'] ) && $attributes['popupMaxHeight'] !== '' ) {
+                $css_rules[] = "{$selector} .ts-quicksearch-popup { max-height: {$attributes['popupMaxHeight']}px; overflow-y: auto; }";
+            }
+            if ( isset( $attributes['popupMaxHeight_tablet'] ) && $attributes['popupMaxHeight_tablet'] !== '' ) {
+                $tablet_rules[] = "{$selector} .ts-quicksearch-popup { max-height: {$attributes['popupMaxHeight_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMaxHeight_mobile'] ) && $attributes['popupMaxHeight_mobile'] !== '' ) {
+                $mobile_rules[] = "{$selector} .ts-quicksearch-popup { max-height: {$attributes['popupMaxHeight_mobile']}px; }";
+            }
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for listing-plans block.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Unique block ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_listing_plans_css( $attributes, $block_id ) {
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = ".voxel-fse-listing-plans-{$block_id}";
+
+        // ============================================
+        // STYLE TAB - General Section
+        // ============================================
+
+        // Plans columns (grid) - uses CSS variable
+        if ( isset( $attributes['plansColumns'] ) && $attributes['plansColumns'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plans-list { --ts-plans-columns: {$attributes['plansColumns']}; }";
+        }
+        if ( isset( $attributes['plansColumns_tablet'] ) && $attributes['plansColumns_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plans-list { --ts-plans-columns: {$attributes['plansColumns_tablet']}; }";
+        }
+        if ( isset( $attributes['plansColumns_mobile'] ) && $attributes['plansColumns_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plans-list { --ts-plans-columns: {$attributes['plansColumns_mobile']}; }";
+        }
+
+        // Plans gap
+        if ( isset( $attributes['plansGap'] ) && $attributes['plansGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plans-list { --ts-plans-gap: {$attributes['plansGap']}px; }";
+        }
+        if ( isset( $attributes['plansGap_tablet'] ) && $attributes['plansGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plans-list { --ts-plans-gap: {$attributes['plansGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['plansGap_mobile'] ) && $attributes['plansGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plans-list { --ts-plans-gap: {$attributes['plansGap_mobile']}px; }";
+        }
+
+        // Plans border radius (responsive)
+        if ( isset( $attributes['plansBorderRadius'] ) && $attributes['plansBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['plansBorderRadius_tablet'] ) && $attributes['plansBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['plansBorderRadius_mobile'] ) && $attributes['plansBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius_mobile']}px; }";
+        }
+
+        // Plans border (separate borderType/borderWidth/borderColor)
+        if ( ! empty( $attributes['plansBorderType'] ) && $attributes['plansBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-plan-container { border-style: {$attributes['plansBorderType']}; }";
+
+            if ( ! empty( $attributes['plansBorderWidth'] ) ) {
+                $w = $attributes['plansBorderWidth'];
+                $unit = $w['unit'] ?? 'px';
+                $top = floatval( $w['top'] ?? 0 );
+                $right = floatval( $w['right'] ?? 0 );
+                $bottom = floatval( $w['bottom'] ?? 0 );
+                $left = floatval( $w['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-plan-container { border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+            }
+
+            if ( ! empty( $attributes['plansBorderColor'] ) ) {
+                $css_rules[] = "{$selector} .ts-plan-container { border-color: {$attributes['plansBorderColor']}; }";
+            }
+        }
+
+        // Plans background
+        if ( ! empty( $attributes['plansBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-container { background-color: {$attributes['plansBackground']}; }";
+        }
+
+        // Plans box shadow (no enable flag)
+        if ( ! empty( $attributes['plansBoxShadow'] ) ) {
+            $s = $attributes['plansBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-container { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Body padding (responsive)
+        if ( isset( $attributes['bodyPadding'] ) && $attributes['bodyPadding'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding']}px; }";
+        }
+        if ( isset( $attributes['bodyPadding_tablet'] ) && $attributes['bodyPadding_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['bodyPadding_mobile'] ) && $attributes['bodyPadding_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding_mobile']}px; }";
+        }
+
+        // Body content gap (responsive)
+        if ( isset( $attributes['bodyContentGap'] ) && $attributes['bodyContentGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-body { gap: {$attributes['bodyContentGap']}px; }";
+        }
+        if ( isset( $attributes['bodyContentGap_tablet'] ) && $attributes['bodyContentGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-body { gap: {$attributes['bodyContentGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['bodyContentGap_mobile'] ) && $attributes['bodyContentGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-body { gap: {$attributes['bodyContentGap_mobile']}px; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Image Section
+        // ============================================
+
+        // Image padding (dimensions)
+        if ( ! empty( $attributes['imagePadding'] ) ) {
+            $p = $attributes['imagePadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-plan-image { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Image height (responsive)
+        if ( isset( $attributes['imageHeight'] ) && $attributes['imageHeight'] !== '' && floatval( $attributes['imageHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-plan-image { height: {$attributes['imageHeight']}px; }";
+        }
+        if ( isset( $attributes['imageHeight_tablet'] ) && $attributes['imageHeight_tablet'] !== '' && floatval( $attributes['imageHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-plan-image { height: {$attributes['imageHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['imageHeight_mobile'] ) && $attributes['imageHeight_mobile'] !== '' && floatval( $attributes['imageHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-plan-image { height: {$attributes['imageHeight_mobile']}px; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Pricing Section
+        // ============================================
+
+        // Pricing alignment
+        if ( ! empty( $attributes['pricingAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-pricing { justify-content: {$attributes['pricingAlign']}; }";
+        }
+
+        // Price typography
+        if ( ! empty( $attributes['priceTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['priceTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-price { {$typo}; }";
+            }
+        }
+
+        // Price color
+        if ( ! empty( $attributes['priceColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-price { color: {$attributes['priceColor']}; }";
+        }
+
+        // Period typography
+        if ( ! empty( $attributes['periodTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['periodTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-price-period { {$typo}; }";
+            }
+        }
+
+        // Period color
+        if ( ! empty( $attributes['periodColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-price-period { color: {$attributes['periodColor']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Content Section
+        // ============================================
+
+        // Content alignment
+        if ( ! empty( $attributes['contentAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-details { justify-content: {$attributes['contentAlign']}; }";
+        }
+
+        // Name typography
+        if ( ! empty( $attributes['nameTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['nameTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-name { {$typo}; }";
+            }
+        }
+
+        // Name color
+        if ( ! empty( $attributes['nameColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-name { color: {$attributes['nameColor']}; }";
+        }
+
+        // Description alignment
+        if ( ! empty( $attributes['descAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-desc { text-align: {$attributes['descAlign']}; }";
+        }
+
+        // Description typography
+        if ( ! empty( $attributes['descTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['descTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-desc p { {$typo}; }";
+            }
+        }
+
+        // Description color
+        if ( ! empty( $attributes['descColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-desc p { color: {$attributes['descColor']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Features List Section
+        // ============================================
+
+        // List alignment
+        if ( ! empty( $attributes['listAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features { justify-content: {$attributes['listAlign']}; }";
+        }
+
+        // List gap (responsive)
+        if ( isset( $attributes['listGap'] ) && $attributes['listGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li { margin-bottom: {$attributes['listGap']}px; }";
+        }
+        if ( isset( $attributes['listGap_tablet'] ) && $attributes['listGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li { margin-bottom: {$attributes['listGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['listGap_mobile'] ) && $attributes['listGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li { margin-bottom: {$attributes['listGap_mobile']}px; }";
+        }
+
+        // List icon size (responsive)
+        if ( isset( $attributes['listIconSize'] ) && $attributes['listIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize']}px; height: {$attributes['listIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize']}px; }";
+        }
+        if ( isset( $attributes['listIconSize_tablet'] ) && $attributes['listIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize_tablet']}px; height: {$attributes['listIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['listIconSize_mobile'] ) && $attributes['listIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize_mobile']}px; height: {$attributes['listIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize_mobile']}px; }";
+        }
+
+        // List icon right padding (responsive)
+        if ( isset( $attributes['listIconRightPad'] ) && $attributes['listIconRightPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { margin-right: {$attributes['listIconRightPad']}px; }";
+        }
+        if ( isset( $attributes['listIconRightPad_tablet'] ) && $attributes['listIconRightPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li i { margin-right: {$attributes['listIconRightPad_tablet']}px; }";
+        }
+        if ( isset( $attributes['listIconRightPad_mobile'] ) && $attributes['listIconRightPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li i { margin-right: {$attributes['listIconRightPad_mobile']}px; }";
+        }
+
+        // List typography
+        if ( ! empty( $attributes['listTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['listTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-features ul li span { {$typo}; }";
+            }
+        }
+
+        // List color
+        if ( ! empty( $attributes['listColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li span { color: {$attributes['listColor']}; }";
+        }
+
+        // List icon color
+        if ( ! empty( $attributes['listIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { fill: {$attributes['listIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { color: {$attributes['listIconColor']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Tabs Section
+        // ============================================
+
+        // Tabs justify
+        if ( ! empty( $attributes['tabsJustify'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs { justify-content: {$attributes['tabsJustify']}; }";
+        }
+
+        // Tabs padding (dimensions)
+        if ( ! empty( $attributes['tabsPadding'] ) ) {
+            $p = $attributes['tabsPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Tabs margin (dimensions)
+        if ( ! empty( $attributes['tabsMargin'] ) ) {
+            $p = $attributes['tabsMargin'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 15 );
+            $bottom = floatval( $p['bottom'] ?? 15 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-plan-tabs { margin: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Tabs border radius (responsive)
+        if ( isset( $attributes['tabsBorderRadius'] ) && $attributes['tabsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { border-radius: {$attributes['tabsBorderRadius']}px; }";
+        }
+
+        // Tab typography
+        if ( ! empty( $attributes['tabTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-tabs li a { {$typo}; }";
+            }
+        }
+
+        // Tab active typography
+        if ( ! empty( $attributes['tabActiveTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabActiveTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a { {$typo}; }";
+            }
+        }
+
+        // Tab color
+        if ( ! empty( $attributes['tabColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { color: {$attributes['tabColor']}; }";
+        }
+
+        // Tab active color
+        if ( ! empty( $attributes['tabActiveColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a { color: {$attributes['tabActiveColor']}; }";
+        }
+
+        // Tab border color
+        if ( ! empty( $attributes['tabBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { border-color: {$attributes['tabBorderColor']}; }";
+        }
+
+        // Tab active border color
+        if ( ! empty( $attributes['tabActiveBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a { border-color: {$attributes['tabActiveBorderColor']}; }";
+        }
+
+        // Tab background
+        if ( ! empty( $attributes['tabBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { background-color: {$attributes['tabBackground']}; }";
+        }
+
+        // Tab active background
+        if ( ! empty( $attributes['tabActiveBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a { background-color: {$attributes['tabActiveBackground']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Primary Button Section (.ts-btn-2)
+        // ============================================
+
+        // Primary button radius (responsive)
+        if ( isset( $attributes['primaryBtnRadius'] ) && $attributes['primaryBtnRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnRadius_tablet'] ) && $attributes['primaryBtnRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnRadius_mobile'] ) && $attributes['primaryBtnRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius_mobile']}px; }";
+        }
+
+        // Primary button height (responsive)
+        if ( isset( $attributes['primaryBtnHeight'] ) && $attributes['primaryBtnHeight'] !== '' && floatval( $attributes['primaryBtnHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { height: {$attributes['primaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_tablet'] ) && $attributes['primaryBtnHeight_tablet'] !== '' && floatval( $attributes['primaryBtnHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { height: {$attributes['primaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_mobile'] ) && $attributes['primaryBtnHeight_mobile'] !== '' && floatval( $attributes['primaryBtnHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { height: {$attributes['primaryBtnHeight_mobile']}px; }";
+        }
+
+        // Primary button icon size (responsive)
+        if ( isset( $attributes['primaryBtnIconSize'] ) && $attributes['primaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize']}px; height: {$attributes['primaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_tablet'] ) && $attributes['primaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_tablet']}px; height: {$attributes['primaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_mobile'] ) && $attributes['primaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_mobile']}px; height: {$attributes['primaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Primary button icon padding (responsive)
+        if ( isset( $attributes['primaryBtnIconPad'] ) && $attributes['primaryBtnIconPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { margin-left: {$attributes['primaryBtnIconPad']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { margin-left: {$attributes['primaryBtnIconPad']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconPad_tablet'] ) && $attributes['primaryBtnIconPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { margin-left: {$attributes['primaryBtnIconPad_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { margin-left: {$attributes['primaryBtnIconPad_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconPad_mobile'] ) && $attributes['primaryBtnIconPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { margin-left: {$attributes['primaryBtnIconPad_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { margin-left: {$attributes['primaryBtnIconPad_mobile']}px; }";
+        }
+
+        // Primary button typography
+        if ( ! empty( $attributes['primaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['primaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { {$typo}; }";
+            }
+        }
+
+        // Primary button color
+        if ( ! empty( $attributes['primaryBtnColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { color: {$attributes['primaryBtnColor']}; }";
+        }
+
+        // Primary button background
+        if ( ! empty( $attributes['primaryBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { background-color: {$attributes['primaryBtnBg']}; }";
+        }
+
+        // Primary button border
+        if ( ! empty( $attributes['primaryBtnBorderType'] ) && $attributes['primaryBtnBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-style: {$attributes['primaryBtnBorderType']}; }";
+
+            if ( ! empty( $attributes['primaryBtnBorderWidth'] ) ) {
+                $w = $attributes['primaryBtnBorderWidth'];
+                $unit = $w['unit'] ?? 'px';
+                $top = floatval( $w['top'] ?? 0 );
+                $right = floatval( $w['right'] ?? 0 );
+                $bottom = floatval( $w['bottom'] ?? 0 );
+                $left = floatval( $w['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+            }
+
+            if ( ! empty( $attributes['primaryBtnBorderColor'] ) ) {
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { border-color: {$attributes['primaryBtnBorderColor']}; }";
+            }
+        }
+
+        // Primary button box shadow
+        if ( ! empty( $attributes['primaryBtnBoxShadow'] ) ) {
+            $s = $attributes['primaryBtnBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Primary button icon color
+        if ( ! empty( $attributes['primaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 svg { fill: {$attributes['primaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 i { color: {$attributes['primaryBtnIconColor']}; }";
+        }
+
+        // Primary button hover states
+        if ( ! empty( $attributes['primaryBtnColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover { color: {$attributes['primaryBtnColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover { background-color: {$attributes['primaryBtnBgHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover { border-color: {$attributes['primaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover svg { fill: {$attributes['primaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover i { color: {$attributes['primaryBtnIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnBoxShadowHover'] ) ) {
+            $s = $attributes['primaryBtnBoxShadowHover'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2:hover { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Primary button padding (dimensions, responsive)
+        if ( ! empty( $attributes['primaryBtnPadding'] ) ) {
+            $p = $attributes['primaryBtnPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnPadding_tablet'] ) ) {
+            $p = $attributes['primaryBtnPadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['primaryBtnPadding_mobile'] ) ) {
+            $p = $attributes['primaryBtnPadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-2 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Secondary Button Section (.ts-btn-1)
+        // ============================================
+
+        // Secondary button radius (responsive)
+        if ( isset( $attributes['secondaryBtnRadius'] ) && $attributes['secondaryBtnRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnRadius_tablet'] ) && $attributes['secondaryBtnRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnRadius_mobile'] ) && $attributes['secondaryBtnRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius_mobile']}px; }";
+        }
+
+        // Secondary button height (responsive)
+        if ( isset( $attributes['secondaryBtnHeight'] ) && $attributes['secondaryBtnHeight'] !== '' && floatval( $attributes['secondaryBtnHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { height: {$attributes['secondaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_tablet'] ) && $attributes['secondaryBtnHeight_tablet'] !== '' && floatval( $attributes['secondaryBtnHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { height: {$attributes['secondaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_mobile'] ) && $attributes['secondaryBtnHeight_mobile'] !== '' && floatval( $attributes['secondaryBtnHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { height: {$attributes['secondaryBtnHeight_mobile']}px; }";
+        }
+
+        // Secondary button icon size (responsive)
+        if ( isset( $attributes['secondaryBtnIconSize'] ) && $attributes['secondaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize']}px; height: {$attributes['secondaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_tablet'] ) && $attributes['secondaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_tablet']}px; height: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_mobile'] ) && $attributes['secondaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_mobile']}px; height: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Secondary button icon padding (responsive)
+        if ( isset( $attributes['secondaryBtnIconPad'] ) && $attributes['secondaryBtnIconPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { margin-left: {$attributes['secondaryBtnIconPad']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { margin-left: {$attributes['secondaryBtnIconPad']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconPad_tablet'] ) && $attributes['secondaryBtnIconPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { margin-left: {$attributes['secondaryBtnIconPad_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { margin-left: {$attributes['secondaryBtnIconPad_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconPad_mobile'] ) && $attributes['secondaryBtnIconPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { margin-left: {$attributes['secondaryBtnIconPad_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { margin-left: {$attributes['secondaryBtnIconPad_mobile']}px; }";
+        }
+
+        // Secondary button typography
+        if ( ! empty( $attributes['secondaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['secondaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { {$typo}; }";
+            }
+        }
+
+        // Secondary button color
+        if ( ! empty( $attributes['secondaryBtnColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { color: {$attributes['secondaryBtnColor']}; }";
+        }
+
+        // Secondary button background
+        if ( ! empty( $attributes['secondaryBtnBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { background-color: {$attributes['secondaryBtnBg']}; }";
+        }
+
+        // Secondary button border
+        if ( ! empty( $attributes['secondaryBtnBorderType'] ) && $attributes['secondaryBtnBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-style: {$attributes['secondaryBtnBorderType']}; }";
+
+            if ( ! empty( $attributes['secondaryBtnBorderWidth'] ) ) {
+                $w = $attributes['secondaryBtnBorderWidth'];
+                $unit = $w['unit'] ?? 'px';
+                $top = floatval( $w['top'] ?? 0 );
+                $right = floatval( $w['right'] ?? 0 );
+                $bottom = floatval( $w['bottom'] ?? 0 );
+                $left = floatval( $w['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+            }
+
+            if ( ! empty( $attributes['secondaryBtnBorderColor'] ) ) {
+                $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { border-color: {$attributes['secondaryBtnBorderColor']}; }";
+            }
+        }
+
+        // Secondary button box shadow
+        if ( ! empty( $attributes['secondaryBtnBoxShadow'] ) ) {
+            $s = $attributes['secondaryBtnBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Secondary button icon color
+        if ( ! empty( $attributes['secondaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 svg { fill: {$attributes['secondaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 i { color: {$attributes['secondaryBtnIconColor']}; }";
+        }
+
+        // Secondary button padding (dimensions, responsive)
+        if ( ! empty( $attributes['secondaryBtnPadding'] ) ) {
+            $p = $attributes['secondaryBtnPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnPadding_tablet'] ) ) {
+            $p = $attributes['secondaryBtnPadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnPadding_mobile'] ) ) {
+            $p = $attributes['secondaryBtnPadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-plan-footer .ts-btn-1 { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Secondary button hover states
+        if ( ! empty( $attributes['secondaryBtnColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover { color: {$attributes['secondaryBtnColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBgHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover { background-color: {$attributes['secondaryBtnBgHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover { border-color: {$attributes['secondaryBtnBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover svg { fill: {$attributes['secondaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover i { color: {$attributes['secondaryBtnIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['secondaryBtnBoxShadowHover'] ) ) {
+            $s = $attributes['secondaryBtnBoxShadowHover'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-footer .ts-btn-1:hover { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Featured Plan Section
+        // ============================================
+
+        // Featured plan border
+        if ( ! empty( $attributes['featuredBorderType'] ) && $attributes['featuredBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan { border-style: {$attributes['featuredBorderType']}; }";
+
+            if ( ! empty( $attributes['featuredBorderWidth'] ) ) {
+                $w = $attributes['featuredBorderWidth'];
+                $unit = $w['unit'] ?? 'px';
+                $top = floatval( $w['top'] ?? 0 );
+                $right = floatval( $w['right'] ?? 0 );
+                $bottom = floatval( $w['bottom'] ?? 0 );
+                $left = floatval( $w['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan { border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+            }
+
+            if ( ! empty( $attributes['featuredBorderColor'] ) ) {
+                $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan { border-color: {$attributes['featuredBorderColor']}; }";
+            }
+        }
+
+        // Featured plan box shadow
+        if ( ! empty( $attributes['featuredBoxShadow'] ) ) {
+            $s = $attributes['featuredBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Featured badge background
+        if ( ! empty( $attributes['featuredBadgeBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan .ts-featured-badge { background-color: {$attributes['featuredBadgeBg']}; }";
+        }
+
+        // Featured badge text color
+        if ( ! empty( $attributes['featuredBadgeColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan .ts-featured-badge { color: {$attributes['featuredBadgeColor']}; }";
+        }
+
+        // Featured badge typography
+        if ( ! empty( $attributes['featuredBadgeTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['featuredBadgeTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-container.ts-featured-plan .ts-featured-badge { {$typo}; }";
+            }
+        }
+
+        // ============================================
+        // STYLE TAB - Dialog Section
+        // ============================================
+
+        // Dialog typography
+        if ( ! empty( $attributes['dialogTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['dialogTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { {$typo}; }";
+            }
+        }
+
+        // Dialog color
+        if ( ! empty( $attributes['dialogColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { color: {$attributes['dialogColor']}; }";
+        }
+
+        // Dialog background
+        if ( ! empty( $attributes['dialogBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { background-color: {$attributes['dialogBackground']}; }";
+        }
+
+        // Dialog border
+        if ( ! empty( $attributes['dialogBorderType'] ) && $attributes['dialogBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-style: {$attributes['dialogBorderType']}; }";
+
+            if ( ! empty( $attributes['dialogBorderWidth'] ) ) {
+                $w = $attributes['dialogBorderWidth'];
+                $unit = $w['unit'] ?? 'px';
+                $top = floatval( $w['top'] ?? 0 );
+                $right = floatval( $w['right'] ?? 0 );
+                $bottom = floatval( $w['bottom'] ?? 0 );
+                $left = floatval( $w['left'] ?? 0 );
+                $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-width: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+            }
+
+            if ( ! empty( $attributes['dialogBorderColor'] ) ) {
+                $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-color: {$attributes['dialogBorderColor']}; }";
+            }
+        }
+
+        // Dialog box shadow
+        if ( ! empty( $attributes['dialogBoxShadow'] ) ) {
+            $s = $attributes['dialogBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { box-shadow: {$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Dialog border radius (responsive)
+        if ( isset( $attributes['dialogBorderRadius'] ) && $attributes['dialogBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-radius: {$attributes['dialogBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['dialogBorderRadius_tablet'] ) && $attributes['dialogBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-radius: {$attributes['dialogBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['dialogBorderRadius_mobile'] ) && $attributes['dialogBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-popup-controller .ts-popup-head { border-radius: {$attributes['dialogBorderRadius_mobile']}px; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Tabs Hover States Section
+        // ============================================
+
+        // Tab hover text color
+        if ( ! empty( $attributes['tabsTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a:hover { color: {$attributes['tabsTextColorHover']}; }";
+        }
+
+        // Tab active hover text color
+        if ( ! empty( $attributes['tabsActiveTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a:hover { color: {$attributes['tabsActiveTextColorHover']}; }";
+        }
+
+        // Tab hover border color
+        if ( ! empty( $attributes['tabsBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a:hover { border-color: {$attributes['tabsBorderColorHover']}; }";
+        }
+
+        // Tab active hover border color
+        if ( ! empty( $attributes['tabsActiveBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a:hover { border-color: {$attributes['tabsActiveBorderColorHover']}; }";
+        }
+
+        // Tab hover background color
+        if ( ! empty( $attributes['tabsBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a:hover { background-color: {$attributes['tabsBgColorHover']}; }";
+        }
+
+        // Tab active hover background color
+        if ( ! empty( $attributes['tabsActiveBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li.ts-tab-active a:hover { background-color: {$attributes['tabsActiveBgColorHover']}; }";
+        }
+
+        // Tab border type
+        if ( ! empty( $attributes['tabBorderType'] ) && $attributes['tabBorderType'] !== 'default' && $attributes['tabBorderType'] !== 'none' ) {
+            $css_rules[] = "{$selector} .ts-plan-tabs li a { border-style: {$attributes['tabBorderType']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Responsive Dimensions
+        // ============================================
+
+        // Image padding responsive
+        if ( ! empty( $attributes['imagePadding_tablet'] ) ) {
+            $p = $attributes['imagePadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-plan-image { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['imagePadding_mobile'] ) ) {
+            $p = $attributes['imagePadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-plan-image { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Tabs padding responsive
+        if ( ! empty( $attributes['tabsPadding_tablet'] ) ) {
+            $p = $attributes['tabsPadding_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-plan-tabs li a { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['tabsPadding_mobile'] ) ) {
+            $p = $attributes['tabsPadding_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 0 );
+            $bottom = floatval( $p['bottom'] ?? 0 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-plan-tabs li a { padding: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Tabs margin responsive
+        if ( ! empty( $attributes['tabsMargin_tablet'] ) ) {
+            $p = $attributes['tabsMargin_tablet'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 15 );
+            $bottom = floatval( $p['bottom'] ?? 15 );
+            $left = floatval( $p['left'] ?? 0 );
+            $tablet_rules[] = "{$selector} .ts-plan-tabs { margin: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+        if ( ! empty( $attributes['tabsMargin_mobile'] ) ) {
+            $p = $attributes['tabsMargin_mobile'];
+            $unit = $p['unit'] ?? 'px';
+            $top = floatval( $p['top'] ?? 0 );
+            $right = floatval( $p['right'] ?? 15 );
+            $bottom = floatval( $p['bottom'] ?? 15 );
+            $left = floatval( $p['left'] ?? 0 );
+            $mobile_rules[] = "{$selector} .ts-plan-tabs { margin: {$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}; }";
+        }
+
+        // Tabs border radius responsive
+        if ( isset( $attributes['tabsBorderRadius_tablet'] ) && $attributes['tabsBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-tabs li a { border-radius: {$attributes['tabsBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['tabsBorderRadius_mobile'] ) && $attributes['tabsBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-tabs li a { border-radius: {$attributes['tabsBorderRadius_mobile']}px; }";
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for membership-plans block.
+     *
+     * Key differences from listing-plans:
+     * - Uses grid-template-columns: repeat(N, 1fr) instead of CSS variables
+     * - plansBg (not plansBackground), plansShadow (with position/inset)
+     * - .ts-generic-tabs (not .ts-plan-tabs)
+     * - .ts-btn-2/.ts-btn-1 WITHOUT .ts-plan-footer prefix
+     * - .ts-plan-image img (not .ts-plan-image)
+     * - bodyContentGap uses grid-gap
+     * - generateBorderCSS format: border: Wpx type color
+     * - listAlign uses align-items, listGap uses grid-gap on ul
+     * - listTypography targets ul li (not ul li span)
+     * - primaryBtnBgColor/primaryBtnTextColor attribute names
+     * - primaryBtnIconPad uses grid-gap + padding-right: 0px
+     * - listIconRightPad: padding-right for i, margin-right for svg
+     * - Sticky positioning section
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Unique block ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_membership_plans_css( $attributes, $block_id ) {
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+        $selector = ".voxel-fse-membership-plans-{$block_id}";
+
+        // Helper: generate border CSS in "border: Wpx type color" format
+        $generate_border = function( $border_type, $border_width, $border_color, $target_selector ) {
+            if ( empty( $border_type ) || $border_type === 'none' || $border_type === '' ) {
+                return null;
+            }
+
+            $width_value = '1px';
+            if ( ! empty( $border_width ) && is_array( $border_width ) ) {
+                $unit = $border_width['unit'] ?? 'px';
+                $top = floatval( $border_width['top'] ?? 0 );
+                $right = floatval( $border_width['right'] ?? 0 );
+                $bottom = floatval( $border_width['bottom'] ?? 0 );
+                $left = floatval( $border_width['left'] ?? 0 );
+
+                if ( $top === $right && $right === $bottom && $bottom === $left ) {
+                    $width_value = "{$top}{$unit}";
+                } else {
+                    $width_value = "{$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}";
+                }
+            }
+
+            $color_value = ! empty( $border_color ) ? $border_color : '#000';
+            return "{$target_selector} { border: {$width_value} {$border_type} {$color_value}; }";
+        };
+
+        // Helper: generate box shadow value (with position/inset support)
+        $generate_shadow = function( $shadow ) {
+            if ( empty( $shadow ) || ! is_array( $shadow ) ) {
+                return null;
+            }
+
+            $h = $shadow['horizontal'] ?? 0;
+            $v = $shadow['vertical'] ?? 0;
+            $blur = $shadow['blur'] ?? 10;
+            $spread = $shadow['spread'] ?? 0;
+            $color = $shadow['color'] ?? 'rgba(0,0,0,0.5)';
+            $position = ( isset( $shadow['position'] ) && $shadow['position'] === 'inset' ) ? 'inset ' : '';
+
+            return "{$position}{$h}px {$v}px {$blur}px {$spread}px {$color}";
+        };
+
+        // Helper: parse dimensions to CSS shorthand
+        $parse_dimensions = function( $dimensions ) {
+            if ( empty( $dimensions ) || ! is_array( $dimensions ) ) {
+                return null;
+            }
+
+            $unit = $dimensions['unit'] ?? 'px';
+            $top = floatval( $dimensions['top'] ?? 0 );
+            $right = floatval( $dimensions['right'] ?? 0 );
+            $bottom = floatval( $dimensions['bottom'] ?? 0 );
+            $left = floatval( $dimensions['left'] ?? 0 );
+
+            if ( $top === 0.0 && $right === 0.0 && $bottom === 0.0 && $left === 0.0 ) {
+                return null;
+            }
+
+            return "{$top}{$unit} {$right}{$unit} {$bottom}{$unit} {$left}{$unit}";
+        };
+
+        // ============================================
+        // GENERAL TAB - Grid Layout
+        // ============================================
+
+        // Number of columns - uses grid-template-columns: repeat(N, 1fr)
+        if ( isset( $attributes['plansColumns'] ) && $attributes['plansColumns'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plans-list { grid-template-columns: repeat({$attributes['plansColumns']}, 1fr); }";
+        }
+        if ( isset( $attributes['plansColumns_tablet'] ) && $attributes['plansColumns_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plans-list { grid-template-columns: repeat({$attributes['plansColumns_tablet']}, 1fr); }";
+        }
+        if ( isset( $attributes['plansColumns_mobile'] ) && $attributes['plansColumns_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plans-list { grid-template-columns: repeat({$attributes['plansColumns_mobile']}, 1fr); }";
+        }
+
+        // Item gap - uses grid-gap
+        if ( isset( $attributes['plansGap'] ) && $attributes['plansGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plans-list { grid-gap: {$attributes['plansGap']}px; }";
+        }
+        if ( isset( $attributes['plansGap_tablet'] ) && $attributes['plansGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plans-list { grid-gap: {$attributes['plansGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['plansGap_mobile'] ) && $attributes['plansGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plans-list { grid-gap: {$attributes['plansGap_mobile']}px; }";
+        }
+
+        // Border radius (responsive)
+        if ( isset( $attributes['plansBorderRadius'] ) && $attributes['plansBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['plansBorderRadius_tablet'] ) && $attributes['plansBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['plansBorderRadius_mobile'] ) && $attributes['plansBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-container { border-radius: {$attributes['plansBorderRadius_mobile']}px; }";
+        }
+
+        // Card border - uses generateBorderCSS format
+        if ( ! empty( $attributes['plansBorderType'] ) ) {
+            $border_css = $generate_border(
+                $attributes['plansBorderType'],
+                $attributes['plansBorderWidth'] ?? null,
+                $attributes['plansBorderColor'] ?? null,
+                "{$selector} .ts-plan-container"
+            );
+            if ( $border_css ) {
+                $css_rules[] = $border_css;
+            }
+        }
+
+        // Card background - uses plansBg
+        if ( ! empty( $attributes['plansBg'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-container { background-color: {$attributes['plansBg']}; }";
+        }
+
+        // Card box shadow - uses plansShadow with generateBoxShadowValue
+        if ( ! empty( $attributes['plansShadow'] ) ) {
+            $shadow_val = $generate_shadow( $attributes['plansShadow'] );
+            if ( $shadow_val ) {
+                $css_rules[] = "{$selector} .ts-plan-container { box-shadow: {$shadow_val}; }";
+            }
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Body
+        // ============================================
+
+        // Body padding (responsive)
+        if ( isset( $attributes['bodyPadding'] ) && $attributes['bodyPadding'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding']}px; }";
+        }
+        if ( isset( $attributes['bodyPadding_tablet'] ) && $attributes['bodyPadding_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding_tablet']}px; }";
+        }
+        if ( isset( $attributes['bodyPadding_mobile'] ) && $attributes['bodyPadding_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-body { padding: {$attributes['bodyPadding_mobile']}px; }";
+        }
+
+        // Body content gap - uses grid-gap (not gap)
+        if ( isset( $attributes['bodyContentGap'] ) && $attributes['bodyContentGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-body { grid-gap: {$attributes['bodyContentGap']}px; }";
+        }
+        if ( isset( $attributes['bodyContentGap_tablet'] ) && $attributes['bodyContentGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-body { grid-gap: {$attributes['bodyContentGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['bodyContentGap_mobile'] ) && $attributes['bodyContentGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-body { grid-gap: {$attributes['bodyContentGap_mobile']}px; }";
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Image
+        // Selector: .ts-plan-image img (NOT .ts-plan-image)
+        // ============================================
+
+        // Image padding (dimensions, responsive) - targets .ts-plan-image img
+        if ( ! empty( $attributes['imagePadding'] ) ) {
+            $dim = $parse_dimensions( $attributes['imagePadding'] );
+            if ( $dim ) {
+                $css_rules[] = "{$selector} .ts-plan-image img { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['imagePadding_tablet'] ) ) {
+            $dim = $parse_dimensions( $attributes['imagePadding_tablet'] );
+            if ( $dim ) {
+                $tablet_rules[] = "{$selector} .ts-plan-image img { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['imagePadding_mobile'] ) ) {
+            $dim = $parse_dimensions( $attributes['imagePadding_mobile'] );
+            if ( $dim ) {
+                $mobile_rules[] = "{$selector} .ts-plan-image img { padding: {$dim}; }";
+            }
+        }
+
+        // Image height (responsive) - targets .ts-plan-image img
+        if ( isset( $attributes['imageHeight'] ) && $attributes['imageHeight'] !== '' && floatval( $attributes['imageHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-plan-image img { height: {$attributes['imageHeight']}px; }";
+        }
+        if ( isset( $attributes['imageHeight_tablet'] ) && $attributes['imageHeight_tablet'] !== '' && floatval( $attributes['imageHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-plan-image img { height: {$attributes['imageHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['imageHeight_mobile'] ) && $attributes['imageHeight_mobile'] !== '' && floatval( $attributes['imageHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-plan-image img { height: {$attributes['imageHeight_mobile']}px; }";
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Pricing
+        // Selector: .ts-plan-pricing .ts-price-amount (not .ts-plan-price)
+        // ============================================
+
+        // Pricing alignment
+        if ( ! empty( $attributes['pricingAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-pricing { justify-content: {$attributes['pricingAlign']}; }";
+        }
+
+        // Price typography
+        if ( ! empty( $attributes['priceTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['priceTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-pricing .ts-price-amount { {$typo}; }";
+            }
+        }
+
+        // Price color
+        if ( ! empty( $attributes['priceColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-pricing .ts-price-amount { color: {$attributes['priceColor']}; }";
+        }
+
+        // Period typography
+        if ( ! empty( $attributes['periodTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['periodTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-pricing .ts-price-period { {$typo}; }";
+            }
+        }
+
+        // Period color
+        if ( ! empty( $attributes['periodColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-pricing .ts-price-period { color: {$attributes['periodColor']}; }";
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Name / Content
+        // Selector: .ts-plan-details .ts-plan-name
+        // ============================================
+
+        // Content alignment
+        if ( ! empty( $attributes['contentAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-details { justify-content: {$attributes['contentAlign']}; }";
+        }
+
+        // Name typography
+        if ( ! empty( $attributes['nameTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['nameTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-details .ts-plan-name { {$typo}; }";
+            }
+        }
+
+        // Name color
+        if ( ! empty( $attributes['nameColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-details .ts-plan-name { color: {$attributes['nameColor']}; }";
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Description
+        // ============================================
+
+        // Description alignment
+        if ( ! empty( $attributes['descAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-desc p { text-align: {$attributes['descAlign']}; }";
+        }
+
+        // Description typography
+        if ( ! empty( $attributes['descTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['descTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-desc p { {$typo}; }";
+            }
+        }
+
+        // Description color
+        if ( ! empty( $attributes['descColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-desc p { color: {$attributes['descColor']}; }";
+        }
+
+        // ============================================
+        // GENERAL TAB - Plan Features
+        // listAlign uses align-items (not justify-content)
+        // listGap uses grid-gap on .ts-plan-features ul (not margin-bottom on li)
+        // listTypography targets .ts-plan-features ul li (not ul li span)
+        // listIconRightPad: padding-right for i, margin-right for svg
+        // ============================================
+
+        // List alignment - uses align-items
+        if ( ! empty( $attributes['listAlign'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul { align-items: {$attributes['listAlign']}; }";
+        }
+
+        // List typography - targets .ts-plan-features ul li
+        if ( ! empty( $attributes['listTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['listTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-plan-features ul li { {$typo}; }";
+            }
+        }
+
+        // List text color - targets .ts-plan-features ul li
+        if ( ! empty( $attributes['listColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li { color: {$attributes['listColor']}; }";
+        }
+
+        // List icon color
+        if ( ! empty( $attributes['listIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { color: {$attributes['listIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { fill: {$attributes['listIconColor']}; }";
+        }
+
+        // List gap - uses grid-gap on .ts-plan-features ul
+        if ( isset( $attributes['listGap'] ) && $attributes['listGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul { grid-gap: {$attributes['listGap']}px; }";
+        }
+        if ( isset( $attributes['listGap_tablet'] ) && $attributes['listGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul { grid-gap: {$attributes['listGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['listGap_mobile'] ) && $attributes['listGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul { grid-gap: {$attributes['listGap_mobile']}px; }";
+        }
+
+        // List icon size (responsive)
+        if ( isset( $attributes['listIconSize'] ) && $attributes['listIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize']}px; height: {$attributes['listIconSize']}px; }";
+        }
+        if ( isset( $attributes['listIconSize_tablet'] ) && $attributes['listIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize_tablet']}px; height: {$attributes['listIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['listIconSize_mobile'] ) && $attributes['listIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li i { font-size: {$attributes['listIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li svg { width: {$attributes['listIconSize_mobile']}px; height: {$attributes['listIconSize_mobile']}px; }";
+        }
+
+        // List icon right padding - padding-right for i, margin-right for svg
+        if ( isset( $attributes['listIconRightPad'] ) && $attributes['listIconRightPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-plan-features ul li i { padding-right: {$attributes['listIconRightPad']}px; }";
+            $css_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad']}px; }";
+        }
+        if ( isset( $attributes['listIconRightPad_tablet'] ) && $attributes['listIconRightPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li i { padding-right: {$attributes['listIconRightPad_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad_tablet']}px; }";
+        }
+        if ( isset( $attributes['listIconRightPad_mobile'] ) && $attributes['listIconRightPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li i { padding-right: {$attributes['listIconRightPad_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-plan-features ul li svg { margin-right: {$attributes['listIconRightPad_mobile']}px; }";
+        }
+
+        // ============================================
+        // TABS ACCORDION - Normal State
+        // Selector: .ts-generic-tabs (NOT .ts-plan-tabs)
+        // Margin targets li (not the tab container)
+        // ============================================
+
+        // Tabs justify
+        if ( ! empty( $attributes['tabsJustify'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs { justify-content: {$attributes['tabsJustify']}; }";
+        }
+
+        // Tabs padding (dimensions, responsive) - targets .ts-generic-tabs li a
+        if ( ! empty( $attributes['tabsPadding'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsPadding'] );
+            if ( $dim ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['tabsPadding_tablet'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsPadding_tablet'] );
+            if ( $dim ) {
+                $tablet_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['tabsPadding_mobile'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsPadding_mobile'] );
+            if ( $dim ) {
+                $mobile_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$dim}; }";
+            }
+        }
+
+        // Tabs margin (dimensions, responsive) - targets .ts-generic-tabs li
+        if ( ! empty( $attributes['tabsMargin'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsMargin'] );
+            if ( $dim ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li { margin: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['tabsMargin_tablet'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsMargin_tablet'] );
+            if ( $dim ) {
+                $tablet_rules[] = "{$selector} .ts-generic-tabs li { margin: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['tabsMargin_mobile'] ) ) {
+            $dim = $parse_dimensions( $attributes['tabsMargin_mobile'] );
+            if ( $dim ) {
+                $mobile_rules[] = "{$selector} .ts-generic-tabs li { margin: {$dim}; }";
+            }
+        }
+
+        // Tab typography
+        if ( ! empty( $attributes['tabTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { {$typo}; }";
+            }
+        }
+
+        // Tab active typography
+        if ( ! empty( $attributes['tabActiveTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabActiveTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { {$typo}; }";
+            }
+        }
+
+        // Tab text color
+        if ( ! empty( $attributes['tabTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { color: {$attributes['tabTextColor']}; }";
+        }
+
+        // Active tab text color
+        if ( ! empty( $attributes['tabActiveTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { color: {$attributes['tabActiveTextColor']}; }";
+        }
+
+        // Tab background
+        if ( ! empty( $attributes['tabBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { background-color: {$attributes['tabBackground']}; }";
+        }
+
+        // Active tab background
+        if ( ! empty( $attributes['tabActiveBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { background-color: {$attributes['tabActiveBackground']}; }";
+        }
+
+        // Tab border - uses generateBorderCSS format
+        if ( ! empty( $attributes['tabBorderType'] ) ) {
+            $border_css = $generate_border(
+                $attributes['tabBorderType'],
+                $attributes['tabBorderWidth'] ?? null,
+                $attributes['tabBorderColor'] ?? null,
+                "{$selector} .ts-generic-tabs li a"
+            );
+            if ( $border_css ) {
+                $css_rules[] = $border_css;
+            }
+        }
+
+        // Active tab border color
+        if ( ! empty( $attributes['tabActiveBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { border-color: {$attributes['tabActiveBorderColor']}; }";
+        }
+
+        // Tab border radius (responsive)
+        if ( isset( $attributes['tabsBorderRadius'] ) && $attributes['tabsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['tabsBorderRadius_tablet'] ) && $attributes['tabsBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['tabsBorderRadius_mobile'] ) && $attributes['tabsBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius_mobile']}px; }";
+        }
+
+        // ============================================
+        // TABS ACCORDION - Hover State
+        // ============================================
+
+        // Tab text color hover
+        if ( ! empty( $attributes['tabTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { color: {$attributes['tabTextColorHover']}; }";
+        }
+
+        // Active tab text color hover
+        if ( ! empty( $attributes['tabActiveTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { color: {$attributes['tabActiveTextColorHover']}; }";
+        }
+
+        // Tab border color hover
+        if ( ! empty( $attributes['tabBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { border-color: {$attributes['tabBorderColorHover']}; }";
+        }
+
+        // Active tab border color hover
+        if ( ! empty( $attributes['tabActiveBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { border-color: {$attributes['tabActiveBorderColorHover']}; }";
+        }
+
+        // Tab background hover
+        if ( ! empty( $attributes['tabBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { background-color: {$attributes['tabBackgroundHover']}; }";
+        }
+
+        // Active tab background hover
+        if ( ! empty( $attributes['tabActiveBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { background-color: {$attributes['tabActiveBackgroundHover']}; }";
+        }
+
+        // ============================================
+        // PRIMARY BUTTON ACCORDION - Normal State
+        // Selector: .ts-btn-2 (WITHOUT .ts-plan-footer prefix)
+        // Uses primaryBtnBgColor/primaryBtnTextColor attribute names
+        // Icon padding uses grid-gap + padding-right: 0px
+        // ============================================
+
+        // Primary button typography
+        if ( ! empty( $attributes['primaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['primaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { {$typo}; }";
+            }
+        }
+
+        // Primary button border radius (responsive)
+        if ( isset( $attributes['primaryBtnRadius'] ) && $attributes['primaryBtnRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnRadius_tablet'] ) && $attributes['primaryBtnRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnRadius_mobile'] ) && $attributes['primaryBtnRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { border-radius: {$attributes['primaryBtnRadius_mobile']}px; }";
+        }
+
+        // Primary button text color - uses primaryBtnTextColor
+        if ( ! empty( $attributes['primaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { color: {$attributes['primaryBtnTextColor']}; }";
+        }
+
+        // Primary button padding (dimensions, responsive)
+        if ( ! empty( $attributes['primaryBtnPadding'] ) ) {
+            $dim = $parse_dimensions( $attributes['primaryBtnPadding'] );
+            if ( $dim ) {
+                $css_rules[] = "{$selector} .ts-btn-2 { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['primaryBtnPadding_tablet'] ) ) {
+            $dim = $parse_dimensions( $attributes['primaryBtnPadding_tablet'] );
+            if ( $dim ) {
+                $tablet_rules[] = "{$selector} .ts-btn-2 { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['primaryBtnPadding_mobile'] ) ) {
+            $dim = $parse_dimensions( $attributes['primaryBtnPadding_mobile'] );
+            if ( $dim ) {
+                $mobile_rules[] = "{$selector} .ts-btn-2 { padding: {$dim}; }";
+            }
+        }
+
+        // Primary button height (responsive)
+        if ( isset( $attributes['primaryBtnHeight'] ) && $attributes['primaryBtnHeight'] !== '' && floatval( $attributes['primaryBtnHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['primaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_tablet'] ) && $attributes['primaryBtnHeight_tablet'] !== '' && floatval( $attributes['primaryBtnHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['primaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnHeight_mobile'] ) && $attributes['primaryBtnHeight_mobile'] !== '' && floatval( $attributes['primaryBtnHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { height: {$attributes['primaryBtnHeight_mobile']}px; }";
+        }
+
+        // Primary button background - uses primaryBtnBgColor and 'background' property
+        if ( ! empty( $attributes['primaryBtnBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { background: {$attributes['primaryBtnBgColor']}; }";
+        }
+
+        // Primary button border - uses generateBorderCSS format
+        if ( ! empty( $attributes['primaryBtnBorderType'] ) ) {
+            $border_css = $generate_border(
+                $attributes['primaryBtnBorderType'],
+                $attributes['primaryBtnBorderWidth'] ?? null,
+                $attributes['primaryBtnBorderColor'] ?? null,
+                "{$selector} .ts-btn-2"
+            );
+            if ( $border_css ) {
+                $css_rules[] = $border_css;
+            }
+        }
+
+        // Primary button icon size (responsive)
+        if ( isset( $attributes['primaryBtnIconSize'] ) && $attributes['primaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize']}px; height: {$attributes['primaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_tablet'] ) && $attributes['primaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_tablet']}px; height: {$attributes['primaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconSize_mobile'] ) && $attributes['primaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 i { font-size: {$attributes['primaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-2 svg { width: {$attributes['primaryBtnIconSize_mobile']}px; height: {$attributes['primaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Primary button icon padding - uses grid-gap + padding-right: 0px
+        if ( isset( $attributes['primaryBtnIconPad'] ) && $attributes['primaryBtnIconPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-2 { grid-gap: {$attributes['primaryBtnIconPad']}px; padding-right: 0px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconPad_tablet'] ) && $attributes['primaryBtnIconPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-2 { grid-gap: {$attributes['primaryBtnIconPad_tablet']}px; padding-right: 0px; }";
+        }
+        if ( isset( $attributes['primaryBtnIconPad_mobile'] ) && $attributes['primaryBtnIconPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-2 { grid-gap: {$attributes['primaryBtnIconPad_mobile']}px; padding-right: 0px; }";
+        }
+
+        // Primary button icon color
+        if ( ! empty( $attributes['primaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2 i { color: {$attributes['primaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn-2 svg { fill: {$attributes['primaryBtnIconColor']}; }";
+        }
+
+        // ============================================
+        // PRIMARY BUTTON ACCORDION - Hover State
+        // ============================================
+
+        // Primary button text color hover
+        if ( ! empty( $attributes['primaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { color: {$attributes['primaryBtnTextColorHover']}; }";
+        }
+
+        // Primary button background hover
+        if ( ! empty( $attributes['primaryBtnBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { background: {$attributes['primaryBtnBgColorHover']}; }";
+        }
+
+        // Primary button border color hover
+        if ( ! empty( $attributes['primaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover { border-color: {$attributes['primaryBtnBorderColorHover']}; }";
+        }
+
+        // Primary button icon color hover
+        if ( ! empty( $attributes['primaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-2:hover i { color: {$attributes['primaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn-2:hover svg { fill: {$attributes['primaryBtnIconColorHover']}; }";
+        }
+
+        // ============================================
+        // SECONDARY BUTTON ACCORDION - Normal State
+        // Selector: .ts-btn-1 (WITHOUT .ts-plan-footer prefix)
+        // Same pattern differences as primary
+        // ============================================
+
+        // Secondary button typography
+        if ( ! empty( $attributes['secondaryBtnTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['secondaryBtnTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { {$typo}; }";
+            }
+        }
+
+        // Secondary button border radius (responsive)
+        if ( isset( $attributes['secondaryBtnRadius'] ) && $attributes['secondaryBtnRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnRadius_tablet'] ) && $attributes['secondaryBtnRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnRadius_mobile'] ) && $attributes['secondaryBtnRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { border-radius: {$attributes['secondaryBtnRadius_mobile']}px; }";
+        }
+
+        // Secondary button text color - uses secondaryBtnTextColor
+        if ( ! empty( $attributes['secondaryBtnTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { color: {$attributes['secondaryBtnTextColor']}; }";
+        }
+
+        // Secondary button padding (dimensions, responsive)
+        if ( ! empty( $attributes['secondaryBtnPadding'] ) ) {
+            $dim = $parse_dimensions( $attributes['secondaryBtnPadding'] );
+            if ( $dim ) {
+                $css_rules[] = "{$selector} .ts-btn-1 { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['secondaryBtnPadding_tablet'] ) ) {
+            $dim = $parse_dimensions( $attributes['secondaryBtnPadding_tablet'] );
+            if ( $dim ) {
+                $tablet_rules[] = "{$selector} .ts-btn-1 { padding: {$dim}; }";
+            }
+        }
+        if ( ! empty( $attributes['secondaryBtnPadding_mobile'] ) ) {
+            $dim = $parse_dimensions( $attributes['secondaryBtnPadding_mobile'] );
+            if ( $dim ) {
+                $mobile_rules[] = "{$selector} .ts-btn-1 { padding: {$dim}; }";
+            }
+        }
+
+        // Secondary button height (responsive)
+        if ( isset( $attributes['secondaryBtnHeight'] ) && $attributes['secondaryBtnHeight'] !== '' && floatval( $attributes['secondaryBtnHeight'] ) > 0 ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['secondaryBtnHeight']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_tablet'] ) && $attributes['secondaryBtnHeight_tablet'] !== '' && floatval( $attributes['secondaryBtnHeight_tablet'] ) > 0 ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['secondaryBtnHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnHeight_mobile'] ) && $attributes['secondaryBtnHeight_mobile'] !== '' && floatval( $attributes['secondaryBtnHeight_mobile'] ) > 0 ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { height: {$attributes['secondaryBtnHeight_mobile']}px; }";
+        }
+
+        // Secondary button background - uses secondaryBtnBgColor and 'background' property
+        if ( ! empty( $attributes['secondaryBtnBgColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { background: {$attributes['secondaryBtnBgColor']}; }";
+        }
+
+        // Secondary button border - uses generateBorderCSS format
+        if ( ! empty( $attributes['secondaryBtnBorderType'] ) ) {
+            $border_css = $generate_border(
+                $attributes['secondaryBtnBorderType'],
+                $attributes['secondaryBtnBorderWidth'] ?? null,
+                $attributes['secondaryBtnBorderColor'] ?? null,
+                "{$selector} .ts-btn-1"
+            );
+            if ( $border_css ) {
+                $css_rules[] = $border_css;
+            }
+        }
+
+        // Secondary button icon size (responsive)
+        if ( isset( $attributes['secondaryBtnIconSize'] ) && $attributes['secondaryBtnIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize']}px; height: {$attributes['secondaryBtnIconSize']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_tablet'] ) && $attributes['secondaryBtnIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_tablet']}px; height: {$attributes['secondaryBtnIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconSize_mobile'] ) && $attributes['secondaryBtnIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 i { font-size: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-btn-1 svg { width: {$attributes['secondaryBtnIconSize_mobile']}px; height: {$attributes['secondaryBtnIconSize_mobile']}px; }";
+        }
+
+        // Secondary button icon padding - uses grid-gap + padding-right: 0px
+        if ( isset( $attributes['secondaryBtnIconPad'] ) && $attributes['secondaryBtnIconPad'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-btn-1 { grid-gap: {$attributes['secondaryBtnIconPad']}px; padding-right: 0px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconPad_tablet'] ) && $attributes['secondaryBtnIconPad_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-btn-1 { grid-gap: {$attributes['secondaryBtnIconPad_tablet']}px; padding-right: 0px; }";
+        }
+        if ( isset( $attributes['secondaryBtnIconPad_mobile'] ) && $attributes['secondaryBtnIconPad_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-btn-1 { grid-gap: {$attributes['secondaryBtnIconPad_mobile']}px; padding-right: 0px; }";
+        }
+
+        // Secondary button icon color
+        if ( ! empty( $attributes['secondaryBtnIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1 i { color: {$attributes['secondaryBtnIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-btn-1 svg { fill: {$attributes['secondaryBtnIconColor']}; }";
+        }
+
+        // ============================================
+        // SECONDARY BUTTON ACCORDION - Hover State
+        // ============================================
+
+        // Secondary button text color hover
+        if ( ! empty( $attributes['secondaryBtnTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { color: {$attributes['secondaryBtnTextColorHover']}; }";
+        }
+
+        // Secondary button background hover
+        if ( ! empty( $attributes['secondaryBtnBgColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { background: {$attributes['secondaryBtnBgColorHover']}; }";
+        }
+
+        // Secondary button border color hover
+        if ( ! empty( $attributes['secondaryBtnBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover { border-color: {$attributes['secondaryBtnBorderColorHover']}; }";
+        }
+
+        // Secondary button icon color hover
+        if ( ! empty( $attributes['secondaryBtnIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-btn-1:hover i { color: {$attributes['secondaryBtnIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-btn-1:hover svg { fill: {$attributes['secondaryBtnIconColorHover']}; }";
+        }
+
+        // ============================================
+        // STICKY POSITIONING
+        // ============================================
+        if ( ! empty( $attributes['stickyEnabled'] ) ) {
+            // Desktop
+            $sticky_desktop = $attributes['stickyDesktop'] ?? 'sticky';
+            if ( $sticky_desktop === 'sticky' ) {
+                $css_rules[] = "{$selector} { position: sticky; z-index: 100; }";
+                if ( isset( $attributes['stickyTop'] ) ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $css_rules[] = "{$selector} { top: {$attributes['stickyTop']}{$unit}; }";
+                }
+                if ( isset( $attributes['stickyRight'] ) ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $css_rules[] = "{$selector} { right: {$attributes['stickyRight']}{$unit}; }";
+                }
+                if ( isset( $attributes['stickyBottom'] ) ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $css_rules[] = "{$selector} { bottom: {$attributes['stickyBottom']}{$unit}; }";
+                }
+                if ( isset( $attributes['stickyLeft'] ) ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $css_rules[] = "{$selector} { left: {$attributes['stickyLeft']}{$unit}; }";
+                }
+            } else {
+                $css_rules[] = "{$selector} { position: initial; }";
+            }
+
+            // Tablet
+            $sticky_tablet = $attributes['stickyTablet'] ?? 'sticky';
+            if ( $sticky_tablet === 'sticky' ) {
+                $tablet_rules[] = "{$selector} { position: sticky; z-index: 100; }";
+                $unit = $attributes['stickyTopUnit'] ?? 'px';
+                $top = $attributes['stickyTop_tablet'] ?? $attributes['stickyTop'] ?? null;
+                $right_val = $attributes['stickyRight_tablet'] ?? $attributes['stickyRight'] ?? null;
+                $bottom = $attributes['stickyBottom_tablet'] ?? $attributes['stickyBottom'] ?? null;
+                $left_val = $attributes['stickyLeft_tablet'] ?? $attributes['stickyLeft'] ?? null;
+                if ( $top !== null ) {
+                    $tablet_rules[] = "{$selector} { top: {$top}{$unit}; }";
+                }
+                if ( $right_val !== null ) {
+                    $tablet_rules[] = "{$selector} { right: {$right_val}{$unit}; }";
+                }
+                if ( $bottom !== null ) {
+                    $tablet_rules[] = "{$selector} { bottom: {$bottom}{$unit}; }";
+                }
+                if ( $left_val !== null ) {
+                    $tablet_rules[] = "{$selector} { left: {$left_val}{$unit}; }";
+                }
+            } else {
+                $tablet_rules[] = "{$selector} { position: initial; }";
+            }
+
+            // Mobile
+            $sticky_mobile = $attributes['stickyMobile'] ?? 'sticky';
+            if ( $sticky_mobile === 'sticky' ) {
+                $mobile_rules[] = "{$selector} { position: sticky; z-index: 100; }";
+                $unit = $attributes['stickyTopUnit'] ?? 'px';
+                $top = $attributes['stickyTop_mobile'] ?? $attributes['stickyTop'] ?? null;
+                $right_val = $attributes['stickyRight_mobile'] ?? $attributes['stickyRight'] ?? null;
+                $bottom = $attributes['stickyBottom_mobile'] ?? $attributes['stickyBottom'] ?? null;
+                $left_val = $attributes['stickyLeft_mobile'] ?? $attributes['stickyLeft'] ?? null;
+                if ( $top !== null ) {
+                    $mobile_rules[] = "{$selector} { top: {$top}{$unit}; }";
+                }
+                if ( $right_val !== null ) {
+                    $mobile_rules[] = "{$selector} { right: {$right_val}{$unit}; }";
+                }
+                if ( $bottom !== null ) {
+                    $mobile_rules[] = "{$selector} { bottom: {$bottom}{$unit}; }";
+                }
+                if ( $left_val !== null ) {
+                    $mobile_rules[] = "{$selector} { left: {$left_val}{$unit}; }";
+                }
+            } else {
+                $mobile_rules[] = "{$selector} { position: initial; }";
+            }
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Flex Container Block
+     *
+     * Translates both generateResponsiveCSS() (outer container) and
+     * generateInnerResponsiveCSS() (inner .e-con-inner) from styles.ts into
+     * a single PHP method that outputs scoped, responsive CSS.
+     *
+     * Evidence: flex-container/styles.ts
+     *
+     * Outer container (.voxel-fse-flex-container-{id}):
+     *   - position (relative / sticky), min-height, overflow, z-index
+     *   - calc min/max height, scrollbar, backdrop blur
+     *   - transforms (normal + hover), box-shadow, transition
+     *
+     * Inner container (.voxel-fse-flex-container-{id} > .e-con-inner):
+     *   - display flex/grid, content width (boxed/full/custom)
+     *   - flex props (direction, justify, align, wrap, alignContent)
+     *   - grid props (template columns/rows, auto-flow)
+     *   - column/row gap, inline-flex
+     *
+     * @param array  $attributes Block attributes from Gutenberg.
+     * @param string $block_id   Unique block ID for scoped selector.
+     * @return string Generated CSS.
+     */
+    public static function generate_flex_container_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $css_rules    = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+
+        $selector = '.voxel-fse-flex-container-' . $block_id;
+        $inner    = $selector . ' > .e-con-inner';
+
+        $is_grid = ( ! empty( $attributes['containerLayout'] ) && $attributes['containerLayout'] === 'grid' );
+
+        // ============================================
+        // OUTER CONTAINER - Desktop
+        // Evidence: styles.ts generateResponsiveCSS() lines 577-810
+        // ============================================
+
+        $desktop_outer = [
+            'width: 100%',
+            'flex: 1 1 0%',
+            'min-width: 0',
+        ];
+
+        // Sticky vs relative position
+        $is_sticky_desktop = ! empty( $attributes['stickyEnabled'] )
+            && ( $attributes['stickyDesktop'] ?? 'sticky' ) === 'sticky';
+
+        if ( $is_sticky_desktop ) {
+            $desktop_outer[] = 'position: sticky';
+            $desktop_outer[] = 'align-self: flex-start';
+            if ( isset( $attributes['stickyTop'] ) && $attributes['stickyTop'] !== '' ) {
+                $unit = $attributes['stickyTopUnit'] ?? 'px';
+                $desktop_outer[] = "top: {$attributes['stickyTop']}{$unit}";
+            }
+            if ( isset( $attributes['stickyLeft'] ) && $attributes['stickyLeft'] !== '' ) {
+                $unit = $attributes['stickyLeftUnit'] ?? 'px';
+                $desktop_outer[] = "left: {$attributes['stickyLeft']}{$unit}";
+            }
+            if ( isset( $attributes['stickyRight'] ) && $attributes['stickyRight'] !== '' ) {
+                $unit = $attributes['stickyRightUnit'] ?? 'px';
+                $desktop_outer[] = "right: {$attributes['stickyRight']}{$unit}";
+            }
+            if ( isset( $attributes['stickyBottom'] ) && $attributes['stickyBottom'] !== '' ) {
+                $unit = $attributes['stickyBottomUnit'] ?? 'px';
+                $desktop_outer[] = "bottom: {$attributes['stickyBottom']}{$unit}";
+            }
+        } else {
+            $desktop_outer[] = 'position: relative';
+        }
+
+        // Min Height
+        if ( ( $attributes['minHeightUnit'] ?? '' ) === 'custom' && ! empty( $attributes['minHeightCustom'] ) ) {
+            $desktop_outer[] = "min-height: {$attributes['minHeightCustom']}";
+        } elseif ( ! empty( $attributes['minHeight'] ) ) {
+            $unit = $attributes['minHeightUnit'] ?? 'px';
+            $desktop_outer[] = "min-height: {$attributes['minHeight']}{$unit}";
+        }
+
+        // Overflow
+        if ( ! empty( $attributes['overflow'] ) && $attributes['overflow'] !== 'visible' ) {
+            $desktop_outer[] = "overflow: {$attributes['overflow']}";
+        }
+
+        // Z-Index
+        if ( isset( $attributes['zIndex'] ) && $attributes['zIndex'] !== '' ) {
+            $desktop_outer[] = "z-index: {$attributes['zIndex']}";
+        }
+
+        // Calc min height
+        if ( ! empty( $attributes['enableCalcMinHeight'] ) && ! empty( $attributes['calcMinHeight'] ) ) {
+            $desktop_outer[] = "min-height: {$attributes['calcMinHeight']}";
+        }
+
+        // Calc max height with scrollbar
+        if ( ! empty( $attributes['enableCalcMaxHeight'] ) && ! empty( $attributes['calcMaxHeight'] ) ) {
+            $desktop_outer[] = "max-height: {$attributes['calcMaxHeight']}";
+            $desktop_outer[] = 'overflow-y: overlay';
+            $desktop_outer[] = 'overflow-x: hidden';
+            if ( ! empty( $attributes['scrollbarColor'] ) ) {
+                $desktop_outer[] = "--ts-scroll-color: {$attributes['scrollbarColor']}";
+            }
+        }
+
+        // Backdrop blur
+        if ( ! empty( $attributes['enableBackdropBlur'] ) && isset( $attributes['backdropBlurStrength'] ) && $attributes['backdropBlurStrength'] !== '' ) {
+            $desktop_outer[] = "backdrop-filter: blur({$attributes['backdropBlurStrength']}px)";
+            $desktop_outer[] = "-webkit-backdrop-filter: blur({$attributes['backdropBlurStrength']}px)";
+        }
+
+        // Transform CSS - Desktop Normal
+        $transform_desktop = self::build_transform_css( $attributes, '', false );
+        if ( ! empty( $transform_desktop['transform'] ) ) {
+            $desktop_outer[] = "transform: {$transform_desktop['transform']}";
+        }
+        if ( ! empty( $transform_desktop['transformOrigin'] ) && $transform_desktop['transformOrigin'] !== '50% 50%' ) {
+            $desktop_outer[] = "transform-origin: {$transform_desktop['transformOrigin']}";
+        }
+        if ( ! empty( $transform_desktop['perspective'] ) ) {
+            $desktop_outer[] = "perspective: {$transform_desktop['perspective']}";
+        }
+
+        // Transform transition duration
+        if ( isset( $attributes['transformTransitionDuration'] ) && $attributes['transformTransitionDuration'] !== '' ) {
+            $desktop_outer[] = "transition: transform {$attributes['transformTransitionDuration']}ms ease";
+        }
+
+        // Box Shadow
+        if ( ! empty( $attributes['boxShadow'] ) ) {
+            $box_shadow = self::generate_box_shadow_css( $attributes['boxShadow'] );
+            if ( $box_shadow ) {
+                $desktop_outer[] = "box-shadow: {$box_shadow}";
+            }
+        }
+
+        $css_rules[] = "{$selector} { " . implode( '; ', $desktop_outer ) . "; }";
+
+        // Desktop Hover transforms
+        $transform_desktop_hover = self::build_transform_css( $attributes, '', true );
+        if ( ! empty( $transform_desktop_hover['transform'] ) ) {
+            $hover_styles = [ "transform: {$transform_desktop_hover['transform']}" ];
+            if ( ! empty( $transform_desktop_hover['transformOrigin'] ) && $transform_desktop_hover['transformOrigin'] !== '50% 50%' ) {
+                $hover_styles[] = "transform-origin: {$transform_desktop_hover['transformOrigin']}";
+            }
+            if ( ! empty( $transform_desktop_hover['perspective'] ) ) {
+                $hover_styles[] = "perspective: {$transform_desktop_hover['perspective']}";
+            }
+            $css_rules[] = "{$selector}:hover { " . implode( '; ', $hover_styles ) . "; }";
+        }
+
+        // ============================================
+        // INNER CONTAINER - Desktop
+        // Evidence: styles.ts generateInnerResponsiveCSS() lines 816-1017
+        // ============================================
+
+        $desktop_inner = [
+            $is_grid ? 'display: grid' : 'display: flex',
+            'width: 100%',
+        ];
+
+        // Content Width - boxed vs full vs custom
+        if ( ( $attributes['contentWidthUnit'] ?? '' ) === 'custom' && ! empty( $attributes['contentWidthCustom'] ) ) {
+            $desktop_inner[] = "width: {$attributes['contentWidthCustom']}";
+            $desktop_inner[] = 'max-width: none';
+            $desktop_inner[] = 'margin-left: auto';
+            $desktop_inner[] = 'margin-right: auto';
+        } elseif ( ( $attributes['contentWidthType'] ?? '' ) === 'full' ) {
+            if ( ! empty( $attributes['contentWidth'] ) && $attributes['contentWidth'] < 100 ) {
+                $unit = $attributes['contentWidthUnit'] ?? '%';
+                $desktop_inner[] = "width: {$attributes['contentWidth']}{$unit}";
+                $desktop_inner[] = 'margin-left: auto';
+                $desktop_inner[] = 'margin-right: auto';
+            }
+            $desktop_inner[] = 'max-width: none';
+        } elseif ( ! empty( $attributes['contentWidth'] ) ) {
+            $unit = $attributes['contentWidthUnit'] ?? 'px';
+            $desktop_inner[] = "max-width: {$attributes['contentWidth']}{$unit}";
+            $desktop_inner[] = 'margin-left: auto';
+            $desktop_inner[] = 'margin-right: auto';
+        }
+
+        // Grid-specific properties
+        if ( $is_grid ) {
+            if ( ! empty( $attributes['gridColumns'] ) ) {
+                $unit = $attributes['gridColumnsUnit'] ?? 'fr';
+                $col_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $desktop_inner[] = "grid-template-columns: repeat({$attributes['gridColumns']}, {$col_val})";
+            }
+            if ( ! empty( $attributes['gridRows'] ) ) {
+                $unit = $attributes['gridRowsUnit'] ?? 'fr';
+                $row_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $desktop_inner[] = "grid-template-rows: repeat({$attributes['gridRows']}, {$row_val})";
+            }
+            if ( ! empty( $attributes['gridAutoFlow'] ) ) {
+                $desktop_inner[] = "grid-auto-flow: {$attributes['gridAutoFlow']}";
+            }
+        } else {
+            // Flex-specific properties
+            if ( ! empty( $attributes['flexDirection'] ) ) {
+                $desktop_inner[] = "flex-direction: {$attributes['flexDirection']}";
+            }
+            if ( ! empty( $attributes['justifyContent'] ) ) {
+                $desktop_inner[] = "justify-content: {$attributes['justifyContent']}";
+            }
+            if ( ! empty( $attributes['alignItems'] ) ) {
+                $desktop_inner[] = "align-items: {$attributes['alignItems']}";
+            }
+            if ( ! empty( $attributes['flexWrap'] ) ) {
+                $desktop_inner[] = "flex-wrap: {$attributes['flexWrap']}";
+            }
+            if ( ! empty( $attributes['alignContent'] ) ) {
+                $desktop_inner[] = "align-content: {$attributes['alignContent']}";
+            }
+        }
+
+        // Gaps
+        if ( isset( $attributes['columnGap'] ) && $attributes['columnGap'] !== '' ) {
+            $unit = $attributes['columnGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $desktop_inner[] = "column-gap: {$attributes['columnGap']}{$unit}";
+        }
+        if ( isset( $attributes['rowGap'] ) && $attributes['rowGap'] !== '' ) {
+            $unit = $attributes['rowGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $desktop_inner[] = "row-gap: {$attributes['rowGap']}{$unit}";
+        }
+
+        // Inline Flex
+        if ( ! empty( $attributes['enableInlineFlex'] ) ) {
+            $desktop_inner[] = 'display: inline-flex';
+            $desktop_inner[] = 'width: auto';
+        }
+
+        $css_rules[] = "{$inner} { " . implode( '; ', $desktop_inner ) . "; }";
+
+        // ============================================
+        // OUTER CONTAINER - Tablet
+        // ============================================
+
+        $tablet_outer = [];
+
+        if ( ! empty( $attributes['minHeight_tablet'] ) ) {
+            $unit = $attributes['minHeightUnit'] ?? 'px';
+            $tablet_outer[] = "min-height: {$attributes['minHeight_tablet']}{$unit}";
+        }
+
+        // Sticky - Tablet
+        if ( ! empty( $attributes['stickyEnabled'] ) ) {
+            if ( ( $attributes['stickyTablet'] ?? '' ) === 'sticky' ) {
+                $tablet_outer[] = 'position: sticky';
+                $tablet_outer[] = 'align-self: flex-start';
+                if ( isset( $attributes['stickyTop_tablet'] ) && $attributes['stickyTop_tablet'] !== '' ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $tablet_outer[] = "top: {$attributes['stickyTop_tablet']}{$unit}";
+                }
+            } elseif ( ( $attributes['stickyTablet'] ?? '' ) === 'initial' ) {
+                $tablet_outer[] = 'position: relative';
+                $tablet_outer[] = 'align-self: stretch';
+            }
+        }
+
+        if ( ! empty( $attributes['enableCalcMinHeight'] ) && ! empty( $attributes['calcMinHeight_tablet'] ) ) {
+            $tablet_outer[] = "min-height: {$attributes['calcMinHeight_tablet']}";
+        }
+        if ( ! empty( $attributes['enableCalcMaxHeight'] ) && ! empty( $attributes['calcMaxHeight_tablet'] ) ) {
+            $tablet_outer[] = "max-height: {$attributes['calcMaxHeight_tablet']}";
+        }
+        if ( ! empty( $attributes['enableBackdropBlur'] ) && isset( $attributes['backdropBlurStrength_tablet'] ) && $attributes['backdropBlurStrength_tablet'] !== '' ) {
+            $tablet_outer[] = "backdrop-filter: blur({$attributes['backdropBlurStrength_tablet']}px)";
+        }
+
+        // Transform CSS - Tablet Normal
+        $transform_tablet = self::build_transform_css( $attributes, '_tablet', false );
+        if ( ! empty( $transform_tablet['transform'] ) ) {
+            $tablet_outer[] = "transform: {$transform_tablet['transform']}";
+        }
+        if ( ! empty( $transform_tablet['transformOrigin'] ) && $transform_tablet['transformOrigin'] !== '50% 50%' ) {
+            $tablet_outer[] = "transform-origin: {$transform_tablet['transformOrigin']}";
+        }
+        if ( ! empty( $transform_tablet['perspective'] ) ) {
+            $tablet_outer[] = "perspective: {$transform_tablet['perspective']}";
+        }
+
+        if ( ! empty( $tablet_outer ) ) {
+            $tablet_rules[] = "{$selector} { " . implode( '; ', $tablet_outer ) . "; }";
+        }
+
+        // Tablet Hover transforms
+        $transform_tablet_hover = self::build_transform_css( $attributes, '_tablet', true );
+        if ( ! empty( $transform_tablet_hover['transform'] ) ) {
+            $hover_styles = [ "transform: {$transform_tablet_hover['transform']}" ];
+            if ( ! empty( $transform_tablet_hover['transformOrigin'] ) && $transform_tablet_hover['transformOrigin'] !== '50% 50%' ) {
+                $hover_styles[] = "transform-origin: {$transform_tablet_hover['transformOrigin']}";
+            }
+            if ( ! empty( $transform_tablet_hover['perspective'] ) ) {
+                $hover_styles[] = "perspective: {$transform_tablet_hover['perspective']}";
+            }
+            $tablet_rules[] = "{$selector}:hover { " . implode( '; ', $hover_styles ) . "; }";
+        }
+
+        // ============================================
+        // INNER CONTAINER - Tablet
+        // ============================================
+
+        $tablet_inner = [];
+
+        if ( ! empty( $attributes['contentWidth_tablet'] ) ) {
+            $unit = $attributes['contentWidthUnit'] ?? 'px';
+            $tablet_inner[] = "max-width: {$attributes['contentWidth_tablet']}{$unit}";
+        }
+
+        if ( $is_grid ) {
+            if ( ! empty( $attributes['gridColumns_tablet'] ) ) {
+                $unit = $attributes['gridColumnsUnit'] ?? 'fr';
+                $col_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $tablet_inner[] = "grid-template-columns: repeat({$attributes['gridColumns_tablet']}, {$col_val})";
+            }
+            if ( ! empty( $attributes['gridRows_tablet'] ) ) {
+                $unit = $attributes['gridRowsUnit'] ?? 'fr';
+                $row_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $tablet_inner[] = "grid-template-rows: repeat({$attributes['gridRows_tablet']}, {$row_val})";
+            }
+        } else {
+            if ( ! empty( $attributes['flexDirection_tablet'] ) ) {
+                $tablet_inner[] = "flex-direction: {$attributes['flexDirection_tablet']}";
+            }
+            if ( ! empty( $attributes['justifyContent_tablet'] ) ) {
+                $tablet_inner[] = "justify-content: {$attributes['justifyContent_tablet']}";
+            }
+            if ( ! empty( $attributes['alignItems_tablet'] ) ) {
+                $tablet_inner[] = "align-items: {$attributes['alignItems_tablet']}";
+            }
+            if ( ! empty( $attributes['flexWrap_tablet'] ) ) {
+                $tablet_inner[] = "flex-wrap: {$attributes['flexWrap_tablet']}";
+            }
+            if ( ! empty( $attributes['alignContent_tablet'] ) ) {
+                $tablet_inner[] = "align-content: {$attributes['alignContent_tablet']}";
+            }
+        }
+
+        if ( isset( $attributes['columnGap_tablet'] ) && $attributes['columnGap_tablet'] !== '' ) {
+            $unit = $attributes['columnGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $tablet_inner[] = "column-gap: {$attributes['columnGap_tablet']}{$unit}";
+        }
+        if ( isset( $attributes['rowGap_tablet'] ) && $attributes['rowGap_tablet'] !== '' ) {
+            $unit = $attributes['rowGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $tablet_inner[] = "row-gap: {$attributes['rowGap_tablet']}{$unit}";
+        }
+
+        if ( isset( $attributes['enableInlineFlex_tablet'] ) ) {
+            if ( $attributes['enableInlineFlex_tablet'] ) {
+                $tablet_inner[] = 'display: inline-flex';
+                $tablet_inner[] = 'width: auto';
+            } else {
+                $tablet_inner[] = $is_grid ? 'display: grid' : 'display: flex';
+                $tablet_inner[] = 'width: 100%';
+            }
+        }
+
+        if ( ! empty( $tablet_inner ) ) {
+            $tablet_rules[] = "{$inner} { " . implode( '; ', $tablet_inner ) . "; }";
+        }
+
+        // ============================================
+        // OUTER CONTAINER - Mobile
+        // ============================================
+
+        $mobile_outer = [];
+
+        if ( ! empty( $attributes['minHeight_mobile'] ) ) {
+            $unit = $attributes['minHeightUnit'] ?? 'px';
+            $mobile_outer[] = "min-height: {$attributes['minHeight_mobile']}{$unit}";
+        }
+
+        // Sticky - Mobile
+        if ( ! empty( $attributes['stickyEnabled'] ) ) {
+            if ( ( $attributes['stickyMobile'] ?? '' ) === 'sticky' ) {
+                $mobile_outer[] = 'position: sticky';
+                $mobile_outer[] = 'align-self: flex-start';
+                if ( isset( $attributes['stickyTop_mobile'] ) && $attributes['stickyTop_mobile'] !== '' ) {
+                    $unit = $attributes['stickyTopUnit'] ?? 'px';
+                    $mobile_outer[] = "top: {$attributes['stickyTop_mobile']}{$unit}";
+                }
+            } elseif ( ( $attributes['stickyMobile'] ?? '' ) === 'initial' ) {
+                $mobile_outer[] = 'position: relative';
+                $mobile_outer[] = 'align-self: stretch';
+            }
+        }
+
+        if ( ! empty( $attributes['enableCalcMinHeight'] ) && ! empty( $attributes['calcMinHeight_mobile'] ) ) {
+            $mobile_outer[] = "min-height: {$attributes['calcMinHeight_mobile']}";
+        }
+        if ( ! empty( $attributes['enableCalcMaxHeight'] ) && ! empty( $attributes['calcMaxHeight_mobile'] ) ) {
+            $mobile_outer[] = "max-height: {$attributes['calcMaxHeight_mobile']}";
+        }
+        if ( ! empty( $attributes['enableBackdropBlur'] ) && isset( $attributes['backdropBlurStrength_mobile'] ) && $attributes['backdropBlurStrength_mobile'] !== '' ) {
+            $mobile_outer[] = "backdrop-filter: blur({$attributes['backdropBlurStrength_mobile']}px)";
+        }
+
+        // Transform CSS - Mobile Normal
+        $transform_mobile = self::build_transform_css( $attributes, '_mobile', false );
+        if ( ! empty( $transform_mobile['transform'] ) ) {
+            $mobile_outer[] = "transform: {$transform_mobile['transform']}";
+        }
+        if ( ! empty( $transform_mobile['transformOrigin'] ) && $transform_mobile['transformOrigin'] !== '50% 50%' ) {
+            $mobile_outer[] = "transform-origin: {$transform_mobile['transformOrigin']}";
+        }
+        if ( ! empty( $transform_mobile['perspective'] ) ) {
+            $mobile_outer[] = "perspective: {$transform_mobile['perspective']}";
+        }
+
+        if ( ! empty( $mobile_outer ) ) {
+            $mobile_rules[] = "{$selector} { " . implode( '; ', $mobile_outer ) . "; }";
+        }
+
+        // Mobile Hover transforms
+        $transform_mobile_hover = self::build_transform_css( $attributes, '_mobile', true );
+        if ( ! empty( $transform_mobile_hover['transform'] ) ) {
+            $hover_styles = [ "transform: {$transform_mobile_hover['transform']}" ];
+            if ( ! empty( $transform_mobile_hover['transformOrigin'] ) && $transform_mobile_hover['transformOrigin'] !== '50% 50%' ) {
+                $hover_styles[] = "transform-origin: {$transform_mobile_hover['transformOrigin']}";
+            }
+            if ( ! empty( $transform_mobile_hover['perspective'] ) ) {
+                $hover_styles[] = "perspective: {$transform_mobile_hover['perspective']}";
+            }
+            $mobile_rules[] = "{$selector}:hover { " . implode( '; ', $hover_styles ) . "; }";
+        }
+
+        // ============================================
+        // INNER CONTAINER - Mobile
+        // ============================================
+
+        $mobile_inner = [];
+
+        if ( ! empty( $attributes['contentWidth_mobile'] ) ) {
+            $unit = $attributes['contentWidthUnit'] ?? 'px';
+            $mobile_inner[] = "max-width: {$attributes['contentWidth_mobile']}{$unit}";
+        }
+
+        if ( $is_grid ) {
+            if ( ! empty( $attributes['gridColumns_mobile'] ) ) {
+                $unit = $attributes['gridColumnsUnit'] ?? 'fr';
+                $col_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $mobile_inner[] = "grid-template-columns: repeat({$attributes['gridColumns_mobile']}, {$col_val})";
+            }
+            if ( ! empty( $attributes['gridRows_mobile'] ) ) {
+                $unit = $attributes['gridRowsUnit'] ?? 'fr';
+                $row_val = $unit === 'auto' ? 'auto' : "1{$unit}";
+                $mobile_inner[] = "grid-template-rows: repeat({$attributes['gridRows_mobile']}, {$row_val})";
+            }
+        } else {
+            if ( ! empty( $attributes['flexDirection_mobile'] ) ) {
+                $mobile_inner[] = "flex-direction: {$attributes['flexDirection_mobile']}";
+            }
+            if ( ! empty( $attributes['justifyContent_mobile'] ) ) {
+                $mobile_inner[] = "justify-content: {$attributes['justifyContent_mobile']}";
+            }
+            if ( ! empty( $attributes['alignItems_mobile'] ) ) {
+                $mobile_inner[] = "align-items: {$attributes['alignItems_mobile']}";
+            }
+            if ( ! empty( $attributes['flexWrap_mobile'] ) ) {
+                $mobile_inner[] = "flex-wrap: {$attributes['flexWrap_mobile']}";
+            }
+            if ( ! empty( $attributes['alignContent_mobile'] ) ) {
+                $mobile_inner[] = "align-content: {$attributes['alignContent_mobile']}";
+            }
+        }
+
+        if ( isset( $attributes['columnGap_mobile'] ) && $attributes['columnGap_mobile'] !== '' ) {
+            $unit = $attributes['columnGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $mobile_inner[] = "column-gap: {$attributes['columnGap_mobile']}{$unit}";
+        }
+        if ( isset( $attributes['rowGap_mobile'] ) && $attributes['rowGap_mobile'] !== '' ) {
+            $unit = $attributes['rowGapUnit'] ?? $attributes['gapUnit'] ?? 'px';
+            $mobile_inner[] = "row-gap: {$attributes['rowGap_mobile']}{$unit}";
+        }
+
+        if ( isset( $attributes['enableInlineFlex_mobile'] ) ) {
+            if ( $attributes['enableInlineFlex_mobile'] ) {
+                $mobile_inner[] = 'display: inline-flex';
+                $mobile_inner[] = 'width: auto';
+            } else {
+                $mobile_inner[] = $is_grid ? 'display: grid' : 'display: flex';
+                $mobile_inner[] = 'width: 100%';
+            }
+        }
+
+        if ( ! empty( $mobile_inner ) ) {
+            $mobile_rules[] = "{$inner} { " . implode( '; ', $mobile_inner ) . "; }";
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Build transform CSS string from flex-container attributes.
+     *
+     * Translates generateTransformCSS() from styles.ts.
+     * Handles: rotate, 3D rotate, translate, scale, skew, flip, transform-origin, perspective.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $suffix     Device suffix: '' (desktop), '_tablet', '_mobile'.
+     * @param bool   $is_hover   Whether generating for hover state.
+     * @return array { transform: string, transformOrigin: string, perspective: string }
+     */
+    private static function build_transform_css( $attributes, $suffix = '', $is_hover = false ) {
+        $transforms = [];
+        $hover_key  = $is_hover ? 'Hover' : '';
+
+        // Helper to read numeric value with device suffix
+        $get_value = function ( $base_name ) use ( $attributes, $hover_key, $suffix ) {
+            $attr_name = $base_name . $hover_key . $suffix;
+            return isset( $attributes[ $attr_name ] ) && $attributes[ $attr_name ] !== '' ? $attributes[ $attr_name ] : null;
+        };
+
+        // Helper to read string value with device suffix
+        $get_string = function ( $base_name ) use ( $attributes, $hover_key, $suffix ) {
+            $attr_name = $base_name . $hover_key . $suffix;
+            return ! empty( $attributes[ $attr_name ] ) ? $attributes[ $attr_name ] : null;
+        };
+
+        // Rotate
+        $rotate = $get_value( 'transformRotate' );
+        if ( $rotate !== null ) {
+            $transforms[] = "rotate({$rotate}deg)";
+        }
+
+        // 3D Rotate
+        $is_3d = $is_hover
+            ? ! empty( $attributes['transformRotate3DHover'] )
+            : ! empty( $attributes['transformRotate3D'] );
+
+        if ( $is_3d ) {
+            $rotate_x = $get_value( 'transformRotateX' );
+            $rotate_y = $get_value( 'transformRotateY' );
+            if ( $rotate_x !== null ) {
+                $transforms[] = "rotateX({$rotate_x}deg)";
+            }
+            if ( $rotate_y !== null ) {
+                $transforms[] = "rotateY({$rotate_y}deg)";
+            }
+        }
+
+        // Translate
+        $translate_x = $get_value( 'transformTranslateX' );
+        $translate_x_unit = $is_hover
+            ? ( $attributes['transformTranslateXHoverUnit'] ?? 'px' )
+            : ( $attributes['transformTranslateXUnit'] ?? 'px' );
+        if ( $translate_x !== null ) {
+            $transforms[] = "translateX({$translate_x}{$translate_x_unit})";
+        }
+
+        $translate_y = $get_value( 'transformTranslateY' );
+        $translate_y_unit = $is_hover
+            ? ( $attributes['transformTranslateYHoverUnit'] ?? 'px' )
+            : ( $attributes['transformTranslateYUnit'] ?? 'px' );
+        if ( $translate_y !== null ) {
+            $transforms[] = "translateY({$translate_y}{$translate_y_unit})";
+        }
+
+        // Scale
+        $keep_proportions = $is_hover
+            ? ( $attributes['transformScaleProportionsHover'] ?? true )
+            : ( $attributes['transformScaleProportions'] ?? true );
+
+        if ( $keep_proportions ) {
+            $scale = $get_value( 'transformScale' );
+            if ( $scale !== null ) {
+                $transforms[] = "scale({$scale})";
+            }
+        } else {
+            $scale_x = $get_value( 'transformScaleX' );
+            $scale_y = $get_value( 'transformScaleY' );
+            if ( $scale_x !== null ) {
+                $transforms[] = "scaleX({$scale_x})";
+            }
+            if ( $scale_y !== null ) {
+                $transforms[] = "scaleY({$scale_y})";
+            }
+        }
+
+        // Skew
+        $skew_x = $get_value( 'transformSkewX' );
+        if ( $skew_x !== null ) {
+            $transforms[] = "skewX({$skew_x}deg)";
+        }
+        $skew_y = $get_value( 'transformSkewY' );
+        if ( $skew_y !== null ) {
+            $transforms[] = "skewY({$skew_y}deg)";
+        }
+
+        // Flip (scaleX/Y with -1)
+        $flip_x = $is_hover
+            ? ! empty( $attributes['transformFlipXHover'] )
+            : ! empty( $attributes['transformFlipX'] );
+        $flip_y = $is_hover
+            ? ! empty( $attributes['transformFlipYHover'] )
+            : ! empty( $attributes['transformFlipY'] );
+
+        if ( $flip_x ) {
+            $transforms[] = 'scaleX(-1)';
+        }
+        if ( $flip_y ) {
+            $transforms[] = 'scaleY(-1)';
+        }
+
+        // Transform Origin
+        $origin_x = $get_string( 'transformOriginX' ) ?? 'center';
+        $origin_y = $get_string( 'transformOriginY' ) ?? 'center';
+        $transform_origin = self::anchor_to_percent( $origin_x ) . ' ' . self::anchor_to_percent( $origin_y );
+
+        // Perspective
+        $perspective = $get_value( 'transformPerspective' );
+        $perspective_css = $perspective !== null ? "{$perspective}px" : '';
+
+        return [
+            'transform'       => implode( ' ', $transforms ),
+            'transformOrigin' => $transform_origin,
+            'perspective'     => $perspective_css,
+        ];
+    }
+
+    /**
+     * Convert anchor point value to CSS percentage.
+     *
+     * Translates anchorToPercent() from styles.ts.
+     *
+     * @param string $anchor Anchor value: 'left', 'top', 'center', 'right', 'bottom'.
+     * @return string CSS percentage value.
+     */
+    private static function anchor_to_percent( $anchor ) {
+        switch ( $anchor ) {
+            case 'left':
+            case 'top':
+                return '0%';
+            case 'right':
+            case 'bottom':
+                return '100%';
+            case 'center':
+            default:
+                return '50%';
+        }
+    }
+
+    /**
+     * Generate CSS for Visit Chart Block
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Unique block ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_visit_chart_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $selector = '.voxel-fse-visit-chart-frontend.voxel-fse-visit-chart-' . $block_id;
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+
+        // ============================================
+        // SECTION: Chart
+        // ============================================
+
+        // Content height (responsive)
+        if ( isset( $attributes['chartHeight'] ) && $attributes['chartHeight'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['chartHeight']}px; }";
+        }
+        if ( isset( $attributes['chartHeight_tablet'] ) && $attributes['chartHeight_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['chartHeight_tablet']}px; }";
+        }
+        if ( isset( $attributes['chartHeight_mobile'] ) && $attributes['chartHeight_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['chartHeight_mobile']}px; }";
+        }
+
+        // Axis Typography
+        if ( ! empty( $attributes['axisTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['axisTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .chart-content span { {$typo}; }";
+            }
+        }
+
+        // Axis Text Color
+        if ( ! empty( $attributes['axisTextColor'] ) ) {
+            $css_rules[] = "{$selector} .chart-content span { color: {$attributes['axisTextColor']}; }";
+        }
+
+        // Vertical axis width (responsive)
+        if ( isset( $attributes['verticalAxisWidth'] ) && $attributes['verticalAxisWidth'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['verticalAxisWidth']}px; }";
+        }
+        if ( isset( $attributes['verticalAxisWidth_tablet'] ) && $attributes['verticalAxisWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['verticalAxisWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['verticalAxisWidth_mobile'] ) && $attributes['verticalAxisWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['verticalAxisWidth_mobile']}px; }";
+        }
+
+        // Chart lines border type
+        if ( ! empty( $attributes['chartLineBorderType'] ) && $attributes['chartLineBorderType'] !== 'default' ) {
+            if ( $attributes['chartLineBorderType'] === 'none' ) {
+                $css_rules[] = "{$selector} .chart-content .bar-values span { border-top-style: none; }";
+            } else {
+                $css_rules[] = "{$selector} .chart-content .bar-values span { border-top-style: {$attributes['chartLineBorderType']}; }";
+            }
+        }
+
+        // Bar gap (responsive)
+        if ( isset( $attributes['barGap'] ) && $attributes['barGap'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['barGap']}px; }";
+        }
+        if ( isset( $attributes['barGap_tablet'] ) && $attributes['barGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['barGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['barGap_mobile'] ) && $attributes['barGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['barGap_mobile']}px; }";
+        }
+
+        // Bar width (responsive)
+        if ( isset( $attributes['barWidth'] ) && $attributes['barWidth'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['barWidth']}px; }";
+        }
+        if ( isset( $attributes['barWidth_tablet'] ) && $attributes['barWidth_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['barWidth_tablet']}px; }";
+        }
+        if ( isset( $attributes['barWidth_mobile'] ) && $attributes['barWidth_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['barWidth_mobile']}px; }";
+        }
+
+        // Bar radius (responsive)
+        if ( isset( $attributes['barRadius'] ) && $attributes['barRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['barRadius']}px; }";
+        }
+        if ( isset( $attributes['barRadius_tablet'] ) && $attributes['barRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['barRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['barRadius_mobile'] ) && $attributes['barRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['barRadius_mobile']}px; }";
+        }
+
+        // Bar background (BackgroundControl)
+        if ( ! empty( $attributes['barBackground'] ) ) {
+            $bg = $attributes['barBackground'];
+            $bg_type = $bg['backgroundType'] ?? 'classic';
+            if ( $bg_type === 'gradient' && ! empty( $bg['backgroundGradient'] ) ) {
+                $css_rules[] = "{$selector} .chart-content .bar-item { background-image: {$bg['backgroundGradient']}; }";
+            } elseif ( ! empty( $bg['backgroundColor'] ) ) {
+                $css_rules[] = "{$selector} .chart-content .bar-item { background-color: {$bg['backgroundColor']}; }";
+            }
+        }
+
+        // Bar background hover
+        if ( ! empty( $attributes['barBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item:hover { background-color: {$attributes['barBackgroundHover']}; }";
+        }
+
+        // Bar box shadow
+        if ( ! empty( $attributes['barBoxShadow'] ) && ! empty( $attributes['barBoxShadow']['enable'] ) ) {
+            $s = $attributes['barBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $s['position'] ?? 'outline' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .chart-content .bar-item { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Bar popup background
+        if ( ! empty( $attributes['barPopupBackground'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data { background-color: {$attributes['barPopupBackground']}; }";
+        }
+
+        // Bar popup border
+        if ( ! empty( $attributes['barPopupBorderType'] ) && $attributes['barPopupBorderType'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['barPopupBorderType']};";
+            if ( ! empty( $attributes['barPopupBorderWidth'] ) ) {
+                $w = $attributes['barPopupBorderWidth'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['barPopupBorderColor'] ) ) {
+                $border_css .= " border-color: {$attributes['barPopupBorderColor']};";
+            }
+            $css_rules[] = "{$selector} .bar-item-data { {$border_css} }";
+        }
+
+        // Bar popup radius (responsive)
+        if ( isset( $attributes['barPopupRadius'] ) && $attributes['barPopupRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['barPopupRadius']}px; }";
+        }
+        if ( isset( $attributes['barPopupRadius_tablet'] ) && $attributes['barPopupRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['barPopupRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['barPopupRadius_mobile'] ) && $attributes['barPopupRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['barPopupRadius_mobile']}px; }";
+        }
+
+        // Bar popup box shadow
+        if ( ! empty( $attributes['barPopupBoxShadow'] ) && ! empty( $attributes['barPopupBoxShadow']['enable'] ) ) {
+            $s = $attributes['barPopupBoxShadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $s['position'] ?? 'outline' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .bar-item-data { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Bar popup value typography
+        if ( ! empty( $attributes['barPopupValueTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['barPopupValueTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .bar-item-data li { {$typo}; }";
+            }
+        }
+
+        // Bar popup value color
+        if ( ! empty( $attributes['barPopupValueColor'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data li { color: {$attributes['barPopupValueColor']}; }";
+        }
+
+        // Bar popup label typography
+        if ( ! empty( $attributes['barPopupLabelTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['barPopupLabelTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .bar-item-data li small { {$typo}; }";
+            }
+        }
+
+        // Bar popup label color
+        if ( ! empty( $attributes['barPopupLabelColor'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data li small { color: {$attributes['barPopupLabelColor']}; }";
+        }
+
+        // ============================================
+        // SECTION: Tabs
+        // ============================================
+
+        // Tabs justify
+        if ( ! empty( $attributes['tabsJustify'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs { justify-content: {$attributes['tabsJustify']}; }";
+        }
+
+        // Tabs padding
+        if ( ! empty( $attributes['tabsPadding'] ) ) {
+            $p = $attributes['tabsPadding'];
+            $unit = $p['unit'] ?? 'px';
+            $t = floatval( $p['top'] ?? 0 );
+            $r = floatval( $p['right'] ?? 0 );
+            $b = floatval( $p['bottom'] ?? 0 );
+            $l = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$t}{$unit} {$r}{$unit} {$b}{$unit} {$l}{$unit}; }";
+        }
+
+        // Tabs margin
+        if ( ! empty( $attributes['tabsMargin'] ) ) {
+            $m = $attributes['tabsMargin'];
+            $unit = $m['unit'] ?? 'px';
+            $t = floatval( $m['top'] ?? 0 );
+            $r = floatval( $m['right'] ?? 0 );
+            $b = floatval( $m['bottom'] ?? 0 );
+            $l = floatval( $m['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li { margin: {$t}{$unit} {$r}{$unit} {$b}{$unit} {$l}{$unit}; }";
+        }
+
+        // Tab typography
+        if ( ! empty( $attributes['tabsTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabsTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { {$typo}; }";
+            }
+        }
+
+        // Active tab typography
+        if ( ! empty( $attributes['tabsActiveTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['tabsActiveTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { {$typo}; }";
+            }
+        }
+
+        // Text color
+        if ( ! empty( $attributes['tabsTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { color: {$attributes['tabsTextColor']}; }";
+        }
+
+        // Active text color
+        if ( ! empty( $attributes['tabsActiveTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { color: {$attributes['tabsActiveTextColor']}; }";
+        }
+
+        // Background
+        if ( ! empty( $attributes['tabsBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { background-color: {$attributes['tabsBackground']}; }";
+        }
+
+        // Active background
+        if ( ! empty( $attributes['tabsActiveBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { background-color: {$attributes['tabsActiveBackground']}; }";
+        }
+
+        // Border type
+        if ( ! empty( $attributes['tabsBorderType'] ) && $attributes['tabsBorderType'] !== 'default' ) {
+            if ( $attributes['tabsBorderType'] === 'none' ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { border-style: none; }";
+            } else {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { border-style: {$attributes['tabsBorderType']}; }";
+            }
+        }
+
+        // Active border color
+        if ( ! empty( $attributes['tabsActiveBorderColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { border-color: {$attributes['tabsActiveBorderColor']}; }";
+        }
+
+        // Border radius (responsive)
+        if ( isset( $attributes['tabsBorderRadius'] ) && $attributes['tabsBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['tabsBorderRadius_tablet'] ) && $attributes['tabsBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['tabsBorderRadius_mobile'] ) && $attributes['tabsBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['tabsBorderRadius_mobile']}px; }";
+        }
+
+        // HOVER STATES
+        if ( ! empty( $attributes['tabsTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { color: {$attributes['tabsTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsActiveTextColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { color: {$attributes['tabsActiveTextColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { border-color: {$attributes['tabsBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsActiveBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { border-color: {$attributes['tabsActiveBorderColorHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { background-color: {$attributes['tabsBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['tabsActiveBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { background-color: {$attributes['tabsActiveBackgroundHover']}; }";
+        }
+
+        // ============================================
+        // SECTION: Week Buttons
+        // ============================================
+
+        // Range typography
+        if ( ! empty( $attributes['weekRangeTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['weekRangeTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-chart-nav p { {$typo}; }";
+            }
+        }
+
+        // Range text color
+        if ( ! empty( $attributes['weekRangeTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav p { color: {$attributes['weekRangeTextColor']}; }";
+        }
+
+        // Button icon color
+        if ( ! empty( $attributes['weekButtonIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { color: {$attributes['weekButtonIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { fill: {$attributes['weekButtonIconColor']}; }";
+        }
+
+        // Button icon size (responsive)
+        if ( isset( $attributes['weekButtonIconSize'] ) && $attributes['weekButtonIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { font-size: {$attributes['weekButtonIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { width: {$attributes['weekButtonIconSize']}px; height: {$attributes['weekButtonIconSize']}px; }";
+        }
+        if ( isset( $attributes['weekButtonIconSize_tablet'] ) && $attributes['weekButtonIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { font-size: {$attributes['weekButtonIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { width: {$attributes['weekButtonIconSize_tablet']}px; height: {$attributes['weekButtonIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['weekButtonIconSize_mobile'] ) && $attributes['weekButtonIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { font-size: {$attributes['weekButtonIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { width: {$attributes['weekButtonIconSize_mobile']}px; height: {$attributes['weekButtonIconSize_mobile']}px; }";
+        }
+
+        // Button background
+        if ( ! empty( $attributes['weekButtonBackground'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { background-color: {$attributes['weekButtonBackground']}; }";
+        }
+
+        // Button border
+        if ( ! empty( $attributes['weekButtonBorderType'] ) && $attributes['weekButtonBorderType'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['weekButtonBorderType']};";
+            if ( ! empty( $attributes['weekButtonBorderWidth'] ) ) {
+                $w = $attributes['weekButtonBorderWidth'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['weekButtonBorderColor'] ) ) {
+                $border_css .= " border-color: {$attributes['weekButtonBorderColor']};";
+            }
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { {$border_css} }";
+        }
+
+        // Button border radius (responsive)
+        if ( isset( $attributes['weekButtonBorderRadius'] ) && $attributes['weekButtonBorderRadius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { border-radius: {$attributes['weekButtonBorderRadius']}px; }";
+        }
+        if ( isset( $attributes['weekButtonBorderRadius_tablet'] ) && $attributes['weekButtonBorderRadius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { border-radius: {$attributes['weekButtonBorderRadius_tablet']}px; }";
+        }
+        if ( isset( $attributes['weekButtonBorderRadius_mobile'] ) && $attributes['weekButtonBorderRadius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { border-radius: {$attributes['weekButtonBorderRadius_mobile']}px; }";
+        }
+
+        // Button size (responsive)
+        if ( isset( $attributes['weekButtonSize'] ) && $attributes['weekButtonSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { width: {$attributes['weekButtonSize']}px; height: {$attributes['weekButtonSize']}px; min-width: {$attributes['weekButtonSize']}px; }";
+        }
+        if ( isset( $attributes['weekButtonSize_tablet'] ) && $attributes['weekButtonSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { width: {$attributes['weekButtonSize_tablet']}px; height: {$attributes['weekButtonSize_tablet']}px; min-width: {$attributes['weekButtonSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['weekButtonSize_mobile'] ) && $attributes['weekButtonSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { width: {$attributes['weekButtonSize_mobile']}px; height: {$attributes['weekButtonSize_mobile']}px; min-width: {$attributes['weekButtonSize_mobile']}px; }";
+        }
+
+        // HOVER STATES
+        if ( ! empty( $attributes['weekButtonIconColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover i { color: {$attributes['weekButtonIconColorHover']}; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover svg { fill: {$attributes['weekButtonIconColorHover']}; }";
+        }
+        if ( ! empty( $attributes['weekButtonBackgroundHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover { background-color: {$attributes['weekButtonBackgroundHover']}; }";
+        }
+        if ( ! empty( $attributes['weekButtonBorderColorHover'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover { border-color: {$attributes['weekButtonBorderColorHover']}; }";
+        }
+
+        // ============================================
+        // SECTION: No Activity
+        // ============================================
+
+        // Content gap (responsive)
+        if ( isset( $attributes['noActivityContentGap'] ) && $attributes['noActivityContentGap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts { grid-gap: {$attributes['noActivityContentGap']}px; }";
+        }
+        if ( isset( $attributes['noActivityContentGap_tablet'] ) && $attributes['noActivityContentGap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-no-posts { grid-gap: {$attributes['noActivityContentGap_tablet']}px; }";
+        }
+        if ( isset( $attributes['noActivityContentGap_mobile'] ) && $attributes['noActivityContentGap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-no-posts { grid-gap: {$attributes['noActivityContentGap_mobile']}px; }";
+        }
+
+        // Icon size (responsive)
+        if ( isset( $attributes['noActivityIconSize'] ) && $attributes['noActivityIconSize'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noActivityIconSize']}px; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noActivityIconSize']}px; height: {$attributes['noActivityIconSize']}px; }";
+        }
+        if ( isset( $attributes['noActivityIconSize_tablet'] ) && $attributes['noActivityIconSize_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noActivityIconSize_tablet']}px; }";
+            $tablet_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noActivityIconSize_tablet']}px; height: {$attributes['noActivityIconSize_tablet']}px; }";
+        }
+        if ( isset( $attributes['noActivityIconSize_mobile'] ) && $attributes['noActivityIconSize_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-no-posts i { font-size: {$attributes['noActivityIconSize_mobile']}px; }";
+            $mobile_rules[] = "{$selector} .ts-no-posts svg { width: {$attributes['noActivityIconSize_mobile']}px; height: {$attributes['noActivityIconSize_mobile']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['noActivityIconColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts i { color: {$attributes['noActivityIconColor']}; }";
+            $css_rules[] = "{$selector} .ts-no-posts svg { fill: {$attributes['noActivityIconColor']}; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['noActivityTypography'] ) ) {
+            $typo = self::generate_typography_css( $attributes['noActivityTypography'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-no-posts p { {$typo}; }";
+            }
+        }
+
+        // Text color
+        if ( ! empty( $attributes['noActivityTextColor'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts p { color: {$attributes['noActivityTextColor']}; }";
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
+        $final_css = '';
+        if ( ! empty( $css_rules ) ) {
+            $final_css .= implode( "\n", $css_rules );
+        }
+        if ( ! empty( $tablet_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::TABLET_BREAKPOINT . "px) {\n" . implode( "\n", $tablet_rules ) . "\n}";
+        }
+        if ( ! empty( $mobile_rules ) ) {
+            $final_css .= "\n@media (max-width: " . self::MOBILE_BREAKPOINT . "px) {\n" . implode( "\n", $mobile_rules ) . "\n}";
+        }
+
+        return $final_css;
+    }
+
+    /**
+     * Generate CSS for Sales Chart Block
+     *
+     * Note: Uses snake_case attribute names.
+     *
+     * @param array  $attributes Block attributes.
+     * @param string $block_id   Unique block ID.
+     * @return string Generated CSS.
+     */
+    public static function generate_sales_chart_css( $attributes, $block_id ) {
+        if ( empty( $block_id ) ) {
+            return '';
+        }
+
+        $selector = '.voxel-fse-sales-chart-' . $block_id;
+        $css_rules = [];
+        $tablet_rules = [];
+        $mobile_rules = [];
+
+        // ============================================
+        // SECTION: Chart
+        // ============================================
+
+        // Content height (responsive)
+        if ( isset( $attributes['ts_chart_height'] ) && $attributes['ts_chart_height'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['ts_chart_height']}px; }";
+        }
+        if ( isset( $attributes['ts_chart_height_tablet'] ) && $attributes['ts_chart_height_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['ts_chart_height_tablet']}px; }";
+        }
+        if ( isset( $attributes['ts_chart_height_mobile'] ) && $attributes['ts_chart_height_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .ts-chart .ts-no-posts, {$selector} .ts-chart .chart-content { height: {$attributes['ts_chart_height_mobile']}px; }";
+        }
+
+        // Axis Typography
+        if ( ! empty( $attributes['axis_typo'] ) ) {
+            $typo = self::generate_typography_css( $attributes['axis_typo'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .chart-content span { {$typo}; }";
+            }
+        }
+
+        // Axis text color
+        if ( ! empty( $attributes['ts_axis_typo_col'] ) ) {
+            $css_rules[] = "{$selector} .chart-content span { color: {$attributes['ts_axis_typo_col']}; }";
+        }
+
+        // Vertical axis width (responsive)
+        if ( isset( $attributes['vertical_axis_width'] ) && $attributes['vertical_axis_width'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['vertical_axis_width']}px; }";
+        }
+        if ( isset( $attributes['vertical_axis_width_tablet'] ) && $attributes['vertical_axis_width_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['vertical_axis_width_tablet']}px; }";
+        }
+        if ( isset( $attributes['vertical_axis_width_mobile'] ) && $attributes['vertical_axis_width_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content.min-scroll { margin-left: {$attributes['vertical_axis_width_mobile']}px; }";
+        }
+
+        // Chart lines border
+        if ( ! empty( $attributes['chart_line_border_type'] ) && $attributes['chart_line_border_type'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['chart_line_border_type']};";
+            if ( ! empty( $attributes['chart_line_border_width'] ) ) {
+                $w = $attributes['chart_line_border_width'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['chart_line_border_color'] ) ) {
+                $border_css .= " border-color: {$attributes['chart_line_border_color']};";
+            }
+            $css_rules[] = "{$selector} .chart-content .bar-values span { {$border_css} }";
+        }
+
+        // Bar gap (responsive)
+        if ( isset( $attributes['chart_col_gap'] ) && $attributes['chart_col_gap'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['chart_col_gap']}px; }";
+        }
+        if ( isset( $attributes['chart_col_gap_tablet'] ) && $attributes['chart_col_gap_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['chart_col_gap_tablet']}px; }";
+        }
+        if ( isset( $attributes['chart_col_gap_mobile'] ) && $attributes['chart_col_gap_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content { grid-gap: {$attributes['chart_col_gap_mobile']}px; }";
+        }
+
+        // Bar width (responsive)
+        if ( isset( $attributes['bar_width'] ) && $attributes['bar_width'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['bar_width']}px; }";
+        }
+        if ( isset( $attributes['bar_width_tablet'] ) && $attributes['bar_width_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['bar_width_tablet']}px; }";
+        }
+        if ( isset( $attributes['bar_width_mobile'] ) && $attributes['bar_width_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content .bar-item { width: {$attributes['bar_width_mobile']}px; }";
+        }
+
+        // Bar radius (responsive)
+        if ( isset( $attributes['bar_radius'] ) && $attributes['bar_radius'] !== '' ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['bar_radius']}px; }";
+        }
+        if ( isset( $attributes['bar_radius_tablet'] ) && $attributes['bar_radius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['bar_radius_tablet']}px; }";
+        }
+        if ( isset( $attributes['bar_radius_mobile'] ) && $attributes['bar_radius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .chart-content .bar-item { border-radius: {$attributes['bar_radius_mobile']}px; }";
+        }
+
+        // Bar background (BackgroundControl)
+        if ( ! empty( $attributes['bar_bg'] ) ) {
+            $bg = $attributes['bar_bg'];
+            $bg_type = $bg['backgroundType'] ?? 'classic';
+            if ( $bg_type === 'gradient' && ! empty( $bg['backgroundGradient'] ) ) {
+                $css_rules[] = "{$selector} .chart-content .bar-item { background-image: {$bg['backgroundGradient']}; }";
+            } elseif ( ! empty( $bg['backgroundColor'] ) ) {
+                $css_rules[] = "{$selector} .chart-content .bar-item { background-color: {$bg['backgroundColor']}; }";
+            }
+        }
+
+        // Bar hover
+        if ( ! empty( $attributes['bar_bg_hover'] ) ) {
+            $css_rules[] = "{$selector} .chart-content .bar-item:hover { background-color: {$attributes['bar_bg_hover']}; }";
+        }
+
+        // Bar shadow
+        if ( ! empty( $attributes['bar_sh_shadow'] ) && ! empty( $attributes['bar_sh_shadow']['enable'] ) ) {
+            $s = $attributes['bar_sh_shadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $s['position'] ?? 'outline' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .chart-content .bar-item { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // ============================================
+        // SECTION: Bar Popup
+        // ============================================
+
+        // Popup background
+        if ( ! empty( $attributes['bar_pop_bg'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data { background-color: {$attributes['bar_pop_bg']}; }";
+        }
+
+        // Popup border
+        if ( ! empty( $attributes['bar_pop_border_type'] ) && $attributes['bar_pop_border_type'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['bar_pop_border_type']};";
+            if ( ! empty( $attributes['bar_pop_border_width'] ) ) {
+                $w = $attributes['bar_pop_border_width'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['bar_pop_border_color'] ) ) {
+                $border_css .= " border-color: {$attributes['bar_pop_border_color']};";
+            }
+            $css_rules[] = "{$selector} .bar-item-data { {$border_css} }";
+        }
+
+        // Popup radius (responsive)
+        if ( isset( $attributes['bar_pop_radius'] ) && $attributes['bar_pop_radius'] !== '' ) {
+            $css_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['bar_pop_radius']}px; }";
+        }
+        if ( isset( $attributes['bar_pop_radius_tablet'] ) && $attributes['bar_pop_radius_tablet'] !== '' ) {
+            $tablet_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['bar_pop_radius_tablet']}px; }";
+        }
+        if ( isset( $attributes['bar_pop_radius_mobile'] ) && $attributes['bar_pop_radius_mobile'] !== '' ) {
+            $mobile_rules[] = "{$selector} .bar-item-data { border-radius: {$attributes['bar_pop_radius_mobile']}px; }";
+        }
+
+        // Popup shadow
+        if ( ! empty( $attributes['bar_pop_shadow'] ) && ! empty( $attributes['bar_pop_shadow']['enable'] ) ) {
+            $s = $attributes['bar_pop_shadow'];
+            $h = $s['horizontal'] ?? 0;
+            $v = $s['vertical'] ?? 0;
+            $blur = $s['blur'] ?? 0;
+            $spread = $s['spread'] ?? 0;
+            $color = $s['color'] ?? 'rgba(0,0,0,0.1)';
+            $inset = ( $s['position'] ?? 'outline' ) === 'inset' ? 'inset ' : '';
+            $css_rules[] = "{$selector} .bar-item-data { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+        }
+
+        // Popup value typography
+        if ( ! empty( $attributes['ts_primary_typo'] ) ) {
+            $typo = self::generate_typography_css( $attributes['ts_primary_typo'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .bar-item-data li { {$typo}; }";
+            }
+        }
+
+        // Popup value color
+        if ( ! empty( $attributes['ts_primary_color'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data li { color: {$attributes['ts_primary_color']}; }";
+        }
+
+        // Popup label typography
+        if ( ! empty( $attributes['ts_secondary_typo'] ) ) {
+            $typo = self::generate_typography_css( $attributes['ts_secondary_typo'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .bar-item-data li small { {$typo}; }";
+            }
+        }
+
+        // Popup label color
+        if ( ! empty( $attributes['ts_secondary_color'] ) ) {
+            $css_rules[] = "{$selector} .bar-item-data li small { color: {$attributes['ts_secondary_color']}; }";
+        }
+
+        // ============================================
+        // SECTION: Tabs
+        // ============================================
+
+        // Tabs justify
+        if ( ! empty( $attributes['ts_tabs_justify'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs { justify-content: {$attributes['ts_tabs_justify']}; }";
+        }
+
+        // Tab margin
+        if ( ! empty( $attributes['ts_tabs_margin'] ) ) {
+            $m = $attributes['ts_tabs_margin'];
+            $unit = $m['unit'] ?? 'px';
+            $t = floatval( $m['top'] ?? 0 );
+            $r = floatval( $m['right'] ?? 0 );
+            $b = floatval( $m['bottom'] ?? 0 );
+            $l = floatval( $m['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li { margin: {$t}{$unit} {$r}{$unit} {$b}{$unit} {$l}{$unit}; }";
+        }
+
+        // Tab padding
+        if ( ! empty( $attributes['ts_tabs_padding'] ) ) {
+            $p = $attributes['ts_tabs_padding'];
+            $unit = $p['unit'] ?? 'px';
+            $t = floatval( $p['top'] ?? 0 );
+            $r = floatval( $p['right'] ?? 0 );
+            $b = floatval( $p['bottom'] ?? 0 );
+            $l = floatval( $p['left'] ?? 0 );
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { padding: {$t}{$unit} {$r}{$unit} {$b}{$unit} {$l}{$unit}; }";
+        }
+
+        // Tab typography
+        if ( ! empty( $attributes['ts_tabs_text'] ) ) {
+            $typo = self::generate_typography_css( $attributes['ts_tabs_text'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li a { {$typo}; }";
+            }
+        }
+
+        // Tab text color
+        if ( ! empty( $attributes['ts_tabs_text_color'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { color: {$attributes['ts_tabs_text_color']}; }";
+        }
+
+        // Tab background
+        if ( ! empty( $attributes['ts_tabs_bg_color'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { background-color: {$attributes['ts_tabs_bg_color']}; }";
+        }
+
+        // Tab border
+        if ( ! empty( $attributes['ts_tabs_border_type'] ) && $attributes['ts_tabs_border_type'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['ts_tabs_border_type']};";
+            if ( ! empty( $attributes['ts_tabs_border_width'] ) ) {
+                $w = $attributes['ts_tabs_border_width'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['ts_tabs_border_color'] ) ) {
+                $border_css .= " border-color: {$attributes['ts_tabs_border_color']};";
+            }
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { {$border_css} }";
+        }
+
+        // Tab radius
+        if ( isset( $attributes['ts_tabs_radius'] ) && $attributes['ts_tabs_radius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a { border-radius: {$attributes['ts_tabs_radius']}px; }";
+        }
+
+        // Active tab typography
+        if ( ! empty( $attributes['ts_tabs_text_active'] ) ) {
+            $typo = self::generate_typography_css( $attributes['ts_tabs_text_active'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { {$typo}; }";
+            }
+        }
+
+        // Active text color
+        if ( ! empty( $attributes['ts_active_text_color'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { color: {$attributes['ts_active_text_color']}; }";
+        }
+
+        // Active background
+        if ( ! empty( $attributes['ts_tabs_bg_active_color'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { background-color: {$attributes['ts_tabs_bg_active_color']}; }";
+        }
+
+        // Active border color
+        if ( ! empty( $attributes['ts_tabs_border_active'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a { border-color: {$attributes['ts_tabs_border_active']}; }";
+        }
+
+        // Hover states
+        if ( ! empty( $attributes['ts_tabs_text_color_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { color: {$attributes['ts_tabs_text_color_h']}; }";
+        }
+        if ( ! empty( $attributes['ts_tabs_border_color_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { border-color: {$attributes['ts_tabs_border_color_h']}; }";
+        }
+        if ( ! empty( $attributes['ts_tabs_bg_color_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li a:hover { background-color: {$attributes['ts_tabs_bg_color_h']}; }";
+        }
+
+        // Active hover
+        if ( ! empty( $attributes['ts_tabs_active_text_color_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { color: {$attributes['ts_tabs_active_text_color_h']}; }";
+        }
+        if ( ! empty( $attributes['ts_tabs_border_h_active'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { border-color: {$attributes['ts_tabs_border_h_active']}; }";
+        }
+        if ( ! empty( $attributes['ts_bg_active_color_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-generic-tabs li.ts-tab-active a:hover { background-color: {$attributes['ts_bg_active_color_h']}; }";
+        }
+
+        // ============================================
+        // SECTION: Week Buttons
+        // ============================================
+
+        // Range typography
+        if ( ! empty( $attributes['week_range_typo'] ) ) {
+            $typo = self::generate_typography_css( $attributes['week_range_typo'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-chart-nav p { {$typo}; }";
+            }
+        }
+
+        // Range color
+        if ( ! empty( $attributes['week_range_col'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav p { color: {$attributes['week_range_col']}; }";
+        }
+
+        // Button icon color
+        if ( ! empty( $attributes['ts_week_btn_color'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { color: {$attributes['ts_week_btn_color']}; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { fill: {$attributes['ts_week_btn_color']}; }";
+        }
+
+        // Button icon size
+        if ( isset( $attributes['ts_week_btn_icon_size'] ) && $attributes['ts_week_btn_icon_size'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn i { font-size: {$attributes['ts_week_btn_icon_size']}px; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn svg { width: {$attributes['ts_week_btn_icon_size']}px; height: {$attributes['ts_week_btn_icon_size']}px; }";
+        }
+
+        // Button size
+        if ( isset( $attributes['ts_week_btn_size'] ) && $attributes['ts_week_btn_size'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { width: {$attributes['ts_week_btn_size']}px; height: {$attributes['ts_week_btn_size']}px; min-width: {$attributes['ts_week_btn_size']}px; }";
+        }
+
+        // Button background
+        if ( ! empty( $attributes['ts_week_btn_bg'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { background-color: {$attributes['ts_week_btn_bg']}; }";
+        }
+
+        // Button border
+        if ( ! empty( $attributes['ts_week_btn_border_type'] ) && $attributes['ts_week_btn_border_type'] !== 'none' ) {
+            $border_css = "border-style: {$attributes['ts_week_btn_border_type']};";
+            if ( ! empty( $attributes['ts_week_btn_border_width'] ) ) {
+                $w = $attributes['ts_week_btn_border_width'];
+                $t = floatval( $w['top'] ?? 0 );
+                $r = floatval( $w['right'] ?? 0 );
+                $b = floatval( $w['bottom'] ?? 0 );
+                $l = floatval( $w['left'] ?? 0 );
+                $border_css .= " border-width: {$t}px {$r}px {$b}px {$l}px;";
+            }
+            if ( ! empty( $attributes['ts_week_btn_border_color'] ) ) {
+                $border_css .= " border-color: {$attributes['ts_week_btn_border_color']};";
+            }
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { {$border_css} }";
+        }
+
+        // Button radius
+        if ( isset( $attributes['ts_week_btn_radius'] ) && $attributes['ts_week_btn_radius'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn { border-radius: {$attributes['ts_week_btn_radius']}px; }";
+        }
+
+        // Hover states
+        if ( ! empty( $attributes['ts_week_btn_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover i { color: {$attributes['ts_week_btn_h']}; }";
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover svg { fill: {$attributes['ts_week_btn_h']}; }";
+        }
+        if ( ! empty( $attributes['ts_week_btn_bg_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover { background-color: {$attributes['ts_week_btn_bg_h']}; }";
+        }
+        if ( ! empty( $attributes['ts_week_border_c_h'] ) ) {
+            $css_rules[] = "{$selector} .ts-chart-nav .ts-icon-btn:hover { border-color: {$attributes['ts_week_border_c_h']}; }";
+        }
+
+        // ============================================
+        // SECTION: No Activity
+        // ============================================
+
+        // Content gap
+        if ( isset( $attributes['ts_nopost_content_Gap'] ) && $attributes['ts_nopost_content_Gap'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts { grid-gap: {$attributes['ts_nopost_content_Gap']}px; }";
+        }
+
+        // Icon size
+        if ( isset( $attributes['ts_nopost_ico_size'] ) && $attributes['ts_nopost_ico_size'] !== '' ) {
+            $css_rules[] = "{$selector} .ts-no-posts i, {$selector} .ts-no-posts svg { font-size: {$attributes['ts_nopost_ico_size']}px; width: {$attributes['ts_nopost_ico_size']}px; height: {$attributes['ts_nopost_ico_size']}px; }";
+        }
+
+        // Icon color
+        if ( ! empty( $attributes['ts_nopost_ico_col'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts i, {$selector} .ts-no-posts svg { color: {$attributes['ts_nopost_ico_col']}; fill: {$attributes['ts_nopost_ico_col']}; }";
+        }
+
+        // Typography
+        if ( ! empty( $attributes['ts_nopost_typo'] ) ) {
+            $typo = self::generate_typography_css( $attributes['ts_nopost_typo'] );
+            if ( $typo ) {
+                $css_rules[] = "{$selector} .ts-no-posts p { {$typo}; }";
+            }
+        }
+
+        // Text color
+        if ( ! empty( $attributes['ts_nopost_typo_col'] ) ) {
+            $css_rules[] = "{$selector} .ts-no-posts p { color: {$attributes['ts_nopost_typo_col']}; }";
+        }
+
+        // ============================================
+        // Combine CSS with media queries
+        // ============================================
         $final_css = '';
         if ( ! empty( $css_rules ) ) {
             $final_css .= implode( "\n", $css_rules );

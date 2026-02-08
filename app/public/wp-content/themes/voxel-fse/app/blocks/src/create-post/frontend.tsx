@@ -158,7 +158,15 @@ async function fetchFieldsConfig(
 
 	try {
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Sending fetch request...');
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response status:', response.status);
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response ok:', response.ok);
 		if (!response.ok) {
@@ -198,8 +206,14 @@ async function fetchPostContext(
 	const endpoint = `${restUrl}voxel-fse/v1/create-post/post-context?${params.toString()}`;
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
 		const response = await fetch(endpoint, {
-			credentials: 'same-origin', // Include cookies for authentication
+			credentials: 'same-origin',
+			headers,
 		});
 
 		if (!response.ok) {

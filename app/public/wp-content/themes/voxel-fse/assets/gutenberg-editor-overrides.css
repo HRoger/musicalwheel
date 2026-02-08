@@ -202,6 +202,9 @@ body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-lower {
 }
 
 
+/* Reset Gutenberg's default focus ring while preserving Voxel's own focus styles.
+ * Voxel default: border: 1px solid var(--ts-shade-3); border-radius: .375rem;
+ * Inspector controls (Input > Focus > Border Color) can override these defaults. */
 body.block-editor-page [class*="wp-block-voxel-"] input[type=color]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=date]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=datetime-local]:focus,
@@ -216,11 +219,12 @@ body.block-editor-page [class*="wp-block-voxel-"] input[type=text]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=time]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=url]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=week]:focus,
-body.block-editor-page [class*="wp-block-voxel-"] select,
+body.block-editor-page [class*="wp-block-voxel-"] select:focus,
 body.block-editor-page [class*="wp-block-voxel-"] textarea:focus {
-    border-radius: 0;
     box-shadow: none;
-    border: none;
+    outline: none;
+    border: 1px solid var(--ts-shade-3);
+    border-radius: .375rem;
 }
 
 /* ============================================

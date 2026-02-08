@@ -186,15 +186,15 @@ export function getResponsiveValueClient<T>(
 
 /**
  * Default checkmark SVG (fallback when no icon is configured)
- * Matches Voxel's checkmark-circle.svg
+ * Matches Voxel's checkmark-circle.svg (exact copy from voxel/assets/images/svgs/checkmark-circle.svg)
  */
-const DEFAULT_CHECKMARK_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+const DEFAULT_CHECKMARK_SVG = `<svg width="80" height="80" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(0 0 0)"><path d="M2 12.3906C2 6.86778 6.47715 2.39062 12 2.39062C17.5228 2.39062 22 6.86778 22 12.3906C22 17.9135 17.5228 22.3906 12 22.3906C6.47715 22.3906 2 17.9135 2 12.3906ZM15.5071 9.85447C15.2142 9.56158 14.7393 9.56158 14.4464 9.85447L10.9649 13.336L9.55359 11.9247C9.2607 11.6318 8.78582 11.6318 8.49293 11.9247C8.20004 12.2176 8.20004 12.6925 8.49294 12.9854L10.4346 14.927C10.7275 15.2199 11.2023 15.2199 11.4952 14.927L15.5071 10.9151C15.8 10.6222 15.8 10.1474 15.5071 9.85447Z" fill="#343C54"/></svg>`;
 
 /**
  * Default search SVG (fallback when no icon is configured)
- * Matches Voxel's search.svg
+ * Matches Voxel's search.svg (exact copy from voxel/assets/images/svgs/search.svg)
  */
-const DEFAULT_SEARCH_SVG = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>`;
+const DEFAULT_SEARCH_SVG = `<svg width="80" height="80" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(0 0 0)"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z" fill="#343C54"/></svg>`;
 
 /**
  * Default geolocation SVG (fallback when no icon is configured)
@@ -406,7 +406,16 @@ async function initCurrentPostMap(
 	const endpoint = `${restUrl}voxel-fse/v1/map/post-location?post_id=${postId}`;
 
 	try {
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -620,6 +629,13 @@ async function initializeVoxelMap(
 		console.log('[Map Block] VxMap instance created, calling init()...');
 		await map.init();
 		console.log('[Map Block] VxMap.init() completed, native map:', map.getNative());
+
+		// CRITICAL FIX: Re-apply height after map initialization
+		// Google Maps API sets inline styles (height: 100%, width: 100%) during init
+		// which override our configured height. We must re-apply it here.
+		mapContainer.style.height = height;
+		mapContainer.style.minHeight = height;
+		console.log('[Map Block] Height re-applied after map init:', height);
 
 		// Initialize clusterer for search-form mode
 		let clusterer: VxClusterer | null = null;

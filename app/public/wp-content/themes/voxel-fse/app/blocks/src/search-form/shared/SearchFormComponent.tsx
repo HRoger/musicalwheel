@@ -634,14 +634,22 @@ export default function SearchFormComponent({
 						minHeight: tsMap.style.minHeight || '',
 					};
 				}
-				// Expand map to fill viewport below its current position
-				// Matches Elementor's calc(100vh - offset) behavior
-				// Works in both frontend (real viewport) and editor (iframe viewport)
-				requestAnimationFrame(() => {
-					const mapTop = mapWidget.getBoundingClientRect().top;
-					tsMap.style.height = `calc(100vh - ${Math.round(mapTop)}px)`;
-					tsMap.style.minHeight = `calc(100vh - ${Math.round(mapTop)}px)`;
-				});
+				// Respect the map block's configured height from inspector controls
+				// The --vx-map-height CSS variable is set by the map block's applyMapStyles()
+				// based on the Height inspector control (or calc height if enabled)
+				const configuredHeight = mapWidget.style.getPropertyValue('--vx-map-height');
+				if (configuredHeight) {
+					tsMap.style.height = configuredHeight;
+					tsMap.style.minHeight = configuredHeight;
+				} else {
+					// Fallback: expand to fill viewport below search form
+					// Matches Elementor's calc(100vh - offset) behavior
+					requestAnimationFrame(() => {
+						const mapTop = mapWidget.getBoundingClientRect().top;
+						tsMap.style.height = `calc(100vh - ${Math.round(mapTop)}px)`;
+						tsMap.style.minHeight = `calc(100vh - ${Math.round(mapTop)}px)`;
+					});
+				}
 			}
 		}
 	};
