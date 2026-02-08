@@ -4523,6 +4523,38 @@ JAVASCRIPT;
 
         if ($block_name === 'search-form' && $block_id) {
             $block_content = self::apply_search_form_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'map' && $block_id) {
+            $block_content = self::apply_map_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'post-feed' && $block_id) {
+            $block_content = self::apply_post_feed_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'navbar' && $block_id) {
+            $block_content = self::apply_navbar_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'userbar' && $block_id) {
+            $block_content = self::apply_userbar_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'messages' && $block_id) {
+            $block_content = self::apply_messages_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'create-post' && $block_id) {
+            $block_content = self::apply_create_post_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'product-form' && $block_id) {
+            $block_content = self::apply_product_form_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'cart-summary' && $block_id) {
+            $block_content = self::apply_cart_summary_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'term-feed' && $block_id) {
+            $block_content = self::apply_term_feed_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'slider' && $block_id) {
+            $block_content = self::apply_slider_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'image' && $block_id) {
+            $block_content = self::apply_image_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'advanced-list' && $block_id) {
+            $block_content = self::apply_advanced_list_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'product-price' && $block_id) {
+            $block_content = self::apply_product_price_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'current-plan' && $block_id) {
+            $block_content = self::apply_current_plan_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'current-role' && $block_id) {
+            $block_content = self::apply_current_role_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'work-hours' && $block_id) {
+            $block_content = self::apply_work_hours_styles($block_content, $attributes, $block_id);
         }
 
         // 5. Final step: Process Voxel dynamic tags (VoxelScript)
@@ -4565,7 +4597,7 @@ JAVASCRIPT;
 
         // If no styles or classes to apply, return original content
         if (
-            empty($styles['inline_styles']) &&
+            empty($styles['desktop_css']) &&
             empty($styles['responsive_css']) &&
             empty($styles['classes']) &&
             empty($styles['custom_attrs']) &&
@@ -4574,19 +4606,27 @@ JAVASCRIPT;
             return $block_content;
         }
 
-        // Find the root element and inject styles
+        // Inject classes and custom attributes into root element (but NOT inline styles)
         $block_content = self::inject_styles_into_html(
             $block_content,
             $block_id,
-            $styles['inline_styles'],
+            '', // No inline styles - using CSS instead
             $styles['classes'],
             $styles['custom_attrs'],
             $styles['element_id'] ?? ''
         );
 
-        // Prepend responsive CSS as a style tag
+        // Prepend ALL CSS as style tags (desktop + responsive)
+        $all_css = '';
+        if (!empty($styles['desktop_css'])) {
+            $all_css .= '/* AdvancedTab & VoxelTab Desktop Styles */' . "\n" . $styles['desktop_css'];
+        }
         if (!empty($styles['responsive_css'])) {
-            $style_tag = '<style>' . $styles['responsive_css'] . '</style>';
+            $all_css .= "\n" . $styles['responsive_css'];
+        }
+
+        if (!empty($all_css)) {
+            $style_tag = '<style>' . $all_css . '</style>';
             $block_content = $style_tag . $block_content;
         }
 
@@ -4612,6 +4652,300 @@ JAVASCRIPT;
 
         if (!empty($css)) {
             $style_tag = '<style>/* Search Form Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply map block specific styles
+     *
+     * This is called separately from apply_block_styles because map block
+     * has special CSS requirements (markers, clusters, popups, nav buttons).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_map_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_map_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Map Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply post-feed block specific styles
+     *
+     * This is called separately from apply_block_styles because post-feed
+     * has special CSS requirements (carousel nav, pagination, no-results states).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_post_feed_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_post_feed_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Post Feed Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply navbar block specific styles
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_navbar_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_navbar_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Navbar Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_userbar_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_userbar_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Userbar Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_messages_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_messages_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Messages Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_create_post_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_create_post_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Create Post Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_product_form_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_product_form_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Product Form Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_cart_summary_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_cart_summary_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Cart Summary Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_term_feed_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_term_feed_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Term Feed Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_slider_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_slider_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Slider Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_image_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_image_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Image Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Advanced List block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_advanced_list_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_advanced_list_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Advanced List Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Product Price block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_product_price_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_product_price_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Product Price Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Current Plan block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_current_plan_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_current_plan_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Current Plan Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Current Role block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_current_role_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_current_role_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Current Role Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply work-hours-specific styles
+     *
+     * @param string $block_content Existing block content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_work_hours_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_work_hours_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Work Hours Inline Styles */' . $css . '</style>';
             $block_content = $style_tag . $block_content;
         }
 

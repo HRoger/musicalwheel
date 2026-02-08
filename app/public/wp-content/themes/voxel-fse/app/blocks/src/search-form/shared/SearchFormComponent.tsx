@@ -536,6 +536,9 @@ export default function SearchFormComponent({
 	// Current view state (feed or map)
 	const [currentView, setCurrentView] = useState<'feed' | 'map'>(getSwitcherDefault);
 
+	// Store original .ts-map height so we can restore it after toggling
+	const originalMapHeightRef = useRef<{ height: string; minHeight: string } | null>(null);
+
 	// Reset view when device type changes
 	useEffect(() => {
 		setCurrentView(getSwitcherDefault());
@@ -579,12 +582,30 @@ export default function SearchFormComponent({
 		const mapWidget = findConnectedWidget(attributes.postToMapId || '', 'map');
 		const feedWidget = findConnectedWidget(attributes.postToFeedId || '', 'feed');
 
-		if (mapWidget) mapWidget.classList.add(`vx-hidden-${bp}`);
-		if (feedWidget) feedWidget.classList.remove(`vx-hidden-${bp}`);
+		if (mapWidget) {
+			mapWidget.classList.add(`vx-hidden-${bp}`);
+			// Also hide the map's parent flex-container wrapper
+			const mapWrapper = mapWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (mapWrapper) mapWrapper.classList.add(`vx-hidden-${bp}`);
+			// Restore original map height (set by map block's frontend.tsx init)
+			const tsMap = mapWidget.querySelector('.ts-map') as HTMLElement;
+			if (tsMap && originalMapHeightRef.current) {
+				tsMap.style.height = originalMapHeightRef.current.height;
+				tsMap.style.minHeight = originalMapHeightRef.current.minHeight;
+			}
+		}
+		if (feedWidget) {
+			feedWidget.classList.remove(`vx-hidden-${bp}`);
+			// Also show the feed's parent flex-container wrapper
+			const feedWrapper = feedWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (feedWrapper) feedWrapper.classList.remove(`vx-hidden-${bp}`);
+		}
 	};
 
 	// Toggle to map view (show map, hide feed)
 	// Evidence: voxel-search-form.beautified.js:2920-2926
+	// Voxel behavior: map expands to fill viewport below search form, covering the post-feed area
+	// Evidence: Elementor CSS uses height: calc(100vh - 149px) on .ts-map
 	const toggleMapView = () => {
 		setCurrentView('map');
 
@@ -592,28 +613,52 @@ export default function SearchFormComponent({
 		const mapWidget = findConnectedWidget(attributes.postToMapId || '', 'map');
 		const feedWidget = findConnectedWidget(attributes.postToFeedId || '', 'feed');
 
-		if (mapWidget) mapWidget.classList.remove(`vx-hidden-${bp}`);
-
-		// Only hide feed on mobile/tablet. On desktop, feed should remain visible.
 		if (feedWidget) {
-			// User requested Post Feed to remain visible when toggling to Map View on all devices
-			feedWidget.classList.remove(`vx-hidden-${bp}`);
+			feedWidget.classList.add(`vx-hidden-${bp}`);
+			// Also hide the feed's parent flex-container wrapper (has padding that creates a gap)
+			const feedWrapper = feedWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (feedWrapper) feedWrapper.classList.add(`vx-hidden-${bp}`);
+		}
+		if (mapWidget) {
+			mapWidget.classList.remove(`vx-hidden-${bp}`);
+			// Also show the map's parent flex-container wrapper
+			const mapWrapper = mapWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (mapWrapper) mapWrapper.classList.remove(`vx-hidden-${bp}`);
+			// Save original .ts-map height (set by map block's frontend.tsx init) before overriding
+			const tsMap = mapWidget.querySelector('.ts-map') as HTMLElement;
+			if (tsMap) {
+				// Save original height only once (before first override)
+				if (!originalMapHeightRef.current) {
+					originalMapHeightRef.current = {
+						height: tsMap.style.height || '',
+						minHeight: tsMap.style.minHeight || '',
+					};
+				}
+				// Expand map to fill viewport below its current position
+				// Matches Elementor's calc(100vh - offset) behavior
+				// Works in both frontend (real viewport) and editor (iframe viewport)
+				requestAnimationFrame(() => {
+					const mapTop = mapWidget.getBoundingClientRect().top;
+					tsMap.style.height = `calc(100vh - ${Math.round(mapTop)}px)`;
+					tsMap.style.minHeight = `calc(100vh - ${Math.round(mapTop)}px)`;
+				});
+			}
 		}
 	};
 
 	// Initialize visibility on mount (and when device type changes)
-	// CRITICAL: Ensure correct initial state in Editor
+	// CRITICAL: Must run on BOTH editor and frontend to set initial view state
+	// Evidence: Voxel's search-form.php sets initial vx-hidden classes server-side,
+	// but FSE blocks need JS to apply them since save.tsx is static HTML
 	useEffect(() => {
-		// Only run this auto-hide logic in editor or if explicitly requested
-		// Frontend handles this via PHP initial rendering classes mostly, but JS enforces it
-		if (context === 'editor' && isSwitcherEnabled) {
+		if (isSwitcherEnabled) {
 			if (currentView === 'feed') {
 				toggleListView();
 			} else {
 				toggleMapView();
 			}
 		}
-	}, [deviceType, currentView, context, isSwitcherEnabled, attributes.postToMapId, attributes.postToFeedId]);
+	}, [deviceType, currentView, isSwitcherEnabled, attributes.postToMapId, attributes.postToFeedId]);
 
 	// Render the Map/Feed Switcher button
 	// Evidence: themes/voxel/templates/widgets/search-form.php:200-221

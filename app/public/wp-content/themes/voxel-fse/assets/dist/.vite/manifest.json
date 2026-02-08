@@ -126,8 +126,8 @@
       "_TypographyPopup-CAcEJ5NA.js"
     ]
   },
-  "_SearchFormComponent-CQkx5gHD.js": {
-    "file": "SearchFormComponent-CQkx5gHD.js",
+  "_SearchFormComponent-jHjTHKwn.js": {
+    "file": "SearchFormComponent-jHjTHKwn.js",
     "name": "SearchFormComponent",
     "imports": [
       "_siteUrl-7x5eJEvc.js",
@@ -687,7 +687,7 @@
       "_PostSelectControl-DfkHxd67.js",
       "_siteUrl-7x5eJEvc.js",
       "_EmptyPlaceholder-BsL18qxN.js",
-      "_SearchFormComponent-CQkx5gHD.js",
+      "_SearchFormComponent-jHjTHKwn.js",
       "_voxelShim-DB_Ue-9R.js",
       "_useAdvancedTabProps-BnJDQbKr.js",
       "_backgroundElements-Ui-iCrLV.js",
@@ -840,7 +840,7 @@
     "src": "app/blocks/src/search-form/index.tsx",
     "isEntry": true,
     "imports": [
-      "_SearchFormComponent-CQkx5gHD.js",
+      "_SearchFormComponent-jHjTHKwn.js",
       "_TypographyPopup-CAcEJ5NA.js",
       "_RepeaterControl-C7JnAhZL.js",
       "_IconPickerControl-Lep6knGI.js",

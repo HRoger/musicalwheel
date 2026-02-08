@@ -133,7 +133,10 @@ export default defineConfig({
         'react',
         'react-dom',
         'react-dom/client',
-        '@wordpress/element',
+        // NOTE: @wordpress/element is NOT external - it's aliased to 'react' below.
+        // wp.element is NOT available on the public frontend (only in the editor),
+        // so bundled code that imports from @wordpress/element (e.g. @wordpress/data
+        // using createContext) would crash with "Cannot read properties of undefined".
         '@wordpress/api-fetch',
       ],
       output: {
@@ -141,7 +144,6 @@ export default defineConfig({
           react: 'React',
           'react-dom': 'ReactDOM',
           'react-dom/client': 'ReactDOM',
-          '@wordpress/element': 'wp.element',
           '@wordpress/api-fetch': 'wp.apiFetch',
         },
       },
@@ -152,6 +154,11 @@ export default defineConfig({
       '@shared': resolve(__dirname, './app/blocks/shared'),
       '@styles': resolve(__dirname, './assets/styles'),
       '@scripts': resolve(__dirname, './assets/scripts'),
+      // Redirect @wordpress/element to react - wp.element is NOT available on
+      // the public frontend (only in the editor). Bundled packages like
+      // @wordpress/data use createContext/useContext from @wordpress/element,
+      // which must resolve to React's versions via the 'React' global.
+      '@wordpress/element': 'react',
     },
     extensions: ['.js', '.jsx', '.ts', '.tsx'],
   },
