@@ -289,9 +289,21 @@
 			"type": "number",
 			"default": 0
 		},
+		"popupTopMargin_tablet": {
+			"type": "number"
+		},
+		"popupTopMargin_mobile": {
+			"type": "number"
+		},
 		"popupMaxHeight": {
 			"type": "number",
 			"default": 0
+		},
+		"popupMaxHeight_tablet": {
+			"type": "number"
+		},
+		"popupMaxHeight_mobile": {
+			"type": "number"
 		},
 		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
 		"visibilityBehavior": {

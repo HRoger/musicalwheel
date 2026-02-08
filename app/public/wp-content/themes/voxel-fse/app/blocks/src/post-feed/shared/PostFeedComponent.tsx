@@ -191,7 +191,12 @@ function getIconHtml(icon: { library?: string; value?: string } | undefined, def
  * @param html - Raw HTML from Voxel's search_posts AJAX response
  * @returns Array of card innerHTML strings (to be wrapped in our own .ts-preview)
  */
-function parseCardsFromHtml(html: string): string[] {
+interface ParsedCard {
+	html: string;
+	postId: string | null;
+}
+
+function parseCardsFromHtml(html: string): ParsedCard[] {
 	if (!html || !html.trim()) {
 		return [];
 	}
@@ -203,8 +208,11 @@ function parseCardsFromHtml(html: string): string[] {
 	const cards = doc.querySelectorAll<HTMLElement>('.ts-preview');
 
 	if (cards.length > 0) {
-		// Return innerHTML so we can add our own .ts-preview wrapper with custom styles
-		return Array.from(cards).map(card => card.innerHTML);
+		// Return innerHTML + data-post-id so we can reconstruct the wrapper
+		return Array.from(cards).map(card => ({
+			html: card.innerHTML,
+			postId: card.getAttribute('data-post-id'),
+		}));
 	}
 
 	// Fallback: Use direct children of wrapper (excluding scripts, links, styles, etc.)
@@ -218,7 +226,10 @@ function parseCardsFromHtml(html: string): string[] {
 		});
 		if (children.length > 0) {
 			// For fallback elements, return outerHTML since they're the actual cards
-			return children.map(child => (child as HTMLElement).outerHTML);
+			return children.map(child => ({
+				html: (child as HTMLElement).outerHTML,
+				postId: (child as HTMLElement).getAttribute('data-post-id'),
+			}));
 		}
 	}
 
@@ -1311,8 +1322,8 @@ export default function PostFeedComponent({
 									scrollSnapType: 'none', // Override Voxel's scroll-snap-type
 								}}
 							>
-								{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
-								{carouselCards.map((html, i) => {
+								{/* parseCardsFromHtml returns {html, postId}, we add our own .ts-preview wrapper */}
+								{carouselCards.map((card, i) => {
 									// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
 									// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
 									// APPLIED TO EDITOR RENDER LOOP
@@ -1335,6 +1346,7 @@ export default function PostFeedComponent({
 										<div
 											key={i}
 											className="ts-preview"
+											data-post-id={card.postId || undefined}
 											style={{
 												width: cardWidth,
 												minWidth: cardWidth,
@@ -1344,7 +1356,7 @@ export default function PostFeedComponent({
 												position: 'relative',
 												scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
 											}}
-											dangerouslySetInnerHTML={{ __html: html }}
+											dangerouslySetInnerHTML={{ __html: card.html }}
 										/>
 									);
 								})}
@@ -1539,8 +1551,8 @@ export default function PostFeedComponent({
 							scrollSnapType: 'none', // Override Voxel's scroll-snap-type
 						}}
 					>
-						{/* parseCardsFromHtml returns innerHTML, we add our own .ts-preview wrapper */}
-						{carouselCards.map((html, i) => {
+						{/* parseCardsFromHtml returns {html, postId}, we add our own .ts-preview wrapper */}
+						{carouselCards.map((card, i) => {
 							// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
 							// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
 							const gap = attributes.itemGap || 20;
@@ -1562,6 +1574,7 @@ export default function PostFeedComponent({
 								<div
 									key={i}
 									className="ts-preview"
+									data-post-id={card.postId || undefined}
 									style={{
 										width: cardWidth,
 										minWidth: cardWidth,
@@ -1571,7 +1584,7 @@ export default function PostFeedComponent({
 										position: 'relative',
 										scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
 									}}
-									dangerouslySetInnerHTML={{ __html: html }}
+									dangerouslySetInnerHTML={{ __html: card.html }}
 								/>
 							);
 						})}

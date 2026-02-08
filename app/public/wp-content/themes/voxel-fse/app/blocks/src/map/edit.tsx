@@ -35,47 +35,14 @@ import type { MapEditProps } from './types';
 import { buildVxConfig, applyMapStyles } from './utils';
 import StyleTab from './inspector/StyleTab';
 import { generateMapResponsiveCSS } from './styles';
-
-// Voxel Maps API types
-// Evidence: themes/voxel/assets/dist/create-post.js - Voxel.Maps.LatLng
-interface VoxelLatLng {
-	getLatitude: () => number;
-	getLongitude: () => number;
-	toGeocoderFormat: () => { lat: number; lng: number };
-}
-
-interface VoxelMapInstance {
-	setCenter: (position: VoxelLatLng) => void;
-	setZoom: (zoom: number) => void;
-	fitMarkers: () => void;
-	getZoom: () => number;
-}
-
-interface VoxelMaps {
-	await: (callback: () => void) => void;
-	Map: new (config: {
-		el: HTMLElement;
-		zoom: number;
-		center?: VoxelLatLng;
-		minZoom?: number;
-		maxZoom?: number;
-	}) => VoxelMapInstance;
-	LatLng: new (lat: number, lng: number) => VoxelLatLng;
-	Marker: new (config: Record<string, unknown>) => unknown;
-	Loaded?: boolean;
-}
-
-declare global {
-	interface Window {
-		Voxel?: {
-			Maps?: VoxelMaps;
-		};
-	}
-}
-
-declare const Voxel: {
-	Maps: VoxelMaps;
-};
+import {
+	VxMap,
+	VxMarker,
+	VxLatLng,
+	VxClusterer,
+	VxPopup,
+} from './voxel-maps-adapter';
+import { addMarkersToMap, clearPreviewCardCache, type MarkerConfig } from './map-markers';
 
 /**
  * Generate unique block ID
@@ -118,8 +85,11 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 	// Refs for map management
 	const blockWrapperRef = useRef<HTMLDivElement>(null);
 	const mapContainerRef = useRef<HTMLDivElement>(null);
-	const mapInstanceRef = useRef<VoxelMapInstance | null>(null);
+	const mapInstanceRef = useRef<VxMap | null>(null);
 	const mapInitializedRef = useRef(false);
+	const editorMarkersRef = useRef<VxMarker[]>([]);
+	const editorClustererRef = useRef<VxClusterer | null>(null);
+	const editorPopupRef = useRef<VxPopup | null>(null);
 
 	// Loading state for map initialization
 	const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -189,74 +159,46 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 		[clientId]
 	);
 
-	// Initialize interactive Google Map in editor
+	// Initialize interactive Google Map in editor using VxMap adapter
+	// Uses Voxel.Maps.await() to wait indefinitely for Google Maps (no timeout)
 	const initializeMap = useCallback(() => {
 		if (!mapContainerRef.current || mapInitializedRef.current) {
 			return;
 		}
 
-		// Check if Voxel.Maps is available
-		if (typeof Voxel === 'undefined' || !Voxel.Maps) {
+		const Voxel = (window as any).Voxel;
+		if (!Voxel?.Maps) {
 			console.warn('[Map Block] Voxel.Maps not available yet');
 			return;
 		}
 
+		// Mark as initialized early to prevent duplicate init from re-renders
+		mapInitializedRef.current = true;
+
+		// Use Voxel.Maps.await() — waits indefinitely until Google Maps JS loads
 		Voxel.Maps.await(() => {
-			if (!mapContainerRef.current || mapInitializedRef.current) {
-				return;
-			}
+			if (!mapContainerRef.current) return;
 
 			try {
-				// Create center position using Voxel.Maps.LatLng
-				// Evidence: themes/voxel/assets/dist/create-post.js - new Voxel.Maps.LatLng()
-				const centerPosition = new Voxel.Maps.LatLng(
-					attributes.defaultLat,
-					attributes.defaultLng
-				);
-
-				// Create map using Voxel's API
-				// Evidence: themes/voxel/assets/dist/create-post.js - new Voxel.Maps.Map()
-				mapInstanceRef.current = new Voxel.Maps.Map({
+				const map = new VxMap({
 					el: mapContainerRef.current,
 					zoom: attributes.defaultZoom,
-					center: centerPosition,
+					center: new VxLatLng(attributes.defaultLat, attributes.defaultLng),
 					minZoom: attributes.minZoom,
 					maxZoom: attributes.maxZoom,
 				});
-				mapContainerRef.current.classList.add('ts-map-loaded');
-				mapInitializedRef.current = true;
-				setIsMapLoaded(true);
 
-				// CRITICAL: Hide Map/Satellite and Street View controls in editor
-				// Access the native Google Maps instance via getSourceObject()
-				// Voxel.Maps.Map stores the google.maps.Map in this.map, accessible via getSourceObject()
-				const googleMap = (mapInstanceRef.current as any)?.getSourceObject?.();
-				if (googleMap && typeof window.google !== 'undefined') {
-					// Force hide these controls for cleaner FSE editor experience
-					googleMap.setOptions({
-						mapTypeControl: false,
-						streetViewControl: false,
-					});
-
-					// DOM fallback: hide control elements after a short delay
-					setTimeout(() => {
-						if (mapContainerRef.current) {
-							// Hide Map/Satellite toggle
-							const mapTypeElements = mapContainerRef.current.querySelectorAll('.gm-style-mtc, .gm-style-mtc-bbw');
-							mapTypeElements.forEach((el: Element) => {
-								(el as HTMLElement).style.display = 'none';
-							});
-							// Hide Street View pegman
-							const streetViewElements = mapContainerRef.current.querySelectorAll('.gm-svpc');
-							streetViewElements.forEach((el: Element) => {
-								(el as HTMLElement).style.display = 'none';
-							});
-						}
-					}, 100);
-				}
-
-				console.log('[Map Block] Interactive map initialized in editor');
+				// Maps is already loaded, so init() resolves immediately
+				map.init().then(() => {
+					mapInstanceRef.current = map;
+					setIsMapLoaded(true);
+					console.log('[Map Block] Interactive map initialized in editor');
+				}).catch((error) => {
+					mapInitializedRef.current = false;
+					console.error('[Map Block] Failed to initialize map:', error);
+				});
 			} catch (error) {
+				mapInitializedRef.current = false;
 				console.error('[Map Block] Failed to initialize map:', error);
 			}
 		});
@@ -274,12 +216,8 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 
 	// Update map center/zoom when attributes change
 	useEffect(() => {
-		if (mapInstanceRef.current && mapInitializedRef.current && typeof Voxel !== 'undefined' && Voxel.Maps) {
-			const newCenter = new Voxel.Maps.LatLng(
-				attributes.defaultLat,
-				attributes.defaultLng
-			);
-			mapInstanceRef.current.setCenter(newCenter);
+		if (mapInstanceRef.current && mapInitializedRef.current) {
+			mapInstanceRef.current.setCenter(new VxLatLng(attributes.defaultLat, attributes.defaultLng));
 			mapInstanceRef.current.setZoom(attributes.defaultZoom);
 		}
 	}, [attributes.defaultLat, attributes.defaultLng, attributes.defaultZoom]);
@@ -291,6 +229,110 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 			applyMapStyles(blockWrapperRef.current, config);
 		}
 	}, [attributes]);
+
+	// Load markers from post feed in editor with popup + clustering support
+	// Uses shared addMarkersToMap() from map-markers.ts (same function as frontend.tsx)
+	useEffect(() => {
+		if (!isMapLoaded || !mapInstanceRef.current) return;
+
+		let loadedPostIdKey = '';
+		let isLoading = false;
+
+		// Create shared popup instance (one per map, same as frontend.tsx)
+		if (!editorPopupRef.current) {
+			const popup = new VxPopup({});
+			popup.init(mapInstanceRef.current);
+			editorPopupRef.current = popup;
+		}
+
+		const loadEditorMarkers = async () => {
+			if (isLoading || !mapInstanceRef.current) return;
+
+			// Find post IDs from rendered post feed cards in the editor
+			const previewEls = document.querySelectorAll<HTMLElement>('.ts-preview[data-post-id]');
+			if (previewEls.length === 0) return;
+
+			const postIds = Array.from(previewEls)
+				.map((el) => parseInt(el.getAttribute('data-post-id') || '0', 10))
+				.filter((id) => id > 0);
+
+			if (postIds.length === 0) return;
+
+			// Skip if same post IDs already loaded
+			const newKey = postIds.sort().join(',');
+			if (newKey === loadedPostIdKey) return;
+
+			isLoading = true;
+
+			try {
+				const restUrl = (window as any).wpApiSettings?.root || '/wp-json/';
+				const res = await fetch(`${restUrl}voxel-fse/v1/map/markers`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': (window as any).wpApiSettings?.nonce || '',
+					},
+					body: JSON.stringify({ post_ids: postIds }),
+				});
+				const data: { success: boolean; markers: Array<{ postId: number; lat: number; lng: number; template: string }> } = await res.json();
+
+				if (!data.success || !data.markers || !mapInstanceRef.current) return;
+
+				// Clear existing markers
+				editorMarkersRef.current.forEach((m) => m.remove());
+				editorMarkersRef.current = [];
+				editorClustererRef.current = null;
+				clearPreviewCardCache();
+
+				const map = mapInstanceRef.current;
+				const popup = editorPopupRef.current!;
+
+				// Convert REST API response to MarkerConfig[] for shared function
+				const markerConfigs: MarkerConfig[] = data.markers.map((m) => ({
+					lat: m.lat,
+					lng: m.lng,
+					template: m.template,
+					postId: m.postId,
+				}));
+
+				// Initialize clusterer
+				let clusterer: VxClusterer | null = null;
+				try {
+					clusterer = new VxClusterer();
+					await clusterer.init(map);
+					editorClustererRef.current = clusterer;
+				} catch (err) {
+					console.warn('[Map Block] Editor: clusterer init failed:', err);
+				}
+
+				// Use shared addMarkersToMap — same function frontend.tsx uses
+				const newMarkers = await addMarkersToMap(map, markerConfigs, popup, clusterer);
+				editorMarkersRef.current = newMarkers;
+
+				// Render clusters after markers are added
+				if (clusterer) {
+					clusterer.render();
+				}
+
+				loadedPostIdKey = newKey;
+				console.log('[Map Block] Editor: loaded', data.markers.length, 'markers with popups');
+			} catch (err) {
+				console.warn('[Map Block] Editor: failed to load markers:', err);
+			} finally {
+				isLoading = false;
+			}
+		};
+
+		// Initial load with delay to let post feed render
+		const timer = setTimeout(loadEditorMarkers, 1500);
+
+		return () => {
+			clearTimeout(timer);
+			editorMarkersRef.current.forEach((m) => m.remove());
+			editorMarkersRef.current = [];
+			editorClustererRef.current = null;
+		};
+	}, [isMapLoaded]);
 
 	// Content Tab Component
 	const ContentTab = () => (
@@ -619,10 +661,9 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 								const { latitude, longitude } = position.coords;
 
 								// Update map center if map is loaded
-								if (mapInstanceRef.current && typeof Voxel !== 'undefined' && Voxel.Maps) {
-									const newCenter = new Voxel.Maps.LatLng(latitude, longitude);
-									mapInstanceRef.current.setCenter(newCenter);
-									mapInstanceRef.current.setZoom(15); // Zoom in to user's location
+								if (mapInstanceRef.current) {
+									mapInstanceRef.current.setCenter(new VxLatLng(latitude, longitude));
+									mapInstanceRef.current.setZoom(15);
 								}
 
 								// Update block attributes so it persists

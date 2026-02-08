@@ -88,8 +88,8 @@ import {
 	getUserLocation,
 	fitBoundsToMarkers,
 	type VxMapOptions,
-	type VxMarkerOptions,
 } from './voxel-maps-adapter';
+import { addMarkersToMap, clearPreviewCardCache } from './map-markers';
 
 
 
@@ -125,6 +125,12 @@ function injectGeolocateButtonCSS(): void {
 		@keyframes vx-spin {
 			from { transform: rotate(0deg); }
 			to { transform: rotate(360deg); }
+		}
+		/* FSE popup: re-enable pointer-events on block content
+		   Voxel parent targets: .ts-preview-popup > .elementor { pointer-events: all }
+		   FSE uses wp-block-* wrappers instead of .elementor */
+		.ts-preview-popup > * {
+			pointer-events: all;
 		}
 	`;
 	document.head.appendChild(style);
@@ -730,51 +736,7 @@ async function initializeVoxelMap(
 	}
 }
 
-/**
- * Add markers to map with optional clustering
- */
-async function addMarkersToMap(
-	map: VxMap,
-	markerConfigs: MapDataConfig['markers'],
-	popup: VxPopup,
-	clusterer: VxClusterer | null
-): Promise<VxMarker[]> {
-	if (!markerConfigs) return [];
-
-	const markers: VxMarker[] = [];
-
-	for (const config of markerConfigs) {
-		const template = config.uriencoded
-			? decodeURIComponent(config.template)
-			: config.template;
-
-		const markerOptions: VxMarkerOptions = {
-			position: new VxLatLng(config.lat, config.lng),
-			template,
-			onClick: (_e, marker) => {
-				// Show popup on marker click
-				const pos = marker.getPosition();
-				if (pos) {
-					popup.setPosition(pos);
-					popup.setContent(template);
-					popup.show();
-				}
-			},
-			data: { lat: config.lat, lng: config.lng },
-		};
-
-		const marker = new VxMarker(markerOptions);
-		marker.init(map);
-		markers.push(marker);
-	}
-
-	// Add to clusterer if available
-	if (clusterer && markers.length > 0) {
-		clusterer.addMarkers(markers);
-	}
-
-	return markers;
-}
+// addMarkersToMap, clearPreviewCardCache imported from ./map-markers
 
 /**
  * Trigger drag search (for automatic mode)
@@ -934,6 +896,10 @@ async function displayMarkersFromFeed(
 		return;
 	}
 
+	// Clear preview card cache when markers are refreshed
+	// Evidence: voxel-search-form.beautified.js:2498
+	clearPreviewCardCache();
+
 	// Convert to marker configs
 	const markerConfigs = markers.map((m) => ({
 		lat: m.lat,
@@ -942,12 +908,16 @@ async function displayMarkersFromFeed(
 		uriencoded: false,
 	}));
 
+	// Extract postIds for preview card popup support
+	const postIds = markers.map((m) => m.postId);
+
 	// Add markers to map
 	const newMarkers = await addMarkersToMap(
 		instanceData.map,
 		markerConfigs,
 		instanceData.popup!,
-		instanceData.clusterer
+		instanceData.clusterer,
+		postIds
 	);
 
 	instanceData.markers = newMarkers;
@@ -962,102 +932,7 @@ async function displayMarkersFromFeed(
 	console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers from feed');
 }
 
-/**
- * Fetch markers from API and display them on the map
- * Called when Post Feed emits search results with post IDs
- *
- * Reference: voxel-search-form.beautified.js:2488-2600 (_updateMarkers)
- * Voxel reads markers from feed DOM, we fetch via REST API
- */
-async function fetchAndDisplayMarkers(
-	mapContainer: HTMLElement,
-	postIds: number[]
-): Promise<void> {
-	const instanceData = mapInstances.get(mapContainer);
-	if (!instanceData) {
-		console.warn('[Map Block] fetchAndDisplayMarkers: No map instance found');
-		return;
-	}
 
-	console.log('[Map Block] Fetching markers for', postIds.length, 'posts');
-
-	// Clear existing markers
-	if (instanceData.clusterer) {
-		instanceData.clusterer.clearMarkers();
-	} else {
-		instanceData.markers.forEach((m) => m.remove());
-	}
-	instanceData.markers = [];
-	instanceData.popup?.hide();
-
-	if (postIds.length === 0) {
-		console.log('[Map Block] No posts to display markers for');
-		return;
-	}
-
-	try {
-		// Fetch markers from REST API
-		const restUrl = getRestUrl();
-		const response = await fetch(`${restUrl}voxel-fse/v1/map/markers`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ post_ids: postIds }),
-		});
-
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}`);
-		}
-
-		const data = await response.json() as {
-			success: boolean;
-			markers: Array<{
-				postId: number;
-				lat: number;
-				lng: number;
-				template: string;
-				uriencoded?: boolean;
-			}>;
-		};
-
-		if (!data.success || !data.markers || data.markers.length === 0) {
-			console.log('[Map Block] No markers returned from API');
-			return;
-		}
-
-		console.log('[Map Block] Received', data.markers.length, 'markers from API');
-
-		// Convert to marker configs
-		const markerConfigs = data.markers.map((m) => ({
-			lat: m.lat,
-			lng: m.lng,
-			template: m.template,
-			uriencoded: m.uriencoded ?? false,
-		}));
-
-		// Add markers to map
-		const newMarkers = await addMarkersToMap(
-			instanceData.map,
-			markerConfigs,
-			instanceData.popup!,
-			instanceData.clusterer
-		);
-
-		instanceData.markers = newMarkers;
-
-		// Render clusters or fit bounds
-		if (instanceData.clusterer && newMarkers.length > 0) {
-			instanceData.clusterer.render();
-		} else if (newMarkers.length > 0) {
-			fitBoundsToMarkers(instanceData.map, newMarkers);
-		}
-
-		console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers');
-	} catch (error) {
-		console.error('[Map Block] Failed to fetch markers:', error);
-	}
-}
 
 /**
  * Show radius circle on map
@@ -1182,7 +1057,7 @@ function renderMapLoading(container: HTMLElement): void {
  * Initialize all map blocks on the page
  */
 function initMapBlocks(): void {
-	// Inject CSS for geolocate button visibility (once)
+	// Inject CSS (once)
 	injectGeolocateButtonCSS();
 
 	const blocks = document.querySelectorAll<HTMLElement>('.voxel-fse-map');
