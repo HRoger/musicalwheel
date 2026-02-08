@@ -1,22 +1,5 @@
-/**
- * EmojiPicker Component
- *
- * 1:1 match with Voxel's emoji picker implementation.
- * Template: themes/voxel/templates/widgets/timeline/partials/_emoji-picker.php
- *
- * Uses FormPopup wrapper with ts-emoji-popup class (no footer).
- * Features:
- * - Search with ts-input-icon structure
- * - Recently used emojis (localStorage)
- * - Grouped by categories with labels
- *
- * @package VoxelFSE
- */
-
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-// TODO: FormPopup component needs to be created or imported from popup-kit
-// import { FormPopup } from '../../shared';
-import { FormPopup } from '../../popup-kit/shared';
+import { createPortal } from 'react-dom';
 
 /**
  * Emoji item with searchable name
@@ -247,13 +230,15 @@ const saveToRecents = (emoji: string): void => {
 };
 
 /**
- * Search icon matching Voxel's icon-search
+ * Search icon matching Voxel's icon-search (exact match from original)
  */
 const SearchIcon = () => (
-	<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+	<svg width="80" height="80" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(0 0 0)">
 		<path
-			d="M12.5 11H11.71L11.43 10.73C12.41 9.59 13 8.11 13 6.5C13 2.91 10.09 0 6.5 0C2.91 0 0 2.91 0 6.5C0 10.09 2.91 13 6.5 13C8.11 13 9.59 12.41 10.73 11.43L11 11.71V12.5L16 17.49L17.49 16L12.5 11ZM6.5 11C4.01 11 2 8.99 2 6.5C2 4.01 4.01 2 6.5 2C8.99 2 11 4.01 11 6.5C11 8.99 8.99 11 6.5 11Z"
-			fill="currentColor"
+			fillRule="evenodd"
+			clipRule="evenodd"
+			d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z"
+			fill="#343C54"
 		/>
 	</svg>
 );
@@ -268,30 +253,30 @@ interface EmojiPickerProps {
 	onClose: () => void;
 	/** Called when emoji is selected */
 	onSelect: (emoji: string) => void;
-	/** Target element for positioning (Voxel uses composer.uniqueId) */
+	/** Target element for positioning */
 	target?: HTMLElement | null;
+	/** Element whose width the popup should match (typically the composer wrapper) */
+	widthElement?: HTMLElement | null;
 	/** Reference to the composer for positioning */
 	composer?: { uniqueId: string };
 }
 
 /**
  * EmojiPicker Component
- *
- * 1:1 match with Voxel's _emoji-picker.php structure:
- * - FormPopup with ts-emoji-popup class
- * - Search with ts-sticky-top and ts-input-icon
- * - ts-emoji-list with ts-form-group sections
- * - Recently used section
  */
 export function EmojiPicker({
 	isOpen,
 	onClose,
 	onSelect,
 	target,
+	widthElement,
 }: EmojiPickerProps): JSX.Element | null {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [recents, setRecents] = useState<string[]>([]);
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const popupRef = useRef<HTMLDivElement>(null);
+	const popupBoxRef = useRef<HTMLDivElement>(null);
+	const [styles, setStyles] = useState<React.CSSProperties>({});
 
 	// Load recents on mount
 	useEffect(() => {
@@ -338,93 +323,182 @@ export function EmojiPicker({
 		[onSelect]
 	);
 
-	if (!isOpen) return null;
+	/**
+	 * Position popup
+	 */
+	const reposition = useCallback(() => {
+		if (!popupRef.current || !popupBoxRef.current || !target) {
+			return;
+		}
 
-	return (
-		<FormPopup
-			isOpen={isOpen}
-			popupId="emoji-picker-popup"
-			target={target}
-			onClose={onClose}
-			showHeader={false}
-			showFooter={false}
-			popupClass="ts-emoji-popup"
-		>
-			{/* Search bar - matches Voxel's ts-sticky-top structure */}
-			<div className="ts-sticky-top uib b-bottom">
-				<div className="ts-input-icon flexify">
-					<SearchIcon />
-					<input
-						ref={searchInputRef}
-						type="text"
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						placeholder="Search emojis"
-						className="autofocus"
-					/>
+		const triggerRect = target.getBoundingClientRect();
+		const triggerOffset = {
+			left: triggerRect.left + window.scrollX,
+			top: triggerRect.top + window.scrollY,
+		};
+
+		// Use widthElement if provided, otherwise fall back to target
+		const widthRef = widthElement || target;
+		const widthRect = widthRef.getBoundingClientRect();
+		const popupWidth = widthRect.width;
+		const widthOffset = {
+			left: widthRect.left + window.scrollX,
+		};
+
+		// Position horizontally based on widthElement's position (left edge)
+		const leftPosition = widthOffset.left;
+
+		// Position vertically below the trigger element
+		let topPosition = triggerOffset.top + triggerRect.height;
+		const viewportHeight = window.innerHeight;
+		const popupBoxRect = popupBoxRef.current.getBoundingClientRect();
+		const popupHeight = popupBoxRect.height;
+		const isBottomTruncated = triggerRect.bottom + popupHeight > viewportHeight;
+		const isRoomAbove = triggerRect.top - popupHeight >= 0;
+
+		if (isBottomTruncated && isRoomAbove) {
+			topPosition = triggerOffset.top - popupHeight;
+		}
+
+		setStyles({
+			position: 'absolute',
+			top: `${topPosition}px`,
+			left: `${leftPosition}px`,
+			width: `${popupWidth}px`,
+		});
+	}, [target, widthElement]);
+
+	// Reposition on scroll/resize/mount
+	useEffect(() => {
+		if (!isOpen) return;
+		reposition();
+		const handleScroll = () => reposition();
+		const handleResize = () => reposition();
+		window.addEventListener('scroll', handleScroll, true);
+		window.addEventListener('resize', handleResize, true);
+		return () => {
+			window.removeEventListener('scroll', handleScroll, true);
+			window.removeEventListener('resize', handleResize, true);
+		};
+	}, [isOpen, reposition]);
+
+	useEffect(() => {
+		if (isOpen) {
+			// Initial reposition after render
+			requestAnimationFrame(reposition);
+		}
+	}, [isOpen, reposition]);
+
+	// Click outside to close
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleMouseDown = (e: MouseEvent) => {
+			const clickTarget = e.target as HTMLElement;
+			// Don't close if clicking inside the popup box
+			if (popupBoxRef.current?.contains(clickTarget)) return;
+			// Don't close if clicking on the trigger (if accessible)
+			if (target && target.contains(clickTarget)) return;
+
+			onClose();
+		};
+		document.addEventListener('mousedown', handleMouseDown);
+		return () => document.removeEventListener('mousedown', handleMouseDown);
+	}, [isOpen, target, onClose]);
+
+	if (!isOpen || !target) return null;
+
+	return createPortal(
+		<div className="elementor vx-popup ts-emoji-popup">
+			<div className="ts-popup-root elementor-element elementor-element-2168fda-wrap">
+				<div ref={popupRef} className="ts-form elementor-element elementor-element-2168fda" style={styles}>
+					<div className="ts-field-popup-container">
+						<div
+							ref={popupBoxRef}
+							className="ts-field-popup triggers-blur"
+						>
+							<div className="ts-popup-content-wrapper min-scroll">
+								{/* Search bar */}
+								<div className="ts-sticky-top uib b-bottom">
+									<div className="ts-input-icon flexify">
+										<SearchIcon />
+										<input
+											ref={searchInputRef}
+											type="text"
+											value={searchTerm}
+											onChange={(e) => setSearchTerm(e.target.value)}
+											placeholder="Search emojis"
+											className="autofocus"
+										/>
+									</div>
+								</div>
+
+								{/* Emoji list */}
+								<div className="ts-emoji-list">
+									{searchTerm.trim() ? (
+										/* Search results */
+										<div className="ts-form-group">
+											<label>
+												{searchResults.length > 0
+													? 'Search results'
+													: 'No emojis found'}
+											</label>
+											<ul className="flexify simplify-ul">
+												{searchResults.map((item, index) => (
+													<li key={`search-${index}`}>
+														<span onClick={() => handleSelect(item.emoji)}>
+															{item.emoji}
+														</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									) : (
+										/* Categories view */
+										<>
+											{/* Recently used */}
+											{recents.length > 0 && (
+												<div className="ts-form-group">
+													<label>Recently used</label>
+													<ul className="flexify simplify-ul">
+														{recents.map((emoji, index) => (
+															<li key={`recent-${index}`}>
+																<span onClick={() => handleSelect(emoji)}>
+																	{emoji}
+																</span>
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+
+											{/* Emoji groups */}
+											{Object.entries(EMOJI_GROUPS).map(([groupKey, items]) => (
+												<div key={groupKey} className="ts-form-group">
+													<label className="hidden">
+														{EMOJI_GROUP_LABELS[groupKey] || groupKey}
+													</label>
+													<ul className="flexify simplify-ul">
+														{items.map((item, index) => (
+															<li key={`${groupKey}-${index}`}>
+																<span onClick={() => handleSelect(item.emoji)}>
+																	{item.emoji}
+																</span>
+															</li>
+														))}
+													</ul>
+												</div>
+											))}
+										</>
+									)}
+								</div>
+							</div>
+							<template></template>
+						</div>
+					</div>
 				</div>
 			</div>
-
-			{/* Emoji list - matches Voxel's ts-emoji-list structure */}
-			<div className="ts-emoji-list">
-				{searchTerm.trim() ? (
-					/* Search results */
-					<div className="ts-form-group">
-						<label>
-							{searchResults.length > 0
-								? 'Search results'
-								: 'No emojis found'}
-						</label>
-						<ul className="flexify simplify-ul">
-							{searchResults.map((item, index) => (
-								<li key={`search-${index}`}>
-									<span onClick={() => handleSelect(item.emoji)}>
-										{item.emoji}
-									</span>
-								</li>
-							))}
-						</ul>
-					</div>
-				) : (
-					/* Categories view */
-					<>
-						{/* Recently used */}
-						{recents.length > 0 && (
-							<div className="ts-form-group">
-								<label>Recently used</label>
-								<ul className="flexify simplify-ul">
-									{recents.map((emoji, index) => (
-										<li key={`recent-${index}`}>
-											<span onClick={() => handleSelect(emoji)}>
-												{emoji}
-											</span>
-										</li>
-									))}
-								</ul>
-							</div>
-						)}
-
-						{/* Emoji groups */}
-						{Object.entries(EMOJI_GROUPS).map(([groupKey, items]) => (
-							<div key={groupKey} className="ts-form-group">
-								<label className="hidden">
-									{EMOJI_GROUP_LABELS[groupKey] || groupKey}
-								</label>
-								<ul className="flexify simplify-ul">
-									{items.map((item, index) => (
-										<li key={`${groupKey}-${index}`}>
-											<span onClick={() => handleSelect(item.emoji)}>
-												{item.emoji}
-											</span>
-										</li>
-									))}
-								</ul>
-							</div>
-						))}
-					</>
-				)}
-			</div>
-		</FormPopup>
+		</div>,
+		document.body
 	);
 }
 

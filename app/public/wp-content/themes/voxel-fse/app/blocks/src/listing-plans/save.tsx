@@ -72,8 +72,10 @@ export default function save({ attributes }: SaveProps) {
 		priceGroups: attributes.priceGroups ?? [],
 		planConfigs: attributes.planConfigs ?? {},
 		arrowIcon: attributes.arrowIcon ?? defaultIconValue,
-		// Redirect options (Content Tab)
-		directPurchaseRedirect: attributes.directPurchaseRedirect ?? 'order_page',
+		// Redirect options (Content Tab) — Evidence: listing-plans-widget.php:1549-1582
+		directPurchaseRedirect: attributes.directPurchaseRedirect ?? 'order',
+		directPurchasePostType: attributes.directPurchasePostType,
+		directPurchaseCustomUrl: attributes.directPurchaseCustomUrl,
 		style: {
 			plansColumns: attributes.plansColumns ?? 3,
 			plansColumns_tablet: attributes.plansColumns_tablet,

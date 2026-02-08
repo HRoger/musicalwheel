@@ -22,7 +22,7 @@ export interface OrderingOption {
 	_id: string;
 	order: 'latest' | 'earliest' | 'most_liked' | 'most_discussed' | 'most_popular' | 'best_rated' | 'worst_rated';
 	time: 'today' | 'this_week' | 'this_month' | 'this_year' | 'all_time' | 'custom';
-	timeCustom: number;
+	timeCustom: number | string;
 	label: string;
 	// Row visibility
 	rowVisibility?: 'show' | 'hide';

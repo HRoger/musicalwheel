@@ -166,6 +166,72 @@
 		"listIconRightPad_mobile": {
 			"type": "number"
 		},
+		"_comment_typography_color": "Typography and color controls for pricing, name, description, features",
+		"priceTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"priceColor": {
+			"type": "string",
+			"default": ""
+		},
+		"periodTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"periodColor": {
+			"type": "string",
+			"default": ""
+		},
+		"nameTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"nameColor": {
+			"type": "string",
+			"default": ""
+		},
+		"descTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"descColor": {
+			"type": "string",
+			"default": ""
+		},
+		"listTypography": {
+			"type": "object",
+			"default": {}
+		},
+		"listColor": {
+			"type": "string",
+			"default": ""
+		},
+		"listIconColor": {
+			"type": "string",
+			"default": ""
+		},
+		"_comment_card_container": "Card container border, background, and shadow controls",
+		"plansBorderType": {
+			"type": "string",
+			"default": ""
+		},
+		"plansBorderWidth": {
+			"type": "object",
+			"default": {}
+		},
+		"plansBorderColor": {
+			"type": "string",
+			"default": ""
+		},
+		"plansBg": {
+			"type": "string",
+			"default": ""
+		},
+		"plansShadow": {
+			"type": "object",
+			"default": {}
+		},
 		"tabsDisabled": {
 			"type": "boolean",
 			"default": false

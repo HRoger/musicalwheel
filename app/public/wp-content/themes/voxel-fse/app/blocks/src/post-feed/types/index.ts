@@ -81,6 +81,9 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	carouselItemWidth_mobile?: number;
 	carouselItemWidthUnit: string;
 	carouselAutoSlide: boolean;
+	carouselAutoSlideInterval?: number;
+	carouselAutoSlideInterval_tablet?: number;
+	carouselAutoSlideInterval_mobile?: number;
 	scrollPadding?: number;
 	scrollPadding_tablet?: number;
 	scrollPadding_mobile?: number;
@@ -112,6 +115,7 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	// Loading Style
 	loadingStyle: LoadingStyle;
 	loadingOpacity: number;
+	skeletonBackgroundColor: string;
 
 	// No Results Style
 	noResultsHideScreen: boolean;
@@ -142,6 +146,8 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	paginationSpacing_tablet?: number;
 	paginationSpacing_mobile?: number;
 	paginationBorderType: string;
+	paginationBorderWidth?: number;
+	paginationBorderColor: string;
 	paginationBorderRadius?: number;
 	paginationBorderRadius_tablet?: number;
 	paginationBorderRadius_mobile?: number;
@@ -176,6 +182,8 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	carouselNavBackground: string;
 	carouselNavBackdropBlur?: number;
 	carouselNavBorderType: string;
+	carouselNavBorderWidth?: number;
+	carouselNavBorderColor: string;
 	carouselNavBorderRadius?: number;
 	carouselNavBorderRadius_tablet?: number;
 	carouselNavBorderRadius_mobile?: number;
@@ -236,6 +244,7 @@ export interface PostFeedVxConfig {
 	carouselItemWidth_mobile?: number;
 	carouselItemWidthUnit: string;
 	carouselAutoSlide: boolean;
+	carouselAutoSlideInterval?: number;
 	scrollPadding?: number;
 	scrollPadding_tablet?: number;
 	scrollPadding_mobile?: number;

@@ -34,6 +34,9 @@ export default function OrdersList({
 	attributes,
 	isLoading,
 	onOrderSelect,
+	currentPage,
+	totalPages,
+	onPageChange,
 }: OrdersListProps) {
 	// Empty state
 	if (!orders || orders.length === 0) {
@@ -45,74 +48,107 @@ export default function OrdersList({
 		);
 	}
 
+	const hasMore = currentPage < totalPages;
+	const showPagination = currentPage > 1 || hasMore;
+
 	return (
-		<div className="vx-order-list">
-			{orders.map((order) => (
-				<div
-					key={order.id}
-					className={`vx-order-card vx-status-${order.status}`}
-					onClick={() => onOrderSelect(order.id)}
-					style={{
-						cursor: 'pointer',
-						backgroundColor: attributes.cardBackground || undefined,
-						borderRadius: attributes.cardBorderRadius ? `${attributes.cardBorderRadius}px` : undefined,
-					}}
-				>
-					{/* Order Title Row */}
-					<div className="vx-order-meta vx-order-title">
-						{/* Avatar */}
-						{order.customer.avatar ? (
-							<div
-								className="vx-avatar"
-								dangerouslySetInnerHTML={{ __html: order.customer.avatar }}
-							/>
-						) : order.vendor.avatar ? (
-							<div
-								className="vx-avatar"
-								dangerouslySetInnerHTML={{ __html: order.vendor.avatar }}
-							/>
+		<>
+			<div className="vx-order-list">
+				{orders.map((order) => (
+					<div
+						key={order.id}
+						className={`vx-order-card vx-status-${order.status}`}
+						onClick={() => onOrderSelect(order.id)}
+						style={{
+							cursor: 'pointer',
+							backgroundColor: attributes.cardBackground || undefined,
+							borderRadius: attributes.cardBorderRadius ? `${attributes.cardBorderRadius}px` : undefined,
+						}}
+					>
+						{/* Order Title Row */}
+						<div className="vx-order-meta vx-order-title">
+							{/* Avatar */}
+							{order.customer.avatar ? (
+								<div
+									className="vx-avatar"
+									dangerouslySetInnerHTML={{ __html: order.customer.avatar }}
+								/>
+							) : order.vendor.avatar ? (
+								<div
+									className="vx-avatar"
+									dangerouslySetInnerHTML={{ __html: order.vendor.avatar }}
+								/>
+							) : (
+								<div className="vx-avatar">
+									<span className="vx-avatar-placeholder">{order.customer.name?.charAt(0) || '?'}</span>
+								</div>
+							)}
+
+							{/* Order Badge */}
+							<span className="order-badge">#{order.id}</span>
+
+							{/* Order Title */}
+							<b>
+								{order.item_count === 1
+									? 'One item'
+									: `${order.item_count} items`}
+							</b>
+						</div>
+
+						{/* Order Meta Row */}
+						<div className="vx-order-meta">
+							{/* Date */}
+							<span className="vx-hide-mobile">{order.created_at}</span>
+
+							{/* Total */}
+							{order.total !== null && (
+								<span className="vx-hide-mobile">
+									{currencyFormat(order.total, order.currency)}
+								</span>
+							)}
+						</div>
+
+						{/* Status Badge */}
+						{order.shipping_status !== null ? (
+							<div className={`order-status ${getShippingStatusClass(order.shipping_status, config)}`}>
+								{getShippingStatusLabel(order.shipping_status, config)}
+							</div>
 						) : (
-							<div className="vx-avatar">
-								<span className="vx-avatar-placeholder">{order.customer.name?.charAt(0) || '?'}</span>
+							<div className={`order-status ${getStatusClass(order.status, config)}`}>
+								{getStatusLabel(order.status, config)}
 							</div>
 						)}
-
-						{/* Order Badge */}
-						<span className="order-badge">#{order.id}</span>
-
-						{/* Order Title */}
-						<b>
-							{order.item_count === 1
-								? 'One item'
-								: `${order.item_count} items`}
-						</b>
 					</div>
+				))}
+			</div>
 
-					{/* Order Meta Row */}
-					<div className="vx-order-meta">
-						{/* Date */}
-						<span className="vx-hide-mobile">{order.created_at}</span>
-
-						{/* Total */}
-						{order.total !== null && (
-							<span className="vx-hide-mobile">
-								{currencyFormat(order.total, order.currency)}
-							</span>
-						)}
-					</div>
-
-					{/* Status Badge */}
-					{order.shipping_status !== null ? (
-						<div className={`order-status ${getShippingStatusClass(order.shipping_status, config)}`}>
-							{getShippingStatusLabel(order.shipping_status, config)}
-						</div>
-					) : (
-						<div className={`order-status ${getStatusClass(order.status, config)}`}>
-							{getStatusLabel(order.status, config)}
-						</div>
-					)}
+			{/* Pagination - matches Voxel: templates/widgets/orders.php:210-219 */}
+			{showPagination && (
+				<div className={`vx-order-more${isLoading ? ' vx-inert' : ''}`}>
+					<a
+						href="#"
+						className={`ts-load-more ts-btn ts-btn-1${currentPage < 2 ? ' vx-disabled' : ''}`}
+						onClick={(e) => {
+							e.preventDefault();
+							if (currentPage > 1) onPageChange(currentPage - 1);
+						}}
+					>
+						{renderIcon(getIconWithFallback(attributes.backIcon, 'backIcon'))}
+						Previous
+					</a>
+					<a
+						href="#"
+						className={`ts-load-more ts-btn ts-btn-1${!hasMore ? ' vx-disabled' : ''}`}
+						onClick={(e) => {
+							e.preventDefault();
+							if (hasMore) onPageChange(currentPage + 1);
+						}}
+					>
+						Next
+						{renderIcon(getIconWithFallback(attributes.forwardIcon, 'forwardIcon'))}
+					</a>
 				</div>
-			))}
-		</div>
+			)}
+		</>
 	);
 }

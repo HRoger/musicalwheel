@@ -63,9 +63,13 @@ class FSE_Stripe_Account_API_Controller extends FSE_Base_Controller {
 	 *
 	 * Returns the same config structure as Voxel's stripe-account-widget.php render() method
 	 *
+	 * Supports preview_as_user for editor preview (admin only):
+	 * - Voxel source: themes/voxel/app/modules/stripe-connect/widgets/stripe-account-widget.php:2618-2627
+	 *
+	 * @param \WP_REST_Request $request
 	 * @return \WP_REST_Response
 	 */
-	public function get_config(): \WP_REST_Response {
+	public function get_config( \WP_REST_Request $request ): \WP_REST_Response {
 		// Check if Stripe Connect is enabled
 		if ( ! $this->is_stripe_connect_enabled() ) {
 			return new \WP_REST_Response( [
@@ -74,7 +78,19 @@ class FSE_Stripe_Account_API_Controller extends FSE_Base_Controller {
 			], 403 );
 		}
 
-		$config = $this->build_config();
+		// Support preview_as_user for admin users in editor
+		// Voxel source: themes/voxel/app/modules/stripe-connect/widgets/stripe-account-widget.php:2618-2627
+		$preview_user_id = $request->get_param( 'user_id' );
+		$is_preview      = false;
+
+		if ( ! empty( $preview_user_id ) && current_user_can( 'administrator' ) ) {
+			$preview_user_id = absint( $preview_user_id );
+			$is_preview      = true;
+		} else {
+			$preview_user_id = null;
+		}
+
+		$config = $this->build_config( $preview_user_id, $is_preview );
 
 		return new \WP_REST_Response( [
 			'success' => true,
@@ -99,10 +115,23 @@ class FSE_Stripe_Account_API_Controller extends FSE_Base_Controller {
 	 *
 	 * Matches Voxel's stripe-account-widget.php render() method config
 	 *
+	 * @param int|null $preview_user_id Optional user ID for admin preview
+	 * @param bool     $is_preview      Whether this is a preview request
 	 * @return array
 	 */
-	private function build_config(): array {
-		$user = $this->get_current_voxel_user();
+	private function build_config( ?int $preview_user_id = null, bool $is_preview = false ): array {
+		// Support preview_as_user for admin users
+		// Voxel source: themes/voxel/app/modules/stripe-connect/widgets/stripe-account-widget.php:2618-2627
+		if ( $preview_user_id && function_exists( '\\Voxel\\User::get' ) ) {
+			$user = \Voxel\User::get( $preview_user_id );
+			if ( ! $user ) {
+				// Fallback to current user if preview user not found
+				$user       = $this->get_current_voxel_user();
+				$is_preview = false;
+			}
+		} else {
+			$user = $this->get_current_voxel_user();
+		}
 
 		if ( ! $user ) {
 			return [
@@ -130,7 +159,7 @@ class FSE_Stripe_Account_API_Controller extends FSE_Base_Controller {
 		// Voxel source: themes/voxel/app/modules/stripe-connect/widgets/stripe-account-widget.php:2655-2658
 		$config = [
 			'nonce'                    => wp_create_nonce( 'vx_vendor_dashboard' ),
-			'is_preview'               => false,
+			'is_preview'               => $is_preview,
 			'onboard_link'             => $onboard_link,
 			'dashboard_link'           => $dashboard_link,
 			'account'                  => $account,

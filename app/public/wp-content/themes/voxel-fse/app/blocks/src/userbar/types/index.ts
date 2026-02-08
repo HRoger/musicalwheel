@@ -201,6 +201,10 @@ export interface UserbarAttributes {
 	itemMargin: BoxDimensions;
 	/** Item padding */
 	itemPadding: BoxDimensions;
+	/** Item box shadow */
+	itemBoxShadow: BoxShadowValue;
+	/** Item box shadow on hover */
+	itemBoxShadowHover: BoxShadowValue;
 
 	// Item Background
 	/** Item background color */

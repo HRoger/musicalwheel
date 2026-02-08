@@ -135,6 +135,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 						context="editor"
 						isLoading={false}
 						error={null}
+						currentPage={1}
+						totalPages={1}
 					/>
 				)}
 			</div>

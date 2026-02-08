@@ -191,6 +191,7 @@ interface NotificationsItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 }
 
 /**
@@ -200,7 +201,7 @@ interface NotificationsItemProps {
  * PARITY: notifications.php:12 checks \Voxel\current_user()->get_notification_count()['unread']
  * Server config provides this initial state so indicator shows immediately without API call
  */
-function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
+function NotificationsItem({ item, icons, context, popupScopeClass }: NotificationsItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -576,7 +577,7 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => { setIsOpen(false); setActiveItem(null); }}
 					showFooter={false}
-					popupClass="md-width"
+					popupClass={`md-width ${popupScopeClass || ''}`.trim()}
 				>
 					<div className="ts-notifications-list min-scroll">
 						{/* Header with clear all button */}
@@ -649,6 +650,7 @@ interface MessagesItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	nonce?: string;
 }
 
@@ -659,7 +661,7 @@ interface MessagesItemProps {
  * PARITY: messages.php:1-3 provides data-config with nonce
  * PARITY: messages.php:7 checks \Voxel\current_user()->get_inbox_meta()['unread']
  */
-function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
+function MessagesItem({ item, icons, context, popupScopeClass, nonce }: MessagesItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -795,7 +797,7 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
-					popupClass="md-width"
+					popupClass={`md-width ${popupScopeClass || ''}`.trim()}
 				>
 					<div className="ts-chats-list min-scroll">
 						{/* Loading state */}
@@ -841,6 +843,7 @@ interface CartItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	nonce?: string;
 	isCartEmpty?: boolean;
 }
@@ -858,7 +861,7 @@ interface CartItemProps {
  * - nonce: wp_create_nonce('vx_cart')
  * - is_cart_empty: from metadata_exists check
  */
-function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartItemProps) {
+function CartItemComponent({ item, icons, context, popupScopeClass, nonce, isCartEmpty }: CartItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const iconRef = useRef<HTMLDivElement>(null);
@@ -1313,7 +1316,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
-					popupClass="lg-width ts-cart-popup"
+					popupClass={`lg-width ts-cart-popup ${popupScopeClass || ''}`.trim()}
 				>
 					<div className="ts-cart-content min-scroll">
 						{/* Loading state */}
@@ -1371,6 +1374,7 @@ interface UserMenuItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	hideChevron: boolean;
 }
 
@@ -1380,7 +1384,7 @@ interface UserMenuItemProps {
  * - $user->get_avatar_markup()
  * - $user->get_display_name()
  */
-function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) {
+function UserMenuItem({ item, icons, context, popupScopeClass, hideChevron }: UserMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
@@ -1461,6 +1465,7 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 					icon={avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:24px;height:24px;border-radius:50%;">` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
+					popupClass={popupScopeClass || ''}
 				>
 					<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
 						<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
@@ -1481,9 +1486,10 @@ interface WpMenuItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 }
 
-function WpMenuItem({ item, icons, context }: WpMenuItemProps) {
+function WpMenuItem({ item, icons, context, popupScopeClass }: WpMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
@@ -1520,6 +1526,7 @@ function WpMenuItem({ item, icons, context }: WpMenuItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
+					popupClass={popupScopeClass || ''}
 				>
 					<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
 						<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
@@ -1577,6 +1584,7 @@ function renderItem(
 	icons: UserbarAttributes['icons'],
 	context: 'editor' | 'frontend',
 	hideChevron: boolean,
+	popupScopeClass: string,
 	nonce?: string,
 	isCartEmpty?: boolean
 ): React.ReactNode {
@@ -1588,6 +1596,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'messages':
@@ -1597,6 +1606,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 					nonce={nonce}
 				/>
 			);
@@ -1607,6 +1617,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 					nonce={nonce}
 					isCartEmpty={isCartEmpty}
 				/>
@@ -1619,6 +1630,7 @@ function renderItem(
 					icons={icons}
 					context={context}
 					hideChevron={hideChevron}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'select_wp_menu':
@@ -1628,6 +1640,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'link':
@@ -1673,6 +1686,9 @@ export default function UserbarComponent({
 	const nonce = windowConfig?.nonce;
 	const isCartEmpty = windowConfig?.is_cart_empty ?? true;
 
+	// Popup scope class for CSS targeting portaled popups from this block instance
+	const popupScopeClass = `voxel-popup-userbar-${attributes.blockId || 'default'}`;
+
 	// Build inline styles for the list
 	const listStyle: React.CSSProperties = {
 		justifyContent: settings.itemsAlign,
@@ -1715,7 +1731,7 @@ export default function UserbarComponent({
 			{/* Main user bar structure - 1:1 Voxel match */}
 			<ul className="flexify simplify-ul user-area-menu" style={listStyle}>
 				{items.map((item) =>
-					renderItem(item, icons, context, settings.hideChevron, nonce, isCartEmpty)
+					renderItem(item, icons, context, settings.hideChevron, popupScopeClass, nonce, isCartEmpty)
 				)}
 			</ul>
 		</>

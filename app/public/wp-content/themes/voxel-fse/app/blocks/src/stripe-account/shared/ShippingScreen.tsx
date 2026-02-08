@@ -981,7 +981,8 @@ export default function ShippingScreen({
 												className="ts-repeater-head ts-repeater-head--rate"
 												onClick={() => setActiveRate(activeRate === rate ? null : rate)}
 											>
-												{renderIcon(config.icons?.zone, 'las la-box')}
+												{/* Use rate icon for rate headers (Voxel uses box.svg fallback) */}
+												{renderIcon(config.icons?.rate, 'las la-box')}
 												<label>{rate.label || __('Untitled rate', 'voxel-fse')}</label>
 												{getRateZones(rate).length > 0 && (
 													<em>

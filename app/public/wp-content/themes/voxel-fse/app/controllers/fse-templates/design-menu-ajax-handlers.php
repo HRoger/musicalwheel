@@ -214,11 +214,11 @@ add_action( 'voxel_ajax_backend.create_base_template', function() {
 		return;
 	}
 
-	// ⭐ DON'T store FSE template ID in Voxel's config - it should only contain Elementor IDs
-	// $templates = \Voxel\get( 'templates' ) ?? [];
-	// $templates[ $template_type ] = $fse_template_id;
-	// \Voxel\set( 'templates', $templates );
-	// Voxel will create its own Elementor template via its AJAX handler
+	// ⭐ CRITICAL FIX: Save FSE template ID to Voxel's config for persistence!
+	// Without this, the template ID is not saved and the "Create" button shows again after reload.
+	// Since wp_send_json() stops execution, Voxel's handler (priority 10) never runs,
+	// so we MUST save the template ID ourselves.
+	\Voxel\set( $template_key, $fse_template_id );
 
 	// Store FSE template mapping for JavaScript
 	$fse_mapping = get_option( 'mw_fse_design_template_mapping', [] );

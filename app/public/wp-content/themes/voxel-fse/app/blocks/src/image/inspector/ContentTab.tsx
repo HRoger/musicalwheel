@@ -63,13 +63,6 @@ export function ContentTab({
 		return attributes.image.id ? select('core').getMedia(attributes.image.id) : null;
 	});
 
-	console.log('Image Debug:', {
-		id: attributes.image.id,
-		size: attributes.imageSize,
-		media: media,
-		sizes: media?.media_details?.sizes
-	});
-
 	return (
 		<AccordionPanelGroup
 			attributes={attributes as Record<string, any>}
@@ -121,33 +114,21 @@ export function ContentTab({
 					label={__('Image Resolution', 'voxel-fse')}
 					value={attributes.imageSize}
 					onChange={(value) => {
-						console.log('Resolution Change:', value);
 						const newAttrs: Partial<ImageBlockAttributes> = { imageSize: value };
 
 						// Try to find the URL for the selected size
 						if (value !== 'custom' && media && media.media_details && media.media_details.sizes) {
 							if (media.media_details.sizes[value]) {
-								console.log('Found size URL:', media.media_details.sizes[value].source_url);
 								newAttrs.image = {
 									...attributes.image,
 									url: media.media_details.sizes[value].source_url
 								};
 							} else if (value === 'full' && media.source_url) {
-								console.log('Using full size URL:', media.source_url);
 								newAttrs.image = {
 									...attributes.image,
 									url: media.source_url
 								};
-							} else {
-								console.log('Size not found, keeping current URL');
 							}
-						} else {
-							console.log('Condition failed:', {
-								custom: value === 'custom',
-								hasMedia: !!media,
-								hasDetails: !!media?.media_details,
-								hasSizes: !!media?.media_details?.sizes
-							});
 						}
 
 						setAttributes(newAttrs);

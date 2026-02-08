@@ -376,11 +376,22 @@ export default function CartSummaryComponent({
 
 	/**
 	 * Get shipping method
-	 * Matches Voxel's getShippingMethod() method
+	 * Evidence: docs/block-conversions/cart-summary/product-summary-beautified.js:7
+	 * Voxel checks: multivendor.enabled, responsibility === 'vendor', vendor count, platform key
 	 */
-	const getShippingMethod = (): 'platform_rates' | 'vendor_rates' => {
+	const getShippingMethod = (): 'platform_rates' | 'vendor_rates' | null => {
 		if (!config?.multivendor.enabled) return 'platform_rates';
-		return config.shipping.responsibility === 'vendor' ? 'vendor_rates' : 'platform_rates';
+		if (config.shipping.responsibility !== 'vendor') return 'platform_rates';
+
+		// Check vendor count - if only 1 vendor and it's 'platform', use platform_rates
+		const vendorKeys = Object.keys(vendors);
+		const vendorCount = vendorKeys.length;
+		if (vendorCount === 1 && vendors['platform']) {
+			return 'platform_rates';
+		}
+
+		// If at least one vendor, use vendor_rates
+		return vendorCount >= 1 ? 'vendor_rates' : null;
 	};
 
 	/**

@@ -497,6 +497,8 @@ export interface OrdersComponentProps {
 	context: BlockContext;
 	isLoading: boolean;
 	error: string | null;
+	currentPage: number;
+	totalPages: number;
 	onSearch?: (query: string) => void;
 	onStatusFilter?: (status: OrderStatus | null) => void;
 	onProductTypeFilter?: (productType: string | null) => void;
@@ -516,6 +518,9 @@ export interface OrdersListProps {
 	attributes: OrdersBlockAttributes;
 	isLoading: boolean;
 	onOrderSelect: (orderId: number) => void;
+	currentPage: number;
+	totalPages: number;
+	onPageChange: (page: number) => void;
 }
 
 /**
@@ -538,6 +543,7 @@ export interface SingleOrderProps {
 export interface OrdersFilterState {
 	searchQuery: string;
 	status: OrderStatus | null;
+	shippingStatus: string | null;
 	productType: string | null;
 	page: number;
 }

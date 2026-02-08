@@ -545,7 +545,8 @@ export interface AddonChoice {
 	value: string;
 	label: string;
 	price: number;
-	image?: string;
+	image?: string | { url: string; alt?: string } | null;
+	subheading?: string | null;
 	quantity?: {
 		enabled: boolean;
 		min: number;

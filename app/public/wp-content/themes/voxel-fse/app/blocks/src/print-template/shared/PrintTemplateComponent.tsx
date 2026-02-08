@@ -280,15 +280,6 @@ export default function PrintTemplateComponent({
 	// Build class list
 	const classList = ['ts-print-template-content'];
 
-	if (attributes.hideDesktop) {
-		classList.push('hide-desktop');
-	}
-	if (attributes.hideTablet) {
-		classList.push('hide-tablet');
-	}
-	if (attributes.hideMobile) {
-		classList.push('hide-mobile');
-	}
 	if (attributes.customClasses) {
 		classList.push(attributes.customClasses);
 	}
@@ -296,9 +287,6 @@ export default function PrintTemplateComponent({
 	// Build vxconfig for re-rendering (required for DevTools visibility)
 	const vxConfig: PrintTemplateVxConfig = {
 		templateId: attributes.templateId || '',
-		hideDesktop: attributes.hideDesktop ?? false,
-		hideTablet: attributes.hideTablet ?? false,
-		hideMobile: attributes.hideMobile ?? false,
 		customClasses: attributes.customClasses || '',
 	};
 

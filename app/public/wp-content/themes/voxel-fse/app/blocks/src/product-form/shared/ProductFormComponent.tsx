@@ -437,7 +437,8 @@ export default function ProductFormComponent({
 				)}
 
 				{/* Quantity Field (for regular products) */}
-				{hasQuantity && productMode === 'regular' && (
+				{/* Evidence: form-quantity-field.php:53 - sold_individually hides quantity selector */}
+				{hasQuantity && productMode === 'regular' && !quantityField?.props?.sold_individually && (
 					<FieldQuantity
 						maxQuantity={maxQuantity}
 						value={quantity}

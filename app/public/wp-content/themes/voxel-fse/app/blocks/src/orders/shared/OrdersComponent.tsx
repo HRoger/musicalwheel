@@ -291,6 +291,8 @@ export default function OrdersComponent({
 	context,
 	isLoading,
 	error,
+	currentPage,
+	totalPages,
 	onSearch,
 	onStatusFilter,
 	onShippingStatusFilter,
@@ -593,6 +595,21 @@ export default function OrdersComponent({
 			}
 		}
 	}, [state.parentOrderId, onOrderSelect, onOrderBack]);
+
+	// Handle page change with URL persistence
+	const handlePageChangeWithUrl = useCallback(
+		(page: number) => {
+			if (page > 1) {
+				setSearchParam('pg', page);
+			} else {
+				deleteSearchParam('pg');
+			}
+			if (onPageChange) {
+				onPageChange(page);
+			}
+		},
+		[onPageChange]
+	);
 
 	// Get status filter label
 	const statusFilterLabel = useMemo(() => {
@@ -1022,6 +1039,9 @@ export default function OrdersComponent({
 							attributes={attributes}
 							isLoading={isLoading}
 							onOrderSelect={handleOrderSelectWithUrl}
+							currentPage={currentPage}
+							totalPages={totalPages}
+							onPageChange={handlePageChangeWithUrl}
 						/>
 					)}
 				</>

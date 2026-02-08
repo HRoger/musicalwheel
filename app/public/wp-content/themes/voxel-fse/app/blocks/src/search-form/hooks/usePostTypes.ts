@@ -84,8 +84,10 @@ export function usePostTypes(options: UsePostTypesOptions = {}): UsePostTypesRet
 				});
 			} else {
 				// GET for basic post types (no filter config needed)
+				// Uses frontend-config (public) instead of post-types (editor-only)
+				// to avoid 401 errors for logged-out users
 				data = await apiFetch<PostTypeConfig[]>( {
-					path: '/voxel-fse/v1/search-form/post-types',
+					path: '/voxel-fse/v1/search-form/frontend-config',
 				} );
 			}
 

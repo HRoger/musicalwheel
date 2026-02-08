@@ -24,6 +24,14 @@ import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons } from '@shared/utils';
 
 /**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
+
+/**
  * Check if page is RTL
  * Evidence: themes/voxel/assets/dist/commons.js - Voxel_Config.is_rtl
  */
@@ -78,6 +86,27 @@ export default function SliderComponent({
 	const images = processedImages;
 	const isSingleImage = images.length === 1;
 	const hasMultipleImages = images.length > 1;
+
+	// Build lightbox slides from all images
+	const lightboxSlides = useMemo(
+		() => images.map((img) => ({
+			src: img.srcLightbox || img.src,
+			alt: img.alt || '',
+		})),
+		[images]
+	);
+
+	// Lightbox click handler - opens at the correct image index
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
+			e.preventDefault();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(lightboxSlides, index);
+			}
+		},
+		[lightboxSlides]
+	);
 
 	// Build inline styles based on attributes
 	const sliderStyle: CSSProperties = {};
@@ -262,12 +291,10 @@ export default function SliderComponent({
 	 * Get link props for image
 	 * Evidence: themes/voxel/templates/widgets/slider.php:14-22, 39-47
 	 *
-	 * For lightbox mode, uses Elementor's native lightbox via data attributes:
-	 * - data-elementor-open-lightbox="yes" - Triggers Elementor lightbox
-	 * - data-elementor-lightbox-slideshow="{gallery_id}" - Groups images (only for multiple images)
-	 * - data-elementor-lightbox-description="{caption}" - Shows caption in lightbox
+	 * For lightbox mode, uses VoxelLightbox global API via onClick handler.
+	 * data-elementor-* attributes are kept for HTML parity only.
 	 */
-	const getLinkProps = (image: ProcessedImage) => {
+	const getLinkProps = (image: ProcessedImage, index: number) => {
 		if (attributes.linkType === 'custom_link' && attributes.customLinkUrl) {
 			return {
 				href: attributes.customLinkUrl,
@@ -275,17 +302,14 @@ export default function SliderComponent({
 			};
 		}
 		if (attributes.linkType === 'lightbox') {
-			// Use Elementor's native lightbox (100% Voxel parity)
-			// Evidence: themes/voxel/templates/widgets/slider.php:17-19, 42-44
-			const props: Record<string, string> = {
+			const props: Record<string, unknown> = {
 				href: image.srcLightbox,
 				'data-elementor-open-lightbox': 'yes',
 				'data-elementor-lightbox-description': getLightboxDescription(image),
+				onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleLightboxClick(e, index),
 			};
 
 			// Only add slideshow attribute for multiple images
-			// Evidence: themes/voxel/templates/widgets/slider.php:18,43
-			// $is_slideshow ? sprintf( 'data-elementor-lightbox-slideshow="%s"', $gallery_id ) : ''
 			if (isSlideshow) {
 				props['data-elementor-lightbox-slideshow'] = galleryId;
 			}
@@ -344,7 +368,7 @@ export default function SliderComponent({
 				<div className="ts-preview ts-single-slide" style={sliderStyle}>
 					{(() => {
 						const image = images[0];
-						const linkProps = getLinkProps(image);
+						const linkProps = getLinkProps(image, 0);
 
 						const imageElement = (
 							<img
@@ -391,7 +415,7 @@ export default function SliderComponent({
 						}}
 					>
 						{images.map((image, index) => {
-							const linkProps = getLinkProps(image);
+							const linkProps = getLinkProps(image, index);
 
 							const imageElement = (
 								<img

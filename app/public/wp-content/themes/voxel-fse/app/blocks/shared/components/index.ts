@@ -8,3 +8,6 @@
 
 export { Loader } from './Loader';
 export type { LoaderProps } from './Loader';
+
+export { VoxelLightbox } from './Lightbox';
+export type { VoxelLightboxProps, LightboxSlide } from './Lightbox';

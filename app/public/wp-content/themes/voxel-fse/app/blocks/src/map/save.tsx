@@ -25,9 +25,12 @@ export default function save({ attributes }: MapSaveProps) {
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
 	// This handles: styles, className, responsiveCSS, customAttrs, elementId
+	// IMPORTANT: Include 'elementor-widget-ts-map' class for Voxel CSS selector compatibility
+	// The Voxel parent theme uses `.elementor-widget-ts-map:has(.gm-control-active) .vx-geolocate-me { display: flex; }`
+	// to show the geolocate button when the map is loaded
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
 		blockId,
-		baseClass: 'voxel-fse-map ts-map-widget',
+		baseClass: 'voxel-fse-map ts-map-widget elementor-widget-ts-map',
 		selectorPrefix: 'voxel-fse-map',
 	});
 

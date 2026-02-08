@@ -507,6 +507,14 @@ function voxel_fse_enqueue_block_editor_assets()
             array(),
             wp_get_theme()->parent()->get('Version')
     );
+
+    // Enqueue responsive visibility classes in editor (needed for map/feed switcher toggle)
+    wp_enqueue_style(
+            'voxel-fse-responsive-visibility',
+            VOXEL_FSE_URL . '/assets/css/responsive-visibility.css',
+            array(),
+            VOXEL_FSE_VERSION
+    );
 }
 
 add_action('enqueue_block_editor_assets', 'voxel_fse_enqueue_block_editor_assets', 999);

@@ -205,6 +205,16 @@ The WordPress editor uses centralized style generation utilities that must be po
 - `resolveLoop()` - Loop source resolution
 - `withVoxelFeatures()` - HOC combining visibility + loop
 
+**CSS Generation Architecture:**
+
+Block-specific CSS (from InlineTab, StyleTab, etc.) requires special handling due to Gutenberg validation issues. During the transitional period, CSS is generated server-side via `style-generator.php` and injected via `render_block` filter.
+
+See **[14-css-generation-architecture.md](14-css-generation-architecture.md)** for:
+- Why PHP CSS generation exists (Gutenberg validation issue)
+- How to port styles.ts to Next.js
+- Portal element handling
+- Migration status and priority
+
 ---
 
 ## Parallel Development Strategy

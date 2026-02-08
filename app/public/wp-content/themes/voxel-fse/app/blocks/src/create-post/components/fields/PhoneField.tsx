@@ -71,7 +71,7 @@ export const PhoneField: React.FC<PhoneFieldProps> = ({ field, value, onChange, 
 					value={value || ''}
 					onChange={(e) => onChange(e.target.value)}
 					onBlur={onBlur}
-					placeholder={field.placeholder || field.label}
+					placeholder={field.props?.placeholder || field.label}
 					required={field.required}
 					title={field.label}
 				/>

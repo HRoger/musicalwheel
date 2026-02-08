@@ -68,6 +68,79 @@ console.log('[Timeline Frontend] Script loaded!', {
 });
 
 /**
+ * Patch Voxel's render_static_popups to handle React-rendered DOM.
+ *
+ * Voxel's render_static_popups() scans for .ts-popup-component elements and mounts
+ * Vue apps on them. The Vue mixin's mounted() hook calls:
+ *   this.$root.$options.el.closest(".elementor-element").dataset.id
+ * which crashes with "Cannot read properties of null (reading 'dataset')"
+ * when the element is inside React-rendered HTML without Elementor wrappers.
+ *
+ * This patch wraps the original function to skip elements that lack the
+ * required .elementor-element parent.
+ */
+function patchRenderStaticPopups(): void {
+	const win = window as unknown as {
+		render_static_popups?: () => void;
+		_original_render_static_popups?: () => void;
+	};
+
+	// Wait for commons.js to define the function
+	const tryPatch = (): boolean => {
+		if (typeof win.render_static_popups !== 'function') return false;
+		if (win._original_render_static_popups) return true; // Already patched
+
+		win._original_render_static_popups = win.render_static_popups;
+
+		win.render_static_popups = () => {
+			// Remove .ts-popup-component elements that lack Elementor wrappers
+			// before calling the original, so Vue won't try to mount on them.
+			const popups = document.querySelectorAll<HTMLElement>('.ts-popup-component');
+			const toSkip: Array<{ el: HTMLElement; hadClass: boolean }> = [];
+
+			popups.forEach((el) => {
+				if (el.__vue_app__) return; // Already has a Vue app, skip
+				const elementorEl = el.closest('.elementor-element');
+				if (!elementorEl || !elementorEl.getAttribute('data-id')) {
+					// This element would crash - temporarily remove the class
+					el.classList.remove('ts-popup-component');
+					el.classList.add('ts-popup-component--fse-skip');
+					toSkip.push({ el, hadClass: true });
+				}
+			});
+
+			// Call original safely
+			try {
+				win._original_render_static_popups!();
+			} catch (e) {
+				console.warn('[FSE] render_static_popups error caught:', e);
+			}
+
+			// Restore classes
+			toSkip.forEach(({ el }) => {
+				el.classList.remove('ts-popup-component--fse-skip');
+				el.classList.add('ts-popup-component');
+			});
+		};
+
+		console.log('[FSE] Patched render_static_popups for React compatibility');
+		return true;
+	};
+
+	// Try immediately, then retry after a tick if commons.js hasn't loaded yet
+	if (!tryPatch()) {
+		setTimeout(tryPatch, 0);
+		// Also try after DOMContentLoaded in case commons.js loads late
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', tryPatch, { once: true });
+		}
+	}
+}
+
+// Apply the patch immediately
+patchRenderStaticPopups();
+
+/**
  * Block config structure from save.tsx vxconfig-block script
  */
 interface BlockConfig {

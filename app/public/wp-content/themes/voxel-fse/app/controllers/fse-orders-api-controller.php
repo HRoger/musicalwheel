@@ -70,6 +70,11 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 					'type'              => 'string',
 					'sanitize_callback' => 'sanitize_text_field',
 				],
+				'shipping_status' => [
+					'required'          => false,
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
 			],
 		] );
 
@@ -130,6 +135,25 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		$is_vendor = $this->is_user_vendor( $current_user_id );
 		$is_admin = $this->is_user_admin( $current_user_id );
 
+		// Messages config (DMS / direct messaging)
+		$messages = null;
+		if ( function_exists( '\Voxel\get' ) ) {
+			$inbox_id = \Voxel\get( 'templates.inbox' );
+			$inbox_url = $inbox_id ? get_permalink( $inbox_id ) : home_url( '/' );
+			$messages = [
+				'url'          => $inbox_url ?: home_url( '/' ),
+				'enquiry_text' => [
+					'vendor'   => _x( 'Hello, we\'re enquiring about your order #@order_id', 'vendor enquiry text', 'voxel' ),
+					'customer' => _x( 'Hello, I\'m enquiring about my order #@order_id', 'customer enquiry text', 'voxel' ),
+				],
+			];
+		}
+
+		// Data inputs config
+		$data_inputs = [
+			'content_length' => apply_filters( 'voxel/single_order/data_inputs/max_content_length', 128 ),
+		];
+
 		return rest_ensure_response( [
 			'statuses'          => $statuses,
 			'statuses_ui'       => $statuses_ui,
@@ -138,6 +162,9 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 			'is_vendor'         => $is_vendor,
 			'is_admin'          => $is_admin,
 			'current_user_id'   => $current_user_id ?: null,
+			'nonce'             => wp_create_nonce( 'vx_orders' ),
+			'messages'          => $messages,
+			'data_inputs'       => $data_inputs,
 		] );
 	}
 
@@ -161,6 +188,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		$page = $request->get_param( 'page' ) ?: 1;
 		$per_page = min( $request->get_param( 'per_page' ) ?: 10, 50 );
 		$status = $request->get_param( 'status' );
+		$shipping_status = $request->get_param( 'shipping_status' );
 		$product_type = $request->get_param( 'product_type' );
 		$search = $request->get_param( 'search' );
 
@@ -175,34 +203,49 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		}
 
 		try {
-			// Build query args
+			// Build query args matching Voxel parent: orders-controller.php:25-30
 			$args = [
-				'limit'  => $per_page,
-				'offset' => ( $page - 1 ) * $per_page,
+				'limit'      => $per_page,
+				'offset'     => $page <= 1 ? null : ( ( $page - 1 ) * $per_page ),
+				'with_items' => false,
+				'parent_id'  => 0,
 			];
 
-			// Determine if user is viewing as customer or vendor
-			$is_vendor = $this->is_user_vendor( $current_user_id );
+			// Determine user role and filter accordingly
+			// Voxel parent uses party_id for non-admins (matches both vendor and customer)
 			$is_admin = $this->is_user_admin( $current_user_id );
 
 			if ( $is_admin ) {
-				// Admin can see all orders
-				$args['vendor_id'] = null;
-				$args['customer_id'] = null;
-			} elseif ( $is_vendor ) {
-				// Vendor sees orders where they are the vendor
-				$args['vendor_id'] = $current_user_id;
+				// Admin can see all orders - no party filter needed
+				// But still show only top-level orders (parent_id = 0)
 			} else {
-				// Customer sees their own orders
-				$args['customer_id'] = $current_user_id;
+				// Non-admin: use party_id to match as either customer or vendor
+				// Reference: Voxel orders-controller.php:35-36
+				$args['party_id'] = $current_user_id;
+				$args['parent_id'] = null;
 			}
 
-			// Add filters
-			if ( $status ) {
+			// Status filter - exclude pending_payment by default
+			// Reference: Voxel orders-controller.php:39-43
+			if ( empty( $status ) || $status === 'all' ) {
+				$args['status_not_in'] = [ 'pending_payment' ];
+			} else {
 				$args['status'] = $status;
 			}
 
-			if ( $search ) {
+			// Shipping status filter
+			// Reference: Voxel orders-controller.php:45-47
+			if ( ! empty( $shipping_status ) && $shipping_status !== 'all' ) {
+				$args['shipping_status'] = $shipping_status;
+			}
+
+			// Product type filter
+			// Reference: Voxel orders-controller.php:49-51
+			if ( ! empty( $product_type ) && $product_type !== 'all' ) {
+				$args['product_type'] = $product_type;
+			}
+
+			if ( ! empty( $search ) ) {
 				$args['search'] = $search;
 			}
 
@@ -778,6 +821,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		}
 
 		// DMS (Direct Messaging) configuration
+		// Reference: Voxel single-order-controller.php:282-306
 		$dms = [
 			'enabled'       => false,
 			'vendor_target' => null,
@@ -785,7 +829,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 
 		if ( class_exists( '\Voxel\DM' ) && $order->get_vendor_id() ) {
 			$dms['enabled'] = true;
-			$dms['vendor_target'] = $order->get_vendor_id();
+			$dms['vendor_target'] = $this->get_dms_vendor_target( $order );
 		}
 
 		return [
@@ -835,5 +879,43 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		// Voxel handles the action via its own AJAX system
 		// We return success and let the frontend refetch the order
 		return true;
+	}
+
+	/**
+	 * Get DMS vendor target for an order
+	 *
+	 * Matches Voxel parent logic: single-order-controller.php:282-306
+	 * For single-item orders with a post that has messages enabled, returns "p{postId}".
+	 * Otherwise returns "u{vendorId}".
+	 *
+	 * @param \Voxel\Order $order Order object.
+	 * @return string|null Vendor target string (e.g. "p123" or "u456") or null.
+	 */
+	protected function get_dms_vendor_target( $order ) {
+		$vendor = $order->get_vendor();
+		if ( ! $vendor ) {
+			return null;
+		}
+
+		if ( count( $order->get_items() ) === 1 ) {
+			foreach ( $order->get_items() as $order_item ) {
+				// Skip promotion items
+				if ( $order_item->get_type() === 'regular' && in_array( $order_item->get_product_field_key(), [ 'voxel:promotion' ], true ) ) {
+					break;
+				}
+
+				$post = $order_item->get_post();
+				if ( ! ( $post && $post->post_type ) ) {
+					break;
+				}
+
+				// If the post type has messaging enabled, target the post
+				if ( $post->post_type->config( 'settings.messages.enabled' ) ) {
+					return sprintf( 'p%d', $post->get_id() );
+				}
+			}
+		}
+
+		return sprintf( 'u%d', $vendor->get_id() );
 	}
 }

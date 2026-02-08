@@ -48,7 +48,10 @@ export default function save({ attributes }: SaveProps): JSX.Element {
 	return (
 		<>
 			{/* Inject dynamic styles GLOBALLY to .vxfeed elements */}
-			<style dangerouslySetInnerHTML={{ __html: dynamicCSS }} />
+			{/* data-voxel-timeline-kit-styles: Marker for Block_Loader.php to extract and enqueue globally */}
+			<style type="text/css" data-voxel-timeline-kit-styles="true">
+				{dynamicCSS}
+			</style>
 
 			<div {...blockProps}>
 				{/* Responsive CSS from AdvancedTab + VoxelTab */}

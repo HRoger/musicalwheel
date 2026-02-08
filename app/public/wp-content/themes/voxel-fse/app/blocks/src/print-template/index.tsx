@@ -14,10 +14,22 @@ import { __ } from '@wordpress/i18n';
 import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
-import type { PrintTemplateAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 
+
+/**
+ * Legacy attributes interface for deprecated block versions
+ * These properties existed in older versions but are no longer in block.json
+ */
+interface LegacyPrintTemplateAttributes {
+	blockId: string;
+	templateId: string;
+	hideDesktop?: boolean;
+	hideTablet?: boolean;
+	hideMobile?: boolean;
+	customClasses: string;
+}
 
 /**
  * Deprecated block versions for migration
@@ -34,7 +46,7 @@ const deprecated = [
 	// v2: Old placeholder with emoji icon and text spans (no data-template-id attribute)
 	{
 		attributes: metadata.attributes,
-		save({ attributes }: { attributes: PrintTemplateAttributes }) {
+		save({ attributes }: { attributes: LegacyPrintTemplateAttributes }) {
 			// Old version did NOT have data-template-id attribute
 			const blockProps = useBlockProps.save({
 				className: 'voxel-fse-print-template ts-print-template',
@@ -42,9 +54,6 @@ const deprecated = [
 
 			const vxConfig = {
 				templateId: attributes.templateId || '',
-				hideDesktop: attributes.hideDesktop ?? false,
-				hideTablet: attributes.hideTablet ?? false,
-				hideMobile: attributes.hideMobile ?? false,
 				customClasses: attributes.customClasses || '',
 			};
 
@@ -66,7 +75,7 @@ const deprecated = [
 	// v3: Old placeholder with document icon and text
 	{
 		attributes: metadata.attributes,
-		save({ attributes }: { attributes: PrintTemplateAttributes }) {
+		save({ attributes }: { attributes: LegacyPrintTemplateAttributes }) {
 			const blockProps = useBlockProps.save({
 				className: 'voxel-fse-print-template',
 				'data-template-id': attributes.templateId || '',
@@ -74,9 +83,6 @@ const deprecated = [
 
 			const vxConfig = {
 				templateId: attributes.templateId || '',
-				hideDesktop: attributes.hideDesktop ?? false,
-				hideTablet: attributes.hideTablet ?? false,
-				hideMobile: attributes.hideMobile ?? false,
 				customClasses: attributes.customClasses || '',
 			};
 
@@ -98,7 +104,7 @@ const deprecated = [
 ];
 
 // Register the block
-registerBlockType<PrintTemplateAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Print Template (VX)', 'voxel-fse'),
@@ -109,4 +115,4 @@ registerBlockType<PrintTemplateAttributes>(metadata.name, {
 	edit: Edit,
 	save,
 	deprecated,
-} as Parameters<typeof registerBlockType<PrintTemplateAttributes>>[1]);
+});

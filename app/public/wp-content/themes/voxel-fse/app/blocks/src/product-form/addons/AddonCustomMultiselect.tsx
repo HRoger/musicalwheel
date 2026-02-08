@@ -174,83 +174,166 @@ export default function AddonCustomMultiselect( {
 		return '';
 	};
 
+	const displayMode = addon.props.display_mode ?? 'cards';
+
 	if ( ! shouldShowAddon() ) {
 		return null;
 	}
 
+	/**
+	 * Render quantity stepper for a checked choice
+	 * Evidence: custom-multiselect.php shared across checkboxes/cards modes
+	 */
+	const renderQuantityStepper = ( choice: AddonChoice ) => {
+		const idx = getSelectionIndex( choice );
+		if ( idx === -1 || ! choice.quantity?.enabled ) return null;
+		const currentQty = selections[ idx ].quantity;
+		return (
+			<div
+				className="ts-stepper-input flexify custom-addon-stepper"
+				onClick={ ( e ) => e.stopPropagation() }
+			>
+				<button
+					type="button"
+					className={ `ts-stepper-left ts-icon-btn ts-smaller${ ( choice.quantity?.min ?? 1 ) >= currentQty ? ' vx-disabled' : '' }` }
+					onClick={ () => decrementQuantity( choice ) }
+				>
+					<i className="las la-minus" />
+				</button>
+				<input
+					type="number"
+					value={ currentQty }
+					onChange={ ( e ) => {
+						const val = parseInt( e.target.value, 10 );
+						if ( ! isNaN( val ) ) {
+							const newSelections = [ ...selections ];
+							newSelections[ idx ] = { ...newSelections[ idx ], quantity: val };
+							onChange( { selected: newSelections } );
+						}
+					} }
+					onBlur={ () => validateQuantity( choice ) }
+					className="ts-input-box ts-smaller"
+				/>
+				<button
+					type="button"
+					className={ `ts-stepper-right ts-icon-btn ts-smaller${ ( choice.quantity?.max ?? 999 ) <= currentQty ? ' vx-disabled' : '' }` }
+					onClick={ () => incrementQuantity( choice ) }
+				>
+					<i className="las la-plus" />
+				</button>
+			</div>
+		);
+	};
+
+	// Checkboxes mode
+	// Evidence: templates/widgets/product-form/form-addons/custom-multiselect.php:6-37
+	if ( displayMode === 'checkboxes' ) {
+		return (
+			<div className="ts-form-group ts-custom-additions ts-addon-custom-multiselect">
+				<label>{ addon.label }</label>
+				<ul className="simplify-ul ts-addition-list flexify">
+					{ choiceValues.map( ( choice ) => {
+						if ( ! shouldShowChoice( choice ) ) return null;
+						const checked = isChecked( choice );
+						const priceLabel = formatPrice( choice );
+
+						return (
+							<li
+								key={ choice.value }
+								className={ `flexify${ checked ? ' ts-checked' : '' }` }
+							>
+								<div
+									className="addition-body"
+									onClick={ () => toggleChoice( choice ) }
+								>
+									<label className="container-checkbox">
+										<input
+											type="checkbox"
+											checked={ checked }
+											onChange={ () => {} }
+											disabled
+											hidden
+										/>
+										<span className="checkmark"></span>
+									</label>
+									<span>{ choice.label }</span>
+									{ priceLabel && (
+										<div className="vx-addon-price">{ priceLabel }</div>
+									) }
+								</div>
+								{ renderQuantityStepper( choice ) }
+							</li>
+						);
+					} ) }
+				</ul>
+			</div>
+		);
+	}
+
+	// Buttons mode
+	// Evidence: templates/widgets/product-form/form-addons/custom-multiselect.php:38-49
+	if ( displayMode === 'buttons' ) {
+		return (
+			<div className="ts-form-group ts-addon-custom-multiselect">
+				<label>{ addon.label }</label>
+				<ul className="simplify-ul addon-buttons flexify">
+					{ choiceValues.map( ( choice ) => {
+						if ( ! shouldShowChoice( choice ) ) return null;
+						return (
+							<li
+								key={ choice.value }
+								className={ `flexify${ isChecked( choice ) ? ' adb-selected' : '' }` }
+								onClick={ () => toggleChoice( choice ) }
+							>
+								{ choice.label }
+							</li>
+						);
+					} ) }
+				</ul>
+			</div>
+		);
+	}
+
+	// Cards mode (default)
+	// Evidence: templates/widgets/product-form/form-addons/custom-multiselect.php:50-84
 	return (
 		<div className="ts-form-group ts-addon-custom-multiselect">
 			<label>{ addon.label }</label>
-			<div className="ts-custom-select-cards ts-multi">
+			<ul className="simplify-ul addon-cards flexify">
 				{ choiceValues.map( ( choice ) => {
 					if ( ! shouldShowChoice( choice ) ) return null;
 
-					const idx = getSelectionIndex( choice );
-					const isSelected = idx !== -1;
+					const checked = isChecked( choice );
 					const priceLabel = formatPrice( choice );
-					const hasQuantity = choice.quantity?.enabled && isSelected;
-					const currentQty = isSelected ? selections[ idx ].quantity : 1;
+					const imageData = choice.image as { url?: string; alt?: string } | string | null;
 
 					return (
-						<div
+						<li
 							key={ choice.value }
-							className={ `ts-card-choice${ isSelected ? ' ts-selected' : '' }` }
+							className={ `flexify${ checked ? ' adc-selected' : '' }` }
 							onClick={ () => toggleChoice( choice ) }
-							role="option"
-							aria-selected={ isSelected }
 						>
-							<div className="ts-checkbox-container">
-								<label className="container-checkbox">
-									<input
-										type="checkbox"
-										checked={ isSelected }
-										onChange={ () => {} }
-										tabIndex={ -1 }
-									/>
-									<span className="checkmark"></span>
-								</label>
-							</div>
-							{ choice.image && (
-								<div className="ts-card-image">
-									<img src={ choice.image } alt={ choice.label } />
-								</div>
+							{ imageData && (
+								typeof imageData === 'string'
+									? <img src={ imageData } alt={ choice.label } />
+									: imageData.url
+										? <img src={ imageData.url } title={ imageData.alt } alt={ imageData.alt } />
+										: null
 							) }
-							<div className="ts-card-content">
-								<span className="ts-card-label">{ choice.label }</span>
+							<div className="addon-details">
+								<span className="adc-title">{ choice.label }</span>
+								{ choice.subheading && (
+									<span className="adc-subtitle">{ choice.subheading }</span>
+								) }
 								{ priceLabel && (
-									<span className="ts-card-price">{ priceLabel }</span>
+									<div className="vx-addon-price">{ priceLabel }</div>
 								) }
 							</div>
-							{ hasQuantity && (
-								<div
-									className="ts-stepper-input"
-									onClick={ ( e ) => e.stopPropagation() }
-								>
-									<button
-										type="button"
-										className="ts-stepper-btn ts-stepper-minus"
-										onClick={ () => decrementQuantity( choice ) }
-										disabled={ currentQty <= ( choice.quantity?.min ?? 1 ) }
-									>
-										<span className="ts-icon">-</span>
-									</button>
-									<span className="ts-stepper-value">
-										{ currentQty }
-									</span>
-									<button
-										type="button"
-										className="ts-stepper-btn ts-stepper-plus"
-										onClick={ () => incrementQuantity( choice ) }
-										disabled={ currentQty >= ( choice.quantity?.max ?? 999 ) }
-									>
-										<span className="ts-icon">+</span>
-									</button>
-								</div>
-							) }
-						</div>
+							{ renderQuantityStepper( choice ) }
+						</li>
 					);
 				} ) }
-			</div>
+			</ul>
 		</div>
 	);
 }

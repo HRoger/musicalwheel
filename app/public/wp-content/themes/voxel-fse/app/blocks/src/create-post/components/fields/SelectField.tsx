@@ -40,7 +40,8 @@ interface SelectFieldProps {
 }
 
 export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange, onBlur }) => {
-	const displayAs = field.props?.['display_as'] || 'default';
+	// Evidence: select-field.php:21 — Voxel defaults display_as to 'popup'
+	const displayAs = field.props?.['display_as'] || 'popup';
 	const choices = (field.props?.['choices'] || []) as SelectChoice[];
 
 	// Get validation error from field (matches TextField pattern)

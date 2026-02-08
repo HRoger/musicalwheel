@@ -1,30 +1,36 @@
 /**
  * Print Template Block - Type Definitions
  *
+ * Synced with block.json attributes.
+ *
  * @package VoxelFSE
  */
 
 /**
  * Block attributes interface
- * Matches Voxel's print-template widget with single templateId control
+ * Matches block.json and Voxel's print-template widget
  */
 export interface PrintTemplateAttributes {
 	blockId: string;
 	templateId: string; // Can be numeric ID or @tags()...@endtags() dynamic tag
-	hideDesktop: boolean;
-	hideTablet: boolean;
-	hideMobile: boolean;
+	contentTabOpenPanel: string;
 	customClasses: string;
+	// VoxelTab attributes for visibility and loop features
+	visibilityBehavior: 'show' | 'hide';
+	visibilityRules: object[];
+	loopEnabled: boolean;
+	loopSource: string;
+	loopProperty: string;
+	loopLimit: string;
+	loopOffset: string;
 }
 
 /**
  * vxconfig structure for frontend hydration
+ * Minimal config needed for client-side rendering
  */
 export interface PrintTemplateVxConfig {
 	templateId: string;
-	hideDesktop: boolean;
-	hideTablet: boolean;
-	hideMobile: boolean;
 	customClasses: string;
 }
 
