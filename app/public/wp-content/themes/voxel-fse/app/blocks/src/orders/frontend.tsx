@@ -269,7 +269,8 @@ async function fetchOrdersList(
 	page: number = 1,
 	status?: string | null,
 	productType?: string | null,
-	search?: string
+	search?: string,
+	shippingStatus?: string | null
 ): Promise<{ orders: OrderListItem[]; total: number; totalPages: number }> {
 	const restUrl = getRestUrl();
 	const nonce = getRestNonce();
@@ -279,6 +280,7 @@ async function fetchOrdersList(
 	if (status) params.set('status', status);
 	if (productType) params.set('product_type', productType);
 	if (search) params.set('search', search);
+	if (shippingStatus) params.set('shipping_status', shippingStatus);
 
 	try {
 		const headers: HeadersInit = {
@@ -440,10 +442,12 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 	const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [totalPages, setTotalPages] = useState(1);
 
 	const [filters, setFilters] = useState<OrdersFilterState>({
 		searchQuery: '',
 		status: null,
+		shippingStatus: null,
 		productType: null,
 		page: 1,
 	});
@@ -483,11 +487,13 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 				filters.page,
 				filters.status,
 				filters.productType,
-				filters.searchQuery
+				filters.searchQuery,
+				filters.shippingStatus
 			);
 
 			if (!cancelled) {
 				setOrders(result.orders);
+				setTotalPages(result.totalPages);
 				setIsLoading(false);
 			}
 		}
@@ -507,6 +513,11 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 	// Handle status filter
 	const handleStatusFilter = useCallback((status: OrderStatus | null) => {
 		setFilters((prev) => ({ ...prev, status, page: 1 }));
+	}, []);
+
+	// Handle shipping status filter
+	const handleShippingStatusFilter = useCallback((shippingStatus: string | null) => {
+		setFilters((prev) => ({ ...prev, shippingStatus, page: 1 }));
 	}, []);
 
 	// Handle product type filter
@@ -544,7 +555,8 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 					filters.page,
 					filters.status,
 					filters.productType,
-					filters.searchQuery
+					filters.searchQuery,
+					filters.shippingStatus
 				);
 				setOrders(result.orders);
 			}
@@ -576,7 +588,8 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 					filters.page,
 					filters.status,
 					filters.productType,
-					filters.searchQuery
+					filters.searchQuery,
+					filters.shippingStatus
 				);
 				setOrders(result.orders);
 			}
@@ -605,8 +618,11 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 			context="frontend"
 			isLoading={isLoading}
 			error={error}
+			currentPage={filters.page}
+			totalPages={totalPages}
 			onSearch={handleSearch}
 			onStatusFilter={handleStatusFilter}
+			onShippingStatusFilter={handleShippingStatusFilter}
 			onProductTypeFilter={handleProductTypeFilter}
 			onOrderSelect={handleOrderSelect}
 			onOrderBack={handleOrderBack}

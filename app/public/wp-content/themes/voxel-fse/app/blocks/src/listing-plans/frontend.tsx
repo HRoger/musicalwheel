@@ -266,11 +266,12 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		if (val && typeof val === 'object' && !Array.isArray(val)) {
 			const obj = val as Record<string, unknown>;
 			return {
+				id: normalizeString(obj.id ?? obj._id, ''),
 				text: normalizeString(obj.text ?? obj.feature_text, ''),
 				icon: normalizeIcon(obj.icon ?? obj.feature_ico),
 			};
 		}
-		return { text: '', icon: { library: '', value: '' } };
+		return { id: '', text: '', icon: { library: '', value: '' } };
 	};
 
 	// Helper for PlanConfig normalization
@@ -289,6 +290,8 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 				features: Array.isArray(obj.features)
 					? obj.features.map(normalizeFeature)
 					: [],
+				featured: normalizeBoolean(obj.featured, false),
+				featuredText: normalizeString(obj.featuredText ?? obj.featured_text, ''),
 			};
 		}
 		return { image: null, features: [] };
@@ -301,12 +304,13 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 			return {
 				id: normalizeString(obj.id ?? obj._id, ''),
 				label: normalizeString(obj.label ?? obj.group_label, ''),
+				icon: normalizeIcon(obj.icon),
 				prices: Array.isArray(obj.prices)
 					? obj.prices.map((p) => normalizeString(p, ''))
 					: [],
 			};
 		}
-		return { id: '', label: '', prices: [] };
+		return { id: '', label: '', icon: { library: '', value: '' }, prices: [] };
 	};
 
 	// Helper for style object normalization
@@ -381,10 +385,22 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		raw.arrowIcon ?? raw.arrow_icon ?? raw.ts_arrow_right
 	);
 
-	// Normalize direct purchase redirect
+	// Normalize direct purchase redirect — Evidence: listing-plans-widget.php:1549-1582
 	const rawRedirect = raw.directPurchaseRedirect ?? raw.direct_purchase_redirect ?? raw.ts_direct_purchase_flow;
-	const directPurchaseRedirect: 'order_page' | 'back' =
-		rawRedirect === 'back' ? 'back' : 'order_page';
+	const directPurchaseRedirect: 'order' | 'new_post' | 'custom' =
+		rawRedirect === 'new_post' ? 'new_post'
+		: rawRedirect === 'custom' ? 'custom'
+		: 'order';
+
+	const directPurchasePostType = normalizeString(
+		raw.directPurchasePostType ?? raw.direct_purchase_post_type ?? raw.ts_direct_purchase_flow_post_type,
+		''
+	) || undefined;
+
+	const directPurchaseCustomUrl = normalizeString(
+		raw.directPurchaseCustomUrl ?? raw.direct_purchase_custom_url ?? raw.ts_direct_purchase_flow_custom_redirect,
+		''
+	) || undefined;
 
 	// Normalize style
 	const style = normalizeStyle(raw.style);
@@ -394,6 +410,8 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		planConfigs,
 		arrowIcon,
 		directPurchaseRedirect,
+		directPurchasePostType,
+		directPurchaseCustomUrl,
 		style,
 	};
 }
@@ -431,8 +449,16 @@ function parseVxConfig(container: HTMLElement): ListingPlansVxConfig | null {
  */
 async function fetchPlansData(): Promise<ListingPlansApiResponse> {
 	const restUrl = getRestUrl();
+
+	const headers: HeadersInit = {};
+	const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+	if (nonce) {
+		headers['X-WP-Nonce'] = nonce;
+	}
+
 	const response = await fetch(`${restUrl}voxel-fse/v1/listing-plans`, {
 		credentials: 'same-origin', // Include cookies for auth
+		headers,
 	});
 
 	if (!response.ok) {
@@ -495,8 +521,10 @@ function ListingPlansWrapper({
 		priceGroups: config.priceGroups,
 		planConfigs: config.planConfigs,
 		arrowIcon: config.arrowIcon ?? defaultIconValue,
-		// Redirect options (Content Tab)
-		directPurchaseRedirect: config.directPurchaseRedirect ?? 'order_page',
+		// Redirect options (Content Tab) — Evidence: listing-plans-widget.php:1549-1582
+		directPurchaseRedirect: config.directPurchaseRedirect ?? 'order',
+		directPurchasePostType: config.directPurchasePostType,
+		directPurchaseCustomUrl: config.directPurchaseCustomUrl,
 
 		// Style from config
 		plansColumns: config.style.plansColumns ?? 3,

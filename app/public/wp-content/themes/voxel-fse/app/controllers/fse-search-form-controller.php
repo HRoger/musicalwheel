@@ -495,7 +495,15 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 
 		$fallback_value = null;
 		if ( $default_value_enabled && $default_value !== null && $default_value !== '' ) {
-			$fallback_value = $default_value;
+			// For range filters: validate that ".." format has actual numeric values
+			// When "Add default value" is enabled with empty start/end fields,
+			// defaultValue becomes ".." which Voxel's parse_value converts to [0, 0]
+			// This sends an invalid search causing 0 results. Treat ".." as empty.
+			if ( $filter->get_type() === 'range' && $default_value === '..' ) {
+				$fallback_value = null;
+			} else {
+				$fallback_value = $default_value;
+			}
 		}
 
 		// Step 2: Set the filter value
@@ -681,11 +689,10 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 				break;
 
 			case 'date':
-				$props = [
-					'format'      => $filter->get_prop( 'format' ) ?? 'date',
-					'compare'     => $filter->get_prop( 'compare' ) ?? 'equals',
-					'enable_range' => $filter->get_prop( 'enable_range' ) ?? false,
-				];
+				// Date filter props come from frontend_props() via get_frontend_config()
+				// (inputMode, value, displayValue, presets, l10n)
+				// Evidence: themes/voxel/app/post-types/filters/traits/date-filter-helpers.php:52-68
+				// No additional extraction needed here.
 				break;
 
 			case 'order-by':

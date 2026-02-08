@@ -9,7 +9,7 @@
  * @package VoxelFSE
  */
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback } from 'react';
 import type {
 	AddonConfig,
 	AddonMultiselectValue,
@@ -38,8 +38,6 @@ export default function AddonMultiselect( {
 	value,
 	onChange,
 }: AddonMultiselectProps ) {
-	const [ isOpen, setIsOpen ] = useState( false );
-	const triggerRef = useRef<HTMLDivElement>( null );
 	const choices = addon.props.choices ?? {};
 	const choiceKeys = Object.keys( choices );
 	const selectedItems = value.selected ?? [];
@@ -77,6 +75,8 @@ export default function AddonMultiselect( {
 		return selectedItems.includes( choiceKey );
 	};
 
+	const displayMode = addon.props.display_mode ?? 'checkboxes';
+
 	// Format price for a choice
 	const formatPrice = ( choice: AddonChoice ): string => {
 		if ( choice.price != null && choice.price > 0 ) {
@@ -85,80 +85,69 @@ export default function AddonMultiselect( {
 		return '';
 	};
 
-	// Get display text for trigger
-	const getDisplayText = (): string => {
-		if ( selectedItems.length === 0 ) {
-			return 'Select...';
-		}
-		if ( selectedItems.length === 1 ) {
-			return choices[ selectedItems[ 0 ] ]?.label ?? 'Selected';
-		}
-		return `${ selectedItems.length } selected`;
-	};
-
-	return (
-		<div className="ts-form-group ts-addon-multiselect">
-			<label>{ addon.label }</label>
-			<div
-				ref={ triggerRef }
-				className={ `ts-filter ts-popup-target${ selectedItems.length > 0 ? ' ts-filled' : '' }` }
-				onClick={ () => setIsOpen( ! isOpen ) }
-				role="button"
-				tabIndex={ 0 }
-				onKeyDown={ ( e ) => e.key === 'Enter' && setIsOpen( ! isOpen ) }
-			>
-				<span className="ts-filter-text">
-					{ getDisplayText() }
-				</span>
-				<div className="ts-down-icon"></div>
-			</div>
-
-			{ isOpen && (
-				<div className="ts-popup-list">
-					<ul className="simplify-ul ts-form-options ts-checkboxes">
-						{ selectedItems.length > 0 && ! addon.required && (
+	// Buttons mode
+	// Evidence: templates/widgets/product-form/form-addons/multiselect.php:6-15
+	if ( displayMode === 'buttons' ) {
+		return (
+			<div className="ts-form-group ts-addon-multiselect">
+				<label>{ addon.label }</label>
+				<ul className="simplify-ul addon-buttons flexify">
+					{ choiceKeys.map( ( choiceKey ) => {
+						const choice = choices[ choiceKey ];
+						return (
 							<li
-								className="ts-option ts-option-clear"
-								onClick={ handleClear }
-								role="option"
+								key={ choiceKey }
+								className={ `flexify${ isSelected( choiceKey ) ? ' adb-selected' : '' }` }
+								onClick={ () => toggle( choiceKey ) }
 							>
-								<span>Clear all</span>
+								{ choice.label }
 							</li>
-						) }
-						{ choiceKeys.map( ( choiceKey ) => {
-							const choice = choices[ choiceKey ];
-							const checked = isSelected( choiceKey );
-							const priceLabel = formatPrice( choice );
+						);
+					} ) }
+				</ul>
+			</div>
+		);
+	}
 
-							return (
-								<li
-									key={ choiceKey }
-									className={ `ts-option ts-checkbox-option${ checked ? ' ts-selected' : '' }` }
-									onClick={ () => toggle( choiceKey ) }
-									role="option"
-									aria-selected={ checked }
-								>
-									<div className="ts-checkbox-container">
-										<label className="container-checkbox">
-											<input
-												type="checkbox"
-												checked={ checked }
-												onChange={ () => {} }
-												tabIndex={ -1 }
-											/>
-											<span className="checkmark"></span>
-										</label>
-									</div>
-									<span className="option-label">{ choice.label }</span>
-									{ priceLabel && (
-										<span className="option-price">{ priceLabel }</span>
-									) }
-								</li>
-							);
-						} ) }
-					</ul>
-				</div>
-			) }
+	// Checkboxes mode (default)
+	// Evidence: templates/widgets/product-form/form-addons/multiselect.php:16-35
+	return (
+		<div className="ts-form-group inline-terms-wrapper ts-inline-filter ts-addon-multiselect">
+			<label>{ addon.label }</label>
+			<ul className="simplify-ul ts-addition-list flexify">
+				{ choiceKeys.map( ( choiceKey ) => {
+					const choice = choices[ choiceKey ];
+					const checked = isSelected( choiceKey );
+					const priceLabel = formatPrice( choice );
+
+					return (
+						<li
+							key={ choiceKey }
+							className={ `flexify${ checked ? ' ts-checked' : '' }` }
+						>
+							<div
+								className="addition-body"
+								onClick={ () => toggle( choiceKey ) }
+							>
+								<label className="container-checkbox">
+									<input
+										type="checkbox"
+										checked={ checked }
+										onChange={ () => {} }
+										disabled
+										hidden
+									/>
+									<span className="checkmark"></span>
+								</label>
+								<span>{ choice.label }</span>
+								{ priceLabel && (
+									<div className="vx-addon-price">{ priceLabel }</div>
+								) }
+							</div>
+						</li>
+					);
+				} ) }
+			</ul>
 		</div>
 	);
 }

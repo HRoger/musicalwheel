@@ -209,6 +209,9 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 	 * Format a menu item for API response
 	 *
 	 * Evidence: Matches Voxel's nav-menu-walker.php structure
+	 * - Line 116: $atts['title'] = ! empty( $item->attr_title ) ? $item->attr_title : '';
+	 * - Lines 118-122: rel attribute logic for _blank targets
+	 * - Line 124: $atts['aria-current'] = $item->current ? 'page' : '';
 	 *
 	 * @param \WP_Post $item Menu item post object
 	 * @return array Formatted menu item
@@ -231,16 +234,27 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 		// Get CSS classes
 		$classes = empty( $item->classes ) ? [] : array_filter( (array) $item->classes );
 
-		// Check if current
+		// Check if current (matches Voxel walker line 124)
 		$is_current = in_array( 'current-menu-item', $classes, true ) ||
 		              in_array( 'current-menu-parent', $classes, true ) ||
 		              in_array( 'current-menu-ancestor', $classes, true );
 
+		// Build rel attribute (matches Voxel walker lines 118-122)
+		// Security: External links opened in new tabs should have rel="noopener"
+		$rel = '';
+		if ( '_blank' === $item->target && empty( $item->xfn ) ) {
+			$rel = 'noopener';
+		} elseif ( ! empty( $item->xfn ) ) {
+			$rel = $item->xfn;
+		}
+
 		return [
 			'id'          => (int) $item->ID,
 			'title'       => apply_filters( 'the_title', $item->title, $item->ID ),
+			'attrTitle'   => ! empty( $item->attr_title ) ? $item->attr_title : '', // Voxel walker line 116
 			'url'         => ! empty( $item->url ) ? esc_url( $item->url ) : '#',
 			'target'      => ! empty( $item->target ) ? $item->target : '',
+			'rel'         => $rel, // Voxel walker lines 118-122
 			'icon'        => $icon_markup,
 			'classes'     => $classes,
 			'isCurrent'   => $is_current,

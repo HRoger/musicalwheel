@@ -28,13 +28,13 @@
  * ✅ Elementor Templates - elementor_library (via Voxel\print_template)
  * ⚠️ FSE Templates - Requires authentication (server-side only)
  *
- * VISIBILITY (FSE Extensions):
- * ✅ hideDesktop - Hide on desktop devices
- * ✅ hideTablet - Hide on tablet devices
- * ✅ hideMobile - Hide on mobile devices
- *
  * STYLING (FSE Extensions):
  * ✅ customClasses - Additional CSS classes
+ *
+ * VISIBILITY (VoxelTab - handled by Block_Loader.php):
+ * ✅ visibilityBehavior - Show/hide based on rules
+ * ✅ visibilityRules - Visibility rule conditions
+ * ✅ loopEnabled/loopSource/loopProperty - Loop features
  *
  * DYNAMIC TAGS:
  * ✅ @tags()@post(id)@endtags() - Current post ID
@@ -86,24 +86,12 @@ function normalizeConfig(raw: Record<string, unknown>): PrintTemplateVxConfig {
 		return fallback;
 	};
 
-	// Helper for boolean normalization
-	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
-		if (typeof val === 'boolean') return val;
-		if (val === 'true' || val === '1' || val === 1 || val === 'yes') return true;
-		if (val === 'false' || val === '0' || val === 0 || val === 'no' || val === '') return false;
-		return fallback;
-	};
-
 	return {
 		// Template ID - support both camelCase and snake_case
 		templateId: normalizeString(
 			raw.templateId ?? raw.template_id ?? raw.ts_template_id,
 			''
 		),
-		// Visibility controls
-		hideDesktop: normalizeBool(raw.hideDesktop ?? raw.hide_desktop, false),
-		hideTablet: normalizeBool(raw.hideTablet ?? raw.hide_tablet, false),
-		hideMobile: normalizeBool(raw.hideMobile ?? raw.hide_mobile, false),
 		// Custom classes
 		customClasses: normalizeString(raw.customClasses ?? raw.custom_classes, ''),
 	};
@@ -297,15 +285,12 @@ function PrintTemplateWrapper({ config }: PrintTemplateWrapperProps) {
 		};
 	}, [config.templateId]);
 
-	// Build attributes from config
-	const attributes: PrintTemplateAttributes = {
+	// Build attributes from config (minimal set needed for rendering)
+	const attributes = {
 		blockId: '',
 		templateId: config.templateId,
-		hideDesktop: config.hideDesktop,
-		hideTablet: config.hideTablet,
-		hideMobile: config.hideMobile,
 		customClasses: config.customClasses,
-	};
+	} as PrintTemplateAttributes;
 
 	return (
 		<PrintTemplateComponent

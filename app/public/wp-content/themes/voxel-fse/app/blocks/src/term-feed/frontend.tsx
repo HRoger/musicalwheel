@@ -446,8 +446,18 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
 	}
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/term-feed/terms?${params.toString()}`
+			`${restUrl}voxel-fse/v1/term-feed/terms?${params.toString()}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {

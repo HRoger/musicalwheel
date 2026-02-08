@@ -394,6 +394,14 @@
 			"type": "object",
 			"default": {}
 		},
+		"searchIcon": {
+			"type": "object",
+			"default": {}
+		},
+		"geolocationIcon": {
+			"type": "object",
+			"default": {}
+		},
 		"navBtnIconColor": {
 			"type": "string"
 		},

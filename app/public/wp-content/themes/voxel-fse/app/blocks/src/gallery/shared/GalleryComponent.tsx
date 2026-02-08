@@ -28,7 +28,7 @@
  * @package VoxelFSE
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import type {
 	GalleryBlockAttributes,
 	GalleryComponentProps,
@@ -38,6 +38,14 @@ import type {
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 /**
  * Process images for rendering
@@ -224,6 +232,27 @@ export default function GalleryComponent({
 	// Build grid styles
 	const gridStyles = buildGridStyles(attributes);
 
+	// Build lightbox slides from ALL images (visible + hidden)
+	const lightboxSlides = useMemo(
+		() => processedImages.map((img) => ({
+			src: img.src_lightbox || img.src_display,
+			alt: img.alt || '',
+		})),
+		[processedImages]
+	);
+
+	// Lightbox click handler - opens at the correct image index
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
+			e.preventDefault();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(lightboxSlides, index);
+			}
+		},
+		[lightboxSlides]
+	);
+
 	// Build vxconfig for re-rendering (CRITICAL for DevTools visibility)
 	const vxConfig: GalleryVxConfig = {
 		blockId: attributes.blockId,
@@ -331,6 +360,7 @@ export default function GalleryComponent({
 							data-elementor-lightbox-description={
 								image.caption || image.alt || image.description
 							}
+							onClick={(e) => handleLightboxClick(e, index)}
 							style={{
 								display: 'block',
 								width: '100%',
@@ -385,6 +415,7 @@ export default function GalleryComponent({
 							data-elementor-lightbox-description={
 								hidden[0].caption || hidden[0].alt || hidden[0].description
 							}
+							onClick={(e) => handleLightboxClick(e, visible.length)}
 							style={{
 								display: 'block',
 								width: '100%',
