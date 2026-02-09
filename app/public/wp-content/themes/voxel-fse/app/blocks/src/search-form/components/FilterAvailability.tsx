@@ -105,6 +105,11 @@ export default function FilterAvailability({
 	const pickerInstanceRef = useRef<any>(null); // Store Pikaday instance for setStartRange/setEndRange
 	const [isOpen, setIsOpen] = useState(false);
 
+	// Refs to keep range state fresh for the mouseover handler (avoids stale closures)
+	// Evidence: Voxel's onCalendarMouseOver accesses this.value.start / this.value.end directly
+	const pickerDateRef = useRef<Date | null>(null);
+	const pickerEndDateRef = useRef<Date | null>(null);
+
 	const props = filterData.props || {};
 	// Voxel uses 'inputMode' with values 'single-date' or 'date-range'
 	// Evidence: themes/voxel/app/post-types/filters/availability-filter.php:269
@@ -146,6 +151,56 @@ export default function FilterAvailability({
 	const [activePicker, setActivePicker] = useState<'start' | 'end'>('start'); // For range mode
 	const [localSlots, setLocalSlots] = useState(currentSlots);
 
+	// Keep refs in sync with state for the mouseover handler
+	pickerDateRef.current = pickerDate;
+	pickerEndDateRef.current = pickerEndDate;
+
+	// Hover range preview handler — EXACT Voxel behavior
+	// Evidence: search-form.js onCalendarMouseOver in availability-date-range-picker component
+	// When start date is selected but end is not, hovering over days shows a preview range:
+	// - Hovered day gets is-endrange class (accent color)
+	// - Days between start and hovered get is-inrange class (gray)
+	// - On mouseleave: all classes are cleaned up
+	const onCalendarMouseOver = useCallback((event: MouseEvent) => {
+		const start = pickerDateRef.current;
+		const end = pickerEndDateRef.current;
+		const picker = pickerInstanceRef.current;
+		if (!start || end || !picker) return;
+
+		const target = event.target as HTMLElement;
+		const td = target.tagName === 'TD' ? target : target.closest('td');
+		if (!td || td.classList.contains('is-empty') || td.classList.contains('is-disabled')) return;
+
+		const btn = td.querySelector('.pika-button') as HTMLElement | null;
+		if (!btn || (btn as HTMLButtonElement).disabled) return;
+
+		// Add is-endrange to hovered cell
+		td.classList.add('is-endrange');
+
+		// Calculate hovered date
+		const hoveredDate = new Date(
+			parseInt(btn.getAttribute('data-pika-year') || '0'),
+			parseInt(btn.getAttribute('data-pika-month') || '0'),
+			parseInt(btn.getAttribute('data-pika-day') || '0')
+		);
+
+		// Fill is-inrange for all days between start and hovered
+		const dayMs = 86400000; // 864e5
+		const fillDate = new Date(hoveredDate.getTime() - dayMs);
+		while (fillDate > start) {
+			const selector = `.pika-button[data-pika-year="${fillDate.getFullYear()}"][data-pika-month="${fillDate.getMonth()}"][data-pika-day="${fillDate.getDate()}"]`;
+			picker.el.querySelector(selector)?.parentElement?.classList.add('is-inrange');
+			fillDate.setTime(fillDate.getTime() - dayMs);
+		}
+
+		// On mouseleave: clean up all hover classes
+		td.addEventListener('mouseleave', () => {
+			const inRangeCells = picker.el.querySelectorAll('td.is-inrange:not(.is-disabled)');
+			inRangeCells.forEach((cell: Element) => cell.classList.remove('is-inrange'));
+			td.classList.remove('is-endrange');
+		}, { once: true });
+	}, []);
+
 	// Sync when popup opens
 	useEffect(() => {
 		if (isOpen) {
@@ -171,9 +226,10 @@ export default function FilterAvailability({
 	const handleDateChange = useCallback((date: Date | null) => {
 		if (isRangeMode && date && pickerInstanceRef.current) {
 			if (activePicker === 'start') {
-				// Set start date, switch to end picker
-				// Evidence: lines 956-959
+				// Set start date, clear end date, switch to end picker
+				// Evidence: Voxel resets end date to "Check-out" when new start is selected
 				setPickerDate(date);
+				setPickerEndDate(null); // Clear end date so header shows "Check-out"
 				setActivePicker('end');
 				pickerInstanceRef.current.setStartRange(date);
 				pickerInstanceRef.current.setEndRange(null);
@@ -415,8 +471,12 @@ export default function FilterAvailability({
 					{...(!isRangeMode && { onSelect: handleSave })}
 					pickerConfig={{
 						minDate: new Date(), // CRITICAL: Disable past dates
-						...(isRangeMode ? { numberOfMonths: 2, theme: 'pika-range' } : {}),
-						// Evidence: voxel-search-form.beautified.js - rangePicker uses numberOfMonths:2, theme:'pika-range'
+						...(isRangeMode ? {
+							numberOfMonths: 2,
+							theme: 'pika-range',
+							// Evidence: Voxel search-form.js — onDraw re-attaches mouseover for hover range preview
+							onDraw: (picker: any) => picker.el.addEventListener('mouseover', onCalendarMouseOver),
+						} : {}),
 					}}
 					onPickerReady={(picker) => {
 						pickerInstanceRef.current = picker;
