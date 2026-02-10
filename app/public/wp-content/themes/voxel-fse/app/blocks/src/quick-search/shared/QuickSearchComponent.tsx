@@ -432,6 +432,7 @@ export default function QuickSearchComponent({
 			key,
 			title: search.trim(),
 			logo: null,
+			icon: null,
 			link,
 		};
 

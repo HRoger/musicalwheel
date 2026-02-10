@@ -916,8 +916,15 @@ async function fetchCartConfig(): Promise<CartConfig | null> {
 	const restUrl = getRestUrl();
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(`${restUrl}voxel-fse/v1/cart/config`, {
 			credentials: 'same-origin',
+			headers,
 		});
 
 		if (!response.ok) {

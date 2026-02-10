@@ -72,6 +72,7 @@ export default function save({ attributes }: SaveProps) {
 		'data-on-submit': attributes.onSubmit,
 		'data-post-to-feed-id': attributes.postToFeedId,
 		'data-post-to-map-id': attributes.postToMapId,
+		'data-enable-clusters': attributes.mapEnableClusters === false ? 'no' : 'yes',
 		// VOXEL COMPATIBILITY: Add data attributes that Voxel's commons.js expects
 		// Evidence: themes/voxel/assets/dist/commons.js line 1486-1487
 		// Voxel's popup components look for .elementor-element and .elementor parents
@@ -135,11 +136,20 @@ export default function save({ attributes }: SaveProps) {
 		leftArrowIcon: attributes.leftArrowIcon,
 		closeIcon: attributes.closeIcon,
 		trashIcon: attributes.trashIcon,
+		// Map/Feed switcher settings
+		// Evidence: themes/voxel/templates/widgets/search-form.php:194-222
+		mfSwitcherDesktop: attributes.mfSwitcherDesktop ?? false,
+		mfSwitcherDesktopDefault: attributes.mfSwitcherDesktopDefault ?? 'feed',
+		mfSwitcherTablet: attributes.mfSwitcherTablet ?? false,
+		mfSwitcherTabletDefault: attributes.mfSwitcherTabletDefault ?? 'feed',
+		mfSwitcherMobile: attributes.mfSwitcherMobile ?? false,
+		mfSwitcherMobileDefault: attributes.mfSwitcherMobileDefault ?? 'feed',
 	};
 
 	return (
 		<div {...blockProps}>
-			{/* Responsive CSS from AdvancedTab (tablet/mobile overrides, custom CSS, hover states) */}
+			{/* Responsive CSS is now generated server-side in PHP (Block_Loader.php) */}
+			{/* This avoids Gutenberg block validation issues with dynamic CSS content */}
 			{responsiveCSS && (
 				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
 			)}

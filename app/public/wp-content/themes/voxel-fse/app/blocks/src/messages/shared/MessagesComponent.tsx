@@ -596,10 +596,16 @@ export default function MessagesComponent({
 		formData.append('_wpnonce', messagesConfig.nonce);
 
 		// Update UI
+		// Reference: voxel-messages.beautified.js line 801-805
+		// blur_on_send is a WebKit iOS bug workaround
 		setTimeout(() => {
 			updateScroll();
 			resizeComposer();
-			composerRef.current?.focus();
+			if (messagesConfig.blur_on_send) {
+				composerRef.current?.blur();
+			} else {
+				composerRef.current?.focus();
+			}
 		}, 10);
 
 		try {
@@ -1206,10 +1212,25 @@ export default function MessagesComponent({
 
 	/**
 	 * Handle file selection
-	 * Reference: voxel-messages.beautified.js line 326-359
+	 * Reference: voxel-messages.beautified.js line 326-359, 433-462
 	 */
 	const pushFile = useCallback((file: File) => {
 		const maxCount = messagesConfig?.files?.max_count || 5;
+		const maxSize = messagesConfig?.files?.max_size; // in KB
+
+		// Validate file size (Reference: voxel-messages.beautified.js line 452-462)
+		if (maxSize && file.size > maxSize * 1000) {
+			const limitKb = maxSize;
+			const limitMb = (maxSize / 1000).toFixed(1);
+			showAlert(
+				__('File "%s" exceeds the maximum size limit (%s KB / %s MB)', 'voxel-fse')
+					.replace('%s', file.name)
+					.replace('%s', String(limitKb))
+					.replace('%s', limitMb),
+				'error'
+			);
+			return;
+		}
 
 		const fileData: FileData = {
 			source: 'new_upload',
@@ -2024,12 +2045,13 @@ export default function MessagesComponent({
 																	))}
 																</div>
 															) : (
-																/* Emoji categories */
+																/* Emoji categories - use translated labels from l10n.emoji_groups */
+																/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 320 */
 																state.emojis.list &&
 																Object.entries(state.emojis.list as EmojiCategory).map(
 																	([category, emojis]) => (
 																		<div key={category} className="ts-emoji-category">
-																			<span>{category}</span>
+																			<span>{messagesConfig?.l10n?.emoji_groups?.[category] || category}</span>
 																			<div className="ts-emoji-grid">
 																				{emojis.map((emoji: { emoji: string }, i: number) => (
 																					<button
@@ -2051,47 +2073,53 @@ export default function MessagesComponent({
 										</div>
 
 										{/* Attach file button (upload new files) */}
-										<button
-											onClick={() => fileInputRef.current?.click()}
-											className="ts-icon-btn ts-attach-btn"
-											title={__('Upload file', 'voxel-fse')}
-										>
-											<span
-												dangerouslySetInnerHTML={{
-													__html: getIcon(attributes.icons.upload, DEFAULT_ICONS.attach),
-												}}
-											/>
-										</button>
-
-										{/* Media library button (select existing files) */}
-										<MediaPopup
-											multiple={true}
-											saveLabel={__('Add files', 'voxel-fse')}
-											onSave={(files) => {
-												// Convert MediaPopup files to FileData format
-												const fileDataList: FileData[] = files.map((file) => ({
-													source: (file.source || 'existing') as 'existing' | 'new_upload',
-													id: file.id,
-													_id: file.id ? String(file.id) : undefined,
-													name: file.name,
-													type: file.type || '',
-													size: 0,
-													preview: file.preview || '',
-												}));
-												onMediaPopupSave(fileDataList);
-											}}
-										>
+										{/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 269 */}
+										{(messagesConfig?.files?.enabled !== false) && (
 											<button
-												className="ts-icon-btn ts-gallery-btn"
-												title={__('Media library', 'voxel-fse')}
+												onClick={() => fileInputRef.current?.click()}
+												className="ts-icon-btn ts-attach-btn"
+												title={__('Upload file', 'voxel-fse')}
 											>
 												<span
 													dangerouslySetInnerHTML={{
-														__html: getIcon(attributes.icons.gallery, DEFAULT_ICONS.gallery),
+														__html: getIcon(attributes.icons.upload, DEFAULT_ICONS.attach),
 													}}
 												/>
 											</button>
-										</MediaPopup>
+										)}
+
+										{/* Media library button (select existing files) */}
+										{/* Reference: themes/voxel/app/modules/direct-messages/templates/frontend/messages-widget.php line 272 */}
+										{(messagesConfig?.files?.enabled !== false) && (
+											<MediaPopup
+												multiple={true}
+												saveLabel={__('Add files', 'voxel-fse')}
+												onSave={(files) => {
+													// Convert MediaPopup files to FileData format
+													const fileDataList: FileData[] = files.map((file) => ({
+														source: (file.source || 'existing') as 'existing' | 'new_upload',
+														id: file.id,
+														_id: file.id ? String(file.id) : undefined,
+														name: file.name,
+														type: file.type || '',
+														size: 0,
+														preview: file.preview || '',
+													}));
+													onMediaPopupSave(fileDataList);
+												}}
+											>
+												<button
+													className="ts-icon-btn ts-gallery-btn"
+													title={__('Media library', 'voxel-fse')}
+												>
+													<span
+														dangerouslySetInnerHTML={{
+															__html: getIcon(attributes.icons.gallery, DEFAULT_ICONS.gallery),
+														}}
+													/>
+												</button>
+											</MediaPopup>
+										)}
 
 										<div className="compose-message min-scroll">
 											<textarea

@@ -14,9 +14,18 @@
  * @package VoxelFSE
  */
 
+import { useCallback } from 'react';
 import { __ } from '@wordpress/i18n';
 import type { ImageBlockAttributes, SliderValue } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 interface ImageComponentProps {
 	attributes: ImageBlockAttributes;
@@ -152,6 +161,19 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	const showCaption = hasCaption(attributes);
 	const linkUrl = getLinkUrl(attributes);
 
+	// Lightbox click handler for "file" link type
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement | HTMLImageElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox && attributes.image.url) {
+				lightbox.open([{ src: attributes.image.url, alt: attributes.image.alt || '' }], 0);
+			}
+		},
+		[attributes.image.url, attributes.image.alt]
+	);
+
 	// Visibility classes
 	const visibilityClasses: string[] = [];
 	if (attributes.hideDesktop) visibilityClasses.push('vx-hidden-desktop');
@@ -175,6 +197,9 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 		return null;
 	}
 
+	// Determine if image should open lightbox in editor
+	const isEditorLightbox = context === 'editor' && attributes.linkTo === 'file' && attributes.openLightbox !== 'no';
+
 	// Build the image element - matches Elementor output exactly
 	// Evidence: plugins/elementor/includes/widgets/image.php:752
 	const imageElement = (
@@ -191,14 +216,15 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	// Wrap with link if needed
 	let content = imageElement;
 	if (linkUrl) {
-		const linkAttributes: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
+		const linkAttributes: Record<string, unknown> = {
 			href: linkUrl,
 			className: 'elementor-clickable',
 		};
 
-		// Add lightbox data attribute
+		// Add lightbox data attribute and click handler
 		if (attributes.linkTo === 'file' && attributes.openLightbox !== 'no') {
 			linkAttributes['data-elementor-open-lightbox'] = attributes.openLightbox;
+			linkAttributes.onClick = handleLightboxClick;
 		}
 
 		// Add target/rel for custom links
@@ -211,7 +237,13 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 			}
 		}
 
-		content = <a {...linkAttributes}>{imageElement}</a>;
+		// In editor: override display:contents from style.css so <a> has a box
+		// and can receive click events. Same pattern as GalleryComponent.
+		if (context === 'editor' && isEditorLightbox) {
+			linkAttributes.style = { display: 'inline-block', cursor: 'pointer' };
+		}
+
+		content = <a {...(linkAttributes as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>{imageElement}</a>;
 	}
 
 	// Wrap with figure if has caption

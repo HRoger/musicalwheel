@@ -87,7 +87,9 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 		$currency = \Voxel\get( 'settings.stripe.currency', 'USD' );
 		$is_logged_in = is_user_logged_in();
 
-		// Get authentication link
+		// Get authentication link with redirect_to parameter
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2594
+		// Voxel adds redirect_to=current_url so user returns to cart after login
 		$auth_link = '';
 		$auth_page_id = \Voxel\get( 'templates.auth' );
 		if ( $auth_page_id ) {
@@ -95,6 +97,16 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 		}
 		if ( ! $auth_link ) {
 			$auth_link = wp_login_url();
+		}
+
+		// Add redirect_to parameter - use Referer header as fallback for current URL
+		// In REST context we don't have the page URL, so use Referer or home_url
+		$redirect_to = '';
+		if ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
+			$redirect_to = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+		}
+		if ( $redirect_to ) {
+			$auth_link = add_query_arg( 'redirect_to', $redirect_to, $auth_link );
 		}
 
 		// Multivendor configuration
@@ -107,19 +119,9 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 		$guest_customers = $this->get_guest_customers_config();
 
 		// GeoIP providers for country detection
-		$geoip_providers = [];
-		if ( \Voxel\get( 'product_settings.cart_summary.geoip.enabled', false ) ) {
-			$geoip_providers = [
-				[
-					'url'  => 'https://ipapi.co/json/',
-					'prop' => 'country_code',
-				],
-				[
-					'url'  => 'https://api.country.is/',
-					'prop' => 'country',
-				],
-			];
-		}
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2646-2662
+		// Dynamically build from admin-configured providers with API keys
+		$geoip_providers = $this->get_geoip_providers();
 
 		// reCAPTCHA configuration
 		$recaptcha_enabled = (bool) \Voxel\get( 'settings.recaptcha.enabled', false );
@@ -169,24 +171,24 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 		$default_country = $this->get_default_shipping_country();
 
 		// Get saved shipping address for logged-in users
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2665-2674
+		// Voxel stores address as JSON blob in voxel:shipping_address, NOT individual meta keys
 		$saved_address = null;
 		if ( is_user_logged_in() ) {
 			$user = \Voxel\current_user();
 			if ( $user ) {
-				$saved_first_name = get_user_meta( $user->get_id(), 'voxel:shipping_first_name', true );
-				$saved_last_name = get_user_meta( $user->get_id(), 'voxel:shipping_last_name', true );
-				$saved_country = get_user_meta( $user->get_id(), 'voxel:shipping_country', true );
+				// Use Voxel's site-specific meta function for multisite compatibility
+				if ( function_exists( '\Voxel\get_site_specific_user_meta' ) ) {
+					$saved_address_json = \Voxel\get_site_specific_user_meta( $user->get_id(), 'voxel:shipping_address', true );
+				} else {
+					$saved_address_json = get_user_meta( $user->get_id(), 'voxel:shipping_address', true );
+				}
 
-				// Only include if user has saved data
-				if ( $saved_country ) {
-					$saved_address = [
-						'first_name' => $saved_first_name,
-						'last_name'  => $saved_last_name,
-						'country'    => $saved_country,
-						'state'      => get_user_meta( $user->get_id(), 'voxel:shipping_state', true ),
-						'address'    => get_user_meta( $user->get_id(), 'voxel:shipping_address', true ),
-						'zip'        => get_user_meta( $user->get_id(), 'voxel:shipping_zip', true ),
-					];
+				if ( ! empty( $saved_address_json ) ) {
+					$decoded = json_decode( $saved_address_json, true );
+					if ( is_array( $decoded ) && ! empty( $decoded['country'] ) ) {
+						$saved_address = $decoded;
+					}
 				}
 			}
 		}
@@ -194,14 +196,21 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 		// Get shipping zones from Voxel
 		$zones = $this->get_voxel_shipping_zones();
 
-		// Get countries from zones
-		$countries = $this->get_shipping_countries( $zones );
+		// Get supported countries using Voxel's method
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2635
+		// Voxel uses Shipping_Zone::get_supported_countries_data() - NOT custom extraction
+		$countries = [];
+		if ( class_exists( '\Voxel\Product_Types\Shipping\Shipping_Zone' ) ) {
+			$countries = \Voxel\Product_Types\Shipping\Shipping_Zone::get_supported_countries_data();
+		}
 
 		// Get shipping rates order
-		$rates_order = \Voxel\get( 'product_settings.shipping.rates_order', [] );
-		if ( ! is_array( $rates_order ) ) {
-			$rates_order = [];
-		}
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2638-2643
+		// Voxel reads shipping_rates array and extracts keys, not a separate rates_order setting
+		$shipping_rates = (array) \Voxel\get( 'product_settings.shipping.shipping_rates', [] );
+		$rates_order = array_values( array_filter( array_map( function( $rate ) {
+			return $rate['key'] ?? null;
+		}, $shipping_rates ) ) );
 
 		return [
 			'responsibility'       => $responsibility,
@@ -258,45 +267,6 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 	}
 
 	/**
-	 * Get shipping countries from zones
-	 *
-	 * Builds a list of all countries enabled for shipping
-	 *
-	 * @param object|array $zones Shipping zones
-	 * @return array
-	 */
-	private function get_shipping_countries( $zones ): array {
-		$countries = [];
-		$zones_array = (array) $zones;
-
-		// Get all country data from Voxel
-		if ( class_exists( '\Voxel\Utils\Shippable_Countries' ) ) {
-			$all_countries_data = \Voxel\Utils\Shippable_Countries::all();
-		} else {
-			$all_countries_data = $this->get_fallback_countries_list();
-		}
-
-		// Extract countries from all zones
-		foreach ( $zones_array as $zone ) {
-			$zone_countries = isset( $zone['countries'] ) ? $zone['countries'] : [];
-			foreach ( array_keys( (array) $zone_countries ) as $country_code ) {
-				if ( ! isset( $countries[ $country_code ] ) ) {
-					$country_data = isset( $all_countries_data[ $country_code ] )
-						? $all_countries_data[ $country_code ]
-						: [ 'name' => $country_code ];
-
-					$countries[ $country_code ] = [
-						'name'   => is_array( $country_data ) ? ( $country_data['name'] ?? $country_code ) : $country_data,
-						'states' => $this->get_country_states( $country_code ),
-					];
-				}
-			}
-		}
-
-		return $countries;
-	}
-
-	/**
 	 * Get default shipping country
 	 *
 	 * Uses Voxel's method to determine customer's country
@@ -304,20 +274,17 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 	 * @return string|null
 	 */
 	private function get_default_shipping_country(): ?string {
-		// First check Voxel settings for default country
-		$default = \Voxel\get( 'product_settings.shipping.default_country' );
-		if ( $default ) {
-			return $default;
-		}
-
-		// Try to get from visitor IP if Voxel's Visitor class exists
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2694-2701
+		// Voxel ONLY uses Visitor::get()->get_country()['alpha-2']
+		// It does NOT check product_settings.shipping.default_country
 		if ( class_exists( '\Voxel\Visitor' ) ) {
 			try {
 				$visitor = \Voxel\Visitor::get();
-				if ( $visitor && method_exists( $visitor, 'get_country_code' ) ) {
-					$country = $visitor->get_country_code();
-					if ( $country ) {
-						return $country;
+				if ( $visitor ) {
+					// get_country() returns array with 'alpha-2' key or null
+					$country = $visitor->get_country();
+					if ( $country && isset( $country['alpha-2'] ) ) {
+						return $country['alpha-2'];
 					}
 				}
 			} catch ( \Exception $e ) {
@@ -329,6 +296,54 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 	}
 
 	/**
+	 * Get GeoIP providers configuration
+	 *
+	 * Evidence: themes/voxel/app/widgets/cart-summary.php:2646-2662
+	 * Evidence: themes/voxel/app/utils/utils.php:1440-1466
+	 *
+	 * Dynamically builds provider list from admin settings, including API keys.
+	 *
+	 * @return array
+	 */
+	private function get_geoip_providers(): array {
+		$geoip_providers = [];
+
+		// Get enabled providers from admin settings
+		$enabled_providers = (array) \Voxel\get( 'settings.ipgeo.providers', [] );
+		if ( empty( $enabled_providers ) ) {
+			return $geoip_providers;
+		}
+
+		// Get all available provider definitions
+		$all_providers = function_exists( '\Voxel\get_ipgeo_providers' )
+			? \Voxel\get_ipgeo_providers()
+			: [];
+
+		// Match enabled providers against available providers
+		foreach ( $enabled_providers as $enabled_provider ) {
+			foreach ( $all_providers as $provider ) {
+				if ( $provider['key'] === $enabled_provider['key'] ) {
+					$geocode_url = $provider['geocode_url'];
+
+					// Append API key if configured
+					if ( ! empty( $enabled_provider['api_key'] ) && ! empty( $provider['api_key_param'] ) ) {
+						$geocode_url = add_query_arg( $provider['api_key_param'], $enabled_provider['api_key'], $geocode_url );
+					}
+
+					$geoip_providers[] = [
+						'url'  => $geocode_url,
+						'prop' => $provider['country_code_key'],
+					];
+
+					break;
+				}
+			}
+		}
+
+		return $geoip_providers;
+	}
+
+	/**
 	 * Get guest customers configuration
 	 *
 	 * Evidence: themes/voxel/app/widgets/cart-summary.php (lines 2600-2610)
@@ -336,7 +351,8 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 	 * @return array
 	 */
 	private function get_guest_customers_config(): array {
-		$behavior = \Voxel\get( 'product_settings.cart_summary.guest_customers.behavior', 'redirect_to_login' );
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2602 - default is 'proceed_with_email'
+		$behavior = \Voxel\get( 'product_settings.cart_summary.guest_customers.behavior', 'proceed_with_email' );
 
 		if ( $behavior !== 'proceed_with_email' ) {
 			return [
@@ -370,194 +386,5 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 				'tos_text'             => $tos_text,
 			],
 		];
-	}
-
-	/**
-	 * Get states/provinces for a country
-	 *
-	 * @param string $country_code
-	 * @return array
-	 */
-	private function get_country_states( string $country_code ): array {
-		// Try Voxel's country data first
-		if ( class_exists( '\Voxel\Utils\Shippable_Countries' ) ) {
-			try {
-				$country_data = \Voxel\Utils\Shippable_Countries::get( $country_code );
-				if ( $country_data && isset( $country_data['states'] ) && is_array( $country_data['states'] ) ) {
-					$states = [];
-					foreach ( $country_data['states'] as $state_code => $state_name ) {
-						$states[ $state_code ] = [
-							'name' => is_array( $state_name ) ? ( $state_name['name'] ?? $state_code ) : $state_name,
-						];
-					}
-					return $states;
-				}
-			} catch ( \Exception $e ) {
-				// Fall through to fallback
-			}
-		}
-
-		// Fallback state lists
-		return $this->get_fallback_country_states( $country_code );
-	}
-
-	/**
-	 * Get fallback countries list when Voxel's class is not available
-	 *
-	 * @return array
-	 */
-	private function get_fallback_countries_list(): array {
-		return [
-			'US' => [ 'name' => 'United States' ],
-			'CA' => [ 'name' => 'Canada' ],
-			'GB' => [ 'name' => 'United Kingdom' ],
-			'AU' => [ 'name' => 'Australia' ],
-			'DE' => [ 'name' => 'Germany' ],
-			'FR' => [ 'name' => 'France' ],
-			'ES' => [ 'name' => 'Spain' ],
-			'IT' => [ 'name' => 'Italy' ],
-			'NL' => [ 'name' => 'Netherlands' ],
-			'BE' => [ 'name' => 'Belgium' ],
-			'AT' => [ 'name' => 'Austria' ],
-			'CH' => [ 'name' => 'Switzerland' ],
-			'SE' => [ 'name' => 'Sweden' ],
-			'NO' => [ 'name' => 'Norway' ],
-			'DK' => [ 'name' => 'Denmark' ],
-			'FI' => [ 'name' => 'Finland' ],
-			'IE' => [ 'name' => 'Ireland' ],
-			'PT' => [ 'name' => 'Portugal' ],
-			'PL' => [ 'name' => 'Poland' ],
-			'CZ' => [ 'name' => 'Czech Republic' ],
-			'NZ' => [ 'name' => 'New Zealand' ],
-			'JP' => [ 'name' => 'Japan' ],
-			'KR' => [ 'name' => 'South Korea' ],
-			'SG' => [ 'name' => 'Singapore' ],
-			'HK' => [ 'name' => 'Hong Kong' ],
-			'MX' => [ 'name' => 'Mexico' ],
-			'BR' => [ 'name' => 'Brazil' ],
-			'AR' => [ 'name' => 'Argentina' ],
-		];
-	}
-
-	/**
-	 * Get fallback states/provinces for a country
-	 *
-	 * @param string $country_code
-	 * @return array
-	 */
-	private function get_fallback_country_states( string $country_code ): array {
-		$states = [];
-
-		switch ( $country_code ) {
-			case 'US':
-				$states = [
-					'AL' => [ 'name' => 'Alabama' ],
-					'AK' => [ 'name' => 'Alaska' ],
-					'AZ' => [ 'name' => 'Arizona' ],
-					'AR' => [ 'name' => 'Arkansas' ],
-					'CA' => [ 'name' => 'California' ],
-					'CO' => [ 'name' => 'Colorado' ],
-					'CT' => [ 'name' => 'Connecticut' ],
-					'DE' => [ 'name' => 'Delaware' ],
-					'DC' => [ 'name' => 'District of Columbia' ],
-					'FL' => [ 'name' => 'Florida' ],
-					'GA' => [ 'name' => 'Georgia' ],
-					'HI' => [ 'name' => 'Hawaii' ],
-					'ID' => [ 'name' => 'Idaho' ],
-					'IL' => [ 'name' => 'Illinois' ],
-					'IN' => [ 'name' => 'Indiana' ],
-					'IA' => [ 'name' => 'Iowa' ],
-					'KS' => [ 'name' => 'Kansas' ],
-					'KY' => [ 'name' => 'Kentucky' ],
-					'LA' => [ 'name' => 'Louisiana' ],
-					'ME' => [ 'name' => 'Maine' ],
-					'MD' => [ 'name' => 'Maryland' ],
-					'MA' => [ 'name' => 'Massachusetts' ],
-					'MI' => [ 'name' => 'Michigan' ],
-					'MN' => [ 'name' => 'Minnesota' ],
-					'MS' => [ 'name' => 'Mississippi' ],
-					'MO' => [ 'name' => 'Missouri' ],
-					'MT' => [ 'name' => 'Montana' ],
-					'NE' => [ 'name' => 'Nebraska' ],
-					'NV' => [ 'name' => 'Nevada' ],
-					'NH' => [ 'name' => 'New Hampshire' ],
-					'NJ' => [ 'name' => 'New Jersey' ],
-					'NM' => [ 'name' => 'New Mexico' ],
-					'NY' => [ 'name' => 'New York' ],
-					'NC' => [ 'name' => 'North Carolina' ],
-					'ND' => [ 'name' => 'North Dakota' ],
-					'OH' => [ 'name' => 'Ohio' ],
-					'OK' => [ 'name' => 'Oklahoma' ],
-					'OR' => [ 'name' => 'Oregon' ],
-					'PA' => [ 'name' => 'Pennsylvania' ],
-					'RI' => [ 'name' => 'Rhode Island' ],
-					'SC' => [ 'name' => 'South Carolina' ],
-					'SD' => [ 'name' => 'South Dakota' ],
-					'TN' => [ 'name' => 'Tennessee' ],
-					'TX' => [ 'name' => 'Texas' ],
-					'UT' => [ 'name' => 'Utah' ],
-					'VT' => [ 'name' => 'Vermont' ],
-					'VA' => [ 'name' => 'Virginia' ],
-					'WA' => [ 'name' => 'Washington' ],
-					'WV' => [ 'name' => 'West Virginia' ],
-					'WI' => [ 'name' => 'Wisconsin' ],
-					'WY' => [ 'name' => 'Wyoming' ],
-				];
-				break;
-
-			case 'CA':
-				$states = [
-					'AB' => [ 'name' => 'Alberta' ],
-					'BC' => [ 'name' => 'British Columbia' ],
-					'MB' => [ 'name' => 'Manitoba' ],
-					'NB' => [ 'name' => 'New Brunswick' ],
-					'NL' => [ 'name' => 'Newfoundland and Labrador' ],
-					'NS' => [ 'name' => 'Nova Scotia' ],
-					'NT' => [ 'name' => 'Northwest Territories' ],
-					'NU' => [ 'name' => 'Nunavut' ],
-					'ON' => [ 'name' => 'Ontario' ],
-					'PE' => [ 'name' => 'Prince Edward Island' ],
-					'QC' => [ 'name' => 'Quebec' ],
-					'SK' => [ 'name' => 'Saskatchewan' ],
-					'YT' => [ 'name' => 'Yukon' ],
-				];
-				break;
-
-			case 'AU':
-				$states = [
-					'ACT' => [ 'name' => 'Australian Capital Territory' ],
-					'NSW' => [ 'name' => 'New South Wales' ],
-					'NT'  => [ 'name' => 'Northern Territory' ],
-					'QLD' => [ 'name' => 'Queensland' ],
-					'SA'  => [ 'name' => 'South Australia' ],
-					'TAS' => [ 'name' => 'Tasmania' ],
-					'VIC' => [ 'name' => 'Victoria' ],
-					'WA'  => [ 'name' => 'Western Australia' ],
-				];
-				break;
-
-			case 'DE':
-				$states = [
-					'BW' => [ 'name' => 'Baden-Württemberg' ],
-					'BY' => [ 'name' => 'Bavaria' ],
-					'BE' => [ 'name' => 'Berlin' ],
-					'BB' => [ 'name' => 'Brandenburg' ],
-					'HB' => [ 'name' => 'Bremen' ],
-					'HH' => [ 'name' => 'Hamburg' ],
-					'HE' => [ 'name' => 'Hesse' ],
-					'MV' => [ 'name' => 'Mecklenburg-Vorpommern' ],
-					'NI' => [ 'name' => 'Lower Saxony' ],
-					'NW' => [ 'name' => 'North Rhine-Westphalia' ],
-					'RP' => [ 'name' => 'Rhineland-Palatinate' ],
-					'SL' => [ 'name' => 'Saarland' ],
-					'SN' => [ 'name' => 'Saxony' ],
-					'ST' => [ 'name' => 'Saxony-Anhalt' ],
-					'SH' => [ 'name' => 'Schleswig-Holstein' ],
-					'TH' => [ 'name' => 'Thuringia' ],
-				];
-				break;
-		}
-
-		return $states;
 	}
 }

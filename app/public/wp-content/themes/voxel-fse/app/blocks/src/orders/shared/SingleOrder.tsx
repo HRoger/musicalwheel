@@ -6,7 +6,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 import type { SingleOrderProps, Order, OrderAction, OrderItem } from '../types';
 
@@ -53,6 +53,14 @@ export default function SingleOrder({
 	// Ref for actions dropdown to blur after action execution
 	// Reference: voxel-orders.beautified.js line 430 - self.$refs.actions?.blur()
 	const actionsRef = useRef<HTMLAnchorElement>(null);
+
+	// Scroll to top when single order view opens
+	useEffect(() => {
+		window.scrollTo(0, 0);
+	}, [order.id]);
+
+	// Content truncation length from config (default 128)
+	const contentLength = config?.data_inputs?.content_length ?? 128;
 
 	/**
 	 * Handle promotion cancellation for an order item
@@ -342,12 +350,12 @@ export default function SingleOrder({
 													dangerouslySetInnerHTML={{
 														__html: expandedItems[item.id]
 															? item.data_inputs_markup
-															: getTruncatedContent(item.data_inputs_markup),
+															: getTruncatedContent(item.data_inputs_markup, contentLength),
 													}}
 												/>
 
 												{/* Expand/Collapse */}
-												{hasLongContent(item.data_inputs_markup) && (
+												{hasLongContent(item.data_inputs_markup, contentLength) && (
 													<span className="order-expand-details">
 														<span onClick={() => toggleItemExpanded(item.id)}>
 															{expandedItems[item.id] ? 'Collapse ▴' : 'Expand ▾'}
@@ -587,16 +595,16 @@ export default function SingleOrder({
 /**
  * Helper to check if content is long
  */
-function hasLongContent(html: string): boolean {
-	// Simple check - if more than 200 characters, consider it long
+function hasLongContent(html: string, maxLength: number = 128): boolean {
 	const stripped = html.replace(/<[^>]*>/g, '');
-	return stripped.length > 200;
+	return stripped.length > maxLength;
 }
 
 /**
  * Helper to get truncated content
+ * Default 128 matches Voxel: apply_filters('voxel/single_order/data_inputs/max_content_length', 128)
  */
-function getTruncatedContent(html: string, maxLength: number = 200): string {
+function getTruncatedContent(html: string, maxLength: number = 128): string {
 	const stripped = html.replace(/<[^>]*>/g, '');
 	if (stripped.length <= maxLength) return html;
 

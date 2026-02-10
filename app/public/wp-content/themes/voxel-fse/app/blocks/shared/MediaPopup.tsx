@@ -45,6 +45,21 @@ interface SessionFile {
 }
 
 /**
+ * Uploaded file interface (matches FileUploadField.tsx and cart-summary)
+ * Used for both session files (new uploads) and existing files in the global cache
+ */
+interface UploadedFile {
+	source: 'new_upload' | 'existing';
+	name: string;
+	type: string;
+	size: number;
+	preview: string;
+	item?: File; // Only for new uploads
+	_id?: string; // Session ID for new uploads
+	id?: number; // WordPress attachment ID for existing
+}
+
+/**
  * API response from list_media endpoint
  */
 interface MediaListResponse {
@@ -71,14 +86,6 @@ interface VoxelConfig {
 	[key: string]: unknown;
 }
 
-/**
- * WordPress API settings (available in Gutenberg editor)
- */
-interface WpApiSettings {
-	root?: string;
-	nonce?: string;
-	[key: string]: unknown;
-}
 
 /**
  * Global cache for session files (Voxel pattern)
@@ -86,10 +93,13 @@ interface WpApiSettings {
  */
 declare global {
 	interface Window {
-		_vx_file_upload_cache?: SessionFile[];
+		_vx_file_upload_cache?: UploadedFile[];
 		voxelFseCreatePost?: VoxelFseCreatePostData;
 		Voxel_Config?: VoxelConfig;
-		wpApiSettings?: WpApiSettings;
+		wpApiSettings?: {
+			root: string;
+			nonce?: string;
+		};
 	}
 }
 
@@ -182,7 +192,7 @@ export default function MediaPopup({
 	const [loading, setLoading] = useState<boolean>(true);
 	const [hasMore, setHasMore] = useState<boolean>(false);
 	const [offset, setOffset] = useState<number>(0);
-	const [selected, setSelected] = useState<Record<string | number, MediaFile | SessionFile>>({});
+	const [selected, setSelected] = useState<Record<string | number, MediaFile | SessionFile | UploadedFile>>({});
 
 	// Search state
 	const [searchTerm, setSearchTerm] = useState<string>('');
@@ -380,7 +390,7 @@ export default function MediaPopup({
 	 * Get background style for file preview
 	 * Matches Voxel's getStyle method
 	 */
-	const getStyle = (file: MediaFile | SessionFile): React.CSSProperties => {
+	const getStyle = (file: MediaFile | UploadedFile): React.CSSProperties => {
 		if (file.type.startsWith('image/') && file.preview) {
 			return {
 				backgroundImage: `url(${file.preview})`,
@@ -392,7 +402,7 @@ export default function MediaPopup({
 	/**
 	 * Check if file is an image
 	 */
-	const isImage = (file: MediaFile | SessionFile): boolean => {
+	const isImage = (file: MediaFile | UploadedFile): boolean => {
 		return file.type.startsWith('image/');
 	};
 
@@ -400,7 +410,7 @@ export default function MediaPopup({
 	 * Get session files from global cache
 	 * Matches Voxel's sessionFiles() method
 	 */
-	const getSessionFiles = (): SessionFile[] => {
+	const getSessionFiles = (): UploadedFile[] => {
 		if (!Array.isArray(window._vx_file_upload_cache)) {
 			window._vx_file_upload_cache = [];
 		}
@@ -412,20 +422,21 @@ export default function MediaPopup({
 	 * Handle session file selection
 	 * Uses _id instead of id for session files
 	 */
-	const handleSessionFileSelect = (file: SessionFile) => {
+	const handleSessionFileSelect = (file: UploadedFile) => {
+		const fileKey = file._id || `upload-${file.name}`;
 		setSelected((prev) => {
 			const newSelected = { ...prev };
 
-			if (newSelected[file._id]) {
+			if (newSelected[fileKey]) {
 				// Deselect
-				delete newSelected[file._id];
+				delete newSelected[fileKey];
 			} else {
 				// Select
 				if (!multiple) {
 					// Single select - clear others
-					return { [file._id]: file };
+					return { [fileKey]: file };
 				}
-				newSelected[file._id] = file;
+				newSelected[fileKey] = file;
 			}
 
 			return newSelected;
@@ -565,10 +576,12 @@ export default function MediaPopup({
 							<>
 								<div className="ts-file-list">
 									{/* Session files first (temporary uploads with upload icon) */}
-									{getSessionFiles().map((file) => (
+									{getSessionFiles().map((file) => {
+										const fileKey = file._id || `upload-${file.name}`;
+										return (
 										<div
-											key={file._id}
-											className={`ts-file ${selected[file._id] ? 'selected' : ''} ${
+											key={fileKey}
+											className={`ts-file ${selected[fileKey] ? 'selected' : ''} ${
 												isImage(file) ? 'ts-file-img' : ''
 											}`}
 											style={getStyle(file)}
@@ -624,7 +637,8 @@ export default function MediaPopup({
 												</svg>
 											</div>
 										</div>
-									))}
+									);
+									})}
 
 									{/* Existing files from library */}
 									{displayFiles.map((file) => (

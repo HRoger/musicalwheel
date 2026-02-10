@@ -59,9 +59,14 @@
 			"items": {
 				"type": "object",
 				"properties": {
-					"term_id": {
-						"type": "number"
-					}
+					"id": { "type": "string" },
+					"term_id": { "type": "number" },
+					"loopSource": { "type": "string" },
+					"loopProperty": { "type": "string" },
+					"loopLimit": { "type": "string" },
+					"loopOffset": { "type": "string" },
+					"rowVisibility": { "type": "string" },
+					"visibilityRules": { "type": "array", "items": { "type": "object" } }
 				}
 			}
 		},
@@ -172,8 +177,7 @@
 			"default": false
 		},
 		"navHorizontalPosition": {
-			"type": "number",
-			"default": -15
+			"type": "number"
 		},
 		"navHorizontalPosition_tablet": {
 			"type": "number"
@@ -182,8 +186,7 @@
 			"type": "number"
 		},
 		"navVerticalPosition": {
-			"type": "number",
-			"default": 0
+			"type": "number"
 		},
 		"navVerticalPosition_tablet": {
 			"type": "number"
@@ -239,8 +242,7 @@
 			"default": ""
 		},
 		"navBorderRadius": {
-			"type": "number",
-			"default": 50
+			"type": "number"
 		},
 		"navBorderRadius_tablet": {
 			"type": "number"

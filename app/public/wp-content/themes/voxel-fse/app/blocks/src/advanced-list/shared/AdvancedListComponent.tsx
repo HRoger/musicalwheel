@@ -77,6 +77,122 @@ function getShareLink(type: string, title: string, url: string): string {
 }
 
 /**
+ * Generate Google Calendar URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_google_calendar_link()
+ * See: themes/voxel/app/utils/sharer.php:161-189
+ */
+function getGoogleCalendarUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	timezone?: string;
+}): string | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const params = new URLSearchParams({
+		action: 'TEMPLATE',
+		trp: 'true',
+		text: args.title || '',
+		dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+	});
+
+	if (args.description) {
+		// Strip HTML tags like Voxel's wp_kses($args['description'], [])
+		const plainDescription = args.description.replace(/<[^>]*>/g, '');
+		params.set('details', plainDescription);
+	}
+	if (args.location) {
+		params.set('location', args.location);
+	}
+	if (args.timezone) {
+		params.set('ctz', args.timezone);
+	}
+
+	return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Generate iCalendar (ICS) data URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_icalendar_data()
+ * See: themes/voxel/app/utils/sharer.php:191-243
+ */
+function getICalendarDataUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	url?: string;
+}): { dataUrl: string; filename: string } | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const start = formatDate(startDate);
+	const end = formatDate(endDate);
+	const title = (args.title || 'event').replace(/[^\w\s-]/g, '');
+	const description = (args.description || '')
+		.replace(/<[^>]*>/g, '') // Strip HTML
+		.replace(/\r\n|\r|\n/g, '\\n') // Convert newlines
+		.replace(/&nbsp;/g, '');
+	const location = (args.location || '').replace(/[^\w\s,-]/g, '');
+	const url = args.url || '';
+	const dtstamp = formatDate(new Date());
+	const uid = `${window.location.origin}/?ics_uid=${btoa(JSON.stringify([title, start, end, url])).slice(0, 20)}`;
+
+	// Build ICS content (no leading whitespace per line - ICS format requirement)
+	const icsContent = [
+		'BEGIN:VCALENDAR',
+		'VERSION:2.0',
+		'PRODID:-//hacksw/handcal//NONSGML v1.0//EN',
+		'CALSCALE:GREGORIAN',
+		'BEGIN:VEVENT',
+		`LOCATION:${location}`,
+		`DESCRIPTION:${description}`,
+		`DTSTART:${start}`,
+		`DTEND:${end}`,
+		`SUMMARY:${title}`,
+		`URL;VALUE=URI:${url}`,
+		`DTSTAMP:${dtstamp}`,
+		`UID:${uid}`,
+		'END:VEVENT',
+		'END:VCALENDAR',
+	].join('\r\n');
+
+	// Create base64 data URL (matches Voxel's base64_encode approach)
+	const dataUrl = `data:text/calendar;base64,${btoa(icsContent)}`;
+	const filename = `${title || 'event'}.ics`;
+
+	return { dataUrl, filename };
+}
+
+/**
  * Edit Steps Popup Component
  * Matches edit-post-action.php:16-50 structure
  */
@@ -838,6 +954,53 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					},
 				};
 
+			case 'action_gcal': {
+				// add-to-gcal-action.php:7-23 - Google Calendar link
+				// Uses \Voxel\Utils\Sharer::get_google_calendar_link()
+				const gcalUrl = getGoogleCalendarUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					// Note: timezone would need to come from post context if available
+				});
+				if (!gcalUrl) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: gcalUrl,
+					target: '_blank',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
+			case 'action_ical': {
+				// add-to-ical-action.php:6-24 - iCalendar download link
+				// Uses \Voxel\Utils\Sharer::get_icalendar_data()
+				const icalData = getICalendarDataUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					url: item.calUrl,
+				});
+				if (!icalData) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: icalData.dataUrl,
+					download: icalData.filename,
+					role: 'button',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
 			default:
 				return { tag: 'div' };
 		}
@@ -896,10 +1059,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		isIntermediate ? 'intermediate' : '',
 	].filter(Boolean).join(' ');
 
-	// Tooltip attributes (follow-post-action.php:25-30)
-	// For follow actions, use tooltip-inactive and tooltip-active attributes
-	// For other actions, use data-tooltip
+	// Tooltip attributes
+	// Different actions use different tooltip attribute patterns:
+	// - Follow actions (follow-post-action.php:25-30): tooltip-inactive, tooltip-active
+	// - Select addition (select-addon.php:6-12): data-tooltip, data-tooltip-default, data-tooltip-active
+	// - Other actions: data-tooltip
 	const isFollowAction = ['action_follow_post', 'action_follow'].includes(item.actionType);
+	const isSelectAddition = item.actionType === 'select_addition';
 	const tooltipAttrs: Record<string, string | undefined> = {};
 
 	if (isFollowAction) {
@@ -909,6 +1075,15 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		}
 		if (item.activeEnableTooltip && item.activeTooltipText) {
 			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		}
+	} else if (isSelectAddition) {
+		// select-addon.php:6-12 - Uses data-tooltip + data-tooltip-default for normal, data-tooltip-active for active
+		if (item.enableTooltip && item.tooltipText) {
+			tooltipAttrs['data-tooltip'] = item.tooltipText;
+			tooltipAttrs['data-tooltip-default'] = item.tooltipText;
+		}
+		if (item.activeEnableTooltip && item.activeTooltipText) {
+			tooltipAttrs['data-tooltip-active'] = item.activeTooltipText;
 		}
 	} else {
 		// Regular data-tooltip for non-follow actions
