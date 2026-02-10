@@ -36,7 +36,8 @@ export default function save({ attributes }: SaveProps) {
 		.filter(Boolean)
 		.join('\n');
 
-	const blockProps = useBlockProps.save({
+	// @ts-ignore
+	const blockProps = (useBlockProps as any).save({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
 		style: advancedProps.styles,

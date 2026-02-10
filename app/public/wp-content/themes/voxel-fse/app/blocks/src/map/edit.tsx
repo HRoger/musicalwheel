@@ -43,6 +43,7 @@ import {
 	VxPopup,
 } from './voxel-maps-adapter';
 import { addMarkersToMap, clearPreviewCardCache, type MarkerConfig } from './map-markers';
+import { DEFAULT_CHECKMARK_SVG, DEFAULT_SEARCH_SVG } from './map-icons';
 
 /**
  * Generate unique block ID
@@ -159,6 +160,48 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 		[clientId]
 	);
 
+	// Read the linked search-form's mapEnableClusters attribute DIRECTLY from the store
+	// This makes the editor preview reactive to toggling the clustering switch on the search-form block.
+	// CRITICAL: We must use getBlockAttributes() inside the selector (not rely on searchFormBlocks array)
+	// because searchFormBlocks is derived from getBlocks() which may not trigger re-renders
+	// when only an attribute changes on a nested block.
+	const enableClustersInEditor = useSelect(
+		(select) => {
+			if (!attributes.searchFormId || attributes.source !== 'search-form') {
+				return true; // default: enabled (matches Voxel default 'yes')
+			}
+			const { getBlocksByClientId, getBlocks } = select('core/block-editor') as {
+				getBlocksByClientId: (clientIds: string[]) => Array<{ clientId: string; attributes: Record<string, unknown> } | null>;
+				getBlocks: () => Array<{ clientId: string; name: string; attributes: Record<string, unknown>; innerBlocks: Array<unknown> }>;
+			};
+
+			// Find the search-form block's clientId by matching its blockId attribute
+			const findSearchFormClientId = (blocks: Array<{ clientId: string; name: string; attributes: Record<string, unknown>; innerBlocks: Array<unknown> }>): string | null => {
+				for (const block of blocks) {
+					if (block.name === 'voxel-fse/search-form' && (block.attributes.blockId as string) === attributes.searchFormId) {
+						return block.clientId;
+					}
+					if (block.innerBlocks?.length > 0) {
+						const found = findSearchFormClientId(block.innerBlocks as typeof blocks);
+						if (found) return found;
+					}
+				}
+				return null;
+			};
+
+			const sfClientId = findSearchFormClientId(getBlocks());
+			if (!sfClientId) return true;
+
+			// Read the attribute fresh from the store - this will trigger re-render when it changes
+			const sfBlocks = getBlocksByClientId([sfClientId]);
+			const sfBlock = sfBlocks?.[0];
+			if (!sfBlock) return true;
+
+			return sfBlock.attributes.mapEnableClusters !== false;
+		},
+		[attributes.searchFormId, attributes.source]
+	);
+
 	// Initialize interactive Google Map in editor using VxMap adapter
 	// Uses Voxel.Maps.await() to wait indefinitely for Google Maps (no timeout)
 	const initializeMap = useCallback(() => {
@@ -237,6 +280,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 
 		let loadedPostIdKey = '';
 		let isLoading = false;
+		let isCancelled = false;
 
 		// Create shared popup instance (one per map, same as frontend.tsx)
 		if (!editorPopupRef.current) {
@@ -245,8 +289,36 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 			editorPopupRef.current = popup;
 		}
 
+		/**
+		 * Remove all markers from the map.
+		 * Uses VxMarker.remove() for each tracked marker, plus DOM cleanup as fallback.
+		 * Voxel's native Map.removeMarkers() can't be used because it relies on
+		 * an internal markers[] array that isn't populated when markers are added
+		 * through our VxMarker adapter path.
+		 */
+		const removeAllMarkers = () => {
+			// Remove each tracked marker via Voxel's Marker.remove()
+			// (calls marker.setMap(null) + marker.remove() on the AdvancedMarkerElement)
+			editorMarkersRef.current.forEach((m) => m.remove());
+			editorMarkersRef.current = [];
+
+			// DOM fallback: remove any orphaned marker-wrapper elements from the map
+			// This catches cases where Voxel's AdvancedMarkerElement.remove()
+			// doesn't fully clean up the DOM node
+			const mapEl = mapInstanceRef.current?.getElement();
+			if (mapEl) {
+				mapEl.querySelectorAll('.marker-wrapper').forEach((el) => el.remove());
+			}
+
+			// Clear clusterer
+			if (editorClustererRef.current) {
+				editorClustererRef.current.clearMarkers();
+				editorClustererRef.current = null;
+			}
+		};
+
 		const loadEditorMarkers = async () => {
-			if (isLoading || !mapInstanceRef.current) return;
+			if (isCancelled || isLoading || !mapInstanceRef.current) return;
 
 			// Find post IDs from rendered post feed cards in the editor
 			const previewEls = document.querySelectorAll<HTMLElement>('.ts-preview[data-post-id]');
@@ -274,14 +346,16 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 					},
 					body: JSON.stringify({ post_ids: postIds }),
 				});
+
+				// Check cancellation after async operation
+				if (isCancelled) return;
+
 				const data: { success: boolean; markers: Array<{ postId: number; lat: number; lng: number; template: string }> } = await res.json();
 
-				if (!data.success || !data.markers || !mapInstanceRef.current) return;
+				if (!data.success || !data.markers || !mapInstanceRef.current || isCancelled) return;
 
-				// Clear existing markers
-				editorMarkersRef.current.forEach((m) => m.remove());
-				editorMarkersRef.current = [];
-				editorClustererRef.current = null;
+				// Clear existing markers using Voxel's native method
+				removeAllMarkers();
 				clearPreviewCardCache();
 
 				const map = mapInstanceRef.current;
@@ -295,18 +369,26 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 					postId: m.postId,
 				}));
 
-				// Initialize clusterer
+				// Initialize clusterer only when enabled by the linked search-form
+				// Voxel parity: voxel-search-form.beautified.js:2406 - if (this.config.enable_clusters)
 				let clusterer: VxClusterer | null = null;
-				try {
-					clusterer = new VxClusterer();
-					await clusterer.init(map);
-					editorClustererRef.current = clusterer;
-				} catch (err) {
-					console.warn('[Map Block] Editor: clusterer init failed:', err);
+				if (enableClustersInEditor) {
+					try {
+						clusterer = new VxClusterer();
+						await clusterer.init(map);
+						if (isCancelled) return;
+						editorClustererRef.current = clusterer;
+					} catch (err) {
+						console.warn('[Map Block] Editor: clusterer init failed:', err);
+					}
 				}
 
 				// Use shared addMarkersToMap — same function frontend.tsx uses
 				const newMarkers = await addMarkersToMap(map, markerConfigs, popup, clusterer);
+				if (isCancelled) {
+					newMarkers.forEach((m) => m.remove());
+					return;
+				}
 				editorMarkersRef.current = newMarkers;
 
 				// Render clusters after markers are added
@@ -317,22 +399,40 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 				loadedPostIdKey = newKey;
 				console.log('[Map Block] Editor: loaded', data.markers.length, 'markers with popups');
 			} catch (err) {
-				console.warn('[Map Block] Editor: failed to load markers:', err);
+				if (!isCancelled) {
+					console.warn('[Map Block] Editor: failed to load markers:', err);
+				}
 			} finally {
 				isLoading = false;
 			}
 		};
 
-		// Initial load with delay to let post feed render
-		const timer = setTimeout(loadEditorMarkers, 1500);
+		// Poll for post feed previews — they may render much later than the map
+		// Retries every 2s for up to 30s, then stops polling
+		let retryCount = 0;
+		const maxRetries = 15;
+		let pollTimer: ReturnType<typeof setTimeout> | null = null;
+
+		const pollForPreviews = () => {
+			if (isCancelled) return;
+			const hasNewPreviews = document.querySelectorAll('.ts-preview[data-post-id]').length > 0;
+			if (hasNewPreviews || loadedPostIdKey !== '') {
+				loadEditorMarkers();
+			} else if (retryCount < maxRetries) {
+				retryCount++;
+				pollTimer = setTimeout(pollForPreviews, 2000);
+			}
+		};
+
+		// Start polling after initial delay
+		pollTimer = setTimeout(pollForPreviews, 1500);
 
 		return () => {
-			clearTimeout(timer);
-			editorMarkersRef.current.forEach((m) => m.remove());
-			editorMarkersRef.current = [];
-			editorClustererRef.current = null;
+			isCancelled = true;
+			if (pollTimer) clearTimeout(pollTimer);
+			removeAllMarkers();
 		};
-	}, [isMapLoaded]);
+	}, [isMapLoaded, enableClustersInEditor]);
 
 	// Content Tab Component
 	const ContentTab = () => (
@@ -592,15 +692,8 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 									}`}
 								onClick={(e) => e.preventDefault()}
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									viewBox="0 0 24 24"
-									width="18"
-									height="18"
-									fill="currentColor"
-								>
-									<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-								</svg>
+								{/* DRY: Uses same DEFAULT_CHECKMARK_SVG as frontend.tsx (from shared map-icons.ts) */}
+								<span dangerouslySetInnerHTML={{ __html: DEFAULT_CHECKMARK_SVG }} />
 								{__('Search as I move the map', 'voxel-fse')}
 							</a>
 						) : (
@@ -609,15 +702,8 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 								className="ts-search-area ts-map-btn"
 								onClick={(e) => e.preventDefault()}
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									viewBox="0 0 24 24"
-									width="18"
-									height="18"
-									fill="currentColor"
-								>
-									<path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-								</svg>
+								{/* DRY: Uses same DEFAULT_SEARCH_SVG as frontend.tsx (from shared map-icons.ts) */}
+								<span dangerouslySetInnerHTML={{ __html: DEFAULT_SEARCH_SVG }} />
 								{__('Search this area', 'voxel-fse')}
 							</a>
 						)}

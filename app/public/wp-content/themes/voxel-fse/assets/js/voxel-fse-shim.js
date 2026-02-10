@@ -2,8 +2,7 @@
 	'use strict';
 
 	const LOG_PREFIX = '[Voxel FSE]';
-	console.error(`${LOG_PREFIX} SHIM EXECUTING - If you see this, the file loaded.`);
-	console.log(`${LOG_PREFIX} Compatibility shim loading...`);
+	console.log(`${LOG_PREFIX} Shim loaded`);
 
 	// Flag to prevent double-patching
 	let patched = false;
@@ -35,30 +34,43 @@
 			mounted() {
 				// Try to get widget_id and post_id from Elementor (original behavior)
 				try {
-					const parentElement = this.$el?.parentElement;
-					const elementorElement = parentElement?.closest?.('.elementor-element');
-					const elementorRoot = parentElement?.closest?.('.elementor');
+					// Safety check - ensure $el exists and has required methods
+					if (!this.$el || typeof this.$el.closest !== 'function') {
+						this.widget_id = 'fse-' + Math.random().toString(36).substr(2, 9);
+						this.post_id = document.body?.dataset?.postId || '0';
+						return;
+					}
 
-					if (elementorElement && elementorRoot && elementorElement.dataset && elementorRoot.dataset) {
+					const parentElement = this.$el.parentElement;
+					if (!parentElement) {
+						this.widget_id = 'fse-' + Math.random().toString(36).substr(2, 9);
+						this.post_id = document.body?.dataset?.postId || '0';
+						return;
+					}
+
+					const elementorElement = parentElement.closest('.elementor-element');
+					const elementorRoot = parentElement.closest('.elementor');
+
+					if (elementorElement?.dataset && elementorRoot?.dataset) {
 						this.widget_id = elementorElement.dataset.id;
 						this.post_id = elementorRoot.dataset.elementorId;
 					} else {
 						// FSE context - find closest block wrapper or generate fallback
-						const fseBlock = this.$el?.closest?.('[data-id]');
-						if (fseBlock && fseBlock.dataset) {
+						const fseBlock = this.$el.closest('[data-id]');
+						if (fseBlock?.dataset) {
 							this.widget_id = fseBlock.dataset.id || fseBlock.id;
-							this.post_id = fseBlock.dataset.elementorId || document.body.dataset?.postId || '0';
+							this.post_id = fseBlock.dataset.elementorId || document.body?.dataset?.postId || '0';
 						} else {
 							// Fallback: generate unique ID
 							this.widget_id = 'fse-' + Math.random().toString(36).substr(2, 9);
-							this.post_id = document.body.dataset?.postId || '0';
+							this.post_id = document.body?.dataset?.postId || '0';
 						}
 					}
 				} catch (error) {
 					// Graceful fallback prevents the crash
 					console.warn(`${LOG_PREFIX} ID extraction failed:`, error);
 					this.widget_id = 'fse-' + Math.random().toString(36).substr(2, 9);
-					this.post_id = document.body.dataset?.postId || '0';
+					this.post_id = document.body?.dataset?.postId || '0';
 				}
 			},
 		};

@@ -419,6 +419,8 @@ export interface SearchSubmitEventDetail {
 	targetId: string;
 	postType: string;
 	filters: Record<string, unknown>;
+	mapEnableClusters?: boolean;
+	mapAdditionalMarkers?: number;
 }
 
 /**

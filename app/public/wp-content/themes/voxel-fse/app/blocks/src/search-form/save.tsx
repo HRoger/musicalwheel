@@ -72,6 +72,7 @@ export default function save({ attributes }: SaveProps) {
 		'data-on-submit': attributes.onSubmit,
 		'data-post-to-feed-id': attributes.postToFeedId,
 		'data-post-to-map-id': attributes.postToMapId,
+		'data-enable-clusters': attributes.mapEnableClusters === false ? 'no' : 'yes',
 		// VOXEL COMPATIBILITY: Add data attributes that Voxel's commons.js expects
 		// Evidence: themes/voxel/assets/dist/commons.js line 1486-1487
 		// Voxel's popup components look for .elementor-element and .elementor parents

@@ -4738,6 +4738,15 @@ JAVASCRIPT;
     {
         require_once __DIR__ . '/shared/style-generator.php';
 
+        // Strip baked-in <style> tags from saved HTML to prevent stale CSS overriding fresh PHP-generated styles.
+        $div_pos = strpos($block_content, '<div');
+        if ($div_pos !== false) {
+            $before_div = substr($block_content, 0, $div_pos);
+            $from_div = substr($block_content, $div_pos);
+            $from_div = preg_replace('/<style[^>]*>.*?<\/style>/s', '', $from_div);
+            $block_content = $before_div . $from_div;
+        }
+
         $css = Style_Generator::generate_post_feed_css($attributes, $block_id);
 
         if (!empty($css)) {
@@ -4886,12 +4895,120 @@ JAVASCRIPT;
     {
         require_once __DIR__ . '/shared/style-generator.php';
 
+        // Strip baked-in <style> tags from saved HTML to prevent stale CSS overriding fresh PHP-generated styles.
+        // PHP-prepended styles (AdvancedTab) come BEFORE the <div, baked-in styles are INSIDE.
+        $div_pos = strpos($block_content, '<div');
+        if ($div_pos !== false) {
+            $before_div = substr($block_content, 0, $div_pos);
+            $from_div = substr($block_content, $div_pos);
+            $from_div = preg_replace('/<style[^>]*>.*?<\/style>/s', '', $from_div);
+            $block_content = $before_div . $from_div;
+        }
+
+        // Regenerate vxconfig from $attributes to prevent stale baked-in values.
+        // $attributes comes from block.json defaults + saved user values (no stale data).
+        $block_content = self::regenerate_term_feed_vxconfig($block_content, $attributes);
+
         $css = Style_Generator::generate_term_feed_css($attributes, $block_id);
 
         if (!empty($css)) {
             $style_tag = '<style>/* Term Feed Inline Styles */' . $css . '</style>';
             $block_content = $style_tag . $block_content;
         }
+
+        return $block_content;
+    }
+
+    /**
+     * Regenerate the vxconfig JSON script tag from fresh $attributes.
+     * Prevents stale baked-in vxconfig from causing CSS conflicts on the frontend.
+     */
+    private static function regenerate_term_feed_vxconfig($block_content, $attributes)
+    {
+        // Build fresh vxconfig from $attributes (mirrors save.tsx vxConfig structure)
+        $vxconfig = array_filter([
+            'source'                   => $attributes['source'] ?? 'filters',
+            'manualTermIds'            => isset($attributes['manualTerms']) ? array_map(function($t) { return $t['term_id'] ?? 0; }, $attributes['manualTerms']) : [],
+            'taxonomy'                 => $attributes['taxonomy'] ?? '',
+            'parentTermId'             => $attributes['parentTermId'] ?? 0,
+            'order'                    => $attributes['order'] ?? 'default',
+            'perPage'                  => $attributes['perPage'] ?? 10,
+            'hideEmpty'                => $attributes['hideEmpty'] ?? false,
+            'hideEmptyPostType'        => $attributes['hideEmptyPostType'] ?? ':all',
+            'cardTemplate'             => $attributes['cardTemplate'] ?? 'main',
+            'layoutMode'               => $attributes['layoutMode'] ?? 'ts-feed-grid-default',
+            'carouselItemWidth'        => $attributes['carouselItemWidth'] ?? 200,
+            'carouselItemWidthUnit'    => $attributes['carouselItemWidthUnit'] ?? 'px',
+            'carouselAutoplay'         => $attributes['carouselAutoplay'] ?? false,
+            'carouselAutoplayInterval' => $attributes['carouselAutoplayInterval'] ?? 3000,
+            'gridColumns'              => $attributes['gridColumns'] ?? 3,
+            'itemGap'                  => $attributes['itemGap'] ?? 20,
+            'scrollPadding'            => $attributes['scrollPadding'] ?? 0,
+            'itemPadding'              => $attributes['itemPadding'] ?? 0,
+            'replaceAccentColor'       => $attributes['replaceAccentColor'] ?? false,
+            // Nav styling — only include if explicitly set (isset check, no defaults)
+            'navHorizontalPosition'    => $attributes['navHorizontalPosition'] ?? null,
+            'navVerticalPosition'      => $attributes['navVerticalPosition'] ?? null,
+            'navButtonIconColor'       => $attributes['navButtonIconColor'] ?? null,
+            'navButtonSize'            => $attributes['navButtonSize'] ?? null,
+            'navButtonIconSize'        => $attributes['navButtonIconSize'] ?? null,
+            'navButtonBackground'      => $attributes['navButtonBackground'] ?? null,
+            'navBackdropBlur'          => $attributes['navBackdropBlur'] ?? null,
+            'navBorderType'            => $attributes['navBorderType'] ?? null,
+            'navBorderWidth'           => $attributes['navBorderWidth'] ?? null,
+            'navBorderColor'           => $attributes['navBorderColor'] ?? null,
+            'navBorderRadius'          => $attributes['navBorderRadius'] ?? null,
+            'navButtonSizeHover'       => $attributes['navButtonSizeHover'] ?? null,
+            'navButtonIconSizeHover'   => $attributes['navButtonIconSizeHover'] ?? null,
+            'navButtonIconColorHover'  => $attributes['navButtonIconColorHover'] ?? null,
+            'navButtonBackgroundHover' => $attributes['navButtonBackgroundHover'] ?? null,
+            'navButtonBorderColorHover'=> $attributes['navButtonBorderColorHover'] ?? null,
+            'rightChevronIcon'         => $attributes['rightChevronIcon'] ?? null,
+            'leftChevronIcon'          => $attributes['leftChevronIcon'] ?? null,
+        ], function($v) { return $v !== null; });
+
+        // Build responsive sub-object (only include set values)
+        $responsive = array_filter([
+            'carouselItemWidth_tablet'        => $attributes['carouselItemWidth_tablet'] ?? null,
+            'carouselItemWidth_mobile'        => $attributes['carouselItemWidth_mobile'] ?? null,
+            'gridColumns_tablet'              => $attributes['gridColumns_tablet'] ?? null,
+            'gridColumns_mobile'              => $attributes['gridColumns_mobile'] ?? null,
+            'itemGap_tablet'                  => $attributes['itemGap_tablet'] ?? null,
+            'itemGap_mobile'                  => $attributes['itemGap_mobile'] ?? null,
+            'scrollPadding_tablet'            => $attributes['scrollPadding_tablet'] ?? null,
+            'scrollPadding_mobile'            => $attributes['scrollPadding_mobile'] ?? null,
+            'itemPadding_tablet'              => $attributes['itemPadding_tablet'] ?? null,
+            'itemPadding_mobile'              => $attributes['itemPadding_mobile'] ?? null,
+            'navHorizontalPosition_tablet'    => $attributes['navHorizontalPosition_tablet'] ?? null,
+            'navHorizontalPosition_mobile'    => $attributes['navHorizontalPosition_mobile'] ?? null,
+            'navVerticalPosition_tablet'      => $attributes['navVerticalPosition_tablet'] ?? null,
+            'navVerticalPosition_mobile'      => $attributes['navVerticalPosition_mobile'] ?? null,
+            'navButtonSize_tablet'            => $attributes['navButtonSize_tablet'] ?? null,
+            'navButtonSize_mobile'            => $attributes['navButtonSize_mobile'] ?? null,
+            'navButtonIconSize_tablet'        => $attributes['navButtonIconSize_tablet'] ?? null,
+            'navButtonIconSize_mobile'        => $attributes['navButtonIconSize_mobile'] ?? null,
+            'navBackdropBlur_tablet'          => $attributes['navBackdropBlur_tablet'] ?? null,
+            'navBackdropBlur_mobile'          => $attributes['navBackdropBlur_mobile'] ?? null,
+            'navBorderRadius_tablet'          => $attributes['navBorderRadius_tablet'] ?? null,
+            'navBorderRadius_mobile'          => $attributes['navBorderRadius_mobile'] ?? null,
+            'navButtonSizeHover_tablet'       => $attributes['navButtonSizeHover_tablet'] ?? null,
+            'navButtonSizeHover_mobile'       => $attributes['navButtonSizeHover_mobile'] ?? null,
+            'navButtonIconSizeHover_tablet'   => $attributes['navButtonIconSizeHover_tablet'] ?? null,
+            'navButtonIconSizeHover_mobile'   => $attributes['navButtonIconSizeHover_mobile'] ?? null,
+        ], function($v) { return $v !== null; });
+
+        if (!empty($responsive)) {
+            $vxconfig['responsive'] = $responsive;
+        }
+
+        $fresh_json = wp_json_encode($vxconfig);
+
+        // Replace the baked-in vxconfig script content
+        $block_content = preg_replace(
+            '/<script\s+type="text\/json"\s+class="vxconfig"[^>]*>.*?<\/script>/s',
+            '<script type="text/json" class="vxconfig">' . $fresh_json . '</script>',
+            $block_content
+        );
 
         return $block_content;
     }
@@ -5581,10 +5698,17 @@ JAVASCRIPT;
 
         self::ensure_voxel_styles_registered();
 
-        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
-        $commons_url = file_exists($commons_path)
-            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
-            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        // CHANGED: Prefer dist version (built), fallback to source
+        $dist_path = get_stylesheet_directory() . '/assets/dist/voxel-fse-shim.js';
+        $source_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+
+        if (file_exists($dist_path)) {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-fse-shim.js';
+        } elseif (file_exists($source_path)) {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js';
+        } else {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        }
 
         // Enqueue the shim script with time() to force cache update
         wp_enqueue_script(

@@ -37,13 +37,10 @@ import type {
 	PostFeedComponentProps,
 	PostFeedState,
 	PostFeedVxConfig,
-	SearchResultsResponse,
 } from '../types';
 import { generatePostFeedStyles } from '../styles';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { Loader } from '@shared/components/Loader';
-import useEmblaCarousel from 'embla-carousel-react';
-import Autoplay from 'embla-carousel-autoplay';
 
 /**
  * Default icons (matches Voxel defaults)
@@ -265,53 +262,59 @@ function generateResponsiveLayoutCSS(attributes: PostFeedAttributes, blockId: st
 		}
 	}
 
-	// Item gap - responsive (both grid and carousel)
-	// Evidence: post-feed.php:317-341 - grid-gap selector
+	// Item gap — applies to BOTH grid and carousel modes
+	// Evidence: post-feed.php:317-341 uses grid-gap on {{WRAPPER}} > .post-feed-grid
+	// grid-gap works in both CSS Grid and Flexbox contexts
 	if (attributes.itemGap !== undefined) {
-		rules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap}px; }`);
+		rules.push(`${selector} .post-feed-grid { grid-gap: ${attributes.itemGap}px; }`);
 	}
 	if (attributes.itemGap_tablet !== undefined) {
-		tabletRules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap_tablet}px; }`);
+		tabletRules.push(`${selector} .post-feed-grid { grid-gap: ${attributes.itemGap_tablet}px; }`);
 	}
 	if (attributes.itemGap_mobile !== undefined) {
-		mobileRules.push(`${selector} .post-feed-grid { gap: ${attributes.itemGap_mobile}px; }`);
+		mobileRules.push(`${selector} .post-feed-grid { grid-gap: ${attributes.itemGap_mobile}px; }`);
 	}
 
-	// Carousel mode specific
+	// Carousel mode — Voxel CSS scroll-snap approach
+	// Evidence: themes/voxel/app/widgets/post-feed.php - ts_nowrap_item_width control
+	// Selector: {{WRAPPER}} > .post-feed-grid > div → width + min-width
+	// The parent CSS (.ts-feed-nowrap) provides display:flex, overflow-x:scroll, scroll-snap-type
+	// Child CSS (.ts-feed-nowrap > div) provides scroll-snap-align:start
 	if (attributes.layoutMode === 'carousel') {
 		const unit = attributes.carouselItemWidthUnit || 'px';
 
-		// Item width - responsive
-		// Evidence: post-feed.php:253-271 - width and min-width selector
-		// Default to 300px if no width is set (matches normalizeConfig default)
-		const itemWidth = attributes.carouselItemWidth || 300;
-		rules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${itemWidth}${unit}; min-width: ${itemWidth}${unit}; flex: 0 0 ${itemWidth}${unit}; scroll-snap-align: start; }`);
-		if (attributes.carouselItemWidth_tablet) {
-			tabletRules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth_tablet}${unit}; min-width: ${attributes.carouselItemWidth_tablet}${unit}; flex: 0 0 ${attributes.carouselItemWidth_tablet}${unit}; }`);
-		}
-		if (attributes.carouselItemWidth_mobile) {
-			mobileRules.push(`${selector} .post-feed-grid > div, ${selector} .post-feed-grid > .ts-preview { width: ${attributes.carouselItemWidth_mobile}${unit}; min-width: ${attributes.carouselItemWidth_mobile}${unit}; flex: 0 0 ${attributes.carouselItemWidth_mobile}${unit}; }`);
+		// Item width (matches Voxel: width + min-width on direct child divs)
+		if (attributes.carouselItemWidth) {
+			rules.push(`${selector} .post-feed-grid > div { width: ${attributes.carouselItemWidth}${unit}; min-width: ${attributes.carouselItemWidth}${unit}; }`);
 		}
 
-		// Scroll padding - responsive
-		// Evidence: post-feed.php:346-365 - padding and scroll-padding selector
+		// Scroll padding (Voxel: padding + scroll-padding on container)
 		if (attributes.scrollPadding) {
 			rules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding}px; scroll-padding: ${attributes.scrollPadding}px; }`);
+		}
+
+		// Item padding
+		if (attributes.itemPadding) {
+			rules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding}px; }`);
+		}
+
+		// Responsive tablet (only when explicitly set)
+		if (attributes.carouselItemWidth_tablet) {
+			tabletRules.push(`${selector} .post-feed-grid > div { width: ${attributes.carouselItemWidth_tablet}${unit}; min-width: ${attributes.carouselItemWidth_tablet}${unit}; }`);
 		}
 		if (attributes.scrollPadding_tablet) {
 			tabletRules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding_tablet}px; scroll-padding: ${attributes.scrollPadding_tablet}px; }`);
 		}
-		if (attributes.scrollPadding_mobile) {
-			mobileRules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding_mobile}px; scroll-padding: ${attributes.scrollPadding_mobile}px; }`);
-		}
-
-		// Item padding - responsive
-		// Evidence: post-feed.php:367-386 - padding on .ts-preview selector
-		if (attributes.itemPadding) {
-			rules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding}px; }`);
-		}
 		if (attributes.itemPadding_tablet) {
 			tabletRules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding_tablet}px; }`);
+		}
+
+		// Responsive mobile (only when explicitly set)
+		if (attributes.carouselItemWidth_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid > div { width: ${attributes.carouselItemWidth_mobile}${unit}; min-width: ${attributes.carouselItemWidth_mobile}${unit}; }`);
+		}
+		if (attributes.scrollPadding_mobile) {
+			mobileRules.push(`${selector} .post-feed-grid { padding: 0 ${attributes.scrollPadding_mobile}px; scroll-padding: ${attributes.scrollPadding_mobile}px; }`);
 		}
 		if (attributes.itemPadding_mobile) {
 			mobileRules.push(`${selector} .post-feed-grid > .ts-preview { padding: ${attributes.itemPadding_mobile}px; }`);
@@ -332,65 +335,13 @@ function generateResponsiveLayoutCSS(attributes: PostFeedAttributes, blockId: st
 	return css;
 }
 
-/**
- * Generate typography CSS from typography object
- * Helper function matching pattern from popup-kit/shared/generateCSS.ts
- *
- * @param typo Typography object from attributes
- * @returns CSS string (semicolon-separated rules)
- */
-function generateTypographyCSS(typo: Record<string, unknown>): string {
-	const rules: string[] = [];
 
-	if (typo.fontFamily) {
-		rules.push(`font-family: ${typo.fontFamily}`);
-	}
-
-	if (typo.fontSize) {
-		const unit = (typo.fontSizeUnit as string) || 'px';
-		rules.push(`font-size: ${typo.fontSize}${unit}`);
-	}
-
-	if (typo.fontWeight) {
-		rules.push(`font-weight: ${typo.fontWeight}`);
-	}
-
-	if (typo.lineHeight) {
-		const unit = (typo.lineHeightUnit as string) || '';
-		rules.push(`line-height: ${typo.lineHeight}${unit}`);
-	}
-
-	if (typo.textTransform && typo.textTransform !== 'none') {
-		rules.push(`text-transform: ${typo.textTransform}`);
-	}
-
-	if (typo.fontStyle) {
-		rules.push(`font-style: ${typo.fontStyle}`);
-	}
-
-	if (typo.textDecoration) {
-		rules.push(`text-decoration: ${typo.textDecoration}`);
-	}
-
-	if (typo.letterSpacing) {
-		const unit = (typo.letterSpacingUnit as string) || 'px';
-		rules.push(`letter-spacing: ${typo.letterSpacing}${unit}`);
-	}
-
-	if (typo.wordSpacing) {
-		const unit = (typo.wordSpacingUnit as string) || 'px';
-		rules.push(`word-spacing: ${typo.wordSpacing}${unit}`);
-	}
-
-	return rules.join('; ');
-}
 
 /**
  * Post Feed Shared Component
  */
 export default function PostFeedComponent({
 	attributes,
-	config,
 	context,
 	editorFilters,
 	containerElement,
@@ -418,6 +369,17 @@ export default function PostFeedComponent({
 	// Dynamic filters from search form (for search-form source mode)
 	const [dynamicFilters, setDynamicFilters] = useState<Record<string, unknown>>({});
 	const [dynamicPostType, setDynamicPostType] = useState<string>(attributes.postType || '');
+
+	// Prevent link navigation in editor (matches Elementor's onLinkClick behavior)
+	// Skip carousel nav buttons (.ts-icon-btn) so arrows still work
+	const handleEditorClick = useCallback((e: React.MouseEvent) => {
+		if (context !== 'editor') return;
+		const target = (e.target as HTMLElement).closest('a');
+		if (target && !target.closest('.post-feed-nav')) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+	}, [context]);
 
 	// CRITICAL: Sync dynamicPostType with attributes.postType in editor context
 	// In editor, postType changes come through props (from linkedPostType in edit.tsx)
@@ -554,14 +516,29 @@ export default function PostFeedComponent({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [context, editorFilters, attributes.postType, attributes.postsPerPage, attributes.displayDetails]);
 
-	// Build CSS classes (grid mode only — carousel mode uses YARL Inline plugin)
-	const loadingClass = state.loading ? `vx-${attributes.loadingStyle}` : '';
+	// EXACT Voxel: Loading style class (vx-opacity or vx-skeleton) goes on the GRID (always present)
+	// .vx-loading toggles on the OUTER container to activate the loading effect
+	// Evidence: post-feed.php:19 - ts_loading_style is always on the grid
+	// Evidence: post-feed.php:628 - {{WRAPPER}}.vx-loading .vx-opacity { opacity: X }
+	// Evidence: voxel-post-feed.beautified.js:122,132 - feedContainer.addClass/removeClass("vx-loading")
+	const loadingStyleClass = `vx-${attributes.loadingStyle}`;
+
+	// Toggle .vx-loading on the outer container element (matches Voxel's feedContainer pattern)
+	useEffect(() => {
+		const container = containerElement || containerRef.current;
+		if (!container) return;
+		if (state.loading) {
+			container.classList.add('vx-loading');
+		} else {
+			container.classList.remove('vx-loading');
+		}
+	}, [state.loading, containerElement]);
 
 	// Evidence: themes/voxel/templates/widgets/post-feed.php:18-19
-	// Grid classes: post-feed-grid, layout class, loading class, vx-opacity for opacity transition,
+	// Grid classes: post-feed-grid, layout class, loading style class (always present),
 	// sf-post-feed when connected to search form, vx-event-scroll for scroll tracking
 	// CRITICAL: vx-event-autoslide and vx-event-scroll prevent Voxel's commons.js from double-binding
-	const gridClasses = `post-feed-grid ts-feed-grid-default ${loadingClass} vx-opacity ${attributes.source === 'search-form' ? 'sf-post-feed vx-event-scroll' : ''}`.trim();
+	const gridClasses = `post-feed-grid ts-feed-grid-default ${loadingStyleClass} ${attributes.source === 'search-form' ? 'sf-post-feed vx-event-scroll' : ''}`.trim();
 
 	// Generate responsive layout CSS
 	const responsiveLayoutCSS = generateResponsiveLayoutCSS(attributes, attributes.blockId);
@@ -795,8 +772,8 @@ export default function PostFeedComponent({
 
 							markerEls.forEach((markerEl) => {
 								const el = markerEl as HTMLElement;
-								const position = el.dataset.position;
-								const postId = el.dataset.postId;
+								const position = el.dataset['position'];
+								const postId = el.dataset['postId'];
 
 								if (!position || !postId) return;
 
@@ -1118,99 +1095,128 @@ export default function PostFeedComponent({
 	}, [attributes.layoutMode, state.results]);
 
 	/**
-	 * Embla Carousel Configuration
-	 * 
-	 * Replaces manual scroll logic with robust library solution.
-	 * Maintains Voxel 1:1 parity by using the same classes and structure.
+	 * CSS Scroll-Snap Carousel (Voxel 1:1 Parity)
+	 *
+	 * Uses native CSS scroll-snap-type: x mandatory on the container
+	 * and scroll-snap-align: start on items. Navigation via scrollBy().
+	 * Evidence: themes/voxel/assets/dist/commons.js - scroll boundary detection
+	 * Evidence: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap scroll-snap rules
 	 */
-	// CRITICAL: Initialize Embla with stable options, but update dynamically via useEffect below
-	// This ensures Editor controls (Autoplay, etc.) work in real-time
-	const [emblaRef, emblaApi] = useEmblaCarousel({
-		loop: false,
-		align: 'start',
-		containScroll: 'trimSnaps',
-		dragFree: true,
-	}, [
-		Autoplay({
-			delay: attributes.carouselAutoSlideInterval || 3000,
-			stopOnInteraction: true,
-			active: !!attributes.carouselAutoSlide,
-		})
-	]);
-
-	// React to attribute changes (Editor wiring)
-	useEffect(() => {
-		if (!emblaApi) return;
-
-		const autoplayEnabled = !!attributes.carouselAutoSlide;
-		const autoplayDelay = attributes.carouselAutoSlideInterval || 3000;
-
-		// Re-initialize Embla with updated options and plugins
-		emblaApi.reInit({
-			loop: false,
-			align: 'start',
-			containScroll: 'trimSnaps',
-			dragFree: true,
-		}, [
-			Autoplay({
-				delay: autoplayDelay,
-				stopOnInteraction: true,
-				active: autoplayEnabled,
-			})
-		]);
-	}, [
-		emblaApi,
-		attributes.carouselAutoSlide,
-		attributes.carouselAutoSlideInterval,
-		attributes.itemGap,
-		attributes.carouselItemWidth,
-		attributes.carouselItemWidthUnit,
-		// Re-run if layout mode or data changes
-		attributes.layoutMode,
-		carouselCards.length
-	]);
-
-	// Track scroll state for button enable/disable
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const [canScrollPrev, setCanScrollPrev] = useState(false);
-	const [canScrollNext, setCanScrollNext] = useState(false);
+	const [canScrollNext, setCanScrollNext] = useState(true);
 
-	const onSelect = useCallback((api: any) => {
-		setCanScrollPrev(api.canScrollPrev());
-		setCanScrollNext(api.canScrollNext());
-	}, []);
+	// Check scroll state for carousel navigation (on scroll events)
+	// Matches term-feed pattern: update prev/next based on scroll position
+	const checkCarouselScrollState = useCallback(() => {
+		if (!scrollContainerRef.current || attributes.layoutMode !== 'carousel') return;
+		const el = scrollContainerRef.current;
+		setCanScrollPrev(Math.abs(el.scrollLeft) > 10);
+		setCanScrollNext(el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
+	}, [attributes.layoutMode]);
 
-	// Attach listeners to Embla API
+	// Enable/disable nav buttons when cards or item width change
+	// RAF ensures CSS has been applied before measuring
+	// ResizeObserver catches the block becoming visible (e.g. hidden tab → visible)
 	useEffect(() => {
-		if (!emblaApi) return;
+		const el = scrollContainerRef.current;
+		if (!el || attributes.layoutMode !== 'carousel') return;
 
-		onSelect(emblaApi);
-		emblaApi.on('reInit', onSelect);
-		emblaApi.on('select', onSelect);
+		const measureOverflow = () => {
+			if (!el || el.clientWidth < 1) return;
+			const hasOverflow = el.scrollWidth > el.clientWidth;
+			setCanScrollPrev(Math.abs(el.scrollLeft) > 10);
+			setCanScrollNext(hasOverflow && el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
+		};
 
-		// Force re-init when cards change to recalculate bounds
-		emblaApi.reInit();
+		requestAnimationFrame(measureOverflow);
+
+		// ResizeObserver: re-measure when the element goes from 0 → visible width
+		let ro: ResizeObserver | null = null;
+		if (typeof ResizeObserver !== 'undefined') {
+			ro = new ResizeObserver(() => {
+				requestAnimationFrame(measureOverflow);
+			});
+			ro.observe(el);
+		}
+
+		el.addEventListener('scroll', checkCarouselScrollState, { passive: true });
+		window.addEventListener('resize', checkCarouselScrollState);
 
 		return () => {
-			emblaApi.off('reInit', onSelect);
-			emblaApi.off('select', onSelect);
+			ro?.disconnect();
+			el.removeEventListener('scroll', checkCarouselScrollState);
+			window.removeEventListener('resize', checkCarouselScrollState);
 		};
-	}, [emblaApi, onSelect, carouselCards.length]);
+	}, [checkCarouselScrollState, carouselCards.length, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
 
 	/**
-	 * Handle carousel prev click
+	 * Scroll the carousel — 1:1 port of Voxel's commons.js `l()` function
+	 *
+	 * Evidence: themes/voxel/assets/dist/commons.js
+	 * - Next: scroll by one item width. If at end, wrap to start.
+	 * - Prev: scroll by negative item width. If at start, wrap to end.
 	 */
+	const scrollCarousel = useCallback((direction: 'next' | 'prev') => {
+		const el = scrollContainerRef.current;
+		if (!el) return;
+		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+		if (!firstItem) return;
+
+		let scrollAmount: number;
+
+		if (direction === 'next') {
+			scrollAmount = firstItem.scrollWidth;
+			// If at end, wrap to start
+			if (el.clientWidth + Math.abs(el.scrollLeft) + 10 >= el.scrollWidth) {
+				scrollAmount = -el.scrollLeft;
+			}
+		} else {
+			scrollAmount = -firstItem.scrollWidth;
+			// If at start, wrap to end
+			if (Math.abs(el.scrollLeft) <= 10) {
+				scrollAmount = el.scrollWidth - el.clientWidth - el.scrollLeft;
+			}
+		}
+
+		el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+	}, []);
+
 	const handleCarouselPrev = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		if (emblaApi) emblaApi.scrollPrev();
-	}, [emblaApi]);
+		scrollCarousel('prev');
+	}, [scrollCarousel]);
 
-	/**
-	 * Handle carousel next click
-	 */
 	const handleCarouselNext = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		if (emblaApi) emblaApi.scrollNext();
-	}, [emblaApi]);
+		scrollCarousel('next');
+	}, [scrollCarousel]);
+
+	// Autoplay with hover-pause (matches Voxel's setInterval approach)
+	useEffect(() => {
+		if (!attributes.carouselAutoSlide || attributes.layoutMode !== 'carousel') return;
+		const interval = attributes.carouselAutoSlideInterval || 3000;
+		if (interval < 20) return;
+
+		let isHovered = false;
+		const container = scrollContainerRef.current?.closest('.voxel-fse-post-feed-frontend') || scrollContainerRef.current?.closest('.ts-post-feed');
+		const onEnter = () => { isHovered = true; };
+		const onLeave = () => { isHovered = false; };
+		container?.addEventListener('mouseenter', onEnter);
+		container?.addEventListener('mouseleave', onLeave);
+
+		const timer = setInterval(() => {
+			if (!isHovered && scrollContainerRef.current) {
+				scrollCarousel('next');
+			}
+		}, interval);
+
+		return () => {
+			clearInterval(timer);
+			container?.removeEventListener('mouseenter', onEnter);
+			container?.removeEventListener('mouseleave', onLeave);
+		};
+	}, [attributes.carouselAutoSlide, attributes.carouselAutoSlideInterval, attributes.layoutMode, scrollCarousel]);
 
 	// Render vxconfig for DevTools visibility (CRITICAL for Plan C+)
 	const vxConfig: PostFeedVxConfig = {
@@ -1264,8 +1270,41 @@ export default function PostFeedComponent({
 
 	// Build carousel grid classes to match Voxel exactly (used in both editor and frontend)
 	// Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
-	// Classes: post-feed-grid, ts-feed-nowrap, min-scroll, min-scroll-h, vx-opacity, vx-event-autoslide, vx-event-scroll
-	const carouselGridClasses = `post-feed-grid ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`.trim();
+	// Classes: post-feed-grid, ts-feed-nowrap, min-scroll, min-scroll-h, loading style class, vx-event-autoslide, vx-event-scroll
+	// EXACT Voxel: Loading style class is ALWAYS on the grid. .vx-loading toggles on the outer container.
+	const carouselGridClasses = `post-feed-grid ts-feed-nowrap min-scroll min-scroll-h ${loadingStyleClass} vx-event-autoslide vx-event-scroll`.trim();
+
+	// Shared carousel nav — used by both editor and frontend (DRY)
+	// Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14
+	// Renders position:absolute overlay with prev/next buttons
+	const carouselNav = attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
+		<ul className="simplify-ul flexify post-feed-nav">
+			<li>
+				<a
+					href="#"
+					className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
+					aria-label={__('Previous', 'voxel-fse')}
+					onClick={handleCarouselPrev}
+				>
+					<span dangerouslySetInnerHTML={{
+						__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
+					}} />
+				</a>
+			</li>
+			<li>
+				<a
+					href="#"
+					className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
+					aria-label={__('Next', 'voxel-fse')}
+					onClick={handleCarouselNext}
+				>
+					<span dangerouslySetInnerHTML={{
+						__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
+					}} />
+				</a>
+			</li>
+		</ul>
+	) : null;
 
 	// Editor preview - shows actual data or placeholder while loading
 	if (context === 'editor') {
@@ -1277,7 +1316,7 @@ export default function PostFeedComponent({
 		const showSkeletonCards = state.loading && attributes.postType;
 
 		return (
-			<div ref={containerRef} className={`ts-post-feed ${loadingClass}`} data-block-id={attributes.blockId}>
+			<div ref={containerRef} className={`ts-post-feed ${state.loading ? 'vx-loading' : ''}`} data-block-id={attributes.blockId} onClickCapture={handleEditorClick}>
 				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
@@ -1308,70 +1347,24 @@ export default function PostFeedComponent({
 				{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
 				{(!isUnconfigured && !showSkeletonCards && state.results) ? (
 					attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
-						/* Embla Carousel (matches Voxel's ts-feed-nowrap pattern visually)
-						 * Wrapper acts as Embla Viewport
-						 * Grid acts as Embla Container
+						/* CSS Scroll-Snap Carousel (1:1 Voxel parity)
+						 * Single scroll container — no Embla wrapper needed
 						 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
 						 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
 						 */
 						<div
-							className={`ts-post-feed-carousel-view ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`}
-							ref={emblaRef}
-							style={{ overflow: 'hidden' }}
+							ref={scrollContainerRef}
+							className={carouselGridClasses}
+							data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlideInterval || 3000) : '0'}
 						>
-							<div
-								className={carouselGridClasses}
-								data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
-								style={{
-									gap: `${attributes.itemGap || 20}px`,
-									scrollPadding: `${attributes.scrollPadding || 0}px`,
-									padding: `0 ${attributes.scrollPadding || 0}px`,
-									backfaceVisibility: 'hidden',
-									display: 'flex',
-									touchAction: 'pan-y',
-									overflowX: 'visible', // Override Voxel's overflow-x: scroll
-									scrollSnapType: 'none', // Override Voxel's scroll-snap-type
-								}}
-							>
-								{/* parseCardsFromHtml returns {html, postId}, we add our own .ts-preview wrapper */}
-								{carouselCards.map((card, i) => {
-									// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
-									// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
-									// APPLIED TO EDITOR RENDER LOOP
-									const gap = attributes.itemGap || 20;
-									const cols = attributes.columns || 3;
-
-									// Check if we should use fixed width:
-									// 1. Must have a width value
-									// 2. AND (Width is NOT 300 OR Columns is NOT set)
-									// This treats '300' as a soft default that yields to 'columns' configuration
-									// SAFETY: Cast to Number to prevent string/number mismatch issues
-									const widthVal = Number(attributes.carouselItemWidth);
-									const useFixedWidth = widthVal && (widthVal !== 300 || !attributes.columns);
-
-									const cardWidth = useFixedWidth
-										? `${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`
-										: `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
-
-									return (
-										<div
-											key={i}
-											className="ts-preview"
-											data-post-id={card.postId || undefined}
-											style={{
-												width: cardWidth,
-												minWidth: cardWidth,
-												maxWidth: cardWidth, // Prevent cards from growing
-												flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
-												boxSizing: 'border-box', // Include padding in width calculation
-												position: 'relative',
-												scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
-											}}
-											dangerouslySetInnerHTML={{ __html: card.html }}
-										/>
-									);
-								})}
-							</div>
+							{carouselCards.map((card, i) => (
+								<div
+									key={i}
+									className="ts-preview"
+									data-post-id={card.postId || undefined}
+									dangerouslySetInnerHTML={{ __html: card.html }}
+								/>
+							))}
 						</div>
 					) : (
 						/* Grid mode - render directly in grid container */
@@ -1456,38 +1449,8 @@ export default function PostFeedComponent({
 					</div>
 				)}
 
-				{/* Carousel navigation - rendered AFTER pagination as a SIBLING (not nested) */}
-				{/* Evidence: themes/voxel/templates/widgets/post-feed.php:32 - carousel-nav.php is last include */}
-				{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
-				{/* STRICT 1:1 PARITY: .post-feed-nav uses position:absolute relative to parent container */}
-				{attributes.layoutMode === 'carousel' && carouselCards.length > 0 && (
-					<ul className="simplify-ul flexify post-feed-nav">
-						<li>
-							<a
-								href="#"
-								className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
-								aria-label={__('Previous', 'voxel-fse')}
-								onClick={handleCarouselPrev}
-							>
-								<span dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
-								}} />
-							</a>
-						</li>
-						<li>
-							<a
-								href="#"
-								className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
-								aria-label={__('Next', 'voxel-fse')}
-								onClick={handleCarouselNext}
-							>
-								<span dangerouslySetInnerHTML={{
-									__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
-								}} />
-							</a>
-						</li>
-					</ul>
-				)}
+				{/* Carousel navigation (shared) */}
+				{carouselNav}
 			</div>
 		);
 	}
@@ -1537,69 +1500,24 @@ export default function PostFeedComponent({
 			{/* Evidence: themes/voxel/templates/widgets/post-feed.php:17-28 */}
 			{/* STRICT 1:1 PARITY: NO wrapper div around carousel grid - nav is a SIBLING, not nested */}
 			{attributes.layoutMode === 'carousel' && carouselCards.length > 0 ? (
-				/* Embla Carousel (matches Voxel's ts-feed-nowrap pattern visually)
-				 * Wrapper acts as Embla Viewport
-				 * Grid acts as Embla Container
+				/* CSS Scroll-Snap Carousel (1:1 Voxel parity)
+				 * Single scroll container — no wrapper needed
 				 * Evidence: themes/voxel/templates/widgets/post-feed.php:18-21
 				 * Classes: ts-feed-nowrap min-scroll min-scroll-h vx-opacity vx-event-autoslide vx-event-scroll
 				 */
 				<div
-					className={`ts-post-feed-carousel-view ${state.loading ? `vx-${attributes.loadingStyle}` : ''}`}
-					ref={emblaRef}
-					style={{ overflow: 'hidden' }}
+					ref={scrollContainerRef}
+					className={carouselGridClasses}
+					data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlideInterval || 3000) : '0'}
 				>
-					<div
-						className={carouselGridClasses}
-						data-auto-slide={attributes.carouselAutoSlide ? String(attributes.carouselAutoSlide) : '0'}
-						style={{
-							gap: `${attributes.itemGap || 20}px`,
-							scrollPadding: `${attributes.scrollPadding || 0}px`,
-							padding: `0 ${attributes.scrollPadding || 0}px`,
-							backfaceVisibility: 'hidden',
-							display: 'flex',
-							touchAction: 'pan-y',
-							overflowX: 'visible', // Override Voxel's overflow-x: scroll
-							scrollSnapType: 'none', // Override Voxel's scroll-snap-type
-						}}
-					>
-						{/* parseCardsFromHtml returns {html, postId}, we add our own .ts-preview wrapper */}
-						{carouselCards.map((card, i) => {
-							// Logic: Prioritize column-based layout if 'columns' is set, unless the user explicitely sets a width other than the legacy default of 300.
-							// This handles the case where '300' persists in the attribute but the user wants column-based sizing.
-							const gap = attributes.itemGap || 20;
-							const cols = attributes.columns || 3;
-
-							// Check if we should use fixed width:
-							// 1. Must have a width value
-							// 2. AND (Width is NOT 300 OR Columns is NOT set)
-							// This treats '300' as a soft default that yields to 'columns' configuration
-							// SAFETY: Cast to Number to prevent string/number mismatch issues
-							const widthVal = Number(attributes.carouselItemWidth);
-							const useFixedWidth = widthVal && (widthVal !== 300 || !attributes.columns);
-
-							const cardWidth = useFixedWidth
-								? `${attributes.carouselItemWidth}${attributes.carouselItemWidthUnit || 'px'}`
-								: `calc((100% - ${(cols - 1) * gap}px) / ${cols})`;
-
-							return (
-								<div
-									key={i}
-									className="ts-preview"
-									data-post-id={card.postId || undefined}
-									style={{
-										width: cardWidth,
-										minWidth: cardWidth,
-										maxWidth: cardWidth, // Prevent cards from growing
-										flex: `0 0 ${cardWidth}`, // flex-grow: 0, flex-shrink: 0, flex-basis: cardWidth
-										boxSizing: 'border-box', // Include padding in width calculation
-										position: 'relative',
-										scrollSnapAlign: 'none', // Override Voxel's scroll-snap-align
-									}}
-									dangerouslySetInnerHTML={{ __html: card.html }}
-								/>
-							);
-						})}
-					</div>
+					{carouselCards.map((card, i) => (
+						<div
+							key={i}
+							className="ts-preview"
+							data-post-id={card.postId || undefined}
+							dangerouslySetInnerHTML={{ __html: card.html }}
+						/>
+					))}
 				</div>
 			) : (
 				<div
@@ -1702,41 +1620,8 @@ export default function PostFeedComponent({
 				</div>
 			)}
 
-			{/* Carousel navigation - rendered AFTER pagination as a SIBLING (not nested) */}
-			{/* Evidence: themes/voxel/templates/widgets/post-feed.php:32 - carousel-nav.php is last include */}
-			{/* Evidence: themes/voxel/templates/widgets/post-feed/carousel-nav.php:1-14 */}
-			{/* STRICT 1:1 PARITY: .post-feed-nav uses position:absolute relative to parent container */}
-			{/* The parent .voxel-fse-post-feed-frontend (save.tsx) provides position:relative */}
-			{attributes.layoutMode === 'carousel' && carouselCards.length > 0 && (
-				<ul className="simplify-ul flexify post-feed-nav">
-					<li>
-						<a
-							href="#"
-							className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
-							aria-label={__('Previous', 'voxel-fse')}
-							onClick={handleCarouselPrev}
-						>
-							{/* Icon rendered directly without wrapper span (matches Voxel) */}
-							<span dangerouslySetInnerHTML={{
-								__html: getIconHtml(attributes.leftChevronIcon, DEFAULT_ICONS.leftChevron),
-							}} />
-						</a>
-					</li>
-					<li>
-						<a
-							href="#"
-							className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
-							aria-label={__('Next', 'voxel-fse')}
-							onClick={handleCarouselNext}
-						>
-							{/* Icon rendered directly without wrapper span (matches Voxel) */}
-							<span dangerouslySetInnerHTML={{
-								__html: getIconHtml(attributes.rightChevronIcon, DEFAULT_ICONS.rightChevron),
-							}} />
-						</a>
-					</li>
-				</ul>
-			)}
+			{/* Carousel navigation (shared) */}
+			{carouselNav}
 		</>
 	);
 }

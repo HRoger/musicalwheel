@@ -150,8 +150,10 @@ export function generatePostFeedStyles(
 	// FIX: Add layout constraints to prevent carousel from expanding parent
 	// Evidence: Browser inspection showed container expanding to content width (1134px) instead of parent (400px)
 	// causing scrollWidth == clientWidth and breaking carousel functionality
-	cssRules.push(`${selector} { position: relative; max-width: 100%; min-width: 0; }`);
-	cssRules.push(`${selector} .post-feed-grid { max-width: 100%; }`);
+	// overflow: hidden prevents carousel content from pushing the flex parent wider
+	// In Elementor, the widget wrapper has a fixed column width that constrains the carousel;
+	// In FSE's flex-based layout, we need overflow: hidden to achieve the same containment
+	cssRules.push(`${selector} { position: relative; max-width: 100%; min-width: 0; overflow: hidden; }`);
 
 	// ============================================
 	// COUNTER STYLES
@@ -542,8 +544,10 @@ export function generatePostFeedStyles(
 	// ============================================
 
 	// Loading opacity - Evidence: post-feed.php:611-621
+	// EXACT Voxel selector: {{WRAPPER}}.vx-loading .vx-opacity { opacity: {{SIZE}} }
+	// .vx-loading is on the outer container, .vx-opacity is on the grid
 	if (attributes.loadingStyle === 'opacity' && attributes.loadingOpacity !== undefined) {
-		cssRules.push(`${selector} .post-feed-grid.vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+		cssRules.push(`${selector}.vx-loading .vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
 	}
 
 	// Skeleton background color - Evidence: post-feed.php:633-642

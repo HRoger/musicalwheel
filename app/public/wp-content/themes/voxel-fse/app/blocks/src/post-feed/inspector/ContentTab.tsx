@@ -304,8 +304,10 @@ export function ContentTab({
 							attributes={attributes}
 							setAttributes={setAttributes}
 							attributeBaseName="carouselItemWidth"
-							min={100}
-							max={800}
+							min={0}
+							max={attributes.carouselItemWidthUnit === '%' ? 100 : 800}
+							availableUnits={['px', '%']}
+							unitAttributeName="carouselItemWidthUnit"
 						/>
 
 						<ToggleControl

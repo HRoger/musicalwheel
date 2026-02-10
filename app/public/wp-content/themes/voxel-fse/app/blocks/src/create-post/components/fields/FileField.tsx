@@ -45,7 +45,7 @@
  * [{ source: 'new_upload', file: File, name: 'file.jpg', type: 'image/jpeg', preview: 'blob:...' }]
  * [{ source: 'existing', id: 123, name: 'file.jpg', type: 'image/jpeg', preview: 'url' }]
  */
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import type { VoxelField, FieldIcons } from '../../types';
 import { getUploadIcon } from '../../utils/fieldIconsHelper';
 import { MediaPopup } from '@shared';
@@ -152,6 +152,18 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 	// Normalize value to FileObject array
 	const files: FileObject[] = Array.isArray(value) ? value : [];
 
+	// Cleanup blob URLs on unmount to prevent memory leaks
+	// Evidence: Voxel calls URL.revokeObjectURL() in unmounted hook
+	useEffect(() => {
+		return () => {
+			files.forEach((file) => {
+				if (file.source === 'new_upload' && file.preview?.startsWith('blob:')) {
+					URL.revokeObjectURL(file.preview);
+				}
+			});
+		};
+	}, []);
+
 	// Field configuration from Voxel props
 	const maxCount = field.props?.['max-count'] || field.props?.['maxCount'] || 1;
 	// Evidence: file-field-trait.php:145 — sortable flag enables drag-and-drop reordering
@@ -181,9 +193,25 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		const maxSize = (field.props?.['max-size'] || field.props?.['maxSize'] || 2000) * 1000; // Convert KB to bytes
 		const validationErrors: string[] = [];
 
+		// Get allowed MIME types for validation
+		const allowedTypes = field.props?.['allowedTypes'] || field.props?.['allowed-types'] || [];
+		const allowedMimes: string[] = Array.isArray(allowedTypes) ? allowedTypes : [];
+
 		// Process all selected files (matches Voxel: allow upload, then validate)
 		for (let i = 0; i < selectedFiles.length; i++) {
 			const file = selectedFiles[i];
+
+			// Validate MIME type against allowedTypes
+			// Evidence: Voxel file-field-trait.php validates allowed_types server-side
+			if (allowedMimes.length > 0 && !allowedMimes.some((mime) => {
+				if (mime.endsWith('/*')) {
+					return file.type.startsWith(mime.replace('/*', '/'));
+				}
+				return file.type === mime;
+			})) {
+				validationErrors.push(`${file.name}: file type not allowed`);
+				continue;
+			}
 
 			// Add file to global session cache (shared with MediaPopup)
 			const sessionId = addToSessionCache(file);
@@ -225,11 +253,26 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		}
 	};
 
-	// Handle drag & drop
+	// Handle drag & drop - uses DataTransferItemList API with .files fallback
+	// Evidence: Modern browsers provide items[] which filters non-file entries
 	const handleDrop = (e: React.DragEvent) => {
 		e.preventDefault();
 		setDragActive(false);
-		handleFileSelect(e.dataTransfer.files);
+
+		// Prefer DataTransferItemList (filters non-file items like text selections)
+		if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+			const dt = new DataTransfer();
+			for (let i = 0; i < e.dataTransfer.items.length; i++) {
+				const item = e.dataTransfer.items[i];
+				if (item.kind === 'file') {
+					const file = item.getAsFile();
+					if (file) dt.items.add(file);
+				}
+			}
+			handleFileSelect(dt.files);
+		} else {
+			handleFileSelect(e.dataTransfer.files);
+		}
 	};
 
 	// Remove file

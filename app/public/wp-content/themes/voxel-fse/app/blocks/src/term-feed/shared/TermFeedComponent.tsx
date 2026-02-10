@@ -31,6 +31,7 @@ import type {
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+import { generateTermFeedResponsiveCSS } from '../styles';
 
 /**
  * Build inline styles for the feed container
@@ -77,98 +78,102 @@ export default function TermFeedComponent({
 	isLoading,
 	error,
 	context,
+	cssSelector,
 }: TermFeedComponentProps) {
 	const feedRef = useRef<HTMLDivElement>(null);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
 	const [canScrollRight, setCanScrollRight] = useState(true);
 
-	// Check scroll state for carousel navigation
+	// Check scroll state for carousel navigation (on scroll events)
 	const checkScrollState = useCallback(() => {
-		if (!feedRef.current || attributes.layoutMode !== 'ts-feed-nowrap') {
-			return;
-		}
-
+		if (!feedRef.current || attributes.layoutMode !== 'ts-feed-nowrap') return;
 		const el = feedRef.current;
-		const scrollLeft = el.scrollLeft;
-		const scrollWidth = el.scrollWidth;
-		const clientWidth = el.clientWidth;
-
-		setCanScrollLeft(scrollLeft > 0);
-		setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+		setCanScrollLeft(Math.abs(el.scrollLeft) > 10);
+		setCanScrollRight(el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
 	}, [attributes.layoutMode]);
 
-	// Update scroll state on mount and resize
+	// Enable/disable nav buttons when cards or item width change
+	// RAF ensures CSS has been applied before measuring
 	useEffect(() => {
-		checkScrollState();
-
 		const el = feedRef.current;
-		if (el) {
-			el.addEventListener('scroll', checkScrollState);
-			window.addEventListener('resize', checkScrollState);
-		}
+		if (!el || attributes.layoutMode !== 'ts-feed-nowrap') return;
+
+		requestAnimationFrame(() => {
+			if (!el) return;
+			const hasOverflow = el.scrollWidth > el.clientWidth;
+			setCanScrollLeft(false);
+			setCanScrollRight(hasOverflow);
+		});
+
+		el.addEventListener('scroll', checkScrollState, { passive: true });
+		window.addEventListener('resize', checkScrollState);
 
 		return () => {
-			if (el) {
-				el.removeEventListener('scroll', checkScrollState);
-			}
+			el.removeEventListener('scroll', checkScrollState);
 			window.removeEventListener('resize', checkScrollState);
 		};
-	}, [checkScrollState, terms]);
+	}, [checkScrollState, terms, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
 
-	// Handle carousel navigation
-	const handlePrev = (e: React.MouseEvent) => {
+	// Handle carousel navigation — scroll by one item width (matches Voxel commons.js)
+	const handlePrev = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		if (!feedRef.current) return;
-
 		const el = feedRef.current;
-		const scrollAmount = el.clientWidth * 0.8;
-		el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-	};
+		if (!el) return;
+		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+		const itemWidth = firstItem?.scrollWidth || 300;
+		el.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+	}, []);
 
-	const handleNext = (e: React.MouseEvent) => {
+	const handleNext = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
-		if (!feedRef.current) return;
-
 		const el = feedRef.current;
-		const scrollAmount = el.clientWidth * 0.8;
-		el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-	};
+		if (!el) return;
+		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+		const itemWidth = firstItem?.scrollWidth || 300;
+		el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+	}, []);
 
-	// Auto-slide for carousel
+	// Autoplay with hover-pause (matches Voxel's setInterval approach)
 	useEffect(() => {
-		if (
-			attributes.layoutMode !== 'ts-feed-nowrap' ||
-			!attributes.carouselAutoplay ||
-			!feedRef.current ||
-			context === 'editor'
-		) {
-			return;
-		}
+		if (attributes.layoutMode !== 'ts-feed-nowrap' || !attributes.carouselAutoplay || !feedRef.current) return;
+		if (context === 'editor') return;
 
-		const interval = setInterval(() => {
-			if (!feedRef.current) return;
+		const interval = attributes.carouselAutoplayInterval || 3000;
+		if (interval < 20) return;
 
-			const el = feedRef.current;
-			const scrollLeft = el.scrollLeft;
-			const scrollWidth = el.scrollWidth;
-			const clientWidth = el.clientWidth;
+		let isHovered = false;
+		const container = feedRef.current.closest('.voxel-fse-term-feed') || feedRef.current;
+		const onEnter = () => { isHovered = true; };
+		const onLeave = () => { isHovered = false; };
+		container?.addEventListener('mouseenter', onEnter);
+		container?.addEventListener('mouseleave', onLeave);
 
-			if (scrollLeft + clientWidth >= scrollWidth - 1) {
-				// At the end, scroll back to start
-				el.scrollTo({ left: 0, behavior: 'smooth' });
-			} else {
-				// Scroll to next
-				el.scrollBy({ left: clientWidth * 0.8, behavior: 'smooth' });
+		const timer = setInterval(() => {
+			if (!isHovered && feedRef.current) {
+				const el = feedRef.current;
+				const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+				const itemWidth = firstItem?.scrollWidth || 300;
+				el.scrollBy({ left: itemWidth, behavior: 'smooth' });
 			}
-		}, attributes.carouselAutoplayInterval);
+		}, interval);
 
-		return () => clearInterval(interval);
-	}, [
-		attributes.layoutMode,
-		attributes.carouselAutoplay,
-		attributes.carouselAutoplayInterval,
-		context,
-	]);
+		return () => {
+			clearInterval(timer);
+			container?.removeEventListener('mouseenter', onEnter);
+			container?.removeEventListener('mouseleave', onLeave);
+		};
+	}, [attributes.layoutMode, attributes.carouselAutoplay, attributes.carouselAutoplayInterval, context]);
+
+	// Prevent link navigation in editor (matches Elementor's onLinkClick behavior)
+	// Skip carousel nav buttons (.ts-icon-btn) so arrows still work
+	const handleEditorClick = useCallback((e: React.MouseEvent) => {
+		if (context !== 'editor') return;
+		const target = (e.target as HTMLElement).closest('a');
+		if (target && !target.closest('.post-feed-nav')) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+	}, [context]);
 
 	// Build vxconfig for re-rendering
 	const vxConfig: TermFeedVxConfig = {
@@ -226,6 +231,9 @@ export default function TermFeedComponent({
 	]
 		.filter(Boolean)
 		.join(' ');
+
+	// Generate responsive CSS (carousel item width, gap, nav styles, etc.)
+	const responsiveCSS = cssSelector ? generateTermFeedResponsiveCSS(attributes, cssSelector) : '';
 
 	// Loading state - matches Voxel's ts-no-posts pattern
 	if (isLoading) {
@@ -285,13 +293,18 @@ export default function TermFeedComponent({
 
 	// Render term feed - matches Voxel's term-feed.php structure exactly
 	return (
-		<div className="term-feed-content">
+		<div className="term-feed-content" onClickCapture={handleEditorClick}>
 			{/* vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
+
+			{/* Responsive layout CSS (carousel widths, gap, nav styles) */}
+			{responsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
+			)}
 
 			{/* Term feed grid/carousel - matches Voxel */}
 			<div

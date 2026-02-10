@@ -47,6 +47,9 @@ export function generateMapResponsiveCSS(
     cssRules.push(`.marker-wrapper { position: absolute; z-index: 10; transform: translate(-50%, -50%); }`);
     cssRules.push(`.map-marker { display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }`);
 
+    // Hide Google Maps native Map/Satellite toggle button (matches Voxel behavior)
+    cssRules.push(`.gm-style-mtc-bbw { display: none; }`);
+
     // ============================================
     // ACCORDION: Clusters
     // ============================================

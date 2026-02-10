@@ -79,6 +79,8 @@ interface VoxelMapOptions {
     minZoom?: number;
     maxZoom?: number;
     draggable?: boolean;
+    mapTypeControl?: boolean;
+    streetViewControl?: boolean;
 }
 
 interface VoxelMap {
@@ -465,6 +467,13 @@ export class VxMap {
               );
         console.log('[VxMap] centerLatLng created:', centerLatLng);
 
+        // EXACT Voxel: Read map controls from Voxel_Config.google_maps
+        // Evidence: voxel-map.beautified.js:583-584
+        //   mapTypeControl: !!Voxel_Config.google_maps?.mapTypeControl,
+        //   streetViewControl: !!Voxel_Config.google_maps?.streetViewControl,
+        // Evidence: assets-controller.php:346-347 (defaults to false)
+        const voxelConfig = getVoxelWindow().Voxel_Config;
+
         const mapOptions = {
             el: this._el,
             zoom: this._options.zoom ?? 10,
@@ -472,73 +481,19 @@ export class VxMap {
             minZoom: this._options.minZoom ?? 2,
             maxZoom: this._options.maxZoom ?? 20,
             draggable: this._options.draggable ?? true,
+            mapTypeControl: !!voxelConfig?.google_maps?.mapTypeControl,
+            streetViewControl: !!voxelConfig?.google_maps?.streetViewControl,
         };
-        console.log('[VxMap] About to call new Maps.Map() with:', mapOptions);
 
         try {
             this._native = new Maps.Map(mapOptions);
-            console.log('[VxMap] Maps.Map created successfully:', this._native);
-            console.log('[VxMap] Native map object:', this._native?.map);
-            console.log('[VxMap] Container after init:', this._el.innerHTML.substring(0, 200));
 
             // Add ts-map-loaded class to container (matches Voxel behavior)
             this._el.classList.add('ts-map-loaded');
             // Also attach instance to element (matches Voxel behavior: el.__vx_map__ = this)
             (this._el as any).__vx_map__ = this._native;
 
-            // CRITICAL: Force-hide map controls for FSE blocks
-            // Even if Voxel_Config has mapTypeControl: true, we force-hide for cleaner FSE experience
-            // This matches what users typically expect from the Voxel map widget appearance
-
-            // Access the native Google Maps instance via getSourceObject()
-            // Voxel.Maps.Map stores the google.maps.Map in this.map, accessible via getSourceObject()
             const googleMap = this._native?.getSourceObject();
-            const voxelConfig = getVoxelWindow().Voxel_Config;
-            if (googleMap && typeof google !== 'undefined') {
-                // Log what config says for debugging
-                const configMapTypeControl = !!voxelConfig?.google_maps?.mapTypeControl;
-                const configStreetViewControl = !!voxelConfig?.google_maps?.streetViewControl;
-                console.log('[VxMap] Voxel_Config control settings:', { configMapTypeControl, configStreetViewControl });
-                console.log('[VxMap] Full Voxel_Config.google_maps:', voxelConfig?.google_maps);
-
-                // Log the CURRENT map options BEFORE our setOptions call
-                console.log('[VxMap] googleMap BEFORE setOptions - mapTypeControl:', (googleMap as any).mapTypeControl);
-                console.log('[VxMap] googleMap BEFORE setOptions - streetViewControl:', (googleMap as any).streetViewControl);
-
-                // FORCE hide these controls - FSE blocks should have clean map appearance
-                // If users want these controls, they can enable via block settings (future feature)
-                googleMap.setOptions({
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                });
-                console.log('[VxMap] setOptions called with mapTypeControl: false, streetViewControl: false');
-
-                // Log AFTER to verify the change
-                setTimeout(() => {
-                    console.log('[VxMap] googleMap AFTER setOptions (after 100ms) - mapTypeControl:', (googleMap as any).mapTypeControl);
-                    console.log('[VxMap] googleMap AFTER setOptions (after 100ms) - streetViewControl:', (googleMap as any).streetViewControl);
-
-                    // If still showing, force remove the control elements from DOM as last resort
-                    const mapContainer = this._el;
-                    const mapTypeElements = mapContainer.querySelectorAll('.gm-style-mtc, .gm-style-mtc-bbw');
-                    console.log('[VxMap] Found map type control elements in DOM:', mapTypeElements.length);
-                    if (mapTypeElements.length > 0) {
-                        console.log('[VxMap] Hiding map type control elements from DOM...');
-                        mapTypeElements.forEach(el => {
-                            (el as HTMLElement).style.display = 'none';
-                        });
-                    }
-
-                    // Also hide street view pegman if present
-                    const streetViewElements = mapContainer.querySelectorAll('.gm-svpc');
-                    if (streetViewElements.length > 0) {
-                        console.log('[VxMap] Hiding street view control elements from DOM...');
-                        streetViewElements.forEach(el => {
-                            (el as HTMLElement).style.display = 'none';
-                        });
-                    }
-                }, 100);
-            }
 
             // CRITICAL: Trigger resize event to force Google Maps to render tiles
             // Google Maps v3.62+ uses lazy rendering and may not render tiles until
@@ -1381,6 +1336,11 @@ export function createMarker(
 
 /**
  * Fit map bounds to include all markers
+ *
+ * Matches Voxel's _mapBoundsHandler pattern:
+ * Evidence: voxel-search-form.beautified.js:2682-2704
+ * - If bounds empty → reset to mapConfig center/zoom (handled by caller)
+ * - If bounds exist → fitBounds, then clamp zoom to min/max via setTimeout
  */
 export function fitBoundsToMarkers(map: VxMap, markers: VxMarker[]): void {
     if (markers.length === 0) return;
@@ -1404,5 +1364,20 @@ export function fitBoundsToMarkers(map: VxMap, markers: VxMarker[]): void {
 
     if (!bounds.empty()) {
         map.fitBounds(bounds);
+
+        // Zoom clamping after fitBounds
+        // Voxel parity: beautified.js:2695-2702
+        // Uses setTimeout because fitBounds is async and zoom isn't set immediately
+        setTimeout(() => {
+            const currentZoom = map.getZoom();
+            const maxZoom = map.getMaxZoom();
+            const minZoom = map.getMinZoom();
+            if (currentZoom > maxZoom) {
+                map.setZoom(maxZoom);
+            }
+            if (currentZoom < minZoom) {
+                map.setZoom(minZoom);
+            }
+        });
     }
 }

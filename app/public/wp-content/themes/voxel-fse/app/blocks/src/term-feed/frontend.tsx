@@ -167,6 +167,22 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 		return fallback;
 	};
 
+	// Optional number: returns undefined when not set (for nav styling that should inherit Voxel defaults)
+	const optionalNumber = (val: unknown): number | undefined => {
+		if (typeof val === 'number') return val;
+		if (typeof val === 'string') {
+			const parsed = parseFloat(val);
+			return isNaN(parsed) ? undefined : parsed;
+		}
+		return undefined;
+	};
+
+	// Optional string: returns undefined when not set or empty
+	const optionalString = (val: unknown): string | undefined => {
+		if (typeof val === 'string' && val !== '') return val;
+		return undefined;
+	};
+
 	// Helper for icon normalization
 	const normalizeIcon = (val: unknown): IconValue => {
 		if (val && typeof val === 'object') {
@@ -251,25 +267,25 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 		itemPadding: normalizeNumber(raw.itemPadding ?? raw.item_padding ?? raw.ts_item_padding, 0),
 		replaceAccentColor: normalizeBool(raw.replaceAccentColor ?? raw.replace_accent_color ?? raw.mod_accent, false),
 
-		// Navigation styling - Normal state
-		navHorizontalPosition: normalizeNumber(raw.navHorizontalPosition ?? raw.nav_horizontal_position ?? raw.ts_fnav_btn_horizontal, 0),
-		navVerticalPosition: normalizeNumber(raw.navVerticalPosition ?? raw.nav_vertical_position ?? raw.ts_fnav_btn_vertical, 0),
-		navButtonIconColor: normalizeString(raw.navButtonIconColor ?? raw.nav_button_icon_color ?? raw.ts_fnav_btn_color, ''),
-		navButtonSize: normalizeNumber(raw.navButtonSize ?? raw.nav_button_size ?? raw.ts_fnav_btn_size, 40),
-		navButtonIconSize: normalizeNumber(raw.navButtonIconSize ?? raw.nav_button_icon_size ?? raw.ts_fnav_btn_icon_size, 24),
-		navButtonBackground: normalizeString(raw.navButtonBackground ?? raw.nav_button_background ?? raw.ts_fnav_btn_nbg, ''),
-		navBackdropBlur: normalizeNumber(raw.navBackdropBlur ?? raw.nav_backdrop_blur ?? raw.ts_fnav_blur, 0),
-		navBorderType: normalizeString(raw.navBorderType ?? raw.nav_border_type, 'none'),
-		navBorderWidth: normalizeBorderWidth(raw.navBorderWidth ?? raw.nav_border_width),
-		navBorderColor: normalizeString(raw.navBorderColor ?? raw.nav_border_color, ''),
-		navBorderRadius: normalizeNumber(raw.navBorderRadius ?? raw.nav_border_radius ?? raw.ts_fnav_btn_radius, 0),
+		// Navigation styling - Normal state (use undefined when not set, so CSS generator skips and Voxel defaults apply)
+		navHorizontalPosition: optionalNumber(raw.navHorizontalPosition ?? raw.nav_horizontal_position ?? raw.ts_fnav_btn_horizontal),
+		navVerticalPosition: optionalNumber(raw.navVerticalPosition ?? raw.nav_vertical_position ?? raw.ts_fnav_btn_vertical),
+		navButtonIconColor: optionalString(raw.navButtonIconColor ?? raw.nav_button_icon_color ?? raw.ts_fnav_btn_color),
+		navButtonSize: optionalNumber(raw.navButtonSize ?? raw.nav_button_size ?? raw.ts_fnav_btn_size),
+		navButtonIconSize: optionalNumber(raw.navButtonIconSize ?? raw.nav_button_icon_size ?? raw.ts_fnav_btn_icon_size),
+		navButtonBackground: optionalString(raw.navButtonBackground ?? raw.nav_button_background ?? raw.ts_fnav_btn_nbg),
+		navBackdropBlur: optionalNumber(raw.navBackdropBlur ?? raw.nav_backdrop_blur ?? raw.ts_fnav_blur),
+		navBorderType: optionalString(raw.navBorderType ?? raw.nav_border_type),
+		navBorderWidth: (raw.navBorderWidth ?? raw.nav_border_width) ? normalizeBorderWidth(raw.navBorderWidth ?? raw.nav_border_width) : undefined,
+		navBorderColor: optionalString(raw.navBorderColor ?? raw.nav_border_color),
+		navBorderRadius: optionalNumber(raw.navBorderRadius ?? raw.nav_border_radius ?? raw.ts_fnav_btn_radius),
 
 		// Navigation styling - Hover state
-		navButtonSizeHover: normalizeNumber(raw.navButtonSizeHover ?? raw.nav_button_size_hover ?? raw.ts_fnav_btn_size_h, 40),
-		navButtonIconSizeHover: normalizeNumber(raw.navButtonIconSizeHover ?? raw.nav_button_icon_size_hover ?? raw.ts_fnav_btn_icon_size_h, 24),
-		navButtonIconColorHover: normalizeString(raw.navButtonIconColorHover ?? raw.nav_button_icon_color_hover ?? raw.ts_fnav_btn_h, ''),
-		navButtonBackgroundHover: normalizeString(raw.navButtonBackgroundHover ?? raw.nav_button_background_hover ?? raw.ts_fnav_btn_nbg_h, ''),
-		navButtonBorderColorHover: normalizeString(raw.navButtonBorderColorHover ?? raw.nav_button_border_color_hover ?? raw.ts_fnav_border_c_h, ''),
+		navButtonSizeHover: optionalNumber(raw.navButtonSizeHover ?? raw.nav_button_size_hover ?? raw.ts_fnav_btn_size_h),
+		navButtonIconSizeHover: optionalNumber(raw.navButtonIconSizeHover ?? raw.nav_button_icon_size_hover ?? raw.ts_fnav_btn_icon_size_h),
+		navButtonIconColorHover: optionalString(raw.navButtonIconColorHover ?? raw.nav_button_icon_color_hover ?? raw.ts_fnav_btn_h),
+		navButtonBackgroundHover: optionalString(raw.navButtonBackgroundHover ?? raw.nav_button_background_hover ?? raw.ts_fnav_btn_nbg_h),
+		navButtonBorderColorHover: optionalString(raw.navButtonBorderColorHover ?? raw.nav_button_border_color_hover ?? raw.ts_fnav_border_c_h),
 
 		// Icons
 		rightChevronIcon: normalizeIcon(raw.rightChevronIcon ?? raw.right_chevron_icon ?? raw.ts_chevron_right),
@@ -477,9 +493,10 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
  */
 interface TermFeedWrapperProps {
 	config: TermFeedVxConfig;
+	cssSelector: string;
 }
 
-function TermFeedWrapper({ config }: TermFeedWrapperProps) {
+function TermFeedWrapper({ config, cssSelector }: TermFeedWrapperProps) {
 	const [terms, setTerms] = useState<TermData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -527,6 +544,7 @@ function TermFeedWrapper({ config }: TermFeedWrapperProps) {
 			isLoading={isLoading}
 			error={error}
 			context="frontend"
+			cssSelector={cssSelector}
 		/>
 	);
 }
@@ -553,13 +571,19 @@ function initTermFeeds() {
 			return;
 		}
 
+		// Extract unique CSS selector from container classes (e.g., '.voxel-fse-term-feed-{uuid}')
+		const uniqueClass = Array.from(container.classList).find(
+			(cls) => cls.startsWith('voxel-fse-term-feed-') && cls !== 'voxel-fse-term-feed'
+		);
+		const cssSelector = uniqueClass ? `.${uniqueClass}` : `.${container.classList[0] || 'voxel-fse-term-feed'}`;
+
 		// Mark as hydrated and clear placeholder
 		container.dataset.hydrated = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<TermFeedWrapper config={config} />);
+		root.render(<TermFeedWrapper config={config} cssSelector={cssSelector} />);
 	});
 }
 
