@@ -206,6 +206,11 @@ export function generateBlockResponsiveCSS(
 	// Source: pricing-plans-widget.php:103-128
 	// ============================================
 
+	// Base grid display - ensures grid works in both editor and frontend
+	// On frontend, Voxel parent's pricing-plan.css provides display: grid,
+	// but in the Gutenberg editor that CSS isn't loaded.
+	cssRules.push(`${selector} .ts-plans-list { display: grid; }`);
+
 	// Number of columns - pricing-plans-widget.php:103-107
 	// Selector: '{{WRAPPER}} .ts-plans-list' => 'grid-template-columns: repeat({{VALUE}}, 1fr);'
 	if (attributes.plansColumns !== undefined) {
@@ -373,20 +378,20 @@ export function generateBlockResponsiveCSS(
 	}
 
 	// Price typography - pricing-plans-widget.php:297-304
-	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-amount'
+	// Selector: '{{WRAPPER}} .ts-plan-price'
 	if (attributes.priceTypography) {
 		const priceTypoCSS = applyTypographyStyles(
 			attributes.priceTypography,
-			`${selector} .ts-plan-pricing .ts-price-amount`
+			`${selector} .ts-plan-pricing .ts-plan-price`
 		);
 		if (priceTypoCSS) cssRules.push(priceTypoCSS);
 	}
 
 	// Price color - pricing-plans-widget.php:306-316
-	// Selector: '{{WRAPPER}} .ts-plan-pricing .ts-price-amount' => 'color: {{VALUE}}'
+	// Selector: '{{WRAPPER}} .ts-plan-price' => 'color: {{VALUE}}'
 	if (attributes.priceColor) {
 		cssRules.push(
-			`${selector} .ts-plan-pricing .ts-price-amount { color: ${attributes.priceColor}; }`
+			`${selector} .ts-plan-pricing .ts-plan-price { color: ${attributes.priceColor}; }`
 		);
 	}
 

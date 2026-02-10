@@ -349,6 +349,7 @@ export interface UserMembership {
 	planKey: string;
 	priceKey: string | null;
 	isSubscriptionCanceled: boolean;
+	isInitialState: boolean;
 }
 
 /**

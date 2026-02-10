@@ -12,7 +12,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
@@ -100,6 +100,11 @@ const deprecated = [
 				</div>
 			);
 		},
+	},
+	// v4: SVG grid placeholder (AdvancedTab + VoxelTab era)
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
 	},
 ];
 

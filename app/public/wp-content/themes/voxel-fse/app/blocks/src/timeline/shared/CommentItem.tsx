@@ -36,7 +36,7 @@
  */
 
 import { useState, useCallback, useMemo, useRef, type MouseEvent } from 'react';
-import { useTimelineConfig, useStrings, useCurrentUser, useCommentActions } from '../hooks';
+import { useTimelineConfig, useStrings, useCurrentUser, useCommentActions, usePostContext } from '../hooks';
 import { RichTextFormatter } from './RichTextFormatter';
 import { MediaGallery } from './MediaGallery';
 import { DropdownList } from './DropdownList';
@@ -88,6 +88,7 @@ export function CommentItem({
 	const strings = useStrings();
 	const l10n = (config?.strings ?? {}) as any;
 	const currentUser = useCurrentUser();
+	const postContext = usePostContext();
 
 	// Refs for dropdown positioning
 	const moreButtonRef = useRef<HTMLAnchorElement>(null);
@@ -233,7 +234,7 @@ export function CommentItem({
 						)}
 					</a>
 					<span>
-						{username && (
+						{username && postContext?.show_usernames !== false && (
 							<a href={profileUrl}>@{username}</a>
 						)}
 						<a
@@ -250,58 +251,82 @@ export function CommentItem({
 					</span>
 				</div>
 
-				{/* More menu */}
-				{(displayComment.current_user?.can_edit ||
-					displayComment.current_user?.can_delete ||
-					displayComment.current_user?.can_moderate) && (
-						<>
-							<a
-								href="#"
-								className="vxf-icon vxf-more"
-								ref={moreButtonRef}
-								onClick={(e) => e.preventDefault()}
-								onMouseDown={() => setShowActions((prev) => !prev)}
-								dangerouslySetInnerHTML={{ __html: config?.icons?.more ?? '' }}
-							/>
+				{/* More menu - always shown (matches Voxel comment.php line 37) */}
+				<a
+					href="#"
+					className="vxf-icon vxf-more"
+					ref={moreButtonRef}
+					onClick={(e) => e.preventDefault()}
+					onMouseDown={() => setShowActions((prev) => !prev)}
+					dangerouslySetInnerHTML={{ __html: config?.icons?.more ?? '' }}
+				/>
 
-							{/* Actions dropdown */}
-							{showActions && (
-								<DropdownList
-									target={moreButtonRef.current}
-									onBlur={() => setShowActions(false)}
-								>
-									{displayComment.current_user?.can_edit && (
-										<li>
-											<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleEditClick(); }}>
-												<span>{l10n.edit ?? 'Edit'}</span>
-											</a>
-										</li>
-									)}
-									{displayComment.current_user?.can_moderate && comment.is_pending && (
-										<li>
-											<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleApprove(); setShowActions(false); }}>
-												<span>{l10n.approve ?? 'Approve'}</span>
-											</a>
-										</li>
-									)}
-									{displayComment.current_user?.can_moderate && !comment.is_pending && (
-										<li>
-											<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleMarkPending(); setShowActions(false); }}>
-												<span>{l10n.mark_pending ?? 'Mark as pending'}</span>
-											</a>
-										</li>
-									)}
-									{displayComment.current_user?.can_delete && (
-										<li>
-											<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleDeleteClick(); }}>
-												<span>{l10n.delete ?? 'Delete'}</span>
-											</a>
-										</li>
-									)}
-								</DropdownList>
-							)}
-						</>
-					)}
+				{/* Actions dropdown - matches Voxel comment.php lines 40-72 */}
+				{showActions && (
+					<DropdownList
+						target={moreButtonRef.current}
+						onBlur={() => setShowActions(false)}
+					>
+						{/* Copy link - always visible (Voxel line 41-45) */}
+						<li>
+							<a href="#" className="flexify" onClick={async (e) => {
+								e.preventDefault();
+								try {
+									const url = comment.link ?? window.location.href;
+									await navigator.clipboard.writeText(url);
+									if ((window as any).Voxel?.alert) {
+										(window as any).Voxel.alert(l10n.copied ?? 'Copied to clipboard');
+									}
+								} catch (err) {
+									console.error('Failed to copy link:', err);
+								}
+								setShowActions(false);
+							}}>
+								<span>{l10n.copy_link ?? 'Copy link'}</span>
+							</a>
+						</li>
+						{/* Share - if Web Share API available (Voxel line 46-50) */}
+						{(navigator as any).share && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => {
+									e.preventDefault();
+									(navigator as any).share({ url: comment.link ?? window.location.href });
+									setShowActions(false);
+								}}>
+									<span>{l10n.share ?? 'Share'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_edit && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleEditClick(); }}>
+									<span>{l10n.edit ?? 'Edit'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_moderate && comment.is_pending && (
+							<li>
+								<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleApprove(); setShowActions(false); }}>
+									<span>{l10n.approve ?? 'Approve'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_moderate && !comment.is_pending && (
+							<li>
+								<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleMarkPending(); setShowActions(false); }}>
+									<span>{l10n.mark_pending ?? 'Mark as pending'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_delete && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleDeleteClick(); }}>
+									<span>{l10n.delete ?? 'Delete'}</span>
+								</a>
+							</li>
+						)}
+					</DropdownList>
+				)}
 			</div>
 
 			{/* Body - matches Voxel's vxf-body structure */}
@@ -351,7 +376,7 @@ export function CommentItem({
 					<a
 						href="#"
 						onClick={handleLikeClick}
-						className={`vxf-icon ${hasLiked ? 'vxf-liked' : ''} ${actionState.isLiking ? 'vx-inert' : ''} ${comment.is_pending && !hasLiked ? 'vx-pending' : ''}`}
+						className={`vxf-icon ${hasLiked ? 'vxf-liked' : ''} ${actionState.isLiking ? 'vx-inert' : ''} ${(status.is_pending || comment.is_pending) && !hasLiked ? 'vx-pending' : ''}`}
 					>
 						<span dangerouslySetInnerHTML={{ __html: hasLiked ? (config?.icons?.liked ?? '') : (config?.icons?.like ?? '') }} />
 						<RayHolder />
@@ -362,7 +387,7 @@ export function CommentItem({
 						<a
 							href="#"
 							onClick={(e) => { e.preventDefault(); onReplyClick?.(); }}
-							className={`vxf-icon ${comment.is_pending ? 'vx-pending' : ''}`}
+							className={`vxf-icon ${status.is_pending || comment.is_pending ? 'vx-pending' : ''}`}
 							dangerouslySetInnerHTML={{ __html: config?.icons?.reply ?? '' }}
 						/>
 					)}

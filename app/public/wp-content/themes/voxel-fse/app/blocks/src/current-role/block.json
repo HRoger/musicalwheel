@@ -72,11 +72,25 @@
 		"panelBg": {
 			"type": "string"
 		},
+		"panelBg_tablet": {
+			"type": "string"
+		},
+		"panelBg_mobile": {
+			"type": "string"
+		},
 		"panelShadow": {
 			"type": "object",
 			"default": {}
 		},
 		"headPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"headPadding_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"headPadding_mobile": {
 			"type": "object",
 			"default": {}
 		},
@@ -89,6 +103,12 @@
 		"headIcoCol": {
 			"type": "string"
 		},
+		"headIcoCol_tablet": {
+			"type": "string"
+		},
+		"headIcoCol_mobile": {
+			"type": "string"
+		},
 		"headTypo": {
 			"type": "object",
 			"default": {}
@@ -96,7 +116,19 @@
 		"headTypoCol": {
 			"type": "string"
 		},
+		"headTypoCol_tablet": {
+			"type": "string"
+		},
+		"headTypoCol_mobile": {
+			"type": "string"
+		},
 		"headBorderCol": {
+			"type": "string"
+		},
+		"headBorderCol_tablet": {
+			"type": "string"
+		},
+		"headBorderCol_mobile": {
 			"type": "string"
 		},
 		"panelSpacing": {
@@ -116,6 +148,12 @@
 		"bodyTypoCol": {
 			"type": "string"
 		},
+		"bodyTypoCol_tablet": {
+			"type": "string"
+		},
+		"bodyTypoCol_mobile": {
+			"type": "string"
+		},
 		"panelButtonsGap": {
 			"type": "number"
 		},
@@ -129,7 +167,21 @@
 		"scndBtnC": {
 			"type": "string"
 		},
+		"scndBtnC_tablet": {
+			"type": "string"
+		},
+		"scndBtnC_mobile": {
+			"type": "string"
+		},
 		"scndBtnPadding": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnPadding_tablet": {
+			"type": "object",
+			"default": {}
+		},
+		"scndBtnPadding_mobile": {
 			"type": "object",
 			"default": {}
 		},
@@ -137,6 +189,12 @@
 			"type": "number"
 		},
 		"scndBtnBg": {
+			"type": "string"
+		},
+		"scndBtnBg_tablet": {
+			"type": "string"
+		},
+		"scndBtnBg_mobile": {
 			"type": "string"
 		},
 		"scndBtnBorder": {
@@ -152,16 +210,46 @@
 		"scndBtnIconColor": {
 			"type": "string"
 		},
+		"scndBtnIconColor_tablet": {
+			"type": "string"
+		},
+		"scndBtnIconColor_mobile": {
+			"type": "string"
+		},
 		"scndBtnCH": {
+			"type": "string"
+		},
+		"scndBtnCH_tablet": {
+			"type": "string"
+		},
+		"scndBtnCH_mobile": {
 			"type": "string"
 		},
 		"scndBtnBgH": {
 			"type": "string"
 		},
+		"scndBtnBgH_tablet": {
+			"type": "string"
+		},
+		"scndBtnBgH_mobile": {
+			"type": "string"
+		},
 		"scndBtnBorderH": {
 			"type": "string"
 		},
+		"scndBtnBorderH_tablet": {
+			"type": "string"
+		},
+		"scndBtnBorderH_mobile": {
+			"type": "string"
+		},
 		"scndBtnIconColorH": {
+			"type": "string"
+		},
+		"scndBtnIconColorH_tablet": {
+			"type": "string"
+		},
+		"scndBtnIconColorH_mobile": {
 			"type": "string"
 		},
 		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",

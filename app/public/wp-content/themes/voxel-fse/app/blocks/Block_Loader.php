@@ -136,6 +136,11 @@ class Block_Loader
         // Priority 30 to run at same time as pikaday
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_nouislider_assets'], 30);
 
+        // Inject config data for config-fetching blocks (search-form, create-post, navbar)
+        // This eliminates the .ts-loader spinner in the editor by providing data inline
+        // Priority 50 to run after all block scripts are registered
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'inject_editor_config_data'], 50);
+
         // Enqueue CodeMirror for custom CSS code editor in AdvancedTab
         // Priority 30 to run at same time as other editor assets
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_code_editor_assets'], 30);
@@ -448,6 +453,22 @@ class Block_Loader
                         $vendor_url . $nouislider_file,
                         [],
                         '14.6.3'
+                );
+            }
+        }
+
+        // Register nouislider JS (needed for range sliders on frontend)
+        // On admin, Voxel's Assets_Controller registers it, but on frontend we need to ensure it
+        if (!wp_script_is('nouislider', 'registered')) {
+            $nouislider_js_file = 'nouislider/nouislider' . $vendor_suffix . '.js';
+            $nouislider_js_path = $vendor_dir . $nouislider_js_file;
+            if (file_exists($nouislider_js_path)) {
+                wp_register_script(
+                        'nouislider',
+                        $vendor_url . $nouislider_js_file,
+                        [],
+                        '14.6.3',
+                        true
                 );
             }
         }
@@ -1065,6 +1086,119 @@ CSS;
             );
             wp_enqueue_script('nouislider');
         }
+    }
+
+    /**
+     * Inject pre-fetched config data for config-fetching blocks in the editor
+     *
+     * Eliminates .ts-loader spinners by providing configuration data inline
+     * via window.__voxelFseEditorConfig. The editor hooks (usePostTypes,
+     * useFieldsConfig, navbar edit.tsx) check this object before making
+     * REST API calls.
+     *
+     * Uses wp_add_inline_script() on wp-blocks (always loaded in editor).
+     */
+    public static function inject_editor_config_data()
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        $config = [];
+
+        // Search form: generate config for all Voxel post types
+        // In editor, we don't know which post types the block will use, so generate all
+        try {
+            require_once dirname(__DIR__) . '/controllers/fse-search-form-controller.php';
+            $search_config = \VoxelFSE\Controllers\FSE_Search_Form_Controller::generate_frontend_config();
+            if (!empty($search_config)) {
+                $config['searchForm'] = $search_config;
+            }
+        } catch (\Throwable $e) {
+            // Silently skip if controller fails
+        }
+
+        // Create-post: generate field configs for all Voxel post types
+        // Keyed by post type key so useFieldsConfig can look up by postTypeKey
+        try {
+            if (class_exists('\Voxel\Post_Type')) {
+                $create_post_fields = [];
+                $all_types = \Voxel\Post_Type::get_voxel_types();
+                foreach ($all_types as $pt) {
+                    $pt_key = $pt->get_key();
+                    $fields_config = [];
+
+                    foreach ($pt->get_fields() as $field) {
+                        try {
+                            $field->check_dependencies();
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+
+                        if (!$field->passes_visibility_rules()) {
+                            continue;
+                        }
+
+                        try {
+                            $field_config = $field->get_frontend_config();
+                            if ($field_config) {
+                                $fields_config[] = $field_config;
+                            }
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+                    }
+
+                    if (!empty($fields_config)) {
+                        $create_post_fields[$pt_key] = [
+                            'fields_config' => $fields_config,
+                            'field_count'   => count($fields_config),
+                        ];
+                    }
+                }
+                if (!empty($create_post_fields)) {
+                    $config['createPostFields'] = $create_post_fields;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
+        // Navbar: generate menu locations list
+        // Must match REST API shape: { slug, name, description }
+        // Used by edit.tsx getInlineNavbarLocations() → MenuLocation interface
+        try {
+            $nav_menus = get_registered_nav_menus();
+            $menu_locations = [];
+            foreach ( $nav_menus as $slug => $name ) {
+                $menu_locations[] = [
+                    'slug'        => $slug,
+                    'name'        => $name,
+                    'description' => '',
+                ];
+            }
+            if ( ! empty( $menu_locations ) ) {
+                $config['navbarLocations'] = $menu_locations;
+            }
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
+        if (empty($config)) {
+            return;
+        }
+
+        $json = wp_json_encode($config);
+        if ($json === false) {
+            return;
+        }
+
+        // Inject on wp-blocks which is always loaded in the editor
+        wp_add_inline_script(
+            'wp-blocks',
+            'window.__voxelFseEditorConfig = ' . $json . ';',
+            'before'
+        );
     }
 
     /**
@@ -2187,23 +2321,42 @@ CSS;
         }
 
         // Add script AFTER our commons to define GoogleMaps callback
+        // NOTE: Voxel.Maps is created by google-maps.js which loads AFTER this script.
+        // We must retry until Voxel.Maps becomes available rather than failing immediately.
         $post_commons_script = <<<'JAVASCRIPT'
 (function() {
-	if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
-		window.Voxel.Maps.GoogleMaps = function() {
-			window.Voxel.Maps.Loaded = true;
-			document.dispatchEvent(new CustomEvent('maps:loaded'));
-		};
-
-		// Check if Google Maps already loaded and called the stub
-		if (window._voxel_gmaps_callback_fired && !window.Voxel.Maps.Loaded) {
-			if (typeof google !== 'undefined' && google.maps) {
-				window.Voxel.Maps.Loaded = true;
-				document.dispatchEvent(new CustomEvent('maps:loaded'));
+	function defineGoogleMapsCallback() {
+		if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
+			if (!window.Voxel.Maps.GoogleMaps) {
+				window.Voxel.Maps.GoogleMaps = function() {
+					window.Voxel.Maps.Loaded = true;
+					document.dispatchEvent(new CustomEvent('maps:loaded'));
+				};
 			}
+
+			// Check if Google Maps already loaded and called the stub
+			if (window._voxel_gmaps_callback_fired && !window.Voxel.Maps.Loaded) {
+				if (typeof google !== 'undefined' && google.maps) {
+					window.Voxel.Maps.Loaded = true;
+					document.dispatchEvent(new CustomEvent('maps:loaded'));
+				}
+			}
+			return true;
 		}
-	} else {
-		console.error('[Voxel FSE] Cannot define GoogleMaps callback - Voxel.Maps not available');
+		return false;
+	}
+
+	// Try immediately
+	if (!defineGoogleMapsCallback()) {
+		// Voxel.Maps not yet available (google-maps.js loads later) — poll until ready
+		var attempts = 0;
+		var maxAttempts = 100; // 10 seconds max (100 * 100ms)
+		var timer = setInterval(function() {
+			attempts++;
+			if (defineGoogleMapsCallback() || attempts >= maxAttempts) {
+				clearInterval(timer);
+			}
+		}, 100);
 	}
 })();
 JAVASCRIPT;
@@ -2481,20 +2634,21 @@ JAVASCRIPT;
             return;
         }
 
-        // Check if popup block is used on the current page
-        // Check in post content, widgets, and FSE templates
+        // Check which blocks are used on the current page
         $has_popup_block = false;
+        $has_search_form_block = false;
 
         // Check current post/page content
         if (is_singular()) {
             global $post;
             if ($post && has_blocks($post->post_content)) {
                 $has_popup_block = has_block('voxel-fse/popup-kit', $post);
+                $has_search_form_block = has_block('voxel-fse/search-form', $post);
             }
         }
 
         // Check widgets (block widgets)
-        if (!$has_popup_block && function_exists('wp_get_sidebars_widgets')) {
+        if ((!$has_popup_block || !$has_search_form_block) && function_exists('wp_get_sidebars_widgets')) {
             $sidebars = wp_get_sidebars_widgets();
             foreach ($sidebars as $sidebar => $widgets) {
                 if (is_array($widgets)) {
@@ -2502,9 +2656,16 @@ JAVASCRIPT;
                         if (strpos($widget, 'block-') === 0) {
                             $widget_id = str_replace('block-', '', $widget);
                             $widget_content = get_post_field('post_content', $widget_id);
-                            if ($widget_content && has_block('voxel-fse/popup-kit', $widget_content)) {
-                                $has_popup_block = true;
-                                break 2;
+                            if ($widget_content) {
+                                if (!$has_popup_block && has_block('voxel-fse/popup-kit', $widget_content)) {
+                                    $has_popup_block = true;
+                                }
+                                if (!$has_search_form_block && has_block('voxel-fse/search-form', $widget_content)) {
+                                    $has_search_form_block = true;
+                                }
+                                if ($has_popup_block && $has_search_form_block) {
+                                    break 2;
+                                }
                             }
                         }
                     }
@@ -2512,22 +2673,43 @@ JAVASCRIPT;
             }
         }
 
-        // If popup block is used, enqueue vendor CSS and product-form.css
-        if ($has_popup_block) {
+        // Check FSE templates/template parts (search-form is typically in header templates)
+        if (!$has_popup_block) {
+            $has_popup_block = self::check_fse_templates_for_block('voxel-fse/popup-kit');
+        }
+        if (!$has_search_form_block) {
+            $has_search_form_block = self::check_fse_templates_for_block('voxel-fse/search-form');
+        }
+
+        // Blocks that need vendor assets (nouislider, pikaday)
+        $needs_vendor_assets = $has_popup_block || $has_search_form_block;
+
+        if ($needs_vendor_assets) {
             // Ensure styles are registered
             self::ensure_voxel_styles_registered();
 
-            // Enqueue pikaday CSS
+            // Enqueue pikaday CSS (date filters in search-form, date fields in popup)
             if (wp_style_is('pikaday', 'registered')) {
                 wp_enqueue_style('pikaday');
             }
 
-            // Enqueue nouislider CSS
+            // Enqueue nouislider CSS + JS (range filters in search-form, range fields in popup)
+            // CRITICAL: Both CSS and JS are required. CSS provides styling, JS provides window.noUiSlider API
+            // which is accessed via the import map proxy in frontend.tsx
             if (wp_style_is('nouislider', 'registered')) {
                 wp_enqueue_style('nouislider');
             }
+            if (wp_script_is('nouislider', 'registered')) {
+                wp_enqueue_script('nouislider');
+            }
+        }
 
-            // Enqueue product-form.css (needed for product form fields in popup)
+        // Enqueue product-form.css only for popup block
+        if ($has_popup_block) {
+            if (!$needs_vendor_assets) {
+                self::ensure_voxel_styles_registered();
+            }
+
             if (wp_style_is('vx:product-form.css', 'registered')) {
                 wp_enqueue_style('vx:product-form.css');
             }
@@ -3590,7 +3772,8 @@ JAVASCRIPT;
                             self::ensure_voxel_styles_registered();
                             $editor_style_deps = [
                                     'vx:commons.css',
-                                    'vx:forms.css'
+                                    'vx:forms.css',
+                                    'vx:popup-kit.css'
                             ];
                         } elseif ($block_name === 'userbar') {
                             self::ensure_voxel_styles_registered();
@@ -3737,12 +3920,20 @@ JAVASCRIPT;
                                 });
                             }
 
-                            // quick-search needs Voxel's forms.css
+                            // quick-search needs Voxel's commons.css, forms.css, and popup-kit.css
+                            // Evidence: themes/voxel/app/widgets/quick-search.php uses form-group component
+                            // which depends on popup-kit for .ts-popup-overlay, .ts-popup-backdrop, .ts-quicksearch-popup
                             if ($block_name === 'quick-search') {
                                 add_action('wp_enqueue_scripts', function () {
                                     self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:commons.css', 'registered')) {
+                                        wp_enqueue_style('vx:commons.css');
+                                    }
                                     if (wp_style_is('vx:forms.css', 'registered')) {
                                         wp_enqueue_style('vx:forms.css');
+                                    }
+                                    if (wp_style_is('vx:popup-kit.css', 'registered')) {
+                                        wp_enqueue_style('vx:popup-kit.css');
                                     }
                                 });
                             }
@@ -3772,7 +3963,7 @@ JAVASCRIPT;
                             // Note: post-feed removed - it uses native CSS scroll-snap carousel, not YARL lightbox
                             // YARL has a carousel feature (https://yet-another-react-lightbox.com/examples/carousel)
                             // that could be integrated later if needed
-                            $lightbox_blocks = ['timeline', 'gallery', 'slider', 'image'/* , 'post-feed' */];
+                            $lightbox_blocks = ['timeline', 'gallery', 'slider', 'image', 'messages'/* , 'post-feed' */];
                             if (in_array($block_name, $lightbox_blocks, true)) {
                                 // Frontend: enqueue via wp_enqueue_scripts
                                 add_action('wp_enqueue_scripts', function () {
@@ -3858,21 +4049,19 @@ JAVASCRIPT;
                             // membership-plans and listing-plans need Voxel's pricing-plan.css for plan styling
                             // Evidence: pricing-plans-widget.php:1518-1519
                             if ($block_name === 'membership-plans' || $block_name === 'listing-plans') {
-                                add_action('wp_enqueue_scripts', function () {
-                                    $dist = trailingslashit(get_template_directory_uri()) . 'assets/dist/';
-                                    $version = function_exists('\Voxel\get_assets_version') ? \Voxel\get_assets_version() : '1.7.1.3';
+                                $dist = trailingslashit(get_template_directory_uri()) . 'assets/dist/';
+                                $version = function_exists('\Voxel\get_assets_version') ? \Voxel\get_assets_version() : '1.7.1.3';
 
-                                    // Register and enqueue pricing-plan.css from Voxel parent
-                                    if (!wp_style_is('vx:pricing-plan.css', 'registered')) {
-                                        wp_register_style(
-                                                'vx:pricing-plan.css',
-                                                $dist . (is_rtl() ? 'pricing-plan-rtl.css' : 'pricing-plan.css'),
-                                                [],
-                                                $version
-                                        );
-                                    }
-                                    wp_enqueue_style('vx:pricing-plan.css');
-                                });
+                                // Register and enqueue pricing-plan.css from Voxel parent
+                                if (!wp_style_is('vx:pricing-plan.css', 'registered')) {
+                                    wp_register_style(
+                                            'vx:pricing-plan.css',
+                                            $dist . (is_rtl() ? 'pricing-plan-rtl.css' : 'pricing-plan.css'),
+                                            [],
+                                            $version
+                                    );
+                                }
+                                wp_enqueue_style('vx:pricing-plan.css');
                             }
 
                             // create-post needs TinyMCE editor and Voxel CSS/JS for texteditor fields
@@ -4537,18 +4726,21 @@ JAVASCRIPT;
 
         if ($block_name === 'search-form' && $block_id) {
             $block_content = self::apply_search_form_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_search_form_config($block_content, $attributes);
         } elseif ($block_name === 'map' && $block_id) {
             $block_content = self::apply_map_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'post-feed' && $block_id) {
             $block_content = self::apply_post_feed_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'navbar' && $block_id) {
             $block_content = self::apply_navbar_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_navbar_config($block_content, $attributes);
         } elseif ($block_name === 'userbar' && $block_id) {
             $block_content = self::apply_userbar_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'messages' && $block_id) {
             $block_content = self::apply_messages_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'create-post' && $block_id) {
             $block_content = self::apply_create_post_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_create_post_config($block_content, $attributes);
         } elseif ($block_name === 'product-form' && $block_id) {
             $block_content = self::apply_product_form_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'login' && $block_id) {
@@ -5730,6 +5922,262 @@ JAVASCRIPT;
                 }
             }
         }
+    }
+
+    // =========================================================================
+    // Server-Side Config Injection (eliminates .ts-loader spinners)
+    // See: docs/headless-architecture/17-server-side-config-injection.md
+    // =========================================================================
+
+    /**
+     * Inject search form config data inline to eliminate REST API spinner
+     *
+     * Calls the same static method used by the REST endpoint, injecting the
+     * full PostTypeConfig[] data as inline JSON so frontend.tsx can read it
+     * immediately without making a REST call.
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_search_form_config($block_content, $attributes)
+    {
+        $post_type_keys = $attributes['postTypes'] ?? [];
+        if (empty($post_type_keys)) {
+            return $block_content;
+        }
+
+        // Transform filterLists from save.tsx format to the controller's filter_configs format
+        // save.tsx stores: { postTypeKey: [{ filterKey, defaultValueEnabled, defaultValue, resetValue }, ...] }
+        // Controller expects: { postTypeKey: { filterKey: { defaultValueEnabled, defaultValue, resetValue } } }
+        $filter_configs = [];
+        $filter_lists = $attributes['filterLists'] ?? [];
+        if (!empty($filter_lists) && is_array($filter_lists)) {
+            foreach ($filter_lists as $pt_key => $configs) {
+                if (!is_array($configs)) continue;
+                $filter_configs[$pt_key] = [];
+                foreach ($configs as $config) {
+                    if (!empty($config['filterKey'])) {
+                        $filter_configs[$pt_key][$config['filterKey']] = [
+                            'defaultValueEnabled' => $config['defaultValueEnabled'] ?? false,
+                            'defaultValue'        => $config['defaultValue'] ?? null,
+                            'resetValue'          => $config['resetValue'] ?? 'empty',
+                        ];
+                    }
+                }
+            }
+        }
+
+        require_once dirname(__DIR__) . '/controllers/fse-search-form-controller.php';
+        $config = \VoxelFSE\Controllers\FSE_Search_Form_Controller::generate_frontend_config(
+            $post_type_keys,
+            $filter_configs
+        );
+
+        if (empty($config)) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Inject create post config data inline to eliminate REST API spinner
+     *
+     * Calls the same static methods used by the REST endpoints, injecting
+     * both fieldsConfig and postContext as inline JSON. Only injects when
+     * user is logged in (create-post requires authentication).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_create_post_config($block_content, $attributes)
+    {
+        // Create-post requires authentication
+        if (!is_user_logged_in()) {
+            return $block_content;
+        }
+
+        $post_type_key = $attributes['postTypeKey'] ?? '';
+        if (empty($post_type_key)) {
+            return $block_content;
+        }
+
+        // Get post_id from URL params (edit mode vs create mode)
+        $post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : null;
+
+        require_once dirname(__DIR__) . '/controllers/fse-create-post-controller.php';
+
+        // Generate both configs in parallel (same logic as REST endpoints)
+        $fields_data = \VoxelFSE\Controllers\FSE_Create_Post_Controller::generate_fields_config(
+            $post_type_key,
+            $post_id,
+            false // Not admin metabox in frontend context
+        );
+
+        $context_data = \VoxelFSE\Controllers\FSE_Create_Post_Controller::generate_post_context(
+            $post_type_key,
+            $post_id
+        );
+
+        // Skip if either returned an error
+        if (is_wp_error($fields_data) || is_wp_error($context_data)) {
+            return $block_content;
+        }
+
+        $config = [
+            'fieldsConfig' => $fields_data,
+            'postContext'   => $context_data,
+        ];
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Inject navbar config data inline to eliminate REST API spinner
+     *
+     * Only injects when source is 'select_wp_menu'. For 'add_links_manually',
+     * data is already in vxconfig.
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_navbar_config($block_content, $attributes)
+    {
+        $source = $attributes['source'] ?? 'add_links_manually';
+        $config = [];
+
+        if ($source === 'select_wp_menu') {
+            $menu_location = $attributes['menuLocation'] ?? '';
+            $mobile_menu_location = $attributes['mobileMenuLocation'] ?? '';
+
+            if (empty($menu_location) && empty($mobile_menu_location)) {
+                return $block_content;
+            }
+
+            require_once dirname(__DIR__) . '/controllers/fse-navbar-api-controller.php';
+
+            if (!empty($menu_location)) {
+                $config['mainMenu'] = \VoxelFSE\Controllers\FSE_Navbar_API_Controller::generate_menu_items($menu_location);
+            }
+
+            if (!empty($mobile_menu_location)) {
+                $config['mobileMenu'] = \VoxelFSE\Controllers\FSE_Navbar_API_Controller::generate_menu_items($mobile_menu_location);
+            }
+        } elseif ($source === 'search_form') {
+            // Resolve linked search-form's post types for frontend hydration
+            // Mirrors Voxel's navbar.php lines 46-75 where it reads post types from linked search form
+            $search_form_id = $attributes['searchFormId'] ?? '';
+            if (empty($search_form_id)) {
+                return $block_content;
+            }
+
+            $config['searchFormId'] = $search_form_id;
+            $config['linkedPostTypes'] = [];
+
+            if (class_exists('\Voxel\Post_Type')) {
+                // Find the search-form block on the current page to read its postTypes attribute
+                $post = get_post();
+                $post_types_keys = [];
+
+                if ($post && has_blocks($post->post_content)) {
+                    $blocks = parse_blocks($post->post_content);
+                    $post_types_keys = self::find_search_form_post_types($blocks, $search_form_id);
+                }
+
+                // Resolve post type labels and icons from Voxel registry
+                foreach ($post_types_keys as $pt_key) {
+                    try {
+                        $pt = \Voxel\Post_Type::get($pt_key);
+                        if ($pt) {
+                            $icon_markup = '';
+                            $icon = $pt->get_icon();
+                            if (!empty($icon)) {
+                                $icon_markup = \Voxel\get_icon_markup($icon);
+                            }
+                            $config['linkedPostTypes'][] = [
+                                'key'      => $pt_key,
+                                'label'    => $pt->get_label(),
+                                'icon'     => $icon_markup ?: null,
+                                'isActive' => false,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+
+                // Mark the first post type as active by default
+                if (!empty($config['linkedPostTypes'])) {
+                    $config['linkedPostTypes'][0]['isActive'] = true;
+                }
+            }
+        } else {
+            return $block_content;
+        }
+
+        if (empty($config)) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Recursively find a search-form block by blockId and return its postTypes attribute
+     */
+    private static function find_search_form_post_types($blocks, $search_form_id)
+    {
+        foreach ($blocks as $block) {
+            if (
+                ($block['blockName'] === 'voxel-fse/search-form') &&
+                isset($block['attrs']['blockId']) &&
+                $block['attrs']['blockId'] === $search_form_id
+            ) {
+                return $block['attrs']['postTypes'] ?? [];
+            }
+
+            // Recurse into inner blocks
+            if (!empty($block['innerBlocks'])) {
+                $result = self::find_search_form_post_types($block['innerBlocks'], $search_form_id);
+                if (!empty($result)) {
+                    return $result;
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Inject config data as inline JSON script tag into block HTML
+     *
+     * Inserts a <script type="text/json" class="vxconfig-hydrate"> element
+     * before the last </div> in the block content. frontend.tsx reads this
+     * to skip the REST API call.
+     *
+     * @param string $block_content Block HTML content.
+     * @param mixed  $data          Data to JSON-encode and inject.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_inline_config($block_content, $data)
+    {
+        $json = wp_json_encode($data);
+        if ($json === false) {
+            return $block_content;
+        }
+
+        $script = '<script type="text/json" class="vxconfig-hydrate">' . $json . '</script>';
+
+        // Insert before last </div> (the block's closing wrapper)
+        $pos = strrpos($block_content, '</div>');
+        if ($pos !== false) {
+            $block_content = substr_replace($block_content, $script, $pos, 0);
+        }
+
+        return $block_content;
     }
 }
 

@@ -36,9 +36,28 @@ interface EditProps {
 }
 
 /**
+ * Get pre-injected editor config from window.__voxelFseEditorConfig
+ */
+function getInlineNavbarLocations(): MenuLocation[] | null {
+	try {
+		const config = (window as any).__voxelFseEditorConfig?.navbarLocations;
+		if (Array.isArray(config) && config.length > 0) {
+			return config;
+		}
+	} catch {}
+	return null;
+}
+
+/**
  * Fetch WordPress menu locations
  */
 async function fetchMenuLocations(): Promise<MenuLocation[]> {
+	// Check for pre-injected data first (eliminates initial REST call)
+	const inlineData = getInlineNavbarLocations();
+	if (inlineData) {
+		return inlineData;
+	}
+
 	try {
 		const response = (await apiFetch({
 			path: '/voxel-fse/v1/navbar/locations',

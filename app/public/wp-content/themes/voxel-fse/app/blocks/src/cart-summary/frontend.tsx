@@ -269,6 +269,7 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useCallback } from 'react';
 import CartSummaryComponent from './shared/CartSummaryComponent';
+import PromoteScreen from './shared/PromoteScreen';
 
 import type {
 	CartSummaryBlockAttributes,
@@ -278,6 +279,7 @@ import type {
 	ShippingState,
 	QuickRegisterState,
 	OrderNotesState,
+	PromoteConfig,
 } from './types';
 import type { IconValue } from '@shared/controls/IconPickerControl';
 import { getSiteBaseUrl, getRestBaseUrl } from '@shared/utils/siteUrl';
@@ -1109,6 +1111,10 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 	// Track checkout source (cart or direct_cart)
 	const [source, setSource] = useState<'cart' | 'direct_cart'>('cart');
 
+	// Promote screen state
+	// Evidence: themes/voxel/app/widgets/cart-summary.php:2562-2591
+	const [promoteConfig, setPromoteConfig] = useState<PromoteConfig | null>(null);
+
 	/**
 	 * GeoIP country detection
 	 * Matches Voxel's geocodeCountry() method
@@ -1168,6 +1174,31 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 			}
 
 			setConfig(configData);
+
+			// Check if this is a promote screen
+			// Evidence: themes/voxel/app/widgets/cart-summary.php:2562-2591
+			const screen = getSearchParam('screen');
+			const promotePostId = getSearchParam('post_id');
+			if (screen === 'promote' && promotePostId && configData.is_logged_in) {
+				try {
+					const restBase = getRestBaseUrl();
+					const promoteResponse = await fetch(
+						`${restBase}voxel-fse/v1/cart/promote-config?post_id=${encodeURIComponent(promotePostId)}`,
+						{ credentials: 'same-origin' }
+					);
+					if (promoteResponse.ok) {
+						const promoteData = await promoteResponse.json() as PromoteConfig & { success?: boolean };
+						if (!cancelled && promoteData.success !== false) {
+							setPromoteConfig(promoteData);
+							setIsLoading(false);
+							return;
+						}
+					}
+				} catch (err) {
+					console.error('Failed to load promote config:', err);
+				}
+				// Fall through to regular cart if promote fails
+			}
 
 			// Check if this is a direct cart checkout (single item via URL)
 			const checkoutItem = getSearchParam('checkout_item');
@@ -1655,6 +1686,18 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 	const handleOrderNotesChange = useCallback((changes: Partial<OrderNotesState>) => {
 		setOrderNotes((prev) => ({ ...prev, ...changes }));
 	}, []);
+
+	// Promote screen mode - render separate UI
+	// Evidence: themes/voxel/app/widgets/cart-summary.php:2562-2591
+	if (promoteConfig) {
+		return (
+			<PromoteScreen
+				config={promoteConfig}
+				currency={config?.currency || 'USD'}
+				checkoutIcon={attributes.checkoutIcon}
+			/>
+		);
+	}
 
 	return (
 		<CartSummaryComponent

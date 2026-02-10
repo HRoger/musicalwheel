@@ -1232,6 +1232,16 @@ export default function MessagesComponent({
 			return;
 		}
 
+		// Validate file type (Reference: voxel-messages.beautified.js line 467-476)
+		const allowedTypes = messagesConfig?.files?.allowed_file_types;
+		if (allowedTypes && allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
+			showAlert(
+				__('File "%s" is not an allowed file type', 'voxel-fse').replace('%s', file.name),
+				'error'
+			);
+			return;
+		}
+
 		const fileData: FileData = {
 			source: 'new_upload',
 			name: file.name,
@@ -1328,6 +1338,33 @@ export default function MessagesComponent({
 			URL.revokeObjectURL(fileToRemove.preview);
 		}
 	}, []);
+
+	/**
+	 * Handle image attachment click — open YARL lightbox with all chat images as slideshow
+	 * Reference: messages-widget.php lines 186-188 (data-elementor-open-lightbox="yes", slideshow="chat-images")
+	 */
+	const handleImageClick = useCallback((e: React.MouseEvent, imageUrl: string) => {
+		e.preventDefault();
+		if (!state.activeChat) return;
+
+		// Collect all image URLs from active chat messages into slides
+		const slides: Array<{ src: string; alt?: string }> = [];
+		state.activeChat.messages.forEach((msg: VoxelMessage) => {
+			if (msg.files) {
+				msg.files.forEach((file: VoxelMessageFile) => {
+					if (file.is_image) {
+						slides.push({ src: file.url, alt: file.alt || file.name });
+					}
+				});
+			}
+		});
+
+		const index = slides.findIndex((s) => s.src === imageUrl);
+		const lightbox = (window as unknown as { VoxelLightbox?: { open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void } }).VoxelLightbox;
+		if (lightbox) {
+			lightbox.open(slides, Math.max(0, index));
+		}
+	}, [state.activeChat]);
 
 	/**
 	 * Handle MediaPopup save - add selected files from media library
@@ -1878,9 +1915,8 @@ export default function MessagesComponent({
 																		<a
 																			key={`${message.id}-file-${fileIndex}`}
 																			href={file.url}
-																			target="_blank"
-																			rel="noopener noreferrer"
 																			className="ts-image-attachment"
+																			onClick={(e) => handleImageClick(e, file.url)}
 																		>
 																			<img
 																				src={file.preview || file.url}

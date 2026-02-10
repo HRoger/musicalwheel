@@ -225,6 +225,14 @@ export function useSearchForm({
 			onFilterChange({});
 		}
 
+		// Notify linked navbar blocks of post type change (bidirectional sync)
+		// Evidence: voxel-search-form.beautified.js:2367-2373 $watch('post_type')
+		if (context === 'frontend') {
+			window.dispatchEvent(new CustomEvent('voxel-search-form-post-type-changed', {
+				detail: { searchFormId: attributes.blockId, postType: postTypeKey },
+			}));
+		}
+
 		// Auto-submit on post type change in frontend context
 		// This ensures Post Feed updates when user switches post type
 		if (context === 'frontend' && onSubmit) {
@@ -588,6 +596,36 @@ export function useSearchForm({
 			};
 		}
 	}, [state.filterValues, state.currentPostType, attributes.searchOn, context, handleSubmitInternal]);
+
+	// VOXEL PARITY: Listen for PostFeed loading events to show spinner on submit button
+	// In Voxel, the Search Form owns getPosts() so this.loading drives the spinner.
+	// In FSE, PostFeed owns fetchPosts(), so it dispatches events back to SearchForm.
+	// Reference: voxel-search-form.beautified.js:2064 (this.loading = true) and line 131 (ts-loading-btn)
+	useEffect(() => {
+		if (context !== 'frontend') return;
+
+		const handleFeedLoading = (event: Event) => {
+			const detail = (event as CustomEvent).detail;
+			if (detail?.searchFormId === attributes.blockId) {
+				setState(prev => ({ ...prev, loading: true }));
+			}
+		};
+
+		const handleFeedLoaded = (event: Event) => {
+			const detail = (event as CustomEvent).detail;
+			if (detail?.searchFormId === attributes.blockId) {
+				setState(prev => ({ ...prev, loading: false }));
+			}
+		};
+
+		window.addEventListener('voxel-fse:feed-loading', handleFeedLoading);
+		window.addEventListener('voxel-fse:feed-loaded', handleFeedLoaded);
+
+		return () => {
+			window.removeEventListener('voxel-fse:feed-loading', handleFeedLoading);
+			window.removeEventListener('voxel-fse:feed-loaded', handleFeedLoaded);
+		};
+	}, [context, attributes.blockId]);
 
 	// Wrapper for manual submit that reads current state
 	const handleSubmit = useCallback(() => {

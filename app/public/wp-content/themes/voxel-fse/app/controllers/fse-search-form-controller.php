@@ -390,12 +390,29 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 		$requested_keys   = $post_types_param ? array_map( 'trim', explode( ',', $post_types_param ) ) : [];
 
 		// Get filter configs from POST body (if provided)
-		// This allows setting default values and reset behavior per filter
-		// Evidence: themes/voxel/app/widgets/search-form.php:4192-4201
 		$filter_configs = [];
 		if ( $request->get_method() === 'POST' ) {
 			$body = $request->get_json_params();
 			$filter_configs = $body['filter_configs'] ?? [];
+		}
+
+		return rest_ensure_response( self::generate_frontend_config( $requested_keys, $filter_configs ) );
+	}
+
+	/**
+	 * Generate frontend config data (reusable from REST and render_block)
+	 *
+	 * Extracts the core config generation logic so it can be called both from
+	 * the REST API endpoint and from Block_Loader's render_block filter for
+	 * server-side config injection (eliminates .ts-loader spinner).
+	 *
+	 * @param array $post_type_keys Post type keys to include (empty = all)
+	 * @param array $filter_configs Per-filter configs keyed by post_type then filter_key
+	 * @return array PostTypeConfig[] data
+	 */
+	public static function generate_frontend_config( array $post_type_keys = [], array $filter_configs = [] ): array {
+		if ( ! class_exists( '\Voxel\Post_Type' ) ) {
+			return [];
 		}
 
 		// Start output buffering to capture any unwanted output from Voxel's filter methods
@@ -409,7 +426,7 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 			$key = $post_type->get_key();
 
 			// If specific post types requested, only include those
-			if ( ! empty( $requested_keys ) && ! in_array( $key, $requested_keys, true ) ) {
+			if ( ! empty( $post_type_keys ) && ! in_array( $key, $post_type_keys, true ) ) {
 				continue;
 			}
 
@@ -427,12 +444,12 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 				// Initialize elementor_config to prevent "Undefined array key" warnings
 				// Some filters (terms, location) require this to be set before frontend_props()
 				if ( method_exists( $filter, 'set_elementor_config' ) ) {
-					$filter->set_elementor_config( $this->get_default_elementor_config( $filter ) );
+					$filter->set_elementor_config( self::get_default_elementor_config( $filter ) );
 				}
 
 				// CRITICAL: Match Voxel's value lifecycle exactly
 				// Evidence: themes/voxel/app/widgets/search-form.php:4192-4201
-				$this->setup_filter_value( $filter, $config );
+				self::setup_filter_value( $filter, $config );
 
 				// Now get the complete frontend config (includes value and resets_to)
 				// Evidence: themes/voxel/app/post-types/filters/base-filter.php:90-111
@@ -475,7 +492,15 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 		// Evidence: themes/voxel/app/post-types/filters/range-filter.php:217-219
 		ob_end_clean();
 
-		return rest_ensure_response( $result );
+		// CRITICAL: wp_print_styles() inside frontend_props() marks handles as "done" in $wp_styles->done[]
+		// This prevents later wp_enqueue_style() from outputting the CSS. We must undo this.
+		// Evidence: range-filter.php:218 calls wp_print_styles('nouislider') which marks it done
+		global $wp_styles;
+		if ( $wp_styles instanceof \WP_Styles ) {
+			$wp_styles->done = array_diff( $wp_styles->done, [ 'nouislider', 'pikaday' ] );
+		}
+
+		return $result;
 	}
 
 	/**
@@ -486,7 +511,7 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 	 * @param mixed $filter The Voxel filter instance
 	 * @param array $config The filter config from the block (defaultValueEnabled, defaultValue, resetValue)
 	 */
-	private function setup_filter_value( $filter, array $config ): void {
+	private static function setup_filter_value( $filter, array $config ): void {
 		// Step 1: Determine if default value should be used
 		// Evidence: themes/voxel/app/widgets/search-form.php:4192-4195
 		// Voxel checks: ( $filter_config['ts_default_value'] ?? null ) === 'yes'
@@ -530,7 +555,7 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 	 * @param mixed $filter The Voxel filter instance
 	 * @return array Default Elementor config for the filter type
 	 */
-	private function get_default_elementor_config( $filter ): array {
+	private static function get_default_elementor_config( $filter ): array {
 		$type = $filter->get_type();
 
 		switch ( $type ) {

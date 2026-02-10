@@ -371,11 +371,11 @@ export default function PostFeedComponent({
 	const [dynamicPostType, setDynamicPostType] = useState<string>(attributes.postType || '');
 
 	// Prevent link navigation in editor (matches Elementor's onLinkClick behavior)
-	// Skip carousel nav buttons (.ts-icon-btn) so arrows still work
+	// Skip carousel nav buttons (.post-feed-nav) and pagination buttons (.feed-pagination) so they still work
 	const handleEditorClick = useCallback((e: React.MouseEvent) => {
 		if (context !== 'editor') return;
 		const target = (e.target as HTMLElement).closest('a');
-		if (target && !target.closest('.post-feed-nav')) {
+		if (target && !target.closest('.post-feed-nav') && !target.closest('.feed-pagination')) {
 			e.preventDefault();
 			e.stopPropagation();
 		}
@@ -559,6 +559,19 @@ export default function PostFeedComponent({
 		console.log('[PostFeed] fetchPosts caller stack:', new Error().stack);
 		setState(prev => ({ ...prev, loading: true }));
 
+		// VOXEL PARITY: Notify connected blocks (Search Form, Map) that loading started
+		// In Voxel, the Search Form owns getPosts() and sets this.loading = true (line 2064)
+		// which triggers the submit button spinner via :class="{'ts-loading-btn': loading}"
+		// In FSE, we dispatch events so the Search Form can mirror this behavior
+		if (context === 'frontend') {
+			window.dispatchEvent(new CustomEvent('voxel-fse:feed-loading', {
+				detail: { sourceId: attributes.blockId, searchFormId: attributes.searchFormId },
+			}));
+			// VOXEL PARITY: Add map-pending class to map widget during loading
+			// Reference: voxel-search-form.beautified.js:2079 - mapWidget?.addClass("map-pending")
+			document.querySelector('.elementor-widget-ts-map')?.classList.add('map-pending');
+		}
+
 		try {
 			// Use override post type if provided, otherwise use dynamic or attribute
 			const postType = overridePostType || dynamicPostType || attributes.postType || '';
@@ -734,6 +747,16 @@ export default function PostFeedComponent({
 					hasResults,
 				}));
 
+				// VOXEL PARITY: Notify connected blocks that loading finished
+				// In Voxel, getPosts() sets this.loading = false after response (line 2142)
+				if (context === 'frontend') {
+					window.dispatchEvent(new CustomEvent('voxel-fse:feed-loaded', {
+						detail: { sourceId: attributes.blockId, searchFormId: attributes.searchFormId },
+					}));
+					// Reference: voxel-search-form.beautified.js:2159 - mapWidget?.removeClass("map-pending")
+					document.querySelector('.elementor-widget-ts-map')?.classList.remove('map-pending');
+				}
+
 				// VOXEL PARITY: Inject JS assets to #vx-assets-cache after content render
 				// Reference: voxel-post-feed.beautified.js:250-259
 				// Note: We use a timeout to ensure React has finished rendering
@@ -820,6 +843,14 @@ export default function PostFeedComponent({
 				loading: false,
 				hasResults: false,
 			}));
+			// VOXEL PARITY: Notify connected blocks that loading finished (even on error)
+			// Reference: voxel-search-form.beautified.js:2283-2285
+			if (context === 'frontend') {
+				window.dispatchEvent(new CustomEvent('voxel-fse:feed-loaded', {
+					detail: { sourceId: attributes.blockId, searchFormId: attributes.searchFormId },
+				}));
+				document.querySelector('.elementor-widget-ts-map')?.classList.remove('map-pending');
+			}
 		}
 	}, [attributes, context, dynamicFilters, dynamicPostType]);
 

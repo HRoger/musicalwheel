@@ -316,7 +316,7 @@ export default function PrintTemplateComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
@@ -330,7 +330,7 @@ export default function PrintTemplateComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
@@ -344,7 +344,7 @@ export default function PrintTemplateComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
@@ -380,9 +380,9 @@ export default function PrintTemplateComponent({
 					className="ts-print-template-rendered"
 					dangerouslySetInnerHTML={{ __html: templateContent }}
 				/>
-			) : (
+			) : context === 'editor' ? (
 				<EmptyPlaceholder />
-			)}
+			) : null}
 		</div>
 	);
 }

@@ -221,7 +221,7 @@ body.block-editor-page [class*="wp-block-voxel-"] input[type=url]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=week]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] select:focus,
 body.block-editor-page [class*="wp-block-voxel-"] textarea:focus {
-    box-shadow: none;
+    box-shadow: none!important;
     outline: none;
     border: 1px solid var(--ts-shade-3);
     border-radius: .375rem;

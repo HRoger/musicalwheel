@@ -32,7 +32,7 @@
  */
 
 import { useState, useCallback, useMemo, useRef, type MouseEvent } from 'react';
-import { useTimelineAttributes, useStatusActions, useStrings, useCurrentUser, useTimelineConfig } from '../hooks';
+import { useTimelineAttributes, useStatusActions, useStrings, useCurrentUser, useTimelineConfig, usePostContext } from '../hooks';
 import { RichTextFormatter } from './RichTextFormatter';
 import { MediaGallery } from './MediaGallery';
 import { LinkPreview } from './LinkPreview';
@@ -84,6 +84,7 @@ export function StatusItem({
 	const strings = useStrings();
 	const currentUser = useCurrentUser();
 	const { config } = useTimelineConfig();
+	const postContext = usePostContext();
 
 	// Refs for dropdown positioning
 	const actionsTargetRef = useRef<HTMLAnchorElement>(null);
@@ -304,7 +305,7 @@ export function StatusItem({
 							)}
 						</a>
 						<span>
-							{username && (
+							{username && postContext?.show_usernames !== false && (
 								<a href={profileUrl}>@{username}</a>
 							)}
 							{status.post?.link && status.post?.title && (
@@ -407,42 +408,66 @@ export function StatusItem({
 					)}
 
 					{/* Review score - if this is a review (only show in view mode) */}
+					{/* Matches Voxel's status.php lines 109-141 */}
 					{screen === 'view' && status.review && (
-						<div className="rev-score" style={{ '--ts-accent-1': status.review.level?.color } as React.CSSProperties}>
-							{status.review.config?.input_mode === 'stars' ? (
-								<ul className="rev-star-score flexify simplify-ul">
-									{[-2, -1, 0, 1, 2].map((levelScore) => (
-										<li key={levelScore} className={status.review!.score >= (levelScore - 0.5) ? 'active' : ''}>
-											<span dangerouslySetInnerHTML={{
-												__html: status.review!.score >= (levelScore - 0.5)
-													? (status.review!.config?.active_icon ?? status.review!.config?.default_icon ?? '')
-													: (status.review!.config?.default_icon ?? '')
-											}} />
-										</li>
+						<>
+							<div className="rev-score" style={{ '--ts-accent-1': status.review.level?.color } as React.CSSProperties}>
+								{status.review.config?.input_mode === 'stars' ? (
+									<ul className="rev-star-score flexify simplify-ul">
+										{[-2, -1, 0, 1, 2].map((levelScore) => (
+											<li key={levelScore} className={status.review!.score >= (levelScore - 0.5) ? 'active' : ''}>
+												<span dangerouslySetInnerHTML={{
+													__html: status.review!.score >= (levelScore - 0.5)
+														? (status.review!.config?.active_icon ?? status.review!.config?.default_icon ?? '')
+														: (status.review!.config?.inactive_icon ?? status.review!.config?.default_icon ?? '')
+												}} />
+											</li>
+										))}
+									</ul>
+								) : (
+									<div className="rev-num-score flexify">
+										{status.review.formatted_score}
+									</div>
+								)}
+								<span>{status.review.level?.label}</span>
+							</div>
+							{/* Per-category breakdown - shown when 2+ categories (Voxel status.php lines 129-140) */}
+							{status.review.categories && status.review.categories.length >= 2 && (
+								<div className="rev-cats">
+									{status.review.categories.map((category) => (
+										<div
+											key={category.key ?? category.label}
+											className="review-cat"
+											style={{ '--ts-accent-1': category.level?.color } as React.CSSProperties}
+										>
+											<span>{category.label}</span>
+											<ul className="rev-chart simplify-ul">
+												{[-2, -1, 0, 1, 2].map((levelScore) => (
+													<li
+														key={levelScore}
+														className={category.score >= (levelScore - 0.5) ? 'active' : ''}
+													/>
+												))}
+											</ul>
+										</div>
 									))}
-								</ul>
-							) : (
-								<div className="rev-num-score flexify">
-									{status.review.formatted_score}
 								</div>
 							)}
-							<span>{status.review.level?.label}</span>
-						</div>
+						</>
 					)}
 
 					{/* Text Content - hidden when YouTube embed is shown (matches Voxel behavior) */}
 					{/* Voxel clears vxf-body-text content when link_preview.type === 'youtube' */}
 					{screen === 'view' && status.content && status.link_preview?.type !== 'youtube' && (
-						<>
-							<div className="vxf-body-text">
-								<RichTextFormatter
-									content={status.content}
-									maxLength={280}
-									isExpanded={readMore}
-									onToggleExpand={() => setReadMore(!readMore)}
-								/>
-							</div>
-						</>
+						<div className="vxf-body-text">
+							<RichTextFormatter
+								content={status.content}
+								maxLength={280}
+								isExpanded={readMore}
+								onToggleExpand={() => setReadMore(!readMore)}
+								linkPreviewUrl={status.link_preview?.url}
+							/>
+						</div>
 					)}
 					{/* Empty body-text div when YouTube embed (matches Voxel's empty div) */}
 					{screen === 'view' && status.link_preview?.type === 'youtube' && (

@@ -32,3 +32,13 @@
 		display: none !important;
 	}
 }
+
+/* Hide block placeholders on frontend (rendered by save.tsx, replaced by React hydration) */
+.voxel-fse-block-placeholder {
+	display: none !important;
+}
+
+/* Hide editor-only empty state placeholder on frontend */
+.voxel-empty-placeholder {
+	display: none !important;
+}

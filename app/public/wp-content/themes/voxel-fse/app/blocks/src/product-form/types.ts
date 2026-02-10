@@ -738,8 +738,9 @@ export interface SearchContextConfig {
 export interface VariationChoice {
 	value: string;
 	label: string;
-	image?: string;
+	image?: string | { url: string; alt?: string; id?: number } | null;
 	color?: string;
+	subheading?: string | null;
 }
 
 /**
@@ -749,8 +750,9 @@ export interface VariationChoice {
 export interface VariationAttribute {
 	key: string;
 	label: string;
-	display_type: 'dropdown' | 'buttons' | 'images' | 'colors';
+	display_type: 'dropdown' | 'buttons' | 'radio' | 'cards' | 'images' | 'colors';
 	props: {
+		display_mode?: 'dropdown' | 'buttons' | 'radio' | 'cards' | 'images' | 'colors';
 		choices: Record<string, VariationChoice>;
 	};
 }

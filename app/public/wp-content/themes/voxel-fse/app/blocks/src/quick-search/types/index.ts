@@ -18,12 +18,32 @@ export interface PostTypeConfig {
 }
 
 /**
+ * Individual filter item within a post type's repeater
+ */
+export interface QuickSearchFilterItem {
+	id: string;
+	label: string;
+	filter: string;
+	taxonomies: string[];
+	// Visibility
+	rowVisibility?: 'show' | 'hide';
+	visibilityRules?: any[];
+	// Loop
+	loopSource?: string;
+	loopProperty?: string;
+	loopLimit?: string;
+	loopOffset?: string;
+}
+
+/**
  * Per-post-type settings configured in the editor
  */
 export interface PostTypeSettings {
 	label: string;
 	filter: string;
 	taxonomies: string[];
+	// Repeater filter items
+	filterItems?: QuickSearchFilterItem[];
 }
 
 /**

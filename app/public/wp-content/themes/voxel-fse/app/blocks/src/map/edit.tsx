@@ -549,6 +549,8 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 					min={100}
 					max={1200}
 					step={1}
+					units={['px', '%', 'vh']}
+					unitAttributeName="heightUnit"
 				/>
 
 				<ToggleControl

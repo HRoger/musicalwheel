@@ -2285,6 +2285,7 @@ class REST_API_Controller extends FSE_Base_Controller {
 							'planKey'               => $active_plan && method_exists( $active_plan, 'get_key' ) ? $active_plan->get_key() : 'default',
 							'priceKey'              => method_exists( $membership, 'get_price_key' ) ? $membership->get_price_key() : null,
 							'isSubscriptionCanceled' => false,
+							'isInitialState'        => method_exists( $membership, 'is_initial_state' ) ? $membership->is_initial_state() : false,
 						];
 
 						// Check if subscription is canceled

@@ -529,6 +529,8 @@ export interface VoxelFSEUserbarConfig {
 	templates: {
 		inbox: string;
 	};
+	/** Pre-rendered WordPress menu HTML keyed by menu location slug */
+	menus?: Record<string, string>;
 }
 
 declare global {

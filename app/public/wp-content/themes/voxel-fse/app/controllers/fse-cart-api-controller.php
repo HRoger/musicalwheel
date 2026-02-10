@@ -38,6 +38,23 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 			'callback'            => [ $this, 'get_cart_config' ],
 			'permission_callback' => '__return_true', // Public - needed for Plan C+ frontend hydration
 		] );
+
+		// Endpoint: /wp-json/voxel-fse/v1/cart/promote-config
+		// Provides promotion packages for a post (requires login)
+		// Evidence: themes/voxel/app/widgets/cart-summary.php:2562-2591
+		register_rest_route( 'voxel-fse/v1', '/cart/promote-config', [
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'get_promote_config' ],
+			'permission_callback' => function() {
+				return is_user_logged_in();
+			},
+			'args'                => [
+				'post_id' => [
+					'required' => true,
+					'type'     => 'integer',
+				],
+			],
+		] );
 	}
 
 	/**
@@ -386,5 +403,63 @@ class FSE_Cart_API_Controller extends FSE_Base_Controller {
 				'tos_text'             => $tos_text,
 			],
 		];
+	}
+
+	/**
+	 * Get promote screen configuration for a post
+	 *
+	 * Evidence: themes/voxel/app/widgets/cart-summary.php:2562-2591
+	 * Evidence: themes/voxel/app/posts/post-promotions.php
+	 * Evidence: themes/voxel/app/product-types/promotions/promotion-package.php
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response
+	 */
+	public function get_promote_config( \WP_REST_Request $request ): \WP_REST_Response {
+		$post_id = absint( $request->get_param( 'post_id' ) );
+
+		if ( ! class_exists( '\\Voxel\\Post' ) ) {
+			return new \WP_REST_Response( [
+				'success' => false,
+				'message' => 'Voxel is not active',
+			], 400 );
+		}
+
+		$post = \Voxel\Post::get( $post_id );
+		if ( ! $post ) {
+			return new \WP_REST_Response( [
+				'success' => false,
+				'message' => 'Post not found',
+			], 404 );
+		}
+
+		$user = \Voxel\get_current_user();
+		if ( ! $user || ! $post->promotions->is_promotable_by_user( $user ) ) {
+			return new \WP_REST_Response( [
+				'success' => false,
+				'message' => 'You cannot promote this post',
+			], 403 );
+		}
+
+		$packages = array_map( function( $package ) {
+			return [
+				'key'          => $package->get_key(),
+				'label'        => $package->get_label(),
+				'description'  => $package->get_description(),
+				'icon'         => $package->get_icon_markup(),
+				'color'        => $package->get_color(),
+				'price_amount' => $package->get_price_amount(),
+			];
+		}, $post->promotions->get_available_packages() );
+
+		return new \WP_REST_Response( [
+			'success'    => true,
+			'post_id'    => $post->get_id(),
+			'post_title' => $post->get_display_name(),
+			'packages'   => (object) $packages,
+			'nonce'      => [
+				'checkout' => wp_create_nonce( 'vx_checkout' ),
+			],
+		], 200 );
 	}
 }

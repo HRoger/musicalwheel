@@ -381,6 +381,7 @@ export interface PostContext {
 	postLink: string;
 	editLink: string | null;
 	isEditable: boolean;
+	timelineEnabled: boolean;
 	isFollowed: boolean;
 	isFollowRequested: boolean;
 	isAuthorFollowed: boolean;

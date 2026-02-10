@@ -8,7 +8,7 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 
 /**
  * Stripe icon for block inserter
@@ -28,9 +28,17 @@ const StripeIcon = () => (
 /**
  * Register block type
  */
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
+
 registerBlockType(metadata.name, {
 	...metadata,
 	icon: StripeIcon,
 	edit: Edit,
 	save,
+	deprecated,
 });

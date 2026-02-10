@@ -345,11 +345,30 @@ export default function NavbarComponent({
 	mobileMenuData,
 	isLoading,
 	error,
-	context: _context,
+	context,
 	linkedTabs,
 	linkedPostTypes,
 	linkedBlockId,
 }: NavbarComponentProps) {
+	// Track active post type for search_form source (bidirectional sync with search-form block)
+	// Evidence: voxel-search-form.beautified.js:2367-2373 $watch('post_type') updates navbar active state
+	const [activePostType, setActivePostType] = useState<string | null>(
+		linkedPostTypes?.find(pt => pt.isActive)?.key || linkedPostTypes?.[0]?.key || null
+	);
+
+	useEffect(() => {
+		if (attributes.source !== 'search_form' || context !== 'frontend' || !linkedBlockId) return;
+
+		const handlePostTypeChanged = (event: Event) => {
+			const { searchFormId, postType } = (event as CustomEvent).detail || {};
+			if (searchFormId !== linkedBlockId) return;
+			if (postType) setActivePostType(postType);
+		};
+
+		window.addEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+		return () => window.removeEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+	}, [attributes.source, context, linkedBlockId]);
+
 	// Build vxconfig for re-render (required for DevTools visibility)
 	const vxConfig: NavbarVxConfig = {
 		source: attributes.source,
@@ -395,7 +414,7 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -409,7 +428,7 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -554,7 +573,7 @@ export default function NavbarComponent({
 						className="vxconfig"
 						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 					/>
-					<nav className="ts-nav-menu ts-nav-sf flexify">
+					<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
 						<ul className={navClasses}>
 							<li className="menu-item">
 								<span className="ts-item-link">
@@ -575,12 +594,12 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<nav className="ts-nav-menu ts-nav-sf flexify">
+				<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
 					<ul className={navClasses}>
 						{linkedPostTypes.map((postType) => (
 							<li
 								key={postType.key}
-								className={`menu-item ${postType.isActive ? 'current-menu-item' : ''}`}
+								className={`menu-item ${(activePostType ? postType.key === activePostType : postType.isActive) ? 'current-menu-item' : ''}`}
 								data-post-type={postType.key}
 							>
 								<a
@@ -588,6 +607,8 @@ export default function NavbarComponent({
 									className="ts-item-link"
 									onClick={(e) => {
 										e.preventDefault();
+										// Update local active state immediately
+										setActivePostType(postType.key);
 										// Dispatch event for linked search form to handle post type switch
 										window.dispatchEvent(new CustomEvent('voxel-switch-post-type', {
 											detail: {

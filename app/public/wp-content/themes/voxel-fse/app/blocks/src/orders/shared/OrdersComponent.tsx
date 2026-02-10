@@ -679,7 +679,7 @@ export default function OrdersComponent({
 	// Editor mode: Show placeholder preview
 	if (context === 'editor') {
 		return (
-			<div className="vx-orders-widget voxel-fse-orders-preview" style={customStyles}>
+			<div className="vx-orders-widget vx-order-ease voxel-fse-orders-preview" style={customStyles}>
 				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
@@ -711,9 +711,9 @@ export default function OrdersComponent({
 				{/* Header */}
 				{!attributes.headHide && (
 					<div className="widget-head">
-						<h2 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
+						<h1 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
 							{attributes.ordersTitle || 'Orders'}
-						</h2>
+						</h1>
 						<p style={attributes.subtitleColor ? { color: attributes.subtitleColor } : undefined}>
 							{attributes.ordersSubtitle || 'View all orders related to your account'}
 						</p>
@@ -775,7 +775,7 @@ export default function OrdersComponent({
 
 	// Frontend mode: Full interactive component
 	return (
-		<div className="vx-orders-widget" style={customStyles}>
+		<div className="vx-orders-widget vx-order-ease" style={customStyles}>
 			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
@@ -829,9 +829,9 @@ export default function OrdersComponent({
 					{/* Header */}
 					{!attributes.headHide && (
 						<div className="widget-head">
-							<h2 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
+							<h1 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
 								{attributes.ordersTitle || 'Orders'}
-							</h2>
+							</h1>
 							<p style={attributes.subtitleColor ? { color: attributes.subtitleColor } : undefined}>
 								{attributes.ordersSubtitle || 'View all orders related to your account'}
 							</p>

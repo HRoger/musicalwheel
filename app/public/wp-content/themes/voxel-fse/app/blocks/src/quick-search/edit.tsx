@@ -50,19 +50,9 @@ export default function Edit({
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
-	// Inject Voxel Editor Styles
-	useEffect(() => {
-		const cssId = 'voxel-quick-search-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
-			link.id = cssId;
-			link.rel = 'stylesheet';
-			const voxelConfig = (window as any).Voxel_Config;
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/quick-search.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
-		}
-	}, []);
+	// CSS is enqueued server-side via Block_Loader.php editor_style_deps:
+	// vx:commons.css, vx:forms.css, vx:popup-kit.css
+	// No client-side CSS injection needed.
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {

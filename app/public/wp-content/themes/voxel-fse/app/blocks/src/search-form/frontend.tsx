@@ -413,11 +413,12 @@ function parseVxConfig(container: HTMLElement): SearchFormAttributes {
 interface SearchFormWrapperProps {
 	attributes: SearchFormAttributes;
 	onSubmit: (values: Record<string, unknown>) => void;
+	inlinePostTypes?: PostTypeConfig[] | null;
 }
 
-function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
-	const [postTypes, setPostTypes] = useState<PostTypeConfig[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+function SearchFormWrapper({ attributes, onSubmit, inlinePostTypes }: SearchFormWrapperProps) {
+	const [postTypes, setPostTypes] = useState<PostTypeConfig[]>(inlinePostTypes || []);
+	const [isLoading, setIsLoading] = useState(!inlinePostTypes || inlinePostTypes.length === 0);
 	const [error, setError] = useState<string | null>(null);
 	const hasDispatchedInitial = useRef(false);
 
@@ -457,6 +458,12 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 	}, [attributes.postTypes, onSubmit, isLoading, postTypes]);
 
 	useEffect(() => {
+		// Skip REST fetch if we have inline data from server-side config injection
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		if (inlinePostTypes && inlinePostTypes.length > 0) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadPostTypes() {
@@ -486,7 +493,7 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [attributes.postTypes, attributes.filterLists]);
+	}, [inlinePostTypes, attributes.postTypes, attributes.filterLists]);
 
 	// Register this Search Form in the global registry for Post Feed connection
 	// NOTE: The Post Feed now fetches on mount, so this registry is mainly for edge cases
@@ -630,12 +637,30 @@ function initSearchForms() {
 			}
 		};
 
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlinePostTypes: PostTypeConfig[] | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlinePostTypes = JSON.parse(hydrateScript.textContent);
+			} catch {
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
 		// Clear placeholder and create React root
 		container.innerHTML = '';
 		dataset.hydrated = 'true';
 
 		const root = createRoot(container);
-		root.render(<SearchFormWrapper attributes={attributes} onSubmit={handleSubmit} />);
+		root.render(
+			<SearchFormWrapper
+				attributes={attributes}
+				onSubmit={handleSubmit}
+				inlinePostTypes={inlinePostTypes}
+			/>
+		);
 	});
 }
 

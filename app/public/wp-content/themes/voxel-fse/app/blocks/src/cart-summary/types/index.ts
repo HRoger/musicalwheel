@@ -797,3 +797,29 @@ export interface CartSummaryComponentProps {
 	orderNotes?: OrderNotesState;
 	onOrderNotesChange?: (orderNotes: Partial<OrderNotesState>) => void;
 }
+
+/**
+ * Promotion package
+ * Evidence: themes/voxel/app/widgets/cart-summary.php:2571-2579
+ */
+export interface PromotePackage {
+	key: string;
+	label: string;
+	description: string;
+	icon: string;
+	color: string;
+	price_amount: number;
+}
+
+/**
+ * Promote screen config
+ * Evidence: themes/voxel/app/widgets/cart-summary.php:2566-2581
+ */
+export interface PromoteConfig {
+	post_id: number;
+	post_title: string;
+	packages: Record<string, PromotePackage>;
+	nonce: {
+		checkout: string;
+	};
+}

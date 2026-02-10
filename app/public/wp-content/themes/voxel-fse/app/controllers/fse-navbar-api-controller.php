@@ -109,42 +109,48 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 	 */
 	public function get_menu_items( \WP_REST_Request $request ) {
 		$location = $request->get_param( 'location' );
+		return rest_ensure_response( self::generate_menu_items( $location ?? '' ) );
+	}
 
-		// Handle empty location - return empty items
+	/**
+	 * Generate menu items data (reusable from REST and render_block)
+	 *
+	 * @param string $location Menu location slug.
+	 * @return array NavbarMenuApiResponse data.
+	 */
+	public static function generate_menu_items( string $location ): array {
 		if ( empty( $location ) ) {
-			return rest_ensure_response( [
+			return [
 				'menuLocation' => '',
 				'menuName'     => '',
 				'items'        => [],
 				'message'      => 'No menu location specified',
-			] );
+			];
 		}
 
-		// Get menu locations
 		$menu_locations = get_nav_menu_locations();
 
 		if ( ! isset( $menu_locations[ $location ] ) ) {
-			return rest_ensure_response( [
+			return [
 				'menuLocation' => $location,
 				'menuName'     => '',
 				'items'        => [],
 				'message'      => sprintf( 'Menu location "%s" not found or has no menu assigned.', $location ),
-			] );
+			];
 		}
 
 		$menu_id = $menu_locations[ $location ];
 		$menu = wp_get_nav_menu_object( $menu_id );
 
 		if ( ! $menu ) {
-			return rest_ensure_response( [
+			return [
 				'menuLocation' => $location,
 				'menuName'     => '',
 				'items'        => [],
 				'message'      => 'Menu not found for this location.',
-			] );
+			];
 		}
 
-		// Get menu items
 		$menu_items = wp_get_nav_menu_items( $menu->term_id, [
 			'order'                  => 'ASC',
 			'orderby'                => 'menu_order',
@@ -153,21 +159,20 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 		] );
 
 		if ( ! $menu_items ) {
-			return rest_ensure_response( [
+			return [
 				'menuLocation' => $location,
 				'menuName'     => $menu->name,
 				'items'        => [],
-			] );
+			];
 		}
 
-		// Build hierarchical menu structure
-		$items = $this->build_menu_tree( $menu_items );
+		$items = self::build_menu_tree( $menu_items );
 
-		return rest_ensure_response( [
+		return [
 			'menuLocation' => $location,
 			'menuName'     => $menu->name,
 			'items'        => $items,
-		] );
+		];
 	}
 
 	/**
@@ -176,13 +181,13 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 	 * @param array $menu_items Flat array of menu items
 	 * @return array Hierarchical menu structure
 	 */
-	private function build_menu_tree( array $menu_items ): array {
+	private static function build_menu_tree( array $menu_items ): array {
 		// First pass: create a map of all items by ID
 		$items_by_id = [];
 		$root_items = [];
 
 		foreach ( $menu_items as $item ) {
-			$item_data = $this->format_menu_item( $item );
+			$item_data = self::format_menu_item( $item );
 			$items_by_id[ $item->ID ] = $item_data;
 		}
 
@@ -216,7 +221,7 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 	 * @param \WP_Post $item Menu item post object
 	 * @return array Formatted menu item
 	 */
-	private function format_menu_item( \WP_Post $item ): array {
+	private static function format_menu_item( \WP_Post $item ): array {
 		// Get icon from meta (Voxel stores icons in _voxel_item_icon)
 		$icon_string = get_post_meta( $item->ID, '_voxel_item_icon', true );
 		$icon_markup = '';

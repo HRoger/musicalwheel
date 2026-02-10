@@ -471,7 +471,7 @@ export function StyleTab({
 							{/* Hover Tab - Timeline tabs section */}
 							{tab.name === 'hover' && (
 								<>
-									<SectionHeading label={__('Timeline tabs', 'voxel-fse')} />
+									<SectionHeading label={__('Tabs hover', 'voxel-fse')} />
 
 									<div className="voxel-fse-control-row">
 										<ColorControl

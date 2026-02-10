@@ -96,6 +96,7 @@ import type {
 	NavbarMenuApiResponse,
 	VoxelIcon,
 	NavbarManualItem,
+	LinkedPostTypeData,
 } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
@@ -252,6 +253,10 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 		customPopupEnabled: normalizeBool(raw.customPopupEnabled ?? raw.custom_popup_enabled ?? raw.custom_popup_enable, false),
 		multiColumnMenu: normalizeBool(raw.multiColumnMenu ?? raw.multi_column_menu ?? raw.custom_menu_cols, false),
 		menuColumns: normalizeNumber(raw.menuColumns ?? raw.menu_columns ?? raw.set_menu_cols, 1),
+
+		// Linked block IDs
+		searchFormId: normalizeString(raw.searchFormId ?? raw.search_form_id, ''),
+		templateTabsId: normalizeString(raw.templateTabsId ?? raw.template_tabs_id, ''),
 	};
 }
 
@@ -316,19 +321,39 @@ async function fetchMenuItems(
 /**
  * Wrapper component that handles data fetching
  */
-interface NavbarWrapperProps {
-	config: NavbarVxConfig;
+interface InlineNavbarData {
+	mainMenu?: NavbarMenuApiResponse;
+	mobileMenu?: NavbarMenuApiResponse;
+	searchFormId?: string;
+	linkedPostTypes?: Array<{ key: string; label: string; icon: string | null; isActive: boolean }>;
 }
 
-function NavbarWrapper({ config }: NavbarWrapperProps) {
-	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(null);
+interface NavbarWrapperProps {
+	config: NavbarVxConfig;
+	inlineData?: InlineNavbarData | null;
+}
+
+function NavbarWrapper({ config, inlineData }: NavbarWrapperProps) {
+	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(
+		inlineData?.mainMenu || null
+	);
 	const [mobileMenuData, setMobileMenuData] =
-		useState<NavbarMenuApiResponse | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+		useState<NavbarMenuApiResponse | null>(
+			inlineData?.mobileMenu || null
+		);
+	const [isLoading, setIsLoading] = useState(
+		!inlineData && config.source === 'select_wp_menu'
+	);
 	const [error, setError] = useState<string | null>(null);
 
-	// Fetch menu data on mount
+	// Fetch menu data on mount (skip if inline data present)
 	useEffect(() => {
+		// Skip REST fetch if we have inline data from server-side config injection
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		if (inlineData) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadMenuData() {
@@ -371,7 +396,7 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [config.source, config.menuLocation, config.mobileMenuLocation]);
+	}, [inlineData, config.source, config.menuLocation, config.mobileMenuLocation]);
 
 	// Build attributes from config
 	const attributes: NavbarAttributes = {
@@ -396,7 +421,13 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 		customPopupEnabled: config.customPopupEnabled,
 		multiColumnMenu: config.multiColumnMenu,
 		menuColumns: config.menuColumns,
+		searchFormId: config.searchFormId,
+		templateTabsId: config.templateTabsId,
 	};
+
+	// Resolve linked post types from inline hydration data (search_form source)
+	const linkedPostTypes: LinkedPostTypeData[] | undefined = inlineData?.linkedPostTypes || undefined;
+	const linkedBlockId: string | undefined = config.searchFormId || inlineData?.searchFormId || undefined;
 
 	return (
 		<NavbarComponent
@@ -406,6 +437,8 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 			isLoading={isLoading}
 			error={error}
 			context="frontend"
+			linkedPostTypes={linkedPostTypes}
+			linkedBlockId={linkedBlockId}
 		/>
 	);
 }
@@ -430,13 +463,25 @@ function initNavbars() {
 			return;
 		}
 
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlineData: InlineNavbarData | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlineData = JSON.parse(hydrateScript.textContent);
+			} catch {
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
 		// Mark as hydrated and clear placeholder
 		container.dataset.hydrated = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<NavbarWrapper config={config} />);
+		root.render(<NavbarWrapper config={config} inlineData={inlineData} />);
 	});
 }
 

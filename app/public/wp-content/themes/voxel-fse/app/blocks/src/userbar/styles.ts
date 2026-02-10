@@ -347,46 +347,38 @@ export function generateUserbarResponsiveCSS(
 		const itemSelector = `${selector} .elementor-repeater-item-${item._id}`;
 
 		// Label visibility controls (lines 220-250)
+		// Elementor pattern: generate CSS for each breakpoint when value differs from default (flex)
 		if (item.labelVisibility) {
+			const labelDefault = 'flex';
 			// Desktop
-			if (item.labelVisibilityDesktop === 'none') {
-				cssRules.push(`${itemSelector} .ts_comp_label { display: none; }`);
+			if (item.labelVisibilityDesktop && item.labelVisibilityDesktop !== labelDefault) {
+				cssRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityDesktop} !important; }`);
 			}
-			// Tablet
-			if (item.labelVisibilityTablet === 'none') {
-				tabletRules.push(`${itemSelector} .ts_comp_label { display: none; }`);
-			} else if (item.labelVisibilityTablet === 'flex' && item.labelVisibilityDesktop === 'none') {
-				// Override desktop 'none' on tablet
-				tabletRules.push(`${itemSelector} .ts_comp_label { display: flex; }`);
+			// Tablet — always generate if set, the media query cascade handles inheritance
+			if (item.labelVisibilityTablet) {
+				tabletRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityTablet} !important; }`);
 			}
-			// Mobile
-			if (item.labelVisibilityMobile === 'none') {
-				mobileRules.push(`${itemSelector} .ts_comp_label { display: none; }`);
-			} else if (item.labelVisibilityMobile === 'flex' && (item.labelVisibilityDesktop === 'none' || item.labelVisibilityTablet === 'none')) {
-				// Override desktop/tablet 'none' on mobile
-				mobileRules.push(`${itemSelector} .ts_comp_label { display: flex; }`);
+			// Mobile — always generate if set
+			if (item.labelVisibilityMobile) {
+				mobileRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityMobile} !important; }`);
 			}
 		}
 
 		// Component visibility controls (lines 254-295)
+		// Same Elementor pattern: generate CSS for each breakpoint when value differs from default
 		if (item.componentVisibility) {
+			const compDefault = 'flex';
 			// Desktop
-			if (item.userBarVisibilityDesktop === 'none') {
-				cssRules.push(`${itemSelector} { display: none !important; }`);
+			if (item.userBarVisibilityDesktop && item.userBarVisibilityDesktop !== compDefault) {
+				cssRules.push(`${itemSelector} { display: ${item.userBarVisibilityDesktop} !important; }`);
 			}
-			// Tablet
-			if (item.userBarVisibilityTablet === 'none') {
-				tabletRules.push(`${itemSelector} { display: none !important; }`);
-			} else if (item.userBarVisibilityTablet === 'flex' && item.userBarVisibilityDesktop === 'none') {
-				// Override desktop 'none' on tablet
-				tabletRules.push(`${itemSelector} { display: flex !important; }`);
+			// Tablet — always generate if set
+			if (item.userBarVisibilityTablet) {
+				tabletRules.push(`${itemSelector} { display: ${item.userBarVisibilityTablet} !important; }`);
 			}
-			// Mobile
-			if (item.userBarVisibilityMobile === 'none') {
-				mobileRules.push(`${itemSelector} { display: none !important; }`);
-			} else if (item.userBarVisibilityMobile === 'flex' && (item.userBarVisibilityDesktop === 'none' || item.userBarVisibilityTablet === 'none')) {
-				// Override desktop/tablet 'none' on mobile
-				mobileRules.push(`${itemSelector} { display: flex !important; }`);
+			// Mobile — always generate if set
+			if (item.userBarVisibilityMobile) {
+				mobileRules.push(`${itemSelector} { display: ${item.userBarVisibilityMobile} !important; }`);
 			}
 		}
 	});

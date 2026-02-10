@@ -9,7 +9,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import type { SliderBlockAttributes } from './types';
 
@@ -34,9 +34,17 @@ const icon = (
 /**
  * Register the Slider block
  */
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
+
 registerBlockType(metadata.name, {
 	...metadata,
 	icon,
 	edit: Edit,
 	save,
+	deprecated,
 } as any);

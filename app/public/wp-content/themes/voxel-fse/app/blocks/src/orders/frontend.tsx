@@ -64,6 +64,9 @@ import type {
 } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
+// jQuery type for voxel:markup-update handler
+declare const jQuery: any;
+
 /**
  * Get the REST API base URL
  * MULTISITE FIX: Uses getRestBaseUrl() for multisite subdirectory support
@@ -670,6 +673,31 @@ function initOrdersBlocks() {
 	});
 }
 
+/**
+ * Component registry for custom order/item types
+ * Reference: voxel-orders.beautified.js lines 244-280 (setupComponents)
+ * Voxel uses Vue.defineAsyncComponent() to lazy-load custom renderers.
+ * We expose a registration API so third-party code can add custom components.
+ */
+const componentRegistry: Record<string, () => Promise<{ default: React.ComponentType<any> }>> = {};
+
+/**
+ * Expose window.VX_Orders global for external script compatibility
+ * Reference: voxel-orders.beautified.js line 779 (window.VX_Orders = this)
+ */
+(window as any).VX_Orders = {
+	reinit: () => initOrdersBlocks(),
+	/**
+	 * Register a custom component for an order or item type.
+	 * Usage: VX_Orders.registerComponent('order:booking', () => import('./my-booking-component'))
+	 * Usage: VX_Orders.registerComponent('order-item:custom_addon', () => import('./my-addon-component'))
+	 */
+	registerComponent: (name: string, loader: () => Promise<{ default: React.ComponentType<any> }>) => {
+		componentRegistry[name] = loader;
+	},
+	getComponent: (name: string) => componentRegistry[name] || null,
+};
+
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', initOrdersBlocks);
@@ -680,3 +708,9 @@ if (document.readyState === 'loading') {
 // Also initialize on Turbo/PJAX page loads
 window.addEventListener('turbo:load', initOrdersBlocks);
 window.addEventListener('pjax:complete', initOrdersBlocks);
+
+// Re-initialize on Voxel's native AJAX markup updates
+// Reference: voxel-orders.beautified.js line 1153
+if (typeof jQuery !== 'undefined') {
+	jQuery(document).on('voxel:markup-update', initOrdersBlocks);
+}

@@ -284,6 +284,23 @@ export default function SearchFormComponent({
 		return () => window.removeEventListener('voxel-search-clear', handleExternalClear);
 	}, [context, attributes.blockId, clearAll]);
 
+	// Listen for post type switch events from linked Navbar block
+	// Evidence: voxel-search-form.beautified.js:2360-2373 handleNavbars()
+	// Navbar dispatches 'voxel-switch-post-type' when user clicks a post type tab
+	useEffect(() => {
+		if (context !== 'frontend') return;
+
+		const handlePostTypeSwitch = (event: Event) => {
+			const { searchFormId, postType } = (event as CustomEvent).detail || {};
+			// Only respond if this event targets this search form
+			if (searchFormId !== attributes.blockId) return;
+			if (postType) setCurrentPostType(postType);
+		};
+
+		window.addEventListener('voxel-switch-post-type', handlePostTypeSwitch);
+		return () => window.removeEventListener('voxel-switch-post-type', handlePostTypeSwitch);
+	}, [context, attributes.blockId, setCurrentPostType]);
+
 	// Get current post type config
 	const currentPostTypeConfig = postTypes.find(
 		(pt) => pt.key === state.currentPostType
