@@ -86,6 +86,16 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 	// Field props
 	const isMultiple = field.props?.['multiple'] ?? false;
 	const placeholder = field.props?.['placeholder'] || field.label;
+	// Evidence: post-relation-field.php:128-129 — max_count limits how many posts can be selected
+	const maxCount = field.props?.['max_count'] as number | null | undefined;
+	// Evidence: post-relation-field.php:155 — relation_type: 'has_one'|'has_many'|'belongs_to_one'|'belongs_to_many'
+	const relationType = field.props?.['relation_type'] as string | undefined;
+	// Evidence: post-relation-field.php:157 — post_types array of allowed post type keys
+	const postTypes = field.props?.['post_types'] as string[] | undefined;
+	// Evidence: post-relation-field.php:183 — require_author_approval flag
+	const requireAuthorApproval = field.props?.['require_author_approval'] === true;
+	// Evidence: post-relation-field.php:186 — pending_ids: post IDs pending approval
+	const pendingIds = (field.props?.['pending_ids'] || []) as number[];
 
 	// Get validation error from field
 	const displayError = field.validation?.errors?.[0] || '';
@@ -112,6 +122,9 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 
 	// Track which post IDs we've already attempted to fetch (to prevent infinite loops)
 	const fetchedIdsRef = useRef<Set<number>>(new Set());
+
+	// Set of pending post IDs for O(1) lookup — Evidence: post-relation-field.php:186
+	const pendingSet = useMemo(() => new Set(pendingIds), [pendingIds]);
 
 	// EXACT Voxel: Get search icon from widget settings OR use Voxel default
 	// Evidence: themes/voxel/templates/widgets/create-post/post-relation-field.php:24,69,122
@@ -373,8 +386,27 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 			if (newSelected[post.id]) {
 				delete newSelected[post.id];
 			} else {
+				// Enforce max_count — Evidence: post-relation-field.php:128-129
+				if (maxCount && maxCount > 0) {
+					const currentCount = Object.values(newSelected).filter(Boolean).length;
+					if (currentCount >= maxCount) {
+						if (field.validation) {
+							field.validation.errors = [`You can select up to ${maxCount} items`];
+						}
+						return;
+					}
+				}
 				newSelected[post.id] = true;
 			}
+
+			// Clear validation error when under limit
+			if (field.validation?.errors?.length) {
+				const count = Object.values(newSelected).filter(Boolean).length;
+				if (!maxCount || count <= maxCount) {
+					field.validation.errors = [];
+				}
+			}
+
 			const ids = Object.keys(newSelected).map(Number);
 			onChange(ids.length > 0 ? ids : null);
 		} else {
@@ -382,7 +414,7 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 			onChange(post.id);
 			closePopup();
 		}
-	}, [isMultiple, selectedPosts, onChange, closePopup, postTypeKey, field.key]);
+	}, [isMultiple, selectedPosts, onChange, closePopup, postTypeKey, field.key, maxCount, field.validation]);
 
 	// Handle search input change
 	// EXACT Voxel: Debounced search with loading state
@@ -522,7 +554,7 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 							{searchResults.length > 0 ? (
 								<>
 									{searchResults.map(post => (
-										<li key={post.id}>
+										<li key={post.id} className={pendingSet.has(post.id) ? 'ts-pending' : ''}>
 											<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); selectPost(post); }}>
 												<div className="ts-checkbox-container">
 													<label className={`container-${isMultiple ? 'checkbox' : 'radio'}`}>
@@ -537,6 +569,9 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 													</label>
 												</div>
 												<span>{post.title}</span>
+												{requireAuthorApproval && pendingSet.has(post.id) && (
+													<span className="ts-status-badge" style={{ fontSize: '11px', opacity: 0.7 }}>Pending</span>
+												)}
 												{post.logo && (
 													<div className="ts-term-image">
 														<span dangerouslySetInnerHTML={{ __html: post.logo }} />
@@ -575,7 +610,7 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 							{initialPosts.length > 0 ? (
 								<>
 									{initialPosts.map(post => (
-										<li key={post.id}>
+										<li key={post.id} className={pendingSet.has(post.id) ? 'ts-pending' : ''}>
 											<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); selectPost(post); }}>
 												<div className="ts-checkbox-container">
 													<label className={`container-${isMultiple ? 'checkbox' : 'radio'}`}>
@@ -590,6 +625,9 @@ export const PostRelationField: React.FC<PostRelationFieldProps> = ({
 													</label>
 												</div>
 												<span>{post.title}</span>
+												{requireAuthorApproval && pendingSet.has(post.id) && (
+													<span className="ts-status-badge" style={{ fontSize: '11px', opacity: 0.7 }}>Pending</span>
+												)}
 												{post.logo && (
 													<div className="ts-term-image">
 														<span dangerouslySetInnerHTML={{ __html: post.logo }} />

@@ -434,6 +434,9 @@ export interface StripeAccountConfig {
 	};
 
 	// Icon markup (from widget settings)
+	// NOTE: Voxel template uses 'flag_icon' for zones and 'box_icon' for rates,
+	// but neither are registered as Elementor controls. They always fall back to SVGs.
+	// We use 'zone' for zone headers and 'rate' for rate headers to match visual parity.
 	icons: {
 		setup?: string;
 		submit?: string;
@@ -444,6 +447,7 @@ export interface StripeAccountConfig {
 		save?: string;
 		handle?: string;
 		zone?: string;
+		rate?: string; // For rate headers (Voxel uses box.svg fallback)
 		trash?: string;
 		down?: string;
 		search?: string;

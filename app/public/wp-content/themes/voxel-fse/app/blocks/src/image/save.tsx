@@ -7,7 +7,7 @@
  * Evidence: plugins/elementor/includes/widgets/image.php:render()
  * HTML structure:
  * - figure.wp-caption (when has caption)
- * - a.elementor-clickable (when linked)
+ * - a (when linked; .elementor-clickable is editor-only per Elementor image.php:746-749)
  * - img with elementor-animation-* class (when hover animation set)
  * - figcaption.widget-image-caption.wp-caption-text (when has caption)
  *
@@ -131,7 +131,10 @@ export default function save({ attributes }: SaveProps) {
 	if (attributes.customClasses) visibilityClasses.push(attributes.customClasses);
 
 	// Check for caption
+	// Evidence: Elementor image.php:697-722 - has_caption() checks captionSource != 'none'
 	const hasCaption = attributes.captionSource !== 'none';
+	// For 'custom': use the user-entered caption text
+	// For 'attachment': render empty figcaption placeholder — render.php injects wp_get_attachment_caption()
 	const caption = attributes.captionSource === 'custom' ? (attributes.caption || '') : '';
 
 	// Check for link
@@ -175,17 +178,23 @@ export default function save({ attributes }: SaveProps) {
 		/>
 	);
 
-	// Wrap with link if needed - matches a.elementor-clickable
+	// Wrap with link if needed
+	// Evidence: .elementor-clickable is editor-only in Elementor (image.php:746-749)
+	// Frontend <a> has NO class attribute by default
 	let content = imageElement;
 	if (hasLink && linkUrl) {
 		const linkAttributes: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
 			href: linkUrl,
-			className: 'elementor-clickable',
 		};
 
-		// Add lightbox data attribute
+		// Add lightbox data attributes
+		// Evidence: Elementor image.php:752-754 applies data-elementor-open-lightbox
+		// and data-elementor-lightbox-slideshow for gallery grouping
 		if (attributes.linkTo === 'file' && attributes.openLightbox !== 'no') {
 			linkAttributes['data-elementor-open-lightbox'] = attributes.openLightbox;
+			if (attributes.lightboxGroup) {
+				linkAttributes['data-elementor-lightbox-slideshow'] = attributes.lightboxGroup;
+			}
 		}
 
 		// Add target/rel for custom links
@@ -208,7 +217,7 @@ export default function save({ attributes }: SaveProps) {
 				{combinedCSS && <style dangerouslySetInnerHTML={{ __html: combinedCSS }} />}
 				<figure className="wp-caption">
 					{content}
-					{caption && (
+					{(caption || attributes.captionSource === 'attachment') && (
 						<figcaption
 							className="widget-image-caption wp-caption-text"
 							style={Object.keys(captionStyles).length > 0 ? captionStyles : undefined}

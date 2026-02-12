@@ -18,12 +18,32 @@ export interface PostTypeConfig {
 }
 
 /**
+ * Individual filter item within a post type's repeater
+ */
+export interface QuickSearchFilterItem {
+	id: string;
+	label: string;
+	filter: string;
+	taxonomies: string[];
+	// Visibility
+	rowVisibility?: 'show' | 'hide';
+	visibilityRules?: any[];
+	// Loop
+	loopSource?: string;
+	loopProperty?: string;
+	loopLimit?: string;
+	loopOffset?: string;
+}
+
+/**
  * Per-post-type settings configured in the editor
  */
 export interface PostTypeSettings {
 	label: string;
 	filter: string;
 	taxonomies: string[];
+	// Repeater filter items
+	filterItems?: QuickSearchFilterItem[];
 }
 
 /**
@@ -152,11 +172,19 @@ export interface QuickSearchAttributes {
 	popupPointerEvents: boolean;
 	popupCenterPosition: boolean;
 	popupMinWidth: number;
+	popupMinWidth_tablet: number;
+	popupMinWidth_mobile: number;
 	popupMaxWidth: number;
+	popupMaxWidth_tablet: number;
+	popupMaxWidth_mobile: number;
 	popupMaxHeight: number;
+	popupMaxHeight_tablet: number;
+	popupMaxHeight_mobile: number;
 	popupTopBottomMargin: number;
+	popupTopBottomMargin_tablet: number;
+	popupTopBottomMargin_mobile: number;
 	popupBoxShadow: object;
-	popupBorder: object;
+	popupBorder: any;
 
 	// Style - Custom Popup Menu
 	customPopupMenuState: string;
@@ -209,6 +237,15 @@ export interface QuickSearchAttributes {
 	hideTablet: boolean;
 	hideMobile: boolean;
 	customClasses: string;
+
+	// Visibility & Loops
+	visibilityBehavior?: string;
+	visibilityRules?: any[];
+	loopSource?: string;
+	loopLimit?: string;
+	loopOffset?: string;
+	loopProperty?: string;
+
 	[key: string]: any;
 }
 

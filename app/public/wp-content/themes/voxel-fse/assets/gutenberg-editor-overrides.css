@@ -116,7 +116,6 @@ body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
 }
 
 
-
 body .vxf-create-post {
     flex-wrap: nowrap !important;
 
@@ -200,6 +199,32 @@ body.block-editor-page .edit-post-meta-boxes-are #vx-verification-status a {
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-higher,
 body.block-editor-page .edit-post-meta-boxes-area .postbox .handle-order-lower {
     display: none;
+}
+
+
+/* Reset Gutenberg's default focus ring while preserving Voxel's own focus styles.
+ * Voxel default: border: 1px solid var(--ts-shade-3); border-radius: .375rem;
+ * Inspector controls (Input > Focus > Border Color) can override these defaults. */
+body.block-editor-page [class*="wp-block-voxel-"] input[type=color]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=date]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=datetime-local]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=datetime]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=email]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=month]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=number]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=password]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=search]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=tel]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=text]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=time]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=url]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] input[type=week]:focus,
+body.block-editor-page [class*="wp-block-voxel-"] select:focus,
+body.block-editor-page [class*="wp-block-voxel-"] textarea:focus {
+    box-shadow: none!important;
+    outline: none;
+    border: 1px solid var(--ts-shade-3);
+    border-radius: .375rem;
 }
 
 /* ============================================
@@ -457,8 +482,6 @@ body.block-editor-page .interface-interface-skeleton__sidebar .inside {
 }
 
 
-
-
 /* ============================================
  * Fix: viewport width
  * ============================================ */
@@ -492,6 +515,4 @@ body .block-editor-block-list__layout.is-root-container > .alignwide {
 body .block-editor-block-list__layout.is-root-container > .alignfull {
     max-width: none;
 }
-
-
 

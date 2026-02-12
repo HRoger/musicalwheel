@@ -33,6 +33,17 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		}
 	}, []);
 
+	// FIX: Clean up global styles injected by PHP/Block Loader to prevent conflicts with editor preview
+	// The server injects a style tag with ID 'vx:timeline-kit-custom-inline-css' that persists even after
+	// block attributes are reset, causing stale styles to remain.
+	// Pattern: css-priority-and-admin-integrity.md (Section 6)
+	useEffect(() => {
+		const globalStyle = document.getElementById('vx:timeline-kit-custom-inline-css');
+		if (globalStyle) {
+			globalStyle.remove();
+		}
+	}, []);
+
 	const blockProps = useBlockProps({
 		className: 'voxel-fse-timeline-kit-editor',
 	});

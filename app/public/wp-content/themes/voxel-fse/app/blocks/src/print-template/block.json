@@ -25,7 +25,7 @@
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
-	"viewScript": "file:./frontend.js",
+	"editorStyle": "file:./editor.css",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
 	"attributes": {

@@ -9,7 +9,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
@@ -20,6 +20,17 @@ import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls
  * Register the Advanced List block
  * Merge advancedTabAttributes and voxelTabAttributes for AdvancedTab + VoxelTab support
  */
+const deprecated = [
+	{
+		attributes: {
+			...metadata.attributes,
+			...advancedTabAttributes,
+			...voxelTabAttributes,
+		},
+		save: saveWithPlaceholder,
+	},
+];
+
 registerBlockType(metadata.name, {
 	...metadata,
 	attributes: {
@@ -30,6 +41,7 @@ registerBlockType(metadata.name, {
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
+	deprecated,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any);
 

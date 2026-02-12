@@ -269,7 +269,16 @@ async function fetchProductPrice(postId: number): Promise<ProductPriceData> {
 	const restUrl = getRestUrl();
 	const endpoint = `${restUrl}voxel-fse/v1/product-price?post_id=${postId}`;
 
-	const response = await fetch(endpoint);
+	const headers: HeadersInit = {};
+	const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+	if (nonce) {
+		headers['X-WP-Nonce'] = nonce;
+	}
+
+	const response = await fetch(endpoint, {
+		credentials: 'same-origin',
+		headers,
+	});
 
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));

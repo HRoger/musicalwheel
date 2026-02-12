@@ -26,7 +26,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	// Use shared utility for AdvancedTab + VoxelTab wiring (Layer 1)
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
 		blockId,
-		baseClass: 'vx-orders-widget voxel-fse-orders-editor',
+		baseClass: 'vx-orders-widget vx-order-ease voxel-fse-orders-editor',
 		selectorPrefix: 'voxel-fse-orders',
 	});
 
@@ -135,6 +135,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 						context="editor"
 						isLoading={false}
 						error={null}
+						currentPage={1}
+						totalPages={1}
 					/>
 				)}
 			</div>

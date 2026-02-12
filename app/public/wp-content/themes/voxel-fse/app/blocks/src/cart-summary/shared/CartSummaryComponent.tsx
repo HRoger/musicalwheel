@@ -11,13 +11,14 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import { renderIcon } from '@shared/utils/renderIcon';
 import QuickRegister from './QuickRegister';
 import ShippingDetails from './ShippingDetails';
 import ShippingMethodCards from './ShippingMethodCards';
 import VendorShippingCards from './VendorShippingCards';
+import FileUploadField from './FileUploadField';
 import type {
 	CartSummaryComponentProps,
 	CartItem,
@@ -376,11 +377,22 @@ export default function CartSummaryComponent({
 
 	/**
 	 * Get shipping method
-	 * Matches Voxel's getShippingMethod() method
+	 * Evidence: docs/block-conversions/cart-summary/product-summary-beautified.js:7
+	 * Voxel checks: multivendor.enabled, responsibility === 'vendor', vendor count, platform key
 	 */
-	const getShippingMethod = (): 'platform_rates' | 'vendor_rates' => {
+	const getShippingMethod = (): 'platform_rates' | 'vendor_rates' | null => {
 		if (!config?.multivendor.enabled) return 'platform_rates';
-		return config.shipping.responsibility === 'vendor' ? 'vendor_rates' : 'platform_rates';
+		if (config.shipping.responsibility !== 'vendor') return 'platform_rates';
+
+		// Check vendor count - if only 1 vendor and it's 'platform', use platform_rates
+		const vendorKeys = Object.keys(vendors);
+		const vendorCount = vendorKeys.length;
+		if (vendorCount === 1 && vendors['platform']) {
+			return 'platform_rates';
+		}
+
+		// If at least one vendor, use vendor_rates
+		return vendorCount >= 1 ? 'vendor_rates' : null;
 	};
 
 	/**
@@ -795,6 +807,28 @@ export default function CartSummaryComponent({
 								<div className="or-line"></div>
 							</div>
 						</div>
+
+						{/* Dynamic Cart Item Components */}
+						{/* Matches Voxel: cart-summary.php:95-113 (suspense > item.components) */}
+						{items && Object.values(items).map((item) =>
+							item.components && Object.entries(item.components).map(([compKey, component]) => {
+								const compData = (component as Record<string, unknown>).data as Record<string, unknown> | undefined;
+								if (component.type === 'file-upload' && compData) {
+									return (
+										<FileUploadField
+											key={`${item.key}-${compKey}`}
+											field={(compData.field as { key: string; label?: string; allowed_types?: string; max_files?: number }) || { key: compKey }}
+											value={(compData.value as []) || []}
+											onChange={() => {}}
+											uploadIcon={getIcon(attributes.uploadIcon, 'uploadIcon')}
+											trashIcon={getIcon(attributes.deleteIcon, 'deleteIcon')}
+											context={context}
+										/>
+									);
+								}
+								return null;
+							})
+						)}
 
 						{/* Order Notes */}
 						{orderNotes && onOrderNotesChange && (

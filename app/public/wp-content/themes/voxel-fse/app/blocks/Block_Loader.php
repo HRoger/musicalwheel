@@ -75,6 +75,8 @@ class Block_Loader
         add_action('init', [__CLASS__, 'load_blocks']);
         add_filter('block_categories_all', [__CLASS__, 'add_block_categories']);
         add_action('rest_api_init', [__CLASS__, 'register_rest_endpoints']);
+        add_action('init', [__CLASS__, 'register_yarl_assets']);
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_frontend_shims_patched'], 20);
 
         // CRITICAL: Add import map BEFORE any scripts are printed
         // Using wp_print_scripts with priority -9999 ensures import map loads BEFORE modules
@@ -114,7 +116,7 @@ class Block_Loader
         // Priority 15 ensures Voxel's register_scripts (on admin_enqueue_scripts:10) completes first
         // We use admin_enqueue_scripts (not enqueue_block_editor_assets) because we need scripts
         // to be registered before we enqueue them. The method has is_block_editor() checks.
-        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_voxel_core_scripts'], 15);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_voxel_core_scripts'], 20);
 
         // CRITICAL: Dequeue Vue/commons.js in block editor to prevent Vue errors
         // enqueue_block_editor_assets only fires in block editor, so no need for screen checks
@@ -133,6 +135,11 @@ class Block_Loader
         // We must enqueue it in editor for the search-form range slider to work
         // Priority 30 to run at same time as pikaday
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_nouislider_assets'], 30);
+
+        // Inject config data for config-fetching blocks (search-form, create-post, navbar)
+        // This eliminates the .ts-loader spinner in the editor by providing data inline
+        // Priority 50 to run after all block scripts are registered
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'inject_editor_config_data'], 50);
 
         // Enqueue CodeMirror for custom CSS code editor in AdvancedTab
         // Priority 30 to run at same time as other editor assets
@@ -158,7 +165,7 @@ class Block_Loader
         // Set CSS variable for font-family BEFORE commons.css loads (priority 1, before Voxel's priority 5)
         // This ensures --e-global-typography-text-font-family is set to WordPress system font
         // before commons.css applies font-family: var(--e-global-typography-text-font-family), sans-serif;
-        add_action('wp_enqueue_scripts', [__CLASS__, 'set_font_family_css_variable'], 1);
+//        add_action('wp_enqueue_scripts', [__CLASS__, 'set_font_family_css_variable'], 1);
 
         // Set popup block CSS variables on main document body (priority 1, before Voxel's priority 5)
         // This ensures CSS variables are available for parent theme's commons.css
@@ -199,6 +206,11 @@ class Block_Loader
         // Extracts CSS from popup-kit block in kit_popups template and enqueues it globally
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_popup_kit_global_styles'], 100);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_popup_kit_global_styles'], 100);
+
+        // Enqueue timeline-kit global styles
+        // Extracts CSS from timeline-kit block in kit_timeline template and enqueues it globally
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_timeline_kit_global_styles'], 100);
+        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_timeline_kit_global_styles'], 100);
 
         // GLOBAL ABSTRACTION: Handle Visibility, Loop, and VoxelScript for all voxel-fse blocks
         // Priority 10 ensures it runs for all blocks, including those without render_callback
@@ -441,6 +453,22 @@ class Block_Loader
                         $vendor_url . $nouislider_file,
                         [],
                         '14.6.3'
+                );
+            }
+        }
+
+        // Register nouislider JS (needed for range sliders on frontend)
+        // On admin, Voxel's Assets_Controller registers it, but on frontend we need to ensure it
+        if (!wp_script_is('nouislider', 'registered')) {
+            $nouislider_js_file = 'nouislider/nouislider' . $vendor_suffix . '.js';
+            $nouislider_js_path = $vendor_dir . $nouislider_js_file;
+            if (file_exists($nouislider_js_path)) {
+                wp_register_script(
+                        'nouislider',
+                        $vendor_url . $nouislider_js_file,
+                        [],
+                        '14.6.3',
+                        true
                 );
             }
         }
@@ -1058,6 +1086,119 @@ CSS;
             );
             wp_enqueue_script('nouislider');
         }
+    }
+
+    /**
+     * Inject pre-fetched config data for config-fetching blocks in the editor
+     *
+     * Eliminates .ts-loader spinners by providing configuration data inline
+     * via window.__voxelFseEditorConfig. The editor hooks (usePostTypes,
+     * useFieldsConfig, navbar edit.tsx) check this object before making
+     * REST API calls.
+     *
+     * Uses wp_add_inline_script() on wp-blocks (always loaded in editor).
+     */
+    public static function inject_editor_config_data()
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        $config = [];
+
+        // Search form: generate config for all Voxel post types
+        // In editor, we don't know which post types the block will use, so generate all
+        try {
+            require_once dirname(__DIR__) . '/controllers/fse-search-form-controller.php';
+            $search_config = \VoxelFSE\Controllers\FSE_Search_Form_Controller::generate_frontend_config();
+            if (!empty($search_config)) {
+                $config['searchForm'] = $search_config;
+            }
+        } catch (\Throwable $e) {
+            // Silently skip if controller fails
+        }
+
+        // Create-post: generate field configs for all Voxel post types
+        // Keyed by post type key so useFieldsConfig can look up by postTypeKey
+        try {
+            if (class_exists('\Voxel\Post_Type')) {
+                $create_post_fields = [];
+                $all_types = \Voxel\Post_Type::get_voxel_types();
+                foreach ($all_types as $pt) {
+                    $pt_key = $pt->get_key();
+                    $fields_config = [];
+
+                    foreach ($pt->get_fields() as $field) {
+                        try {
+                            $field->check_dependencies();
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+
+                        if (!$field->passes_visibility_rules()) {
+                            continue;
+                        }
+
+                        try {
+                            $field_config = $field->get_frontend_config();
+                            if ($field_config) {
+                                $fields_config[] = $field_config;
+                            }
+                        } catch (\Exception $e) {
+                            continue;
+                        }
+                    }
+
+                    if (!empty($fields_config)) {
+                        $create_post_fields[$pt_key] = [
+                            'fields_config' => $fields_config,
+                            'field_count'   => count($fields_config),
+                        ];
+                    }
+                }
+                if (!empty($create_post_fields)) {
+                    $config['createPostFields'] = $create_post_fields;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
+        // Navbar: generate menu locations list
+        // Must match REST API shape: { slug, name, description }
+        // Used by edit.tsx getInlineNavbarLocations() → MenuLocation interface
+        try {
+            $nav_menus = get_registered_nav_menus();
+            $menu_locations = [];
+            foreach ( $nav_menus as $slug => $name ) {
+                $menu_locations[] = [
+                    'slug'        => $slug,
+                    'name'        => $name,
+                    'description' => '',
+                ];
+            }
+            if ( ! empty( $menu_locations ) ) {
+                $config['navbarLocations'] = $menu_locations;
+            }
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
+        if (empty($config)) {
+            return;
+        }
+
+        $json = wp_json_encode($config);
+        if ($json === false) {
+            return;
+        }
+
+        // Inject on wp-blocks which is always loaded in the editor
+        wp_add_inline_script(
+            'wp-blocks',
+            'window.__voxelFseEditorConfig = ' . $json . ';',
+            'before'
+        );
     }
 
     /**
@@ -2152,33 +2293,70 @@ CSS;
 
         // Enqueue our React-compatible voxel-commons.js instead
         // Provides the same Voxel.* APIs without Vue dependencies
-        $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        // Enqueue our Compatibility Shim (// updated filename)
+        // This patches Voxel.mixins.base to prevent 'dataset' errors in FSE context
+        // We favor the source file in assets/js/ over dist/ to ensure we get the latest patches
+        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+        $commons_url = file_exists($commons_path) 
+            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
+            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+
         wp_enqueue_script(
             'voxel-fse-commons',
             $commons_url,
             [], // No dependencies - standalone vanilla JS
-            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0',
-            true // In footer
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : time(), // Force cache bust
+            false // In HEAD to race common.js
         );
 
+        // Force 'vx:commons.js' to depend on 'voxel-fse-commons'
+        // This guarantees that our shim loads BEFORE Voxel core, preventing the "dataset" error
+        global $wp_scripts;
+        $commons_handle = 'vx:commons.js';
+        if (wp_script_is($commons_handle, 'registered')) {
+            $script = $wp_scripts->query($commons_handle, 'registered');
+            if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                $script->deps[] = 'voxel-fse-commons';
+            }
+        }
+
         // Add script AFTER our commons to define GoogleMaps callback
+        // NOTE: Voxel.Maps is created by google-maps.js which loads AFTER this script.
+        // We must retry until Voxel.Maps becomes available rather than failing immediately.
         $post_commons_script = <<<'JAVASCRIPT'
 (function() {
-	if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
-		window.Voxel.Maps.GoogleMaps = function() {
-			window.Voxel.Maps.Loaded = true;
-			document.dispatchEvent(new CustomEvent('maps:loaded'));
-		};
-
-		// Check if Google Maps already loaded and called the stub
-		if (window._voxel_gmaps_callback_fired && !window.Voxel.Maps.Loaded) {
-			if (typeof google !== 'undefined' && google.maps) {
-				window.Voxel.Maps.Loaded = true;
-				document.dispatchEvent(new CustomEvent('maps:loaded'));
+	function defineGoogleMapsCallback() {
+		if (typeof window.Voxel !== 'undefined' && typeof window.Voxel.Maps !== 'undefined') {
+			if (!window.Voxel.Maps.GoogleMaps) {
+				window.Voxel.Maps.GoogleMaps = function() {
+					window.Voxel.Maps.Loaded = true;
+					document.dispatchEvent(new CustomEvent('maps:loaded'));
+				};
 			}
+
+			// Check if Google Maps already loaded and called the stub
+			if (window._voxel_gmaps_callback_fired && !window.Voxel.Maps.Loaded) {
+				if (typeof google !== 'undefined' && google.maps) {
+					window.Voxel.Maps.Loaded = true;
+					document.dispatchEvent(new CustomEvent('maps:loaded'));
+				}
+			}
+			return true;
 		}
-	} else {
-		console.error('[Voxel FSE] Cannot define GoogleMaps callback - Voxel.Maps not available');
+		return false;
+	}
+
+	// Try immediately
+	if (!defineGoogleMapsCallback()) {
+		// Voxel.Maps not yet available (google-maps.js loads later) — poll until ready
+		var attempts = 0;
+		var maxAttempts = 100; // 10 seconds max (100 * 100ms)
+		var timer = setInterval(function() {
+			attempts++;
+			if (defineGoogleMapsCallback() || attempts >= maxAttempts) {
+				clearInterval(timer);
+			}
+		}, 100);
 	}
 })();
 JAVASCRIPT;
@@ -2214,16 +2392,22 @@ JAVASCRIPT;
      * dynamic-data.js, vue-draggable.js) runs on the same admin page and needs Vue.
      * WordPress doesn't have separate script queues for the main admin page vs editor iframe.
      *
-     * Instead, we use the voxel-fse-compat.js shim to intercept and suppress errors
+     * Instead, we use the voxel-fse-shim.js shim to intercept and suppress errors
      * from render_static_popups() when it tries to access .elementor-element.
      *
      * @since 1.0.0
      */
     public static function dequeue_vue_commons_in_block_editor()
     {
-        // DISABLED - breaks Voxel admin UI
-        // The shim approach (voxel-fse-compat.js) handles the error instead
-        return;
+        // Only dequeue frontend commons, KEEP vue for backend metaboxes
+        wp_dequeue_script('vx:commons');
+        wp_dequeue_script('vx:commons.js');
+        
+        // Ensure footer scripts are also dequeued
+        add_action('admin_print_footer_scripts', function() {
+            wp_dequeue_script('vx:commons');
+            wp_dequeue_script('vx:commons.js');
+        }, 11);
     }
 
     /**
@@ -2235,8 +2419,9 @@ JAVASCRIPT;
      */
     public static function dequeue_vue_commons_in_editor()
     {
-        // DISABLED - breaks Voxel admin UI
-        return;
+        // Only dequeue frontend commons, KEEP vue for backend metaboxes
+        wp_dequeue_script('vx:commons');
+        wp_dequeue_script('vx:commons.js');
     }
 
     /**
@@ -2258,7 +2443,19 @@ JAVASCRIPT;
         // Ensure commons.css is registered (Voxel will register it, but we need it registered now)
         self::ensure_voxel_styles_registered();
 
-        $css = ':root, body { --e-global-typography-text-font-family: var(--wp--preset--font-family--system, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif); }';
+        // Elementor CSS variable fallbacks for FSE pages
+        // On Elementor pages, these are set by Elementor's global settings. On FSE/Gutenberg
+        // pages without Elementor, they're undefined — causing broken typography and colors
+        // across 40+ Voxel CSS files that consume var(--ts-shade-*), var(--ts-accent-*), etc.
+        $css = ':root, body {'
+            . ' --e-global-typography-text-font-family: var(--wp--preset--font-family--system, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif);'
+            . ' --e-global-typography-text-font-size: 14px;'
+            . ' --e-global-typography-secondary-font-weight: 500;'
+            . ' --ts-shade-1: #1a1a1a;'
+            . ' --ts-shade-2: #4a4a4a;'
+            . ' --ts-shade-5: #999;'
+            . ' --ts-accent-1: var(--e-global-color-accent);'
+            . ' }';
 
         // Method 1: Add inline CSS to vx:commons.css (WordPress will add it when the style is enqueued)
         if (wp_style_is('vx:commons.css', 'registered')) {
@@ -2266,9 +2463,9 @@ JAVASCRIPT;
         }
 
         // Method 2: Also output directly in wp_head at very early priority as fallback
-        // This ensures the CSS variable is set even if wp_add_inline_style doesn't work
+        // This ensures the CSS variables are set even if wp_add_inline_style doesn't work
         add_action('wp_head', function () use ($css) {
-            echo '<style type="text/css" id="voxel-fse-font-family-variable">' . wp_strip_all_tags($css) . '</style>' . "\n";
+            echo '<style type="text/css" id="voxel-fse-elementor-fallback-variables">' . wp_strip_all_tags($css) . '</style>' . "\n";
         }, 0); // Priority 0 to run as early as possible
     }
 
@@ -2437,20 +2634,21 @@ JAVASCRIPT;
             return;
         }
 
-        // Check if popup block is used on the current page
-        // Check in post content, widgets, and FSE templates
+        // Check which blocks are used on the current page
         $has_popup_block = false;
+        $has_search_form_block = false;
 
         // Check current post/page content
         if (is_singular()) {
             global $post;
             if ($post && has_blocks($post->post_content)) {
                 $has_popup_block = has_block('voxel-fse/popup-kit', $post);
+                $has_search_form_block = has_block('voxel-fse/search-form', $post);
             }
         }
 
         // Check widgets (block widgets)
-        if (!$has_popup_block && function_exists('wp_get_sidebars_widgets')) {
+        if ((!$has_popup_block || !$has_search_form_block) && function_exists('wp_get_sidebars_widgets')) {
             $sidebars = wp_get_sidebars_widgets();
             foreach ($sidebars as $sidebar => $widgets) {
                 if (is_array($widgets)) {
@@ -2458,9 +2656,16 @@ JAVASCRIPT;
                         if (strpos($widget, 'block-') === 0) {
                             $widget_id = str_replace('block-', '', $widget);
                             $widget_content = get_post_field('post_content', $widget_id);
-                            if ($widget_content && has_block('voxel-fse/popup-kit', $widget_content)) {
-                                $has_popup_block = true;
-                                break 2;
+                            if ($widget_content) {
+                                if (!$has_popup_block && has_block('voxel-fse/popup-kit', $widget_content)) {
+                                    $has_popup_block = true;
+                                }
+                                if (!$has_search_form_block && has_block('voxel-fse/search-form', $widget_content)) {
+                                    $has_search_form_block = true;
+                                }
+                                if ($has_popup_block && $has_search_form_block) {
+                                    break 2;
+                                }
                             }
                         }
                     }
@@ -2468,22 +2673,43 @@ JAVASCRIPT;
             }
         }
 
-        // If popup block is used, enqueue vendor CSS and product-form.css
-        if ($has_popup_block) {
+        // Check FSE templates/template parts (search-form is typically in header templates)
+        if (!$has_popup_block) {
+            $has_popup_block = self::check_fse_templates_for_block('voxel-fse/popup-kit');
+        }
+        if (!$has_search_form_block) {
+            $has_search_form_block = self::check_fse_templates_for_block('voxel-fse/search-form');
+        }
+
+        // Blocks that need vendor assets (nouislider, pikaday)
+        $needs_vendor_assets = $has_popup_block || $has_search_form_block;
+
+        if ($needs_vendor_assets) {
             // Ensure styles are registered
             self::ensure_voxel_styles_registered();
 
-            // Enqueue pikaday CSS
+            // Enqueue pikaday CSS (date filters in search-form, date fields in popup)
             if (wp_style_is('pikaday', 'registered')) {
                 wp_enqueue_style('pikaday');
             }
 
-            // Enqueue nouislider CSS
+            // Enqueue nouislider CSS + JS (range filters in search-form, range fields in popup)
+            // CRITICAL: Both CSS and JS are required. CSS provides styling, JS provides window.noUiSlider API
+            // which is accessed via the import map proxy in frontend.tsx
             if (wp_style_is('nouislider', 'registered')) {
                 wp_enqueue_style('nouislider');
             }
+            if (wp_script_is('nouislider', 'registered')) {
+                wp_enqueue_script('nouislider');
+            }
+        }
 
-            // Enqueue product-form.css (needed for product form fields in popup)
+        // Enqueue product-form.css only for popup block
+        if ($has_popup_block) {
+            if (!$needs_vendor_assets) {
+                self::ensure_voxel_styles_registered();
+            }
+
             if (wp_style_is('vx:product-form.css', 'registered')) {
                 wp_enqueue_style('vx:product-form.css');
             }
@@ -2776,7 +3002,7 @@ JAVASCRIPT;
         }
 
         // Read the compatibility script
-        $compat_file = 'voxel-fse-compat.js';
+        $compat_file = 'voxel-fse-shim.js';
         $compat_path = get_stylesheet_directory() . '/assets/js/' . $compat_file;
 
         if (file_exists($compat_path)) {
@@ -2823,6 +3049,7 @@ JAVASCRIPT;
                 'voxel-fse/userbar',
                 'voxel-fse/quick-search',
                 'voxel-fse/current-plan',
+                'voxel-fse/current-role',
                 'voxel-fse/cart-summary',
                 'voxel-fse/post-feed',
                 'voxel-fse/login',
@@ -2871,14 +3098,54 @@ JAVASCRIPT;
             $has_react_block = true;
         }
 
+        // Fallback: Check for custom pages (like stays-grid) that may not be detected above
+        // If we haven't found a block yet and we're on a page, check page content directly
+        if (!$has_react_block && is_page()) {
+            global $post;
+            if ($post && $post->post_content) {
+                // Quick check if any voxel-fse block exists in the content
+                if (strpos($post->post_content, '<!-- wp:voxel-fse/') !== false) {
+                    $has_react_block = true;
+                }
+            }
+        }
+
+        // Final fallback: For FSE themes, always ensure React is available
+        // FSE templates may contain React blocks that are hard to detect at this point
+        if (!$has_react_block && function_exists('wp_is_block_theme') && wp_is_block_theme()) {
+            // Conservative approach: check if any template part might have our blocks
+            // For performance, we just enable it if we're in a block theme
+            $has_react_block = true;
+        }
+
         // If any React block is found, ensure React scripts are enqueued
         if ($has_react_block) {
             // WordPress 6.0+ has react and react-dom as registered scripts
             // They provide window.React and window.ReactDOM globals
+            //
+            // CRITICAL: Load React in <head> NOT footer to ensure it executes
+            // BEFORE block IIFE scripts. When an IIFE runs, it immediately
+            // evaluates `React` and `ReactDOM` globals - if they don't exist
+            // yet, the script fails with "Cannot read properties of undefined".
+            //
+            // By setting $in_footer=false, WordPress will output React scripts
+            // in <head> which guarantees they execute before any footer scripts.
+            global $wp_scripts;
+
             if (wp_script_is('react', 'registered')) {
+                // Move react to head by re-registering with in_footer=false
+                $react_script = $wp_scripts->registered['react'] ?? null;
+                if ($react_script) {
+                    $react_script->args = null; // null = load in head, 1 = footer
+                }
                 wp_enqueue_script('react');
             }
             if (wp_script_is('react-dom', 'registered')) {
+                // Move react-dom to head by re-registering with in_footer=false
+                $react_dom_script = $wp_scripts->registered['react-dom'] ?? null;
+                if ($react_dom_script) {
+                    $react_dom_script->args = null; // null = load in head, 1 = footer
+                }
                 wp_enqueue_script('react-dom');
             }
         }
@@ -3505,7 +3772,8 @@ JAVASCRIPT;
                             self::ensure_voxel_styles_registered();
                             $editor_style_deps = [
                                     'vx:commons.css',
-                                    'vx:forms.css'
+                                    'vx:forms.css',
+                                    'vx:popup-kit.css'
                             ];
                         } elseif ($block_name === 'userbar') {
                             self::ensure_voxel_styles_registered();
@@ -3541,6 +3809,15 @@ JAVASCRIPT;
                             $editor_style_deps = [
                                     'vx:commons.css',
                                     'vx:post-feed.css'
+                            ];
+                        } elseif ($block_name === 'print-template') {
+                            // Print-template can embed ANY content, so it needs all core Voxel styles
+                            // to render the embedded template correctly in the editor (ServerSideRender)
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css',
+                                    'vx:popup-kit.css'
                             ];
                         }
 
@@ -3602,6 +3879,7 @@ JAVASCRIPT;
                                 'userbar',
                                 'quick-search',
                                 'current-plan',
+                                'current-role',
                                 'cart-summary',
                                 'post-feed',
                                 'login',
@@ -3651,12 +3929,20 @@ JAVASCRIPT;
                                 });
                             }
 
-                            // quick-search needs Voxel's forms.css
+                            // quick-search needs Voxel's commons.css, forms.css, and popup-kit.css
+                            // Evidence: themes/voxel/app/widgets/quick-search.php uses form-group component
+                            // which depends on popup-kit for .ts-popup-overlay, .ts-popup-backdrop, .ts-quicksearch-popup
                             if ($block_name === 'quick-search') {
                                 add_action('wp_enqueue_scripts', function () {
                                     self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:commons.css', 'registered')) {
+                                        wp_enqueue_style('vx:commons.css');
+                                    }
                                     if (wp_style_is('vx:forms.css', 'registered')) {
                                         wp_enqueue_style('vx:forms.css');
+                                    }
+                                    if (wp_style_is('vx:popup-kit.css', 'registered')) {
+                                        wp_enqueue_style('vx:popup-kit.css');
                                     }
                                 });
                             }
@@ -3679,6 +3965,37 @@ JAVASCRIPT;
                                         wp_enqueue_style('vx:forms.css');
                                     }
                                 });
+                            }
+
+                            // Shared YARL Lightbox Enqueue (frontend + editor)
+                            // See docs/shared-yarl-lightbox-architecture.md
+                            // Note: post-feed removed - it uses native CSS scroll-snap carousel, not YARL lightbox
+                            // YARL has a carousel feature (https://yet-another-react-lightbox.com/examples/carousel)
+                            // that could be integrated later if needed
+                            $lightbox_blocks = ['timeline', 'gallery', 'slider', 'image', 'messages'/* , 'post-feed' */];
+                            if (in_array($block_name, $lightbox_blocks, true)) {
+                                // Frontend: enqueue via wp_enqueue_scripts
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_script_is('mw-yarl-lightbox', 'registered')) {
+                                        wp_enqueue_script('mw-yarl-lightbox');
+                                    }
+                                    if (wp_style_is('mw-yarl-lightbox', 'registered')) {
+                                        wp_enqueue_style('mw-yarl-lightbox');
+                                    }
+                                });
+
+                                // Editor: enqueue via enqueue_block_editor_assets
+                                // Provides window.VoxelLightbox global in Gutenberg so
+                                // clicking images in the editor opens the lightbox
+                                add_action('enqueue_block_editor_assets', function () {
+                                    if (wp_script_is('mw-yarl-lightbox', 'registered') && !wp_script_is('mw-yarl-lightbox', 'enqueued')) {
+                                        wp_enqueue_script('mw-yarl-lightbox');
+                                    }
+                                    if (wp_style_is('mw-yarl-lightbox', 'registered') && !wp_style_is('mw-yarl-lightbox', 'enqueued')) {
+                                        wp_enqueue_style('mw-yarl-lightbox');
+                                    }
+                                }, 25);
                             }
 
                             // product-form needs Voxel's product-form.css
@@ -3741,21 +4058,19 @@ JAVASCRIPT;
                             // membership-plans and listing-plans need Voxel's pricing-plan.css for plan styling
                             // Evidence: pricing-plans-widget.php:1518-1519
                             if ($block_name === 'membership-plans' || $block_name === 'listing-plans') {
-                                add_action('wp_enqueue_scripts', function () {
-                                    $dist = trailingslashit(get_template_directory_uri()) . 'assets/dist/';
-                                    $version = function_exists('\Voxel\get_assets_version') ? \Voxel\get_assets_version() : '1.7.1.3';
+                                $dist = trailingslashit(get_template_directory_uri()) . 'assets/dist/';
+                                $version = function_exists('\Voxel\get_assets_version') ? \Voxel\get_assets_version() : '1.7.1.3';
 
-                                    // Register and enqueue pricing-plan.css from Voxel parent
-                                    if (!wp_style_is('vx:pricing-plan.css', 'registered')) {
-                                        wp_register_style(
-                                                'vx:pricing-plan.css',
-                                                $dist . (is_rtl() ? 'pricing-plan-rtl.css' : 'pricing-plan.css'),
-                                                [],
-                                                $version
-                                        );
-                                    }
-                                    wp_enqueue_style('vx:pricing-plan.css');
-                                });
+                                // Register and enqueue pricing-plan.css from Voxel parent
+                                if (!wp_style_is('vx:pricing-plan.css', 'registered')) {
+                                    wp_register_style(
+                                            'vx:pricing-plan.css',
+                                            $dist . (is_rtl() ? 'pricing-plan-rtl.css' : 'pricing-plan.css'),
+                                            [],
+                                            $version
+                                    );
+                                }
+                                wp_enqueue_style('vx:pricing-plan.css');
                             }
 
                             // create-post needs TinyMCE editor and Voxel CSS/JS for texteditor fields
@@ -3865,9 +4180,15 @@ JAVASCRIPT;
                                         wp_enqueue_script('pikaday');
                                     }
 
-                                    // Enqueue nouislider for range filter
+                                    // Enqueue nouislider for range filter (CSS + JavaScript)
+                                    // CRITICAL: Both CSS and JS are required for FilterRange component
+                                    // CSS provides slider styling, JS provides window.noUiSlider API
+                                    // Evidence: themes/voxel/app/controllers/assets-controller.php:141,184-186
                                     if (wp_style_is('nouislider', 'registered')) {
                                         wp_enqueue_style('nouislider');
+                                    }
+                                    if (wp_script_is('nouislider', 'registered')) {
+                                        wp_enqueue_script('nouislider');
                                     }
                                 }, 100);
                             }
@@ -4015,6 +4336,10 @@ JAVASCRIPT;
                         } elseif ($block_name === 'timeline') {
                             // Timeline needs Voxel social feed CSS for matching parent theme styles
                             self::ensure_voxel_styles_registered();
+
+                            // Use Shared YARL Lightbox (see docs/shared-yarl-lightbox-architecture.md)
+                            // NOTE: Do NOT add 'mw-yarl-lightbox' as a dependency here.
+                            // It is enqueued via wp_enqueue_scripts hook below.
                             $style_deps = [
                                     'vx:commons.css',
                                     'vx:forms.css',
@@ -4404,6 +4729,75 @@ JAVASCRIPT;
         // 4. Apply Styles (Sticky, Advanced Tab CSS, Visibility Classes)
         $block_content = self::apply_block_styles($block_content, $attributes);
 
+        // 4b. Apply block-specific styles (search-form switcher, etc.)
+        $block_name = str_replace('voxel-fse/', '', $block['blockName']);
+        $block_id = $attributes['blockId'] ?? null;
+
+        if ($block_name === 'search-form' && $block_id) {
+            $block_content = self::apply_search_form_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_search_form_config($block_content, $attributes);
+        } elseif ($block_name === 'map' && $block_id) {
+            $block_content = self::apply_map_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'post-feed' && $block_id) {
+            $block_content = self::apply_post_feed_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'navbar' && $block_id) {
+            $block_content = self::apply_navbar_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_navbar_config($block_content, $attributes);
+        } elseif ($block_name === 'userbar' && $block_id) {
+            $block_content = self::apply_userbar_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'messages' && $block_id) {
+            $block_content = self::apply_messages_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'create-post' && $block_id) {
+            $block_content = self::apply_create_post_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_create_post_config($block_content, $attributes);
+        } elseif ($block_name === 'product-form' && $block_id) {
+            $block_content = self::apply_product_form_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'login' && $block_id) {
+            $block_content = self::apply_login_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'stripe-account' && $block_id) {
+            $block_content = self::apply_stripe_account_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'review-stats' && $block_id) {
+            $block_content = self::apply_review_stats_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'cart-summary' && $block_id) {
+            $block_content = self::apply_cart_summary_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'term-feed' && $block_id) {
+            $block_content = self::apply_term_feed_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'slider' && $block_id) {
+            $block_content = self::apply_slider_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'image' && $block_id) {
+            $block_content = self::apply_image_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'advanced-list' && $block_id) {
+            $block_content = self::apply_advanced_list_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'product-price' && $block_id) {
+            $block_content = self::apply_product_price_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'current-plan' && $block_id) {
+            $block_content = self::apply_current_plan_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'current-role' && $block_id) {
+            $block_content = self::apply_current_role_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'work-hours' && $block_id) {
+            $block_content = self::apply_work_hours_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'ring-chart' && $block_id) {
+            $block_content = self::apply_ring_chart_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'nested-accordion' && $block_id) {
+            $block_content = self::apply_nested_accordion_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'nested-tabs' && $block_id) {
+            $block_content = self::apply_nested_tabs_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'orders' && $block_id) {
+            $block_content = self::apply_orders_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'quick-search' && $block_id) {
+            $block_content = self::apply_quick_search_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'listing-plans' && $block_id) {
+            $block_content = self::apply_listing_plans_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'membership-plans' && $block_id) {
+            $block_content = self::apply_membership_plans_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'flex-container' && $block_id) {
+            $block_content = self::apply_flex_container_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'visit-chart' && $block_id) {
+            $block_content = self::apply_visit_chart_styles($block_content, $attributes, $block_id);
+        } elseif ($block_name === 'sales-chart' && $block_id) {
+            $block_content = self::apply_sales_chart_styles($block_content, $attributes, $block_id);
+        }
+
         // 5. Final step: Process Voxel dynamic tags (VoxelScript)
         // This ensures tags like @post(title) work inside static blocks.
         if (function_exists('\Voxel\render')) {
@@ -4444,7 +4838,7 @@ JAVASCRIPT;
 
         // If no styles or classes to apply, return original content
         if (
-            empty($styles['inline_styles']) &&
+            empty($styles['desktop_css']) &&
             empty($styles['responsive_css']) &&
             empty($styles['classes']) &&
             empty($styles['custom_attrs']) &&
@@ -4453,22 +4847,618 @@ JAVASCRIPT;
             return $block_content;
         }
 
-        // Find the root element and inject styles
+        // Inject classes and custom attributes into root element (but NOT inline styles)
         $block_content = self::inject_styles_into_html(
             $block_content,
             $block_id,
-            $styles['inline_styles'],
+            '', // No inline styles - using CSS instead
             $styles['classes'],
             $styles['custom_attrs'],
             $styles['element_id'] ?? ''
         );
 
-        // Prepend responsive CSS as a style tag
+        // Prepend ALL CSS as style tags (desktop + responsive)
+        $all_css = '';
+        if (!empty($styles['desktop_css'])) {
+            $all_css .= '/* AdvancedTab & VoxelTab Desktop Styles */' . "\n" . $styles['desktop_css'];
+        }
         if (!empty($styles['responsive_css'])) {
-            $style_tag = '<style>' . $styles['responsive_css'] . '</style>';
+            $all_css .= "\n" . $styles['responsive_css'];
+        }
+
+        if (!empty($all_css)) {
+            $style_tag = '<style>' . $all_css . '</style>';
             $block_content = $style_tag . $block_content;
         }
 
+        return $block_content;
+    }
+
+    /**
+     * Apply search-form specific styles
+     *
+     * This is called separately from apply_block_styles because search-form
+     * has special CSS requirements (portal-rendered elements like switcher).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_search_form_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_search_form_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Search Form Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply map block specific styles
+     *
+     * This is called separately from apply_block_styles because map block
+     * has special CSS requirements (markers, clusters, popups, nav buttons).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_map_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_map_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Map Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply post-feed block specific styles
+     *
+     * This is called separately from apply_block_styles because post-feed
+     * has special CSS requirements (carousel nav, pagination, no-results states).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_post_feed_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        // Strip baked-in <style> tags from saved HTML to prevent stale CSS overriding fresh PHP-generated styles.
+        $div_pos = strpos($block_content, '<div');
+        if ($div_pos !== false) {
+            $before_div = substr($block_content, 0, $div_pos);
+            $from_div = substr($block_content, $div_pos);
+            $from_div = preg_replace('/<style[^>]*>.*?<\/style>/s', '', $from_div);
+            $block_content = $before_div . $from_div;
+        }
+
+        $css = Style_Generator::generate_post_feed_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Post Feed Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply navbar block specific styles
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes.
+     * @param string $block_id      Block unique ID.
+     * @return string Modified block content with styles.
+     */
+    private static function apply_navbar_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_navbar_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Navbar Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_userbar_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_userbar_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Userbar Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_messages_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_messages_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Messages Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_create_post_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_create_post_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Create Post Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_product_form_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_product_form_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Product Form Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_login_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_login_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Login Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_stripe_account_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_stripe_account_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Stripe Account Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_review_stats_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_review_stats_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Review Stats Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_cart_summary_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_cart_summary_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Cart Summary Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_term_feed_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        // Strip baked-in <style> tags from saved HTML to prevent stale CSS overriding fresh PHP-generated styles.
+        // PHP-prepended styles (AdvancedTab) come BEFORE the <div, baked-in styles are INSIDE.
+        $div_pos = strpos($block_content, '<div');
+        if ($div_pos !== false) {
+            $before_div = substr($block_content, 0, $div_pos);
+            $from_div = substr($block_content, $div_pos);
+            $from_div = preg_replace('/<style[^>]*>.*?<\/style>/s', '', $from_div);
+            $block_content = $before_div . $from_div;
+        }
+
+        // Regenerate vxconfig from $attributes to prevent stale baked-in values.
+        // $attributes comes from block.json defaults + saved user values (no stale data).
+        $block_content = self::regenerate_term_feed_vxconfig($block_content, $attributes);
+
+        $css = Style_Generator::generate_term_feed_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Term Feed Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Regenerate the vxconfig JSON script tag from fresh $attributes.
+     * Prevents stale baked-in vxconfig from causing CSS conflicts on the frontend.
+     */
+    private static function regenerate_term_feed_vxconfig($block_content, $attributes)
+    {
+        // Build fresh vxconfig from $attributes (mirrors save.tsx vxConfig structure)
+        $vxconfig = array_filter([
+            'source'                   => $attributes['source'] ?? 'filters',
+            'manualTermIds'            => isset($attributes['manualTerms']) ? array_map(function($t) { return $t['term_id'] ?? 0; }, $attributes['manualTerms']) : [],
+            'taxonomy'                 => $attributes['taxonomy'] ?? '',
+            'parentTermId'             => $attributes['parentTermId'] ?? 0,
+            'order'                    => $attributes['order'] ?? 'default',
+            'perPage'                  => $attributes['perPage'] ?? 10,
+            'hideEmpty'                => $attributes['hideEmpty'] ?? false,
+            'hideEmptyPostType'        => $attributes['hideEmptyPostType'] ?? ':all',
+            'cardTemplate'             => $attributes['cardTemplate'] ?? 'main',
+            'layoutMode'               => $attributes['layoutMode'] ?? 'ts-feed-grid-default',
+            'carouselItemWidth'        => $attributes['carouselItemWidth'] ?? 200,
+            'carouselItemWidthUnit'    => $attributes['carouselItemWidthUnit'] ?? 'px',
+            'carouselAutoplay'         => $attributes['carouselAutoplay'] ?? false,
+            'carouselAutoplayInterval' => $attributes['carouselAutoplayInterval'] ?? 3000,
+            'gridColumns'              => $attributes['gridColumns'] ?? 3,
+            'itemGap'                  => $attributes['itemGap'] ?? 20,
+            'scrollPadding'            => $attributes['scrollPadding'] ?? 0,
+            'itemPadding'              => $attributes['itemPadding'] ?? 0,
+            'replaceAccentColor'       => $attributes['replaceAccentColor'] ?? false,
+            // Nav styling — only include if explicitly set (isset check, no defaults)
+            'navHorizontalPosition'    => $attributes['navHorizontalPosition'] ?? null,
+            'navVerticalPosition'      => $attributes['navVerticalPosition'] ?? null,
+            'navButtonIconColor'       => $attributes['navButtonIconColor'] ?? null,
+            'navButtonSize'            => $attributes['navButtonSize'] ?? null,
+            'navButtonIconSize'        => $attributes['navButtonIconSize'] ?? null,
+            'navButtonBackground'      => $attributes['navButtonBackground'] ?? null,
+            'navBackdropBlur'          => $attributes['navBackdropBlur'] ?? null,
+            'navBorderType'            => $attributes['navBorderType'] ?? null,
+            'navBorderWidth'           => $attributes['navBorderWidth'] ?? null,
+            'navBorderColor'           => $attributes['navBorderColor'] ?? null,
+            'navBorderRadius'          => $attributes['navBorderRadius'] ?? null,
+            'navButtonSizeHover'       => $attributes['navButtonSizeHover'] ?? null,
+            'navButtonIconSizeHover'   => $attributes['navButtonIconSizeHover'] ?? null,
+            'navButtonIconColorHover'  => $attributes['navButtonIconColorHover'] ?? null,
+            'navButtonBackgroundHover' => $attributes['navButtonBackgroundHover'] ?? null,
+            'navButtonBorderColorHover'=> $attributes['navButtonBorderColorHover'] ?? null,
+            'rightChevronIcon'         => $attributes['rightChevronIcon'] ?? null,
+            'leftChevronIcon'          => $attributes['leftChevronIcon'] ?? null,
+        ], function($v) { return $v !== null; });
+
+        // Build responsive sub-object (only include set values)
+        $responsive = array_filter([
+            'carouselItemWidth_tablet'        => $attributes['carouselItemWidth_tablet'] ?? null,
+            'carouselItemWidth_mobile'        => $attributes['carouselItemWidth_mobile'] ?? null,
+            'gridColumns_tablet'              => $attributes['gridColumns_tablet'] ?? null,
+            'gridColumns_mobile'              => $attributes['gridColumns_mobile'] ?? null,
+            'itemGap_tablet'                  => $attributes['itemGap_tablet'] ?? null,
+            'itemGap_mobile'                  => $attributes['itemGap_mobile'] ?? null,
+            'scrollPadding_tablet'            => $attributes['scrollPadding_tablet'] ?? null,
+            'scrollPadding_mobile'            => $attributes['scrollPadding_mobile'] ?? null,
+            'itemPadding_tablet'              => $attributes['itemPadding_tablet'] ?? null,
+            'itemPadding_mobile'              => $attributes['itemPadding_mobile'] ?? null,
+            'navHorizontalPosition_tablet'    => $attributes['navHorizontalPosition_tablet'] ?? null,
+            'navHorizontalPosition_mobile'    => $attributes['navHorizontalPosition_mobile'] ?? null,
+            'navVerticalPosition_tablet'      => $attributes['navVerticalPosition_tablet'] ?? null,
+            'navVerticalPosition_mobile'      => $attributes['navVerticalPosition_mobile'] ?? null,
+            'navButtonSize_tablet'            => $attributes['navButtonSize_tablet'] ?? null,
+            'navButtonSize_mobile'            => $attributes['navButtonSize_mobile'] ?? null,
+            'navButtonIconSize_tablet'        => $attributes['navButtonIconSize_tablet'] ?? null,
+            'navButtonIconSize_mobile'        => $attributes['navButtonIconSize_mobile'] ?? null,
+            'navBackdropBlur_tablet'          => $attributes['navBackdropBlur_tablet'] ?? null,
+            'navBackdropBlur_mobile'          => $attributes['navBackdropBlur_mobile'] ?? null,
+            'navBorderRadius_tablet'          => $attributes['navBorderRadius_tablet'] ?? null,
+            'navBorderRadius_mobile'          => $attributes['navBorderRadius_mobile'] ?? null,
+            'navButtonSizeHover_tablet'       => $attributes['navButtonSizeHover_tablet'] ?? null,
+            'navButtonSizeHover_mobile'       => $attributes['navButtonSizeHover_mobile'] ?? null,
+            'navButtonIconSizeHover_tablet'   => $attributes['navButtonIconSizeHover_tablet'] ?? null,
+            'navButtonIconSizeHover_mobile'   => $attributes['navButtonIconSizeHover_mobile'] ?? null,
+        ], function($v) { return $v !== null; });
+
+        if (!empty($responsive)) {
+            $vxconfig['responsive'] = $responsive;
+        }
+
+        $fresh_json = wp_json_encode($vxconfig);
+
+        // Replace the baked-in vxconfig script content
+        $block_content = preg_replace(
+            '/<script\s+type="text\/json"\s+class="vxconfig"[^>]*>.*?<\/script>/s',
+            '<script type="text/json" class="vxconfig">' . $fresh_json . '</script>',
+            $block_content
+        );
+
+        return $block_content;
+    }
+
+    private static function apply_slider_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_slider_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Slider Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_image_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_image_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Image Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Advanced List block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_advanced_list_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_advanced_list_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Advanced List Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Product Price block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_product_price_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_product_price_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Product Price Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Current Plan block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_current_plan_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_current_plan_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Current Plan Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply Current Role block styles
+     *
+     * @param string $block_content Block HTML content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_current_role_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_current_role_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Current Role Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply work-hours-specific styles
+     *
+     * @param string $block_content Existing block content
+     * @param array  $attributes    Block attributes
+     * @param string $block_id      Block identifier
+     * @return string Modified block content with inline styles
+     */
+    private static function apply_work_hours_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+
+        $css = Style_Generator::generate_work_hours_css($attributes, $block_id);
+
+        if (!empty($css)) {
+            $style_tag = '<style>/* Work Hours Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    private static function apply_ring_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_ring_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Ring Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_nested_accordion_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_nested_accordion_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Nested Accordion Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_nested_tabs_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_nested_tabs_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Nested Tabs Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_orders_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_orders_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Orders Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_quick_search_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_quick_search_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Quick Search Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_listing_plans_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_listing_plans_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Listing Plans Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_membership_plans_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_membership_plans_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Membership Plans Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_flex_container_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_flex_container_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Flex Container Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_visit_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_visit_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Visit Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
+        return $block_content;
+    }
+
+    private static function apply_sales_chart_styles($block_content, $attributes, $block_id)
+    {
+        require_once __DIR__ . '/shared/style-generator.php';
+        $css = Style_Generator::generate_sales_chart_css($attributes, $block_id);
+        if (!empty($css)) {
+            $style_tag = '<style>/* Sales Chart Inline Styles */' . $css . '</style>';
+            $block_content = $style_tag . $block_content;
+        }
         return $block_content;
     }
 
@@ -4724,6 +5714,502 @@ JAVASCRIPT;
              wp_add_inline_style('vx-popup-kit-global', $css);
              wp_enqueue_style('vx-popup-kit-global');
         }
+
+        // Enqueue vendor CSS/JS that popup components depend on (pikaday, nouislider)
+        // These are needed for date pickers and range sliders rendered inside popups.
+        // The kit_popups template is NOT a regular page template, so
+        // check_fse_templates_for_block() in enqueue_frontend_vendor_styles() misses it.
+        // We enqueue here because this method already queries kit_popups and confirms
+        // popup-kit content exists.
+        if (!is_admin()) {
+            self::ensure_voxel_styles_registered();
+
+            if (wp_style_is('pikaday', 'registered') && !wp_style_is('pikaday', 'enqueued')) {
+                wp_enqueue_style('pikaday');
+            }
+            if (wp_script_is('pikaday', 'registered') && !wp_script_is('pikaday', 'enqueued')) {
+                wp_enqueue_script('pikaday');
+            }
+            if (wp_style_is('nouislider', 'registered') && !wp_style_is('nouislider', 'enqueued')) {
+                wp_enqueue_style('nouislider');
+            }
+            if (wp_script_is('nouislider', 'registered') && !wp_script_is('nouislider', 'enqueued')) {
+                wp_enqueue_script('nouislider');
+            }
+        }
+    }
+
+    /**
+     * Enqueue timeline-kit global styles from kit_timeline template
+     *
+     * Pattern: css-priority-and-admin-integrity.md
+     * - Extracts CSS from timeline-kit block via data-voxel-timeline-kit-styles attribute
+     * - Enqueues with dependency on vx:social-feed.css for proper cascade
+     * - Only loads on frontend or block editor (prevents admin styling leaks)
+     */
+    public static function enqueue_timeline_kit_global_styles() {
+        // PERF: Only load on frontend or block editor, NEVER on generic admin pages
+        if (is_admin()) {
+            $screen = get_current_screen();
+            if (!$screen || !$screen->is_block_editor()) {
+                return;
+            }
+        }
+
+        // Get kit_timeline template content
+        $content = '';
+
+        // 1. Try to find the FSE customized template (saved in DB)
+        // Check for both raw slug and FSE-prefixed slug
+        $possible_slugs = ['voxel-kit_timeline', 'voxel-fse//voxel-kit_timeline'];
+
+        $query = new \WP_Query([
+            'post_type' => 'wp_template',
+            'post_status' => 'any',
+            'post_name__in' => $possible_slugs,
+            'posts_per_page' => 1,
+            'no_found_rows' => true,
+            'ignore_sticky_posts' => true,
+        ]);
+
+        if (!empty($query->posts)) {
+            $content = $query->posts[0]->post_content;
+        }
+
+        // 2. Fallback: Check Voxel settings (Legacy/Elementor support)
+        if (empty($content)) {
+            $template_id = \Voxel\get('templates.kit_timeline');
+            if ($template_id) {
+                $post = get_post($template_id);
+                if ($post) {
+                    $content = $post->post_content;
+                }
+            }
+        }
+
+        if (empty($content)) {
+            return;
+        }
+
+        // Extract <style> tags with data-voxel-timeline-kit-styles attribute
+        preg_match_all(
+            '/<style[^>]*data-voxel-timeline-kit-styles[^>]*>(.*?)<\/style>/s',
+            $content,
+            $matches
+        );
+
+        if (empty($matches[1])) {
+            return;
+        }
+
+        // Combine all CSS
+        $css = implode("\n", $matches[1]);
+
+        // CSS Priority Strategy:
+        // 1. Timeline-kit custom CSS loads FIRST (lower priority in cascade)
+        // 2. Voxel's social-feed.css loads AFTER (higher priority = appears at top of DevTools)
+        // This ensures Voxel's base styles (like .rs-num) take effect when no custom value is set,
+        // while custom styles with same specificity still override when explicitly set.
+        
+        // Register timeline-kit-custom WITHOUT dependency so it loads early
+        wp_register_style('vx:timeline-kit-custom', false, []);
+        wp_add_inline_style('vx:timeline-kit-custom', $css);
+        wp_enqueue_style('vx:timeline-kit-custom');
+        
+        // Make social-feed.css depend on timeline-kit-custom so it loads AFTER
+        // This gives social-feed.css higher priority in the cascade
+        if (wp_style_is('vx:social-feed.css', 'registered')) {
+            // Add timeline-kit-custom as a dependency of social-feed.css
+            global $wp_styles;
+            if (isset($wp_styles->registered['vx:social-feed.css'])) {
+                $existing_deps = $wp_styles->registered['vx:social-feed.css']->deps;
+                if (!in_array('vx:timeline-kit-custom', $existing_deps)) {
+                    $wp_styles->registered['vx:social-feed.css']->deps[] = 'vx:timeline-kit-custom';
+                }
+            }
+            
+            // Ensure base style is enqueued
+            if (!wp_style_is('vx:social-feed.css', 'enqueued')) {
+                wp_enqueue_style('vx:social-feed.css');
+            }
+        }
+    }
+
+    /**
+     * Register Shared YARL Lightbox assets
+     * 
+     * Loaded as shared global dependency.
+     * See docs/shared-yarl-lightbox-architecture.md
+     */
+    public static function register_yarl_assets()
+    {
+        // Style Registration
+        if (!wp_style_is('mw-yarl-lightbox', 'registered')) {
+            $yarl_css_path = get_stylesheet_directory() . '/assets/dist/yarl-lightbox.css';
+            if (file_exists($yarl_css_path)) {
+                wp_register_style('mw-yarl-lightbox',
+                    get_stylesheet_directory_uri() . '/assets/dist/yarl-lightbox.css',
+                    // loading vx:commons.css here ensures cascade order override
+                    ['vx:commons.css'],
+                    filemtime($yarl_css_path)
+                );
+            }
+        }
+
+        // Script Registration
+        if (!wp_script_is('mw-yarl-lightbox', 'registered')) {
+            $yarl_js_path = get_stylesheet_directory() . '/assets/dist/yarl-lightbox.js';
+            if (file_exists($yarl_js_path)) {
+                wp_register_script('mw-yarl-lightbox',
+                    get_stylesheet_directory_uri() . '/assets/dist/yarl-lightbox.js',
+                    ['react', 'react-dom'],
+                    filemtime($yarl_js_path),
+                    true
+                );
+            }
+        }
+    }
+
+    /**
+     * Enqueue global frontend shims
+     * 
+     * Loads voxel-fse-shim.js to patch Voxel mixins for FSE environment.
+     * Prevents "Cannot read properties of null (reading 'dataset')" errors.
+     */
+    public static function enqueue_frontend_shims()
+    {
+        $commons_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+        $commons_url = file_exists($commons_path) 
+            ? get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js'
+            : get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+
+        if (!wp_script_is('voxel-fse-commons', 'registered')) {
+             wp_register_script(
+                'voxel-fse-commons',
+                $commons_url,
+                [], 
+                defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($commons_path),
+                false // In HEAD
+            );
+        }
+        
+        wp_enqueue_script('voxel-fse-commons');
+
+        // Force 'vx:commons' to depend on 'voxel-fse-commons'
+        // This guarantees that our shim loads BEFORE Voxel core, preventing the "dataset" error
+        global $wp_scripts;
+        $commons_handle = 'vx:commons'; // Frontend handle is usually vx:commons
+        if (wp_script_is($commons_handle, 'registered')) {
+            $script = $wp_scripts->query($commons_handle, 'registered');
+            if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                $script->deps[] = 'voxel-fse-commons';
+            }
+        }
+    }
+
+
+    /**
+     * Enqueue frontend shims with cache busting (PATCHED)
+     * 
+     * Replaces enqueue_frontend_shims to ensure time()-based versioning
+     */
+    public static function enqueue_frontend_shims_patched()
+    {
+        // Check if we're on the frontend
+        if (is_admin()) {
+            return;
+        }
+
+        self::ensure_voxel_styles_registered();
+
+        // CHANGED: Prefer dist version (built), fallback to source
+        $dist_path = get_stylesheet_directory() . '/assets/dist/voxel-fse-shim.js';
+        $source_path = get_stylesheet_directory() . '/assets/js/voxel-fse-shim.js';
+
+        if (file_exists($dist_path)) {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-fse-shim.js';
+        } elseif (file_exists($source_path)) {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/js/voxel-fse-shim.js';
+        } else {
+            $commons_url = get_stylesheet_directory_uri() . '/assets/dist/voxel-commons.js';
+        }
+
+        // Enqueue the shim script with time() to force cache update
+        wp_enqueue_script(
+            'voxel-fse-commons',
+            $commons_url,
+            [], // No dependencies - standalone vanilla JS
+            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : time(),
+            false // In Head
+        );
+        
+        // Force dependencies
+        global $wp_scripts;
+        $handles = ['vx:commons.js', 'vx:commons'];
+        foreach ($handles as $handle) {
+            if (wp_script_is($handle, 'registered')) {
+                $script = $wp_scripts->query($handle, 'registered');
+                if ($script && !in_array('voxel-fse-commons', $script->deps)) {
+                    $script->deps[] = 'voxel-fse-commons';
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Server-Side Config Injection (eliminates .ts-loader spinners)
+    // See: docs/headless-architecture/17-server-side-config-injection.md
+    // =========================================================================
+
+    /**
+     * Inject search form config data inline to eliminate REST API spinner
+     *
+     * Calls the same static method used by the REST endpoint, injecting the
+     * full PostTypeConfig[] data as inline JSON so frontend.tsx can read it
+     * immediately without making a REST call.
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_search_form_config($block_content, $attributes)
+    {
+        $post_type_keys = $attributes['postTypes'] ?? [];
+        if (empty($post_type_keys)) {
+            return $block_content;
+        }
+
+        // Transform filterLists from save.tsx format to the controller's filter_configs format
+        // save.tsx stores: { postTypeKey: [{ filterKey, defaultValueEnabled, defaultValue, resetValue }, ...] }
+        // Controller expects: { postTypeKey: { filterKey: { defaultValueEnabled, defaultValue, resetValue } } }
+        $filter_configs = [];
+        $filter_lists = $attributes['filterLists'] ?? [];
+        if (!empty($filter_lists) && is_array($filter_lists)) {
+            foreach ($filter_lists as $pt_key => $configs) {
+                if (!is_array($configs)) continue;
+                $filter_configs[$pt_key] = [];
+                foreach ($configs as $config) {
+                    if (!empty($config['filterKey'])) {
+                        $filter_configs[$pt_key][$config['filterKey']] = [
+                            'defaultValueEnabled' => $config['defaultValueEnabled'] ?? false,
+                            'defaultValue'        => $config['defaultValue'] ?? null,
+                            'resetValue'          => $config['resetValue'] ?? 'empty',
+                        ];
+                    }
+                }
+            }
+        }
+
+        require_once dirname(__DIR__) . '/controllers/fse-search-form-controller.php';
+        $config = \VoxelFSE\Controllers\FSE_Search_Form_Controller::generate_frontend_config(
+            $post_type_keys,
+            $filter_configs
+        );
+
+        if (empty($config)) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Inject create post config data inline to eliminate REST API spinner
+     *
+     * Calls the same static methods used by the REST endpoints, injecting
+     * both fieldsConfig and postContext as inline JSON. Only injects when
+     * user is logged in (create-post requires authentication).
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_create_post_config($block_content, $attributes)
+    {
+        // Create-post requires authentication
+        if (!is_user_logged_in()) {
+            return $block_content;
+        }
+
+        $post_type_key = $attributes['postTypeKey'] ?? '';
+        if (empty($post_type_key)) {
+            return $block_content;
+        }
+
+        // Get post_id from URL params (edit mode vs create mode)
+        $post_id = isset($_GET['post_id']) ? absint($_GET['post_id']) : null;
+
+        require_once dirname(__DIR__) . '/controllers/fse-create-post-controller.php';
+
+        // Generate both configs in parallel (same logic as REST endpoints)
+        $fields_data = \VoxelFSE\Controllers\FSE_Create_Post_Controller::generate_fields_config(
+            $post_type_key,
+            $post_id,
+            false // Not admin metabox in frontend context
+        );
+
+        $context_data = \VoxelFSE\Controllers\FSE_Create_Post_Controller::generate_post_context(
+            $post_type_key,
+            $post_id
+        );
+
+        // Skip if either returned an error
+        if (is_wp_error($fields_data) || is_wp_error($context_data)) {
+            return $block_content;
+        }
+
+        $config = [
+            'fieldsConfig' => $fields_data,
+            'postContext'   => $context_data,
+        ];
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Inject navbar config data inline to eliminate REST API spinner
+     *
+     * Only injects when source is 'select_wp_menu'. For 'add_links_manually',
+     * data is already in vxconfig.
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_navbar_config($block_content, $attributes)
+    {
+        $source = $attributes['source'] ?? 'add_links_manually';
+        $config = [];
+
+        if ($source === 'select_wp_menu') {
+            $menu_location = $attributes['menuLocation'] ?? '';
+            $mobile_menu_location = $attributes['mobileMenuLocation'] ?? '';
+
+            if (empty($menu_location) && empty($mobile_menu_location)) {
+                return $block_content;
+            }
+
+            require_once dirname(__DIR__) . '/controllers/fse-navbar-api-controller.php';
+
+            if (!empty($menu_location)) {
+                $config['mainMenu'] = \VoxelFSE\Controllers\FSE_Navbar_API_Controller::generate_menu_items($menu_location);
+            }
+
+            if (!empty($mobile_menu_location)) {
+                $config['mobileMenu'] = \VoxelFSE\Controllers\FSE_Navbar_API_Controller::generate_menu_items($mobile_menu_location);
+            }
+        } elseif ($source === 'search_form') {
+            // Resolve linked search-form's post types for frontend hydration
+            // Mirrors Voxel's navbar.php lines 46-75 where it reads post types from linked search form
+            $search_form_id = $attributes['searchFormId'] ?? '';
+            if (empty($search_form_id)) {
+                return $block_content;
+            }
+
+            $config['searchFormId'] = $search_form_id;
+            $config['linkedPostTypes'] = [];
+
+            if (class_exists('\Voxel\Post_Type')) {
+                // Find the search-form block on the current page to read its postTypes attribute
+                $post = get_post();
+                $post_types_keys = [];
+
+                if ($post && has_blocks($post->post_content)) {
+                    $blocks = parse_blocks($post->post_content);
+                    $post_types_keys = self::find_search_form_post_types($blocks, $search_form_id);
+                }
+
+                // Resolve post type labels and icons from Voxel registry
+                foreach ($post_types_keys as $pt_key) {
+                    try {
+                        $pt = \Voxel\Post_Type::get($pt_key);
+                        if ($pt) {
+                            $icon_markup = '';
+                            $icon = $pt->get_icon();
+                            if (!empty($icon)) {
+                                $icon_markup = \Voxel\get_icon_markup($icon);
+                            }
+                            $config['linkedPostTypes'][] = [
+                                'key'      => $pt_key,
+                                'label'    => $pt->get_label(),
+                                'icon'     => $icon_markup ?: null,
+                                'isActive' => false,
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+
+                // Mark the first post type as active by default
+                if (!empty($config['linkedPostTypes'])) {
+                    $config['linkedPostTypes'][0]['isActive'] = true;
+                }
+            }
+        } else {
+            return $block_content;
+        }
+
+        if (empty($config)) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Recursively find a search-form block by blockId and return its postTypes attribute
+     */
+    private static function find_search_form_post_types($blocks, $search_form_id)
+    {
+        foreach ($blocks as $block) {
+            if (
+                ($block['blockName'] === 'voxel-fse/search-form') &&
+                isset($block['attrs']['blockId']) &&
+                $block['attrs']['blockId'] === $search_form_id
+            ) {
+                return $block['attrs']['postTypes'] ?? [];
+            }
+
+            // Recurse into inner blocks
+            if (!empty($block['innerBlocks'])) {
+                $result = self::find_search_form_post_types($block['innerBlocks'], $search_form_id);
+                if (!empty($result)) {
+                    return $result;
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Inject config data as inline JSON script tag into block HTML
+     *
+     * Inserts a <script type="text/json" class="vxconfig-hydrate"> element
+     * before the last </div> in the block content. frontend.tsx reads this
+     * to skip the REST API call.
+     *
+     * @param string $block_content Block HTML content.
+     * @param mixed  $data          Data to JSON-encode and inject.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_inline_config($block_content, $data)
+    {
+        $json = wp_json_encode($data);
+        if ($json === false) {
+            return $block_content;
+        }
+
+        $script = '<script type="text/json" class="vxconfig-hydrate">' . $json . '</script>';
+
+        // Insert before last </div> (the block's closing wrapper)
+        $pos = strrpos($block_content, '</div>');
+        if ($pos !== false) {
+            $block_content = substr_replace($block_content, $script, $pos, 0);
+        }
+
+        return $block_content;
     }
 }
 

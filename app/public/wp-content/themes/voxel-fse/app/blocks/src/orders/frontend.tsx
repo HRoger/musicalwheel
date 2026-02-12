@@ -64,6 +64,9 @@ import type {
 } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
+// jQuery type for voxel:markup-update handler
+declare const jQuery: any;
+
 /**
  * Get the REST API base URL
  * MULTISITE FIX: Uses getRestBaseUrl() for multisite subdirectory support
@@ -269,7 +272,8 @@ async function fetchOrdersList(
 	page: number = 1,
 	status?: string | null,
 	productType?: string | null,
-	search?: string
+	search?: string,
+	shippingStatus?: string | null
 ): Promise<{ orders: OrderListItem[]; total: number; totalPages: number }> {
 	const restUrl = getRestUrl();
 	const nonce = getRestNonce();
@@ -279,6 +283,7 @@ async function fetchOrdersList(
 	if (status) params.set('status', status);
 	if (productType) params.set('product_type', productType);
 	if (search) params.set('search', search);
+	if (shippingStatus) params.set('shipping_status', shippingStatus);
 
 	try {
 		const headers: HeadersInit = {
@@ -440,10 +445,12 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 	const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [totalPages, setTotalPages] = useState(1);
 
 	const [filters, setFilters] = useState<OrdersFilterState>({
 		searchQuery: '',
 		status: null,
+		shippingStatus: null,
 		productType: null,
 		page: 1,
 	});
@@ -483,11 +490,13 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 				filters.page,
 				filters.status,
 				filters.productType,
-				filters.searchQuery
+				filters.searchQuery,
+				filters.shippingStatus
 			);
 
 			if (!cancelled) {
 				setOrders(result.orders);
+				setTotalPages(result.totalPages);
 				setIsLoading(false);
 			}
 		}
@@ -507,6 +516,11 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 	// Handle status filter
 	const handleStatusFilter = useCallback((status: OrderStatus | null) => {
 		setFilters((prev) => ({ ...prev, status, page: 1 }));
+	}, []);
+
+	// Handle shipping status filter
+	const handleShippingStatusFilter = useCallback((shippingStatus: string | null) => {
+		setFilters((prev) => ({ ...prev, shippingStatus, page: 1 }));
 	}, []);
 
 	// Handle product type filter
@@ -544,7 +558,8 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 					filters.page,
 					filters.status,
 					filters.productType,
-					filters.searchQuery
+					filters.searchQuery,
+					filters.shippingStatus
 				);
 				setOrders(result.orders);
 			}
@@ -576,7 +591,8 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 					filters.page,
 					filters.status,
 					filters.productType,
-					filters.searchQuery
+					filters.searchQuery,
+					filters.shippingStatus
 				);
 				setOrders(result.orders);
 			}
@@ -605,8 +621,11 @@ function OrdersWrapper({ attributes }: OrdersWrapperProps) {
 			context="frontend"
 			isLoading={isLoading}
 			error={error}
+			currentPage={filters.page}
+			totalPages={totalPages}
 			onSearch={handleSearch}
 			onStatusFilter={handleStatusFilter}
+			onShippingStatusFilter={handleShippingStatusFilter}
 			onProductTypeFilter={handleProductTypeFilter}
 			onOrderSelect={handleOrderSelect}
 			onOrderBack={handleOrderBack}
@@ -654,6 +673,31 @@ function initOrdersBlocks() {
 	});
 }
 
+/**
+ * Component registry for custom order/item types
+ * Reference: voxel-orders.beautified.js lines 244-280 (setupComponents)
+ * Voxel uses Vue.defineAsyncComponent() to lazy-load custom renderers.
+ * We expose a registration API so third-party code can add custom components.
+ */
+const componentRegistry: Record<string, () => Promise<{ default: React.ComponentType<any> }>> = {};
+
+/**
+ * Expose window.VX_Orders global for external script compatibility
+ * Reference: voxel-orders.beautified.js line 779 (window.VX_Orders = this)
+ */
+(window as any).VX_Orders = {
+	reinit: () => initOrdersBlocks(),
+	/**
+	 * Register a custom component for an order or item type.
+	 * Usage: VX_Orders.registerComponent('order:booking', () => import('./my-booking-component'))
+	 * Usage: VX_Orders.registerComponent('order-item:custom_addon', () => import('./my-addon-component'))
+	 */
+	registerComponent: (name: string, loader: () => Promise<{ default: React.ComponentType<any> }>) => {
+		componentRegistry[name] = loader;
+	},
+	getComponent: (name: string) => componentRegistry[name] || null,
+};
+
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', initOrdersBlocks);
@@ -664,3 +708,9 @@ if (document.readyState === 'loading') {
 // Also initialize on Turbo/PJAX page loads
 window.addEventListener('turbo:load', initOrdersBlocks);
 window.addEventListener('pjax:complete', initOrdersBlocks);
+
+// Re-initialize on Voxel's native AJAX markup updates
+// Reference: voxel-orders.beautified.js line 1153
+if (typeof jQuery !== 'undefined') {
+	jQuery(document).on('voxel:markup-update', initOrdersBlocks);
+}

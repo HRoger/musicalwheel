@@ -122,7 +122,16 @@ async function fetchPostTypes(postTypeKeys: string[]): Promise<PostTypeConfig[]>
 	const endpoint = `${restUrl}voxel-fse/v1/quick-search/post-types?post_types=${encodeURIComponent(postTypeKeys.join(','))}`;
 
 	try {
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -186,11 +195,11 @@ function buildAttributes(config: VxConfig): QuickSearchAttributes {
 		buttonBorderColorFilled: '',
 		buttonBorderWidthFilled: 0,
 		suffixHide: false,
-		suffixPadding: { top: 2, right: 8, bottom: 2, left: 8 },
+		suffixPadding: undefined,
 		suffixTextColor: '',
 		suffixBackground: '',
-		suffixBorderRadius: 50,
-		suffixMargin: 0,
+		suffixBorderRadius: undefined,
+		suffixMargin: undefined,
 		tabsJustify: 'center',
 		tabsPadding: {},
 		tabsMargin: { top: 10, right: 0, bottom: 10, left: 0 },

@@ -436,10 +436,17 @@ async function fetchChartContext(
 			params.append('post_id', String(postId));
 		}
 
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
 			`${restUrl}voxel-fse/v1/visit-chart/context?${params.toString()}`,
 			{
 				credentials: 'same-origin', // Send cookies for WordPress auth
+				headers,
 			}
 		);
 
@@ -637,12 +644,6 @@ function initVisitCharts() {
 
 		// Mark as mounted to prevent double-initialization
 		container.dataset.reactMounted = 'true';
-
-		// Clear placeholder content
-		const placeholder = container.querySelector('.voxel-fse-block-placeholder');
-		if (placeholder) {
-			placeholder.remove();
-		}
 
 		// Create React root and render
 		const root = createRoot(container);

@@ -32,14 +32,25 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 	const min = field.props?.min;
 	const max = field.props?.max;
 	const step = field.props?.step || 1;
-	const displayMode = field.props?.display || 'default';
+	// Evidence: number-field.php:192 — display is 'input' (default) or 'stepper'
+	const displayMode = field.props?.display || 'input';
 	const suffix = field.props?.suffix;
+	// Evidence: number-field.php:185 — precision is calculated from step decimal places
+	const precision = field.props?.precision as number | undefined;
 
 	// EXACT Voxel: Get plus/minus icons from widget settings OR use Voxel defaults
 	// Evidence: themes/voxel/templates/widgets/create-post/number-field.php:15,27
 	// Pattern: \Voxel\get_icon_markup(...) ?: \Voxel\svg('icon.svg')
 	const minusIconHtml = iconToHtml(icons?.tsMinusIcon, VOXEL_MINUS_ICON);
 	const plusIconHtml = iconToHtml(icons?.tsPlusIcon, VOXEL_PLUS_ICON);
+
+	// Round value to the correct precision (matches Voxel server-side validation)
+	const roundToPrecision = (val: number): number => {
+		if (precision !== undefined && precision > 0) {
+			return parseFloat(val.toFixed(precision));
+		}
+		return val;
+	};
 
 	// Convert value to number for calculations
 	const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value || 0;
@@ -81,7 +92,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 
 	// Increment/decrement handlers for stepper mode
 	const handleIncrement = () => {
-		let newValue = numValue + step;
+		let newValue = roundToPrecision(numValue + step);
 
 		// If current value is below min, set to min
 		if (min !== undefined && numValue < min) {
@@ -99,7 +110,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 	};
 
 	const handleDecrement = () => {
-		let newValue = numValue - step;
+		let newValue = roundToPrecision(numValue - step);
 
 		// If current value is above max, set to max
 		if (max !== undefined && numValue > max) {
@@ -126,19 +137,22 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 		setLocalError(error);
 	};
 
-	// Handle blur - auto-correct to min/max if out of bounds
+	// Handle blur - auto-correct to min/max if out of bounds, apply precision
 	const handleBlurWithCorrection = () => {
 		const num = parseFloat(value as string);
 
-		// If valid number but out of bounds, auto-correct
+		// If valid number, apply precision rounding and bounds correction
 		if (!isNaN(num)) {
-			if (min !== undefined && num < min) {
+			const rounded = roundToPrecision(num);
+			if (min !== undefined && rounded < min) {
 				onChange(min);
-				// Clear local error after auto-correction
 				setLocalError('');
-			} else if (max !== undefined && num > max) {
+			} else if (max !== undefined && rounded > max) {
 				onChange(max);
-				// Clear local error after auto-correction
+				setLocalError('');
+			} else if (rounded !== num) {
+				// Apply precision rounding on blur
+				onChange(rounded);
 				setLocalError('');
 			}
 		}

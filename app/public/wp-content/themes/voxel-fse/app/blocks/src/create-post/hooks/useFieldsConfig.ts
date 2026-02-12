@@ -49,6 +49,20 @@ export interface UseFieldsConfigReturn {
 }
 
 /**
+ * Get pre-injected editor config from window.__voxelFseEditorConfig
+ * This is set by Block_Loader::inject_editor_config_data() via wp_add_inline_script
+ */
+function getInlineEditorFields(postTypeKey: string): PostTypeFieldsResponse | null {
+	try {
+		const config = (window as any).__voxelFseEditorConfig?.createPostFields?.[postTypeKey];
+		if (config?.fields_config && Array.isArray(config.fields_config) && config.fields_config.length > 0) {
+			return config;
+		}
+	} catch {}
+	return null;
+}
+
+/**
  * useFieldsConfig Hook
  *
  * @param postTypeKey - Voxel post type key (e.g., 'places', 'events')
@@ -59,8 +73,13 @@ export function useFieldsConfig(
 	postTypeKey: string,
 	context: 'editor' | 'frontend'
 ): UseFieldsConfigReturn {
-	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>([]);
-	const [isLoading, setIsLoading] = useState<boolean>(true);
+	// Check for pre-injected editor data (eliminates spinner)
+	const inlineData = context === 'editor' && postTypeKey ? getInlineEditorFields(postTypeKey) : null;
+
+	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>(
+		inlineData?.fields_config || []
+	);
+	const [isLoading, setIsLoading] = useState<boolean>(!inlineData);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -70,27 +89,31 @@ export function useFieldsConfig(
 				setError(null);
 
 				if (context === 'editor') {
-					// Editor: Load from REST API
-					// Endpoint created in Phase 1: /wp-json/voxel-fse/v1/post-type-fields
 					if (!postTypeKey) {
 						setFieldsConfig([]);
 						setIsLoading(false);
 						return;
 					}
 
-					// Use wp.apiFetch for WordPress REST API calls
+					// Check for pre-injected data first
+					const inline = getInlineEditorFields(postTypeKey);
+					if (inline) {
+						setFieldsConfig(inline.fields_config || []);
+						setIsLoading(false);
+						return;
+					}
+
+					// Fallback: Load from REST API
 					const data = await wp.apiFetch<PostTypeFieldsResponse>({
 						path: `/voxel-fse/v1/post-type-fields?post_type=${postTypeKey}`,
 					});
 
-					console.log(`useFieldsConfig (editor): Loaded ${data.field_count} fields for ${postTypeKey}`);
 					setFieldsConfig(data.fields_config || []);
 				} else {
 					// Frontend: Load from window object (wp_localize_script)
 					const wpData = window.voxelFseCreatePost || {};
 					const fields = wpData.fieldsConfig || [];
 
-					console.log(`useFieldsConfig (frontend): Loaded ${fields.length} fields from window object`);
 					setFieldsConfig(fields);
 				}
 
@@ -101,6 +124,11 @@ export function useFieldsConfig(
 				setIsLoading(false);
 			}
 		};
+
+		// Skip if we already have inline data for this post type
+		if (inlineData && context === 'editor') {
+			return;
+		}
 
 		loadFields();
 	}, [postTypeKey, context]);

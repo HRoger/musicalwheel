@@ -291,6 +291,8 @@ export default function OrdersComponent({
 	context,
 	isLoading,
 	error,
+	currentPage,
+	totalPages,
 	onSearch,
 	onStatusFilter,
 	onShippingStatusFilter,
@@ -594,6 +596,21 @@ export default function OrdersComponent({
 		}
 	}, [state.parentOrderId, onOrderSelect, onOrderBack]);
 
+	// Handle page change with URL persistence
+	const handlePageChangeWithUrl = useCallback(
+		(page: number) => {
+			if (page > 1) {
+				setSearchParam('pg', page);
+			} else {
+				deleteSearchParam('pg');
+			}
+			if (onPageChange) {
+				onPageChange(page);
+			}
+		},
+		[onPageChange]
+	);
+
 	// Get status filter label
 	const statusFilterLabel = useMemo(() => {
 		if (state.statusFilter && config?.statuses) {
@@ -662,7 +679,7 @@ export default function OrdersComponent({
 	// Editor mode: Show placeholder preview
 	if (context === 'editor') {
 		return (
-			<div className="vx-orders-widget voxel-fse-orders-preview" style={customStyles}>
+			<div className="voxel-fse-orders-inner" style={{ display: 'contents', ...customStyles }}>
 				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
@@ -694,9 +711,9 @@ export default function OrdersComponent({
 				{/* Header */}
 				{!attributes.headHide && (
 					<div className="widget-head">
-						<h2 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
+						<h1 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
 							{attributes.ordersTitle || 'Orders'}
-						</h2>
+						</h1>
 						<p style={attributes.subtitleColor ? { color: attributes.subtitleColor } : undefined}>
 							{attributes.ordersSubtitle || 'View all orders related to your account'}
 						</p>
@@ -758,7 +775,7 @@ export default function OrdersComponent({
 
 	// Frontend mode: Full interactive component
 	return (
-		<div className="vx-orders-widget" style={customStyles}>
+		<div className="voxel-fse-orders-inner" style={{ display: 'contents', ...customStyles }}>
 			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
@@ -812,9 +829,9 @@ export default function OrdersComponent({
 					{/* Header */}
 					{!attributes.headHide && (
 						<div className="widget-head">
-							<h2 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
+							<h1 style={attributes.titleColor ? { color: attributes.titleColor } : undefined}>
 								{attributes.ordersTitle || 'Orders'}
-							</h2>
+							</h1>
 							<p style={attributes.subtitleColor ? { color: attributes.subtitleColor } : undefined}>
 								{attributes.ordersSubtitle || 'View all orders related to your account'}
 							</p>
@@ -1022,6 +1039,9 @@ export default function OrdersComponent({
 							attributes={attributes}
 							isLoading={isLoading}
 							onOrderSelect={handleOrderSelectWithUrl}
+							currentPage={currentPage}
+							totalPages={totalPages}
+							onPageChange={handlePageChangeWithUrl}
 						/>
 					)}
 				</>

@@ -355,6 +355,14 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controlle
 new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
+ * Load FSE Print Template API Controller
+ * Provides REST endpoint for server-side template rendering in editor preview.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-print-template-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Print_Template_API_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all
@@ -506,6 +514,14 @@ function voxel_fse_enqueue_block_editor_assets()
             get_template_directory_uri() . '/assets/icons/line-awesome/line-awesome.css',
             array(),
             wp_get_theme()->parent()->get('Version')
+    );
+
+    // Enqueue responsive visibility classes in editor (needed for map/feed switcher toggle)
+    wp_enqueue_style(
+            'voxel-fse-responsive-visibility',
+            VOXEL_FSE_URL . '/assets/css/responsive-visibility.css',
+            array(),
+            VOXEL_FSE_VERSION
     );
 }
 

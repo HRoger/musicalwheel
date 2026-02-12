@@ -31,6 +31,12 @@ export interface PlanFeature {
 
 /**
  * Plan configuration stored in block attributes
+ *
+ * Evidence: listing-plans-widget.php:1494-1538
+ * - image: ts_plan__{key}__image
+ * - features: ts_plan__{key}__features
+ * - featured: ts_plan__{key}__featured (switcher, 'yes'/'')
+ * - featuredText: ts_plan__{key}__featured_text (default 'Featured')
  */
 export interface PlanConfig {
 	image: {
@@ -39,6 +45,8 @@ export interface PlanConfig {
 	} | null;
 	imageDynamicTag?: string; // For dynamic images
 	features: PlanFeature[];
+	featured?: boolean;
+	featuredText?: string;
 }
 
 /**
@@ -325,8 +333,10 @@ export interface ListingPlansAttributes {
 	// Icons
 	arrowIcon: IconValue;
 
-	// Redirect options
-	directPurchaseRedirect: 'order_page' | 'back';
+	// Redirect options — matches Voxel widget ts_direct_purchase_flow (line 1549-1582)
+	directPurchaseRedirect: 'order' | 'new_post' | 'custom';
+	directPurchasePostType?: string;
+	directPurchaseCustomUrl?: string;
 }
 
 /**
@@ -357,15 +367,31 @@ export interface PriceData {
 	amount?: string;
 	discountAmount?: string | null;
 	period?: string;
+	alreadyPurchased?: boolean;
+	disableRepeatPurchase?: boolean;
 }
 
 /**
  * API response for listing plans
  */
+/**
+ * Package data from API (available packages for a plan)
+ *
+ * Evidence: listing-plans-widget.php:1641 - $packages_by_plan
+ */
+export interface PackageData {
+	packageId: number;
+	total: number;
+	used: number;
+}
+
 export interface ListingPlansApiResponse {
 	isLoggedIn: boolean;
 	availablePlans: ListingPlan[];
 	priceGroups: ApiPriceGroup[];
+	packagesByPlan?: Record<string, PackageData>;
+	currentPlanKey?: string | null;
+	process?: string | null;
 }
 
 /**
@@ -384,8 +410,10 @@ export interface ListingPlansVxConfig {
 	priceGroups: PriceGroup[];
 	planConfigs: Record<string, PlanConfig>;
 	arrowIcon: IconValue;
-	// Redirect options (Content Tab)
-	directPurchaseRedirect: 'order_page' | 'back';
+	// Redirect options (Content Tab) — matches Voxel widget ts_direct_purchase_flow
+	directPurchaseRedirect: 'order' | 'new_post' | 'custom';
+	directPurchasePostType?: string;
+	directPurchaseCustomUrl?: string;
 	style: {
 		// General
 		plansColumns: number;
@@ -485,7 +513,7 @@ export const defaultAttributes: Partial<ListingPlansAttributes> = {
 	secondaryBtnIconPad: 8,
 	dialogBorderRadius: 10,
 	arrowIcon: defaultIconValue,
-	directPurchaseRedirect: 'order_page',
+	directPurchaseRedirect: 'order',
 	// Defaults for new attributes
 	plansBorderType: 'default',
 };

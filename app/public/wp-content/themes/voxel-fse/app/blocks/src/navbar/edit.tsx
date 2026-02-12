@@ -14,11 +14,14 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useState, useMemo } from 'react';
+import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 import type {
 	NavbarAttributes,
 	NavbarMenuApiResponse,
 	MenuLocation,
+	LinkedTabData,
+	LinkedPostTypeData,
 } from './types';
 import NavbarComponent from './shared/NavbarComponent';
 import { InspectorTabs } from '@shared/controls';
@@ -33,9 +36,28 @@ interface EditProps {
 }
 
 /**
+ * Get pre-injected editor config from window.__voxelFseEditorConfig
+ */
+function getInlineNavbarLocations(): MenuLocation[] | null {
+	try {
+		const config = (window as any).__voxelFseEditorConfig?.navbarLocations;
+		if (Array.isArray(config) && config.length > 0) {
+			return config;
+		}
+	} catch {}
+	return null;
+}
+
+/**
  * Fetch WordPress menu locations
  */
 async function fetchMenuLocations(): Promise<MenuLocation[]> {
+	// Check for pre-injected data first (eliminates initial REST call)
+	const inlineData = getInlineNavbarLocations();
+	if (inlineData) {
+		return inlineData;
+	}
+
 	try {
 		const response = (await apiFetch({
 			path: '/voxel-fse/v1/navbar/locations',
@@ -80,6 +102,75 @@ export default function Edit({
 		useState<NavbarMenuApiResponse | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Get linked block data for template_tabs and search_form sources
+	const { linkedTabs, linkedPostTypes, linkedBlockId } = useSelect(
+		(select: any) => {
+			const { getBlock, getBlocks } = select('core/block-editor');
+
+			// Helper to find block by clientId recursively
+			const findBlockById = (blocks: any[], targetId: string): any | null => {
+				for (const block of blocks) {
+					if (block.clientId === targetId) return block;
+					if (block.innerBlocks?.length) {
+						const found = findBlockById(block.innerBlocks, targetId);
+						if (found) return found;
+					}
+				}
+				return null;
+			};
+
+			// Template Tabs linking
+			if (attributes.source === 'template_tabs' && attributes.templateTabsId) {
+				const allBlocks = getBlocks();
+				const linkedBlock = findBlockById(allBlocks, attributes.templateTabsId);
+				if (linkedBlock?.attributes?.tabs) {
+					const tabs: LinkedTabData[] = linkedBlock.attributes.tabs.map((tab: any, index: number) => ({
+						id: tab.id || `tab-${index}`,
+						title: tab.title || `Tab #${index + 1}`,
+						urlKey: tab.cssId || tab.id || `tab-${index}`,
+						icon: tab.icon?.value ? `<i class="${tab.icon.value}" aria-hidden="true"></i>` : null,
+						isActive: index === 0, // First tab is active by default
+					}));
+					return {
+						linkedTabs: tabs,
+						linkedPostTypes: undefined,
+						linkedBlockId: linkedBlock.attributes.blockId || linkedBlock.clientId,
+					};
+				}
+			}
+
+			// Search Form linking
+			if (attributes.source === 'search_form' && attributes.searchFormId) {
+				const allBlocks = getBlocks();
+				const linkedBlock = findBlockById(allBlocks, attributes.searchFormId);
+				if (linkedBlock?.attributes?.postTypes) {
+					// For search form, we need to get the post type labels from Voxel config
+					// For now, use the key as label (will be enhanced with API call if needed)
+					const postTypes: LinkedPostTypeData[] = linkedBlock.attributes.postTypes.map(
+						(key: string, index: number) => ({
+							key,
+							label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+							icon: null, // Post type icons would need to come from Voxel API
+							isActive: index === 0 || key === linkedBlock.attributes.selectedPostType,
+						})
+					);
+					return {
+						linkedTabs: undefined,
+						linkedPostTypes: postTypes,
+						linkedBlockId: linkedBlock.attributes.blockId || linkedBlock.clientId,
+					};
+				}
+			}
+
+			return {
+				linkedTabs: undefined,
+				linkedPostTypes: undefined,
+				linkedBlockId: undefined,
+			};
+		},
+		[attributes.source, attributes.templateTabsId, attributes.searchFormId]
+	);
 
 	// Set blockId if not set
 	useEffect(() => {
@@ -263,6 +354,9 @@ export default function Edit({
 				isLoading={isLoading}
 				error={error}
 				context="editor"
+				linkedTabs={linkedTabs}
+				linkedPostTypes={linkedPostTypes}
+				linkedBlockId={linkedBlockId}
 			/>
 		</div>
 	);

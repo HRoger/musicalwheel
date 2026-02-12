@@ -11,6 +11,7 @@
 
 import type { IconValue } from '@shared/types';
 import type { CombinedStyleAttributes } from '@shared/utils';
+import type { TypographyValue } from '@shared/controls/TypographyPopup';
 
 /**
  * Gallery image structure
@@ -142,6 +143,7 @@ export interface GalleryBlockAttributes extends Partial<CombinedStyleAttributes>
 	viewAllIconSize_mobile?: number;
 	viewAllTextColor: string;
 	viewAllTextColorHover: string;
+	viewAllTypography?: TypographyValue;
 
 	// Advanced - Visibility
 	hideDesktop: boolean;
@@ -217,6 +219,7 @@ export interface GalleryVxConfig {
 	viewAllIconSize_mobile?: number;
 	viewAllTextColor: string;
 	viewAllTextColorHover: string;
+	viewAllTypography?: TypographyValue;
 }
 
 /**

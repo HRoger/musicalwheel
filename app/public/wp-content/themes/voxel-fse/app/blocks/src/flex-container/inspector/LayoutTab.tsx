@@ -9,12 +9,13 @@
 
 import { useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import { SelectControl, BaseControl, Button } from '@wordpress/components';
+import { SelectControl, BaseControl, Button, TextControl } from '@wordpress/components';
 
 import {
 	ResponsiveRangeControlWithDropdown,
 	LinkedGapsControl,
 	SectionHeading,
+	ResponsiveRangeControl,
 } from '@shared/controls';
 import { AccordionPanelGroup, AccordionPanel } from '@shared/controls/AccordionPanelGroup';
 
@@ -405,6 +406,69 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 							__nextHasNoMarginBottom
 						/>
 
+						{/* Grid Alignment Section */}
+						<SectionHeading label={__('Alignment', 'voxel-fse')} />
+
+						{/* Justify Items */}
+						<ResponsiveIconButtonGroup
+							label={__('Justify Items', 'voxel-fse')}
+							attributeBaseName="gridJustifyItems"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-justify-start-h" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-justify-center-h" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-justify-end-h" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'stretch', icon: <span className="eicon-flex eicon-align-stretch-h" style={{ fontSize: '16px' }} />, label: __('Stretch', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Align Items */}
+						<ResponsiveIconButtonGroup
+							label={__('Align Items', 'voxel-fse')}
+							attributeBaseName="gridAlignItems"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-align-start-v" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-align-center-v" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-align-end-v" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'stretch', icon: <span className="eicon-flex eicon-align-stretch-v" style={{ fontSize: '16px' }} />, label: __('Stretch', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Justify Content */}
+						<ResponsiveIconButtonGroup
+							label={__('Justify Content', 'voxel-fse')}
+							attributeBaseName="gridJustifyContent"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-justify-start-h" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-justify-center-h" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-justify-end-h" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'space-between', icon: <span className="eicon-flex eicon-justify-space-between-h" style={{ fontSize: '16px' }} />, label: __('Space Between', 'voxel-fse') },
+								{ value: 'space-around', icon: <span className="eicon-flex eicon-justify-space-around-h" style={{ fontSize: '16px' }} />, label: __('Space Around', 'voxel-fse') },
+								{ value: 'space-evenly', icon: <span className="eicon-flex eicon-justify-space-evenly-h" style={{ fontSize: '16px' }} />, label: __('Space Evenly', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Align Content */}
+						<ResponsiveIconButtonGroup
+							label={__('Align Content', 'voxel-fse')}
+							attributeBaseName="gridAlignContent"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-align-start-v" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-align-center-v" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-align-end-v" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'space-between', icon: <span className="eicon-flex eicon-justify-space-between-v" style={{ fontSize: '16px' }} />, label: __('Space Between', 'voxel-fse') },
+								{ value: 'space-around', icon: <span className="eicon-flex eicon-justify-space-around-v" style={{ fontSize: '16px' }} />, label: __('Space Around', 'voxel-fse') },
+								{ value: 'space-evenly', icon: <span className="eicon-flex eicon-justify-space-evenly-v" style={{ fontSize: '16px' }} />, label: __('Space Evenly', 'voxel-fse') },
+							]}
+						/>
+
 						{/* Note about Grid */}
 						<p
 							style={{
@@ -438,10 +502,29 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{ label: 'article', value: 'article' },
 						{ label: 'aside', value: 'aside' },
 						{ label: 'nav', value: 'nav' },
+						{ label: 'a', value: 'a' },
 					]}
 					onChange={(value) => setAttributes({ htmlTag: value })}
 					__nextHasNoMarginBottom
 				/>
+
+				{/* Link URL - Only show when HTML Tag is 'a' */}
+				{attributes.htmlTag === 'a' && (
+					<TextControl
+						label={__('Link', 'voxel-fse')}
+						value={attributes.containerLink?.url || ''}
+						onChange={(url) =>
+							setAttributes({
+								containerLink: {
+									...(attributes.containerLink || {}),
+									url,
+								},
+							})
+						}
+						placeholder="https://"
+						__nextHasNoMarginBottom
+					/>
+				)}
 
 				<SelectControl
 					label={__('Overflow', 'voxel-fse')}
