@@ -11,7 +11,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { SelectControl } from '@wordpress/components';
+import { SelectControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import {
 	AccordionPanelGroup,
@@ -175,13 +175,23 @@ export function ContentTab({
 				)}
 
 				{attributes.linkTo === 'file' && (
-					<SelectControl
-						label={__('Lightbox', 'voxel-fse')}
-						value={attributes.openLightbox}
-						options={LIGHTBOX_OPTIONS}
-						onChange={(value: any) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
-						help={__("Manage your site's lightbox settings in the Lightbox panel.", 'voxel-fse')}
-					/>
+					<>
+						<SelectControl
+							label={__('Lightbox', 'voxel-fse')}
+							value={attributes.openLightbox}
+							options={LIGHTBOX_OPTIONS}
+							onChange={(value: any) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
+							help={__("Manage your site's lightbox settings in the Lightbox panel.", 'voxel-fse')}
+						/>
+						<TextControl
+							label={__('Lightbox Group', 'voxel-fse')}
+							value={attributes.lightboxGroup || ''}
+							onChange={(value: string) => setAttributes({ lightboxGroup: value })}
+							placeholder={__('e.g. gallery-1', 'voxel-fse')}
+							help={__('Group images into a slideshow by entering the same name.', 'voxel-fse')}
+							__nextHasNoMarginBottom
+						/>
+					</>
 				)}
 			</AccordionPanel>
 		</AccordionPanelGroup>

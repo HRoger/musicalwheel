@@ -226,6 +226,21 @@
 			"type": "string",
 			"default": "default"
 		},
+		"linkBorderWidth": {
+			"type": "object",
+			"default": {
+				"top": 1,
+				"right": 1,
+				"bottom": 1,
+				"left": 1,
+				"unit": "px",
+				"linked": true
+			}
+		},
+		"linkBorderColor": {
+			"type": "string",
+			"default": ""
+		},
 		"linkBorderRadius": {
 			"type": "number",
 			"default": 0
@@ -334,17 +349,41 @@
 			"type": "number",
 			"default": 10
 		},
+		"popupTopBottomMargin_tablet": {
+			"type": "number"
+		},
+		"popupTopBottomMargin_mobile": {
+			"type": "number"
+		},
 		"popupMinWidth": {
 			"type": "number",
 			"default": 200
+		},
+		"popupMinWidth_tablet": {
+			"type": "number"
+		},
+		"popupMinWidth_mobile": {
+			"type": "number"
 		},
 		"popupMaxWidth": {
 			"type": "number",
 			"default": 400
 		},
+		"popupMaxWidth_tablet": {
+			"type": "number"
+		},
+		"popupMaxWidth_mobile": {
+			"type": "number"
+		},
 		"popupMaxHeight": {
 			"type": "number",
 			"default": 500
+		},
+		"popupMaxHeight_tablet": {
+			"type": "number"
+		},
+		"popupMaxHeight_mobile": {
+			"type": "number"
 		},
 		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
 		"visibilityBehavior": {

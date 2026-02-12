@@ -130,6 +130,8 @@ export interface NavbarAttributes {
 	linkPadding_tablet: any;
 	linkPadding_mobile: any;
 	linkBorderStyle: string;
+	linkBorderWidth: any;
+	linkBorderColor: string;
 	linkBorderRadius: number;
 	linkBorderRadius_tablet: number;
 	linkBorderRadius_mobile: number;
@@ -153,6 +155,23 @@ export interface NavbarAttributes {
 	iconColorActive: string;
 	scrollBg: string;
 	chevronColor: string;
+
+	// Popup custom style attributes
+	popupBackdropBackground: string;
+	popupBackdropPointerEvents: boolean;
+	popupBoxShadow: any;
+	popupTopBottomMargin: number;
+	popupTopBottomMargin_tablet?: number;
+	popupTopBottomMargin_mobile?: number;
+	popupMinWidth: number;
+	popupMinWidth_tablet?: number;
+	popupMinWidth_mobile?: number;
+	popupMaxWidth: number;
+	popupMaxWidth_tablet?: number;
+	popupMaxWidth_mobile?: number;
+	popupMaxHeight: number;
+	popupMaxHeight_tablet?: number;
+	popupMaxHeight_mobile?: number;
 }
 
 /**

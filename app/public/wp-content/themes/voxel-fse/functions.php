@@ -355,6 +355,14 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controlle
 new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
+ * Load FSE Print Template API Controller
+ * Provides REST endpoint for server-side template rendering in editor preview.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-print-template-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Print_Template_API_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all

@@ -284,9 +284,27 @@
       "type": "number",
       "default": 24
     },
+    "accordionButtonSize_tablet": {
+      "type": "number"
+    },
+    "accordionButtonSize_mobile": {
+      "type": "number"
+    },
     "accordionButtonIconSize": {
       "type": "number",
       "default": 16
+    },
+    "accordionButtonIconSize_tablet": {
+      "type": "number"
+    },
+    "accordionButtonIconSize_mobile": {
+      "type": "number"
+    },
+    "accordionButtonBorderRadius_tablet": {
+      "type": "number"
+    },
+    "accordionButtonBorderRadius_mobile": {
+      "type": "number"
     },
     "accordionButtonColor": {
       "type": "string",

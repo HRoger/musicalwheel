@@ -469,7 +469,7 @@ export default function Edit({
 							<button
 								type="button"
 								key={tab.id}
-								className={`e-n-tab-title${isActive ? ' e-active' : ''}`}
+								className={`e-n-tab-title${isActive ? ' e-active' : ''}${attributes.tabsHoverAnimation ? ` elementor-animation-${attributes.tabsHoverAnimation}` : ''}`}
 								data-tab-index={tabCount}
 								role="tab"
 								aria-selected={isActive ? 'true' : 'false'}

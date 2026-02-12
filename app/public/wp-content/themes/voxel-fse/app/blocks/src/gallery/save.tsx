@@ -14,6 +14,7 @@
 import { useBlockProps } from '@wordpress/block-editor';
 import type { GalleryBlockAttributes, ProcessedImage, GalleryVxConfig } from './types';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
+import { generateGalleryStyles } from './styles';
 
 interface SaveProps {
 	attributes: GalleryBlockAttributes;
@@ -110,13 +111,21 @@ function createSaveFn(includePlaceholder: boolean) {
 			viewAllIconSize_mobile: attributes.viewAllIconSize_mobile,
 			viewAllTextColor: attributes.viewAllTextColor,
 			viewAllTextColorHover: attributes.viewAllTextColorHover,
+			viewAllTypography: attributes.viewAllTypography,
 		};
+
+		// Generate gallery-specific responsive CSS
+		const galleryCSS = generateGalleryStyles(attributes, attributes.blockId || 'gallery-block');
 
 		return (
 			<ul {...blockProps}>
 				{/* Render responsive CSS from tabs */}
 				{advancedProps.responsiveCSS && (
 					<style dangerouslySetInnerHTML={{ __html: advancedProps.responsiveCSS }} />
+				)}
+				{/* Gallery-specific responsive CSS */}
+				{galleryCSS && (
+					<style dangerouslySetInnerHTML={{ __html: galleryCSS }} />
 				)}
 
 				{/* Voxel vxconfig pattern - configuration stored in JSON script */}

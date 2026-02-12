@@ -38,6 +38,7 @@ import type {
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+import { generateGalleryStyles } from '../styles';
 
 /**
  * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
@@ -232,6 +233,12 @@ export default function GalleryComponent({
 	// Build grid styles
 	const gridStyles = buildGridStyles(attributes);
 
+	// Generate responsive CSS for gallery-specific properties
+	const galleryCSS = useMemo(
+		() => generateGalleryStyles(attributes, blockId),
+		[attributes, blockId]
+	);
+
 	// Build lightbox slides from ALL images (visible + hidden)
 	const lightboxSlides = useMemo(
 		() => processedImages.map((img) => ({
@@ -297,6 +304,7 @@ export default function GalleryComponent({
 		viewAllIconSize_mobile: attributes.viewAllIconSize_mobile,
 		viewAllTextColor: attributes.viewAllTextColor,
 		viewAllTextColorHover: attributes.viewAllTextColorHover,
+		viewAllTypography: attributes.viewAllTypography,
 	};
 
 	// Build grid class names
@@ -314,6 +322,9 @@ export default function GalleryComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
+				{galleryCSS && (
+					<style dangerouslySetInnerHTML={{ __html: galleryCSS }} />
+				)}
 				<li style={{ listStyle: 'none', width: '100%' }}>
 					<EmptyPlaceholder />
 				</li>
@@ -329,6 +340,11 @@ export default function GalleryComponent({
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
+
+			{/* Responsive CSS for gallery-specific properties */}
+			{galleryCSS && (
+				<style dangerouslySetInnerHTML={{ __html: galleryCSS }} />
+			)}
 
 			{/* Gallery Grid - matches Voxel structure 1:1 */}
 			<div
@@ -450,11 +466,10 @@ export default function GalleryComponent({
 									{renderIcon(attributes.viewAllIcon, VoxelIcons.grid)}
 								</span>
 								<p
+									className="ts-gallery-viewall-text"
 									style={{
 										margin: 0,
 										color: attributes.viewAllTextColor || '#fff',
-										fontSize: '14px',
-										fontWeight: 600,
 									}}
 								>
 									+{hidden.length}

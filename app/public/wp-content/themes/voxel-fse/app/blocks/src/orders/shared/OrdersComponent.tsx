@@ -679,7 +679,7 @@ export default function OrdersComponent({
 	// Editor mode: Show placeholder preview
 	if (context === 'editor') {
 		return (
-			<div className="vx-orders-widget vx-order-ease voxel-fse-orders-preview" style={customStyles}>
+			<div className="voxel-fse-orders-inner" style={{ display: 'contents', ...customStyles }}>
 				{/* Re-render vxconfig for DevTools visibility */}
 				<script
 					type="text/json"
@@ -775,7 +775,7 @@ export default function OrdersComponent({
 
 	// Frontend mode: Full interactive component
 	return (
-		<div className="vx-orders-widget vx-order-ease" style={customStyles}>
+		<div className="voxel-fse-orders-inner" style={{ display: 'contents', ...customStyles }}>
 			{/* Re-render vxconfig for DevTools visibility */}
 			<script
 				type="text/json"

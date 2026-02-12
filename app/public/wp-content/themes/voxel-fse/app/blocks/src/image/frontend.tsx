@@ -42,7 +42,25 @@ function initImageLightbox() {
 		link.addEventListener('click', (e) => {
 			e.preventDefault();
 			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
-			if (lightbox) {
+			if (!lightbox) return;
+
+			const group = link.dataset.elementorLightboxSlideshow;
+
+			if (group) {
+				// Slideshow mode: collect all images in the same group
+				const groupLinks = document.querySelectorAll<HTMLAnchorElement>(
+					`.voxel-fse-image a[data-elementor-lightbox-slideshow="${CSS.escape(group)}"]`
+				);
+				const slides: Array<{ src: string; alt?: string }> = [];
+				let currentIndex = 0;
+				groupLinks.forEach((gl, i) => {
+					const img = gl.querySelector('img');
+					slides.push({ src: gl.href, alt: img?.alt || '' });
+					if (gl === link) currentIndex = i;
+				});
+				lightbox.open(slides, currentIndex);
+			} else {
+				// Single image mode
 				const img = link.querySelector('img');
 				const src = link.href;
 				const alt = img?.alt || '';

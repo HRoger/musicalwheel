@@ -77,7 +77,7 @@ export default function Edit({
 	const blockProps = useBlockProps({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
-		style: advancedProps.styles,
+		style: { ...advancedProps.styles, width: '100%' },
 		...advancedProps.customAttrs,
 	});
 

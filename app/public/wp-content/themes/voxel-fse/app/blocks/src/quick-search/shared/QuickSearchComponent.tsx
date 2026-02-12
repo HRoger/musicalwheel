@@ -37,7 +37,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { __ } from '@wordpress/i18n';
 import type {
 	QuickSearchAttributes,
@@ -152,6 +151,7 @@ export default function QuickSearchComponent({
 	// Refs
 	const inputRef = useRef<HTMLInputElement>(null);
 	const popupRef = useRef<HTMLDivElement>(null);
+	const formGroupRef = useRef<HTMLDivElement>(null);
 	const lastQueryRef = useRef<string>(''); // Track last query to skip duplicate requests (Voxel parity: line 296)
 
 	// CSS is enqueued server-side via Block_Loader.php:
@@ -227,6 +227,20 @@ export default function QuickSearchComponent({
 			setTimeout(() => inputRef.current?.focus(), 100);
 		}
 	}, [isPopupOpen]);
+
+	// Close popup on click outside (matches Voxel's triggers-blur behavior)
+	useEffect(() => {
+		if (!isPopupOpen || context !== 'frontend') return;
+
+		const handleClickOutside = (e: MouseEvent) => {
+			if (formGroupRef.current && !formGroupRef.current.contains(e.target as Node)) {
+				setIsPopupOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [isPopupOpen, context]);
 
 	// Search function
 	const performSearch = useCallback(async () => {
@@ -655,25 +669,29 @@ export default function QuickSearchComponent({
 									</a>
 								</li>
 							))}
-							{/* View All / Search For */}
-							<li className="view-all">
-								<a
-									href="#"
-									onClick={(e) => {
-										e.preventDefault();
-										saveCurrentTerm();
-										viewArchive();
-									}}
-									className="flexify"
-								>
-									<div className="ts-term-icon">
-										<span>{renderIcon(config.icons.search, DefaultSearchIcon)}</span>
-									</div>
-									<span>
-										{__('Search for', 'voxel-fse')}&nbsp;<strong>{search}</strong>
-									</span>
-								</a>
-							</li>
+							{/* View All / Search For
+							  Tabbed mode: always shown (Voxel line 94)
+							  Single mode: only if submit_to is set (Voxel line 174) */}
+							{(config.displayMode === 'tabbed' || config.singleMode.submitTo) && (
+								<li className="view-all">
+									<a
+										href="#"
+										onClick={(e) => {
+											e.preventDefault();
+											saveCurrentTerm();
+											viewArchive();
+										}}
+										className="flexify"
+									>
+										<div className="ts-term-icon">
+											<span>{renderIcon(config.icons.search, DefaultSearchIcon)}</span>
+										</div>
+										<span>
+											{__('Search for', 'voxel-fse')}&nbsp;<strong>{search}</strong>
+										</span>
+									</a>
+								</li>
+							)}
 						</ul>
 					)}
 				</div>
@@ -681,67 +699,28 @@ export default function QuickSearchComponent({
 		);
 	};
 
-	// Render popup with portal (frontend) or inline (editor)
-	// Voxel's actual popup CSS hierarchy (from popup-kit.css):
-	//   .ts-popup-root (absolute, z-500000, flex center, pointer-events: none)
-	//     > div (pointer-events: all, ::after = backdrop overlay)
-	//       > .ts-form.ts-quicksearch-popup.lg-width.lg-height
-	//         > .ts-field-popup-container
-	//           > .ts-field-popup.triggers-blur
-	//             > .ts-popup-content-wrapper.min-scroll
-	//               > <form>
+	// Render popup inline below the button.
+	// Voxel's form-group component renders the popup within the form-group container,
+	// which has position:relative. The popup drops down below the button.
+	// Voxel teleports to body with absolute pixel positions, but the visual result
+	// is identical to rendering inline within the position:relative parent.
 	//
-	// CRITICAL: .ts-popup-root must have exactly ONE direct child <div>.
-	// That child gets pointer-events:all and ::after backdrop via CSS.
-	// The .ts-form popup content must be INSIDE that child, not a sibling.
+	// Structure matches Voxel:
+	//   .ts-field-popup-container
+	//     > .ts-field-popup.triggers-blur
+	//       > .ts-popup-content-wrapper.min-scroll
+	//         > <form>
 	const renderPopup = () => {
 		if (!isPopupOpen) return null;
 
-		const popupInner = (
-			<div className="ts-form ts-quicksearch-popup lg-width lg-height">
-				<div className="ts-field-popup-container">
-					<div ref={popupRef} className="ts-field-popup triggers-blur">
-						<div className="ts-popup-content-wrapper min-scroll">
-							{renderPopupContent()}
-						</div>
+		return (
+			<div className="ts-field-popup-container">
+				<div ref={popupRef} className="ts-field-popup triggers-blur">
+					<div className="ts-popup-content-wrapper min-scroll">
+						{renderPopupContent()}
 					</div>
 				</div>
 			</div>
-		);
-
-		// In editor, render inline with same class hierarchy but relative positioning
-		// instead of absolute (since Gutenberg has no iframe like Elementor's preview)
-		if (context === 'editor') {
-			return (
-				<div
-					className="ts-popup-root"
-					style={{
-						position: 'relative',
-						top: 'auto',
-						left: 'auto',
-						width: '100%',
-						height: 'auto',
-						zIndex: 1,
-						pointerEvents: 'all',
-					}}
-				>
-					<div>
-						{popupInner}
-					</div>
-				</div>
-			);
-		}
-
-		// In frontend, use portal to body — matches Voxel's Vue <teleport to="body">
-		// CRITICAL: popupInner must be INSIDE the single > div child, not a sibling.
-		// .ts-popup-root > div gets pointer-events:all and ::after backdrop via CSS.
-		return createPortal(
-			<div className="ts-popup-root">
-				<div onClick={() => setIsPopupOpen(false)}>
-					{popupInner}
-				</div>
-			</div>,
-			document.body
 		);
 	};
 
@@ -756,8 +735,8 @@ export default function QuickSearchComponent({
 				className="ts-form-group quick-search-keyword"
 			/>
 
-			{/* Main Search Button */}
-			<div className="ts-form-group quick-search-keyword">
+			{/* Main Search Button + Popup (inside same form-group, matching Voxel's form-group component) */}
+			<div ref={formGroupRef} className="ts-form-group quick-search-keyword">
 				<button
 					type="button"
 					className="ts-filter ts-popup-target"
@@ -770,10 +749,9 @@ export default function QuickSearchComponent({
 						<span className="ts-shortcut">{shortcutText}</span>
 					)}
 				</button>
+				{/* Popup renders inline below button, inside position:relative form-group */}
+				{renderPopup()}
 			</div>
-
-			{/* Popup */}
-			{renderPopup()}
 		</>
 	);
 }

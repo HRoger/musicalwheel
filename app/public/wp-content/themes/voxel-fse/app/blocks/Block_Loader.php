@@ -3810,6 +3810,15 @@ JAVASCRIPT;
                                     'vx:commons.css',
                                     'vx:post-feed.css'
                             ];
+                        } elseif ($block_name === 'print-template') {
+                            // Print-template can embed ANY content, so it needs all core Voxel styles
+                            // to render the embedded template correctly in the editor (ServerSideRender)
+                            self::ensure_voxel_styles_registered();
+                            $editor_style_deps = [
+                                    'vx:commons.css',
+                                    'vx:forms.css',
+                                    'vx:popup-kit.css'
+                            ];
                         }
 
                         // WordPress requires 'wp-edit-blocks' dependency for editor styles
@@ -5704,6 +5713,29 @@ JAVASCRIPT;
              wp_register_style('vx-popup-kit-global', false);
              wp_add_inline_style('vx-popup-kit-global', $css);
              wp_enqueue_style('vx-popup-kit-global');
+        }
+
+        // Enqueue vendor CSS/JS that popup components depend on (pikaday, nouislider)
+        // These are needed for date pickers and range sliders rendered inside popups.
+        // The kit_popups template is NOT a regular page template, so
+        // check_fse_templates_for_block() in enqueue_frontend_vendor_styles() misses it.
+        // We enqueue here because this method already queries kit_popups and confirms
+        // popup-kit content exists.
+        if (!is_admin()) {
+            self::ensure_voxel_styles_registered();
+
+            if (wp_style_is('pikaday', 'registered') && !wp_style_is('pikaday', 'enqueued')) {
+                wp_enqueue_style('pikaday');
+            }
+            if (wp_script_is('pikaday', 'registered') && !wp_script_is('pikaday', 'enqueued')) {
+                wp_enqueue_script('pikaday');
+            }
+            if (wp_style_is('nouislider', 'registered') && !wp_style_is('nouislider', 'enqueued')) {
+                wp_enqueue_style('nouislider');
+            }
+            if (wp_script_is('nouislider', 'registered') && !wp_script_is('nouislider', 'enqueued')) {
+                wp_enqueue_script('nouislider');
+            }
         }
     }
 

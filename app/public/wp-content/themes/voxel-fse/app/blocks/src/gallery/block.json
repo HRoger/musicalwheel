@@ -253,6 +253,9 @@
 			"type": "string",
 			"default": ""
 		},
+		"viewAllTypography": {
+			"type": "object"
+		},
 		"blockMargin": {
 			"type": "object",
 			"default": {}

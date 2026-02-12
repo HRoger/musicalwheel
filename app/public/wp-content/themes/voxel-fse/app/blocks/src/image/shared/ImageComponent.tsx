@@ -3,7 +3,7 @@
  *
  * 1:1 match with Elementor Widget_Image HTML structure:
  * - figure.wp-caption wrapper (when has caption)
- * - a.elementor-clickable link (when linked)
+ * - a link (when linked; .elementor-clickable editor-only per Elementor image.php:746-749)
  * - img with elementor-animation-* class (when hover animation set)
  * - figcaption.widget-image-caption (when has caption)
  *
@@ -116,15 +116,19 @@ function getImageClass(attributes: ImageBlockAttributes): string {
 
 /**
  * Get caption text
+ * Evidence: Elementor image.php:710-722 uses wp_get_attachment_caption() for 'attachment' source
  */
-function getCaption(attributes: ImageBlockAttributes): string {
+function getCaption(attributes: ImageBlockAttributes, context: 'editor' | 'frontend'): string {
 	if (attributes.captionSource === 'custom') {
 		return attributes.caption || '';
 	}
 	if (attributes.captionSource === 'attachment') {
-		// For frontend, this would be resolved from the image attachment
-		// For editor, we return the alt text as a fallback
-		return attributes.image.alt || '';
+		// Frontend: render.php resolves wp_get_attachment_caption() server-side
+		// Editor: show placeholder text so the user knows a caption will appear
+		if (context === 'editor') {
+			return attributes.image.alt || '(Attachment caption)';
+		}
+		return '';
 	}
 	return '';
 }
@@ -157,7 +161,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	const wrapperStyles = buildWrapperStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 	const imageClass = getImageClass(attributes);
-	const caption = getCaption(attributes);
+	const caption = getCaption(attributes, context);
 	const showCaption = hasCaption(attributes);
 	const linkUrl = getLinkUrl(attributes);
 
@@ -214,16 +218,21 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	);
 
 	// Wrap with link if needed
+	// Evidence: .elementor-clickable is editor-only in Elementor (image.php:746-749)
 	let content = imageElement;
 	if (linkUrl) {
 		const linkAttributes: Record<string, unknown> = {
 			href: linkUrl,
-			className: 'elementor-clickable',
+			className: context === 'editor' ? 'elementor-clickable' : undefined,
 		};
 
-		// Add lightbox data attribute and click handler
+		// Add lightbox data attributes and click handler
+		// Evidence: Elementor image.php:752-754
 		if (attributes.linkTo === 'file' && attributes.openLightbox !== 'no') {
 			linkAttributes['data-elementor-open-lightbox'] = attributes.openLightbox;
+			if (attributes.lightboxGroup) {
+				linkAttributes['data-elementor-lightbox-slideshow'] = attributes.lightboxGroup;
+			}
 			linkAttributes.onClick = handleLightboxClick;
 		}
 

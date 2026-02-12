@@ -397,10 +397,20 @@ export function generateWorkHoursResponsiveCSS(
 	// ============================================
 
 	// Accordion button size (responsive)
-	// Verified: work-hours.php:599-620
+	// Verified: work-hours.php:599-620 (responsive SLIDER, range 0-100, px/%)
 	if (attributes.accordionButtonSize !== undefined) {
 		cssRules.push(
 			`${selector} .ts-icon-btn.ts-smaller { width: ${attributes.accordionButtonSize}px; height: ${attributes.accordionButtonSize}px; }`
+		);
+	}
+	if (attributes.accordionButtonSize_tablet !== undefined) {
+		tabletRules.push(
+			`${selector} .ts-icon-btn.ts-smaller { width: ${attributes.accordionButtonSize_tablet}px; height: ${attributes.accordionButtonSize_tablet}px; }`
+		);
+	}
+	if (attributes.accordionButtonSize_mobile !== undefined) {
+		mobileRules.push(
+			`${selector} .ts-icon-btn.ts-smaller { width: ${attributes.accordionButtonSize_mobile}px; height: ${attributes.accordionButtonSize_mobile}px; }`
 		);
 	}
 
@@ -414,11 +424,23 @@ export function generateWorkHoursResponsiveCSS(
 	}
 
 	// Accordion button icon size (responsive)
-	// Verified: work-hours.php:635-657
+	// Verified: work-hours.php:635-657 (responsive SLIDER, range 0-100, px/%)
 	if (attributes.accordionButtonIconSize !== undefined) {
 		cssRules.push(
 			`${selector} .ts-icon-btn.ts-smaller i { font-size: ${attributes.accordionButtonIconSize}px; }`,
 			`${selector} .ts-icon-btn.ts-smaller svg { width: ${attributes.accordionButtonIconSize}px; height: ${attributes.accordionButtonIconSize}px; }`
+		);
+	}
+	if (attributes.accordionButtonIconSize_tablet !== undefined) {
+		tabletRules.push(
+			`${selector} .ts-icon-btn.ts-smaller i { font-size: ${attributes.accordionButtonIconSize_tablet}px; }`,
+			`${selector} .ts-icon-btn.ts-smaller svg { width: ${attributes.accordionButtonIconSize_tablet}px; height: ${attributes.accordionButtonIconSize_tablet}px; }`
+		);
+	}
+	if (attributes.accordionButtonIconSize_mobile !== undefined) {
+		mobileRules.push(
+			`${selector} .ts-icon-btn.ts-smaller i { font-size: ${attributes.accordionButtonIconSize_mobile}px; }`,
+			`${selector} .ts-icon-btn.ts-smaller svg { width: ${attributes.accordionButtonIconSize_mobile}px; height: ${attributes.accordionButtonIconSize_mobile}px; }`
 		);
 	}
 
@@ -444,10 +466,20 @@ export function generateWorkHoursResponsiveCSS(
 	}
 
 	// Accordion button border radius (responsive)
-	// Verified: work-hours.php:680-701
+	// Verified: work-hours.php:680-701 (responsive SLIDER, range 0-100, px/%)
 	if (attributes.accordionButtonBorderRadius !== undefined) {
 		cssRules.push(
 			`${selector} .ts-icon-btn.ts-smaller { border-radius: ${attributes.accordionButtonBorderRadius}px; }`
+		);
+	}
+	if (attributes.accordionButtonBorderRadius_tablet !== undefined) {
+		tabletRules.push(
+			`${selector} .ts-icon-btn.ts-smaller { border-radius: ${attributes.accordionButtonBorderRadius_tablet}px; }`
+		);
+	}
+	if (attributes.accordionButtonBorderRadius_mobile !== undefined) {
+		mobileRules.push(
+			`${selector} .ts-icon-btn.ts-smaller { border-radius: ${attributes.accordionButtonBorderRadius_mobile}px; }`
 		);
 	}
 

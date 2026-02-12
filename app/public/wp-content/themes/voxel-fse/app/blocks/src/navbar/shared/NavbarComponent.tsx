@@ -80,9 +80,10 @@ interface MenuItemProps {
 	depth: number;
 	attributes: NavbarAttributes;
 	onSubmenuToggle?: (itemId: number, isOpen: boolean) => void;
+	popupScopeClass?: string;
 }
 
-function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
+function MenuItem({ item, depth, attributes, onSubmenuToggle, popupScopeClass }: MenuItemProps) {
 	const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
 	const itemRef = useRef<HTMLLIElement>(null);
 	const triggerRef = useRef<HTMLAnchorElement | null>(null);
@@ -168,6 +169,7 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 					showHeader={false}
 					showFooter={false}
 					clearButton={false}
+					popupClass={popupScopeClass}
 					onClose={() => {
 						setIsSubmenuOpen(false);
 						onSubmenuToggle?.(item.id, false);
@@ -189,7 +191,7 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 							</li>
 							{/* Child items */}
 							{item.children.map((child) => (
-								<MenuItem key={child.id} item={child} depth={depth + 1} attributes={attributes} />
+								<MenuItem key={child.id} item={child} depth={depth + 1} attributes={attributes} popupScopeClass={popupScopeClass} />
 							))}
 						</ul>
 					</div>
@@ -205,9 +207,10 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 interface MobileMenuProps {
 	attributes: NavbarAttributes;
 	menuData: NavbarMenuApiResponse | null;
+	popupScopeClass?: string;
 }
 
-function MobileMenu({ attributes, menuData }: MobileMenuProps) {
+function MobileMenu({ attributes, menuData, popupScopeClass }: MobileMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [activeScreen, setActiveScreen] = useState('main');
 	const [, setSlideFrom] = useState<'left' | 'right'>('right');
@@ -259,6 +262,7 @@ function MobileMenu({ attributes, menuData }: MobileMenuProps) {
 				showHeader={true}
 				showFooter={false}
 				clearButton={false}
+				popupClass={popupScopeClass}
 				onClose={() => setIsOpen(false)}
 			>
 				{/* Popup header (mobile only) */}
@@ -368,6 +372,11 @@ export default function NavbarComponent({
 		window.addEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
 		return () => window.removeEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
 	}, [attributes.source, context, linkedBlockId]);
+
+	// Compute popup scope class for custom popup styling (portaled popups)
+	const popupScopeClass = attributes.customPopupEnabled
+		? `voxel-popup-navbar-${attributes.blockId || 'default'}`
+		: undefined;
 
 	// Build vxconfig for re-render (required for DevTools visibility)
 	const vxConfig: NavbarVxConfig = {
@@ -481,12 +490,12 @@ export default function NavbarComponent({
 					<ul className={navClasses}>
 						{/* Mobile menu trigger */}
 						{(attributes.showBurgerDesktop || attributes.showBurgerTablet) && (
-							<MobileMenu attributes={attributes} menuData={effectiveMenuData} />
+							<MobileMenu attributes={attributes} menuData={effectiveMenuData} popupScopeClass={popupScopeClass} />
 						)}
 
 						{/* Desktop menu items */}
 						{menuData?.items.map((item) => (
-							<MenuItem key={item.id} item={item} depth={0} attributes={attributes} />
+							<MenuItem key={item.id} item={item} depth={0} attributes={attributes} popupScopeClass={popupScopeClass} />
 						))}
 					</ul>
 				</nav>
