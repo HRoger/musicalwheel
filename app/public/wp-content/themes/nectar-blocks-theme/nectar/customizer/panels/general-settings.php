@@ -51,8 +51,8 @@ if ( ! defined( 'ABSPATH' ) ) {
         self::get_section_style(),
         self::get_section_functionality(),
         self::get_section_performance(),
-        //self::get_color_scheme(),
-        self::get_form_styling()
+        self::get_form_styling(),
+        self::get_page_transitions()
       ];
     }
 
@@ -89,15 +89,6 @@ if ( ! defined( 'ABSPATH' ) ) {
           'output' => Nectar_Dynamic_Colors()->kirki_arrays('accent-text-color')
         ],
 
-        // array(
-        //   'id' => 'extra-color-1',
-        //   'type' => 'color',
-        //   'title' => esc_html__('Accent Color #2', 'nectar-blocks-theme'),
-        //   'subtitle' => '',
-        //   'default' => '#ff1053',
-        //   'output' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-1')
-        // ),
-
         [
          'id' => 'button-styling',
          'type' => 'select',
@@ -121,7 +112,7 @@ if ( ! defined( 'ABSPATH' ) ) {
          "default" => 4,
          "min" => 1,
          "step" => 1,
-         "max" => 20,
+         "max" => 50,
          'subtitle' => esc_html__('Fine-tune the rounded edges of your buttons.', 'nectar-blocks-theme'),
          'required' => [ [ 'button-styling', '!=', 'default' ], [ 'button-styling', '!=', 'rounded'] , [ 'button-styling', '!=', 'rounded_shadow'], [ 'button-styling', '!=', 'rounded_reveal']  ],
          'display_value' => 'label',
@@ -344,52 +335,6 @@ if ( ! defined( 'ABSPATH' ) ) {
           'default' => '#ff1053',
           'output' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-1')
         ],
-        // array(
-        //   'id' => 'extra-color-2',
-        //   'type' => 'color',
-        //   'title' => esc_html__('Extra Color #2', 'nectar-blocks-theme'),
-        //   'subtitle' => '',
-        //   'default' => '#2AC4EA',
-        //   'output' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-2')
-        // ),
-        // array(
-        //   'id' => 'extra-color-3',
-        //   'type' => 'color',
-        //   'title' => esc_html__('Extra Color #3', 'nectar-blocks-theme'),
-        //   'subtitle' => '',
-        //   'default' => '#333333',
-        //   'output' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-3')
-        // ),
-
-        // array(
-        //   'id' => 'extra-color-gradient',
-        //   'type' => 'color_gradient',
-        //   'title' => esc_html__('Extra Color Gradient', 'nectar-blocks-theme'),
-        //   'subtitle' => '',
-        //   'default'  => array(
-        //     'from' => '#3452ff',
-        //     'to'   => '#ff1053'
-        //   ),
-        //   'transport' => 'refresh',
-        //   // 'output' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-gradient')
-        //   // 'transport' => 'postMessage',
-        //   // 'nectar_post_message_data' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-gradient')
-        // ),
-
-      //   array(
-      //     'id' => 'extra-color-gradient-2',
-      //     'type' => 'color_gradient',
-      //     'title' => esc_html__('Extra Color Gradient #2', 'nectar-blocks-theme'),
-      //     'subtitle' => '',
-      //     'default'  => array(
-      //       'from' => '#2AC4EA',
-      //       'to'   => '#32d6ff'
-      //     ),
-      //     'transport' => 'refresh',
-      //     // 'transport' => 'postMessage',
-      //     // 'nectar_post_message_data' => Nectar_Dynamic_Colors()->kirki_arrays('extra-color-gradient-2')
-      //   )
-      //
     ];
 
       return [
@@ -543,6 +488,59 @@ if ( ! defined( 'ABSPATH' ) ) {
         'section_id' => 'general-form-styling-section',
         'settings' => [
           'title' => esc_html__( 'Form Styling', 'nectar-blocks-theme' ),
+          'priority' => 7
+        ],
+        'controls' => $controls
+      ];
+    }
+
+    public static function get_page_transitions() {
+      $controls = [
+        [
+          'id' => 'page-transitions',
+          'type' => 'nectar_blocks_switch_legacy',
+          'title' => esc_html__('Page Transitions', 'nectar-blocks-theme'),
+          'subtitle' => __('Enhance your site with the modern "View Transitions API" as a progressive enhancement. This cutting-edge web technology enables smoother page transitions. See', 'nectar-blocks-theme') . ' ' . '<a target="_blank" rel="noopener noreferrer" href="https://caniuse.com/view-transitions">' . esc_html__('which browsers support it.', 'nectar-blocks-theme') . '</a>',
+          'default' => '0'
+        ],
+        [
+          'id' => 'page-transitions-effect',
+          'type' => 'select',
+          'title' => esc_html__('Transition Effect', 'nectar-blocks-theme'),
+          'subtitle' => '',
+          'required' => [ ['page-transitions', '=', '1' ]],
+          'options' => [
+            "cross-fade" => __('Cross Fade', 'nectar-blocks-theme'),
+            "fade" => __('Fade', 'nectar-blocks-theme'),
+            "gradient-fade" => __('Gradient Fade', 'nectar-blocks-theme'),
+            "push-reveal" => __('Push Reveal', 'nectar-blocks-theme')
+          ],
+          'default' => 'cross-fade'
+        ],
+        [
+          'id' => 'page-transitions-bg-color',
+          'type' => 'color',
+          'title' => esc_html__('Transition BG Color', 'nectar-blocks-theme'),
+          'subtitle' => '',
+          'required' => [ ['page-transitions', '=', '1' ]],
+          'transparent' => false,
+          'tooltip' => __('Some effects will show this color during the transition.', 'nectar-blocks-theme'),
+          'default' => ''
+        ],
+        [
+          'id' => 'page-transitions-mobile',
+          'type' => 'nectar_blocks_switch_legacy',
+          'title' => esc_html__('Enable on Mobile', 'nectar-blocks-theme'),
+          'subtitle' => esc_html__('Some mobile devices may struggle to handle page transitions, especially when heavy block animations are involved.', 'nectar-blocks-theme'),
+          'required' => [ ['page-transitions', '=', '1' ]],
+          'default' => '0'
+        ],
+    ];
+
+      return [
+        'section_id' => 'general-page-transitions-section',
+        'settings' => [
+          'title' => esc_html__( 'Page Transitions', 'nectar-blocks-theme' ),
           'priority' => 7
         ],
         'controls' => $controls

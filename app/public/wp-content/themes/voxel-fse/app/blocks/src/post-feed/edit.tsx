@@ -45,7 +45,15 @@ export default function Edit({
 
 	const blockProps = useBlockProps({
 		className: advancedProps.className,
-		style: advancedProps.styles,
+		style: {
+			...advancedProps.styles,
+			// Prevent carousel content from expanding the Gutenberg block wrapper
+			// In Elementor, the widget wrapper has a fixed column width; in Gutenberg's
+			// flex layout, we need overflow:hidden + min-width:0 on both the wrapper and
+			// the inner .ts-post-feed to contain the scroll content
+			overflow: 'hidden',
+			minWidth: 0,
+		},
 	});
 
 	// Fetch configuration from REST API

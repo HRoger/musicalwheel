@@ -606,7 +606,15 @@
 		},
 		"directPurchaseRedirect": {
 			"type": "string",
-			"default": "order_page"
+			"default": "order"
+		},
+		"directPurchasePostType": {
+			"type": "string",
+			"default": ""
+		},
+		"directPurchaseCustomUrl": {
+			"type": "string",
+			"default": ""
 		},
 		"contentTabOpenPanel": {
 			"type": "string",

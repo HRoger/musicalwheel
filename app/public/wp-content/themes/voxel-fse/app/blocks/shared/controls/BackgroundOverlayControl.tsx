@@ -136,6 +136,10 @@ export interface BackgroundOverlayControlAttributes {
 	bgOverlayGradientPositionHover_tablet?: string;
 	bgOverlayGradientPositionHover_mobile?: string;
 
+	// Blend Mode (Normal/Hover)
+	bgOverlayBlendMode?: string;
+	bgOverlayBlendModeHover?: string;
+
 	// CSS Filters (Normal/Hover)
 	bgOverlayCssFilters?: CssFiltersValue;
 	bgOverlayCssFiltersHover?: CssFiltersValue;
@@ -826,6 +830,44 @@ export default function BackgroundOverlayControl({
 						</div>
 					</>
 				)}
+
+				{/* Blend Mode - shown in both Normal and Hover tabs */}
+				<div style={{ marginTop: '16px' }}>
+					<SelectControl
+						label={__('Blend Mode', 'voxel-fse')}
+						value={
+							isHover
+								? (attributes.bgOverlayBlendModeHover || '')
+								: (attributes.bgOverlayBlendMode || '')
+						}
+						options={[
+							{ label: __('Normal', 'voxel-fse'), value: '' },
+							{ label: __('Multiply', 'voxel-fse'), value: 'multiply' },
+							{ label: __('Screen', 'voxel-fse'), value: 'screen' },
+							{ label: __('Overlay', 'voxel-fse'), value: 'overlay' },
+							{ label: __('Darken', 'voxel-fse'), value: 'darken' },
+							{ label: __('Lighten', 'voxel-fse'), value: 'lighten' },
+							{ label: __('Color Dodge', 'voxel-fse'), value: 'color-dodge' },
+							{ label: __('Color Burn', 'voxel-fse'), value: 'color-burn' },
+							{ label: __('Hard Light', 'voxel-fse'), value: 'hard-light' },
+							{ label: __('Soft Light', 'voxel-fse'), value: 'soft-light' },
+							{ label: __('Difference', 'voxel-fse'), value: 'difference' },
+							{ label: __('Exclusion', 'voxel-fse'), value: 'exclusion' },
+							{ label: __('Hue', 'voxel-fse'), value: 'hue' },
+							{ label: __('Saturation', 'voxel-fse'), value: 'saturation' },
+							{ label: __('Color', 'voxel-fse'), value: 'color' },
+							{ label: __('Luminosity', 'voxel-fse'), value: 'luminosity' },
+						]}
+						onChange={(value: string) => {
+							if (isHover) {
+								setAttributes({ bgOverlayBlendModeHover: value });
+							} else {
+								setAttributes({ bgOverlayBlendMode: value });
+							}
+						}}
+						__nextHasNoMarginBottom
+					/>
+				</div>
 
 				{/* Transition Duration - Only show in Hover tab */}
 				{isHover && (

@@ -532,6 +532,7 @@ export interface MentionResult {
 	id: number;
 	type: 'user' | 'post';
 	name: string;
+	username?: string;
 	avatar_url: string;
 	link: string;
 }

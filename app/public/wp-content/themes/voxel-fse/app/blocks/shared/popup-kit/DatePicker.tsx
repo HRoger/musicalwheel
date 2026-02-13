@@ -101,7 +101,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	onChangeRef.current = onChange;
 	onSelectRef.current = onSelect;
 
-	// Initialize Pikaday - EXACT Voxel configuration
+	// Initialize Pikaday - EXACT Voxel configuration per filter type
+	// CRITICAL: numberOfMonths is NOT hardcoded here. Each filter passes it via pickerConfig:
+	//
+	// Voxel's Pikaday configs per filter type (from beautified.js):
+	// - FilterAvailability datePicker:   { bound:false, firstDay:1, minDate:new Date() }                    → 1 month
+	// - FilterAvailability rangePicker:  { bound:false, firstDay:1, minDate:new Date(), theme:'pika-range' } → 1 month
+	// - FilterRecurringDate datePicker:  { bound:false, firstDay:1, keyboardInput:false }                    → 1 month
+	// - FilterRecurringDate rangePicker: { bound:false, firstDay:1, keyboardInput:false, numberOfMonths:2, theme:'pika-range' } → 2 months
+	// - FilterDate datePicker:           { bound:false, firstDay:1, keyboardInput:false }                    → 1 month
+	//
+	// Evidence: voxel-search-form.beautified.js lines 1025, 1044, 1354, 1397
 	useEffect(() => {
 		if (!calendarRef.current || !inputRef.current) return;
 
@@ -123,7 +133,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 				bound: false,              // ← EXACT Voxel: inline rendering, NOT popup
 				firstDay: 1,               // ← EXACT Voxel: Monday as first day
 				keyboardInput: false,      // ← EXACT Voxel: no manual typing
-				numberOfMonths: 2,         // ← EXACT Voxel: show 2 months side-by-side
+				// NOTE: numberOfMonths is NOT set here (defaults to 1)
+				// Each filter type passes the correct value via pickerConfig:
+				// - RecurringDate range: { numberOfMonths: 2 }
+				// - All others: omitted (defaults to 1)
 				defaultDate: value || undefined,
 				onSelect: (date: Date) => {
 					// CRITICAL: Use refs to always call the LATEST callback
@@ -138,7 +151,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 				},
 				// Note: selectDayFn exists in Voxel but not in @types/pikaday
 				// It's used to highlight the selected date - handled by Pikaday internally
-				...pickerConfig, // Allow overriding configuration (e.g., theme: 'pika-range')
+				...pickerConfig, // Allow overriding configuration (e.g., theme, numberOfMonths, minDate)
 			});
 
 			// Notify parent of picker instance for advanced control
@@ -169,11 +182,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 	}, [value]);
 
 	// EXACT Voxel HTML structure
-	// Template: '<div class="ts-booking-date ts-booking-date-range ts-form-group" ref="calendar"><input type="hidden" ref="input"></div>'
-	// CRITICAL: ts-booking-date ts-booking-date-range classes required for CSS grid layout (2 months side-by-side)
+	// Template: '<div class="ts-booking-date ts-form-group" ref="calendar"><input type="hidden" ref="input"></div>'
+	// CONDITIONAL: ts-booking-date-range class triggers CSS grid layout for 2 months side-by-side
+	// Only applied when numberOfMonths >= 2 (passed via pickerConfig)
 	// Evidence: themes/voxel/assets/dist/forms.css (.ts-booking-date.ts-booking-date-range .pika-single)
+	const isRange = pickerConfig?.numberOfMonths >= 2;
 	return (
-		<div className="ts-booking-date ts-booking-date-range ts-form-group" ref={calendarRef}>
+		<div className={`ts-booking-date ts-form-group${isRange ? ' ts-booking-date-range' : ''}`} ref={calendarRef}>
 			<input type="hidden" ref={inputRef} />
 		</div>
 	);

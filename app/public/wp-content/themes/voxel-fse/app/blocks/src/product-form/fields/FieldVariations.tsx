@@ -299,7 +299,7 @@ export default function FieldVariations( {
 	}
 
 	return (
-		<div className="ts-field-variations">
+		<>
 			{/* Attribute selectors */}
 			{ attributes.map( ( attribute ) => (
 				<VariationAttribute
@@ -314,39 +314,42 @@ export default function FieldVariations( {
 			) ) }
 
 			{/* Quantity selector for variable products */}
+			{/* Evidence: form-variations.php:14-29 */}
 			{ showQuantitySelector && (
-				<div className="ts-form-group ts-variation-quantity">
-					<label>Quantity</label>
-					<div className="ts-stepper-input">
+				<div className="ts-form-group">
+					<label>{ field.props.l10n?.select_quantity || 'Select quantity' }</label>
+					<div className="ts-stepper-input flexify">
 						<button
 							type="button"
-							className="ts-stepper-btn ts-stepper-minus"
-							onClick={ decrementQuantity }
-							disabled={ value.quantity <= 1 }
+							className={ `ts-stepper-left ts-icon-btn ts-smaller${ value.quantity <= 1 ? ' vx-disabled' : '' }` }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								decrementQuantity();
+							} }
 						>
-							<span className="ts-icon">-</span>
+							<i className="las la-minus" />
 						</button>
 						<input
 							type="number"
 							value={ value.quantity }
 							onChange={ handleQuantityChange }
 							onBlur={ handleQuantityBlur }
-							min={ 1 }
-							max={ maxQuantity }
-							className="ts-stepper-value"
+							className="ts-input-box"
 						/>
 						<button
 							type="button"
-							className="ts-stepper-btn ts-stepper-plus"
-							onClick={ incrementQuantity }
-							disabled={ value.quantity >= maxQuantity }
+							className={ `ts-stepper-right ts-icon-btn ts-smaller${ value.quantity >= maxQuantity ? ' vx-disabled' : '' }` }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								incrementQuantity();
+							} }
 						>
-							<span className="ts-icon">+</span>
+							<i className="las la-plus" />
 						</button>
 					</div>
 				</div>
 			) }
-		</div>
+		</>
 	);
 }
 

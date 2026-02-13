@@ -14,6 +14,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
+import { SelectControl } from '@wordpress/components';
 import {
 	AccordionPanelGroup,
 	AccordionPanel,
@@ -45,6 +46,42 @@ const ICON_POSITION_OPTIONS = [
 	{ value: 'inline-end', title: __('End', 'voxel-fse'), icon: 'eicon-h-align-right' },
 	{ value: 'block-end', title: __('Bottom', 'voxel-fse'), icon: 'eicon-v-align-bottom' },
 	{ value: 'inline-start', title: __('Start', 'voxel-fse'), icon: 'eicon-h-align-left' },
+];
+
+/**
+ * Hover animation options
+ * Matches Elementor's HOVER_ANIMATION control (30+ animation types)
+ * Applied as `.elementor-animation-{value}` class on tab buttons
+ */
+const HOVER_ANIMATION_OPTIONS = [
+	{ label: __('None', 'voxel-fse'), value: '' },
+	{ label: __('Grow', 'voxel-fse'), value: 'grow' },
+	{ label: __('Shrink', 'voxel-fse'), value: 'shrink' },
+	{ label: __('Pulse', 'voxel-fse'), value: 'pulse' },
+	{ label: __('Pulse Grow', 'voxel-fse'), value: 'pulse-grow' },
+	{ label: __('Pulse Shrink', 'voxel-fse'), value: 'pulse-shrink' },
+	{ label: __('Push', 'voxel-fse'), value: 'push' },
+	{ label: __('Pop', 'voxel-fse'), value: 'pop' },
+	{ label: __('Bounce In', 'voxel-fse'), value: 'bounce-in' },
+	{ label: __('Bounce Out', 'voxel-fse'), value: 'bounce-out' },
+	{ label: __('Rotate', 'voxel-fse'), value: 'rotate' },
+	{ label: __('Grow Rotate', 'voxel-fse'), value: 'grow-rotate' },
+	{ label: __('Float', 'voxel-fse'), value: 'float' },
+	{ label: __('Sink', 'voxel-fse'), value: 'sink' },
+	{ label: __('Bob', 'voxel-fse'), value: 'bob' },
+	{ label: __('Hang', 'voxel-fse'), value: 'hang' },
+	{ label: __('Skew', 'voxel-fse'), value: 'skew' },
+	{ label: __('Skew Forward', 'voxel-fse'), value: 'skew-forward' },
+	{ label: __('Skew Backward', 'voxel-fse'), value: 'skew-backward' },
+	{ label: __('Wobble Vertical', 'voxel-fse'), value: 'wobble-vertical' },
+	{ label: __('Wobble Horizontal', 'voxel-fse'), value: 'wobble-horizontal' },
+	{ label: __('Wobble To Bottom Right', 'voxel-fse'), value: 'wobble-to-bottom-right' },
+	{ label: __('Wobble To Top Right', 'voxel-fse'), value: 'wobble-to-top-right' },
+	{ label: __('Wobble Top', 'voxel-fse'), value: 'wobble-top' },
+	{ label: __('Wobble Bottom', 'voxel-fse'), value: 'wobble-bottom' },
+	{ label: __('Wobble Skew', 'voxel-fse'), value: 'wobble-skew' },
+	{ label: __('Buzz', 'voxel-fse'), value: 'buzz' },
+	{ label: __('Buzz Out', 'voxel-fse'), value: 'buzz-out' },
 ];
 
 /**
@@ -245,6 +282,27 @@ export function StyleTab({
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
 										shadowAttributeName="tabsHoverBoxShadow"
+									/>
+
+									{/* Hover Animation - matches Elementor HOVER_ANIMATION control */}
+									<SelectControl
+										label={__('Hover Animation', 'voxel-fse')}
+										value={attributes.tabsHoverAnimation || ''}
+										onChange={(value: string) => setAttributes({ tabsHoverAnimation: value })}
+										options={HOVER_ANIMATION_OPTIONS}
+										__nextHasNoMarginBottom
+									/>
+
+									{/* Transition Duration */}
+									<ResponsiveRangeControl
+										label={__('Transition Duration', 'voxel-fse')}
+										attributes={attributes as Record<string, any>}
+										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+										attributeBaseName="tabsTransitionDuration"
+										min={0}
+										max={3}
+										step={0.1}
+										units={['s']}
 									/>
 								</>
 							)}

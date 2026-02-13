@@ -36,10 +36,11 @@
  */
 
 import { useState, useCallback, useMemo, useRef, type MouseEvent } from 'react';
-import { useTimelineConfig, useStrings, useCurrentUser, useCommentActions } from '../hooks';
+import { useTimelineConfig, useStrings, useCurrentUser, useCommentActions, usePostContext } from '../hooks';
 import { RichTextFormatter } from './RichTextFormatter';
 import { MediaGallery } from './MediaGallery';
 import { DropdownList } from './DropdownList';
+import { CommentComposer } from './CommentComposer';
 import type { Comment, Status } from '../types';
 
 /**
@@ -82,10 +83,12 @@ export function CommentItem({
 	onShowReplies,
 	onReplyClick,
 	showRepliesButton = true,
-}: CommentItemProps): JSX.Element {
+}: CommentItemProps): JSX.Element | null {
 	const { config } = useTimelineConfig();
 	const strings = useStrings();
+	const l10n = (config?.strings ?? {}) as any;
 	const currentUser = useCurrentUser();
+	const postContext = usePostContext();
 
 	// Refs for dropdown positioning
 	const moreButtonRef = useRef<HTMLAnchorElement>(null);
@@ -93,6 +96,7 @@ export function CommentItem({
 	// UI state
 	const [showActions, setShowActions] = useState(false);
 	const [readMore, setReadMore] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
 
 	// Use comment actions hook
 	const {
@@ -122,10 +126,15 @@ export function CommentItem({
 	);
 
 	// Get l10n strings
-	const l10n = config?.strings ?? {};
+
 
 	// Publisher info
 	const publisher = comment.publisher;
+
+	if (!publisher) {
+		return null; // Handle malformed comment data
+	}
+
 	const avatarUrl = publisher.avatar_url ?? '';
 	const displayName = publisher.display_name ?? '';
 	const username = publisher.username ?? '';
@@ -152,16 +161,53 @@ export function CommentItem({
 		[handleLike]
 	);
 
-	// Handle delete click - use native confirm() with Voxel_Config.l10n if available
-	// Matches voxel-timeline-comments.beautified.js line 521: Voxel.prompt(Voxel_Config.l10n.confirmAction, ...)
-	// Using native confirm() for consistency with StatusItem and simpler implementation
+	// Handle delete click - use Voxel.dialog() for styled confirmation
+	// Matches Voxel's implementation: Voxel.dialog({ message, type, actions, hideClose, timeout })
 	const handleDeleteClick = useCallback(async () => {
-		const confirmMsg = (window as any).Voxel_Config?.l10n?.confirmAction ?? strings.delete_comment_confirm ?? 'Are you sure?';
-		if (!confirm(confirmMsg)) return;
+		const confirmMsg = (window as any).Voxel_Config?.l10n?.confirmAction ?? strings.delete_comment_confirm ?? 'Are you sure you want to proceed with this action?';
+		const yesLabel = (window as any).Voxel_Config?.l10n?.yes ?? 'Yes';
+		const noLabel = (window as any).Voxel_Config?.l10n?.no ?? 'No';
 
-		setShowActions(false);
-		await handleDelete();
+		if (typeof window !== 'undefined' && (window as any).Voxel?.dialog) {
+			// Use Voxel's styled dialog
+			(window as any).Voxel.dialog({
+				message: confirmMsg,
+				type: 'warning',
+				actions: [
+					{
+						label: yesLabel,
+						onClick: async () => {
+							setShowActions(false);
+							await handleDelete();
+							// Show success toast
+							if ((window as any).Voxel?.alert) {
+								(window as any).Voxel.alert('Deleted');
+							}
+						}
+					},
+					{
+						label: noLabel,
+						onClick: () => {
+							setShowActions(false);
+						}
+					}
+				],
+				hideClose: true,
+				timeout: 7500
+			});
+		} else {
+			// Fallback to native confirm
+			if (!confirm(confirmMsg)) return;
+			setShowActions(false);
+			await handleDelete();
+		}
 	}, [handleDelete, strings.delete_comment_confirm]);
+
+	// Handle edit click
+	const handleEditClick = useCallback(() => {
+		setIsEditing(true);
+		setShowActions(false);
+	}, []);
 
 	// Build classes
 	const commentClasses = [
@@ -188,7 +234,7 @@ export function CommentItem({
 						)}
 					</a>
 					<span>
-						{username && (
+						{username && postContext?.show_usernames !== false && (
 							<a href={profileUrl}>@{username}</a>
 						)}
 						<a
@@ -205,73 +251,120 @@ export function CommentItem({
 					</span>
 				</div>
 
-				{/* More menu */}
-				{(displayComment.current_user?.can_edit ||
-					displayComment.current_user?.can_delete ||
-					displayComment.current_user?.can_moderate) && (
-					<>
-						<a
-							href="#"
-							className="vxf-icon vxf-more"
-							ref={moreButtonRef}
-							onClick={(e) => e.preventDefault()}
-							onMouseDown={() => setShowActions((prev) => !prev)}
-							dangerouslySetInnerHTML={{ __html: config?.icons?.more ?? '' }}
-						/>
+				{/* More menu - always shown (matches Voxel comment.php line 37) */}
+				<a
+					href="#"
+					className="vxf-icon vxf-more"
+					ref={moreButtonRef}
+					onClick={(e) => e.preventDefault()}
+					onMouseDown={() => setShowActions((prev) => !prev)}
+					dangerouslySetInnerHTML={{ __html: config?.icons?.more ?? '' }}
+				/>
 
-						{/* Actions dropdown */}
-						{showActions && (
-							<DropdownList
-								target={moreButtonRef.current}
-								onBlur={() => setShowActions(false)}
-							>
-								{displayComment.current_user?.can_moderate && comment.is_pending && (
-									<li>
-										<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleApprove(); setShowActions(false); }}>
-											<span>{l10n.approve ?? 'Approve'}</span>
-										</a>
-									</li>
-								)}
-								{displayComment.current_user?.can_moderate && !comment.is_pending && (
-									<li>
-										<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleMarkPending(); setShowActions(false); }}>
-											<span>{l10n.mark_pending ?? 'Mark as pending'}</span>
-										</a>
-									</li>
-								)}
-								{displayComment.current_user?.can_delete && (
-									<li>
-										<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleDeleteClick(); }}>
-											<span>{l10n.delete ?? 'Delete'}</span>
-										</a>
-									</li>
-								)}
-							</DropdownList>
+				{/* Actions dropdown - matches Voxel comment.php lines 40-72 */}
+				{showActions && (
+					<DropdownList
+						target={moreButtonRef.current}
+						onBlur={() => setShowActions(false)}
+					>
+						{/* Copy link - always visible (Voxel line 41-45) */}
+						<li>
+							<a href="#" className="flexify" onClick={async (e) => {
+								e.preventDefault();
+								try {
+									const url = comment.link ?? window.location.href;
+									await navigator.clipboard.writeText(url);
+									if ((window as any).Voxel?.alert) {
+										(window as any).Voxel.alert(l10n.copied ?? 'Copied to clipboard');
+									}
+								} catch (err) {
+									console.error('Failed to copy link:', err);
+								}
+								setShowActions(false);
+							}}>
+								<span>{l10n.copy_link ?? 'Copy link'}</span>
+							</a>
+						</li>
+						{/* Share - if Web Share API available (Voxel line 46-50) */}
+						{(navigator as any).share && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => {
+									e.preventDefault();
+									(navigator as any).share({ url: comment.link ?? window.location.href });
+									setShowActions(false);
+								}}>
+									<span>{l10n.share ?? 'Share'}</span>
+								</a>
+							</li>
 						)}
-					</>
+						{displayComment.current_user?.can_edit && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleEditClick(); }}>
+									<span>{l10n.edit ?? 'Edit'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_moderate && comment.is_pending && (
+							<li>
+								<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleApprove(); setShowActions(false); }}>
+									<span>{l10n.approve ?? 'Approve'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_moderate && !comment.is_pending && (
+							<li>
+								<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleMarkPending(); setShowActions(false); }}>
+									<span>{l10n.mark_pending ?? 'Mark as pending'}</span>
+								</a>
+							</li>
+						)}
+						{displayComment.current_user?.can_delete && (
+							<li>
+								<a href="#" className="flexify" onClick={(e) => { e.preventDefault(); handleDeleteClick(); }}>
+									<span>{l10n.delete ?? 'Delete'}</span>
+								</a>
+							</li>
+						)}
+					</DropdownList>
 				)}
 			</div>
 
 			{/* Body - matches Voxel's vxf-body structure */}
 			<div className="vxf-body">
-				{/* Text content */}
-				{comment.content && (
-					<div className="vxf-body-text">
-						<RichTextFormatter
-							content={comment.content}
-							maxLength={280}
-							isExpanded={readMore}
-							onToggleExpand={() => setReadMore(!readMore)}
-						/>
-					</div>
-				)}
-
-				{/* Media Gallery */}
-				{comment.files && comment.files.length > 0 && (
-					<MediaGallery
-						files={comment.files}
-						statusId={comment.id}
+				{isEditing ? (
+					<CommentComposer
+						statusId={status.id}
+						parentId={comment.parent_id ?? undefined}
+						comment={comment}
+						onCommentUpdated={(updatedComment) => {
+							setIsEditing(false);
+							onCommentUpdate?.(updatedComment);
+						}}
+						onCancel={() => setIsEditing(false)}
+						autoFocus
 					/>
+				) : (
+					<>
+						{/* Text content */}
+						{comment.content && (
+							<div className="vxf-body-text">
+								<RichTextFormatter
+									content={comment.content}
+									maxLength={280}
+									isExpanded={readMore}
+									onToggleExpand={() => setReadMore(!readMore)}
+								/>
+							</div>
+						)}
+
+						{/* Media Gallery */}
+						{comment.files && comment.files.length > 0 && (
+							<MediaGallery
+								files={comment.files}
+								statusId={comment.id}
+							/>
+						)}
+					</>
 				)}
 			</div>
 
@@ -283,7 +376,7 @@ export function CommentItem({
 					<a
 						href="#"
 						onClick={handleLikeClick}
-						className={`vxf-icon ${hasLiked ? 'vxf-liked' : ''} ${actionState.isLiking ? 'vx-inert' : ''} ${comment.is_pending && !hasLiked ? 'vx-pending' : ''}`}
+						className={`vxf-icon ${hasLiked ? 'vxf-liked' : ''} ${actionState.isLiking ? 'vx-inert' : ''} ${(status.is_pending || comment.is_pending) && !hasLiked ? 'vx-pending' : ''}`}
 					>
 						<span dangerouslySetInnerHTML={{ __html: hasLiked ? (config?.icons?.liked ?? '') : (config?.icons?.like ?? '') }} />
 						<RayHolder />
@@ -294,7 +387,7 @@ export function CommentItem({
 						<a
 							href="#"
 							onClick={(e) => { e.preventDefault(); onReplyClick?.(); }}
-							className={`vxf-icon ${comment.is_pending ? 'vx-pending' : ''}`}
+							className={`vxf-icon ${status.is_pending || comment.is_pending ? 'vx-pending' : ''}`}
 							dangerouslySetInnerHTML={{ __html: config?.icons?.reply ?? '' }}
 						/>
 					)}
@@ -305,8 +398,14 @@ export function CommentItem({
 							href="#"
 							onClick={(e) => { e.preventDefault(); onShowReplies?.(); }}
 							className="vxf-icon vxf-has-replies"
-							dangerouslySetInnerHTML={{ __html: config?.icons?.comment ?? '' }}
-						/>
+						>
+							{/* Voxel's comment bubble icon - matching templates/widgets/timeline/comment/comment.php */}
+							<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+								<path d="M7 10.5957C7 10.1815 7.33579 9.8457 7.75 9.8457H16.25C16.6642 9.8457 17 10.1815 17 10.5957C17 11.0099 16.6642 11.3457 16.25 11.3457H7.75C7.33579 11.3457 7 11.0099 7 10.5957Z"></path>
+								<path d="M7.75 12.8457C7.33579 12.8457 7 13.1815 7 13.5957C7 14.0099 7.33579 14.3457 7.75 14.3457H12.75C13.1642 14.3457 13.5 14.0099 13.5 13.5957C13.5 13.1815 13.1642 12.8457 12.75 12.8457H7.75Z"></path>
+								<path fillRule="evenodd" clipRule="evenodd" d="M12 4C7.58172 4 4 7.58172 4 12V20H12C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM2.5 12C2.5 6.75329 6.75329 2.5 12 2.5C17.2467 2.5 21.5 6.75329 21.5 12C21.5 17.2467 17.2467 21.5 12 21.5H3.25C2.83579 21.5 2.5 21.1642 2.5 20.75V12Z"></path>
+							</svg>
+						</a>
 					)}
 				</div>
 
@@ -316,7 +415,7 @@ export function CommentItem({
 						{/* Recent likes avatars */}
 						{displayComment.likes?.last3?.length > 0 && (
 							<div className="vxf-recent-likes flexify">
-								{displayComment.likes.last3.map((like, index) => (
+								{displayComment.likes.last3.filter(like => like && like.avatar_url).map((like, index) => (
 									<img key={index} src={like.avatar_url} alt={like.display_name} title={like.display_name} />
 								))}
 							</div>
@@ -340,7 +439,7 @@ export function CommentItem({
 					</div>
 				)}
 			</div>
-		</div>
+		</div >
 	);
 }
 

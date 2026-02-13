@@ -10,7 +10,7 @@ import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import type { SearchFormAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
@@ -22,6 +22,11 @@ import VoxelGridIcon from '@shared/VoxelGridIcon';
  * Handles old saved content formats to prevent validation errors
  */
 const deprecated = [
+	// v2: SVG placeholder version (pre-cleanup)
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
 	// v1: Old placeholder with emoji icon and text spans
 	{
 		attributes: metadata.attributes,

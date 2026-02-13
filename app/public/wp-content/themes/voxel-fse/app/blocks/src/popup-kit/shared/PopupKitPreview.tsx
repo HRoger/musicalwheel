@@ -13,6 +13,16 @@
 import React from 'react';
 import type { PopupKitAttributes } from '../types';
 
+// Placeholder matching Voxel's gradient demo image (avoids hardcoded URLs that break across environments)
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">' +
+    '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">' +
+    '<stop offset="0%" stop-color="#818cf8"/><stop offset="50%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/>' +
+    '</linearGradient></defs>' +
+    '<rect fill="url(#g)" width="150" height="150" rx="75"/>' +
+    '</svg>'
+);
+
 interface PopupKitPreviewProps {
     attributes: PopupKitAttributes;
     context: 'editor' | 'frontend';
@@ -331,7 +341,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification ts-new-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unseen and unvisited with image</b>
@@ -342,7 +352,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unvisited with image</b>
@@ -353,7 +363,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Seen and visited with image</b>
@@ -364,7 +374,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li>
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" width="150" height="150" />
+                                    <img src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" width="150" height="150" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Notification prompt with actions</b>
@@ -502,7 +512,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                             <ul className="ts-cart-list simplify-ul">
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>
@@ -527,7 +537,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                                 </li>
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>

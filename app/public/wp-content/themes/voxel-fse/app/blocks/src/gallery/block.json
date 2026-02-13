@@ -30,6 +30,7 @@
 		"customClassName": true
 	},
 	"editorScript": "file:./index.js",
+	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
 		"blockId": {
@@ -251,6 +252,9 @@
 		"viewAllTextColorHover": {
 			"type": "string",
 			"default": ""
+		},
+		"viewAllTypography": {
+			"type": "object"
 		},
 		"blockMargin": {
 			"type": "object",

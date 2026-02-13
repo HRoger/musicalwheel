@@ -104,10 +104,12 @@ function OutOfStockState({
 
 /**
  * Editor placeholder component
+ *
+ * Matches Voxel's Elementor editor behavior: when there's no product context,
+ * Voxel renders nothing (content_template is empty, render() returns early).
+ * We show a minimal loading placeholder so the block is visible/selectable.
  */
 function EditorPlaceholder({ attributes }: { attributes: ProductFormAttributes }): React.ReactElement {
-	const icons = attributes.icons || DEFAULT_PRODUCT_FORM_ICONS;
-
 	return (
 		<>
 			{/* Re-render vxconfig for DevTools visibility (CRITICAL for Plan C+) */}
@@ -130,61 +132,8 @@ function EditorPlaceholder({ attributes }: { attributes: ProductFormAttributes }
 					}),
 				}}
 			/>
-			<div className="ts-product-main">
-				{/* Sample field placeholder */}
-				<div className="ts-form-group">
-					<label>{/* Field Label */}Product Options</label>
-					<div className="ts-filter ts-popup-target">
-						<span className="ts-filter-text">Select an option</span>
-						<div className="ts-down-icon"></div>
-					</div>
-				</div>
-
-				{/* Sample cards placeholder */}
-				<div className="ts-form-group">
-					<label>Add-ons</label>
-					<ul className="addon-cards simplify-ul flexify">
-						<li>
-							<div className="adc-title">Sample Add-on</div>
-							<div className="adc-subtitle">Description</div>
-							<span className="vx-addon-price">+$10.00</span>
-						</li>
-						<li className="adc-selected">
-							<div className="adc-title">Selected Add-on</div>
-							<div className="adc-subtitle">Description</div>
-							<span className="vx-addon-price">+$15.00</span>
-						</li>
-					</ul>
-				</div>
-
-				{/* Action button */}
-				<div className="ts-form-group product-actions">
-					<a href="#" className="ts-btn form-btn ts-btn-2">
-						{renderIcon(icons.addToCart)}
-						<span>Add to cart</span>
-					</a>
-				</div>
-
-				{/* Price calculator */}
-				{attributes.showPriceCalculator === 'show' && (
-					<div className="ts-form-group tcc-container">
-						<ul className="ts-cost-calculator simplify-ul flexify">
-							<li>
-								<p className="ts-item-name">Base price</p>
-								<p className="ts-item-price">$50.00</p>
-							</li>
-							<li>
-								<p className="ts-item-name">Add-on: Selected</p>
-								<p className="ts-item-price">$15.00</p>
-							</li>
-							<li className="ts-total">
-								<p className="ts-item-name">Total</p>
-								<p className="ts-item-price">$65.00</p>
-							</li>
-						</ul>
-					</div>
-				)}
-			</div>
+			{/* Shared empty placeholder control */}
+			<EmptyPlaceholder />
 		</>
 	);
 }
@@ -437,7 +386,8 @@ export default function ProductFormComponent({
 				)}
 
 				{/* Quantity Field (for regular products) */}
-				{hasQuantity && productMode === 'regular' && (
+				{/* Evidence: form-quantity-field.php:53 - sold_individually hides quantity selector */}
+				{hasQuantity && productMode === 'regular' && !quantityField?.props?.sold_individually && (
 					<FieldQuantity
 						maxQuantity={maxQuantity}
 						value={quantity}

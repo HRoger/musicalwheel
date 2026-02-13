@@ -69,6 +69,10 @@ export default function Save({ attributes }: SaveProps) {
         'data-loop-property': attributes.loopProperty || undefined,
         'data-loop-limit': attributes.loopLimit || undefined,
         'data-loop-offset': attributes.loopOffset || undefined,
+        // Entrance animation (attribute names match MotionEffectsControls)
+        'data-animation': attributes.entranceAnimation || undefined,
+        'data-animation-duration': attributes.animationDuration || undefined,
+        'data-animation-delay': attributes.animationDelay ? `${attributes.animationDelay}` : undefined,
         ...customAttrs,
     });
 

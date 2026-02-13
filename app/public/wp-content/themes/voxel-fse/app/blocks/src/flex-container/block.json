@@ -157,6 +157,42 @@
             "type": "string",
             "default": "row"
         },
+        "gridJustifyItems": {
+            "type": "string"
+        },
+        "gridJustifyItems_tablet": {
+            "type": "string"
+        },
+        "gridJustifyItems_mobile": {
+            "type": "string"
+        },
+        "gridAlignItems": {
+            "type": "string"
+        },
+        "gridAlignItems_tablet": {
+            "type": "string"
+        },
+        "gridAlignItems_mobile": {
+            "type": "string"
+        },
+        "gridJustifyContent": {
+            "type": "string"
+        },
+        "gridJustifyContent_tablet": {
+            "type": "string"
+        },
+        "gridJustifyContent_mobile": {
+            "type": "string"
+        },
+        "gridAlignContent": {
+            "type": "string"
+        },
+        "gridAlignContent_tablet": {
+            "type": "string"
+        },
+        "gridAlignContent_mobile": {
+            "type": "string"
+        },
         "gridOutline": {
             "type": "boolean",
             "default": false
@@ -721,6 +757,14 @@
             "type": "object",
             "default": {}
         },
+        "bgOverlayBlendMode": {
+            "type": "string",
+            "default": ""
+        },
+        "bgOverlayBlendModeHover": {
+            "type": "string",
+            "default": ""
+        },
         "bgOverlayTransitionDuration": {
             "type": "number",
             "default": 0.3
@@ -895,6 +939,105 @@
         "loopOffset": {
             "type": "string",
             "default": ""
+        },
+        "_comment_flex_item": "Flex Item controls (for child containers in flex parent)",
+        "flexAlignSelf": {
+            "type": "string"
+        },
+        "flexAlignSelf_tablet": {
+            "type": "string"
+        },
+        "flexAlignSelf_mobile": {
+            "type": "string"
+        },
+        "flexOrder": {
+            "type": "string",
+            "default": ""
+        },
+        "flexOrder_tablet": {
+            "type": "string"
+        },
+        "flexOrder_mobile": {
+            "type": "string"
+        },
+        "flexSize": {
+            "type": "string",
+            "default": ""
+        },
+        "flexGrow": {
+            "type": "number"
+        },
+        "flexGrow_tablet": {
+            "type": "number"
+        },
+        "flexGrow_mobile": {
+            "type": "number"
+        },
+        "flexShrink": {
+            "type": "number"
+        },
+        "flexShrink_tablet": {
+            "type": "number"
+        },
+        "flexShrink_mobile": {
+            "type": "number"
+        },
+        "_comment_grid_item": "Grid Item controls (for child containers in grid parent)",
+        "gridColumnSpan": {
+            "type": "string",
+            "default": ""
+        },
+        "gridColumnSpan_tablet": {
+            "type": "string"
+        },
+        "gridColumnSpan_mobile": {
+            "type": "string"
+        },
+        "gridColumnCustom": {
+            "type": "string",
+            "default": ""
+        },
+        "gridRowSpan": {
+            "type": "string",
+            "default": ""
+        },
+        "gridRowSpan_tablet": {
+            "type": "string"
+        },
+        "gridRowSpan_mobile": {
+            "type": "string"
+        },
+        "gridRowCustom": {
+            "type": "string",
+            "default": ""
+        },
+        "_comment_link": "Link URL for container when htmlTag is 'a'",
+        "containerLink": {
+            "type": "object",
+            "default": {}
+        },
+        "_comment_entrance_animation": "Entrance animation attributes (matches MotionEffectsControls)",
+        "entranceAnimation": {
+            "type": "string",
+            "default": ""
+        },
+        "entranceAnimation_tablet": {
+            "type": "string"
+        },
+        "entranceAnimation_mobile": {
+            "type": "string"
+        },
+        "animationDuration": {
+            "type": "string",
+            "default": ""
+        },
+        "animationDelay": {
+            "type": "number",
+            "default": 0
+        },
+        "_comment_editor_preview": "Editor preview width (Voxel container-controller feature)",
+        "editorPreviewWidth": {
+            "type": "number"
         },
         "_comment_container_options": "Container Options - Inline Flex, Calc Height, Backdrop Blur (matches container-controller.php)",
         "enableInlineFlex": {

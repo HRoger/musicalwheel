@@ -477,7 +477,8 @@ if ( ! function_exists( 'nectar_walker_nav_menu' ) ) {
                 $nectar_menu_options_enabled = apply_filters('nectar_menu_options_enabled', true);
                 $item_icon_output = '';
                 $menu_label = '';
-        $custom_typography_class = '';
+                $custom_typography_class = '';
+                $has_custom_button_style = false;
 
                 if( isset($element->ID) ) {
 
@@ -541,6 +542,7 @@ if ( ! function_exists( 'nectar_walker_nav_menu' ) ) {
                             // Button style
                             if( isset($menu_item_options['menu_item_link_link_style']) && 'default' !== $menu_item_options['menu_item_link_link_style'] ) {
                                 $element->classes[] = 'menu-item-btn-style-' . esc_attr($menu_item_options['menu_item_link_link_style']);
+                                $has_custom_button_style = true;
                             }
                             if( isset($menu_item_options['menu_item_link_link_text_style']) && 'default' !== $menu_item_options['menu_item_link_link_text_style'] ) {
 
@@ -739,7 +741,7 @@ if ( ! function_exists( 'nectar_walker_nav_menu' ) ) {
                 }
 
                 // Left Header.
-                if ( empty( $button_style ) && $header_format === 'left-header' ) {
+                if ( empty( $button_style ) && ! $has_custom_button_style && NectarThemeManager::$header_hover_effect !== 'button_bg' && $header_format === 'left-header' ) {
                     $element->title = '<span>' . $element->title . '</span>';
                 }
 

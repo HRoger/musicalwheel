@@ -11,6 +11,7 @@ export type AuthScreen =
 	| 'login'
 	| 'register'
 	| 'confirm_account'
+	| 'login_confirm_account'
 	| 'recover'
 	| 'recover_confirm'
 	| 'recover_set_password'

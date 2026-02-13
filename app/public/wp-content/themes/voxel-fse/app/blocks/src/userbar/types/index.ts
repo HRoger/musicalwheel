@@ -201,6 +201,10 @@ export interface UserbarAttributes {
 	itemMargin: BoxDimensions;
 	/** Item padding */
 	itemPadding: BoxDimensions;
+	/** Item box shadow */
+	itemBoxShadow: BoxShadowValue;
+	/** Item box shadow on hover */
+	itemBoxShadowHover: BoxShadowValue;
 
 	// Item Background
 	/** Item background color */
@@ -525,6 +529,8 @@ export interface VoxelFSEUserbarConfig {
 	templates: {
 		inbox: string;
 	};
+	/** Pre-rendered WordPress menu HTML keyed by menu location slug */
+	menus?: Record<string, string>;
 }
 
 declare global {

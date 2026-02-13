@@ -9,13 +9,13 @@ body[data-slide-out-widget-area-style="slide-out-from-right-hover"] #nectar-nav{
 
 #slide-out-widget-area.slide-out-from-right-hover{
 	 position:fixed;
-		transform:translate3d(341px,0,0);
-		-webkit-transform:translate3d(341px,0,0);
-		-ms-transform:translate3d(341px,0,0);
-		top:0;
-		right:0;
-		width:340px;
-		height:100%;
+	 --ocm-width: 340px;
+	 --nectar-root-width: var(--ocm-width, 340px);
+		transform:translate3d(calc(var(--ocm-width) + 1px + var(--offset, 0px)),0,0);
+		top: var(--offset, 0px);
+		right: var(--offset, 0px);
+		width: var(--ocm-width);
+		height: calc(100% - (var(--offset, 0px) * 2));
 		z-index:9999;
 		padding:54px;
 		padding-top:80px;
@@ -72,6 +72,9 @@ body[data-slide-out-widget-area-style="slide-out-from-right-hover"] #nectar-nav{
 #slide-out-widget-area.slide-out-from-right-hover .inner-wrap {
 	margin: auto 0;
   position: relative;
+}
+#slide-out-widget-area.slide-out-from-right-hover.has-nectar-template .inner-wrap {
+	width: 100%;
 }
 #slide-out-widget-area.slide-out-from-right-hover .inner{
 	 position:relative;
@@ -135,6 +138,10 @@ body #slide-out-widget-area.slide-out-from-right-hover .inner .off-canvas-menu-c
 .admin-bar #slide-out-widget-area.slide-out-from-right-hover{
 	 padding-top:100px
 }
+.admin-bar #slide-out-widget-area.slide-out-from-right-hover.has-nectar-template{
+	padding-top: var(--wp-admin--admin-bar--height);
+}
+
 #slide-out-widget-area.slide-out-from-right-hover[data-dropdown-func="separate-dropdown-parent-link"] .off-canvas-menu-container {
 		position: relative;
 		top: auto;
@@ -280,19 +287,18 @@ body .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .lines-butt
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .lines:before,
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .lines:after,
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .lines-button:after{
-	 width:1.4rem
+	width: var(--ocm-icon-width, 1.4rem);
 }
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .unhidden-line .lines:before,
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .unhidden-line .lines:after,
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .unhidden-line.lines-button:after{
-	 width:1.4rem;
+	 width: var(--ocm-icon-width, 1.4rem);
 		height:2px;
-		-ms-transform:scale(1,1);
 		transform:scale(1,1);
 		-webkit-transform:scale(1,1)
 }
 .slide-out-hover-icon-effect.slide-out-widget-area-toggle.small .lines{
-	 width:1.4rem
+	width: var(--ocm-icon-width, 1.4rem);
 }
 .slide-out-hover-icon-effect.small .lines:after{
 		top:-6px

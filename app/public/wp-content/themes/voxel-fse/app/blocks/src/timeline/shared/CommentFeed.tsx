@@ -148,16 +148,6 @@ export function CommentFeed({
 
 	return (
 		<div className={containerClasses}>
-			{/* Comment composer FIRST - Voxel shows composer before comments (not after empty state) */}
-			{/* Only at top level, and NOT if status is pending */}
-			{!isNested && canComment && !status.is_pending && (
-				<CommentComposer
-					statusId={status.id}
-					onCommentPublished={handleCommentPublished}
-					autoFocus={focusComposer}
-				/>
-			)}
-
 			{/* Comments list */}
 			{comments.map((comment) => (
 				<div key={comment.id} className="vxf-comment-wrapper">
@@ -223,6 +213,16 @@ export function CommentFeed({
 				<div className="ts-no-posts">
 					<p>{error}</p>
 				</div>
+			)}
+
+			{/* Comment composer LAST - matches Voxel's comment-feed.php rendering order */}
+			{/* Only at top level, and NOT if status is pending */}
+			{!isNested && canComment && !status.is_pending && (
+				<CommentComposer
+					statusId={status.id}
+					onCommentPublished={handleCommentPublished}
+					autoFocus={focusComposer}
+				/>
 			)}
 		</div>
 	);

@@ -259,11 +259,17 @@ async function fetchProductConfig(postId: number): Promise<ProductFormConfig | n
 	const endpoint = `${restUrl}voxel-fse/v1/product-form/config?post_id=${postId}`;
 
 	try {
+		const headers: HeadersInit = {
+			'Content-Type': 'application/json',
+		};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(endpoint, {
 			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers,
 		});
 
 		if (!response.ok) {
@@ -315,8 +321,9 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		let cancelled = false;
 
 		async function loadProductConfig() {
+			// Match Voxel behavior: if no post context, render nothing
+			// (Voxel's render() returns early with empty output)
 			if (!postId) {
-				setError('No post ID found');
 				setIsLoading(false);
 				return;
 			}
@@ -358,7 +365,12 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		);
 	}
 
-	// Show error state
+	// No post ID — match Voxel: render nothing
+	if (!postId) {
+		return <></>;
+	}
+
+	// Show error state (API/network errors only, not missing post ID)
 	if (error) {
 		return (
 			<div className="ts-product-main">

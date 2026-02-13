@@ -8,7 +8,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 
 /**
@@ -23,8 +23,16 @@ const blockIcon = (
 /**
  * Register the block
  */
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
+
 registerBlockType(metadata.name, {
 	icon: blockIcon,
 	edit: Edit,
 	save,
+	deprecated,
 });
