@@ -49,15 +49,8 @@ const defaultIcons: Record<string, string> = {
 export function renderIcon(icon?: IconConfig, fallbackKey?: string): ReactNode {
 	// If icon has a value, render it
 	if (icon && icon.value) {
-		// Handle Line Awesome icons (most common)
-		if (icon.library === 'icon' || !icon.library || icon.library === '') {
-			return <i className={icon.value}></i>;
-		}
-
-		// Handle custom SVG
-		if (icon.library === 'svg' && icon.value) {
-			// SVG value could be a URL or inline SVG
-			// For inline SVG, we use dangerouslySetInnerHTML (same as Voxel does)
+		// Handle custom SVG first (specific check)
+		if (icon.library === 'svg') {
 			if (icon.value.startsWith('<svg') || icon.value.startsWith('<?xml')) {
 				return (
 					<span
@@ -69,6 +62,9 @@ export function renderIcon(icon?: IconConfig, fallbackKey?: string): ReactNode {
 			// URL to SVG file - use img tag
 			return <img src={icon.value} alt="" className="ts-icon-svg" />;
 		}
+
+		// Everything else is a font icon class (icon, line-awesome, font-awesome, empty, etc.)
+		return <i className={icon.value}></i>;
 	}
 
 	// If no icon or no value, use fallback

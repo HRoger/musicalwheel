@@ -321,8 +321,9 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		let cancelled = false;
 
 		async function loadProductConfig() {
+			// Match Voxel behavior: if no post context, render nothing
+			// (Voxel's render() returns early with empty output)
 			if (!postId) {
-				setError('No post ID found');
 				setIsLoading(false);
 				return;
 			}
@@ -364,7 +365,12 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		);
 	}
 
-	// Show error state
+	// No post ID — match Voxel: render nothing
+	if (!postId) {
+		return <></>;
+	}
+
+	// Show error state (API/network errors only, not missing post ID)
 	if (error) {
 		return (
 			<div className="ts-product-main">

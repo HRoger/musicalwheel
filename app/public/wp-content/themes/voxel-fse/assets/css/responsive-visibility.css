@@ -38,7 +38,7 @@
 	display: none !important;
 }
 
-/* Hide editor-only empty state placeholder on frontend */
-.voxel-empty-placeholder {
+/* Hide editor-only empty state placeholder on frontend (but keep visible in block editor) */
+body:not(.block-editor-page) .voxel-empty-placeholder {
 	display: none !important;
 }

@@ -154,17 +154,24 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 			'content_length' => apply_filters( 'voxel/single_order/data_inputs/max_content_length', 128 ),
 		];
 
+		// Get available statuses (statuses that actually exist in the orders table)
+		// Reference: Voxel orders.php:2409-2444
+		$available_statuses = $this->get_available_statuses( $current_user_id );
+		$available_shipping_statuses = $this->get_available_shipping_statuses( $current_user_id );
+
 		return rest_ensure_response( [
-			'statuses'          => $statuses,
-			'statuses_ui'       => $statuses_ui,
-			'shipping_statuses' => $shipping_statuses,
-			'product_types'     => $product_types,
-			'is_vendor'         => $is_vendor,
-			'is_admin'          => $is_admin,
-			'current_user_id'   => $current_user_id ?: null,
-			'nonce'             => wp_create_nonce( 'vx_orders' ),
-			'messages'          => $messages,
-			'data_inputs'       => $data_inputs,
+			'statuses'                    => $statuses,
+			'statuses_ui'                 => $statuses_ui,
+			'shipping_statuses'           => $shipping_statuses,
+			'product_types'               => $product_types,
+			'available_statuses'          => $available_statuses,
+			'available_shipping_statuses' => $available_shipping_statuses,
+			'is_vendor'                   => $is_vendor,
+			'is_admin'                    => $is_admin,
+			'current_user_id'             => $current_user_id ?: null,
+			'nonce'                       => wp_create_nonce( 'vx_orders' ),
+			'messages'                    => $messages,
+			'data_inputs'                 => $data_inputs,
 		] );
 	}
 
@@ -491,6 +498,76 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		}
 
 		return $product_types;
+	}
+
+	/**
+	 * Get available statuses (statuses that actually exist in the orders table for this user)
+	 *
+	 * Reference: Voxel orders.php:2409-2435
+	 *
+	 * @param int $user_id Current user ID.
+	 * @return array List of status keys that have orders.
+	 */
+	protected function get_available_statuses( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'vx_orders';
+
+		// Check if the table exists
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return [];
+		}
+
+		$testmode = \Voxel\is_test_mode() ? 'true' : 'false';
+
+		if ( $this->is_user_admin( $user_id ) ) {
+			return $wpdb->get_col( "SELECT `status` FROM {$table} WHERE testmode IS {$testmode} GROUP BY `status`" );
+		}
+
+		if ( ! $user_id ) {
+			return [];
+		}
+
+		return $wpdb->get_col( $wpdb->prepare(
+			"SELECT `status` FROM {$table} WHERE ( customer_id = %d OR vendor_id = %d ) AND testmode IS {$testmode} GROUP BY `status`",
+			$user_id,
+			$user_id
+		) );
+	}
+
+	/**
+	 * Get available shipping statuses (shipping statuses that actually exist in the orders table for this user)
+	 *
+	 * Reference: Voxel orders.php:2415-2442
+	 *
+	 * @param int $user_id Current user ID.
+	 * @return array List of shipping status keys that have orders.
+	 */
+	protected function get_available_shipping_statuses( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'vx_orders';
+
+		// Check if the table exists
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return [];
+		}
+
+		$testmode = \Voxel\is_test_mode() ? 'true' : 'false';
+
+		if ( $this->is_user_admin( $user_id ) ) {
+			return $wpdb->get_col( "SELECT `shipping_status` FROM {$table} WHERE shipping_status IS NOT NULL AND testmode IS {$testmode} GROUP BY `shipping_status`" );
+		}
+
+		if ( ! $user_id ) {
+			return [];
+		}
+
+		return $wpdb->get_col( $wpdb->prepare(
+			"SELECT `shipping_status` FROM {$table} WHERE ( customer_id = %d OR vendor_id = %d ) AND shipping_status IS NOT NULL AND testmode IS {$testmode} GROUP BY `shipping_status`",
+			$user_id,
+			$user_id
+		) );
 	}
 
 	/**

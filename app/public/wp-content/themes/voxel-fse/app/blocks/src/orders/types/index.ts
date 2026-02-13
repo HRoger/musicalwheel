@@ -631,6 +631,8 @@ export interface OrdersConfig {
 	statuses_ui: Record<OrderStatus, { class: string }>;
 	shipping_statuses: Record<ShippingStatus, StatusConfig>;
 	product_types: ProductTypeFilter[];
+	available_statuses: string[];
+	available_shipping_statuses: string[];
 	is_vendor: boolean;
 	is_admin: boolean;
 	current_user_id: number | null;

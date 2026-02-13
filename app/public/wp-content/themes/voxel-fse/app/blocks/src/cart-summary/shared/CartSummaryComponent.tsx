@@ -14,6 +14,7 @@
 import { useMemo, useEffect, useRef, useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import { renderIcon } from '@shared/utils/renderIcon';
+import { VoxelIcons } from '@shared/utils/voxelIcons';
 import QuickRegister from './QuickRegister';
 import ShippingDetails from './ShippingDetails';
 import ShippingMethodCards from './ShippingMethodCards';
@@ -25,32 +26,7 @@ import type {
 	CartSummaryVxConfig,
 	Vendor,
 } from '../types';
-import type { IconValue } from '@shared/controls/IconPickerControl';
-
-// Default icon values
-const defaultIcons: Record<string, IconValue> = {
-	deleteIcon: { library: 'line-awesome', value: 'las la-trash-alt' },
-	noProductsIcon: { library: 'line-awesome', value: 'las la-box' },
-	loginIcon: { library: 'line-awesome', value: 'las la-sign-in-alt' },
-	emailIcon: { library: 'line-awesome', value: 'las la-envelope' },
-	userIcon: { library: 'line-awesome', value: 'las la-user' },
-	uploadIcon: { library: 'line-awesome', value: 'las la-cloud-upload-alt' },
-	shippingIcon: { library: 'line-awesome', value: 'las la-shipping-fast' },
-	minusIcon: { library: 'line-awesome', value: 'las la-minus' },
-	plusIcon: { library: 'line-awesome', value: 'las la-plus' },
-	checkoutIcon: { library: 'line-awesome', value: 'las la-arrow-right' },
-	continueIcon: { library: 'line-awesome', value: 'las la-arrow-right' },
-};
-
-/**
- * Get icon value with fallback
- */
-function getIcon(attrValue: IconValue | undefined, key: string): IconValue {
-	if (attrValue && typeof attrValue === 'object' && 'library' in attrValue) {
-		return attrValue;
-	}
-	return defaultIcons[key] || { library: 'line-awesome', value: 'las la-question' };
-}
+import { getCartIcon, hasIconValue } from './iconDefaults';
 
 /**
  * Currency format helper
@@ -154,7 +130,7 @@ function CartItemRow({
 							if (context === 'frontend') handleMinusOne();
 						}}
 					>
-						{renderIcon(getIcon(attributes.minusIcon, 'minusIcon'))}
+						{renderIcon(getCartIcon(attributes.minusIcon, 'minusIcon'))}
 					</a>
 					<span>{quantity}</span>
 					<a
@@ -165,7 +141,7 @@ function CartItemRow({
 							if (context === 'frontend') handlePlusOne();
 						}}
 					>
-						{renderIcon(getIcon(attributes.plusIcon, 'plusIcon'))}
+						{renderIcon(getCartIcon(attributes.plusIcon, 'plusIcon'))}
 					</a>
 				</div>
 			) : (
@@ -178,7 +154,7 @@ function CartItemRow({
 							if (context === 'frontend') handleRemove();
 						}}
 					>
-						{renderIcon(getIcon(attributes.deleteIcon, 'deleteIcon'))}
+						{renderIcon(getCartIcon(attributes.deleteIcon, 'deleteIcon'))}
 					</a>
 				</div>
 			)}
@@ -297,17 +273,17 @@ export default function CartSummaryComponent({
 	const vxConfig = useMemo<CartSummaryVxConfig>(() => {
 		return {
 			icons: {
-				deleteIcon: getIcon(attributes.deleteIcon, 'deleteIcon'),
-				noProductsIcon: getIcon(attributes.noProductsIcon, 'noProductsIcon'),
-				loginIcon: getIcon(attributes.loginIcon, 'loginIcon'),
-				emailIcon: getIcon(attributes.emailIcon, 'emailIcon'),
-				userIcon: getIcon(attributes.userIcon, 'userIcon'),
-				uploadIcon: getIcon(attributes.uploadIcon, 'uploadIcon'),
-				shippingIcon: getIcon(attributes.shippingIcon, 'shippingIcon'),
-				minusIcon: getIcon(attributes.minusIcon, 'minusIcon'),
-				plusIcon: getIcon(attributes.plusIcon, 'plusIcon'),
-				checkoutIcon: getIcon(attributes.checkoutIcon, 'checkoutIcon'),
-				continueIcon: getIcon(attributes.continueIcon, 'continueIcon'),
+				deleteIcon: getCartIcon(attributes.deleteIcon, 'deleteIcon'),
+				noProductsIcon: getCartIcon(attributes.noProductsIcon, 'noProductsIcon'),
+				loginIcon: getCartIcon(attributes.loginIcon, 'loginIcon'),
+				emailIcon: getCartIcon(attributes.emailIcon, 'emailIcon'),
+				userIcon: getCartIcon(attributes.userIcon, 'userIcon'),
+				uploadIcon: getCartIcon(attributes.uploadIcon, 'uploadIcon'),
+				shippingIcon: getCartIcon(attributes.shippingIcon, 'shippingIcon'),
+				minusIcon: getCartIcon(attributes.minusIcon, 'minusIcon'),
+				plusIcon: getCartIcon(attributes.plusIcon, 'plusIcon'),
+				checkoutIcon: getCartIcon(attributes.checkoutIcon, 'checkoutIcon'),
+				continueIcon: getCartIcon(attributes.continueIcon, 'continueIcon'),
 			},
 			sectionSpacing: attributes.sectionSpacing || undefined,
 			titleColor: attributes.titleColor || undefined,
@@ -569,80 +545,12 @@ export default function CartSummaryComponent({
 		);
 	}
 
-	// Editor preview mode
-	if (context === 'editor') {
-		return (
-			<>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				<div className="ts-form ts-checkout ts-checkout-regular">
-					<div className="ts-cart-head">
-						<h1>{__('Order summary', 'voxel-fse')}</h1>
-					</div>
-					<div className="checkout-section form-field-grid">
-						<div className="ts-form-group">
-							<div className="or-group">
-								<div className="or-line"></div>
-								<span className="or-text">{__('Items', 'voxel-fse')}</span>
-								<div className="or-line"></div>
-							</div>
-						</div>
-						<div className="ts-form-group">
-							<ul className="ts-cart-list simplify-ul">
-								<li>
-									<div
-										className="cart-image"
-										style={{
-											width: '60px',
-											height: '60px',
-											backgroundColor: '#e0e0e0',
-											borderRadius: '8px',
-										}}
-									></div>
-									<div className="cart-item-details">
-										<a href="#">{__('Sample Product', 'voxel-fse')}</a>
-										<span>{__('Product description', 'voxel-fse')}</span>
-										<span>$99.00</span>
-									</div>
-									<div className="cart-stepper">
-										<a href="#" className="ts-icon-btn ts-smaller">
-											{renderIcon(getIcon(attributes.minusIcon, 'minusIcon'))}
-										</a>
-										<span>1</span>
-										<a href="#" className="ts-icon-btn ts-smaller">
-											{renderIcon(getIcon(attributes.plusIcon, 'plusIcon'))}
-										</a>
-									</div>
-								</li>
-							</ul>
-						</div>
-					</div>
-					<div className="checkout-section">
-						<ul className="ts-cost-calculator simplify-ul flexify">
-							<li className="ts-total">
-								<div className="ts-item-name">
-									<p>{__('Subtotal', 'voxel-fse')}</p>
-								</div>
-								<div className="ts-item-price">
-									<p>$99.00</p>
-								</div>
-							</li>
-						</ul>
-						<a href="#" className="ts-btn ts-btn-2 form-btn">
-							{__('Proceed to payment', 'voxel-fse')}
-							{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
-						</a>
-					</div>
-				</div>
-			</>
-		);
-	}
-
-	// Empty cart state
-	if (!hasItems) {
+	// Editor preview and empty cart both show the same empty state placeholder
+	// matching Voxel's behavior when no products are selected for checkout
+	if (context === 'editor' || !hasItems) {
+		const noProductsIconValue = hasIconValue(attributes.noProductsIcon)
+			? attributes.noProductsIcon
+			: null;
 		return (
 			<>
 				<script
@@ -653,7 +561,10 @@ export default function CartSummaryComponent({
 				<div className="ts-form ts-checkout ts-checkout-regular">
 					<div className="vx-loading-screen">
 						<div className="ts-form-group ts-no-posts">
-							{renderIcon(getIcon(attributes.noProductsIcon, 'noProductsIcon'))}
+							{noProductsIconValue
+								? renderIcon(noProductsIconValue)
+								: VoxelIcons.boxRemove
+							}
 							<p>{__('No products selected for checkout', 'voxel-fse')}</p>
 						</div>
 					</div>
@@ -679,8 +590,8 @@ export default function CartSummaryComponent({
 						onQuickRegisterChange={onQuickRegisterChange}
 						authLink={config.auth_link}
 						requireVerification={requireVerification}
-						loginIcon={getIcon(attributes.loginIcon, 'loginIcon')}
-						emailIcon={getIcon(attributes.emailIcon, 'emailIcon')}
+						loginIcon={getCartIcon(attributes.loginIcon, 'loginIcon')}
+						emailIcon={getCartIcon(attributes.emailIcon, 'emailIcon')}
 						context={context}
 					/>
 				)}
@@ -771,7 +682,7 @@ export default function CartSummaryComponent({
 										shipping={shipping}
 										onShippingChange={onShippingChange}
 										items={items}
-										shippingIcon={getIcon(attributes.shippingIcon, 'shippingIcon')}
+										shippingIcon={getCartIcon(attributes.shippingIcon, 'shippingIcon')}
 										currency={currency}
 										l10n={config.l10n}
 										context={context}
@@ -786,7 +697,7 @@ export default function CartSummaryComponent({
 										onShippingChange={onShippingChange}
 										items={items}
 										vendors={vendors}
-										shippingIcon={getIcon(attributes.shippingIcon, 'shippingIcon')}
+										shippingIcon={getCartIcon(attributes.shippingIcon, 'shippingIcon')}
 										currency={currency}
 										l10n={config.l10n}
 										context={context}
@@ -820,8 +731,8 @@ export default function CartSummaryComponent({
 											field={(compData.field as { key: string; label?: string; allowed_types?: string; max_files?: number }) || { key: compKey }}
 											value={(compData.value as []) || []}
 											onChange={() => {}}
-											uploadIcon={getIcon(attributes.uploadIcon, 'uploadIcon')}
-											trashIcon={getIcon(attributes.deleteIcon, 'deleteIcon')}
+											uploadIcon={getCartIcon(attributes.uploadIcon, 'uploadIcon')}
+											trashIcon={getCartIcon(attributes.deleteIcon, 'deleteIcon')}
 											context={context}
 										/>
 									);
@@ -913,19 +824,19 @@ export default function CartSummaryComponent({
 							{subtotal === 0 || isOfflinePayment ? (
 								<>
 									{__('Submit order', 'voxel-fse')}
-									{renderIcon(getIcon(attributes.continueIcon, 'continueIcon'))}
+									{renderIcon(getCartIcon(attributes.continueIcon, 'continueIcon'))}
 								</>
 							) : (
 								<>
 									{__('Proceed to payment', 'voxel-fse')}
-									{renderIcon(getIcon(attributes.checkoutIcon, 'checkoutIcon'))}
+									{renderIcon(getCartIcon(attributes.checkoutIcon, 'checkoutIcon'))}
 								</>
 							)}
 						</a>
 					) : (
 						// Login button for guests when quick register is not enabled
 						<a href={config?.auth_link || '#'} className="ts-btn ts-btn-2 form-btn">
-							{renderIcon(getIcon(attributes.userIcon, 'userIcon'))}
+							{renderIcon(getCartIcon(attributes.userIcon, 'userIcon'))}
 							{__('Log in to continue', 'voxel-fse')}
 						</a>
 					)}

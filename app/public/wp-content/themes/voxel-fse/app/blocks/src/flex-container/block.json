@@ -1016,17 +1016,24 @@
             "type": "object",
             "default": {}
         },
-        "_comment_entrance_animation": "Entrance animation attributes",
+        "_comment_entrance_animation": "Entrance animation attributes (matches MotionEffectsControls)",
         "entranceAnimation": {
             "type": "string",
             "default": ""
         },
-        "entranceAnimationDuration": {
+        "entranceAnimation_tablet": {
+            "type": "string"
+        },
+        "entranceAnimation_mobile": {
+            "type": "string"
+        },
+        "animationDuration": {
             "type": "string",
             "default": ""
         },
-        "entranceAnimationDelay": {
-            "type": "number"
+        "animationDelay": {
+            "type": "number",
+            "default": 0
         },
         "_comment_editor_preview": "Editor preview width (Voxel container-controller feature)",
         "editorPreviewWidth": {

@@ -160,6 +160,7 @@ export interface OverlayAttributes {
 		saturation?: number;
 		hue?: number;
 	};
+	bgOverlayBlendMode?: string;
 	// Hover state
 	bgOverlayTypeHover?: string;
 	bgOverlayColorHover?: string;
@@ -183,6 +184,7 @@ export interface OverlayAttributes {
 		saturation?: number;
 		hue?: number;
 	};
+	bgOverlayBlendModeHover?: string;
 	// Transition duration
 	bgOverlayTransitionDuration?: number;
 	[key: string]: any;
@@ -338,6 +340,11 @@ export function generateOverlayStyles(attributes: OverlayAttributes): CSSPropert
 		}
 	}
 
+	// Apply blend mode
+	if (attributes.bgOverlayBlendMode) {
+		styles.mixBlendMode = attributes.bgOverlayBlendMode as CSSProperties['mixBlendMode'];
+	}
+
 	return styles;
 }
 
@@ -462,6 +469,11 @@ export function generateOverlayHoverCSS(
 		if (filterParts.length > 0) {
 			cssRules.push(`filter: ${filterParts.join(' ')}`);
 		}
+	}
+
+	// Blend mode hover
+	if (attributes.bgOverlayBlendModeHover) {
+		cssRules.push(`mix-blend-mode: ${attributes.bgOverlayBlendModeHover}`);
 	}
 
 	if (cssRules.length === 0) {

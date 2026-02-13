@@ -36,80 +36,47 @@
     },
     "deleteIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-trash-alt"
-      }
+      "default": {}
     },
     "noProductsIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-box"
-      }
+      "default": {}
     },
     "loginIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-sign-in-alt"
-      }
+      "default": {}
     },
     "emailIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-envelope"
-      }
+      "default": {}
     },
     "userIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-user"
-      }
+      "default": {}
     },
     "uploadIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-cloud-upload-alt"
-      }
+      "default": {}
     },
     "shippingIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-shipping-fast"
-      }
+      "default": {}
     },
     "minusIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-minus"
-      }
+      "default": {}
     },
     "plusIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-plus"
-      }
+      "default": {}
     },
     "checkoutIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-arrow-right"
-      }
+      "default": {}
     },
     "continueIcon": {
       "type": "object",
-      "default": {
-        "library": "line-awesome",
-        "value": "las la-arrow-right"
-      }
+      "default": {}
     },
     "sectionSpacing": {
       "type": "number",

@@ -281,8 +281,15 @@ import type {
 	OrderNotesState,
 	PromoteConfig,
 } from './types';
-import type { IconValue } from '@shared/controls/IconPickerControl';
 import { getSiteBaseUrl, getRestBaseUrl } from '@shared/utils/siteUrl';
+import {
+	CART_ICON_DEFAULTS,
+	EMPTY_ICON,
+	getCartIcon,
+	hasIconValue,
+	LEGACY_NO_PRODUCTS_ICON_VALUE,
+	type IconValue,
+} from './shared/iconDefaults';
 
 /**
  * Normalize config from various sources (vxconfig, REST API, data attributes)
@@ -330,8 +337,8 @@ function normalizeConfig(raw: Record<string, unknown>): CartSummaryVxConfig {
 		return fallback;
 	};
 
-	// Default icon values
-	const defaultIcon: IconValue = { library: '', value: '' };
+	// Normalization fallback for missing icon data
+	const defaultIcon = EMPTY_ICON;
 
 	// Normalize icons object - supports both camelCase (FSE) and snake_case (Voxel)
 	const normalizeIcons = (val: unknown): CartSummaryVxConfig['icons'] => {
@@ -576,41 +583,26 @@ function parseVxConfig(container: HTMLElement): CartSummaryVxConfig | null {
 }
 
 /**
- * Default icon values
- */
-const defaultIcons: Record<string, IconValue> = {
-	deleteIcon: { library: 'icon', value: 'las la-trash-alt' },
-	noProductsIcon: { library: 'icon', value: 'las la-box' },
-	loginIcon: { library: 'icon', value: 'las la-sign-in-alt' },
-	emailIcon: { library: 'icon', value: 'las la-envelope' },
-	userIcon: { library: 'icon', value: 'las la-user' },
-	uploadIcon: { library: 'icon', value: 'las la-cloud-upload-alt' },
-	shippingIcon: { library: 'icon', value: 'las la-shipping-fast' },
-	minusIcon: { library: 'icon', value: 'las la-minus' },
-	plusIcon: { library: 'icon', value: 'las la-plus' },
-	checkoutIcon: { library: 'icon', value: 'las la-arrow-right' },
-	continueIcon: { library: 'icon', value: 'las la-arrow-right' },
-};
-
-/**
  * Build attributes from vxconfig
  */
 function buildAttributes(vxConfig: CartSummaryVxConfig): CartSummaryBlockAttributes {
 	return {
 		blockId: '',
 
-		// Icons
-		deleteIcon: vxConfig.icons?.deleteIcon || defaultIcons['deleteIcon'],
-		noProductsIcon: vxConfig.icons?.noProductsIcon || defaultIcons['noProductsIcon'],
-		loginIcon: vxConfig.icons?.loginIcon || defaultIcons['loginIcon'],
-		emailIcon: vxConfig.icons?.emailIcon || defaultIcons['emailIcon'],
-		userIcon: vxConfig.icons?.userIcon || defaultIcons['userIcon'],
-		uploadIcon: vxConfig.icons?.uploadIcon || defaultIcons['uploadIcon'],
-		shippingIcon: vxConfig.icons?.shippingIcon || defaultIcons['shippingIcon'],
-		minusIcon: vxConfig.icons?.minusIcon || defaultIcons['minusIcon'],
-		plusIcon: vxConfig.icons?.plusIcon || defaultIcons['plusIcon'],
-		checkoutIcon: vxConfig.icons?.checkoutIcon || defaultIcons['checkoutIcon'],
-		continueIcon: vxConfig.icons?.continueIcon || defaultIcons['continueIcon'],
+		// Icons — uses shared CART_ICON_DEFAULTS via getCartIcon()
+		deleteIcon: getCartIcon(vxConfig.icons?.deleteIcon, 'deleteIcon'),
+		// Migration: old save.tsx baked 'las la-box' as default; Voxel uses box-remove.svg SVG instead
+		noProductsIcon: (hasIconValue(vxConfig.icons?.noProductsIcon) && vxConfig.icons!.noProductsIcon.value !== LEGACY_NO_PRODUCTS_ICON_VALUE)
+			? vxConfig.icons!.noProductsIcon : CART_ICON_DEFAULTS.noProductsIcon,
+		loginIcon: getCartIcon(vxConfig.icons?.loginIcon, 'loginIcon'),
+		emailIcon: getCartIcon(vxConfig.icons?.emailIcon, 'emailIcon'),
+		userIcon: getCartIcon(vxConfig.icons?.userIcon, 'userIcon'),
+		uploadIcon: getCartIcon(vxConfig.icons?.uploadIcon, 'uploadIcon'),
+		shippingIcon: getCartIcon(vxConfig.icons?.shippingIcon, 'shippingIcon'),
+		minusIcon: getCartIcon(vxConfig.icons?.minusIcon, 'minusIcon'),
+		plusIcon: getCartIcon(vxConfig.icons?.plusIcon, 'plusIcon'),
+		checkoutIcon: getCartIcon(vxConfig.icons?.checkoutIcon, 'checkoutIcon'),
+		continueIcon: getCartIcon(vxConfig.icons?.continueIcon, 'continueIcon'),
 
 		// General
 		sectionSpacing: vxConfig.sectionSpacing || 40,

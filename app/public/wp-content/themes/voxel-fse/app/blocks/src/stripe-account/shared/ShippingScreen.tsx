@@ -676,6 +676,7 @@ export default function ShippingScreen({
 											onDragStart={(e) => handleZoneDragStart(e, zoneIndex)}
 											onDragOver={(e) => handleZoneDragOver(e, zoneIndex)}
 											onDragEnd={handleZoneDragEnd}
+											style={draggedZoneIndex === zoneIndex ? { opacity: 0.5 } : undefined}
 										>
 											<div
 												className="ts-repeater-head ts-repeater-head--zone"
@@ -976,6 +977,7 @@ export default function ShippingScreen({
 											onDragStart={(e) => handleRateDragStart(e, rateIndex)}
 											onDragOver={(e) => handleRateDragOver(e, rateIndex)}
 											onDragEnd={handleRateDragEnd}
+											style={draggedRateIndex === rateIndex ? { opacity: 0.5 } : undefined}
 										>
 											<div
 												className="ts-repeater-head ts-repeater-head--rate"

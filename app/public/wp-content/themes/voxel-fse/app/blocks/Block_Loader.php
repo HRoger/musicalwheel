@@ -426,9 +426,7 @@ class Block_Loader
         $vendor_url = trailingslashit($parent_theme_url) . 'assets/vendor/';
         $vendor_suffix = function_exists('\Voxel\is_dev_mode') && \Voxel\is_dev_mode() ? '' : '.prod';
 
-        // Register pikaday CSS (needed for date pickers in popup)
-        // Even though Voxel's Assets_Controller registers it, we need to ensure it's registered
-        // before it's used as a dependency for the popup block's editorStyle
+        // Register pikaday CSS with bare handle (frontend compatibility)
         if (!wp_style_is('pikaday', 'registered')) {
             $pikaday_file = 'pikaday/pikaday' . $vendor_suffix . '.css';
             $pikaday_path = $vendor_dir . $pikaday_file;
@@ -437,19 +435,50 @@ class Block_Loader
                 wp_register_style(
                         'pikaday',
                         $vendor_url . $pikaday_file,
-                        ['vx:forms.css'], // pikaday depends on forms.css
+                        ['vx:forms.css'],
                         '1.8.15'
                 );
             }
         }
 
-        // Register nouislider CSS
+        // Register pikaday CSS with vx: prefix for FSE editor iframe
+        // The FSE iframe only resolves styles registered with the vx: prefix pattern
+        // via the editorStyle dependency chain. Bare handles like 'pikaday' don't make it in.
+        if (!wp_style_is('vx:pikaday.css', 'registered')) {
+            $pikaday_file = 'pikaday/pikaday' . $vendor_suffix . '.css';
+            $pikaday_path = $vendor_dir . $pikaday_file;
+
+            if (file_exists($pikaday_path)) {
+                wp_register_style(
+                        'vx:pikaday.css',
+                        $vendor_url . $pikaday_file,
+                        ['vx:forms.css'],
+                        '1.8.15'
+                );
+            }
+        }
+
+        // Register nouislider CSS with bare handle (frontend compatibility)
         if (!wp_style_is('nouislider', 'registered')) {
             $nouislider_file = 'nouislider/nouislider' . $vendor_suffix . '.css';
             $nouislider_path = $vendor_dir . $nouislider_file;
             if (file_exists($nouislider_path)) {
                 wp_register_style(
                         'nouislider',
+                        $vendor_url . $nouislider_file,
+                        [],
+                        '14.6.3'
+                );
+            }
+        }
+
+        // Register nouislider CSS with vx: prefix for FSE editor iframe
+        if (!wp_style_is('vx:nouislider.css', 'registered')) {
+            $nouislider_file = 'nouislider/nouislider' . $vendor_suffix . '.css';
+            $nouislider_path = $vendor_dir . $nouislider_file;
+            if (file_exists($nouislider_path)) {
+                wp_register_style(
+                        'vx:nouislider.css',
                         $vendor_url . $nouislider_file,
                         [],
                         '14.6.3'
@@ -1330,25 +1359,9 @@ CSS;
         // Parent theme styles are loaded via block dependencies when blocks are used
         add_editor_style('assets/css/voxel-fse-commons.css');
 
-        // CRITICAL: Load vendor and Voxel CSS into FSE iframe
-        // enqueue_block_editor_assets / wp_enqueue_style loads styles into parent document, but FSE uses an iframe
-        // add_editor_style() is the only way to load styles into the FSE iframe
-        // We use absolute URL because add_editor_style() with relative path looks in child theme
-        $vendor_suffix = function_exists('\Voxel\is_dev_mode') && \Voxel\is_dev_mode() ? '' : '.prod';
-        $parent_theme_url = get_template_directory_uri();
-
-        // Vendor CSS
-        $pikaday_url = $parent_theme_url . '/assets/vendor/pikaday/pikaday' . $vendor_suffix . '.css';
-        add_editor_style($pikaday_url);
-
-        $nouislider_url = $parent_theme_url . '/assets/vendor/nouislider/nouislider' . $vendor_suffix . '.css';
-        add_editor_style($nouislider_url);
-
-        // Voxel parent theme CSS that contains .pika-tooltip and other popup styling
-        // product-form.css contains .pika-tooltip styles needed for date picker tooltips
-        $dist_suffix = is_rtl() ? '-rtl.css' : '.css';
-        $product_form_url = $parent_theme_url . '/assets/dist/product-form' . $dist_suffix;
-        add_editor_style($product_form_url);
+        // Vendor CSS (pikaday, nouislider) and Voxel parent CSS (product-form) are loaded
+        // into the FSE editor iframe via the editorStyle dependency chain using vx: prefixed handles.
+        // See ensure_voxel_styles_registered() for handle registration and load_blocks() for deps.
     }
 
     /**
@@ -2453,7 +2466,7 @@ JAVASCRIPT;
             . ' --e-global-typography-secondary-font-weight: 500;'
             . ' --ts-shade-1: #1a1a1a;'
             . ' --ts-shade-2: #4a4a4a;'
-            . ' --ts-shade-5: #999;'
+            . ' --ts-shade-5: #f3f3f3;'
             . ' --ts-accent-1: var(--e-global-color-accent);'
             . ' }';
 
@@ -3708,8 +3721,8 @@ JAVASCRIPT;
                                     'vx:forms.css',
                                     'vx:popup-kit.css',
                                     'vx:product-form.css',
-                                    'nouislider',
-                                    'pikaday'
+                                    'vx:nouislider.css',
+                                    'vx:pikaday.css'
                             ];
                         } elseif ($block_name === 'create-post') {
                             // Ensure Voxel styles are registered before using them as dependencies
@@ -3926,6 +3939,26 @@ JAVASCRIPT;
                                         );
                                     }
                                     wp_enqueue_style('vx:review-stats.css');
+                                });
+                            }
+
+                            // ring-chart needs Voxel's ring-chart.css for .circle-chart layout,
+                            // .chart-value positioning, and circle-chart-fill animation
+                            // Evidence: themes/voxel/assets/dist/ring-chart.css
+                            if ($block_name === 'ring-chart') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    $dist = trailingslashit(get_template_directory_uri()) . 'assets/dist/';
+                                    $version = function_exists('\Voxel\get_assets_version') ? \Voxel\get_assets_version() : '1.7.1.3';
+
+                                    if (!wp_style_is('vx:ring-chart.css', 'registered')) {
+                                        wp_register_style(
+                                                'vx:ring-chart.css',
+                                                $dist . (is_rtl() ? 'ring-chart-rtl.css' : 'ring-chart.css'),
+                                                [],
+                                                $version
+                                        );
+                                    }
+                                    wp_enqueue_style('vx:ring-chart.css');
                                 });
                             }
 

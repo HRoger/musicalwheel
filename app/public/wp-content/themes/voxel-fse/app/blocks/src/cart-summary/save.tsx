@@ -13,34 +13,8 @@ import {
 	renderBackgroundElements,
 } from '../../shared/utils';
 import { generateCartSummaryStyles } from './styles';
-import type { SaveProps, CartSummaryVxConfig, CartSummaryIcons } from './types';
-import type { IconValue } from '@shared/controls/IconPickerControl';
-
-// Default icon values
-const defaultIcons: CartSummaryIcons = {
-	deleteIcon: { library: 'line-awesome', value: 'las la-trash-alt' },
-	noProductsIcon: { library: 'line-awesome', value: 'las la-box' },
-	loginIcon: { library: 'line-awesome', value: 'las la-sign-in-alt' },
-	emailIcon: { library: 'line-awesome', value: 'las la-envelope' },
-	userIcon: { library: 'line-awesome', value: 'las la-user' },
-	uploadIcon: { library: 'line-awesome', value: 'las la-cloud-upload-alt' },
-	shippingIcon: { library: 'line-awesome', value: 'las la-shipping-fast' },
-	minusIcon: { library: 'line-awesome', value: 'las la-minus' },
-	plusIcon: { library: 'line-awesome', value: 'las la-plus' },
-	checkoutIcon: { library: 'line-awesome', value: 'las la-arrow-right' },
-	continueIcon: { library: 'line-awesome', value: 'las la-arrow-right' },
-};
-
-// Helper to get icon value with fallback
-function getIconValue(
-	attrValue: IconValue | undefined,
-	defaultValue: IconValue
-): IconValue {
-	if (attrValue && typeof attrValue === 'object' && 'library' in attrValue) {
-		return attrValue;
-	}
-	return defaultValue;
-}
+import { CART_ICON_DEFAULTS, getCartIcon } from './shared/iconDefaults';
+import type { SaveProps, CartSummaryVxConfig } from './types';
 
 function createSaveFn(includePlaceholder: boolean) {
 	return function save({ attributes }: SaveProps) {
@@ -76,19 +50,19 @@ function createSaveFn(includePlaceholder: boolean) {
 
 		// Build vxconfig JSON with all frontend-required attributes
 		const vxConfig: CartSummaryVxConfig = {
-			// Icons
+			// Icons — uses shared CART_ICON_DEFAULTS as fallbacks
 			icons: {
-				deleteIcon: getIconValue(attributes.deleteIcon, defaultIcons.deleteIcon),
-				noProductsIcon: getIconValue(attributes.noProductsIcon, defaultIcons.noProductsIcon),
-				loginIcon: getIconValue(attributes.loginIcon, defaultIcons.loginIcon),
-				emailIcon: getIconValue(attributes.emailIcon, defaultIcons.emailIcon),
-				userIcon: getIconValue(attributes.userIcon, defaultIcons.userIcon),
-				uploadIcon: getIconValue(attributes.uploadIcon, defaultIcons.uploadIcon),
-				shippingIcon: getIconValue(attributes.shippingIcon, defaultIcons.shippingIcon),
-				minusIcon: getIconValue(attributes.minusIcon, defaultIcons.minusIcon),
-				plusIcon: getIconValue(attributes.plusIcon, defaultIcons.plusIcon),
-				checkoutIcon: getIconValue(attributes.checkoutIcon, defaultIcons.checkoutIcon),
-				continueIcon: getIconValue(attributes.continueIcon, defaultIcons.continueIcon),
+				deleteIcon: getCartIcon(attributes.deleteIcon, 'deleteIcon'),
+				noProductsIcon: getCartIcon(attributes.noProductsIcon, 'noProductsIcon'),
+				loginIcon: getCartIcon(attributes.loginIcon, 'loginIcon'),
+				emailIcon: getCartIcon(attributes.emailIcon, 'emailIcon'),
+				userIcon: getCartIcon(attributes.userIcon, 'userIcon'),
+				uploadIcon: getCartIcon(attributes.uploadIcon, 'uploadIcon'),
+				shippingIcon: getCartIcon(attributes.shippingIcon, 'shippingIcon'),
+				minusIcon: getCartIcon(attributes.minusIcon, 'minusIcon'),
+				plusIcon: getCartIcon(attributes.plusIcon, 'plusIcon'),
+				checkoutIcon: getCartIcon(attributes.checkoutIcon, 'checkoutIcon'),
+				continueIcon: getCartIcon(attributes.continueIcon, 'continueIcon'),
 			},
 
 			// General styling

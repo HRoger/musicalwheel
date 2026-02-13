@@ -78,6 +78,7 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect } from 'react';
 import ReviewStatsComponent from './shared/ReviewStatsComponent';
+import { generateReviewStatsResponsiveCSS } from './styles';
 import type {
 	ReviewStatsAttributes,
 	ReviewStatsVxConfig,
@@ -169,12 +170,12 @@ function normalizeConfig(raw: Record<string, unknown>): ReviewStatsVxConfig {
 		columns_tablet: columnsRes.tablet,
 		columns_mobile: columnsRes.mobile,
 
-		itemGap: typeof raw['itemGap'] === 'number' ? raw['itemGap'] : (extractNumber(itemGapRes.desktop) ?? 0),
+		itemGap: typeof raw['itemGap'] === 'number' ? raw['itemGap'] : extractNumber(itemGapRes.desktop),
 		itemGap_tablet: typeof raw['itemGap_tablet'] === 'number' ? raw['itemGap_tablet'] as number : extractNumber(itemGapRes.tablet),
 		itemGap_mobile: typeof raw['itemGap_mobile'] === 'number' ? raw['itemGap_mobile'] as number : extractNumber(itemGapRes.mobile),
 
 		// Icon styling
-		iconSize: typeof raw['iconSize'] === 'number' ? raw['iconSize'] : (extractNumber(iconSizeRes.desktop) ?? 0),
+		iconSize: typeof raw['iconSize'] === 'number' ? raw['iconSize'] : extractNumber(iconSizeRes.desktop),
 		iconSize_tablet: typeof raw['iconSize_tablet'] === 'number' ? raw['iconSize_tablet'] as number : extractNumber(iconSizeRes.tablet),
 		iconSize_mobile: typeof raw['iconSize_mobile'] === 'number' ? raw['iconSize_mobile'] as number : extractNumber(iconSizeRes.mobile),
 
@@ -203,11 +204,11 @@ function normalizeConfig(raw: Record<string, unknown>): ReviewStatsVxConfig {
 			''
 		),
 
-		chartHeight: typeof raw['chartHeight'] === 'number' ? raw['chartHeight'] : (extractNumber(chartHeightRes.desktop) ?? 0),
+		chartHeight: typeof raw['chartHeight'] === 'number' ? raw['chartHeight'] : extractNumber(chartHeightRes.desktop),
 		chartHeight_tablet: typeof raw['chartHeight_tablet'] === 'number' ? raw['chartHeight_tablet'] as number : extractNumber(chartHeightRes.tablet),
 		chartHeight_mobile: typeof raw['chartHeight_mobile'] === 'number' ? raw['chartHeight_mobile'] as number : extractNumber(chartHeightRes.mobile),
 
-		chartRadius: typeof raw['chartRadius'] === 'number' ? raw['chartRadius'] : (extractNumber(chartRadiusRes.desktop) ?? 0),
+		chartRadius: typeof raw['chartRadius'] === 'number' ? raw['chartRadius'] : extractNumber(chartRadiusRes.desktop),
 		chartRadius_tablet: typeof raw['chartRadius_tablet'] === 'number' ? raw['chartRadius_tablet'] as number : extractNumber(chartRadiusRes.tablet),
 		chartRadius_mobile: typeof raw['chartRadius_mobile'] === 'number' ? raw['chartRadius_mobile'] as number : extractNumber(chartRadiusRes.mobile),
 	};
@@ -297,10 +298,11 @@ function buildAttributesFromVxConfig(
 		columns: vxconfig.columns || 1,
 		columns_tablet: vxconfig.columns_tablet,
 		columns_mobile: vxconfig.columns_mobile,
-		itemGap: vxconfig.itemGap || 0,
+		// Don't default to 0 — undefined means "use Voxel CSS default"
+		itemGap: vxconfig.itemGap || undefined,
 		itemGap_tablet: vxconfig.itemGap_tablet,
 		itemGap_mobile: vxconfig.itemGap_mobile,
-		iconSize: vxconfig.iconSize || 0,
+		iconSize: vxconfig.iconSize || undefined,
 		iconSize_tablet: vxconfig.iconSize_tablet,
 		iconSize_mobile: vxconfig.iconSize_mobile,
 		iconSpacing: vxconfig.iconSpacing,
@@ -309,10 +311,10 @@ function buildAttributesFromVxConfig(
 		scoreTypography: vxconfig.scoreTypography || {},
 		scoreColor: vxconfig.scoreColor || '',
 		chartBgColor: vxconfig.chartBgColor || '',
-		chartHeight: vxconfig.chartHeight || 0,
+		chartHeight: vxconfig.chartHeight || undefined,
 		chartHeight_tablet: vxconfig.chartHeight_tablet,
 		chartHeight_mobile: vxconfig.chartHeight_mobile,
-		chartRadius: vxconfig.chartRadius || 0,
+		chartRadius: vxconfig.chartRadius || undefined,
 		chartRadius_tablet: vxconfig.chartRadius_tablet,
 		chartRadius_mobile: vxconfig.chartRadius_mobile,
 		hideDesktop: false,
@@ -391,15 +393,24 @@ function ReviewStatsWrapper({ attributes, postId }: ReviewStatsWrapperProps) {
 		};
 	}, [postId]);
 
+	// Re-generate responsive CSS that was destroyed during hydration
+	// (save.tsx outputs a <style> tag but container.innerHTML = '' wipes it)
+	const responsiveCSS = generateReviewStatsResponsiveCSS(attributes, attributes.blockId || '');
+
 	return (
-		<ReviewStatsComponent
-			attributes={attributes}
-			statsData={statsData}
-			isLoading={isLoading}
-			error={error}
-			context="frontend"
-			postId={postId}
-		/>
+		<>
+			{responsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
+			)}
+			<ReviewStatsComponent
+				attributes={attributes}
+				statsData={statsData}
+				isLoading={isLoading}
+				error={error}
+				context="frontend"
+				postId={postId}
+			/>
+		</>
 	);
 }
 

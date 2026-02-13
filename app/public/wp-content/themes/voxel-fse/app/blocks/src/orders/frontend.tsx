@@ -116,7 +116,7 @@ function normalizeConfig(raw: any): OrdersVxConfig {
 	// Normalize icons (handle both nested and flat formats)
 	const icons = {
 		searchIcon: raw.icons?.searchIcon ?? raw.icons?.search_icon ?? { library: 'icon', value: 'las la-search' },
-		noResultsIcon: raw.icons?.noResultsIcon ?? raw.icons?.no_results_icon ?? { library: 'icon', value: 'las la-inbox' },
+		noResultsIcon: raw.icons?.noResultsIcon ?? raw.icons?.no_results_icon ?? { library: 'svg', value: '' },
 		resetSearchIcon: raw.icons?.resetSearchIcon ?? raw.icons?.reset_search_icon ?? { library: 'icon', value: 'las la-sync' },
 		backIcon: raw.icons?.backIcon ?? raw.icons?.back_icon ?? { library: 'icon', value: 'las la-angle-left' },
 		forwardIcon: raw.icons?.forwardIcon ?? raw.icons?.forward_icon ?? { library: 'icon', value: 'las la-angle-right' },
@@ -166,7 +166,7 @@ function buildAttributes(vxConfig: OrdersVxConfig): OrdersBlockAttributes {
 
 		// Icons
 		searchIcon: vxConfig.icons?.searchIcon || { library: 'icon', value: 'las la-search' },
-		noResultsIcon: vxConfig.icons?.noResultsIcon || { library: 'icon', value: 'las la-inbox' },
+		noResultsIcon: vxConfig.icons?.noResultsIcon || { library: 'svg', value: '' },
 		resetSearchIcon: vxConfig.icons?.resetSearchIcon || { library: 'icon', value: 'las la-sync' },
 		backIcon: vxConfig.icons?.backIcon || { library: 'icon', value: 'las la-angle-left' },
 		forwardIcon: vxConfig.icons?.forwardIcon || { library: 'icon', value: 'las la-angle-right' },
