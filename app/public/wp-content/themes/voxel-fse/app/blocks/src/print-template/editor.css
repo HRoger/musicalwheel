@@ -1,0 +1,10 @@
+/* Print Template Block - Editor styles
+ * This file exists to hook into Block_Loader's editorStyle dependency chain,
+ * which loads Voxel core CSS (commons, forms, etc.) into the editor iframe.
+ * The print-template block can embed any content, so it needs all core styles.
+ */
+
+/* Fix dropdown arrow SVG - prevent commons.css :where(path) { fill: inherit } from breaking stroke-only paths */
+.vxfse-post-select-search svg path[fill="none"] {
+	fill: none !important;
+}

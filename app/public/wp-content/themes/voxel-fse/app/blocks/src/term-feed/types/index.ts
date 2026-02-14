@@ -15,6 +15,7 @@
  * Icon value type from shared controls
  */
 import type { IconValue } from '@shared/types';
+import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
 
 /**
  * Border width value type
@@ -28,9 +29,22 @@ export interface BorderWidth {
 
 /**
  * Manual term selection item
+ *
+ * PARITY: Matches Voxel's Elementor repeater for ts_manual_terms
+ * Each item has: term_id (NUMBER), loop config, visibility rules
+ * Evidence: themes/voxel/app/widgets/term-feed.php:44-56
  */
 export interface ManualTermItem {
+	id: string;
 	term_id: number;
+	// Loop repeater row
+	loopSource?: string;
+	loopProperty?: string;
+	loopLimit?: string;
+	loopOffset?: string;
+	// Row visibility
+	rowVisibility?: 'show' | 'hide';
+	visibilityRules?: VisibilityRule[];
 }
 
 /**
@@ -124,27 +138,27 @@ export interface TermFeedAttributes {
 	replaceAccentColor: boolean;
 
 	// Carousel navigation style - Normal state
-	navHorizontalPosition: number;
+	navHorizontalPosition?: number;
 	navHorizontalPosition_tablet?: number;
 	navHorizontalPosition_mobile?: number;
-	navVerticalPosition: number;
+	navVerticalPosition?: number;
 	navVerticalPosition_tablet?: number;
 	navVerticalPosition_mobile?: number;
-	navButtonIconColor: string;
+	navButtonIconColor?: string;
 	navButtonSize?: number;
 	navButtonSize_tablet?: number;
 	navButtonSize_mobile?: number;
 	navButtonIconSize?: number;
 	navButtonIconSize_tablet?: number;
 	navButtonIconSize_mobile?: number;
-	navButtonBackground: string;
+	navButtonBackground?: string;
 	navBackdropBlur?: number;
 	navBackdropBlur_tablet?: number;
 	navBackdropBlur_mobile?: number;
-	navBorderType: string;
-	navBorderWidth: BorderWidth;
-	navBorderColor: string;
-	navBorderRadius: number;
+	navBorderType?: string;
+	navBorderWidth?: BorderWidth;
+	navBorderColor?: string;
+	navBorderRadius?: number;
 	navBorderRadius_tablet?: number;
 	navBorderRadius_mobile?: number;
 
@@ -205,24 +219,24 @@ export interface TermFeedVxConfig {
 	replaceAccentColor: boolean;
 
 	// Navigation styling
-	navHorizontalPosition: number;
-	navVerticalPosition: number;
-	navButtonIconColor: string;
+	navHorizontalPosition?: number;
+	navVerticalPosition?: number;
+	navButtonIconColor?: string;
 	navButtonSize?: number;
 	navButtonIconSize?: number;
-	navButtonBackground: string;
+	navButtonBackground?: string;
 	navBackdropBlur?: number;
-	navBorderType: string;
-	navBorderWidth: BorderWidth;
-	navBorderColor: string;
-	navBorderRadius: number;
+	navBorderType?: string;
+	navBorderWidth?: BorderWidth;
+	navBorderColor?: string;
+	navBorderRadius?: number;
 
 	// Navigation hover styling
 	navButtonSizeHover?: number;
 	navButtonIconSizeHover?: number;
-	navButtonIconColorHover: string;
-	navButtonBackgroundHover: string;
-	navButtonBorderColorHover: string;
+	navButtonIconColorHover?: string;
+	navButtonBackgroundHover?: string;
+	navButtonBorderColorHover?: string;
 
 	// Icons
 	rightChevronIcon: IconValue;
@@ -268,6 +282,8 @@ export interface TermFeedComponentProps {
 	isLoading: boolean;
 	error: string | null;
 	context: 'editor' | 'frontend';
+	/** CSS selector for scoped style generation (e.g., '.voxel-fse-term-feed-{blockId}') */
+	cssSelector?: string;
 }
 
 /**

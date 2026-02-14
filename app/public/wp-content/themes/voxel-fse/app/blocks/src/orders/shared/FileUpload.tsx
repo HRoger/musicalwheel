@@ -27,6 +27,11 @@ declare const Voxel: {
 	};
 };
 
+// WordPress media modal type
+declare const wp: {
+	media: (config: any) => any;
+};
+
 /**
  * Generate random ID for file tracking
  * Reference: voxel-orders.beautified.js line 623
@@ -242,6 +247,46 @@ export default function FileUpload({
 	);
 
 	/**
+	 * Handle media library popup selection
+	 * Reference: voxel-orders.beautified.js lines 672-701 (onMediaPopupSave)
+	 */
+	const handleMediaLibrary = useCallback(() => {
+		if (typeof wp === 'undefined' || !wp.media) return;
+
+		const mediaFrame = wp.media({
+			title: field.label || 'Select Files',
+			multiple: field.maxFileCount !== 1,
+			library: {
+				type: field.allowedFileTypes || undefined,
+			},
+		});
+
+		mediaFrame.on('select', () => {
+			const selection = mediaFrame.state().get('selection');
+			const selected = selection.toJSON();
+
+			const mediaFiles: UploadedFile[] = selected.map((attachment: any) => ({
+				source: 'existing' as const,
+				id: attachment.id,
+				name: attachment.filename || attachment.title,
+				type: attachment.mime || attachment.type,
+				size: attachment.filesizeInBytes || 0,
+				preview: attachment.url,
+			}));
+
+			let newFiles = [...files, ...mediaFiles];
+			if (field.maxFileCount > 0 && newFiles.length > field.maxFileCount) {
+				newFiles = newFiles.slice(-field.maxFileCount);
+			}
+
+			setFiles(newFiles);
+			onChange(newFiles);
+		});
+
+		mediaFrame.open();
+	}, [files, field, onChange]);
+
+	/**
 	 * Get background style for file preview
 	 * Reference: voxel-orders.beautified.js lines 596-600
 	 */
@@ -295,6 +340,19 @@ export default function FileUpload({
 							<label htmlFor={inputId.current} className="vx-file-upload-browse">
 								browse
 							</label>
+							{typeof wp !== 'undefined' && wp.media && (
+								<>
+									{' or '}
+									<button
+										type="button"
+										className="vx-file-upload-browse"
+										onClick={handleMediaLibrary}
+										style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', color: 'inherit', font: 'inherit' }}
+									>
+										media library
+									</button>
+								</>
+							)}
 						</span>
 						{field.allowedFileTypes && (
 							<span className="vx-file-upload-types">

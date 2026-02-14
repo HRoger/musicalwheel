@@ -51,6 +51,8 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 	'number:not_equals': (c, v) => v !== parseFloat(c.value),
 	'number:greater_than': (c, v) => v > parseFloat(c.value),
 	'number:less_than': (c, v) => v < parseFloat(c.value),
+	'number:gte': (c, v) => v >= parseFloat(c.value),
+	'number:lte': (c, v) => v <= parseFloat(c.value),
 	'number:empty': (c, v) => v === null || v === undefined,
 	'number:not_empty': (c, v) => v !== null && v !== undefined,
 

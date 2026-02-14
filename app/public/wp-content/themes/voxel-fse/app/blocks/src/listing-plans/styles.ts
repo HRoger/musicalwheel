@@ -43,6 +43,13 @@ export function generateBlockResponsiveCSS(
 	// Source: listing-plans-widget.php
 	// ============================================
 
+	// Base grid rule - ensures grid works in both editor and frontend
+	// On frontend, Voxel parent's pricing-plan.css provides display: grid,
+	// but in the Gutenberg editor that CSS isn't loaded.
+	cssRules.push(
+		`${selector} .ts-plans-list { display: grid; grid-template-columns: repeat(var(--ts-plans-columns, 3), 1fr); grid-gap: var(--ts-plans-gap, 20px); }`
+	);
+
 	// Plans columns (grid)
 	if (attributes.plansColumns !== undefined) {
 		cssRules.push(

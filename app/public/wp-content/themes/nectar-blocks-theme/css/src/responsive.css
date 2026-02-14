@@ -43,7 +43,7 @@ Description: Global responsive styles
 
 
 /* Tablet Portrait */
-@media only screen and (min-width : 691px) and (max-width: 1024px) {
+@media only screen and (min-width : 768px) and (max-width: 1024px) {
 
   .span_1, .span_2, .span_3, .span_4, .span_5, .span_6,
   .span_7, .span_8, .span_9, .span_10, .span_11, .span_12 {
@@ -64,7 +64,7 @@ Description: Global responsive styles
     width: 100%;
   }
 
- 
+
 
 
   /* Tablet width override end */
@@ -73,7 +73,7 @@ Description: Global responsive styles
     margin-bottom: 2%;
     margin-right: 15px;
     margin-left: 0!important;
-    padding: 15px; 
+    padding: 15px;
     float: left;
 }
 #footer-outer[data-cols="4"] .row > .col:nth-child(2n+2) {
@@ -109,7 +109,7 @@ Description: Global responsive styles
     float: none;
   }
 
- 
+
 
   .page-header-no-bg #nectar-content-wrap .portfolio-filters {
     margin-top: 15px;
@@ -142,13 +142,13 @@ Description: Global responsive styles
 
 
 /* Phone */
-@media only screen and (max-width : 690px) {
+@media only screen and (max-width : 767px) {
 
 
   .material:not(.admin-bar) #nectar-nav[data-using-secondary="1"] {
     top: 0;
   }
-    
+
   body:not([data-hhun="1"]) #nectar-nav[data-using-secondary="1"]:not(.hidden-secondary) {
     transform: none!important;
   }
@@ -157,13 +157,6 @@ Description: Global responsive styles
     width: 100%!important;
   }
 
-
-  body[data-slide-out-widget-area-style="simple"] #nectar-nav[data-full-width="true"] #mobile-menu,
-  body #nectar-nav[data-full-width="true"] header > .container,
-  body #header-secondary-outer[data-full-width="true"] > .container {
-    max-width: 100%;
-    padding: 0 var(--header-mobile-fullwidth-horizontal-padding, 18px);
-  }
 
   .col {
     margin-bottom: 25px;
@@ -250,7 +243,7 @@ Description: Global responsive styles
 
 
 
-  
+
   html.js #page-header-bg[data-parallax="0"].not-loaded {
     background-color: #F5F5F5;
   }
@@ -281,7 +274,7 @@ Description: Global responsive styles
     opacity: 1;
   }
 
- 
+
 
   .gallery .gallery-item {
     width: 100%!important;
@@ -402,10 +395,13 @@ Description: Global responsive styles
   .n-sticky {
     width: 100%;
   }
-  
 
- 
-
+  body[data-slide-out-widget-area-style="simple"] #nectar-nav[data-full-width="true"] #mobile-menu,
+  body #nectar-nav[data-full-width="true"] header > .container,
+  body #header-secondary-outer[data-full-width="true"] > .container {
+    max-width: 100%;
+    padding: 0 var(--header-mobile-fullwidth-horizontal-padding, 18px);
+  }
 
   body #nectar-nav:not(.transparent) #top .span_3 #logo[data-supplied-ml="true"] img:not(.mobile-only-logo),
   body #nectar-nav.transparent #top .span_3 #logo[data-supplied-ml-starting="true"] img.starting-logo:not(.dark-version):not(.mobile-only-logo),
@@ -554,6 +550,15 @@ Description: Global responsive styles
     padding: var(--header-mobile-vertical-padding, 12px) 0;
   }
 
+  body #nectar-nav:has(> .nectar-global-section) {
+    padding-top: 0;
+  }
+
+  body #nectar-nav > .nectar-global-section:first-child {
+    margin-bottom: var(--header-mobile-vertical-padding, 12px);
+  }
+
+
   body.page-template-template-no-header.nectar_using_pfsr #nectar-nav,
   body.page-template-template-no-header-footer.nectar_using_pfsr #nectar-nav {
     padding: 0;
@@ -584,7 +589,7 @@ Description: Global responsive styles
   }
 
   #slide-out-widget-area {
-    top: 0!important;
+    top: var(--offset, 0px)!important;
   }
 
   #nectar-nav #logo {
@@ -681,13 +686,6 @@ Description: Global responsive styles
 
   body[data-slide-out-widget-area="true"] #nectar-nav[data-has-menu="false"] #top .span_3 {
     text-align: left;
-  }
-
-  #nectar-nav .slide-out-widget-area-toggle .lines-button,
-	#nectar-nav .slide-out-widget-area-toggle .lines,
-	#nectar-nav .slide-out-widget-area-toggle .lines:before,
-	#nectar-nav .slide-out-widget-area-toggle .lines:after {
-    width: 22px;
   }
 
   #nectar-nav .slide-out-widget-area-toggle.mobile-icon .lines:after {
@@ -956,7 +954,7 @@ Description: Global responsive styles
     margin-top: -1px;
   }
 
- 
+
 
   #footer-widgets .container .row > div:last-child {
     margin-bottom: 0!important;

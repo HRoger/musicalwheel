@@ -501,8 +501,8 @@ __( 'Show less', 'elementor' );
 __( 'Show more', 'elementor' );
 __( 'What\'s included:', 'elementor' );
 __( 'Import', 'elementor' );
-__( 'Settings up your website templates...', 'elementor' );
-__( 'This usually take a few moments.', 'elementor' );
+__( 'Setting up your website template...', 'elementor' );
+__( 'This usually takes a few moments.', 'elementor' );
 __( 'Don\'t close this window until the process is finished.', 'elementor' );
 __( 'Import', 'elementor' );
 __( 'Import a website template', 'elementor' );
@@ -767,12 +767,9 @@ __( 'Heads up!', 'elementor' );
 __( 'Before applying a new template, we recommend backing up your site so you can roll back any undesired changes.', 'elementor' );
 __( 'Choose a file to import', 'elementor' );
 __( 'Drag & drop the .zip file with your website template', 'elementor' );
-__( 'Import from files' ) }
-						/>
-
-						{ dialog.isOpen &&
-							<Dialog
-								title={ __( 'Warning: JSON or ZIP files may be unsafe', 'elementor' );
+__( 'Or', 'elementor' );
+__( 'Import from files', 'elementor' );
+__( 'Warning: JSON or ZIP files may be unsafe', 'elementor' );
 __( 'Uploading JSON or ZIP files from unknown sources can be harmful and put your site at risk. For maximum safety, upload only JSON or ZIP files from trusted sources.', 'elementor' );
 __( 'Continue', 'elementor' );
 __( 'Cancel', 'elementor' );
@@ -828,12 +825,12 @@ __( "If you don't include them, this kit may not work properly.", 'elementor' );
 __( 'Go Back', 'elementor' );
 __( 'See It Live', 'elementor' );
 __( 'Got It', 'elementor' );
-__( 'Learn more', 'elementor' );
-__( 'Important:', 'elementor' );
-__( "There are few plugins that we couldn't install:", 'elementor' );
 __( 'Let’s do it', 'elementor' );
 __( 'Tip:', 'elementor' );
 __( 'Make sure your Elementor Pro account is connected', 'elementor' );
+__( 'Learn more', 'elementor' );
+__( 'Important:', 'elementor' );
+__( "There are few plugins that we couldn't install:", 'elementor' );
 __( 'Save to library', 'elementor' );
 __( 'Save to library', 'elementor' );
 __( 'Save to library', 'elementor' );

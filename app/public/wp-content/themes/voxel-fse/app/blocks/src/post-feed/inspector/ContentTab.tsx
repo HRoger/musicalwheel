@@ -304,8 +304,10 @@ export function ContentTab({
 							attributes={attributes}
 							setAttributes={setAttributes}
 							attributeBaseName="carouselItemWidth"
-							min={100}
-							max={800}
+							min={0}
+							max={attributes.carouselItemWidthUnit === '%' ? 100 : 800}
+							availableUnits={['px', '%']}
+							unitAttributeName="carouselItemWidthUnit"
 						/>
 
 						<ToggleControl
@@ -313,6 +315,18 @@ export function ContentTab({
 							checked={attributes.carouselAutoSlide}
 							onChange={(value) => setAttributes({ carouselAutoSlide: value })}
 						/>
+
+						{attributes.carouselAutoSlide && (
+							<ResponsiveRangeControl
+								label={__('Auto slide interval (ms)', 'voxel-fse')}
+								attributes={attributes}
+								setAttributes={setAttributes}
+								attributeBaseName="carouselAutoSlideInterval"
+								min={1000}
+								max={10000}
+								help={__('Time between slides in milliseconds', 'voxel-fse')}
+							/>
+						)}
 					</>
 				)}
 
@@ -390,6 +404,12 @@ export function ContentTab({
 					label={__('Left chevron', 'voxel-fse')}
 					value={attributes.leftChevronIcon}
 					onChange={(value) => setAttributes({ leftChevronIcon: value })}
+				/>
+
+				<IconPickerControl
+					label={__('Reset icon', 'voxel-fse')}
+					value={attributes.resetIcon}
+					onChange={(value) => setAttributes({ resetIcon: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

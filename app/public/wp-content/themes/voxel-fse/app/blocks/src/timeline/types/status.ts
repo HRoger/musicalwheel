@@ -118,6 +118,7 @@ export interface ReviewConfig {
 	input_mode: 'stars' | 'numeric';
 	default_icon?: string;
 	active_icon?: string;
+	inactive_icon?: string;
 	rating_levels: ReviewLevel[];
 	categories: Array<{
 		key: string;

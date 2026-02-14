@@ -9,8 +9,9 @@
  * @package VoxelFSE
  */
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useSelect } from '@wordpress/data';
 import type { SearchFormAttributes, PostTypeConfig, FilterConfig, FilterData } from '../types';
 import { useSearchForm } from '../hooks/useSearchForm';
 import { hasDynamicTags, extractTagContent, renderDynamicExpression } from '../utils/renderDynamicTags';
@@ -78,7 +79,7 @@ import {
 	FilterPostTypes,
 } from '../components';
 import { shouldShowFilterByConditions } from '../utils/filterConditions';
-import type { FilterData } from '../types';
+
 
 interface SearchFormComponentProps {
 	attributes: SearchFormAttributes;
@@ -107,8 +108,9 @@ export default function SearchFormComponent({
 	onPostTypeChange,
 	onFilterChange,
 }: SearchFormComponentProps) {
-	const containerRef = useRef<HTMLDivElement>(null);
+
 	const popupBoxRef = useRef<HTMLDivElement>(null);
+	const mainContainerRef = useRef<HTMLDivElement>(null);
 
 	const {
 		state,
@@ -127,6 +129,43 @@ export default function SearchFormComponent({
 		onPostTypeChange,
 		onFilterChange,
 	});
+
+	// Detect Gutenberg sidebars state in editor context
+	const sidebarState = useSelect((select: any) => {
+		if (context !== 'editor') return null;
+		const { isListViewOpened, isEditorSidebarOpened } = select('core/edit-post');
+		return {
+			leftVisible: isListViewOpened?.() ?? false,
+			rightVisible: isEditorSidebarOpened?.() ?? false,
+		};
+	});
+
+	// Calculate dynamic styles for the switcher button in editor
+	const switcherStyles = useMemo(() => {
+		// Only apply sidebar offsets in Desktop mode
+		// In Tablet/Mobile preview, the canvas is already centered/constrained
+		if (context !== 'editor' || !sidebarState || (editorDeviceType && editorDeviceType !== 'desktop')) {
+			// In Tablet/Mobile, ensure full width and reset position
+			return {
+				width: '100%',
+				left: '0',
+				right: '0',
+				zIndex: 9999, // Ensure visible above other elements
+			};
+		}
+
+		const leftWidth = sidebarState.leftVisible ? 350 : 0;
+		const rightWidth = sidebarState.rightVisible ? 280 : 0;
+
+		if (leftWidth === 0 && rightWidth === 0) return {};
+
+		return {
+			width: `calc(100% - ${leftWidth + rightWidth}px)`,
+			left: `${leftWidth}px`,
+			right: `${rightWidth}px`,
+			zIndex: 9999, // Ensure visible above other elements
+		};
+	}, [context, sidebarState, editorDeviceType]);
 
 	// State for rendered dynamic tag values
 	const [renderedSearchButtonText, setRenderedSearchButtonText] = useState<string>('');
@@ -245,6 +284,23 @@ export default function SearchFormComponent({
 		return () => window.removeEventListener('voxel-search-clear', handleExternalClear);
 	}, [context, attributes.blockId, clearAll]);
 
+	// Listen for post type switch events from linked Navbar block
+	// Evidence: voxel-search-form.beautified.js:2360-2373 handleNavbars()
+	// Navbar dispatches 'voxel-switch-post-type' when user clicks a post type tab
+	useEffect(() => {
+		if (context !== 'frontend') return;
+
+		const handlePostTypeSwitch = (event: Event) => {
+			const { searchFormId, postType } = (event as CustomEvent).detail || {};
+			// Only respond if this event targets this search form
+			if (searchFormId !== attributes.blockId) return;
+			if (postType) setCurrentPostType(postType);
+		};
+
+		window.addEventListener('voxel-switch-post-type', handlePostTypeSwitch);
+		return () => window.removeEventListener('voxel-switch-post-type', handlePostTypeSwitch);
+	}, [context, attributes.blockId, setCurrentPostType]);
+
 	// Get current post type config
 	const currentPostTypeConfig = postTypes.find(
 		(pt) => pt.key === state.currentPostType
@@ -317,12 +373,16 @@ export default function SearchFormComponent({
 		// Evidence: Voxel's PHP sets filter.value via set_value() and get_frontend_config()
 		// Our REST API doesn't have this, so we apply it client-side from FilterConfig
 		// Reference: themes/voxel/app/post-types/filters/base-filter.php:101
+		const isValidDefault = config.defaultValueEnabled
+			&& config.defaultValue !== undefined
+			&& config.defaultValue !== ''
+			// Range filters: ".." means empty start/end - treat as no default
+			&& !(filterData.type === 'range' && config.defaultValue === '..');
+
 		const mergedFilterData: FilterData = {
 			...filterData,
-			// Apply defaultValue from block config if enabled
-			value: config.defaultValueEnabled && config.defaultValue !== undefined
-				? config.defaultValue
-				: filterData.value,
+			// Apply defaultValue from block config if enabled and valid
+			value: isValidDefault ? config.defaultValue : filterData.value,
 		};
 
 		// Common props for all filter components
@@ -362,7 +422,13 @@ export default function SearchFormComponent({
 			case 'open-now':
 				return <FilterOpenNow key={config.id} {...commonProps} />;
 			case 'order-by':
-				return <FilterOrderBy key={config.id} {...commonProps} />;
+				return <FilterOrderBy
+					key={config.id}
+					{...commonProps}
+					allFilterValues={state.filterValues}
+					allFiltersData={currentPostTypeConfig?.filters}
+					postFeedId={attributes.postToFeedId}
+				/>;
 			case 'post-status':
 				return <FilterPostStatus key={config.id} {...commonProps} />;
 			case 'user':
@@ -487,10 +553,40 @@ export default function SearchFormComponent({
 	// Current view state (feed or map)
 	const [currentView, setCurrentView] = useState<'feed' | 'map'>(getSwitcherDefault);
 
+	// Store original .ts-map height so we can restore it after toggling
+	const originalMapHeightRef = useRef<{ height: string; minHeight: string } | null>(null);
+
 	// Reset view when device type changes
 	useEffect(() => {
 		setCurrentView(getSwitcherDefault());
 	}, [deviceType, attributes.mfSwitcherDesktopDefault, attributes.mfSwitcherTabletDefault, attributes.mfSwitcherMobileDefault]);
+
+	// Helper to find connected widgets (works in both Editor and Frontend)
+	const findConnectedWidget = (voxelId: string, type: 'map' | 'feed'): HTMLElement | null => {
+		if (!voxelId) return null;
+
+		// Use local document scope if available (fixes editor iframe access)
+		const doc = mainContainerRef.current?.ownerDocument || document;
+
+		// 1. Try finding by ID first (Standard Voxel/Elementor behavior)
+		const byId = doc.getElementById(voxelId);
+		if (byId) return byId;
+
+		// 2. Fallback: Look by Voxel ID class (FSE / Gutenberg behavior & Frontend)
+		// Map class: .voxel-fse-map-{id}
+		// Feed class: .voxel-fse-post-feed-{id}
+		const blockTypeClass = type === 'map' ? 'voxel-fse-map-' : 'voxel-fse-post-feed-';
+
+		// Strip potential '#' prefix
+		const cleanId = voxelId.replace(/^#/, '');
+		const selector = `.${blockTypeClass}${cleanId}`;
+
+		// Try exact match
+		const byClass = doc.querySelector(selector);
+		if (byClass) return byClass as HTMLElement;
+
+		return null;
+	};
 
 	// Toggle to list view (show feed, hide map)
 	// Evidence: voxel-search-form.beautified.js:2908-2914
@@ -500,30 +596,99 @@ export default function SearchFormComponent({
 		// Find and toggle visibility on Map and Post Feed widgets
 		// Uses Voxel's vx-hidden-{breakpoint} classes
 		const bp = deviceType;
-		const mapWidget = document.getElementById(attributes.postToMapId || '');
-		const feedWidget = document.getElementById(attributes.postToFeedId || '');
+		const mapWidget = findConnectedWidget(attributes.postToMapId || '', 'map');
+		const feedWidget = findConnectedWidget(attributes.postToFeedId || '', 'feed');
 
-		if (mapWidget) mapWidget.classList.add(`vx-hidden-${bp}`);
-		if (feedWidget) feedWidget.classList.remove(`vx-hidden-${bp}`);
+		if (mapWidget) {
+			mapWidget.classList.add(`vx-hidden-${bp}`);
+			// Also hide the map's parent flex-container wrapper
+			const mapWrapper = mapWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (mapWrapper) mapWrapper.classList.add(`vx-hidden-${bp}`);
+			// Restore original map height (set by map block's frontend.tsx init)
+			const tsMap = mapWidget.querySelector('.ts-map') as HTMLElement;
+			if (tsMap && originalMapHeightRef.current) {
+				tsMap.style.height = originalMapHeightRef.current.height;
+				tsMap.style.minHeight = originalMapHeightRef.current.minHeight;
+			}
+		}
+		if (feedWidget) {
+			feedWidget.classList.remove(`vx-hidden-${bp}`);
+			// Also show the feed's parent flex-container wrapper
+			const feedWrapper = feedWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (feedWrapper) feedWrapper.classList.remove(`vx-hidden-${bp}`);
+		}
 	};
 
 	// Toggle to map view (show map, hide feed)
 	// Evidence: voxel-search-form.beautified.js:2920-2926
+	// Voxel behavior: map expands to fill viewport below search form, covering the post-feed area
+	// Evidence: Elementor CSS uses height: calc(100vh - 149px) on .ts-map
 	const toggleMapView = () => {
 		setCurrentView('map');
 
 		const bp = deviceType;
-		const mapWidget = document.getElementById(attributes.postToMapId || '');
-		const feedWidget = document.getElementById(attributes.postToFeedId || '');
+		const mapWidget = findConnectedWidget(attributes.postToMapId || '', 'map');
+		const feedWidget = findConnectedWidget(attributes.postToFeedId || '', 'feed');
 
-		if (mapWidget) mapWidget.classList.remove(`vx-hidden-${bp}`);
-		if (feedWidget) feedWidget.classList.add(`vx-hidden-${bp}`);
+		if (feedWidget) {
+			feedWidget.classList.add(`vx-hidden-${bp}`);
+			// Also hide the feed's parent flex-container wrapper (has padding that creates a gap)
+			const feedWrapper = feedWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (feedWrapper) feedWrapper.classList.add(`vx-hidden-${bp}`);
+		}
+		if (mapWidget) {
+			mapWidget.classList.remove(`vx-hidden-${bp}`);
+			// Also show the map's parent flex-container wrapper
+			const mapWrapper = mapWidget.closest('.voxel-fse-flex-container') as HTMLElement;
+			if (mapWrapper) mapWrapper.classList.remove(`vx-hidden-${bp}`);
+			// Save original .ts-map height (set by map block's frontend.tsx init) before overriding
+			const tsMap = mapWidget.querySelector('.ts-map') as HTMLElement;
+			if (tsMap) {
+				// Save original height only once (before first override)
+				if (!originalMapHeightRef.current) {
+					originalMapHeightRef.current = {
+						height: tsMap.style.height || '',
+						minHeight: tsMap.style.minHeight || '',
+					};
+				}
+				// Respect the map block's configured height from inspector controls
+				// The --vx-map-height CSS variable is set by the map block's applyMapStyles()
+				// based on the Height inspector control (or calc height if enabled)
+				const configuredHeight = mapWidget.style.getPropertyValue('--vx-map-height');
+				if (configuredHeight) {
+					tsMap.style.height = configuredHeight;
+					tsMap.style.minHeight = configuredHeight;
+				} else {
+					// Fallback: expand to fill viewport below search form
+					// Matches Elementor's calc(100vh - offset) behavior
+					requestAnimationFrame(() => {
+						const mapTop = mapWidget.getBoundingClientRect().top;
+						tsMap.style.height = `calc(100vh - ${Math.round(mapTop)}px)`;
+						tsMap.style.minHeight = `calc(100vh - ${Math.round(mapTop)}px)`;
+					});
+				}
+			}
+		}
 	};
+
+	// Initialize visibility on mount (and when device type changes)
+	// CRITICAL: Must run on BOTH editor and frontend to set initial view state
+	// Evidence: Voxel's search-form.php sets initial vx-hidden classes server-side,
+	// but FSE blocks need JS to apply them since save.tsx is static HTML
+	useEffect(() => {
+		if (isSwitcherEnabled) {
+			if (currentView === 'feed') {
+				toggleListView();
+			} else {
+				toggleMapView();
+			}
+		}
+	}, [deviceType, currentView, isSwitcherEnabled, attributes.postToMapId, attributes.postToFeedId]);
 
 	// Render the Map/Feed Switcher button
 	// Evidence: themes/voxel/templates/widgets/search-form.php:200-221
 	const renderMapFeedSwitcher = () => {
-		if (!isSwitcherEnabled || context === 'editor') {
+		if (!isSwitcherEnabled) {
 			return null;
 		}
 
@@ -534,8 +699,11 @@ export default function SearchFormComponent({
 			!attributes.mfSwitcherMobile ? 'vx-hidden-mobile' : '',
 		].filter(Boolean).join(' ');
 
-		return createPortal(
-			<div className={`ts-switcher-btn ${containerClasses}`}>
+		const switcherContent = (
+			<div
+				className={`ts-switcher-btn ${containerClasses}`}
+				style={context === 'editor' ? switcherStyles : {}}
+			>
 				{/* List View toggle - visible when map is active */}
 				<a
 					href="#"
@@ -562,6 +730,20 @@ export default function SearchFormComponent({
 					{VoxelIcons.marker}
 					Map view
 				</a>
+			</div>
+		);
+
+		// In editor: render inline preview (can't portal outside editor iframe)
+		// On frontend: portal to document.body as floating button, wrapped in a
+		// scoping div so CSS selectors from styles.ts can match
+		// (same pattern as the search portal at line 744)
+		if (context === 'editor') {
+			return switcherContent;
+		}
+
+		return createPortal(
+			<div className={`voxel-fse-search-form-${attributes.blockId}`} data-voxel-id={attributes.blockId}>
+				{switcherContent}
 			</div>,
 			document.body
 		);
@@ -677,7 +859,7 @@ export default function SearchFormComponent({
 	// data-v-app marks this as a Vue/React app container for Voxel CSS compatibility
 	return (
 		<>
-			<div className="ts-form ts-search-widget" data-v-app="">
+			<div className="ts-form ts-search-widget" data-v-app="" ref={mainContainerRef}>
 				{ /* Voxel vxconfig pattern - configuration stored in JSON script */}
 				<script
 					type="text/json"

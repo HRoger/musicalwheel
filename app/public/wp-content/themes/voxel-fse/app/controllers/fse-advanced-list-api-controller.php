@@ -91,10 +91,14 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 		$current_user = \Voxel\current_user();
 		$is_logged_in = is_user_logged_in();
 
+		// Timeline enabled check (follow-post-action.php:6-8, follow-user-action.php:6-8)
+		// When timeline is disabled, follow actions should not render
+		$timeline_enabled = (bool) \Voxel\get( 'settings.timeline.enabled', true );
+
 		// Calculate follow status (follow-post-action.php:13-22)
 		$is_followed = false;
 		$is_follow_requested = false;
-		if ( $is_logged_in && $current_user ) {
+		if ( $timeline_enabled && $is_logged_in && $current_user ) {
 			$status = $current_user->get_follow_status( 'post', $post->get_id() );
 			$is_followed = $status === \Voxel\FOLLOW_ACCEPTED;
 			$is_follow_requested = $status === \Voxel\FOLLOW_REQUESTED;
@@ -105,7 +109,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 		$is_author_follow_requested = false;
 		$author = $post->get_author();
 		$author_id = $author ? $author->get_id() : null;
-		if ( $is_logged_in && $current_user && $author_id ) {
+		if ( $timeline_enabled && $is_logged_in && $current_user && $author_id ) {
 			$status = $current_user->get_follow_status( 'user', $author_id );
 			$is_author_followed = $status === \Voxel\FOLLOW_ACCEPTED;
 			$is_author_follow_requested = $status === \Voxel\FOLLOW_REQUESTED;
@@ -260,6 +264,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 			'postLink' => $post->get_link(),
 			'editLink' => $edit_link,
 			'isEditable' => $is_editable,
+			'timelineEnabled' => $timeline_enabled,
 			'isFollowed' => $is_followed,
 			'isFollowRequested' => $is_follow_requested,
 			'isAuthorFollowed' => $is_author_followed,

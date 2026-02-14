@@ -225,7 +225,7 @@ export default function ColorPickerControl({
 								border: 'none',
 								background: 'transparent',
 								cursor: 'pointer',
-								color: '#007cba',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 							}}
 						>
 							<span
@@ -278,7 +278,7 @@ export default function ColorPickerControl({
 					<ColorPalette
 						colors={colors}
 						value={value}
-						onChange={(newColor) => {
+						onChange={(newColor: string | undefined) => {
 							// When color is cleared (undefined from ColorPalette), use empty string
 							// Gutenberg properly serializes empty strings, hasValue('') returns false
 							onChange(newColor ?? '');

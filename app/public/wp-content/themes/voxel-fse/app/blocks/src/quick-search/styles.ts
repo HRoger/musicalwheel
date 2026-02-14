@@ -516,8 +516,8 @@ export function generateQuickSearchResponsiveCSS(
 		// 5. Border - quick-search.php:1106
 		// Voxel: {{WRAPPER}} .ts-field-popup
 		// FSE: .ts-quicksearch-popup
-		if (attributes.popupBorder && attributes.popupBorder.borderType && attributes.popupBorder.borderType !== 'none') {
-			const border = attributes.popupBorder;
+		if (attributes.popupBorder && (attributes.popupBorder as any).borderType && (attributes.popupBorder as any).borderType !== 'none') {
+			const border = attributes.popupBorder as any;
 			const borderType = border.borderType;
 			const borderWidth = border.borderWidth || { top: 1, right: 1, bottom: 1, left: 1 };
 			const borderColor = border.borderColor || '#000000';

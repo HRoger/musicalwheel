@@ -14,7 +14,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import type { NavbarAttributes } from './types';
 
@@ -39,10 +39,18 @@ const VoxelGridIcon = () => (
 	</svg>
 );
 
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
+
 // Register the block
 registerBlockType<NavbarAttributes>(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
+	deprecated,
 } as Parameters<typeof registerBlockType<NavbarAttributes>>[1]);

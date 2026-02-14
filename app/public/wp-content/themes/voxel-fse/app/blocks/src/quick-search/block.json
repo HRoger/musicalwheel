@@ -24,7 +24,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -256,13 +255,7 @@
 			"type": "boolean"
 		},
 		"suffixPadding": {
-			"type": "object",
-			"default": {
-				"top": 2,
-				"right": 8,
-				"bottom": 2,
-				"left": 8
-			}
+			"type": "object"
 		},
 		"suffixPadding_tablet": {
 			"type": "object"
@@ -295,8 +288,7 @@
 			"type": "string"
 		},
 		"suffixBorderRadius": {
-			"type": "number",
-			"default": 50
+			"type": "number"
 		},
 		"suffixBorderRadius_tablet": {
 			"type": "number"

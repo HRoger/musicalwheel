@@ -272,11 +272,15 @@ function initTabs(container: HTMLElement): void {
 			title.setAttribute('tabindex', isActive ? '0' : '-1');
 		});
 
-		// Show/hide content panels
+		// Show/hide content panels using hidden attribute (matches Elementor)
 		tabContents.forEach((content, i) => {
 			const isActive = i === index;
 			content.classList.toggle('e-active', isActive);
-			content.style.display = isActive ? 'block' : 'none';
+			if (isActive) {
+				content.removeAttribute('hidden');
+			} else {
+				content.setAttribute('hidden', '');
+			}
 		});
 
 		// Update icons (show active icon for active tab)
@@ -410,10 +414,14 @@ function initTabs(container: HTMLElement): void {
 	if (!hasActiveTab && tabTitles.length > 0) {
 		activateTab(0);
 	} else {
-		// Make sure content visibility matches active state
+		// Make sure content visibility matches active state using hidden attribute
 		tabContents.forEach((content, i) => {
 			const isActive = tabTitles[i]?.classList.contains('e-active');
-			content.style.display = isActive ? 'block' : 'none';
+			if (isActive) {
+				content.removeAttribute('hidden');
+			} else {
+				content.setAttribute('hidden', '');
+			}
 		});
 	}
 

@@ -16,7 +16,10 @@ export default function FilterUIHeading( {
 	config,
 	filterData,
 }: Omit< FilterComponentProps, 'value' | 'onChange' > ) {
-	const description = filterData.props?.description || '';
+	// Evidence: ui-heading-filter.php has NO frontend_props() override (returns [])
+	// Description comes from get_frontend_config() base-filter.php:99 → top-level filterData.description
+	// Voxel template: <small v-if="filter.description">{{ filter.description }}</small>
+	const description = filterData.description || '';
 
 	// Voxel structure: wrapper_class ui-heading > label > text + small
 	const { style, className } = getFilterWrapperStyles( config, 'ts-form-group ui-heading' );

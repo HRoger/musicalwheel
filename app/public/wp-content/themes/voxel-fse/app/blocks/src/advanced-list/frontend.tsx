@@ -699,8 +699,19 @@ async function fetchPostContext(): Promise<PostContext | null> {
 
 	try {
 		const restUrl = getRestUrl();
+
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`
+			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {

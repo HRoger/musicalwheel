@@ -40,7 +40,7 @@ export function ContentTab({
 					label={__('Template', 'voxel-fse')}
 					value={attributes.templateId}
 					onChange={(value) => setAttributes({ templateId: value })}
-					postTypes={['page', 'wp_block']}
+					postTypes={['page', 'wp_block', 'elementor_library']}
 					placeholder={__('Search templates', 'voxel-fse')}
 					enableDynamicTags={true}
 					context="post"

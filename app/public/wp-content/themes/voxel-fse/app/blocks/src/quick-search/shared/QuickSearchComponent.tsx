@@ -37,7 +37,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { __ } from '@wordpress/i18n';
 import type {
 	QuickSearchAttributes,
@@ -79,83 +78,32 @@ function getVisitorOS(): 'macOS' | 'other' {
 }
 
 /**
- * Default search icon SVG
+ * Default SVG icons — match Voxel's filled/solid style from assets/images/svgs/
+ * Voxel icons use `fill` (not stroke). CSS sizes them via `.ts-filter svg { width/height: var(--ts-icon-size) }`
+ * and colors via `fill: var(--ts-icon-color)`. We use `fill="currentColor"` so CSS fill rules work.
  */
 const DefaultSearchIcon = () => (
-	<svg
-		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		width="24"
-		height="24"
-	>
-		<circle cx="11" cy="11" r="8" />
-		<path d="m21 21-4.35-4.35" />
+	<svg width="80" height="80" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path fillRule="evenodd" clipRule="evenodd" d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z" fill="currentColor" />
 	</svg>
 );
 
-/**
- * Default close icon SVG
- */
 const DefaultCloseIcon = () => (
-	<svg
-		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		width="24"
-		height="24"
-	>
-		<path d="M18 6 6 18" />
-		<path d="m6 6 12 12" />
+	<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M5.9545 5.95548C6.39384 5.51614 7.10616 5.51614 7.5455 5.95548L11.999 10.409L16.4524 5.95561C16.8918 5.51627 17.6041 5.51627 18.0434 5.95561C18.4827 6.39495 18.4827 7.10726 18.0434 7.5466L13.59 12L18.0434 16.4534C18.4827 16.8927 18.4827 17.605 18.0434 18.0444C17.6041 18.4837 16.8918 18.4837 16.4524 18.0444L11.999 13.591L7.5455 18.0445C7.10616 18.4839 6.39384 18.4839 5.9545 18.0445C5.51517 17.6052 5.51516 16.8929 5.9545 16.4535L10.408 12L5.9545 7.54647C5.51516 7.10713 5.51517 6.39482 5.9545 5.95548Z" fill="currentColor" />
 	</svg>
 );
 
-/**
- * Default file/result icon SVG
- */
 const DefaultFileIcon = () => (
-	<svg
-		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		width="24"
-		height="24"
-	>
-		<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-		<polyline points="14 2 14 8 20 8" />
+	<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M10.7477 2.46516C10.6701 2.52471 10.5961 2.58957 10.5262 2.65951L5.15851 8.03055C5.08902 8.10008 5.02455 8.1737 4.96533 8.25084H10.0004C10.4148 8.25084 10.7507 7.91473 10.7504 7.5003L10.7477 2.46516Z" fill="currentColor" />
+		<path d="M4.5 9.75084V19.75C4.5 20.9926 5.50736 22 6.75 22H17.25C18.4926 22 19.5 20.9926 19.5 19.75V4.25C19.5 3.00736 18.4926 2 17.25 2H12.2474L12.2504 7.49924C12.2512 8.74244 11.2436 9.75084 10.0004 9.75084H4.5ZM9 13.75H15C15.4142 13.75 15.75 14.0858 15.75 14.5C15.75 14.9142 15.4142 15.25 15 15.25H9C8.58579 15.25 8.25 14.9142 8.25 14.5C8.25 14.0858 8.58579 13.75 9 13.75ZM9 16.75H12C12.4142 16.75 12.75 17.0858 12.75 17.5C12.75 17.9142 12.4142 18.25 12 18.25H9C8.58579 18.25 8.25 17.9142 8.25 17.5C8.25 17.0858 8.58579 16.75 9 16.75Z" fill="currentColor" />
 	</svg>
 );
 
-/**
- * Default trash/clear icon SVG
- */
 const DefaultTrashIcon = () => (
-	<svg
-		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		fill="none"
-		stroke="currentColor"
-		strokeWidth="2"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		width="24"
-		height="24"
-	>
-		<circle cx="12" cy="12" r="10" />
-		<path d="m15 9-6 6" />
-		<path d="m9 9 6 6" />
+	<svg width="80" height="80" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<path d="M2 12.3906C2 6.86778 6.47715 2.39062 12 2.39062C17.5228 2.39062 22 6.86778 22 12.3906C22 17.9135 17.5228 22.3906 12 22.3906C6.47715 22.3906 2 17.9135 2 12.3906ZM8.78362 10.2354L10.9388 12.3906L8.78362 14.5458C8.49073 14.8387 8.49073 15.3136 8.78362 15.6065C9.07652 15.8994 9.55139 15.8994 9.84428 15.6065L11.9995 13.4513L14.1546 15.6064C14.4475 15.8993 14.9224 15.8993 15.2153 15.6064C15.5082 15.3135 15.5082 14.8387 15.2153 14.5458L13.0602 12.3906L15.2153 10.2355C15.5082 9.94258 15.5082 9.46771 15.2153 9.17482C14.9224 8.88192 14.4475 8.88192 14.1546 9.17482L11.9995 11.33L9.84428 9.17475C9.55139 8.88186 9.07652 8.88186 8.78362 9.17475C8.49073 9.46764 8.49073 9.94251 8.78362 10.2354Z" fill="currentColor" />
 	</svg>
 );
 
@@ -203,27 +151,14 @@ export default function QuickSearchComponent({
 	// Refs
 	const inputRef = useRef<HTMLInputElement>(null);
 	const popupRef = useRef<HTMLDivElement>(null);
+	const formGroupRef = useRef<HTMLDivElement>(null);
 	const lastQueryRef = useRef<string>(''); // Track last query to skip duplicate requests (Voxel parity: line 296)
 
-	/**
-	 * Inject Voxel Quick Search CSS for both Editor and Frontend
-	 */
-	useEffect(() => {
-		const cssId = 'voxel-quick-search-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
-			link.id = cssId;
-			link.rel = 'stylesheet';
-
-			// Get site URL from Voxel config or fallback to origin
-			const voxelConfig = (window as unknown as { Voxel_Config?: { site_url?: string } }).Voxel_Config;
-			// Ensure no trailing slash for consistency
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/quick-search.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
-		}
-	}, []);
+	// CSS is enqueued server-side via Block_Loader.php:
+	// - vx:commons.css (base classes: .flexify, .ts-form, SVG sizing)
+	// - vx:forms.css (form controls: .ts-filter, .ts-filter-text, .ts-shortcut)
+	// - vx:popup-kit.css (popup system: .ts-popup-overlay, .ts-popup-backdrop, .ts-quicksearch-popup)
+	// No client-side CSS injection needed — quick-search.css is empty in Voxel dist.
 
 	// Get config
 	const config = vxConfig || {
@@ -292,6 +227,20 @@ export default function QuickSearchComponent({
 			setTimeout(() => inputRef.current?.focus(), 100);
 		}
 	}, [isPopupOpen]);
+
+	// Close popup on click outside (matches Voxel's triggers-blur behavior)
+	useEffect(() => {
+		if (!isPopupOpen || context !== 'frontend') return;
+
+		const handleClickOutside = (e: MouseEvent) => {
+			if (formGroupRef.current && !formGroupRef.current.contains(e.target as Node)) {
+				setIsPopupOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [isPopupOpen, context]);
 
 	// Search function
 	const performSearch = useCallback(async () => {
@@ -432,6 +381,7 @@ export default function QuickSearchComponent({
 			key,
 			title: search.trim(),
 			logo: null,
+			icon: null,
 			link,
 		};
 
@@ -719,25 +669,29 @@ export default function QuickSearchComponent({
 									</a>
 								</li>
 							))}
-							{/* View All / Search For */}
-							<li className="view-all">
-								<a
-									href="#"
-									onClick={(e) => {
-										e.preventDefault();
-										saveCurrentTerm();
-										viewArchive();
-									}}
-									className="flexify"
-								>
-									<div className="ts-term-icon">
-										<span>{renderIcon(config.icons.search, DefaultSearchIcon)}</span>
-									</div>
-									<span>
-										{__('Search for', 'voxel-fse')}&nbsp;<strong>{search}</strong>
-									</span>
-								</a>
-							</li>
+							{/* View All / Search For
+							  Tabbed mode: always shown (Voxel line 94)
+							  Single mode: only if submit_to is set (Voxel line 174) */}
+							{(config.displayMode === 'tabbed' || config.singleMode.submitTo) && (
+								<li className="view-all">
+									<a
+										href="#"
+										onClick={(e) => {
+											e.preventDefault();
+											saveCurrentTerm();
+											viewArchive();
+										}}
+										className="flexify"
+									>
+										<div className="ts-term-icon">
+											<span>{renderIcon(config.icons.search, DefaultSearchIcon)}</span>
+										</div>
+										<span>
+											{__('Search for', 'voxel-fse')}&nbsp;<strong>{search}</strong>
+										</span>
+									</a>
+								</li>
+							)}
 						</ul>
 					)}
 				</div>
@@ -745,38 +699,28 @@ export default function QuickSearchComponent({
 		);
 	};
 
-	// Render popup with portal (frontend) or inline (editor)
+	// Render popup inline below the button.
+	// Voxel's form-group component renders the popup within the form-group container,
+	// which has position:relative. The popup drops down below the button.
+	// Voxel teleports to body with absolute pixel positions, but the visual result
+	// is identical to rendering inline within the position:relative parent.
+	//
+	// Structure matches Voxel:
+	//   .ts-field-popup-container
+	//     > .ts-field-popup.triggers-blur
+	//       > .ts-popup-content-wrapper.min-scroll
+	//         > <form>
 	const renderPopup = () => {
 		if (!isPopupOpen) return null;
 
-		const popupContent = (
-			<div
-				ref={popupRef}
-				className="ts-quicksearch-popup lg-width lg-height ts-popup-content"
-			>
-				{renderPopupContent()}
-			</div>
-		);
-
-		// In editor, render inline
-		if (context === 'editor') {
-			return (
-				<div className="ts-popup-container ts-form-group quick-search-keyword">
-					{popupContent}
+		return (
+			<div className="ts-field-popup-container">
+				<div ref={popupRef} className="ts-field-popup triggers-blur">
+					<div className="ts-popup-content-wrapper min-scroll">
+						{renderPopupContent()}
+					</div>
 				</div>
-			);
-		}
-
-		// In frontend, use portal
-		return createPortal(
-			<div className="ts-popup-overlay">
-				<div
-					className="ts-popup-backdrop"
-					onClick={() => setIsPopupOpen(false)}
-				/>
-				{popupContent}
-			</div>,
-			document.body
+			</div>
 		);
 	};
 
@@ -791,8 +735,8 @@ export default function QuickSearchComponent({
 				className="ts-form-group quick-search-keyword"
 			/>
 
-			{/* Main Search Button */}
-			<div className="ts-form-group quick-search-keyword">
+			{/* Main Search Button + Popup (inside same form-group, matching Voxel's form-group component) */}
+			<div ref={formGroupRef} className="ts-form-group quick-search-keyword">
 				<button
 					type="button"
 					className="ts-filter ts-popup-target"
@@ -805,10 +749,9 @@ export default function QuickSearchComponent({
 						<span className="ts-shortcut">{shortcutText}</span>
 					)}
 				</button>
+				{/* Popup renders inline below button, inside position:relative form-group */}
+				{renderPopup()}
 			</div>
-
-			{/* Popup */}
-			{renderPopup()}
 		</>
 	);
 }

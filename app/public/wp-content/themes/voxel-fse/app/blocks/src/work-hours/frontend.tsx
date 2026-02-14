@@ -243,111 +243,123 @@ function parseVxConfig(container: Element): VxConfig | null {
 
 // Fetch work-hours data from REST API
 async function fetchWorkHoursData(
-  postId: number,
-  fieldKey: string
+	postId: number,
+	fieldKey: string
 ): Promise<{
-  schedule: Record<string, any>;
-  isOpenNow: boolean;
-  weekdays: Record<string, string>;
-  today: string;
-  localTime: string;
+	schedule: Record<string, any>;
+	isOpenNow: boolean;
+	weekdays: Record<string, string>;
+	today: string;
+	localTime: string;
 } | null> {
-  try {
-    // MULTISITE FIX: Use getRestBaseUrl() for multisite subdirectory support
-    const restUrl = getRestBaseUrl();
-    const response = await fetch(
-      `${restUrl}voxel-fse/v1/work-hours/${postId}?field=${encodeURIComponent(fieldKey)}`
-    );
+	try {
+		// MULTISITE FIX: Use getRestBaseUrl() for multisite subdirectory support
+		const restUrl = getRestBaseUrl();
 
-    if (!response.ok) {
-      console.error('Failed to fetch work-hours data:', response.statusText);
-      return null;
-    }
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching work-hours data:', error);
-    return null;
-  }
+		const response = await fetch(
+			`${restUrl}voxel-fse/v1/work-hours/${postId}?field=${encodeURIComponent(fieldKey)}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
+		);
+
+		if (!response.ok) {
+			console.error('Failed to fetch work-hours data:', response.statusText);
+			return null;
+		}
+
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		console.error('Error fetching work-hours data:', error);
+		return null;
+	}
 }
 
 // Hydrate work-hours blocks on frontend
 function initBlocks() {
-  const blocks = document.querySelectorAll<HTMLDivElement>(
-    '.wp-block-voxel-fse-work-hours'
-  );
+	const blocks = document.querySelectorAll<HTMLDivElement>(
+		'.wp-block-voxel-fse-work-hours'
+	);
 
-  blocks.forEach((block) => {
-    // Check if already initialized
-    if (block.dataset.reactMounted === 'true') {
-      return;
-    }
+	blocks.forEach((block) => {
+		// Check if already initialized
+		if (block.dataset.reactMounted === 'true') {
+			return;
+		}
 
-    const vxconfig = parseVxConfig(block);
-    if (!vxconfig) {
-      console.warn('No vxconfig found for work-hours block');
-      return;
-    }
+		const vxconfig = parseVxConfig(block);
+		if (!vxconfig) {
+			console.warn('No vxconfig found for work-hours block');
+			return;
+		}
 
-    const { attributes, postId, fieldKey } = vxconfig;
+		const { attributes, postId, fieldKey } = vxconfig;
 
-    // Find or create container for React
-    let placeholder = block.querySelector<HTMLDivElement>(
-      '.voxel-fse-work-hours-placeholder'
-    );
+		// Find or create container for React
+		let placeholder = block.querySelector<HTMLDivElement>(
+			'.voxel-fse-work-hours-placeholder'
+		);
 
-    if (!placeholder) {
-      // Create placeholder if it doesn't exist
-      placeholder = document.createElement('div');
-      placeholder.className = 'voxel-fse-work-hours-placeholder';
-      block.appendChild(placeholder);
-    }
+		if (!placeholder) {
+			// Create placeholder if it doesn't exist
+			placeholder = document.createElement('div');
+			placeholder.className = 'voxel-fse-work-hours-placeholder';
+			block.appendChild(placeholder);
+		}
 
-    // Fetch work-hours data from API
-    if (postId && fieldKey) {
-      fetchWorkHoursData(postId, fieldKey)
-        .then((data) => {
-          if (data) {
-            const root = createRoot(placeholder!);
-            root.render(
-              <WorkHoursComponent
-                attributes={attributes}
-                scheduleData={data.schedule}
-                isOpenNow={data.isOpenNow}
-                weekdays={data.weekdays}
-                today={data.today}
-                localTime={data.localTime}
-                isPreview={false}
-              />
-            );
-            block.dataset.reactMounted = 'true';
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to initialize work-hours block:', error);
-        });
-    } else {
-      // If no post ID or field key, render with mock data
-      const root = createRoot(placeholder);
-      root.render(
-        <WorkHoursComponent attributes={attributes} isPreview={true} />
-      );
-      block.dataset.reactMounted = 'true';
-    }
-  });
+		// Fetch work-hours data from API
+		if (postId && fieldKey) {
+			fetchWorkHoursData(postId, fieldKey)
+				.then((data) => {
+					if (data) {
+						const root = createRoot(placeholder!);
+						root.render(
+							<WorkHoursComponent
+								attributes={attributes}
+								scheduleData={data.schedule}
+								isOpenNow={data.isOpenNow}
+								weekdays={data.weekdays}
+								today={data.today}
+								localTime={data.localTime}
+								isPreview={false}
+							/>
+						);
+						block.dataset.reactMounted = 'true';
+					}
+				})
+				.catch((error) => {
+					console.error('Failed to initialize work-hours block:', error);
+				});
+		} else {
+			// PARITY FIX: On the frontend, if there's no postId or fieldKey,
+			// don't render anything. The original Voxel widget renders nothing
+			// without a valid post context. Preview/mock data is only for the
+			// editor (handled in edit.tsx).
+			// The render.php guard should already suppress the block on non-single
+			// pages, but this is a safety net for edge cases.
+			return;
+		}
+	});
 }
 
 // Initialize on page load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initBlocks);
+	document.addEventListener('DOMContentLoaded', initBlocks);
 } else {
-  initBlocks();
+	initBlocks();
 }
 
 // Support Turbo/PJAX navigation
 if ((window as any).Turbo) {
-  document.addEventListener('turbo:load', initBlocks);
+	document.addEventListener('turbo:load', initBlocks);
 }
 
 // Support custom events

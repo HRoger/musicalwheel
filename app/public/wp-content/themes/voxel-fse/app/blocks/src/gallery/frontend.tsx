@@ -344,6 +344,7 @@ function normalizeConfig(raw: Record<string, unknown>): GalleryVxConfig {
 			raw.viewAllTextColorHover ?? raw.view_all_text_color_hover ?? raw.ts_viewall_text_color_h,
 			''
 		),
+		viewAllTypography: raw.viewAllTypography as GalleryVxConfig['viewAllTypography'],
 	};
 }
 
@@ -426,6 +427,7 @@ function vxConfigToAttributes(config: GalleryVxConfig): GalleryBlockAttributes {
 		viewAllIconSize_mobile: config.viewAllIconSize_mobile,
 		viewAllTextColor: config.viewAllTextColor,
 		viewAllTextColorHover: config.viewAllTextColorHover,
+		viewAllTypography: config.viewAllTypography,
 		hideDesktop: false,
 		hideTablet: false,
 		hideMobile: false,

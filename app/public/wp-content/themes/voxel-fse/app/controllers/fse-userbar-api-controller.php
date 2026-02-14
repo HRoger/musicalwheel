@@ -33,7 +33,10 @@ class FSE_Userbar_API_Controller extends FSE_Base_Controller {
 	 */
 	protected function hooks(): void {
 		$this->on( 'rest_api_init', '@register_routes' );
-		$this->on( 'wp_enqueue_scripts', '@enqueue_userbar_config', 20 );
+		// Use wp_head directly (not wp_enqueue_scripts) so the config script
+		// is output inline before any block frontend JS runs.
+		// Priority 5 = after Voxel_Config (priority 1) but before scripts.
+		$this->on( 'wp_head', '@enqueue_userbar_config', 5 );
 	}
 
 	/**
@@ -197,7 +200,58 @@ class FSE_Userbar_API_Controller extends FSE_Base_Controller {
 			}
 		}
 
+		// Render menus HTML for user_menu and select_wp_menu components
+		// Reference: user-bar.php:47-55, 90-98 - wp_nav_menu with Popup_Menu_Walker
+		$context['menus'] = $this->render_menus();
+
 		return $context;
+	}
+
+	/**
+	 * Render all registered menu locations as HTML
+	 *
+	 * PARITY: user-bar.php:47-55, 90-98
+	 * Voxel uses wp_nav_menu() with Popup_Menu_Walker to render menus.
+	 * We render them server-side and pass as HTML strings to React.
+	 *
+	 * @return array<string, string> Menu location slug => rendered HTML
+	 */
+	private function render_menus(): array {
+		$menus = [];
+		$locations = get_nav_menu_locations();
+
+		if ( empty( $locations ) || ! is_array( $locations ) ) {
+			return $menus;
+		}
+
+		// Check if Voxel's Popup_Menu_Walker exists
+		$walker_class = class_exists( '\\Voxel\\Utils\\Popup_Menu_Walker' )
+			? '\\Voxel\\Utils\\Popup_Menu_Walker'
+			: null;
+
+		foreach ( $locations as $location_slug => $menu_id ) {
+			if ( ! $menu_id ) {
+				continue;
+			}
+
+			$args = [
+				'echo'           => false,
+				'theme_location' => $location_slug,
+				'container'      => false,
+				'items_wrap'     => '%3$s',
+			];
+
+			if ( $walker_class ) {
+				$args['walker'] = new $walker_class();
+			}
+
+			$html = wp_nav_menu( $args );
+			if ( $html ) {
+				$menus[ $location_slug ] = $html;
+			}
+		}
+
+		return $menus;
 	}
 
 	/**
@@ -210,7 +264,7 @@ class FSE_Userbar_API_Controller extends FSE_Base_Controller {
 	 * component element with a single global config object.
 	 */
 	public function enqueue_userbar_config(): void {
-		// Only on frontend
+		// Skip admin pages (but NOT the block editor — that's handled via REST API)
 		if ( is_admin() ) {
 			return;
 		}
@@ -235,9 +289,7 @@ class FSE_Userbar_API_Controller extends FSE_Base_Controller {
 			$script .= "\n" . 'window.VoxelFSEUser = { isLoggedIn: false };';
 		}
 
-		// Output in wp_head with high priority to ensure it loads before React
-		add_action( 'wp_head', function() use ( $script ) {
-			echo '<script id="voxel-fse-userbar-config">' . $script . '</script>';
-		}, 1 );
+		// Output directly — this method is already hooked to wp_head at priority 5
+		echo '<script id="voxel-fse-userbar-config">' . $script . '</script>';
 	}
 }

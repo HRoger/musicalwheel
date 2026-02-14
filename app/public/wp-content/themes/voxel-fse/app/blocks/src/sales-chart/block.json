@@ -1,364 +1,363 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "voxel-fse/sales-chart",
-  "version": "1.0.0",
-  "title": "Sales Chart (VX)",
-  "category": "voxel-fse",
-  "description": "Display vendor sales statistics with bar chart visualization. Requires Stripe Connect.",
-  "keywords": [
-    "chart",
-    "sales",
-    "bar",
-    "statistics",
-    "stripe",
-    "vendor"
-  ],
-  "textdomain": "voxel-fse",
-  "supports": {
-    "html": false,
-    "anchor": true,
-    "align": [
-      "wide",
-      "full"
-    ],
-    "className": true,
-    "customClassName": true
-  },
-  "attributes": {
-    "blockId": {
-      "type": "string",
-      "default": ""
-    },
-    "contentTabOpenPanel": {
-      "type": "string",
-      "default": "chart"
-    },
-    "styleTabOpenPanel": {
-      "type": "string",
-      "default": "chart"
-    },
-    "ts_active_chart": {
-      "type": "string",
-      "default": "this-week"
-    },
-    "chart_icon": {
-      "type": "object",
-      "default": {
-        "library": "",
-        "value": ""
-      }
-    },
-    "ts_chevron_right": {
-      "type": "object",
-      "default": {
-        "library": "",
-        "value": ""
-      }
-    },
-    "ts_chevron_left": {
-      "type": "object",
-      "default": {
-        "library": "",
-        "value": ""
-      }
-    },
-    "ts_chart_height": {
-      "type": "number"
-    },
-    "ts_chart_height_tablet": {
-      "type": "number"
-    },
-    "ts_chart_height_mobile": {
-      "type": "number"
-    },
-    "ts_axis_typo_col": {
-      "type": "string"
-    },
-    "vertical_axis_width": {
-      "type": "number"
-    },
-    "vertical_axis_width_tablet": {
-      "type": "number"
-    },
-    "vertical_axis_width_mobile": {
-      "type": "number"
-    },
-    "chart_col_gap": {
-      "type": "number"
-    },
-    "chart_col_gap_tablet": {
-      "type": "number"
-    },
-    "chart_col_gap_mobile": {
-      "type": "number"
-    },
-    "bar_width": {
-      "type": "number"
-    },
-    "bar_width_tablet": {
-      "type": "number"
-    },
-    "bar_width_mobile": {
-      "type": "number"
-    },
-    "bar_radius": {
-      "type": "number"
-    },
-    "bar_radius_tablet": {
-      "type": "number"
-    },
-    "bar_radius_mobile": {
-      "type": "number"
-    },
-    "bar_bg_hover": {
-      "type": "string"
-    },
-    "bar_pop_bg": {
-      "type": "string"
-    },
-    "bar_pop_radius": {
-      "type": "number"
-    },
-    "bar_pop_radius_tablet": {
-      "type": "number"
-    },
-    "bar_pop_radius_mobile": {
-      "type": "number"
-    },
-    "ts_primary_color": {
-      "type": "string"
-    },
-    "ts_secondary_color": {
-      "type": "string"
-    },
-    "chart_line_borderType": {
-      "type": "string"
-    },
-    "chart_line_borderWidth": {
-      "type": "object"
-    },
-    "chart_line_borderColor": {
-      "type": "string"
-    },
-    "bar_pop_borderType": {
-      "type": "string"
-    },
-    "bar_pop_borderWidth": {
-      "type": "object"
-    },
-    "bar_pop_borderColor": {
-      "type": "string"
-    },
-    "axis_typo": {
-      "type": "object"
-    },
-    "ts_primary_typo": {
-      "type": "object"
-    },
-    "ts_secondary_typo": {
-      "type": "object"
-    },
-    "bar_sh_shadow": {
-      "type": "object"
-    },
-    "bar_pop_shadow": {
-      "type": "object"
-    },
-    "bar_bg": {
-      "type": "object"
-    },
-    "tabsState": {
-      "type": "string",
-      "default": "normal"
-    },
-    "ts_tabs_justify": {
-      "type": "string",
-      "default": "left"
-    },
-    "ts_tabs_padding": {
-      "type": "object"
-    },
-    "ts_tabs_margin": {
-      "type": "object"
-    },
-    "ts_tabs_text_color": {
-      "type": "string"
-    },
-    "ts_active_text_color": {
-      "type": "string"
-    },
-    "ts_tabs_bg_color": {
-      "type": "string"
-    },
-    "ts_tabs_bg_active_color": {
-      "type": "string"
-    },
-    "ts_tabs_border_active": {
-      "type": "string"
-    },
-    "ts_tabs_radius": {
-      "type": "number"
-    },
-    "ts_tabs_text_color_h": {
-      "type": "string"
-    },
-    "ts_tabs_active_text_color_h": {
-      "type": "string"
-    },
-    "ts_tabs_border_color_h": {
-      "type": "string"
-    },
-    "ts_tabs_border_h_active": {
-      "type": "string"
-    },
-    "ts_tabs_bg_color_h": {
-      "type": "string"
-    },
-    "ts_bg_active_color_h": {
-      "type": "string"
-    },
-    "ts_tabs_borderType": {
-      "type": "string"
-    },
-    "ts_tabs_borderWidth": {
-      "type": "object"
-    },
-    "ts_tabs_borderColor": {
-      "type": "string"
-    },
-    "ts_tabs_text": {
-      "type": "object"
-    },
-    "ts_tabs_text_active": {
-      "type": "object"
-    },
-    "weekButtonsState": {
-      "type": "string",
-      "default": "normal"
-    },
-    "week_range_col": {
-      "type": "string"
-    },
-    "ts_week_btn_color": {
-      "type": "string"
-    },
-    "ts_week_btn_icon_size": {
-      "type": "number"
-    },
-    "ts_week_btn_icon_size_tablet": {
-      "type": "number"
-    },
-    "ts_week_btn_icon_size_mobile": {
-      "type": "number"
-    },
-    "ts_week_btn_bg": {
-      "type": "string"
-    },
-    "ts_week_btn_radius": {
-      "type": "number"
-    },
-    "ts_week_btn_radius_tablet": {
-      "type": "number"
-    },
-    "ts_week_btn_radius_mobile": {
-      "type": "number"
-    },
-    "ts_week_btn_size": {
-      "type": "number"
-    },
-    "ts_week_btn_size_tablet": {
-      "type": "number"
-    },
-    "ts_week_btn_size_mobile": {
-      "type": "number"
-    },
-    "ts_week_btn_h": {
-      "type": "string"
-    },
-    "ts_week_btn_bg_h": {
-      "type": "string"
-    },
-    "ts_week_border_c_h": {
-      "type": "string"
-    },
-    "ts_week_btn_borderType": {
-      "type": "string"
-    },
-    "ts_week_btn_borderWidth": {
-      "type": "object"
-    },
-    "ts_week_btn_borderColor": {
-      "type": "string"
-    },
-    "week_range_typo": {
-      "type": "object"
-    },
-    "ts_nopost_content_Gap": {
-      "type": "number"
-    },
-    "ts_nopost_content_Gap_tablet": {
-      "type": "number"
-    },
-    "ts_nopost_content_Gap_mobile": {
-      "type": "number"
-    },
-    "ts_nopost_ico_size": {
-      "type": "number"
-    },
-    "ts_nopost_ico_size_tablet": {
-      "type": "number"
-    },
-    "ts_nopost_ico_size_mobile": {
-      "type": "number"
-    },
-    "ts_nopost_ico_col": {
-      "type": "string"
-    },
-    "ts_nopost_typo_col": {
-      "type": "string"
-    },
-    "ts_nopost_typo": {
-      "type": "object"
-    },
-    "_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
-    "visibilityBehavior": {
-      "type": "string",
-      "default": "show",
-      "enum": [
-        "show",
-        "hide"
-      ]
-    },
-    "visibilityRules": {
-      "type": "array",
-      "default": [],
-      "items": {
-        "type": "object"
-      }
-    },
-    "loopEnabled": {
-      "type": "boolean",
-      "default": false
-    },
-    "loopSource": {
-      "type": "string",
-      "default": ""
-    },
-    "loopProperty": {
-      "type": "string",
-      "default": ""
-    },
-    "loopLimit": {
-      "type": "string",
-      "default": ""
-    },
-    "loopOffset": {
-      "type": "string",
-      "default": ""
-    }
-  },
-  "editorScript": "file:./index.js",
-  "viewScript": "file:./frontend.js",
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "voxel-fse/sales-chart",
+	"version": "1.0.0",
+	"title": "Sales Chart (VX)",
+	"category": "voxel-fse",
+	"description": "Display vendor sales statistics with bar chart visualization. Requires Stripe Connect.",
+	"keywords": [
+		"chart",
+		"sales",
+		"bar",
+		"statistics",
+		"stripe",
+		"vendor"
+	],
+	"textdomain": "voxel-fse",
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"align": [
+			"wide",
+			"full"
+		],
+		"className": true,
+		"customClassName": true
+	},
+	"attributes": {
+		"blockId": {
+			"type": "string",
+			"default": ""
+		},
+		"contentTabOpenPanel": {
+			"type": "string",
+			"default": "chart"
+		},
+		"styleTabOpenPanel": {
+			"type": "string",
+			"default": "chart"
+		},
+		"ts_active_chart": {
+			"type": "string",
+			"default": "this-week"
+		},
+		"chart_icon": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"ts_chevron_right": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"ts_chevron_left": {
+			"type": "object",
+			"default": {
+				"library": "",
+				"value": ""
+			}
+		},
+		"ts_chart_height": {
+			"type": "number"
+		},
+		"ts_chart_height_tablet": {
+			"type": "number"
+		},
+		"ts_chart_height_mobile": {
+			"type": "number"
+		},
+		"ts_axis_typo_col": {
+			"type": "string"
+		},
+		"vertical_axis_width": {
+			"type": "number"
+		},
+		"vertical_axis_width_tablet": {
+			"type": "number"
+		},
+		"vertical_axis_width_mobile": {
+			"type": "number"
+		},
+		"chart_col_gap": {
+			"type": "number"
+		},
+		"chart_col_gap_tablet": {
+			"type": "number"
+		},
+		"chart_col_gap_mobile": {
+			"type": "number"
+		},
+		"bar_width": {
+			"type": "number"
+		},
+		"bar_width_tablet": {
+			"type": "number"
+		},
+		"bar_width_mobile": {
+			"type": "number"
+		},
+		"bar_radius": {
+			"type": "number"
+		},
+		"bar_radius_tablet": {
+			"type": "number"
+		},
+		"bar_radius_mobile": {
+			"type": "number"
+		},
+		"bar_bg_hover": {
+			"type": "string"
+		},
+		"bar_pop_bg": {
+			"type": "string"
+		},
+		"bar_pop_radius": {
+			"type": "number"
+		},
+		"bar_pop_radius_tablet": {
+			"type": "number"
+		},
+		"bar_pop_radius_mobile": {
+			"type": "number"
+		},
+		"ts_primary_color": {
+			"type": "string"
+		},
+		"ts_secondary_color": {
+			"type": "string"
+		},
+		"chart_line_borderType": {
+			"type": "string"
+		},
+		"chart_line_borderWidth": {
+			"type": "object"
+		},
+		"chart_line_borderColor": {
+			"type": "string"
+		},
+		"bar_pop_borderType": {
+			"type": "string"
+		},
+		"bar_pop_borderWidth": {
+			"type": "object"
+		},
+		"bar_pop_borderColor": {
+			"type": "string"
+		},
+		"axis_typo": {
+			"type": "object"
+		},
+		"ts_primary_typo": {
+			"type": "object"
+		},
+		"ts_secondary_typo": {
+			"type": "object"
+		},
+		"bar_sh_shadow": {
+			"type": "object"
+		},
+		"bar_pop_shadow": {
+			"type": "object"
+		},
+		"bar_bg": {
+			"type": "object"
+		},
+		"tabsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"ts_tabs_justify": {
+			"type": "string",
+			"default": "left"
+		},
+		"ts_tabs_padding": {
+			"type": "object"
+		},
+		"ts_tabs_margin": {
+			"type": "object"
+		},
+		"ts_tabs_text_color": {
+			"type": "string"
+		},
+		"ts_active_text_color": {
+			"type": "string"
+		},
+		"ts_tabs_bg_color": {
+			"type": "string"
+		},
+		"ts_tabs_bg_active_color": {
+			"type": "string"
+		},
+		"ts_tabs_border_active": {
+			"type": "string"
+		},
+		"ts_tabs_radius": {
+			"type": "number"
+		},
+		"ts_tabs_text_color_h": {
+			"type": "string"
+		},
+		"ts_tabs_active_text_color_h": {
+			"type": "string"
+		},
+		"ts_tabs_border_color_h": {
+			"type": "string"
+		},
+		"ts_tabs_border_h_active": {
+			"type": "string"
+		},
+		"ts_tabs_bg_color_h": {
+			"type": "string"
+		},
+		"ts_bg_active_color_h": {
+			"type": "string"
+		},
+		"ts_tabs_borderType": {
+			"type": "string"
+		},
+		"ts_tabs_borderWidth": {
+			"type": "object"
+		},
+		"ts_tabs_borderColor": {
+			"type": "string"
+		},
+		"ts_tabs_text": {
+			"type": "object"
+		},
+		"ts_tabs_text_active": {
+			"type": "object"
+		},
+		"weekButtonsState": {
+			"type": "string",
+			"default": "normal"
+		},
+		"week_range_col": {
+			"type": "string"
+		},
+		"ts_week_btn_color": {
+			"type": "string"
+		},
+		"ts_week_btn_icon_size": {
+			"type": "number"
+		},
+		"ts_week_btn_icon_size_tablet": {
+			"type": "number"
+		},
+		"ts_week_btn_icon_size_mobile": {
+			"type": "number"
+		},
+		"ts_week_btn_bg": {
+			"type": "string"
+		},
+		"ts_week_btn_radius": {
+			"type": "number"
+		},
+		"ts_week_btn_radius_tablet": {
+			"type": "number"
+		},
+		"ts_week_btn_radius_mobile": {
+			"type": "number"
+		},
+		"ts_week_btn_size": {
+			"type": "number"
+		},
+		"ts_week_btn_size_tablet": {
+			"type": "number"
+		},
+		"ts_week_btn_size_mobile": {
+			"type": "number"
+		},
+		"ts_week_btn_h": {
+			"type": "string"
+		},
+		"ts_week_btn_bg_h": {
+			"type": "string"
+		},
+		"ts_week_border_c_h": {
+			"type": "string"
+		},
+		"ts_week_btn_borderType": {
+			"type": "string"
+		},
+		"ts_week_btn_borderWidth": {
+			"type": "object"
+		},
+		"ts_week_btn_borderColor": {
+			"type": "string"
+		},
+		"week_range_typo": {
+			"type": "object"
+		},
+		"ts_nopost_content_Gap": {
+			"type": "number"
+		},
+		"ts_nopost_content_Gap_tablet": {
+			"type": "number"
+		},
+		"ts_nopost_content_Gap_mobile": {
+			"type": "number"
+		},
+		"ts_nopost_ico_size": {
+			"type": "number"
+		},
+		"ts_nopost_ico_size_tablet": {
+			"type": "number"
+		},
+		"ts_nopost_ico_size_mobile": {
+			"type": "number"
+		},
+		"ts_nopost_ico_col": {
+			"type": "string"
+		},
+		"ts_nopost_typo_col": {
+			"type": "string"
+		},
+		"ts_nopost_typo": {
+			"type": "object"
+		},
+		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
+		"visibilityBehavior": {
+			"type": "string",
+			"default": "show",
+			"enum": [
+				"show",
+				"hide"
+			]
+		},
+		"visibilityRules": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object"
+			}
+		},
+		"loopEnabled": {
+			"type": "boolean",
+			"default": false
+		},
+		"loopSource": {
+			"type": "string",
+			"default": ""
+		},
+		"loopProperty": {
+			"type": "string",
+			"default": ""
+		},
+		"loopLimit": {
+			"type": "string",
+			"default": ""
+		},
+		"loopOffset": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"viewScript": "file:./frontend.js",
+	"render": "file:./render.php"
 }

@@ -386,7 +386,7 @@ export default function DimensionsControl({
 					font-family: 'Line Awesome Free';
 					font-weight: 900;
 					font-size: 14px;
-					color: #005a87;
+					color: var(--vxfse-accent-color, #3858e9);
 				}
 				.voxel-fse-dimensions-control__link .la-link::before {
 					content: "\\f0c1";
@@ -416,8 +416,8 @@ export default function DimensionsControl({
 					border-bottom-left-radius: 0 !important;
 				}
 				.voxel-fse-dimension-input:focus {
-					border-color: #007cba !important;
-					border-right: 1px solid #007cba !important;
+					border-color: var(--vxfse-accent-color, #3858e9) !important;
+					border-right: 1px solid var(--vxfse-accent-color, #3858e9) !important;
 					box-shadow: none !important;
 					outline: none !important;
 					z-index: 1;

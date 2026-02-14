@@ -17,7 +17,6 @@ import { useTimelineContext, useStrings, useFileUpload } from '../hooks';
 import { quoteStatusApi } from '../api';
 import { countCharacters } from '../utils';
 import type { Status, MediaFile } from '../types';
-import { QuotedStatus } from './QuotedStatus';
 import EmojiPicker from './EmojiPicker';
 
 /**
@@ -65,7 +64,7 @@ export function QuoteComposer({
 	onQuotePublished,
 	onCancel,
 	className = '',
-}: QuoteComposerProps): JSX.Element {
+}: QuoteComposerProps): JSX.Element | null {
 	const { config } = useTimelineContext();
 	const strings = useStrings();
 
@@ -238,151 +237,160 @@ export function QuoteComposer({
 
 	// Get current user for avatar
 	const currentUser = config?.current_user;
-	const avatarUrl = currentUser?.avatar_url ?? '';
-	const displayName = currentUser?.display_name ?? '';
+
+	// Safety check - don't render if user not loaded
+	if (!currentUser) {
+		return null;
+	}
+
+	const avatarUrl = currentUser.avatar_url ?? '';
+	const displayName = currentUser.display_name ?? '';
 
 	// Get placeholder from quotes config (matches Voxel's computed placeholder)
-	const placeholderText = config?.strings.compose_placeholder ?? 'Add a comment...';
+	const placeholderText = config?.strings.compose_placeholder ?? "What's on your mind?";
 
 	return (
-		<div
-			ref={wrapperRef}
-			className={`vxf-create-post vxf-quote-composer flexify vxf-expanded ${className}`}
-		>
-			{/* Avatar */}
-			{currentUser && (
-				<div className="vxf-avatar flexify">
-					<img src={avatarUrl} alt={displayName} />
-				</div>
-			)}
-
-			{/* Content area */}
-			<div className="vxf-create-post__content">
-				<div className="vxf-content__highlighter"></div>
-				<textarea
-					ref={textareaRef}
-					className="vxf-content__textarea"
-					value={content}
-					onChange={handleContentChange}
-					placeholder={placeholderText}
-					maxLength={maxChars}
-					disabled={isSubmitting}
-				/>
+		<>
+			{/* "Quote post" separator - matches Voxel's vxf-split structure */}
+			<div className="vxf-split flexify">
+				<span>Quote post</span>
 			</div>
 
-			{/* Footer wrapper */}
-			<div className="vxf-footer-wrapper">
-				{/* Quoted status preview */}
-				<div className="vxf-quote-preview">
-					<QuotedStatus status={quoteOf} truncateAt={140} />
-				</div>
-
-				{/* File upload previews - if any */}
-				{(uploads.length > 0 || completedFiles.length > 0) && (
-					<div className="ts-form-group ts-file-upload vxf-create-section">
-						<div className="ts-file-list">
-							{uploads.map((upload) => {
-								const isImage = upload.file.type.startsWith('image/');
-								const previewUrl = isImage ? URL.createObjectURL(upload.file) : '';
-								return (
-									<div
-										key={upload.id}
-										className={`ts-file ${isImage ? 'ts-file-img' : ''}`}
-										style={isImage ? { backgroundImage: `url(${previewUrl})` } : {}}
-									>
-										<div className="ts-file-info">
-											<code>{upload.file.name}</code>
-										</div>
-										<a
-											href="#"
-											className="ts-remove-file flexify"
-											onClick={(e) => {
-												e.preventDefault();
-												removeFile(upload.id);
-											}}
-										>
-											&times;
-										</a>
-										{upload.status === 'uploading' && (
-											<div
-												className="vxf-file-progress"
-												style={{ width: `${upload.progress}%` }}
-											/>
-										)}
-									</div>
-								);
-							})}
-						</div>
+			{/* Composer - matches Voxel's standard vxf-create-post structure */}
+			<div
+				ref={wrapperRef}
+				className={`vxf-create-post flexify vxf-expanded ${className}`}
+			>
+				{/* Avatar */}
+				{currentUser && (
+					<div className="vxf-avatar flexify">
+						<img src={avatarUrl} alt={displayName} />
 					</div>
 				)}
 
-				{/* Footer with actions and buttons */}
-				<div className="vxf-footer flexify">
-					{/* Actions - upload/emoji buttons */}
-					<div className="vxf-actions flexify">
-						{config?.features.file_upload && (
-							<>
-								<a href="#" onClick={openFilePicker} className="vxf-icon">
-									<GalleryIcon />
-								</a>
-								<a href="#" onClick={openFilePicker} className="vxf-icon">
-									<UploadIcon />
-								</a>
-							</>
-						)}
-						<a href="#" className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
-							<EmojiIcon />
-						</a>
-						<EmojiPicker
-							isOpen={showEmojiPicker}
-							onClose={() => setShowEmojiPicker(false)}
-							onSelect={insertEmoji}
-							target={wrapperRef.current}
-						/>
-					</div>
+				{/* Content area */}
+				<div className="vxf-create-post__content">
+					<div className="vxf-content__highlighter"></div>
+					<textarea
+						ref={textareaRef}
+						className="vxf-content__textarea"
+						value={content}
+						onChange={handleContentChange}
+						placeholder={placeholderText}
+						maxLength={maxChars}
+						disabled={isSubmitting}
+					/>
+				</div>
 
-					{/* Buttons - Cancel and Quote */}
-					<div className="vxf-buttons flexify">
-						<a href="#" onClick={handleCancel} className="ts-btn ts-btn-1">
-							{strings.cancel ?? 'Cancel'}
-						</a>
-						<a
-							href="#"
-							onClick={handleSubmit}
-							className={`ts-btn ts-btn-2 ${isSubmitting ? 'vx-pending' : ''}`}
-						>
-							{isSubmitting ? (
-								<div className="ts-loader-wrapper">
-									<span className="ts-loader"></span>
-								</div>
-							) : (
-								strings.compose_submit ?? 'Quote'
+				{/* Footer wrapper - matches Voxel's transition-height > vxf-footer-wrapper */}
+				<div className="vxf-footer-wrapper" style={{ height: 'auto' }}>
+					{/* File upload previews - if any */}
+					{(uploads.length > 0 || completedFiles.length > 0) && (
+						<div className="ts-form-group ts-file-upload vxf-create-section">
+							<div className="ts-file-list">
+								{uploads.map((upload) => {
+									const isImage = upload.file.type.startsWith('image/');
+									const previewUrl = isImage ? URL.createObjectURL(upload.file) : '';
+									return (
+										<div
+											key={upload.id}
+											className={`ts-file ${isImage ? 'ts-file-img' : ''}`}
+											style={isImage ? { backgroundImage: `url(${previewUrl})` } : {}}
+										>
+											<div className="ts-file-info">
+												<code>{upload.file.name}</code>
+											</div>
+											<a
+												href="#"
+												className="ts-remove-file flexify"
+												onClick={(e) => {
+													e.preventDefault();
+													removeFile(upload.id);
+												}}
+											>
+												&times;
+											</a>
+											{upload.status === 'uploading' && (
+												<div
+													className="vxf-file-progress"
+													style={{ width: `${upload.progress}%` }}
+												/>
+											)}
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					)}
+
+					{/* Footer with actions and buttons */}
+					<div className="vxf-footer flexify">
+						{/* Actions - upload/emoji buttons */}
+						<div className="vxf-actions flexify">
+							{config?.features.file_upload && (
+								<>
+									<a href="#" onClick={openFilePicker} className="vxf-icon">
+										<GalleryIcon />
+									</a>
+									<a href="#" onClick={openFilePicker} className="vxf-icon">
+										<UploadIcon />
+									</a>
+								</>
 							)}
-						</a>
+							<a href="#" className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
+								<EmojiIcon />
+							</a>
+							<EmojiPicker
+								isOpen={showEmojiPicker}
+								onClose={() => setShowEmojiPicker(false)}
+								onSelect={insertEmoji}
+								target={wrapperRef.current}
+							/>
+						</div>
+
+						{/* Buttons - Cancel and Publish (matches Voxel's button text) */}
+						<div className="vxf-buttons flexify">
+							<a href="#" onClick={handleCancel} className="ts-btn ts-btn-1">
+								{strings.cancel ?? 'Cancel'}
+							</a>
+							<a
+								href="#"
+								onClick={handleSubmit}
+								className={`ts-btn ts-btn-2 ${isSubmitting ? 'vx-pending' : ''}`}
+							>
+								{isSubmitting ? (
+									<div className="ts-loader-wrapper">
+										<span className="ts-loader"></span>
+									</div>
+								) : (
+									'Publish'
+								)}
+							</a>
+						</div>
 					</div>
 				</div>
+
+				{/* Hidden file input */}
+				{config?.features.file_upload && (
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept={config.upload_config.allowed_types.join(',')}
+						multiple
+						onChange={handleFileSelect}
+						style={{ display: 'none' }}
+						aria-hidden="true"
+					/>
+				)}
+
+				{/* Error message */}
+				{error && (
+					<div className="vxf-create-post__error ts-form-error">
+						{error}
+					</div>
+				)}
 			</div>
-
-			{/* Hidden file input */}
-			{config?.features.file_upload && (
-				<input
-					ref={fileInputRef}
-					type="file"
-					accept={config.upload_config.allowed_types.join(',')}
-					multiple
-					onChange={handleFileSelect}
-					style={{ display: 'none' }}
-					aria-hidden="true"
-				/>
-			)}
-
-			{/* Error message */}
-			{error && (
-				<div className="vxf-create-post__error ts-form-error">
-					{error}
-				</div>
-			)}
-		</div>
+		</>
 	);
 }
 

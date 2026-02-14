@@ -111,7 +111,29 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 
 		$post_type_key = $request->get_param( 'post_type' );
 		$post_id = $request->get_param( 'post_id' );
-		$is_admin_metabox = $request->get_param( 'is_admin_metabox' );
+		$is_admin_metabox = (bool) $request->get_param( 'is_admin_metabox' );
+
+		$result = self::generate_fields_config( $post_type_key, $post_id ? (int) $post_id : null, $is_admin_metabox );
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * Generate fields config data (reusable from REST and render_block)
+	 *
+	 * @param string   $post_type_key Post type key.
+	 * @param int|null $post_id       Post ID for edit mode.
+	 * @param bool     $is_admin_metabox Whether in admin metabox context.
+	 * @return array|\WP_Error FieldsConfigResponse data or error.
+	 */
+	public static function generate_fields_config( string $post_type_key, ?int $post_id = null, bool $is_admin_metabox = false ) {
+		if ( ! class_exists( '\Voxel\Post_Type' ) ) {
+			return [];
+		}
 
 		$post_type = \Voxel\Post_Type::get( $post_type_key );
 		if ( ! $post_type ) {
@@ -233,11 +255,11 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 			$fields_config[] = $config;
 		}
 
-		return rest_ensure_response( [
+		return [
 			'fieldsConfig' => $fields_config,
 			'postId' => $post_id,
 			'postStatus' => $post ? $post->get_status() : null,
-		] );
+		];
 	}
 
 	/**
@@ -258,21 +280,33 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 		$post_type_key = $request->get_param( 'post_type' );
 		$post_id = $request->get_param( 'post_id' );
 
-		// Check if Voxel is active
-		if ( ! class_exists( '\Voxel\Post_Type' ) ) {
-			return new \WP_REST_Response( [
-				'success' => false,
-				'message' => 'Voxel theme is not active',
-			], 400 );
+		$data = self::generate_post_context( $post_type_key, $post_id ? (int) $post_id : null );
+
+		if ( is_wp_error( $data ) ) {
+			return $data;
 		}
 
-		// Validate post type
+		return new \WP_REST_Response( $data );
+	}
+
+	/**
+	 * Generate post context data (reusable from REST and render_block)
+	 *
+	 * Returns permissions, state, and nonces needed for the form.
+	 * Implements 1:1 parity with Voxel's create-post widget render logic.
+	 *
+	 * @param string   $post_type_key Post type key.
+	 * @param int|null $post_id       Post ID for edit mode.
+	 * @return array|\WP_Error PostContext data or error.
+	 */
+	public static function generate_post_context( string $post_type_key, ?int $post_id = null ) {
+		if ( ! class_exists( '\Voxel\Post_Type' ) ) {
+			return new \WP_Error( 'voxel_not_active', 'Voxel theme is not active', [ 'status' => 400 ] );
+		}
+
 		$post_type = \Voxel\Post_Type::get( $post_type_key );
 		if ( ! $post_type ) {
-			return new \WP_REST_Response( [
-				'success' => false,
-				'message' => 'Invalid post type',
-			], 404 );
+			return new \WP_Error( 'invalid_post_type', 'Invalid post type', [ 'status' => 404 ] );
 		}
 
 		$is_logged_in = is_user_logged_in();
@@ -285,7 +319,7 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 		// Handle profile post type specially
 		// Evidence: themes/voxel/app/widgets/create-post.php:4981-4983
 		if ( $post_type_key === 'profile' && $user ) {
-			ob_start(); // Prevent output
+			ob_start();
 			$post = $user->get_or_create_profile();
 			ob_end_clean();
 		}
@@ -293,7 +327,7 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 		// Check if user can edit specific post
 		// Evidence: themes/voxel/app/widgets/create-post.php:4985-4987
 		if ( $post_id ) {
-			ob_start(); // Prevent output
+			ob_start();
 			if ( \Voxel\Post::current_user_can_edit( $post_id ) ) {
 				$post = \Voxel\Post::get( $post_id );
 			}
@@ -307,7 +341,6 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 
 		// Permission check - can user create posts of this type?
 		// Evidence: themes/voxel/templates/widgets/create-post.php:11
-		// "if ( ! $post && ! $user->can_create_post( $post_type->get_key() ) )"
 		$can_create = false;
 		$can_edit = false;
 
@@ -323,17 +356,13 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 			ob_end_clean();
 		}
 
-		// Build permission context
-		// Evidence: themes/voxel/templates/widgets/create-post.php:11
 		$has_permission = $post ? $can_edit : $can_create;
 
 		// Post state context
-		// Evidence: themes/voxel/app/widgets/create-post.php:4993-4999
 		$post_status = $post ? $post->get_status() : null;
 		$can_save_draft = $post ? ( $post_status === 'draft' ) : true;
 
 		// Build edit link for existing posts
-		// Evidence: Matches Voxel's get_edit_link() pattern
 		$edit_link = null;
 		if ( $post ) {
 			ob_start();
@@ -350,8 +379,7 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 			}
 		}
 
-		// Get UI steps for edit menu (if applicable)
-		// Evidence: themes/voxel/app/widgets/create-post.php:5029-5031
+		// Get UI steps for edit menu
 		$steps = [];
 		if ( $post || $can_create ) {
 			foreach ( $post_type->get_fields() as $field ) {
@@ -372,7 +400,6 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 		}
 
 		// Validation error messages (matching Voxel exactly)
-		// Evidence: themes/voxel/app/widgets/create-post.php:5111-5138
 		$validation_errors = [
 			'required' => _x( 'Required', 'field validation', 'voxel' ),
 			'text:minlength' => _x( 'Value cannot be shorter than @minlength characters', 'field validation', 'voxel' ),
@@ -385,52 +412,33 @@ class FSE_Create_Post_Controller extends FSE_Base_Controller {
 			'form:has-errors' => _x( 'Please fill in all required fields', 'repeater row validation', 'voxel' ),
 		];
 
-		// Build response
-		$data = [
-			// User state
+		return [
 			'isLoggedIn' => $is_logged_in,
 			'userId' => $user ? $user->get_id() : null,
-
-			// Permissions (critical for button visibility)
 			'permissions' => [
 				'create' => $can_create,
 				'edit' => $can_edit,
 			],
 			'hasPermission' => $has_permission,
-
-			// No permission message (for no-permission screen)
-			// Evidence: themes/voxel/templates/widgets/create-post/no-permission.php:6-10
 			'noPermission' => [
 				'title' => _x( 'Your account doesn\'t support this feature yet.', 'create post', 'voxel' ),
 			],
-
-			// Post state
 			'postId' => $post ? $post->get_id() : null,
 			'postStatus' => $post_status,
 			'postTitle' => $post ? $post->get_title() : null,
 			'editLink' => $edit_link,
 			'createLink' => $create_link,
-
-			// Form state
 			'canSaveDraft' => $can_save_draft,
 			'steps' => $steps,
-
-			// Validation messages
 			'validationErrors' => $validation_errors,
-
-			// Nonces for form submission
 			'nonces' => [
 				'create_post' => wp_create_nonce( 'vx_create_post' ),
 			],
-
-			// Post type info
 			'postType' => [
 				'key' => $post_type_key,
 				'label' => $post_type->get_label(),
 				'singularName' => $post_type->get_singular_name(),
 			],
 		];
-
-		return new \WP_REST_Response( $data );
 	}
 }

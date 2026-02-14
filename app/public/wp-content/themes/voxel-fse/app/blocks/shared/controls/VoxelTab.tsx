@@ -728,7 +728,7 @@ export default function VoxelTab({
 				}
 
 				.voxel-fse-loop-field-label {
-					color: #2271b1;
+					color: var(--vxfse-accent-color, #3858e9);
 					font-weight: 700;
 					font-size: 13px;
 					text-transform: capitalize;
@@ -743,8 +743,8 @@ export default function VoxelTab({
 				}
 
 				.voxel-fse-loop-field-input:focus {
-					border-color: #2271b1;
-					box-shadow: 0 0 0 1px #2271b1;
+					border-color: var(--vxfse-accent-color, #3858e9);
+					box-shadow: 0 0 0 1px var(--vxfse-accent-color, #3858e9);
 					outline: none;
 				}
 

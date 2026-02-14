@@ -27,7 +27,7 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
+	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
 	"attributes": {
@@ -102,6 +102,10 @@
 				"no"
 			]
 		},
+		"lightboxGroup": {
+			"type": "string",
+			"default": ""
+		},
 		"imageAlign": {
 			"type": "string",
 			"default": ""
@@ -162,52 +166,9 @@
 		"objectPosition_mobile": {
 			"type": "string"
 		},
-		"opacity": {
-			"type": "number"
-		},
-		"cssFilters": {
-			"type": "object",
-			"default": {}
-		},
-		"opacityHover": {
-			"type": "number"
-		},
-		"cssFiltersHover": {
-			"type": "object",
-			"default": {}
-		},
-		"transitionDuration": {
-			"type": "number"
-		},
 		"hoverAnimation": {
 			"type": "string",
 			"default": ""
-		},
-		"borderType": {
-			"type": "string",
-			"default": ""
-		},
-		"borderWidth": {
-			"type": "object",
-			"default": {}
-		},
-		"borderColor": {
-			"type": "string",
-			"default": ""
-		},
-		"borderRadius": {
-			"type": "object",
-			"default": {}
-		},
-		"borderRadius_tablet": {
-			"type": "object"
-		},
-		"borderRadius_mobile": {
-			"type": "object"
-		},
-		"boxShadow": {
-			"type": "object",
-			"default": {}
 		},
 		"aspectRatio": {
 			"type": "string",

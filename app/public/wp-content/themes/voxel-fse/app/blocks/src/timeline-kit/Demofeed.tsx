@@ -161,7 +161,7 @@ export default function Demofeed(): JSX.Element {
 						</div>
 						<div className="ts-form-group review-category">
 							<label>General</label>
-							<ul className="rs-num simplify-ul flexify">
+							<ul className="rs-num simplify-ul flexify" style={{ flexWrap: 'nowrap' }}>
 								<li>1 <span>Poor</span></li>
 								<li className="active">2 <span>Fair</span></li>
 								<li>3 <span>Good</span></li>

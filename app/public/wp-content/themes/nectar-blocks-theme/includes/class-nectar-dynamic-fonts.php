@@ -114,6 +114,7 @@ class Nectar_Dynamic_Fonts {
                 echo '}';
 
                 // Responsive settings.
+
                 if( isset($settings['fontSize']) ) {
                     echo self::get_font_size_rules($settings, $css_arr['selectors']);
                 }
@@ -190,7 +191,7 @@ class Nectar_Dynamic_Fonts {
 
     $css = '';
 
-    if( isset($settings['fontFamily']) ) {
+    if( isset($settings['fontFamily']) && ! empty($settings['fontFamily']) ) {
       if ( self::font_needs_quotes($settings['fontFamily']) ) {
         $css .= "font-family: '$settings[fontFamily]';";
       } else {
@@ -333,7 +334,19 @@ class Nectar_Dynamic_Fonts {
    */
   public static function get_font_size_rules(array $settings, string $selectors) {
     $css = '';
+    // Sometimes the order for devices is not always desktop, tablet, mobile so we need to sort it.
+    $sorted_settings = [];
+    foreach(['desktop', 'tablet', 'mobile'] as $device) {
+      if(isset($settings['fontSize'][$device])) {
+        $sorted_settings[$device] = $settings['fontSize'][$device];
+      }
+    }
+    $settings['fontSize'] = $sorted_settings;
     foreach( $settings['fontSize'] as $device => $size ) {
+
+      if( isset($size['disabled']) && $size['disabled'] === true ) {
+        continue;
+      }
 
       $clampValues = [
         'min' => isset($settings['fontSizeMin'][$device]) ? $settings['fontSizeMin'][$device] : false,
@@ -421,7 +434,7 @@ class Nectar_Dynamic_Fonts {
             #header-secondary-outer .nectar-center-text,
             #slide-out-widget-area .secondary-header-text,
             #nectar-nav #mobile-menu ul li a,
-            #nectar-nav #mobile-menu .secondary-header-text,  
+            #nectar-nav #mobile-menu .secondary-header-text,
             .nectar-mobile-only.mobile-header a',
 
             'key' => 'navigation_font_family',
@@ -502,8 +515,8 @@ class Nectar_Dynamic_Fonts {
 
         /******* Page Heading Font *******************************************/
         $rules[] = [
-            'selectors' => 'body #page-header-bg h1, 
-                html body .row .col.section-title h1, 
+            'selectors' => 'body #page-header-bg h1,
+                html body .row .col.section-title h1,
                 div[data-style="parallax_next_only"].blog_next_prev_buttons h3,
                 .full-width-content.blog_next_prev_buttons[data-style="fullwidth_next_only"] h3,
                 .featured-media-under-header h1,
@@ -516,9 +529,9 @@ class Nectar_Dynamic_Fonts {
         /******* Page Sub Heading Font *******************************************/
 
         $rules[] = [
-            'selectors' => 'body #page-header-bg .span_6 span.subheader, 
+            'selectors' => 'body #page-header-bg .span_6 span.subheader,
 			#page-header-bg span.result-num,
-			body .row .col.section-title > span, 
+			body .row .col.section-title > span,
 			.page-header-no-bg .col.section-title h1 > span',
 
             'key' => 'page_heading_subtitle_font_family',
@@ -535,7 +548,7 @@ class Nectar_Dynamic_Fonts {
 
         /******* Blog Single Post Content Font *******************************************/
         $rules[] = [
-            'selectors' => '.single-post .post-content, .featured-media-under-header__excerpt',
+            'selectors' => '.single-post .nectar_template_single__post, .single-post .post-content, .featured-media-under-header__excerpt',
 
             'key' => 'blog_single_post_content_font_family',
             'suffix' => '',

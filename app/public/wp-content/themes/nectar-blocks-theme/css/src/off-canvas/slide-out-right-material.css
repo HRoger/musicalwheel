@@ -3,7 +3,10 @@ Theme Name:  Nectar Blocks
 Description: Off canvas menu set to "Slide Out From Right" in theme options with Material Skin
 */
 
-
+:root {
+  --ocm-transition-duration: 0.7s;
+  --ocm-transition-easing: cubic-bezier(.15,0.2,.1,1);
+}
 #slide-out-widget-area.slide-out-from-right  {
   z-index: 10000;
 }
@@ -72,7 +75,8 @@ body.material #slide-out-widget-area.slide-out-from-right .off-canvas-menu-conta
 
 @media only screen and ( max-width: 1024px ) {
   #slide-out-widget-area.slide-out-from-right {
-    min-width: 100vw;
+    min-width: calc(100vw - (var(--offset, 0px) * 2));
+    --nectar-root-width: calc(100vw - (var(--offset, 0px) * 2));
   }
 }
 
@@ -96,9 +100,9 @@ body.material #slide-out-widget-area.slide-out-from-right .off-canvas-menu-conta
 #slide-out-widget-area.slide-out-from-right .inner > div,
 #slide-out-widget-area.slide-out-from-right .bottom-meta-wrap {
   -webkit-transform: translateX(50px);
-  -webkit-transition: all 0.7s cubic-bezier(.15,0.2,.1,1);
+  -webkit-transition: all var(--ocm-transition-duration) var(--ocm-transition-easing);
   transform: translateX(50px);
-  transition: all 0.7s cubic-bezier(.15,0.2,.1,1);
+  transition: all var(--ocm-transition-duration) var(--ocm-transition-easing);
 }
 #slide-out-widget-area.slide-out-from-right.material-open .inner > div,
 #slide-out-widget-area.slide-out-from-right.material-open .bottom-meta-wrap {
@@ -108,7 +112,7 @@ body.material #slide-out-widget-area.slide-out-from-right .off-canvas-menu-conta
 }
 
 body #slide-out-widget-area-bg.slide-out-from-right {
-  z-index: 100;
+  z-index: 9999;
 }
 
 body[data-slide-out-widget-area-style="slide-out-from-right"] #slide-out-widget-area {

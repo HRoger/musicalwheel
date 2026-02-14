@@ -1,7 +1,7 @@
 /**
  * StatusFeed Component
  *
- * Timeline feed with infinite scroll, filtering, and status list.
+ * Timeline feed with filtering and status list.
  * Matches Voxel's timeline feed HTML structure EXACTLY for CSS compatibility.
  *
  * Voxel HTML Structure (from templates/widgets/timeline/status-feed/status-feed.php):
@@ -10,10 +10,15 @@
  * - Empty state: <div class="ts-no-posts"><span class="ts-loader"></span></div>
  * - Load more: <a class="ts-load-more ts-btn ts-btn-1">Load more</a>
  *
+ * Load More behavior (Voxel parity):
+ * - Manual click only — Voxel uses @click.prevent="loadMore", NOT IntersectionObserver
+ * - Visible only when server returns has_more=true (v-if="hasMore")
+ * - Icon: reload.svg (circular arrow), NOT a partial circle
+ *
  * @package VoxelFSE
  */
 
-import { useCallback, useRef, useEffect, Fragment, forwardRef, useImperativeHandle } from 'react';
+import { useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useStatusFeed, type FeedFilters, useStrings, useTimelineAttributes, useTimelineConfig } from '../hooks';
 import { StatusItem } from './StatusItem';
 import { FeedFilters as FeedFiltersComponent } from './FeedFilters';
@@ -38,25 +43,25 @@ interface StatusFeedProps {
 	showSearch?: boolean;
 	emptyMessage?: string;
 	className?: string;
+	onLoadingChange?: (isLoading: boolean) => void;
 }
 
 /**
- * Loading icon component - matches Voxel's icon-loading
+ * Loading icon component - matches Voxel's reload.svg exactly
+ * Evidence: themes/voxel/assets/images/svgs/reload.svg
+ * Evidence: themes/voxel/app/widgets/timeline.php line 551:
+ *   'loading' => \Voxel\get_icon_markup(...) ?: \Voxel\get_svg('reload.svg')
  */
 const LoadingIcon = () => (
 	<svg
 		width="24"
 		height="24"
-		viewBox="0 0 24 24"
+		viewBox="0 0 25 24"
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
 	>
-		<path
-			d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-		/>
+		<path d="M21.6009 10.4593C22.001 10.3521 22.2384 9.94088 22.1312 9.54078C21.59 7.52089 20.3974 5.73603 18.7384 4.46302C17.0793 3.19001 15.0466 2.5 12.9555 2.5C10.8644 2.5 8.83164 3.19001 7.17262 4.46302C6.12405 5.26762 5.26179 6.2767 4.63257 7.42036L2.86504 6.92617C2.76093 6.89707 2.65423 6.89133 2.55153 6.9068C2.46222 6.91962 2.37374 6.94889 2.29039 6.99582C1.92945 7.19903 1.80158 7.65636 2.00479 8.0173L3.73942 11.0983C3.83701 11.2717 3.99946 11.3991 4.19104 11.4527C4.30333 11.4841 4.42023 11.4886 4.53266 11.4673C4.61373 11.4524 4.69254 11.4242 4.7657 11.383L7.84641 9.64831C8.11073 9.49948 8.25936 9.20608 8.22302 8.90493C8.18668 8.60378 7.9725 8.35417 7.68037 8.27249L6.1241 7.83737C6.6343 6.99996 7.29751 6.2579 8.08577 5.65305C9.48282 4.58106 11.1946 4 12.9555 4C14.7164 4 16.4282 4.58106 17.8252 5.65305C19.2223 6.72504 20.2266 8.22807 20.6823 9.92901C20.7895 10.3291 21.2008 10.5665 21.6009 10.4593Z" fill="currentColor"/>
+		<path d="M4.30739 13.5387C3.90729 13.6459 3.66985 14.0572 3.77706 14.4573C4.31829 16.4771 5.51089 18.262 7.16991 19.535C8.82892 20.808 10.8616 21.498 12.9528 21.498C15.0439 21.498 17.0766 20.808 18.7356 19.535C19.7859 18.7291 20.6493 17.7181 21.2787 16.5722L23.0083 17.0557C23.1218 17.0961 23.2447 17.1091 23.3661 17.0917C23.5554 17.0658 23.7319 16.968 23.8546 16.8116C24.0419 16.573 24.0669 16.245 23.9181 15.9807L22.1835 12.8996C22.0859 12.7263 21.9234 12.5988 21.7319 12.5453C21.64 12.5196 21.5451 12.5119 21.4521 12.5216C21.3493 12.5317 21.2488 12.5629 21.1571 12.6146L18.0764 14.3493C17.7155 14.5525 17.5876 15.0099 17.7909 15.3708C17.9016 15.5675 18.0879 15.695 18.2929 15.7373L19.7875 16.1552C19.2768 16.9949 18.6125 17.7388 17.8225 18.345C16.4255 19.417 14.7137 19.998 12.9528 19.998C11.1918 19.998 9.4801 19.417 8.08305 18.345C6.686 17.273 5.68171 15.77 5.22595 14.069C5.11874 13.6689 4.70749 13.4315 4.30739 13.5387Z" fill="currentColor"/>
 	</svg>
 );
 
@@ -92,6 +97,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 	showSearch = true,
 	emptyMessage,
 	className = '',
+	onLoadingChange,
 }, ref): JSX.Element {
 	const attributes = useTimelineAttributes();
 	const strings = useStrings();
@@ -146,9 +152,10 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		initialFilters.authorId = authorId;
 	}
 
-	// Get first ordering option as default
+	// Get first ordering option as default (use _id for Voxel parity)
 	if (attributes.orderingOptions?.length > 0) {
 		const firstOption = attributes.orderingOptions[0];
+		initialFilters.orderId = firstOption._id;
 		initialFilters.order = firstOption.order;
 		initialFilters.time = firstOption.time;
 		if (firstOption.time === 'custom') {
@@ -173,37 +180,42 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		filters,
 	} = useStatusFeed(feedMode, initialFilters);
 
+	// Sync active filter to first ordering option when ordering options change in inspector.
+	// This ensures the dropdown default follows the repeater item order.
+	// Uses _id for stable comparison (matches Voxel's Vue implementation).
+	const firstOrderingId = attributes.orderingOptions?.[0]?._id ?? null;
+	const prevFirstOrderingIdRef = useRef(firstOrderingId);
+	useEffect(() => {
+		if (firstOrderingId && firstOrderingId !== prevFirstOrderingIdRef.current) {
+			prevFirstOrderingIdRef.current = firstOrderingId;
+			const first = attributes.orderingOptions[0];
+			setFilters({
+				orderId: first._id,
+				order: first.order,
+				time: first.time,
+				timeCustom: first.time === 'custom' ? first.timeCustom : undefined,
+			});
+		}
+	}, [firstOrderingId, attributes.orderingOptions, setFilters]);
+
+	// Notify parent of loading state changes (for preloading opacity)
+	useEffect(() => {
+		onLoadingChange?.(isLoading);
+	}, [isLoading, onLoadingChange]);
+
 	// Expose addStatus and refresh to parent via ref
 	useImperativeHandle(ref, () => ({
 		addStatus,
 		refresh,
 	}), [addStatus, refresh]);
 
-	// Infinite scroll ref
-	const loadMoreRef = useRef<HTMLAnchorElement>(null);
-
-	// Setup intersection observer for infinite scroll
-	useEffect(() => {
-		if (!loadMoreRef.current || !hasMore || isLoadingMore) return;
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-					loadMore();
-				}
-			},
-			{
-				rootMargin: '200px',
-				threshold: 0,
-			}
-		);
-
-		observer.observe(loadMoreRef.current);
-
-		return () => {
-			observer.disconnect();
-		};
-	}, [hasMore, isLoadingMore, loadMore]);
+	// Note: Voxel uses manual click for Load More, NOT IntersectionObserver auto-scroll.
+	// Evidence: templates/widgets/timeline/status-feed/status-feed.php line 66-71:
+	//   <a href="#" @click.prevent="loadMore" ...>
+	// Previous IntersectionObserver caused infinite vx-pending blink loop when:
+	//   1. Button visible in viewport → observer fires loadMore()
+	//   2. AJAX completes → isLoadingMore=false → observer re-creates → fires again
+	//   3. Repeat indefinitely
 
 	// Handle filter changes
 	const handleFiltersChange = useCallback(
@@ -272,13 +284,15 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 							status={status}
 							onStatusUpdate={handleStatusUpdate}
 							onStatusDelete={handleStatusDelete}
+							onQuote={addStatus}
 						/>
 					))}
 
 					{/* Load More - matches Voxel's ts-load-more ts-btn ts-btn-1 */}
-					{hasMore && (
+					{/* Voxel: v-if="hasMore" — only shows when server confirms more pages */}
+					{/* Voxel: @click.prevent="loadMore" — manual click only, no auto-scroll */}
+					{hasMore && !isLoading && (
 						<a
-							ref={loadMoreRef}
 							href="#"
 							onClick={(e) => { e.preventDefault(); loadMore(); }}
 							className={`ts-load-more ts-btn ts-btn-1 ${isLoadingMore ? 'vx-pending' : ''}`}

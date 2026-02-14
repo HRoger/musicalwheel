@@ -311,6 +311,12 @@ export default function StyleTab({ attributes, setAttributes }: MapComponentProp
                     value={attributes.checkmarkIcon}
                     onChange={(value) => setAttrs({ checkmarkIcon: value })}
                 />
+
+                <IconPickerControl
+                    label={__('Search icon', 'voxel-fse')}
+                    value={attributes.searchIcon}
+                    onChange={(value) => setAttrs({ searchIcon: value })}
+                />
             </AccordionPanel>
 
             {/* Style Tab - Next/Prev Buttons */}
@@ -392,6 +398,15 @@ export default function StyleTab({ attributes, setAttributes }: MapComponentProp
                     onChange={(value) =>
                         setAttrs({ navBtnBorderColorHover: value })
                     }
+                />
+            </AccordionPanel>
+
+            {/* Style Tab - Geolocation Button */}
+            <AccordionPanel id="geolocation-button" title={__('Geolocation button', 'voxel-fse')}>
+                <IconPickerControl
+                    label={__('Geolocation icon', 'voxel-fse')}
+                    value={attributes.geolocationIcon}
+                    onChange={(value) => setAttrs({ geolocationIcon: value })}
                 />
             </AccordionPanel>
         </AccordionPanelGroup>

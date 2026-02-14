@@ -9,12 +9,19 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import type { VisitChartAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 
+
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
 
 // Register the block
 registerBlockType(metadata.name, {
@@ -27,4 +34,5 @@ registerBlockType(metadata.name, {
 	),
 	edit: Edit,
 	save,
+	deprecated,
 } as any);

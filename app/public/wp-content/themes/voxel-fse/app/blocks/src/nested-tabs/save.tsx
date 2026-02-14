@@ -281,7 +281,7 @@ export default function save({ attributes }: SaveProps) {
 								key={tab.id}
 								id={tabId}
 								data-tab-title-id={tabTitleId}
-								className={`e-n-tab-title${isFirst ? ' e-active' : ''}`}
+								className={`e-n-tab-title${isFirst ? ' e-active' : ''}${attributes.tabsHoverAnimation ? ` elementor-animation-${attributes.tabsHoverAnimation}` : ''}`}
 								data-tab-index={tabCount}
 								role="tab"
 								aria-selected={isFirst ? 'true' : 'false'}

@@ -133,9 +133,9 @@ export function ResponsiveIconButtonGroup({
 							minWidth: '36px',
 							height: '36px',
 							padding: '0',
-							backgroundColor: currentValue === opt.value ? '#2271b1' : '#f0f0f1',
+							backgroundColor: currentValue === opt.value ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
 							color: currentValue === opt.value ? '#ffffff' : '#1e1e1e',
-							borderColor: currentValue === opt.value ? '#2271b1' : '#dcdcde',
+							borderColor: currentValue === opt.value ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
 							transition: 'all 0.2s ease',
 						}}
 						label={opt.label}

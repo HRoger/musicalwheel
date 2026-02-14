@@ -143,9 +143,15 @@ export function generateCurrentRoleResponsiveCSS(
         mobileRules.push(`${selector} .ts-panel { border-radius: ${attributes['panelRadius_mobile']}px; }`);
     }
 
-    // Background - panel_bg
+    // Background - panel_bg (responsive)
     if (attributes.panelBg) {
         cssRules.push(`${selector} .ts-panel { background-color: ${attributes.panelBg}; }`);
+    }
+    if (attributes['panelBg_tablet']) {
+        tabletRules.push(`${selector} .ts-panel { background-color: ${attributes['panelBg_tablet']}; }`);
+    }
+    if (attributes['panelBg_mobile']) {
+        mobileRules.push(`${selector} .ts-panel { background-color: ${attributes['panelBg_mobile']}; }`);
     }
 
     // Box Shadow - panel_shadow
@@ -161,11 +167,23 @@ export function generateCurrentRoleResponsiveCSS(
     // Source: current-role.php
     // ============================================
 
-    // Padding - head_padding
+    // Padding - head_padding (responsive)
     if (attributes.headPadding) {
         const paddingCSS = generateDimensionsCSS(attributes.headPadding, 'padding');
         if (paddingCSS) {
             cssRules.push(`${selector} .ac-head { ${paddingCSS} }`);
+        }
+    }
+    if (attributes['headPadding_tablet']) {
+        const paddingCSS = generateDimensionsCSS(attributes['headPadding_tablet'], 'padding');
+        if (paddingCSS) {
+            tabletRules.push(`${selector} .ac-head { ${paddingCSS} }`);
+        }
+    }
+    if (attributes['headPadding_mobile']) {
+        const paddingCSS = generateDimensionsCSS(attributes['headPadding_mobile'], 'padding');
+        if (paddingCSS) {
+            mobileRules.push(`${selector} .ac-head { ${paddingCSS} }`);
         }
     }
 
@@ -197,10 +215,18 @@ export function generateCurrentRoleResponsiveCSS(
         mobileRules.push(`${selector} .ts-panel .ac-head svg { margin-right: ${attributes['headIcoMargin_mobile']}px; }`);
     }
 
-    // Icon color - head_ico_col
+    // Icon color - head_ico_col (responsive)
     if (attributes.headIcoCol) {
         cssRules.push(`${selector} .ts-panel .ac-head i { color: ${attributes.headIcoCol}; }`);
         cssRules.push(`${selector} .ts-panel .ac-head svg { fill: ${attributes.headIcoCol}; }`);
+    }
+    if (attributes['headIcoCol_tablet']) {
+        tabletRules.push(`${selector} .ts-panel .ac-head i { color: ${attributes['headIcoCol_tablet']}; }`);
+        tabletRules.push(`${selector} .ts-panel .ac-head svg { fill: ${attributes['headIcoCol_tablet']}; }`);
+    }
+    if (attributes['headIcoCol_mobile']) {
+        mobileRules.push(`${selector} .ts-panel .ac-head i { color: ${attributes['headIcoCol_mobile']}; }`);
+        mobileRules.push(`${selector} .ts-panel .ac-head svg { fill: ${attributes['headIcoCol_mobile']}; }`);
     }
 
     // Typography - head_typo
@@ -211,14 +237,26 @@ export function generateCurrentRoleResponsiveCSS(
         }
     }
 
-    // Text color - head_typo_col
+    // Text color - head_typo_col (responsive)
     if (attributes.headTypoCol) {
         cssRules.push(`${selector} .ts-panel .ac-head b { color: ${attributes.headTypoCol}; }`);
     }
+    if (attributes['headTypoCol_tablet']) {
+        tabletRules.push(`${selector} .ts-panel .ac-head b { color: ${attributes['headTypoCol_tablet']}; }`);
+    }
+    if (attributes['headTypoCol_mobile']) {
+        mobileRules.push(`${selector} .ts-panel .ac-head b { color: ${attributes['headTypoCol_mobile']}; }`);
+    }
 
-    // Separator color - head_border_col
+    // Separator color - head_border_col (responsive)
     if (attributes.headBorderCol) {
-        cssRules.push(`${selector} .ts-panel .ac-head { border-color: ${attributes.headBorderCol}; }`); // Voxel uses border-color for ac-head (usually border-bottom)
+        cssRules.push(`${selector} .ts-panel .ac-head { border-color: ${attributes.headBorderCol}; }`);
+    }
+    if (attributes['headBorderCol_tablet']) {
+        tabletRules.push(`${selector} .ts-panel .ac-head { border-color: ${attributes['headBorderCol_tablet']}; }`);
+    }
+    if (attributes['headBorderCol_mobile']) {
+        mobileRules.push(`${selector} .ts-panel .ac-head { border-color: ${attributes['headBorderCol_mobile']}; }`);
     }
 
     // ============================================
@@ -261,9 +299,15 @@ export function generateCurrentRoleResponsiveCSS(
         }
     }
 
-    // Text color - body_typo_col
+    // Text color - body_typo_col (responsive)
     if (attributes.bodyTypoCol) {
         cssRules.push(`${selector} .ts-panel .ac-body p { color: ${attributes.bodyTypoCol}; }`);
+    }
+    if (attributes['bodyTypoCol_tablet']) {
+        tabletRules.push(`${selector} .ts-panel .ac-body p { color: ${attributes['bodyTypoCol_tablet']}; }`);
+    }
+    if (attributes['bodyTypoCol_mobile']) {
+        mobileRules.push(`${selector} .ts-panel .ac-body p { color: ${attributes['bodyTypoCol_mobile']}; }`);
     }
 
     // ============================================
@@ -306,16 +350,34 @@ export function generateCurrentRoleResponsiveCSS(
         mobileRules.push(`${selector} .ts-btn-1 { border-radius: ${attributes['scndBtnRadius_mobile']}px; }`);
     }
 
-    // Text color - scnd_btn_c
+    // Text color - scnd_btn_c (responsive)
     if (attributes.scndBtnC) {
         cssRules.push(`${selector} .ts-btn-1 { color: ${attributes.scndBtnC}; }`);
     }
+    if (attributes['scndBtnC_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1 { color: ${attributes['scndBtnC_tablet']}; }`);
+    }
+    if (attributes['scndBtnC_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1 { color: ${attributes['scndBtnC_mobile']}; }`);
+    }
 
-    // Padding - scnd_btn_padding
+    // Padding - scnd_btn_padding (responsive)
     if (attributes.scndBtnPadding) {
         const paddingCSS = generateDimensionsCSS(attributes.scndBtnPadding, 'padding');
         if (paddingCSS) {
             cssRules.push(`${selector} .ts-btn-1 { ${paddingCSS} }`);
+        }
+    }
+    if (attributes['scndBtnPadding_tablet']) {
+        const paddingCSS = generateDimensionsCSS(attributes['scndBtnPadding_tablet'], 'padding');
+        if (paddingCSS) {
+            tabletRules.push(`${selector} .ts-btn-1 { ${paddingCSS} }`);
+        }
+    }
+    if (attributes['scndBtnPadding_mobile']) {
+        const paddingCSS = generateDimensionsCSS(attributes['scndBtnPadding_mobile'], 'padding');
+        if (paddingCSS) {
+            mobileRules.push(`${selector} .ts-btn-1 { ${paddingCSS} }`);
         }
     }
 
@@ -330,9 +392,15 @@ export function generateCurrentRoleResponsiveCSS(
         mobileRules.push(`${selector} .ts-btn-1 { height: ${attributes['scndBtnHeight_mobile']}px; }`);
     }
 
-    // Background color - scnd_btn_bg
+    // Background color - scnd_btn_bg (responsive)
     if (attributes.scndBtnBg) {
         cssRules.push(`${selector} .ts-btn-1 { background: ${attributes.scndBtnBg}; }`);
+    }
+    if (attributes['scndBtnBg_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1 { background: ${attributes['scndBtnBg_tablet']}; }`);
+    }
+    if (attributes['scndBtnBg_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1 { background: ${attributes['scndBtnBg_mobile']}; }`);
     }
 
     // Border - scnd_btn_border
@@ -368,10 +436,18 @@ export function generateCurrentRoleResponsiveCSS(
         mobileRules.push(`${selector} .ts-btn-1 { grid-gap: ${attributes['scndBtnIconPad_mobile']}px; }`);
     }
 
-    // Icon color - scnd_btn_icon_color
+    // Icon color - scnd_btn_icon_color (responsive)
     if (attributes.scndBtnIconColor) {
         cssRules.push(`${selector} .ts-btn-1 i { color: ${attributes.scndBtnIconColor}; }`);
         cssRules.push(`${selector} .ts-btn-1 svg { fill: ${attributes.scndBtnIconColor}; }`);
+    }
+    if (attributes['scndBtnIconColor_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1 i { color: ${attributes['scndBtnIconColor_tablet']}; }`);
+        tabletRules.push(`${selector} .ts-btn-1 svg { fill: ${attributes['scndBtnIconColor_tablet']}; }`);
+    }
+    if (attributes['scndBtnIconColor_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1 i { color: ${attributes['scndBtnIconColor_mobile']}; }`);
+        mobileRules.push(`${selector} .ts-btn-1 svg { fill: ${attributes['scndBtnIconColor_mobile']}; }`);
     }
 
     // ============================================
@@ -379,25 +455,51 @@ export function generateCurrentRoleResponsiveCSS(
     // Source: current-role.php
     // ============================================
 
-    // Text color (Hover) - scnd_btn_c_h
+    // Text color (Hover) - scnd_btn_c_h (responsive)
     if (attributes.scndBtnCH) {
         cssRules.push(`${selector} .ts-btn-1:hover { color: ${attributes.scndBtnCH}; }`);
     }
+    if (attributes['scndBtnCH_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1:hover { color: ${attributes['scndBtnCH_tablet']}; }`);
+    }
+    if (attributes['scndBtnCH_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1:hover { color: ${attributes['scndBtnCH_mobile']}; }`);
+    }
 
-    // Background color (Hover) - scnd_btn_bg_h
+    // Background color (Hover) - scnd_btn_bg_h (responsive)
     if (attributes.scndBtnBgH) {
         cssRules.push(`${selector} .ts-btn-1:hover { background: ${attributes.scndBtnBgH}; }`);
     }
+    if (attributes['scndBtnBgH_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1:hover { background: ${attributes['scndBtnBgH_tablet']}; }`);
+    }
+    if (attributes['scndBtnBgH_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1:hover { background: ${attributes['scndBtnBgH_mobile']}; }`);
+    }
 
-    // Border color (Hover) - scnd_btn_border_h
+    // Border color (Hover) - scnd_btn_border_h (responsive)
     if (attributes.scndBtnBorderH) {
         cssRules.push(`${selector} .ts-btn-1:hover { border-color: ${attributes.scndBtnBorderH}; }`);
     }
+    if (attributes['scndBtnBorderH_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1:hover { border-color: ${attributes['scndBtnBorderH_tablet']}; }`);
+    }
+    if (attributes['scndBtnBorderH_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1:hover { border-color: ${attributes['scndBtnBorderH_mobile']}; }`);
+    }
 
-    // Icon color (Hover) - scnd_btn_icon_color_h
+    // Icon color (Hover) - scnd_btn_icon_color_h (responsive)
     if (attributes.scndBtnIconColorH) {
         cssRules.push(`${selector} .ts-btn-1:hover i { color: ${attributes.scndBtnIconColorH}; }`);
         cssRules.push(`${selector} .ts-btn-1:hover svg { fill: ${attributes.scndBtnIconColorH}; }`);
+    }
+    if (attributes['scndBtnIconColorH_tablet']) {
+        tabletRules.push(`${selector} .ts-btn-1:hover i { color: ${attributes['scndBtnIconColorH_tablet']}; }`);
+        tabletRules.push(`${selector} .ts-btn-1:hover svg { fill: ${attributes['scndBtnIconColorH_tablet']}; }`);
+    }
+    if (attributes['scndBtnIconColorH_mobile']) {
+        mobileRules.push(`${selector} .ts-btn-1:hover i { color: ${attributes['scndBtnIconColorH_mobile']}; }`);
+        mobileRules.push(`${selector} .ts-btn-1:hover svg { fill: ${attributes['scndBtnIconColorH_mobile']}; }`);
     }
 
     // ============================================

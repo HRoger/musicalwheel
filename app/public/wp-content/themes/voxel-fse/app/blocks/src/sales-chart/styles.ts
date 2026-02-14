@@ -55,15 +55,15 @@ export function generateSalesChartResponsiveCSS(attributes: SalesChartAttributes
         desktopRules.push(`${axisSelector} { color: ${attributes.ts_axis_typo_col}; }`);
     }
 
-    // Vertical axis width
+    // Vertical axis width (RTL-aware: Voxel uses margin-right in bar-chart-rtl.css)
     if (attributes.vertical_axis_width !== undefined) {
-        desktopRules.push(`${selector} .chart-content.min-scroll { margin-left: ${attributes.vertical_axis_width}px; }`);
+        desktopRules.push(`${selector} .chart-content.min-scroll { margin-inline-start: ${attributes.vertical_axis_width}px; }`);
     }
     if (attributes.vertical_axis_width_tablet !== undefined) {
-        tabletRules.push(`${selector} .chart-content.min-scroll { margin-left: ${attributes.vertical_axis_width_tablet}px; }`);
+        tabletRules.push(`${selector} .chart-content.min-scroll { margin-inline-start: ${attributes.vertical_axis_width_tablet}px; }`);
     }
     if (attributes.vertical_axis_width_mobile !== undefined) {
-        mobileRules.push(`${selector} .chart-content.min-scroll { margin-left: ${attributes.vertical_axis_width_mobile}px; }`);
+        mobileRules.push(`${selector} .chart-content.min-scroll { margin-inline-start: ${attributes.vertical_axis_width_mobile}px; }`);
     }
 
     // Chart lines border

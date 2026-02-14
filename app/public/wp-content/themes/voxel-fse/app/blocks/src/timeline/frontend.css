@@ -79,6 +79,13 @@
 	display: block;
 }
 
+/* Preloading state - faded opacity while refetching after attribute changes */
+.vxfeed--loading {
+	opacity: 0.45;
+	pointer-events: none;
+	transition: opacity 0.2s ease;
+}
+
 /* Edit mode styling */
 .vxf-edit-mode {
 	width: 100%;
@@ -89,3 +96,44 @@
 	padding: 0;
 }
 
+
+
+/* Fix footer wrapper height - matches Voxel's inline style="height: auto;" */
+.vxf-footer-wrapper {
+	height: auto;
+}
+
+/*
+ * Composer layout fix - Voxel's social-feed.css sets display:flow-root on
+ * .vxf-create-post, which overrides .flexify's display:flex (loaded earlier
+ * in commons.css). In Voxel's Vue, the transition-height component sets
+ * explicit pixel height on the footer-wrapper, making the flow-root parent grow.
+ *
+ * In React we don't have transition-height, so we force display:flex with
+ * flex-direction:column on the expanded composer. This ensures the flex
+ * container naturally sizes to include the footer-wrapper (images + buttons).
+ * Higher specificity selector (.voxel-fse-timeline-frontend .vxf-create-post)
+ * guarantees this overrides both social-feed.css and commons.css.
+ */
+.voxel-fse-timeline-frontend .vxf-create-post.vxf-expanded {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: nowrap;
+}
+
+/*
+ * Defensive overflow fixes - ensure post containers never clip content.
+ * Voxel's social-feed.css does NOT set overflow:hidden on these,
+ * but WordPress block wrappers or theme layout CSS might.
+ */
+.voxel-fse-timeline-frontend .vxf-subgrid,
+.voxel-fse-timeline-frontend .vxf-post,
+.voxel-fse-timeline-frontend .vxf-body,
+.voxel-fse-timeline-frontend .vxf-footer {
+	overflow: visible;
+}
+
+/* Ensure the block wrapper itself doesn't clip */
+.voxel-fse-timeline-frontend {
+	overflow: visible;
+}

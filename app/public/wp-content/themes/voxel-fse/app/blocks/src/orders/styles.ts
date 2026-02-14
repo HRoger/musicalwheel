@@ -21,6 +21,16 @@ import type { OrdersBlockAttributes } from './types';
 // ============================================================================
 
 /**
+ * Check if a numeric attribute has been explicitly set by the user.
+ * Attributes defaulting to 0 in block.json should NOT generate CSS
+ * (0px height, 0px font-size, etc. would break Voxel's default styles).
+ * Only generate CSS when the user has explicitly set a value > 0.
+ */
+function isSet(value: number | undefined): boolean {
+	return value !== undefined && value > 0;
+}
+
+/**
  * Generate dimensions CSS (padding, margin)
  */
 function generateDimensionsCSS(
@@ -34,6 +44,8 @@ function generateDimensionsCSS(
 	const right = parseFloat(String(dimensions.right)) || 0;
 	const bottom = parseFloat(String(dimensions.bottom)) || 0;
 	const left = parseFloat(String(dimensions.left)) || 0;
+	// Only generate if at least one value is non-zero
+	if (top === 0 && right === 0 && bottom === 0 && left === 0) return '';
 	return `${property}: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit};`;
 }
 
@@ -118,15 +130,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Spacing (desktop)
-	if (attributes.generalSpacing !== undefined) {
+	if (isSet(attributes.generalSpacing)) {
 		cssRules.push(`${selector} .widget-head { margin-bottom: ${attributes.generalSpacing}px; }`);
 	}
 	// Spacing (tablet)
-	if (attributes.generalSpacing_tablet !== undefined) {
+	if (isSet(attributes.generalSpacing_tablet)) {
 		tabletRules.push(`${selector} .widget-head { margin-bottom: ${attributes.generalSpacing_tablet}px; }`);
 	}
 	// Spacing (mobile)
-	if (attributes.generalSpacing_mobile !== undefined) {
+	if (isSet(attributes.generalSpacing_mobile)) {
 		mobileRules.push(`${selector} .widget-head { margin-bottom: ${attributes.generalSpacing_mobile}px; }`);
 	}
 
@@ -151,15 +163,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Primary button border radius (desktop)
-	if (attributes.primaryBtnBorderRadius !== undefined) {
+	if (isSet(attributes.primaryBtnBorderRadius)) {
 		cssRules.push(`${selector} .ts-btn-2 { border-radius: ${attributes.primaryBtnBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.primaryBtnBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.primaryBtnBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-2 { border-radius: ${attributes.primaryBtnBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.primaryBtnBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.primaryBtnBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-2 { border-radius: ${attributes.primaryBtnBorderRadius_mobile}px; }`);
 	}
 
@@ -182,17 +194,17 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Primary button icon size (desktop)
-	if (attributes.primaryBtnIconSize !== undefined) {
+	if (isSet(attributes.primaryBtnIconSize)) {
 		cssRules.push(`${selector} .ts-btn-2 i { font-size: ${attributes.primaryBtnIconSize}px; }`);
 		cssRules.push(`${selector} .ts-btn-2 svg { width: ${attributes.primaryBtnIconSize}px; height: ${attributes.primaryBtnIconSize}px; }`);
 	}
 	// Icon size (tablet)
-	if (attributes.primaryBtnIconSize_tablet !== undefined) {
+	if (isSet(attributes.primaryBtnIconSize_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-2 i { font-size: ${attributes.primaryBtnIconSize_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-btn-2 svg { width: ${attributes.primaryBtnIconSize_tablet}px; height: ${attributes.primaryBtnIconSize_tablet}px; }`);
 	}
 	// Icon size (mobile)
-	if (attributes.primaryBtnIconSize_mobile !== undefined) {
+	if (isSet(attributes.primaryBtnIconSize_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-2 i { font-size: ${attributes.primaryBtnIconSize_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-btn-2 svg { width: ${attributes.primaryBtnIconSize_mobile}px; height: ${attributes.primaryBtnIconSize_mobile}px; }`);
 	}
@@ -204,17 +216,17 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Primary button icon spacing (desktop)
-	if (attributes.primaryBtnIconSpacing !== undefined) {
+	if (isSet(attributes.primaryBtnIconSpacing)) {
 		cssRules.push(`${selector} .ts-btn-2 i { margin-right: ${attributes.primaryBtnIconSpacing}px; }`);
 		cssRules.push(`${selector} .ts-btn-2 svg { margin-right: ${attributes.primaryBtnIconSpacing}px; }`);
 	}
 	// Icon spacing (tablet)
-	if (attributes.primaryBtnIconSpacing_tablet !== undefined) {
+	if (isSet(attributes.primaryBtnIconSpacing_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-2 i { margin-right: ${attributes.primaryBtnIconSpacing_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-btn-2 svg { margin-right: ${attributes.primaryBtnIconSpacing_tablet}px; }`);
 	}
 	// Icon spacing (mobile)
-	if (attributes.primaryBtnIconSpacing_mobile !== undefined) {
+	if (isSet(attributes.primaryBtnIconSpacing_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-2 i { margin-right: ${attributes.primaryBtnIconSpacing_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-btn-2 svg { margin-right: ${attributes.primaryBtnIconSpacing_mobile}px; }`);
 	}
@@ -251,33 +263,33 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Secondary button icon size (desktop)
-	if (attributes.secondaryBtnIconSize !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSize)) {
 		cssRules.push(`${selector} .ts-btn-1 i { font-size: ${attributes.secondaryBtnIconSize}px; }`);
 		cssRules.push(`${selector} .ts-btn-1 svg { width: ${attributes.secondaryBtnIconSize}px; height: ${attributes.secondaryBtnIconSize}px; }`);
 	}
 	// Icon size (tablet)
-	if (attributes.secondaryBtnIconSize_tablet !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSize_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-1 i { font-size: ${attributes.secondaryBtnIconSize_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-btn-1 svg { width: ${attributes.secondaryBtnIconSize_tablet}px; height: ${attributes.secondaryBtnIconSize_tablet}px; }`);
 	}
 	// Icon size (mobile)
-	if (attributes.secondaryBtnIconSize_mobile !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSize_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-1 i { font-size: ${attributes.secondaryBtnIconSize_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-btn-1 svg { width: ${attributes.secondaryBtnIconSize_mobile}px; height: ${attributes.secondaryBtnIconSize_mobile}px; }`);
 	}
 
 	// Secondary button icon spacing (desktop)
-	if (attributes.secondaryBtnIconSpacing !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSpacing)) {
 		cssRules.push(`${selector} .ts-btn-1 i { margin-right: ${attributes.secondaryBtnIconSpacing}px; }`);
 		cssRules.push(`${selector} .ts-btn-1 svg { margin-right: ${attributes.secondaryBtnIconSpacing}px; }`);
 	}
 	// Icon spacing (tablet)
-	if (attributes.secondaryBtnIconSpacing_tablet !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSpacing_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-1 i { margin-right: ${attributes.secondaryBtnIconSpacing_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-btn-1 svg { margin-right: ${attributes.secondaryBtnIconSpacing_tablet}px; }`);
 	}
 	// Icon spacing (mobile)
-	if (attributes.secondaryBtnIconSpacing_mobile !== undefined) {
+	if (isSet(attributes.secondaryBtnIconSpacing_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-1 i { margin-right: ${attributes.secondaryBtnIconSpacing_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-btn-1 svg { margin-right: ${attributes.secondaryBtnIconSpacing_mobile}px; }`);
 	}
@@ -296,15 +308,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Secondary button border radius (desktop)
-	if (attributes.secondaryBtnBorderRadius !== undefined) {
+	if (isSet(attributes.secondaryBtnBorderRadius)) {
 		cssRules.push(`${selector} .ts-btn-1 { border-radius: ${attributes.secondaryBtnBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.secondaryBtnBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.secondaryBtnBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .ts-btn-1 { border-radius: ${attributes.secondaryBtnBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.secondaryBtnBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.secondaryBtnBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .ts-btn-1 { border-radius: ${attributes.secondaryBtnBorderRadius_mobile}px; }`);
 	}
 
@@ -354,15 +366,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Card border radius (desktop)
-	if (attributes.cardBorderRadius !== undefined) {
+	if (isSet(attributes.cardBorderRadius)) {
 		cssRules.push(`${selector} .vx-order-card { border-radius: ${attributes.cardBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.cardBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.cardBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .vx-order-card { border-radius: ${attributes.cardBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.cardBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.cardBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .vx-order-card { border-radius: ${attributes.cardBorderRadius_mobile}px; }`);
 	}
 
@@ -375,28 +387,28 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Avatar size (desktop)
-	if (attributes.cardAvatarSize !== undefined) {
+	if (isSet(attributes.cardAvatarSize)) {
 		cssRules.push(`${selector} .vx-order-card .vx-avatar { width: ${attributes.cardAvatarSize}px; height: ${attributes.cardAvatarSize}px; }`);
 	}
 	// Avatar size (tablet)
-	if (attributes.cardAvatarSize_tablet !== undefined) {
+	if (isSet(attributes.cardAvatarSize_tablet)) {
 		tabletRules.push(`${selector} .vx-order-card .vx-avatar { width: ${attributes.cardAvatarSize_tablet}px; height: ${attributes.cardAvatarSize_tablet}px; }`);
 	}
 	// Avatar size (mobile)
-	if (attributes.cardAvatarSize_mobile !== undefined) {
+	if (isSet(attributes.cardAvatarSize_mobile)) {
 		mobileRules.push(`${selector} .vx-order-card .vx-avatar { width: ${attributes.cardAvatarSize_mobile}px; height: ${attributes.cardAvatarSize_mobile}px; }`);
 	}
 
 	// Avatar border radius (desktop)
-	if (attributes.cardAvatarBorderRadius !== undefined) {
+	if (isSet(attributes.cardAvatarBorderRadius)) {
 		cssRules.push(`${selector} .vx-order-card .vx-avatar { border-radius: ${attributes.cardAvatarBorderRadius}px; }`);
 	}
 	// Avatar border radius (tablet)
-	if (attributes.cardAvatarBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.cardAvatarBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .vx-order-card .vx-avatar { border-radius: ${attributes.cardAvatarBorderRadius_tablet}px; }`);
 	}
 	// Avatar border radius (mobile)
-	if (attributes.cardAvatarBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.cardAvatarBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .vx-order-card .vx-avatar { border-radius: ${attributes.cardAvatarBorderRadius_mobile}px; }`);
 	}
 
@@ -419,15 +431,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Order ID border radius (desktop)
-	if (attributes.cardOrderIdBorderRadius !== undefined) {
+	if (isSet(attributes.cardOrderIdBorderRadius)) {
 		cssRules.push(`${selector} .vx-order-card .order-badge { border-radius: ${attributes.cardOrderIdBorderRadius}px; }`);
 	}
 	// Order ID border radius (tablet)
-	if (attributes.cardOrderIdBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.cardOrderIdBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .vx-order-card .order-badge { border-radius: ${attributes.cardOrderIdBorderRadius_tablet}px; }`);
 	}
 	// Order ID border radius (mobile)
-	if (attributes.cardOrderIdBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.cardOrderIdBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .vx-order-card .order-badge { border-radius: ${attributes.cardOrderIdBorderRadius_mobile}px; }`);
 	}
 
@@ -478,15 +490,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Status border radius (desktop)
-	if (attributes.statusBorderRadius !== undefined) {
+	if (isSet(attributes.statusBorderRadius)) {
 		cssRules.push(`${selector} .order-status { border-radius: ${attributes.statusBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.statusBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.statusBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .order-status { border-radius: ${attributes.statusBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.statusBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.statusBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .order-status { border-radius: ${attributes.statusBorderRadius_mobile}px; }`);
 	}
 
@@ -523,28 +535,28 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	// ============================================
 
 	// Filter height (desktop)
-	if (attributes.filterHeight !== undefined) {
+	if (isSet(attributes.filterHeight)) {
 		cssRules.push(`${selector} .ts-filter { height: ${attributes.filterHeight}px; }`);
 	}
 	// Filter height (tablet)
-	if (attributes.filterHeight_tablet !== undefined) {
+	if (isSet(attributes.filterHeight_tablet)) {
 		tabletRules.push(`${selector} .ts-filter { height: ${attributes.filterHeight_tablet}px; }`);
 	}
 	// Filter height (mobile)
-	if (attributes.filterHeight_mobile !== undefined) {
+	if (isSet(attributes.filterHeight_mobile)) {
 		mobileRules.push(`${selector} .ts-filter { height: ${attributes.filterHeight_mobile}px; }`);
 	}
 
 	// Filter border radius (desktop)
-	if (attributes.filterBorderRadius !== undefined) {
+	if (isSet(attributes.filterBorderRadius)) {
 		cssRules.push(`${selector} .ts-filter { border-radius: ${attributes.filterBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.filterBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.filterBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .ts-filter { border-radius: ${attributes.filterBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.filterBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.filterBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .ts-filter { border-radius: ${attributes.filterBorderRadius_mobile}px; }`);
 	}
 
@@ -637,15 +649,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Filter dropdown border width (desktop)
-	if (attributes.filterDropdownBorderWidth !== undefined) {
+	if (isSet(attributes.filterDropdownBorderWidth)) {
 		cssRules.push(`${selector} .ts-filter.ts-filled { border-width: ${attributes.filterDropdownBorderWidth}px; }`);
 	}
 	// Border width (tablet)
-	if (attributes.filterDropdownBorderWidth_tablet !== undefined) {
+	if (isSet(attributes.filterDropdownBorderWidth_tablet)) {
 		tabletRules.push(`${selector} .ts-filter.ts-filled { border-width: ${attributes.filterDropdownBorderWidth_tablet}px; }`);
 	}
 	// Border width (mobile)
-	if (attributes.filterDropdownBorderWidth_mobile !== undefined) {
+	if (isSet(attributes.filterDropdownBorderWidth_mobile)) {
 		mobileRules.push(`${selector} .ts-filter.ts-filled { border-width: ${attributes.filterDropdownBorderWidth_mobile}px; }`);
 	}
 
@@ -673,17 +685,17 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Filter input icon size (desktop)
-	if (attributes.filterInputIconSize !== undefined) {
+	if (isSet(attributes.filterInputIconSize)) {
 		cssRules.push(`${selector} .ts-input-icon i { font-size: ${attributes.filterInputIconSize}px; }`);
 		cssRules.push(`${selector} .ts-input-icon svg { width: ${attributes.filterInputIconSize}px; height: ${attributes.filterInputIconSize}px; }`);
 	}
 	// Icon size (tablet)
-	if (attributes.filterInputIconSize_tablet !== undefined) {
+	if (isSet(attributes.filterInputIconSize_tablet)) {
 		tabletRules.push(`${selector} .ts-input-icon i { font-size: ${attributes.filterInputIconSize_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-input-icon svg { width: ${attributes.filterInputIconSize_tablet}px; height: ${attributes.filterInputIconSize_tablet}px; }`);
 	}
 	// Icon size (mobile)
-	if (attributes.filterInputIconSize_mobile !== undefined) {
+	if (isSet(attributes.filterInputIconSize_mobile)) {
 		mobileRules.push(`${selector} .ts-input-icon i { font-size: ${attributes.filterInputIconSize_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-input-icon svg { width: ${attributes.filterInputIconSize_mobile}px; height: ${attributes.filterInputIconSize_mobile}px; }`);
 	}
@@ -695,17 +707,17 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Filter input icon margin (desktop)
-	if (attributes.filterInputIconMargin !== undefined) {
+	if (isSet(attributes.filterInputIconMargin)) {
 		cssRules.push(`${selector} .ts-input-icon i { margin-right: ${attributes.filterInputIconMargin}px; }`);
 		cssRules.push(`${selector} .ts-input-icon svg { margin-right: ${attributes.filterInputIconMargin}px; }`);
 	}
 	// Icon margin (tablet)
-	if (attributes.filterInputIconMargin_tablet !== undefined) {
+	if (isSet(attributes.filterInputIconMargin_tablet)) {
 		tabletRules.push(`${selector} .ts-input-icon i { margin-right: ${attributes.filterInputIconMargin_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-input-icon svg { margin-right: ${attributes.filterInputIconMargin_tablet}px; }`);
 	}
 	// Icon margin (mobile)
-	if (attributes.filterInputIconMargin_mobile !== undefined) {
+	if (isSet(attributes.filterInputIconMargin_mobile)) {
 		mobileRules.push(`${selector} .ts-input-icon i { margin-right: ${attributes.filterInputIconMargin_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-input-icon svg { margin-right: ${attributes.filterInputIconMargin_mobile}px; }`);
 	}
@@ -723,28 +735,28 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	// ============================================
 
 	// Single event avatar size (desktop)
-	if (attributes.singleEventAvatarSize !== undefined) {
+	if (isSet(attributes.singleEventAvatarSize)) {
 		cssRules.push(`${selector} .order-event .vx-avatar { width: ${attributes.singleEventAvatarSize}px; height: ${attributes.singleEventAvatarSize}px; }`);
 	}
 	// Avatar size (tablet)
-	if (attributes.singleEventAvatarSize_tablet !== undefined) {
+	if (isSet(attributes.singleEventAvatarSize_tablet)) {
 		tabletRules.push(`${selector} .order-event .vx-avatar { width: ${attributes.singleEventAvatarSize_tablet}px; height: ${attributes.singleEventAvatarSize_tablet}px; }`);
 	}
 	// Avatar size (mobile)
-	if (attributes.singleEventAvatarSize_mobile !== undefined) {
+	if (isSet(attributes.singleEventAvatarSize_mobile)) {
 		mobileRules.push(`${selector} .order-event .vx-avatar { width: ${attributes.singleEventAvatarSize_mobile}px; height: ${attributes.singleEventAvatarSize_mobile}px; }`);
 	}
 
 	// Single event avatar border radius (desktop)
-	if (attributes.singleEventAvatarBorderRadius !== undefined) {
+	if (isSet(attributes.singleEventAvatarBorderRadius)) {
 		cssRules.push(`${selector} .order-event .vx-avatar { border-radius: ${attributes.singleEventAvatarBorderRadius}px; }`);
 	}
 	// Avatar border radius (tablet)
-	if (attributes.singleEventAvatarBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.singleEventAvatarBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .order-event .vx-avatar { border-radius: ${attributes.singleEventAvatarBorderRadius_tablet}px; }`);
 	}
 	// Avatar border radius (mobile)
-	if (attributes.singleEventAvatarBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.singleEventAvatarBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .order-event .vx-avatar { border-radius: ${attributes.singleEventAvatarBorderRadius_mobile}px; }`);
 	}
 
@@ -826,15 +838,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	}
 
 	// Single event box border radius (desktop)
-	if (attributes.singleEventBoxBorderRadius !== undefined) {
+	if (isSet(attributes.singleEventBoxBorderRadius)) {
 		cssRules.push(`${selector} .order-event-box { border-radius: ${attributes.singleEventBoxBorderRadius}px; }`);
 	}
 	// Border radius (tablet)
-	if (attributes.singleEventBoxBorderRadius_tablet !== undefined) {
+	if (isSet(attributes.singleEventBoxBorderRadius_tablet)) {
 		tabletRules.push(`${selector} .order-event-box { border-radius: ${attributes.singleEventBoxBorderRadius_tablet}px; }`);
 	}
 	// Border radius (mobile)
-	if (attributes.singleEventBoxBorderRadius_mobile !== undefined) {
+	if (isSet(attributes.singleEventBoxBorderRadius_mobile)) {
 		mobileRules.push(`${selector} .order-event-box { border-radius: ${attributes.singleEventBoxBorderRadius_mobile}px; }`);
 	}
 
@@ -848,54 +860,54 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	// ============================================
 
 	// Single item spacing (desktop)
-	if (attributes.singleItemSpacing !== undefined) {
+	if (isSet(attributes.singleItemSpacing)) {
 		cssRules.push(`${selector} .ts-cart-list li { margin-bottom: ${attributes.singleItemSpacing}px; }`);
 	}
 	// Item spacing (tablet)
-	if (attributes.singleItemSpacing_tablet !== undefined) {
+	if (isSet(attributes.singleItemSpacing_tablet)) {
 		tabletRules.push(`${selector} .ts-cart-list li { margin-bottom: ${attributes.singleItemSpacing_tablet}px; }`);
 	}
 	// Item spacing (mobile)
-	if (attributes.singleItemSpacing_mobile !== undefined) {
+	if (isSet(attributes.singleItemSpacing_mobile)) {
 		mobileRules.push(`${selector} .ts-cart-list li { margin-bottom: ${attributes.singleItemSpacing_mobile}px; }`);
 	}
 
 	// Single item content spacing (desktop)
-	if (attributes.singleItemContentSpacing !== undefined) {
+	if (isSet(attributes.singleItemContentSpacing)) {
 		cssRules.push(`${selector} .cart-item-details { gap: ${attributes.singleItemContentSpacing}px; }`);
 	}
 	// Content spacing (tablet)
-	if (attributes.singleItemContentSpacing_tablet !== undefined) {
+	if (isSet(attributes.singleItemContentSpacing_tablet)) {
 		tabletRules.push(`${selector} .cart-item-details { gap: ${attributes.singleItemContentSpacing_tablet}px; }`);
 	}
 	// Content spacing (mobile)
-	if (attributes.singleItemContentSpacing_mobile !== undefined) {
+	if (isSet(attributes.singleItemContentSpacing_mobile)) {
 		mobileRules.push(`${selector} .cart-item-details { gap: ${attributes.singleItemContentSpacing_mobile}px; }`);
 	}
 
 	// Single item picture size (desktop)
-	if (attributes.singleItemPictureSize !== undefined) {
+	if (isSet(attributes.singleItemPictureSize)) {
 		cssRules.push(`${selector} .cart-image { width: ${attributes.singleItemPictureSize}px; height: ${attributes.singleItemPictureSize}px; }`);
 	}
 	// Picture size (tablet)
-	if (attributes.singleItemPictureSize_tablet !== undefined) {
+	if (isSet(attributes.singleItemPictureSize_tablet)) {
 		tabletRules.push(`${selector} .cart-image { width: ${attributes.singleItemPictureSize_tablet}px; height: ${attributes.singleItemPictureSize_tablet}px; }`);
 	}
 	// Picture size (mobile)
-	if (attributes.singleItemPictureSize_mobile !== undefined) {
+	if (isSet(attributes.singleItemPictureSize_mobile)) {
 		mobileRules.push(`${selector} .cart-image { width: ${attributes.singleItemPictureSize_mobile}px; height: ${attributes.singleItemPictureSize_mobile}px; }`);
 	}
 
 	// Single item picture radius (desktop)
-	if (attributes.singleItemPictureRadius !== undefined) {
+	if (isSet(attributes.singleItemPictureRadius)) {
 		cssRules.push(`${selector} .cart-image { border-radius: ${attributes.singleItemPictureRadius}px; }`);
 	}
 	// Picture radius (tablet)
-	if (attributes.singleItemPictureRadius_tablet !== undefined) {
+	if (isSet(attributes.singleItemPictureRadius_tablet)) {
 		tabletRules.push(`${selector} .cart-image { border-radius: ${attributes.singleItemPictureRadius_tablet}px; }`);
 	}
 	// Picture radius (mobile)
-	if (attributes.singleItemPictureRadius_mobile !== undefined) {
+	if (isSet(attributes.singleItemPictureRadius_mobile)) {
 		mobileRules.push(`${selector} .cart-image { border-radius: ${attributes.singleItemPictureRadius_mobile}px; }`);
 	}
 
@@ -930,15 +942,15 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	// ============================================
 
 	// Single table list spacing (desktop)
-	if (attributes.singleTableListSpacing !== undefined) {
+	if (isSet(attributes.singleTableListSpacing)) {
 		cssRules.push(`${selector} .ts-cost-calculator li { margin-bottom: ${attributes.singleTableListSpacing}px; }`);
 	}
 	// List spacing (tablet)
-	if (attributes.singleTableListSpacing_tablet !== undefined) {
+	if (isSet(attributes.singleTableListSpacing_tablet)) {
 		tabletRules.push(`${selector} .ts-cost-calculator li { margin-bottom: ${attributes.singleTableListSpacing_tablet}px; }`);
 	}
 	// List spacing (mobile)
-	if (attributes.singleTableListSpacing_mobile !== undefined) {
+	if (isSet(attributes.singleTableListSpacing_mobile)) {
 		mobileRules.push(`${selector} .ts-cost-calculator li { margin-bottom: ${attributes.singleTableListSpacing_mobile}px; }`);
 	}
 
@@ -1023,30 +1035,30 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 	// ============================================
 
 	// No results content gap (desktop)
-	if (attributes.noResultsContentGap !== undefined) {
+	if (isSet(attributes.noResultsContentGap)) {
 		cssRules.push(`${selector} .ts-no-posts { gap: ${attributes.noResultsContentGap}px; }`);
 	}
 	// Content gap (tablet)
-	if (attributes.noResultsContentGap_tablet !== undefined) {
+	if (isSet(attributes.noResultsContentGap_tablet)) {
 		tabletRules.push(`${selector} .ts-no-posts { gap: ${attributes.noResultsContentGap_tablet}px; }`);
 	}
 	// Content gap (mobile)
-	if (attributes.noResultsContentGap_mobile !== undefined) {
+	if (isSet(attributes.noResultsContentGap_mobile)) {
 		mobileRules.push(`${selector} .ts-no-posts { gap: ${attributes.noResultsContentGap_mobile}px; }`);
 	}
 
 	// No results icon size (desktop)
-	if (attributes.noResultsIconSize !== undefined) {
+	if (isSet(attributes.noResultsIconSize)) {
 		cssRules.push(`${selector} .ts-no-posts i { font-size: ${attributes.noResultsIconSize}px; }`);
 		cssRules.push(`${selector} .ts-no-posts svg { width: ${attributes.noResultsIconSize}px; height: ${attributes.noResultsIconSize}px; }`);
 	}
 	// Icon size (tablet)
-	if (attributes.noResultsIconSize_tablet !== undefined) {
+	if (isSet(attributes.noResultsIconSize_tablet)) {
 		tabletRules.push(`${selector} .ts-no-posts i { font-size: ${attributes.noResultsIconSize_tablet}px; }`);
 		tabletRules.push(`${selector} .ts-no-posts svg { width: ${attributes.noResultsIconSize_tablet}px; height: ${attributes.noResultsIconSize_tablet}px; }`);
 	}
 	// Icon size (mobile)
-	if (attributes.noResultsIconSize_mobile !== undefined) {
+	if (isSet(attributes.noResultsIconSize_mobile)) {
 		mobileRules.push(`${selector} .ts-no-posts i { font-size: ${attributes.noResultsIconSize_mobile}px; }`);
 		mobileRules.push(`${selector} .ts-no-posts svg { width: ${attributes.noResultsIconSize_mobile}px; height: ${attributes.noResultsIconSize_mobile}px; }`);
 	}

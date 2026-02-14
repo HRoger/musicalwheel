@@ -273,7 +273,7 @@ function DataInputNumber( {
 	onChange: ( value: number | null ) => void;
 	icons?: FieldDataInputsProps['icons'];
 } ) {
-	const { min = 0, max = 999999, display_mode = 'default' } = dataInput.props;
+	const { min = 0, max = 999999, step = 1, display_mode = 'default' } = dataInput.props;
 
 	const validateValueInBounds = useCallback( ( val: number | null ): number | null => {
 		if ( val === null ) return null;
@@ -284,15 +284,15 @@ function DataInputNumber( {
 
 	const increment = useCallback( () => {
 		const current = typeof value === 'number' ? value : min;
-		const newVal = validateValueInBounds( current + 1 );
+		const newVal = validateValueInBounds( current + step );
 		onChange( newVal );
-	}, [ value, min, validateValueInBounds, onChange ] );
+	}, [ value, min, step, validateValueInBounds, onChange ] );
 
 	const decrement = useCallback( () => {
 		const current = typeof value === 'number' ? value : min;
-		const newVal = validateValueInBounds( current - 1 );
+		const newVal = validateValueInBounds( current - step );
 		onChange( newVal );
-	}, [ value, min, validateValueInBounds, onChange ] );
+	}, [ value, min, step, validateValueInBounds, onChange ] );
 
 	const handleInputChange = useCallback( ( e: React.ChangeEvent<HTMLInputElement> ) => {
 		const val = e.target.value === '' ? null : parseInt( e.target.value, 10 );
@@ -321,6 +321,7 @@ function DataInputNumber( {
 						value={ value ?? '' }
 						onChange={ handleInputChange }
 						placeholder={ dataInput.props.placeholder }
+						step={ step }
 					/>
 					<button
 						className={ `ts-stepper-right ts-icon-btn${ ( value ?? 0 ) >= max ? ' vx-disabled' : '' }` }
@@ -350,6 +351,7 @@ function DataInputNumber( {
 					placeholder={ dataInput.props.placeholder }
 					min={ min }
 					max={ max }
+					step={ step }
 				/>
 			</div>
 		</div>

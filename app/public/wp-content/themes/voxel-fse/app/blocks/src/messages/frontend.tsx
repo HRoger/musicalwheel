@@ -256,12 +256,6 @@ function initMessages() {
 		// Mark as hydrated
 		container.dataset['hydrated'] = 'true';
 
-		// Remove placeholder
-		const placeholder = container.querySelector('.voxel-fse-block-placeholder');
-		if (placeholder) {
-			placeholder.remove();
-		}
-
 		// Create React root and render
 		const root = createRoot(container);
 		root.render(<MessagesWrapper config={config} messagesConfig={messagesConfig} />);

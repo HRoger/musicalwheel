@@ -112,6 +112,7 @@ export interface ImageBlockAttributes {
 	linkTo: 'none' | 'file' | 'custom';
 	link: LinkObject;
 	openLightbox: 'default' | 'yes' | 'no';
+	lightboxGroup: string;
 
 	// Style - Image
 	imageAlign: string;
@@ -133,22 +134,8 @@ export interface ImageBlockAttributes {
 	objectPosition_tablet?: string;
 	objectPosition_mobile?: string;
 
-	// Style - Effects
-	opacity?: number;
-	cssFilters: CSSFilters;
-	opacityHover?: number;
-	cssFiltersHover: CSSFilters;
-	transitionDuration?: number;
+	// Style - Effects & Border (active attributes, prefixed with 'image')
 	hoverAnimation: string;
-
-	// Style - Border
-	borderType: string;
-	borderWidth: BoxDimensions;
-	borderColor: string;
-	borderRadius: BoxDimensions;
-	borderRadius_tablet?: BoxDimensions;
-	borderRadius_mobile?: BoxDimensions;
-	boxShadow: BoxShadowValue;
 	aspectRatio: string;
 
 	// Style - Caption
@@ -182,6 +169,9 @@ export interface ImageBlockAttributes {
 	imageBorderRadius?: BoxDimensions;
 	imageBoxShadow?: BoxShadowValue;
 	imageTransitionDuration?: number;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**
@@ -221,23 +211,18 @@ export interface ImageVxConfig {
 	objectFit_mobile?: string;
 	objectPosition: string;
 
-	// Style - Effects
-	opacity?: number;
-	cssFilters: CSSFilters;
-	opacityHover?: number;
-	cssFiltersHover: CSSFilters;
-	transitionDuration?: number;
+	// Style - Effects & Border
 	hoverAnimation: string;
-
-	// Style - Border
-	borderType: string;
-	borderWidth: BoxDimensions;
-	borderColor: string;
-	borderRadius: BoxDimensions;
-	borderRadius_tablet?: BoxDimensions;
-	borderRadius_mobile?: BoxDimensions;
-	boxShadow: BoxShadowValue;
 	aspectRatio: string;
+
+	// Active prefixed attributes
+	imageOpacity?: number;
+	imageOpacityHover?: number;
+	imageCssFilters?: CSSFilters;
+	imageCssFiltersHover?: CSSFilters;
+	imageTransitionDuration?: number;
+	imageBorder?: any;
+	imageBoxShadow?: BoxShadowValue;
 
 	// Style - Caption
 	captionAlign: string;

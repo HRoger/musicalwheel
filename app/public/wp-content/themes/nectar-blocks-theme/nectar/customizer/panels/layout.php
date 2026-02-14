@@ -432,6 +432,20 @@ class NectarBlocks_Customizer_Layout {
   }
 
   public static function get_header_nav_transparency() {
+
+    // create a list of post types
+    $transparent_header_auto_activation_locations = [];
+    $post_types = get_transient('nectar_available_post_types');
+
+    if ( $post_types && ! empty($post_types)) {
+      foreach ( $post_types as $post_type ) {
+        $transparent_header_auto_activation_locations['archive-' . $post_type->name] = esc_html__( 'Archive: ', 'nectar-blocks-theme' ) . $post_type->label;
+      }
+      foreach ( $post_types as $post_type ) {
+        $transparent_header_auto_activation_locations['single-' . $post_type->name] = esc_html__( 'Single: ', 'nectar-blocks-theme' ) . $post_type->label;
+      }
+    }
+
     $controls = [
       [
         'id' => 'transparent-header',
@@ -440,6 +454,14 @@ class NectarBlocks_Customizer_Layout {
         'subtitle' => esc_html__('Causes your header to be completely transparent before the user scrolls. This will be triggered automatically when using a post header, or you can manually trigger it per page.', 'nectar-blocks-theme'),
         'desc' => '',
         'default' => '0'
+      ],
+
+      [
+        'id' => 'transparent-header-auto-activation-locations',
+        'type' => 'multi_select',
+        'title' => esc_html__( 'Automatically Enable On', 'nectar-blocks-theme' ),
+        'options' => $transparent_header_auto_activation_locations,
+        'required' => [ [ 'transparent-header', '=', '1' ] ]
       ],
 
       [
@@ -920,6 +942,53 @@ class NectarBlocks_Customizer_Layout {
       ],
 
       [
+        'id' => 'header-slide-out-widget-area-slide-from-side-width',
+        'type' => 'slider',
+        'title' => esc_html__('Off Canvas Menu Desktop Width (%)', 'nectar-blocks-theme'),
+        'desc' => '',
+        "default" => 33,
+        "min" => 25,
+        "step" => 1,
+        "max" => 100,
+        'required' => [  ['header-slide-out-widget-area-style', '=', 'slide-out-from-right'] ],
+        'display_value' => 'text'
+      ],
+      [
+        'id' => 'header-slide-out-widget-area-offset',
+        'type' => 'slider',
+        'title' => esc_html__('Off Canvas Menu Offset', 'nectar-blocks-theme'),
+        'desc' => '',
+        "default" => 0,
+        "min" => 0,
+        "step" => 1,
+        "max" => 30,
+        'display_value' => 'text'
+      ],
+      [
+        'id' => 'header-slide-out-widget-area-roundness',
+        'type' => 'slider',
+        'title' => esc_html__('Off Canvas Menu Roundness', 'nectar-blocks-theme'),
+        'desc' => '',
+        "default" => 0,
+        "min" => 0,
+        "step" => 1,
+        "max" => 30,
+        'display_value' => 'text'
+      ],
+
+      [
+        'id' => 'header-slide-out-widget-area-icon-width',
+        'type' => 'slider',
+        'title' => esc_html__('Off Canvas Menu Icon Width', 'nectar-blocks-theme'),
+        'desc' => '',
+        "default" => 22,
+        "min" => 16,
+        "step" => 1,
+        "max" => 40,
+        'display_value' => 'text'
+      ],
+
+      [
        'id' => 'fullscreen-inline-images-default',
        'type' => 'media',
        'required' => [  ['header-slide-out-widget-area-style', '=', 'fullscreen-inline-images'] ],
@@ -998,7 +1067,8 @@ class NectarBlocks_Customizer_Layout {
           'solid' => esc_html__('Solid', 'nectar-blocks-theme'),
           'dark' => esc_html__('Dark', 'nectar-blocks-theme'),
           'medium' => esc_html__('Medium', 'nectar-blocks-theme'),
-          'light' => esc_html__('Light', 'nectar-blocks-theme')
+          'light' => esc_html__('Light', 'nectar-blocks-theme'),
+          'none' => esc_html__('None', 'nectar-blocks-theme')
         ],
         'default' => 'dark',
         'required' => [  ['header-slide-out-widget-area-style', '!=', 'simple'] ]
@@ -1438,7 +1508,7 @@ class NectarBlocks_Customizer_Layout {
       [
         'id' => 'header-slide-out-widget-area-background-color',
         'type' => 'color',
-        'title' => esc_html__('Off Canvas Navigation Background', 'nectar-blocks-theme'),
+        'title' => esc_html__('Off Canvas Navigation BG', 'nectar-blocks-theme'),
         'subtitle' => '',
         'desc' => '',
         'class' => 'no-border',
@@ -1451,7 +1521,7 @@ class NectarBlocks_Customizer_Layout {
       [
         'id' => 'header-slide-out-widget-area-background-color-2',
         'type' => 'color',
-        'title' => esc_html__('Off Canvas Navigation Background 2', 'nectar-blocks-theme'),
+        'title' => esc_html__('Off Canvas Navigation BG 2', 'nectar-blocks-theme'),
         'subtitle' => esc_html__('Used for gradient', 'nectar-blocks-theme'),
         'desc' => '',
         'transparent' => false,
@@ -1494,7 +1564,34 @@ class NectarBlocks_Customizer_Layout {
         'default' => '#ffffff',
         'output' => Nectar_Dynamic_Colors()->kirki_arrays('header-slide-out-widget-area-hover-color'),
         'required' => [ [ 'header-color', '=', 'custom' ] ],
-      ]
+      ],
+
+      [
+        'id' => 'header-slide-out-widget-area-close-button-bg',
+        'type' => 'color',
+        'title' => esc_html__('Off Canvas Navigation Close BG', 'nectar-blocks-theme'),
+        'subtitle' => '',
+        'choices' => [
+          'alpha' => true,
+        ],
+        'default' => 'rgba(0,0,0,0.05)',
+        'transport' => 'refresh',
+        'output' => Nectar_Dynamic_Colors()->kirki_arrays('header-slide-out-widget-area-close-button-bg'),
+        'required' => [ [ 'header-color', '=', 'custom' ] ],
+      ],
+      [
+        'id' => 'header-slide-out-widget-area-close-button',
+        'type' => 'color',
+        'title' => esc_html__('Off Canvas Navigation Close', 'nectar-blocks-theme'),
+        'subtitle' => '',
+        'choices' => [
+          'alpha' => true,
+        ],
+        'default' => '#ffffff',
+        'transport' => 'refresh',
+        'output' => Nectar_Dynamic_Colors()->kirki_arrays('header-slide-out-widget-area-close-button'),
+        'required' => [ [ 'header-color', '=', 'custom' ] ],
+      ],
 
     ];
 

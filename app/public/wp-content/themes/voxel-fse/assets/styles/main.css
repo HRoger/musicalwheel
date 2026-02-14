@@ -1,9 +1,9 @@
 /**
  * MusicalWheel FSE Theme - Main Stylesheet
- * 
+ *
  * Tailwind CSS v4 entry point for development and production builds.
  * Processed by Vite with @tailwindcss/vite plugin.
- * 
+ *
  * Design System synchronized with theme.json for WordPress FSE compatibility.
  */
 
@@ -11,7 +11,7 @@
 
 /**
  * Theme Configuration
- * 
+ *
  * Tailwind CSS v4 uses @theme directive for custom design tokens.
  * These are synchronized with WordPress theme.json settings.
  */
@@ -96,7 +96,7 @@
 
 /**
  * Custom Base Styles
- * 
+ *
  * Global element styling and resets.
  */
 @layer base {
@@ -217,12 +217,12 @@
 
 /**
  * Custom Component Styles
- * 
+ *
  * Reusable component classes for WordPress blocks and theme components.
  */
 /**
  * WordPress Block Styles
- * 
+ *
  * Note: Tailwind v4 doesn't support @apply in @layer components.
  * These are direct CSS rules for WordPress blocks.
  */
@@ -300,7 +300,7 @@
 
 /**
  * Custom Utility Styles
- * 
+ *
  * Extended utilities for WordPress FSE and theme-specific patterns.
  */
 @layer utilities {

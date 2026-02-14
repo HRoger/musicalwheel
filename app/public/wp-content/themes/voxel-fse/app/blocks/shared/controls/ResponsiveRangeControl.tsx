@@ -24,7 +24,7 @@ import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
 import UndoIcon from '../icons/UndoIcon';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlProps {
 	label: string;
@@ -73,7 +73,7 @@ export default function ResponsiveRangeControl({
 	const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = useSelect((select: any) => getCurrentDeviceType(select));
 
 	// Get attribute name for current device
 	const getAttributeName = () => {
@@ -352,7 +352,7 @@ export default function ResponsiveRangeControl({
 							size="small"
 							style={{
 								marginTop: '0',
-								color: '#0073aa',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 								padding: '4px',
 								minWidth: 'auto',
 								width: '32px',

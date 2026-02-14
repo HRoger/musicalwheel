@@ -24,6 +24,7 @@ import {
     ResponsiveDimensionsControl,
     ResponsiveRangeControl,
     PopupCustomStyleControl,
+    BorderGroupControl,
 } from '@shared/controls';
 import type { NavbarAttributes } from '../types';
 
@@ -117,20 +118,21 @@ export function StyleTab({
                                         attributeBaseName="linkPadding"
                                     />
 
-                                    <SelectControl
-                                        label={__('Border Type', 'voxel-fse')}
-                                        value={attributes.linkBorderStyle}
-                                        options={[
-                                            { value: 'default', label: __('Default', 'voxel-fse') },
-                                            { value: 'none', label: __('None', 'voxel-fse') },
-                                            { value: 'solid', label: __('Solid', 'voxel-fse') },
-                                            { value: 'double', label: __('Double', 'voxel-fse') },
-                                            { value: 'dotted', label: __('Dotted', 'voxel-fse') },
-                                            { value: 'dashed', label: __('Dashed', 'voxel-fse') },
-                                            { value: 'groove', label: __('Groove', 'voxel-fse') },
-                                        ]}
-                                        onChange={(value: string) => setAttributes({ linkBorderStyle: value })}
-                                        __nextHasNoMarginBottom
+                                    <BorderGroupControl
+                                        label={__('Border', 'voxel-fse')}
+                                        value={{
+                                            borderType: attributes.linkBorderStyle || '',
+                                            borderWidth: attributes.linkBorderWidth || {},
+                                            borderColor: attributes.linkBorderColor || '',
+                                        }}
+                                        onChange={(value) => {
+                                            setAttributes({
+                                                linkBorderStyle: value.borderType,
+                                                linkBorderWidth: value.borderWidth,
+                                                linkBorderColor: value.borderColor,
+                                            });
+                                        }}
+                                        hideRadius={true}
                                     />
 
                                     <ResponsiveRangeControl

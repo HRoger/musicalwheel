@@ -42,25 +42,25 @@ export const BoxControl: React.FC<BoxControlProps> = ({
 				<TextControl
 					label={__('Top', 'voxel-fse')}
 					value={values?.top || ''}
-					onChange={(value) => updateValue('top', value)}
+					onChange={(value: string) => updateValue('top', value)}
 					placeholder={placeholder}
 				/>
 				<TextControl
 					label={__('Right', 'voxel-fse')}
 					value={values?.right || ''}
-					onChange={(value) => updateValue('right', value)}
+					onChange={(value: string) => updateValue('right', value)}
 					placeholder={placeholder}
 				/>
 				<TextControl
 					label={__('Bottom', 'voxel-fse')}
 					value={values?.bottom || ''}
-					onChange={(value) => updateValue('bottom', value)}
+					onChange={(value: string) => updateValue('bottom', value)}
 					placeholder={placeholder}
 				/>
 				<TextControl
 					label={__('Left', 'voxel-fse')}
 					value={values?.left || ''}
-					onChange={(value) => updateValue('left', value)}
+					onChange={(value: string) => updateValue('left', value)}
 					placeholder={placeholder}
 				/>
 			</div>

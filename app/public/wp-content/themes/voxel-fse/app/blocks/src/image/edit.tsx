@@ -58,26 +58,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		style: advancedStyles,
 	});
 
-	/**
-	 * Handle image selection from media library
-	 */
-	const onSelectImage = (media: any) => {
-		// Get the URL for the selected size
-		let url = media.url;
-		if (media.sizes && attributes.imageSize && media.sizes[attributes.imageSize]) {
-			url = media.sizes[attributes.imageSize].url;
-		}
 
-		setAttributes({
-			image: {
-				id: media.id || 0,
-				url: url,
-				alt: media.alt || '',
-				width: media.width || 0,
-				height: media.height || 0,
-			},
-		});
-	};
 
 	return (
 		<div {...blockProps}>
@@ -116,7 +97,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 			</InspectorControls>
 
 			{/* Editor Preview */}
-			<ImageComponent attributes={attributes} context="editor" onSelectImage={onSelectImage} />
+			<ImageComponent attributes={attributes} context="editor" />
 		</div>
 	);
 }

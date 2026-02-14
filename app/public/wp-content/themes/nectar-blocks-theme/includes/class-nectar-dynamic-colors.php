@@ -911,7 +911,7 @@ class Nectar_Dynamic_Colors {
             'declarations' => $accent_color,
             'property' => 'background-color',
             'suffix' => '!important',
-            'media_query' => 'max-width: 768px',
+            'media_query' => 'max-width: 767px',
             'conditionals' => self::$woocommerce_active && $accent_color,
         ];
 
@@ -1791,7 +1791,7 @@ class Nectar_Dynamic_Colors {
 
         $rules[] = [
             'selectors' => '#nectar-nav[data-lhe="button_bg"] #top nav .sf-menu > .sfHover:not([class*="current"]):not(#social-in-menu) > a .menu-title-text,
-			#nectar-nav[data-lhe="button_bg"] #top nav > ul > li:not([class*="current"]) > a:hover .menu-title-text',
+			#nectar-nav[data-lhe="button_bg"] #top nav > ul > li:not([class*="current"]):not([class*="menu-item-btn-style"]) > a:hover .menu-title-text',
 
             'property' => 'color',
             'declarations' => $font_hover_color,
@@ -2232,9 +2232,8 @@ class Nectar_Dynamic_Colors {
             'selectors' =>
                 '#slide-out-widget-area:not(.fullscreen-alt):not(.fullscreen),
 				#slide-out-widget-area-bg.fullscreen,
+                #slide-out-widget-area-bg.fullscreen-alt,
 				#slide-out-widget-area-bg.fullscreen-split,
-				#slide-out-widget-area-bg.fullscreen-inline-images .nectar-ocm-image-wrap-outer,
-				#slide-out-widget-area-bg.fullscreen-alt .bg-inner,
 				body.material #slide-out-widget-area',
 
             'property' => 'background-color',
@@ -2273,7 +2272,8 @@ class Nectar_Dynamic_Colors {
             'selectors' =>
                 'body #slide-out-widget-area,
 				body.material #slide-out-widget-area.slide-out-from-right .off-canvas-social-links a:hover i:before,
-				body #slide-out-widget-area a,
+				body #slide-out-widget-area:not(.has-nectar-template) a,
+                body #slide-out-widget-area:not(.has-nectar-template),
 				body #slide-out-widget-area.fullscreen-alt .inner .widget.widget_nav_menu li a,
 				body #slide-out-widget-area.fullscreen-alt .inner .off-canvas-menu-container li > a,
 				#slide-out-widget-area.fullscreen-split .inner .widget.widget_nav_menu li a,
@@ -2333,16 +2333,41 @@ class Nectar_Dynamic_Colors {
             'conditionals' => $using_custom_color_scheme && $ocm_font_color && 'slide-out-from-right-hover' === self::$off_canvas_style,
         ];
 
+        /* OCM Button   **************************/
+        $ocm_button_bg_color = isset($nectar_options['header-slide-out-widget-area-close-button-bg']) && ! empty($nectar_options['header-slide-out-widget-area-close-button-bg']) ? esc_attr($nectar_options['header-slide-out-widget-area-close-button-bg']) : false;
+        $rules[] = [
+            'selectors' =>
+                '#slide-out-widget-area .slide_out_area_close:before',
+
+            'property' => 'background-color',
+            'declarations' => $ocm_button_bg_color,
+            'color' => 'header-slide-out-widget-area-close-button-bg',
+            'suffix' => '',
+            'conditionals' => $using_custom_color_scheme && $ocm_button_bg_color,
+        ];
+
+        $ocm_button_color = isset($nectar_options['header-slide-out-widget-area-close-button']) && ! empty($nectar_options['header-slide-out-widget-area-close-button']) ? esc_attr($nectar_options['header-slide-out-widget-area-close-button']) : false;
+        $rules[] = [
+            'selectors' =>
+                '#slide-out-widget-area .slide_out_area_close .close-wrap .close-line',
+
+            'property' => 'background-color',
+            'declarations' => $ocm_button_color,
+            'color' => 'header-slide-out-widget-area-close-button',
+            'suffix' => '',
+            'conditionals' => $using_custom_color_scheme && $ocm_button_color,
+        ];
+
         /* OCM Header Color  **************************/
         $ocm_header_color = isset($nectar_options['header-slide-out-widget-area-header-color']) && ! empty($nectar_options['header-slide-out-widget-area-header-color']) ? esc_attr($nectar_options['header-slide-out-widget-area-header-color']) : false;
         $rules[] = [
             'selectors' =>
-                'body #slide-out-widget-area h1,
-				body #slide-out-widget-area h2,
-				body #slide-out-widget-area h3,
-				body #slide-out-widget-area h4,
-				body #slide-out-widget-area h5,
-				body #slide-out-widget-area h6',
+                '#slide-out-widget-area:not(.has-nectar-template) h1,
+				#slide-out-widget-area:not(.has-nectar-template) h2,
+				#slide-out-widget-area:not(.has-nectar-template) h3,
+				#slide-out-widget-area:not(.has-nectar-template) h4,
+				#slide-out-widget-area:not(.has-nectar-template) h5,
+				#slide-out-widget-area.has-nectar-template h6',
 
             'property' => 'color',
             'declarations' => $ocm_header_color,
@@ -2541,10 +2566,10 @@ class Nectar_Dynamic_Colors {
 				body #footer-outer #copyright p',
 
             'property' => 'color',
-            'declarations' => $footer_secondary_font_color,
+            'declarations' => $footer_copyright_font_color,
             'color' => 'footer-copyright-font-color',
             'suffix' => '',
-            'conditionals' => $using_custom_footer_color_scheme && $footer_secondary_font_color,
+            'conditionals' => $using_custom_footer_color_scheme && $footer_copyright_font_color,
         ];
         $rules[] = [
             'selectors' => '#footer-outer #copyright a:not(.nectar-button)',
@@ -2858,7 +2883,7 @@ class Nectar_Dynamic_Colors {
         //if ( isset($nectar_options['product_archive_bg_color']) ) {
             $rules[] = [
                 'selectors' =>
-                    '.post-type-archive-product.woocommerce .container-wrap, 
+                    '.post-type-archive-product.woocommerce .container-wrap,
                     .tax-product_cat.woocommerce .container-wrap',
 
                 'property' => 'background-color',

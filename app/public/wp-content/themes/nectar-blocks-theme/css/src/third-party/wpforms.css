@@ -1,7 +1,7 @@
 body div.wpforms-container-full.nectar-inline-subscribe-form .wpforms-form input[type],
 body div.wpforms-container-full.nectar-inline-subscribe-form .wpforms-form select {
   border-radius: var(--nectar-border-radius);
-} 
+}
 
 body div.wpforms-container-full.nectar-inline-subscribe-form .wpforms-form input:focus {
   box-shadow: none;
@@ -68,6 +68,9 @@ div.wpforms-container-full.nectar-inline-subscribe-form .wpforms-form em.wpforms
 }
 
 /* submit button */
+div.wpforms-container-full .nectar-text-reveal-button {
+  overflow: hidden;
+}
 .nectar-inline-subscribe-form.wpforms-container-full .wpforms-form .wpforms-submit-container {
   position: absolute;
   width: auto;
@@ -119,15 +122,15 @@ body .nectar-transparent-fields.wpforms-container-full .wpforms-form input[type]
 .dark .nectar-transparent-fields.wpforms-container-full .wpforms-form .wpforms-submit-container button {
   background-color: rgba(0,0,0,0.2);
   color: #000;
-} 
+}
 .dark .nectar-transparent-fields.wpforms-container-full .wpforms-form .wpforms-submit-container button:hover {
   color: #fff;
-} 
+}
 .light .nectar-transparent-fields.wpforms-container-full .wpforms-form .wpforms-submit-container button {
   background-color: rgba(255,255,255,0.15);
   color: #fff;
-} 
+}
 
 .light .nectar-transparent-fields.wpforms-container-full .wpforms-form .wpforms-submit-container button:hover {
   background-color: rgba(255,255,255,0.3)!important;
-} 
+}

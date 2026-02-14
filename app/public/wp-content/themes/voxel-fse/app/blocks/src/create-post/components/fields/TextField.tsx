@@ -33,11 +33,15 @@ export const TextField: React.FC<TextFieldProps> = ({ field, value, onChange, on
 	// Profile-name extends Text_Field, so it can have suffix too
 	const hasSuffix = field.props?.['suffix'];
 
+	// Regex pattern validation from admin config
+	// Evidence: text-field.php:98 — returns regex pattern string for client-side validation
+	const pattern = field.props?.['pattern'] as string | null;
+
 	// Real-time validation while typing
 	const handleChange = (newValue: string) => {
 		onChange(newValue);
 
-		// Validate minlength/maxlength if there's a value
+		// Validate minlength/maxlength/pattern if there's a value
 		if (newValue && newValue.length > 0) {
 			const minlength = field.props?.['minlength'];
 			const maxlength = field.props?.['maxlength'];
@@ -46,6 +50,19 @@ export const TextField: React.FC<TextFieldProps> = ({ field, value, onChange, on
 				setLocalError(`Value cannot be shorter than ${minlength} characters`);
 			} else if (maxlength && newValue.length > maxlength) {
 				setLocalError(`Value cannot be longer than ${maxlength} characters`);
+			} else if (pattern) {
+				// Validate regex pattern — matches Voxel's server-side validation in text-field.php
+				try {
+					const regex = new RegExp(pattern);
+					if (!regex.test(newValue)) {
+						setLocalError('Please enter a value in the correct format');
+					} else {
+						setLocalError('');
+					}
+				} catch {
+					// Invalid regex from admin — skip validation
+					setLocalError('');
+				}
 			} else {
 				setLocalError('');
 			}

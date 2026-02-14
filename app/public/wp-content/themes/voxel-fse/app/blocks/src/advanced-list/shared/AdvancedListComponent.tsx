@@ -18,6 +18,7 @@
  */
 
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type {
 	AdvancedListAttributes,
 	AdvancedListComponentProps,
@@ -77,6 +78,275 @@ function getShareLink(type: string, title: string, url: string): string {
 }
 
 /**
+ * Generate Google Calendar URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_google_calendar_link()
+ * See: themes/voxel/app/utils/sharer.php:161-189
+ */
+function getGoogleCalendarUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	timezone?: string;
+}): string | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const params = new URLSearchParams({
+		action: 'TEMPLATE',
+		trp: 'true',
+		text: args.title || '',
+		dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+	});
+
+	if (args.description) {
+		// Strip HTML tags like Voxel's wp_kses($args['description'], [])
+		const plainDescription = args.description.replace(/<[^>]*>/g, '');
+		params.set('details', plainDescription);
+	}
+	if (args.location) {
+		params.set('location', args.location);
+	}
+	if (args.timezone) {
+		params.set('ctz', args.timezone);
+	}
+
+	return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Generate iCalendar (ICS) data URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_icalendar_data()
+ * See: themes/voxel/app/utils/sharer.php:191-243
+ */
+function getICalendarDataUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	url?: string;
+}): { dataUrl: string; filename: string } | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const start = formatDate(startDate);
+	const end = formatDate(endDate);
+	const title = (args.title || 'event').replace(/[^\w\s-]/g, '');
+	const description = (args.description || '')
+		.replace(/<[^>]*>/g, '') // Strip HTML
+		.replace(/\r\n|\r|\n/g, '\\n') // Convert newlines
+		.replace(/&nbsp;/g, '');
+	const location = (args.location || '').replace(/[^\w\s,-]/g, '');
+	const url = args.url || '';
+	const dtstamp = formatDate(new Date());
+	const uid = `${window.location.origin}/?ics_uid=${btoa(JSON.stringify([title, start, end, url])).slice(0, 20)}`;
+
+	// Build ICS content (no leading whitespace per line - ICS format requirement)
+	const icsContent = [
+		'BEGIN:VCALENDAR',
+		'VERSION:2.0',
+		'PRODID:-//hacksw/handcal//NONSGML v1.0//EN',
+		'CALSCALE:GREGORIAN',
+		'BEGIN:VEVENT',
+		`LOCATION:${location}`,
+		`DESCRIPTION:${description}`,
+		`DTSTART:${start}`,
+		`DTEND:${end}`,
+		`SUMMARY:${title}`,
+		`URL;VALUE=URI:${url}`,
+		`DTSTAMP:${dtstamp}`,
+		`UID:${uid}`,
+		'END:VEVENT',
+		'END:VCALENDAR',
+	].join('\r\n');
+
+	// Create base64 data URL (matches Voxel's base64_encode approach)
+	const dataUrl = `data:text/calendar;base64,${btoa(icsContent)}`;
+	const filename = `${title || 'event'}.ics`;
+
+	return { dataUrl, filename };
+}
+
+/**
+ * Popup positioning hook — 1:1 match with Voxel.mixins.popup
+ * Evidence: themes/voxel/assets/dist/commons.js, shared/popup-kit/FormPopup.tsx
+ *
+ * Voxel's algorithm:
+ * 1. Get trigger bounding rect (viewport-relative) and offset (document-relative)
+ * 2. Popup width = max(trigger width, popup CSS min-width)
+ * 3. Left: if trigger center > body center → right-align, else left-align
+ * 4. Top: below trigger; if not enough space below AND fits above → above
+ */
+function usePopupPosition(
+	isOpen: boolean,
+	targetRef: React.RefObject<HTMLElement>,
+	popupRef: React.RefObject<HTMLDivElement>,
+	popupBoxRef: React.RefObject<HTMLDivElement>,
+) {
+	const [styles, setStyles] = useState<React.CSSProperties>({});
+	const lastStylesRef = useRef<string>('');
+
+	const reposition = useCallback(() => {
+		if (!popupBoxRef.current || !targetRef.current || !popupRef.current) return;
+
+		const bodyWidth = document.body.clientWidth;
+		const triggerRect = targetRef.current.getBoundingClientRect();
+		const triggerOuterWidth = targetRef.current.offsetWidth;
+		const triggerOffset = {
+			left: triggerRect.left + window.pageXOffset,
+			top: triggerRect.top + window.pageYOffset,
+		};
+		const popupRect = popupRef.current.getBoundingClientRect();
+		const computedStyle = window.getComputedStyle(popupBoxRef.current);
+		const cssMinWidth = parseFloat(computedStyle.minWidth) || 0;
+		const popupWidth = Math.max(triggerRect.width, cssMinWidth || Math.min(340, bodyWidth - 40));
+
+		const isRightSide = triggerOffset.left + triggerOuterWidth / 2 > bodyWidth / 2 + 1;
+		let leftPosition = isRightSide
+			? triggerOffset.left - popupWidth + triggerOuterWidth
+			: triggerOffset.left;
+
+		if (leftPosition < 0) leftPosition = 10;
+		if (leftPosition + popupWidth > bodyWidth) leftPosition = bodyWidth - popupWidth - 10;
+
+		let topPosition = triggerOffset.top + triggerRect.height;
+		const viewportHeight = window.innerHeight;
+		if (triggerRect.bottom + popupRect.height > viewportHeight && triggerRect.top - popupRect.height >= 0) {
+			topPosition = triggerOffset.top - popupRect.height;
+		}
+
+		const newStyles: React.CSSProperties = {
+			top: `${topPosition}px`,
+			left: `${leftPosition}px`,
+			width: `${popupWidth}px`,
+			position: 'absolute',
+		};
+
+		const serialized = JSON.stringify(newStyles);
+		if (serialized === lastStylesRef.current) return;
+		lastStylesRef.current = serialized;
+		setStyles(newStyles);
+	}, [targetRef, popupRef, popupBoxRef]);
+
+	useEffect(() => {
+		if (!isOpen) return;
+
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => reposition());
+		});
+
+		const onScroll = () => reposition();
+		const onResize = () => reposition();
+		window.addEventListener('scroll', onScroll, true);
+		window.addEventListener('resize', onResize, true);
+
+		let resizeObserver: ResizeObserver | null = null;
+		if (popupBoxRef.current) {
+			resizeObserver = new ResizeObserver(() => {
+				requestAnimationFrame(() => reposition());
+			});
+			resizeObserver.observe(popupBoxRef.current);
+		}
+
+		return () => {
+			window.removeEventListener('scroll', onScroll, true);
+			window.removeEventListener('resize', onResize, true);
+			resizeObserver?.disconnect();
+		};
+	}, [isOpen, reposition, popupBoxRef]);
+
+	return styles;
+}
+
+/**
+ * Portal popup wrapper — renders popup at body level with Voxel positioning
+ * Matches Voxel's <popup> component structure:
+ * ts-popup-root → ts-form (positioned) → ts-field-popup-container → ts-field-popup
+ */
+function PopupPortal({
+	isOpen,
+	targetRef,
+	onClose,
+	children,
+}: {
+	isOpen: boolean;
+	targetRef: React.RefObject<HTMLElement>;
+	onClose: () => void;
+	children: React.ReactNode;
+}) {
+	const popupRef = useRef<HTMLDivElement>(null);
+	const popupBoxRef = useRef<HTMLDivElement>(null);
+	const styles = usePopupPosition(isOpen, targetRef, popupRef, popupBoxRef);
+
+	// ESC key to close
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+		document.addEventListener('keydown', handleEsc);
+		return () => document.removeEventListener('keydown', handleEsc);
+	}, [isOpen, onClose]);
+
+	// Click outside to close
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleClickOutside = (e: MouseEvent) => {
+			const clickTarget = e.target as HTMLElement;
+			if (popupBoxRef.current?.contains(clickTarget)) return;
+			if (targetRef.current?.contains(clickTarget)) return;
+			onClose();
+		};
+		const rafId = requestAnimationFrame(() => {
+			document.addEventListener('mousedown', handleClickOutside);
+		});
+		return () => {
+			cancelAnimationFrame(rafId);
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isOpen, onClose, targetRef]);
+
+	if (!isOpen) return null;
+
+	return createPortal(
+		<div className="ts-popup-root elementor-element">
+			<div ref={popupRef} className="ts-form elementor-element" style={styles}>
+				<div className="ts-field-popup-container">
+					<div ref={popupBoxRef} className="ts-field-popup triggers-blur">
+						{children}
+					</div>
+				</div>
+			</div>
+		</div>,
+		document.body
+	);
+}
+
+/**
  * Edit Steps Popup Component
  * Matches edit-post-action.php:16-50 structure
  */
@@ -91,31 +361,8 @@ interface EditStepsPopupProps {
 }
 
 function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
-
-	if (!isOpen) return null;
-
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--edit-steps">
+		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
 					{renderIcon(icon)}
@@ -148,7 +395,7 @@ function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, tar
 					))}
 				</ul>
 			</div>
-		</div>
+		</PopupPortal>
 	);
 }
 
@@ -167,27 +414,7 @@ interface SharePopupProps {
 }
 
 function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }: SharePopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
 	const [copied, setCopied] = useState(false);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
 
 	const handleShare = async (item: ShareItem, e: React.MouseEvent) => {
 		if (item.type === 'copy') {
@@ -212,15 +439,13 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 		// For social links, let them open normally
 	};
 
-	if (!isOpen) return null;
-
 	const shareList: ShareItem[] = DEFAULT_SHARE_LIST.map((item) => ({
 		...item,
 		link: getShareLink(item.type, title, link),
 	}));
 
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--share">
+		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
 					{renderIcon(icon)}
@@ -245,24 +470,33 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll ts-social-share">
 					{shareList.map((item) => (
-						<li key={item.type} className={`ts-share-${item.type}`}>
-							<a
-								href={item.link}
-								target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
-								className="flexify"
-								rel="nofollow"
-								onClick={(e) => handleShare(item, e)}
-							>
-								<div className="ts-term-icon">
-									<span dangerouslySetInnerHTML={{ __html: item.icon }} />
-								</div>
-								<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
-							</a>
-						</li>
+						item.type === 'ui-heading' ? (
+							/* ui-heading dividers (share-post-action.php:40-46) */
+							<li key={`heading-${item.label}`} className="ts-parent-item vx-noevent">
+								<a href="#" className="flexify">
+									<span>{item.label}</span>
+								</a>
+							</li>
+						) : (
+							<li key={item.type} className={`ts-share-${item.type}`}>
+								<a
+									href={item.link}
+									target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
+									className="flexify"
+									rel="nofollow"
+									onClick={(e) => handleShare(item, e)}
+								>
+									<div className="ts-term-icon">
+										<span dangerouslySetInnerHTML={{ __html: item.icon }} />
+									</div>
+									<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
+								</a>
+							</li>
+						)
 					))}
 				</ul>
 			</div>
-		</div>
+		</PopupPortal>
 	);
 }
 
@@ -532,6 +766,11 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			return postContext?.promote?.isPromotable ?? false;
 		}
 
+		// follow-post-action.php:6-8, follow-user-action.php:6-8 - requires timeline enabled
+		if (['action_follow_post', 'action_follow'].includes(item.actionType)) {
+			if (postContext?.timelineEnabled === false) return false;
+		}
+
 		// follow-user-action.php:10-12 - requires author exists
 		if (item.actionType === 'action_follow') {
 			return postContext?.authorId != null;
@@ -685,10 +924,11 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						}
 					};
 				}
-				// Default to linking to the post
+				// Select options variant (add-to-cart-action.php:33-43) — links to post with cart opts icon/text
 				return {
 					tag: 'a',
 					href: postContext.postLink,
+					className: 'ts-action-con',
 				};
 
 			case 'select_addition':
@@ -838,6 +1078,53 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					},
 				};
 
+			case 'action_gcal': {
+				// add-to-gcal-action.php:7-23 - Google Calendar link
+				// Uses \Voxel\Utils\Sharer::get_google_calendar_link()
+				const gcalUrl = getGoogleCalendarUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					// Note: timezone would need to come from post context if available
+				});
+				if (!gcalUrl) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: gcalUrl,
+					target: '_blank',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
+			case 'action_ical': {
+				// add-to-ical-action.php:6-24 - iCalendar download link
+				// Uses \Voxel\Utils\Sharer::get_icalendar_data()
+				const icalData = getICalendarDataUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					url: item.calUrl,
+				});
+				if (!icalData) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: icalData.dataUrl,
+					download: icalData.filename,
+					role: 'button',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
 			default:
 				return { tag: 'div' };
 		}
@@ -846,13 +1133,19 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const actionProps = getActionProps();
 	const Tag = actionProps.tag as keyof JSX.IntrinsicElements;
 
+	// Cart "Select Options" variant (add-to-cart-action.php:33-43):
+	// Uses cartOptsIcon/cartOptsText instead of normal icon/text
+	const isCartSelectOptions = item.actionType === 'add_to_cart' && postContext?.product && !postContext.product.oneClick;
+
 	// Render content based on active state
+	// Voxel ALWAYS renders both .ts-initial and .ts-reveal spans for active-state actions
+	// (follow-post-action.php:33-40, follow-user-action.php:33-40, select-addon.php:15-20)
+	// CSS handles visibility via .active class on parent — no inline display:none needed
 	const renderContent = () => {
-		if (hasActiveState && isActive && item.activeText) {
-			// Active state content
+		if (hasActiveState) {
 			return (
 				<>
-					<span className="ts-initial" style={{ display: 'none' }}>
+					<span className="ts-initial">
 						<div className="ts-action-icon" style={iconStyles}>
 							{renderIcon(item.icon)}
 						</div>
@@ -868,13 +1161,16 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			);
 		}
 
-		// Normal state content
+		// Cart "Select Options" variant uses different icon/text (add-to-cart-action.php:39-41)
+		const displayIcon = isCartSelectOptions ? (item.cartOptsIcon || item.icon) : item.icon;
+		const displayText = isCartSelectOptions ? item.cartOptsText : item.text;
+
 		return (
 			<>
 				<div className="ts-action-icon" style={iconStyles}>
-					{renderIcon(item.icon)}
+					{renderIcon(displayIcon)}
 				</div>
-				{item.text}
+				{displayText}
 			</>
 		);
 	};
@@ -896,10 +1192,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		isIntermediate ? 'intermediate' : '',
 	].filter(Boolean).join(' ');
 
-	// Tooltip attributes (follow-post-action.php:25-30)
-	// For follow actions, use tooltip-inactive and tooltip-active attributes
-	// For other actions, use data-tooltip
+	// Tooltip attributes
+	// Different actions use different tooltip attribute patterns:
+	// - Follow actions (follow-post-action.php:25-30): tooltip-inactive, tooltip-active
+	// - Select addition (select-addon.php:6-12): data-tooltip, data-tooltip-default, data-tooltip-active
+	// - Other actions: data-tooltip
 	const isFollowAction = ['action_follow_post', 'action_follow'].includes(item.actionType);
+	const isSelectAddition = item.actionType === 'select_addition';
 	const tooltipAttrs: Record<string, string | undefined> = {};
 
 	if (isFollowAction) {
@@ -909,6 +1208,20 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		}
 		if (item.activeEnableTooltip && item.activeTooltipText) {
 			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		}
+	} else if (isSelectAddition) {
+		// select-addon.php:6-12 - Uses data-tooltip + data-tooltip-default for normal, data-tooltip-active for active
+		if (item.enableTooltip && item.tooltipText) {
+			tooltipAttrs['data-tooltip'] = item.tooltipText;
+			tooltipAttrs['data-tooltip-default'] = item.tooltipText;
+		}
+		if (item.activeEnableTooltip && item.activeTooltipText) {
+			tooltipAttrs['data-tooltip-active'] = item.activeTooltipText;
+		}
+	} else if (isCartSelectOptions) {
+		// Cart select options variant (add-to-cart-action.php:35-36) uses its own tooltip
+		if (item.cartOptsEnableTooltip && item.cartOptsTooltipText) {
+			tooltipAttrs['data-tooltip'] = item.cartOptsTooltipText;
 		}
 	} else {
 		// Regular data-tooltip for non-follow actions

@@ -32,9 +32,10 @@
     1.15. Shadows
     1.16. Animations
     1.17. OCM Alignment
-    1.18. Background Blur
-    1.19. Header Size
-    1.20. Header Border
+    1.18. Off Canvas Menu Icon Width
+    1.19. Background Blur
+    1.20. Header Size
+    1.21. Header Border
 2. Link Hover Effects
     2.1 Skip to content focus
     2.2. Header Navigation Hover Effects
@@ -72,6 +73,7 @@
 16. Off Canvas Menu
   16.1 Font sizing
   16.2 Overlay
+  16.3 Styling
 17. Animations
 18. Third Party
   18.1. WooCommerce Theme Skin
@@ -420,7 +422,7 @@ foreach ($gradients as $gradient) {
      // No margin on last li for full width header layout
      if( 'default' === $headerFormat && '1' === $header_fullwidth ) {
       echo '@media only screen and (min-width: 1025px) {
-        body.material #nectar-nav #top .span_9 nav > ul.sf-menu > li:last-child > a {
+        body.material #nectar-nav #top .span_9 nav > ul.sf-menu > li:last-child > a:not(:has(.sf-sub-indicator)) {
           margin-right: 0;
         }
       }';
@@ -793,7 +795,11 @@ foreach ($gradients as $gradient) {
   if ( ! empty( $nectar_options['use-logo'] ) ) {
     $mobile_header_space = intval($mobile_logo_height) + $mobile_header_padding;
   }
-     echo '#nectar-nav-spacer {
+     echo '
+    :root {
+      --header-nav-height: ' . $header_space . 'px;
+    }
+    #nectar-nav-spacer {
 		 padding-top: ' . $header_space . 'px;
 	 }
 	 @media only screen and (max-width: 1024px) {
@@ -829,6 +835,16 @@ foreach ($gradients as $gradient) {
       #nectar-nav.transparent #search-outer:not(.material-open) #search {
         transition: none!important;
       }';
+
+      // Disable blur on all Webkit browsers, as it causes a color inversion when combined with the mix-blend-mode: exclusion;
+      if( isset($nectar_options['header-blur-bg']) && $nectar_options['header-blur-bg'] === '1' ) {
+        echo '@supports (-webkit-hyphens: none) and (not (-ms-ime-align: auto)) {
+            #nectar-nav {
+              -webkit-backdrop-filter: none !important;
+              backdrop-filter: none !important;
+            }
+        }';
+      }
 
     $header_starting_color = '#ffffff';
     $header_starting_dark_color = '#ffffff';
@@ -1429,7 +1445,7 @@ foreach ($gradients as $gradient) {
      }
 
      // Custom header bg opacity
-     if( ! empty($nectar_options['header-bg-opacity']) && ! empty($nectar_options['header-color']) ) {
+     if( isset($nectar_options['header-bg-opacity']) && ! empty($nectar_options['header-color']) ) {
 
       $alpha = intval( $nectar_options['header-bg-opacity'] );
 
@@ -2191,10 +2207,14 @@ foreach ($gradients as $gradient) {
       }
     }';
   }
-  if( isset($nectar_options['header-fullwidth-mobile-padding']) && ! empty($nectar_options['header-fullwidth-mobile-padding']) ) {
+
+  if( ( $full_width_header === 'true' || 'slide-out-from-right-hover' === $side_widget_class ) &&
+    isset($nectar_options['header-fullwidth-mobile-padding']) && ! empty($nectar_options['header-fullwidth-mobile-padding'])
+  ) {
     echo '@media only screen and (max-width: 1024px) {
       :root {
         --header-mobile-fullwidth-horizontal-padding: ' . esc_attr($nectar_options['header-fullwidth-mobile-padding']) . 'px;
+        --mobile-container-width: calc( 100% - ( var(--header-mobile-fullwidth-horizontal-padding, 6%) * 2));
       }
     }';
   }
@@ -2784,7 +2804,7 @@ foreach ($gradients as $gradient) {
           display: none;
         }
         #search-outer .products li.product.material {
-            border-radius: 6px;
+            border-radius: var(--nectar-product-border-radius, 6px);
             transition: box-shadow 0.25s ease, opacity 0.6s cubic-bezier(0.2, 0.6, 0.4, 1), transform 0.6s cubic-bezier(0.2, 0.6, 0.4, 1);
             box-shadow: rgba(0, 0, 0, 0.06) 0 0 0 1px,
                         rgba(0, 0, 0, 0.03) 0 2px 7px;
@@ -2951,7 +2971,7 @@ foreach ($gradients as $gradient) {
         }
 
       }
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 767px) {
         .nectar-ajax-search-results .search-post-item h5 {
           font-size: 14px;
         }
@@ -2993,7 +3013,7 @@ foreach ($gradients as $gradient) {
         min-height: 60px;
         margin: 0 0 25px 0;
       }
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 767px) {
         .nectar-ajax-search-results .search-post-item h5 {
           font-size: 14px;
         }
@@ -3495,7 +3515,17 @@ foreach ($gradients as $gradient) {
   }
 
   /*-------------------------------------------------------------------------*/
-  /*  1.18. Background Blur
+  /*  1.18. Off Canvas Menu Icon Width
+  /*-------------------------------------------------------------------------*/
+  if( isset($nectar_options['header-slide-out-widget-area-icon-width']) ) {
+    echo '
+    :root {
+      --ocm-icon-width: ' . esc_attr($nectar_options['header-slide-out-widget-area-icon-width']) . 'px;
+    }';
+  }
+
+  /*-------------------------------------------------------------------------*/
+  /*  1.19. Background Blur
   /*-------------------------------------------------------------------------*/
   if( isset($nectar_options['header-blur-bg']) && $nectar_options['header-blur-bg'] === '1' ) {
 
@@ -3517,7 +3547,7 @@ foreach ($gradients as $gradient) {
   }
 
   /*-------------------------------------------------------------------------*/
-  /*  1.19. Header Size
+  /*  1.20. Header Size
   /*-------------------------------------------------------------------------*/
 
   if ( nectar_is_contained_header() ) {
@@ -3571,7 +3601,7 @@ foreach ($gradients as $gradient) {
 
     }
 
-    @media only screen and (max-width: 768px) {
+    @media only screen and (max-width: 767px) {
 
       body #nectar-nav .container {
         padding-left: min(max(calc(var(--container-padding)/3),25px), 22px);
@@ -3712,7 +3742,7 @@ foreach ($gradients as $gradient) {
   }
 
   /*-------------------------------------------------------------------------*/
-  /*  1.20. Header Border
+  /*  1.21. Header Border
   /*-------------------------------------------------------------------------*/
   if ( isset( $nectar_options['header-enable-border'] ) && '1' === $nectar_options['header-enable-border'] ) {
 
@@ -3893,10 +3923,19 @@ foreach ($gradients as $gradient) {
  }
 
  // Button BG style
- else if( 'button_bg' === $header_hover_effect && 'left-header' !== $headerFormat ) {
+ else if( 'button_bg' === $header_hover_effect ) {
 
   $header_color_scheme = (isset($nectar_options['header-color'])) ? $nectar_options['header-color'] : 'light';
 
+  if ( 'left-header' === $headerFormat ) {
+    echo '@media only screen and (min-width: 1025px) {
+      #nectar-nav[data-format=left-header] nav > .sf-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+    }';
+  }
   // core styling.
   echo '
   #top .sf-menu > li:not([class*="menu-item-btn"]) > a .menu-title-text {
@@ -4655,7 +4694,8 @@ foreach ($gradients as $gradient) {
 				 #nectar-nav.transparent .cart-menu .cart-icon-wrap .icon-nectar-blocks-cart,
          #nectar-nav.transparent #top .sf-menu > li.nectar-regular-menu-item > a > .nectar-menu-icon,
          #nectar-nav.transparent .nectar-header-text-content,
-         #nectar-nav.transparent .nectar-mobile-only.mobile-header li:not([class*="menu-item-btn-style"]) a
+         #nectar-nav.transparent .nectar-mobile-only.mobile-header li:not([class*="menu-item-btn-style"]) a,
+         #nectar-nav.transparent .nectar-mobile-only.mobile-header li.menu-item-btn-style-border a
 				  {
 				 	color: ' . esc_attr($starting_color) . '!important;
 				 	opacity: ' . esc_attr($starting_opacity) . ';
@@ -5007,7 +5047,7 @@ foreach ($gradients as $gradient) {
       }
     }
 
-    @media only screen and (max-width: 768px) {
+    @media only screen and (max-width: 767px) {
       body #nectar-nav[data-full-width="true"] header > .container {
         padding: 0 25px;
       }
@@ -5715,7 +5755,7 @@ foreach ($gradients as $gradient) {
 
     if( '1' === $blog_hide_sidebar && isset( $nectar_options['blog_width'] ) && ! empty($nectar_options['blog_width']) ) {
 
-      $blog_width = ( 'default' === $nectar_options['blog_width'] ) ? '1000px' : $nectar_options['blog_width'];
+      $blog_width = ( 'default' === $nectar_options['blog_width'] ) ? 'var(--container-width, 1000px)' : $nectar_options['blog_width'];
 
       echo '
       @media only screen and (min-width: 1025px) {
@@ -5730,7 +5770,8 @@ foreach ($gradients as $gradient) {
         body.single-post #page-header-wrap #page-header-bg[data-post-hs="default_minimal"] h1,
         body.single-post #nectar-content-wrap .heading-title[data-header-style="default_minimal"] .entry-title,
         .single-post .featured-media-under-header__content,
-        [data-style="parallax_next_only"].blog_next_prev_buttons .inner {
+        [data-style="parallax_next_only"].blog_next_prev_buttons .inner,
+        .nectar_template_single__post > .container {
           max-width: ' . esc_attr($blog_width) . ';
           margin-left: auto;
           margin-right: auto;
@@ -5921,271 +5962,197 @@ foreach ($gradients as $gradient) {
     /* 8. Page Transitions
     /*-------------------------------------------------------------------------*/
 
-    if( isset($nectar_options['ajax-page-loading']) &&
-       ! empty( $nectar_options['ajax-page-loading'] ) &&
-       $nectar_options['ajax-page-loading'] === '1' ) {
+    $enable_page_transitions = ( isset($nectar_options['page-transitions']) && ! empty($nectar_options['page-transitions']) ) ? esc_attr($nectar_options['page-transitions']) : false;
+    $enable_page_transitions_mobile = ( isset($nectar_options['page-transitions-mobile']) && ! empty($nectar_options['page-transitions-mobile']) ) ? esc_attr($nectar_options['page-transitions-mobile']) : false;
+    if( $enable_page_transitions ) {
 
-    echo '
-    #ajax-loading-screen{
-      background-color:#fff;
-      width:100%;
-      height:100%;
-      position:fixed;
-      top:0;
-      left:0;
-      display:none;
-      z-index:1000000000
-    }
-    #ajax-loading-screen .reveal-1,
-    #ajax-loading-screen .reveal-2{
-      position:absolute;
-      left:100%;
-      top:0;
-      width:100%;
-      height:100%
-    }
-    #ajax-loading-screen[data-effect*="horizontal_swipe"]{
-      background-color:transparent!important;
-      left:-100%
-    }
+      $transition_effect = ( isset($nectar_options['page-transitions-effect']) && ! empty($nectar_options['page-transitions-effect']) ) ? esc_attr($nectar_options['page-transitions-effect']) : 'fade';
+      $transition_bg_color = ( isset($nectar_options['page-transitions-bg-color']) && ! empty($nectar_options['page-transitions-bg-color']) ) ? esc_attr($nectar_options['page-transitions-bg-color']) : 'var(--nectar-overall-bg-color, #ffffff)';
 
-
-    #ajax-loading-screen.in-from-right{
-      left:0;
-    }
-    .no-cssanimations #ajax-loading-screen.loaded .reveal-1,
-    .no-cssanimations #ajax-loading-screen.loaded .reveal-2{
-      display:none
-    }
-    #ajax-loading-screen.loaded .reveal-1{
-      backface-visibility: hidden;
-      -webkit-animation:nectar-anim-effect-2-2 1.85s cubic-bezier(0.67,0,0.3,1) forwards;
-      animation:nectar-anim-effect-2-2 1.85s cubic-bezier(0.67,0,0.3,1) forwards
-    }
-    #ajax-loading-screen.loaded .reveal-2{
-      backface-visibility: hidden;
-      -webkit-animation:nectar-anim-effect-2-1 1.85s cubic-bezier(0.67,0,0.3,1) forwards;
-      animation:nectar-anim-effect-2-1 1.85s cubic-bezier(0.67,0,0.3,1) forwards
-    }
-    #ajax-loading-screen.loaded.in-from-right .reveal-1{
-      -webkit-animation:nectar-anim-effect-2-1 1.85s cubic-bezier(0.67,0,0.3,1) forwards;
-      animation:nectar-anim-effect-2-1 1.85s cubic-bezier(0.67,0,0.3,1) forwards
-    }
-
-    #ajax-loading-screen.loaded.in-from-right .reveal-2{
-      -webkit-animation:nectar-anim-effect-2-2 1.85s cubic-bezier(0.67,0,0.3,1) forwards;
-      animation:nectar-anim-effect-2-2 1.85s cubic-bezier(0.67,0,0.3,1) forwards
-    }
-
-    @-webkit-keyframes nectar-anim-effect-2-1{
-      0%{
-        -ms-transform:translateX(0);
-        -webkit-transform:translate3d(0,0,0);
-        transform:translate3d(0,0,0)
+      $media_query_min = '1025px';
+      if( $enable_page_transitions_mobile ) {
+        $media_query_min = '1px';
       }
-      30%, 100%{
-        -ms-transform:translateX(-100%);
-        -webkit-transform:translate3d(-100%,0,0);
-        transform:translate3d(-100%,0,0);
-        -webkit-animation-timing-function:cubic-bezier(0.67,0,0.3,1);
-        animation-timing-function:cubic-bezier(0.67,0,0.3,1)
-      }
-    }
-    @keyframes nectar-anim-effect-2-1{
-      0%{
-        -ms-transform:translateX(0);
-        -webkit-transform:translate3d(0,0,0);
-        transform:translate3d(0,0,0)
-      }
-      30%, 100%{
-        -ms-transform:translateX(-100%);
-        -webkit-transform:translate3d(-100%,0,0);
-        transform:translate3d(-100%,0,0);
-        -webkit-animation-timing-function:cubic-bezier(0.67,0,0.3,1);
-        animation-timing-function:cubic-bezier(0.67,0,0.3,1)
-      }
-    }
-    @-webkit-keyframes nectar-anim-effect-2-2{
-      0%,14.5%{
-        -ms-transform:translateX(0);
-        -webkit-transform:translate3d(0,0,0);
-        transform:translate3d(0,0,0)
-      }
-      34.5%, 100%{
-        -ms-transform:translateX(-100%);
-        -webkit-transform:translate3d(-100%,0,0);
-        transform:translate3d(-100%,0,0);
-        -webkit-animation-timing-function:cubic-bezier(0.67,0,0.3,1);
-        animation-timing-function:cubic-bezier(0.67,0,0.3,1)
-      }
-    }
-    @keyframes nectar-anim-effect-2-2{
-      0%,14.5%{
-        -ms-transform:translate3d(0,0,0);
-        -webkit-transform:translate3d(0,0,0);
-        transform:translate3d(0,0,0)
-      }
-      34.5%, 100%{
-        -ms-transform:translate3d(-100%,0,0);
-        -webkit-transform:translate3d(-100%,0,0);
-        transform:translate3d(-100%,0,0);
-        -webkit-animation-timing-function:cubic-bezier(0.67,0,0.3,1);
-        animation-timing-function:cubic-bezier(0.67,0,0.3,1)
-      }
-    }
-
-
-    #ajax-loading-screen .material-icon {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translateX(-50%) translateY(-50%);
-    }
-    .nectar-material-spinner circle {
-      stroke-dasharray: 187;
-      stroke-dashoffset: 0;
-      transform-origin: center;
-      animation: nectar_material_loader_dash 1.4s ease-in-out infinite, nectar_material_loader_colors 1.8s ease-in-out infinite;
-    }
-
-    .nectar-material-spinner {
-        animation: nectar_material_loader_rotate 1.4s linear infinite;
-    }
-
-    @keyframes nectar_material_loader_rotate {
-      0% {
-          transform: rotate(0deg);
-      }
-      100% {
-          transform: rotate(270deg);
-      }
-    }
-
-    @keyframes nectar_material_loader_dash {
-      0% {
-        stroke-dashoffset: 187;
-      }
-      50% {
-        stroke-dashoffset: 46.75;
-        -webkit-transform: rotate(135deg);
-                transform: rotate(135deg);
-      }
-      100% {
-        stroke-dashoffset: 187;
-        -webkit-transform: rotate(450deg);
-                transform: rotate(450deg);
-      }
-    }
-
-
-
-
-    body #ajax-loading-screen[data-effect="center_mask_reveal"]{
-      background-color:transparent
-    }
-
-    #ajax-loading-screen[data-effect="center_mask_reveal"] span{
-      position:absolute;
-      background:#fff;
-      z-index:100;
-      -webkit-transition:0.8s cubic-bezier(0.12,0.75,0.4,1);
-      transition:0.8s cubic-bezier(0.12,0.75,0.4,1)
-    }
-    #ajax-loading-screen .mask-top{
-      top:0;
-      left:0;
-      height:50%;
-      width:100%
-    }
-    #ajax-loading-screen .mask-right{
-      top:0;
-      right:0;
-      height:100%;
-      width:50%
-    }
-    #ajax-loading-screen .mask-bottom{
-      bottom:0;
-      right:0;
-      height:50%;
-      width:100%
-    }
-    #ajax-loading-screen .mask-left{
-      top:0;
-      left:0;
-      height:100%;
-      width:50%
-    }
-    #ajax-loading-screen.loaded .mask-top{
-      -webkit-transform:translateY(-100%) translateZ(0);
-      -ms-transform:translateY(-100%) translateZ(0);
-      transform:translateY(-100%) translateZ(0)
-    }
-    #ajax-loading-screen.loaded .mask-right{
-      -webkit-transform:translateX(100%) translateZ(0);
-      -ms-transform:translateX(100%) translateZ(0);
-      transform:translateX(100%) translateZ(0)
-    }
-    #ajax-loading-screen.loaded .mask-bottom{
-      -webkit-transform:translateY(100%) translateZ(0);
-      -ms-transform:translateY(100%) translateZ(0);
-      transform:translateY(100%) translateZ(0)
-    }
-    #ajax-loading-screen.loaded .mask-left{
-      -webkit-transform:translateX(-100%) translateZ(0);
-      -ms-transform:translateX(-100%) translateZ(0);
-      transform:translateX(-100%) translateZ(0)
-    }
-    #ajax-loading-screen[data-effect="center_mask_reveal"].set-to-fade span,
-    #ajax-loading-screen[data-effect="center_mask_reveal"].set-to-fade.loaded span {
-      width:100%;
-      height:100%;
-      top:0;
-      left:0;
-      -webkit-transform:none;
-    	transform:none;
-    }';
-  }
-
-    // Custom loading icon.
-    if( isset($nectar_options['loading-image']['id']) && ! empty($nectar_options['loading-image']['id']) ){
-      echo ' .portfolio-loading, #ajax-loading-screen .loading-icon, .loading-icon, .pp_loaderIcon {
-        background-image: url("' . nectar_options_img( $nectar_options["loading-image"] ) . '");
-      }';
-    }
-
-    // Page transitions coloring.
-    if( $page_transition_bg !== '#ffffff' ) {
-      echo '#ajax-loading-screen,
-      #ajax-loading-screen[data-effect="center_mask_reveal"] span {
-        background-color: ' . esc_attr($page_transition_bg) . '
-      }
-      .default-loading-icon {
-        border-color: rgba(255,255,255,0.2);
-      } ';
-    }
-
-    echo '#ajax-loading-screen .reveal-1 { background-color: ' . esc_attr($page_transition_bg) . '; }';
-    echo '#ajax-loading-screen .reveal-2 { background-color: ' . esc_attr($page_transition_bg_2) . '; }';
-
-    // Material loader color.
-    $loading_icon = (isset($nectar_options['loading-icon'])) ? $nectar_options['loading-icon'] : 'default';
-
-    if( $loading_icon === 'material' ) {
-
-      $icon_colors = (isset($nectar_options['loading-icon-colors'])) ? $nectar_options['loading-icon-colors'] : ['from' => '#444444', 'to' => '#444444'];
-
+      // Cross Fade base.
       echo '
-      @keyframes nectar_material_loader_colors {
-        0% {
-          stroke: ' . esc_attr($icon_colors['from']) . ';
+      @media only screen and (min-width: ' . $media_query_min . ') {
+
+        @view-transition {
+          navigation: auto;
         }
-        50% {
-          stroke: ' . esc_attr($icon_colors['to']) . ';
+
+        html body,
+        html body.compensate-for-scrollbar {
+          overflow: visible;
+          touch-action: pan-y;
         }
-        100% {
-          stroke: ' . esc_attr($icon_colors['from']) . ';
+
+        ';
+
+      // Fade
+      if ( 'fade' === $transition_effect ) {
+        echo '
+        html {
+            background-color: ' . esc_attr($transition_bg_color) . ';
+          }
+          ::view-transition-old(*),
+          ::view-transition-new(*) {
+              mix-blend-mode: normal;
+              backface-visibility: hidden;
+          }
+         @keyframes nectarblocks-view-transition-start {
+              0% {
+                opacity: 0;
+              }
+              100% {
+                opacity: 1;
+              }
+          }
+          @keyframes nectarblocks-view-transition-end {
+              0% {
+                opacity: 1;
+              }
+              100% {
+                opacity: 0;
+              }
+          }
+          ::view-transition-old(root) {
+            animation: nectarblocks-view-transition-end 0.35s cubic-bezier(0.5, 0, 0.35, 1.0);
+            animation-delay: 0s;
+            animation-fill-mode: both;
         }
-      }';
+
+        ::view-transition-new(root) {
+            animation: nectarblocks-view-transition-start 0.65s cubic-bezier(0.5, 0, 0.35, 1.0);
+            animation-delay: 0.35s;
+            animation-fill-mode: both;
+            z-index: 1000;
+            position: relative;
+        }
+        ';
+      }
+
+      else if ( 'gradient-fade' === $transition_effect ) {
+        echo '
+            ::view-transition-old(*),
+            ::view-transition-new(*) {
+                mix-blend-mode: normal;
+                backface-visibility: hidden;
+            }
+
+            @property --nectarblocks-view-transition-gradient-wipe-progress {
+                syntax: "<number>";
+                initial-value: 0;
+                inherits: false;
+            }
+
+            @keyframes nectarblocks-view-transition-start {
+                0% {
+                  opacity: 1;
+                    transform: none;
+                    --nectarblocks-view-transition-gradient-wipe-progress: 0;
+                }
+
+                100% {
+                  opacity: 1;
+                  transform: none;
+                  --nectarblocks-view-transition-gradient-wipe-progress: 1;
+                }
+            }
+
+            @keyframes nectarblocks-view-transition-end {
+                0% {
+                  opacity: 1;
+                  transform: none;
+                }
+
+                100% {
+                  opacity: 1;
+                  transform: none;
+
+                }
+            }
+
+            ::view-transition-old(root) {
+              animation: nectarblocks-view-transition-end 1.2s cubic-bezier(0.45, 0, 0.35, 1.0);
+              animation-delay: 0s;
+              animation-fill-mode: both;
+            }
+
+            ::view-transition-new(root) {
+              animation: nectarblocks-view-transition-start 1.2s cubic-bezier(0.45, 0, 0.35, 1.0);
+              animation-fill-mode: both;
+              mask-image: linear-gradient(
+                270deg,
+                #000000 calc( -70% + calc(170% * var(--nectarblocks-view-transition-gradient-wipe-progress))),
+                transparent calc(170% * var(--nectarblocks-view-transition-gradient-wipe-progress))
+              );
+              -webkit-mask-image: linear-gradient(
+                270deg,
+                #000000 calc( -70% + calc(170% * var(--nectarblocks-view-transition-gradient-wipe-progress))),
+                transparent calc(170% * var(--nectarblocks-view-transition-gradient-wipe-progress))
+              );
+            }
+        ';
+      }
+
+      else if ( 'push-reveal' === $transition_effect ) {
+        // Push Reveal.
+        echo '
+
+          html {
+            background-color: ' . esc_attr($transition_bg_color) . ';
+          }
+          ::view-transition-old(*),
+          ::view-transition-new(*) {
+              mix-blend-mode: normal;
+              backface-visibility: hidden;
+          }
+
+          @keyframes nectarblocks-view-transition-start {
+              0% {
+                clip-path: inset(100% 0% 0% 0%);
+                transform: translateY(10%);
+              }
+              50%,100% {
+                opacity: 1;
+                animation-timing-function: ease-out;
+              }
+              100% {
+                transform: translateY(0%);
+                clip-path: inset(0% 0% 0% 0%);
+              }
+          }
+
+          @keyframes nectarblocks-view-transition-end {
+              0% {
+                opacity: 1;
+                transform: translateY(0%) scale(1);
+              }
+              100% {
+                opacity: 0.4;
+                transform: translateY(-10%) scale(0.93);
+              }
+          }
+
+
+        ::view-transition-old(root) {
+            animation: nectarblocks-view-transition-end 1.2s cubic-bezier(0.6, 0, 0.1, 1.0);
+            animation-delay: 0s;
+            animation-fill-mode: both;
+        }
+
+        ::view-transition-new(root) {
+            animation: nectarblocks-view-transition-start 1.2s cubic-bezier(0.6, 0, 0.1, 1.0);
+            animation-delay: 0s;
+            animation-fill-mode: both;
+            z-index: 1000;
+            position: relative;
+        }';
+
+      } // end reveal from bottom
+
+      echo '}'; // closing media query
 
     }
 
@@ -6971,7 +6938,7 @@ foreach ($gradients as $gradient) {
 
       }
 
-      @media only screen and (max-width : 768px) {
+      @media only screen and (max-width : 767px) {
 
         #nectar-content-wrap #footer-widgets .container .col:nth-child(3) {
           margin-bottom: 40px;
@@ -7801,7 +7768,7 @@ foreach ($gradients as $gradient) {
       line-height:48px;
   }
 
-    @media only screen and (max-width: 768px) {
+    @media only screen and (max-width: 767px) {
 
         #slide-out-widget-area.fullscreen-inline-images .inner .widget.widget_nav_menu li a,
         #slide-out-widget-area.fullscreen-inline-images .inner .off-canvas-menu-container li > a{
@@ -8090,11 +8057,31 @@ if( $slide_out_widget_overlay === 'dark' ) {
     echo 'body #slide-out-widget-area-bg {
 		background-color: rgba(0,0,0,0.6);
 	}';
+} else if( $slide_out_widget_overlay === 'none' ) {
+    echo 'body #slide-out-widget-area-bg {
+		background-color: transparent;
+	}';
 } else {
     echo 'body #slide-out-widget-area-bg {
 		background-color: rgba(0,0,0,0.4);
 	}';
 }
+
+/*-------------------------------------------------------------------------*/
+/* 16.3 Styling
+/*-------------------------------------------------------------------------*/
+
+$slide_out_widget_roundness = (isset($nectar_options['header-slide-out-widget-area-roundness']) && ! empty($nectar_options['header-slide-out-widget-area-roundness'])) ? $nectar_options['header-slide-out-widget-area-roundness'] : 0;
+$slide_out_widget_width = (isset($nectar_options['header-slide-out-widget-area-slide-from-side-width']) && ! empty($nectar_options['header-slide-out-widget-area-slide-from-side-width'])) ? $nectar_options['header-slide-out-widget-area-slide-from-side-width'] : 33;
+$slide_out_widget_offset = (isset($nectar_options['header-slide-out-widget-area-offset']) && ! empty($nectar_options['header-slide-out-widget-area-offset'])) ? $nectar_options['header-slide-out-widget-area-offset'] : 0;
+
+echo '
+#slide-out-widget-area {
+  --roundness: ' . $slide_out_widget_roundness . 'px;
+  --desktop-width: ' . $slide_out_widget_width . 'vw;
+  --offset: ' . $slide_out_widget_offset . 'px;
+}
+';
 
   /*-------------------------------------------------------------------------*/
   /* 17. Animations
@@ -8705,9 +8692,14 @@ if( $slide_out_widget_overlay === 'dark' ) {
       }
 
 
-       @media only screen and (max-width:768px) {
+       @media only screen and (max-width:767px) {
          .nectar-slide-in-cart.style_slide_in_click .widget_shopping_cart_content {
-           width: 90vw;
+           width: 100vw;
+           padding: 30px 20px 20px 20px;
+         }
+        body .nectar-slide-in-cart.style_slide_in_click .inner>.header {
+          left: 20px;
+          width: calc(100% - 20px * 2);
          }
          .style_slide_in_click .product-meta > .product-details {
            width: 57%;
@@ -8725,6 +8717,38 @@ if( $slide_out_widget_overlay === 'dark' ) {
         }
         .style_slide_in_click .product-meta > .quantity .modify {
             margin-top: 25px;
+        }
+        .nectar-slide-in-cart.style_slide_in_click .product-meta > .quantity .modify {
+          min-width: 75px;
+        }
+       .nectar-slide-in-cart.style_slide_in_click .product-meta > .product-details {
+           padding-right: 15px;
+       }
+        body .nectar-slide-in-cart.style_slide_in_click .widget_shopping_cart .cart_list .mini_cart_item>a {
+          margin-right: 15px;
+        }
+        .nectar-slide-in-cart.style_slide_in_click ul.product_list_widget li img {
+          margin-right: 0!important;
+        }
+        .nectar-slide-in-cart.style_slide_in_click .woocommerce-mini-cart div.quantity,
+        #nectar-nav .widget_shopping_cart .cart_list a img, #nectar-nav ul.product_list_widget li img,
+        body .nectar-slide-in-cart.style_slide_in_click ul.product_list_widget li img,
+        body .nectar-slide-in-cart.style_slide_in_click ul.product_list_widget li img:not(.nectar-lazy):not([srcset]) {
+          width: 70px;
+        }
+        body .nectar-slide-in-cart.style_slide_in_click .widget_shopping_cart .product-meta a:not(.remove),
+        body .style_slide_in_click .product-meta > .quantity .amount bdi,
+        body .nectar-slide-in-cart.style_slide_in_click .total {
+          font-size: 14px;
+        }
+        body .nectar-slide-in-cart.style_slide_in_click .widget_shopping_cart a.button {
+          padding: 10px;
+        }
+        html  body .woocommerce-mini-cart div.quantity .qty {
+         font-size: 13px!important;
+        }
+        html body[data-header-format] .woocommerce-mini-cart .quantity input.minus {
+          font-size: 14px!important;
         }
        }';
 
@@ -8832,7 +8856,7 @@ if( $slide_out_widget_overlay === 'dark' ) {
         color: ' . esc_attr( $global_font_color ) . ';
       }
 
-      @media only screen and ( max-width: 768px ) {
+      @media only screen and ( max-width: 767px ) {
         .style_slide_in_click .woocommerce-mini-cart .quantity input.plus,
         .style_slide_in_click .woocommerce-mini-cart .quantity input.minus {
           height: 22px;
@@ -8923,7 +8947,7 @@ if( $slide_out_widget_overlay === 'dark' ) {
       body #slide-out-widget-area .widget_shopping_cart div.quantity {
         display: flex;
       }
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 767px) {
         .cart div.quantity,
         .woocommerce-mini-cart div.quantity {
           margin-left: auto;
@@ -8945,6 +8969,42 @@ if( $slide_out_widget_overlay === 'dark' ) {
 
   if( function_exists( 'is_woocommerce' ) && true === $nectar_blocks_woo_sidebar_toggles) {
 
+    // Compatibility with new WooCommerce Product Filters Block
+    echo '
+      @media (min-width: 1px) {
+        body :where(.wc-block-product-filters) .wc-block-product-filters__overlay,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__overlay {
+          background: inherit;
+          color: inherit;
+          inset: 0;
+          pointer-events: auto;
+          position: relative;
+          transition: none;
+        }
+        body :where(.wc-block-product-filters) .wc-block-product-filters__overlay-wrapper,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__overlay-wrapper {
+          background: inherit;
+          color: inherit;
+          height: auto;
+          width: auto;
+        }
+        body :where(.wc-block-product-filters) .wc-block-product-filters__overlay-dialog,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__overlay-dialog {
+          background: inherit;
+          color: inherit;
+          position: relative;
+          transform: none;
+        }
+        body :where(.wc-block-product-filters) .wc-block-product-filters__open-overlay,
+        body :where(.wc-block-product-filters) .wc-block-product-filters__overlay-footer,
+        body :where(.wc-block-product-filters) .wc-block-product-filters__overlay-header,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__open-overlay,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__overlay-footer,
+        body :where(.wc-block-product-filters).is-overlay-opened .wc-block-product-filters__overlay-header {
+          display: none;
+        }
+      }
+    ';
     echo '
     @media only screen and (min-width: 1025px) {
     	.woocommerce #sidebar .widget.woocommerce > ul,
@@ -9798,7 +9858,7 @@ if( $slide_out_widget_overlay === 'dark' ) {
             width: 100%;
           }
       }
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 767px) {
         .nectar-shop-filters .nectar-shop-filter-trigger .dynamic .show {
           display: none!important;
         }
@@ -10034,7 +10094,7 @@ if( $slide_out_widget_overlay === 'dark' ) {
         }
       }
 
-      @media only screen and (max-width: 768px) {
+      @media only screen and (max-width: 767px) {
         .woocommerce div.product .single-product-main-image div.images .woocommerce-product-gallery__wrapper .woocommerce-product-gallery__image {
           width: 75%;
         }
@@ -10483,6 +10543,9 @@ if( $slide_out_widget_overlay === 'dark' ) {
       if( $product_border_radius && 'default' !== $product_border_radius ) {
         echo '.woocommerce .material.product .product-wrap {
           border-radius: ' . $product_border_radius . ' ' . $product_border_radius . ' 0 0;
+        }
+         :root {
+          --nectar-product-border-radius: ' . $product_border_radius . ';
         }
         .woocommerce .material.product,
         .woocommerce .material.product:before,

@@ -194,8 +194,19 @@ function nectar_hook_after_footer_widget_area() {
     do_action( 'nectar_hook_after_footer_widget_area' );
 }
 
+/**
+ * Templates
+ */
 function nectar_hook_404_content() {
-    do_action( 'nectar_hook_404_content' );
+    do_action( 'nectar_template__404' );
+}
+function nectar_template_single() {
+    $post_type = get_post_type();
+    do_action( 'nectar_template_single__' . $post_type );
+}
+function nectar_template_archive() {
+    $post_type = get_post_type();
+    do_action( 'nectar_template_archive__' . $post_type );
 }
 
 /**

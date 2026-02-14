@@ -111,13 +111,13 @@ export function generateVoxelStyles(attributes: VoxelStyleAttributes): CSSProper
 
     // Container Options - Scrollbar Color
     if (attributes.scrollbarColor) {
-        (styles as Record<string, unknown>).scrollbarColor = `${attributes.scrollbarColor} transparent`;
+        (styles as any).scrollbarColor = `${attributes.scrollbarColor} transparent`;
     }
 
     // Container Options - Backdrop Blur (desktop)
     if (attributes.enableBackdropBlur && attributes.backdropBlurStrength) {
-        (styles as Record<string, unknown>).backdropFilter = `blur(${attributes.backdropBlurStrength}px)`;
-        (styles as Record<string, unknown>).WebkitBackdropFilter = `blur(${attributes.backdropBlurStrength}px)`;
+        (styles as any).backdropFilter = `blur(${attributes.backdropBlurStrength}px)`;
+        (styles as any).WebkitBackdropFilter = `blur(${attributes.backdropBlurStrength}px)`;
     }
 
     return styles;

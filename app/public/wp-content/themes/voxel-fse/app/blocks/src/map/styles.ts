@@ -9,13 +9,14 @@
  * - Layer 2: Block-specific styles (this file)
  */
 
+import type { CSSProperties } from 'react';
 import type { MapAttributes } from './types';
 
 /**
  * Generate inline styles for map elements (applied directly to block wrapper)
  */
-export function generateMapInlineStyles(attributes: MapAttributes): React.CSSProperties {
-    const styles: React.CSSProperties = {};
+export function generateMapInlineStyles(_attributes: MapAttributes): CSSProperties {
+    const styles: CSSProperties = {};
 
     // No inline styles needed - all styles are generated via CSS rules
     return styles;
@@ -32,6 +33,22 @@ export function generateMapResponsiveCSS(
     const tabletRules: string[] = [];
     const mobileRules: string[] = [];
     const selector = `.voxel-fse-map-${blockId}`;
+
+    // ============================================
+    // GLOBAL marker styling - targets markers in Google Maps overlay pane
+    // ============================================
+    // Markers are rendered in Google Maps overlay pane, NOT inside the block DOM!
+    // They are appended to: .gm-style > div > div > div[style*="z-index"] (overlayImage pane)
+    // So we MUST use GLOBAL selectors, not block-scoped selectors.
+    //
+    // NOTE: Elementor CSS variable fallbacks (--e-global-typography-*, --ts-shade-*, --ts-accent-1)
+    // are set GLOBALLY in Block_Loader.php and voxel-fse-commons.css, NOT per-block.
+    cssRules.push(`.marker-type-text { font-size: 14px !important; color: #4a4a4a !important; }`);
+    cssRules.push(`.marker-wrapper { position: absolute; z-index: 10; transform: translate(-50%, -50%); }`);
+    cssRules.push(`.map-marker { display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; }`);
+
+    // Hide Google Maps native Map/Satellite toggle button (matches Voxel behavior)
+    cssRules.push(`.gm-style-mtc-bbw { display: none; }`);
 
     // ============================================
     // ACCORDION: Clusters
@@ -550,6 +567,13 @@ export function generateMapResponsiveCSS(
     if (attributes.navBtnBorderColorHover) {
         cssRules.push(`${selector} .ts-map-nav .ts-icon-btn:hover { border-color: ${attributes.navBtnBorderColorHover}; }`);
     }
+
+    // ============================================
+    // Map Container Height
+    // ============================================
+    // Use CSS custom property --vx-map-height set by applyMapStyles() in utils.ts
+    // This property is set based on height/heightUnit or calcHeight controls
+    cssRules.push(`${selector} .ts-map { height: var(--vx-map-height, 400px); }`);
 
     // ============================================
     // Combine CSS with media queries

@@ -47,12 +47,14 @@ function buildStyleVars(attributes: ReviewStatsAttributes): React.CSSProperties 
 	const styles: React.CSSProperties = {};
 
 	// Grid columns - ts-review-bars uses CSS grid
-	if (attributes.columns) {
+	// Only set if explicitly configured (let Voxel CSS handle default)
+	if (attributes.columns && attributes.columns > 1) {
 		styles.gridTemplateColumns = `repeat(${attributes.columns}, 1fr)`;
 	}
 
-	// Item gap
-	if (attributes.itemGap !== undefined) {
+	// Item gap - only set if explicitly configured
+	// Don't override Voxel's default grid-gap: 20px with 0px
+	if (attributes.itemGap !== undefined && attributes.itemGap > 0) {
 		styles.gap = `${attributes.itemGap}px`;
 	}
 

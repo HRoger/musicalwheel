@@ -23,7 +23,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"style": "file:./style.css",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",

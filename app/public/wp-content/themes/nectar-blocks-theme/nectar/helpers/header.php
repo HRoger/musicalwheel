@@ -17,6 +17,10 @@ add_filter('nectar_activate_transparent_header', 'nectar_blocks_transparent_head
 if( ! function_exists('nectar_blocks_transparent_header_option') ) {
     function nectar_blocks_transparent_header_option($active) {
         global $post;
+        // Avoid using loop post data when rendering archive contexts.
+        if ( is_archive() || is_home() ) {
+            return $active;
+        }
         if (! $post) {
             return false;
         }
@@ -35,6 +39,10 @@ add_filter('nectar_transparent_header_coloring', 'nectar_blocks_transparent_head
 if( ! function_exists('nectar_blocks_transparent_header_color') ) {
     function nectar_blocks_transparent_header_color($color) {
         global $post;
+        // Archive/search contexts should defer to the default color behavior.
+        if ( is_archive() || is_home() ) {
+            return $color;
+        }
         if (! $post) {
             return false;
         }
@@ -856,7 +864,7 @@ if ( ! function_exists( 'nectar_page_trans_markup' ) ) {
                     echo '<div class="material-icon">
 						<svg class="nectar-material-spinner" width="60px" height="60px" viewBox="0 0 60 60">
 							<circle stroke-linecap="round" cx="30" cy="30" r="26" fill="none" stroke-width="6"></circle>
-				  		</svg>	 
+				  		</svg>
 					</div>';
 
                 } else {

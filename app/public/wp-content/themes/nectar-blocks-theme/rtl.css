@@ -1132,6 +1132,14 @@ div[data-project-style="text_on_hover"] .single-product-main-image .onsale {
   right: auto;
 }
 
+#nectar-nav li .nectar-global-section-megamenu {
+  direction: ltr;
+}
+
+#nectar-nav .nectar-global-section-megamenu>.inner>[class*=wp-block] {
+  direction: rtl;
+}
+
 #top nav > ul > .megamenu > ul > li ul {
   right: 0 !important;
 }

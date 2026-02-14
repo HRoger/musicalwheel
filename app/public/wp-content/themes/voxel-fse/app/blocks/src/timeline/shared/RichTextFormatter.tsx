@@ -5,10 +5,11 @@
  * - @mentions (linked to profiles)
  * - #hashtags (linked to search)
  * - URLs (auto-linked)
- * - **bold**, *italic*, ~~strikethrough~~
+ * - *bold*, _italic_, ~strikethrough~
  * - `inline code` and ```code blocks```
  *
- * Matches Voxel's timeline content rendering.
+ * Matches Voxel's timeline content rendering exactly.
+ * See: voxel-timeline-main.beautified.js lines 1471-1559
  *
  * @package VoxelFSE
  */
@@ -28,10 +29,12 @@ interface RichTextFormatterProps {
 	hashtagBaseUrl?: string;
 	className?: string;
 	linkTarget?: '_blank' | '_self';
+	linkPreviewUrl?: string;
 }
 
 /**
  * Render a single content segment
+ * Matches Voxel's highlightContent output HTML
  */
 function renderSegment(
 	segment: ContentSegment,
@@ -56,86 +59,93 @@ function renderSegment(
 				</Fragment>
 			);
 
-		case 'mention':
-			const mentionUrl = segment.metadata?.userId
-				? `${mentionBaseUrl}?user_id=${segment.metadata.userId}`
-				: `${mentionBaseUrl}?username=${encodeURIComponent(segment.content)}`;
-			return (
-				<a
-					key={key}
-					href={mentionUrl}
-					className="vxf-mention"
-					data-user-id={segment.metadata?.userId}
-				>
-					@{segment.content}
-				</a>
-			);
+		case 'mention': {
+			// Voxel uses ?username= param with the username (without @)
+			// Also adds dot styling: · → <span style="opacity:.3;">·</span>
+			const username = segment.content.startsWith('@') ? segment.content.slice(1) : segment.content;
+			const profileUrl = new URL(mentionBaseUrl, window.location.origin);
+			profileUrl.searchParams.set('username', username);
 
-		case 'hashtag':
-			const hashtagUrl = `${hashtagBaseUrl}?search=${encodeURIComponent('#' + segment.content)}`;
+			// Add dot styling (matches Voxel line 1503)
+			const displayParts = segment.content.split('·');
+			const displayContent = displayParts.length > 1
+				? displayParts.map((part, i) => (
+					<Fragment key={i}>
+						{part}
+						{i < displayParts.length - 1 && <span style={{ opacity: 0.3 }}>·</span>}
+					</Fragment>
+				))
+				: segment.content;
+
 			return (
-				<a
-					key={key}
-					href={hashtagUrl}
-					className="vxf-hashtag"
-				>
-					#{segment.content}
+				<a key={key} href={profileUrl.toString()}>
+					{displayContent}
 				</a>
 			);
+		}
+
+		case 'hashtag': {
+			// Voxel uses ?q= param (not ?search=)
+			const hashtagUrl = new URL(hashtagBaseUrl, window.location.origin);
+			hashtagUrl.searchParams.set('q', segment.content);
+
+			return (
+				<a key={key} href={hashtagUrl.toString()}>
+					{segment.content}
+				</a>
+			);
+		}
 
 		case 'link':
-			// Format display URL (remove protocol, truncate if needed)
-			const displayUrl = segment.content
-				.replace(/^https?:\/\//, '')
-				.replace(/\/$/, '');
-			const truncatedUrl = displayUrl.length > 40
-				? displayUrl.slice(0, 37) + '...'
-				: displayUrl;
-
+			// Voxel doesn't truncate URLs - displays full URL
 			return (
 				<a
 					key={key}
 					href={segment.metadata?.url || segment.content}
-					className="vxf-link"
+					rel="noopener noreferrer nofollow"
 					target={linkTarget}
-					rel={linkTarget === '_blank' ? 'noopener noreferrer' : undefined}
 				>
-					{truncatedUrl}
+					{segment.content}
 				</a>
 			);
 
 		case 'code':
-			// Check if multiline (code block)
+			// Multiline = code block with `min-scroll` class (matches Voxel line 1492)
 			if (segment.content.includes('\n')) {
 				return (
-					<pre key={key} className="vxf-code-block">
-						<code>{segment.content}</code>
+					<pre
+						key={key}
+						className="min-scroll"
+						{...(segment.metadata?.lang ? { 'data-lang': segment.metadata.lang } : {})}
+					>
+						{segment.content}
 					</pre>
 				);
 			}
+			// Inline code (matches Voxel line 1497)
 			return (
-				<code key={key} className="vxf-code-inline">
+				<code key={key}>
 					{segment.content}
 				</code>
 			);
 
 		case 'bold':
 			return (
-				<strong key={key} className="vxf-bold">
+				<strong key={key}>
 					{segment.content}
 				</strong>
 			);
 
 		case 'italic':
 			return (
-				<em key={key} className="vxf-italic">
+				<em key={key}>
 					{segment.content}
 				</em>
 			);
 
 		case 'strikethrough':
 			return (
-				<del key={key} className="vxf-strikethrough">
+				<del key={key}>
 					{segment.content}
 				</del>
 			);
@@ -157,6 +167,7 @@ export function RichTextFormatter({
 	hashtagBaseUrl = '/search/',
 	className = '',
 	linkTarget = '_blank',
+	linkPreviewUrl,
 }: RichTextFormatterProps): JSX.Element {
 	// Process and optionally truncate content
 	const { displayContent, isTruncated } = useMemo(() => {
@@ -170,37 +181,38 @@ export function RichTextFormatter({
 
 	// Parse content into segments
 	const segments = useMemo(
-		() => parseContent(displayContent),
-		[displayContent]
+		() => parseContent(displayContent, { linkPreviewUrl }),
+		[displayContent, linkPreviewUrl]
 	);
 
 	return (
-		<div className={`vxf-content ${className}`}>
+		<>
 			{segments.map((segment, index) =>
 				renderSegment(segment, index, mentionBaseUrl, hashtagBaseUrl, linkTarget)
 			)}
 
-			{/* Read more / Read less toggle */}
+			{/* Read more / Read less toggle - matches Voxel's status.php line 144 */}
+			{/* Voxel uses <a href="#" class="vxfeed__read-more"> with ▾ and ▴ arrows */}
 			{isTruncated && !isExpanded && onToggleExpand && (
-				<button
-					type="button"
-					className="vxf-content-toggle vxf-content-toggle--more"
-					onClick={onToggleExpand}
+				<a
+					href="#"
+					className="vxfeed__read-more"
+					onClick={(e) => { e.preventDefault(); onToggleExpand(); }}
 				>
-					Read more
-				</button>
+					Read more &#9662;
+				</a>
 			)}
 
 			{isExpanded && maxLength && content.length > maxLength && onToggleExpand && (
-				<button
-					type="button"
-					className="vxf-content-toggle vxf-content-toggle--less"
-					onClick={onToggleExpand}
+				<a
+					href="#"
+					className="vxfeed__read-more"
+					onClick={(e) => { e.preventDefault(); onToggleExpand(); }}
 				>
-					Show less
-				</button>
+					Read less &#9652;
+				</a>
 			)}
-		</div>
+		</>
 	);
 }
 

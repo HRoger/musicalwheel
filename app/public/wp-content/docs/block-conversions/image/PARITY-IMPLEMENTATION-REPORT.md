@@ -332,7 +332,7 @@ All 28 Elementor hover animations supported:
 | CSS Classes | 100% | All classes preserved |
 | Inspector Controls | 100% | 32/32 controls |
 | Responsive Support | 100% | All breakpoints |
-| Hover Animations | 100% | 28/28 animations |
+| Hover Animations | 100% | 27/27 animations (+ None option) |
 | CSS Filters | 100% | 5/5 filters |
 | Lightbox | 100% | Native integration |
 | Type Safety | 100% | Full TypeScript |

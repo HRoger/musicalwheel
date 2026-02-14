@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { WorkHoursAttributes, ScheduleDay, VxConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import { renderIcon } from '@shared/utils/renderIcon';
+import type { IconValue } from '@shared/types';
 
 interface WorkHoursComponentProps {
   attributes: WorkHoursAttributes;
@@ -190,17 +192,23 @@ export default function WorkHoursComponent({
         {/* Top Section: Current Status - matches Voxel's ts-hours-today structure */}
         <div className="ts-hours-today flexify">
           {/* Status Indicator - matches Voxel's flexify ts-open-status structure */}
+          {/* PARITY: Voxel uses get_icon_markup($icon) ?: svg('clock.svg') */}
+          {/* Reference: themes/voxel/templates/widgets/work-hours.php:6,11,17,22,27,32 */}
           <div className={`flexify ts-open-status ${statusClass}`}>
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              transform="rotate(0 0 0)"
-            >
-              <path d={CLOCK_ICON_PATH} fill={statusIconColor || '#343C54'} />
-            </svg>
+            {statusIcon && (statusIcon as IconValue).value ? (
+              renderIcon(statusIcon as IconValue)
+            ) : (
+              <svg
+                width="80"
+                height="80"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                transform="rotate(0 0 0)"
+              >
+                <path d={CLOCK_ICON_PATH} fill={statusIconColor || '#343C54'} />
+              </svg>
+            )}
             <p>{statusText}</p>
           </div>
 
@@ -210,21 +218,27 @@ export default function WorkHoursComponent({
           </p>
 
           {/* Expand/Collapse Button - includes vx-event-expand class like Voxel */}
+          {/* PARITY: Voxel uses get_icon_markup(down_icon) ?: svg('chevron-down.svg') */}
+          {/* Reference: themes/voxel/templates/widgets/work-hours.php:73 */}
           <a
             href="#"
             className="ts-expand-hours ts-icon-btn ts-smaller vx-event-expand"
             onClick={handleExpandClick}
+            style={isExpanded ? { transform: 'rotate(180deg)' } : undefined}
           >
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              transform={isExpanded ? 'rotate(180 0 0)' : 'rotate(0 0 0)'}
-            >
-              <path d={EXPAND_ICON_PATH} fill={attributes.accordionButtonColor || '#343C54'} />
-            </svg>
+            {attributes.downIcon && (attributes.downIcon as IconValue).value ? (
+              renderIcon(attributes.downIcon as IconValue)
+            ) : (
+              <svg
+                width="80"
+                height="80"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d={EXPAND_ICON_PATH} fill={attributes.accordionButtonColor || '#343C54'} />
+              </svg>
+            )}
           </a>
         </div>
 

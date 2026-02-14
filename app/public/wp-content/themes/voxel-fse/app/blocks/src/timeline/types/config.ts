@@ -40,6 +40,17 @@ export interface UploadConfig {
 }
 
 /**
+ * Reply-specific upload configuration
+ * Evidence: timeline.php L447-459 - replies have separate image settings
+ */
+export interface ReplyUploadConfig {
+	max_file_size: number;
+	max_files: number;
+	enabled: boolean;
+	allowed_types: string[];
+}
+
+/**
  * Character limits configuration
  */
 export interface CharacterLimits {
@@ -174,22 +185,28 @@ export interface TimelineStrings {
 	search_placeholder: string;
 	search_no_results: string;
 
-	// Missing strings identified in StatusItem.tsx
+	// Action strings (from controller)
 	copied?: string;
 	copy_link?: string;
 	share_via?: string;
 	remove_link_preview?: string;
-	// edit, approve, mark_pending, delete, delete_confirm are already defined above
 	restricted_visibility?: string;
-	// repost, unrepost, quote are already defined above
 	yes?: string;
 	no?: string;
 	reposted?: string;
+
+	// Voxel-exact l10n strings - Evidence: timeline.php L491-507
+	// These use Voxel's @count/@date template syntax for 1:1 parity
+	no_activity?: string;
 	editedOn?: string;
 	oneLike?: string;
 	countLikes?: string;
 	oneReply?: string;
 	countReplies?: string;
+	cancelEdit?: string;
+
+	// Emoji group translations - Evidence: timeline.php L492-500
+	emoji_groups?: Record<string, string>;
 }
 
 /**
@@ -221,6 +238,8 @@ export interface TimelineConfig {
 	post_types: StatusPostType[];
 	character_limits: CharacterLimits;
 	upload_config: UploadConfig;
+	// Reply-specific upload config - Evidence: timeline.php L447-459
+	reply_upload_config: ReplyUploadConfig;
 	// Review config is a map of post_type -> ReviewConfig
 	// Matches Voxel's $root.config.reviews structure
 	review_config: Record<string, import('./status').ReviewConfig> | null;
@@ -246,6 +265,34 @@ export interface TimelineConfig {
 		posts_editable: boolean;
 		replies_editable: boolean;
 	};
+
+	// Truncation settings - Evidence: timeline.php L437, L450
+	truncate_at: {
+		posts: number;
+		replies: number;
+	};
+
+	// Quotes config - Evidence: timeline.php L464-467
+	quotes: {
+		truncate_at: number;
+		placeholder: string;
+	};
+
+	// Asset URLs - Evidence: timeline.php L468-479
+	asset_urls: {
+		emojis: string;
+		link_preview_default: string;
+		mentions: string;
+		hashtags: string;
+	};
+
+	// Search config - Evidence: timeline.php L480-484
+	search: {
+		maxlength: number;
+	};
+
+	// Show usernames - Evidence: timeline.php L489
+	show_usernames: boolean;
 
 	// UI strings
 	strings: TimelineStrings;
@@ -301,7 +348,7 @@ export interface OrderingOption {
 	_id: string;
 	order: 'latest' | 'earliest' | 'most_liked' | 'most_discussed' | 'popular' | 'best_rated' | 'worst_rated';
 	time: 'all_time' | 'today' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-	timeCustom: number;
+	timeCustom: number | string;
 	label: string;
 }
 

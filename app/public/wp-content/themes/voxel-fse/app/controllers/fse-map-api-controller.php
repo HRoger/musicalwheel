@@ -128,9 +128,12 @@ class FSE_Map_API_Controller extends FSE_Base_Controller {
 			], 400 );
 		}
 
+		// Set post context so VoxelScript tags resolve (e.g. {post.product.price})
+		// Evidence: post-utils.php:600 calls \Voxel\render() which needs current post
+		\Voxel\set_current_post( $post );
+
 		// Generate marker template using Voxel's function
 		// (map.php:18, post-utils.php:572-651)
-		// Use output buffering to catch any accidental output from Voxel methods
 		ob_start();
 		$marker = \Voxel\_post_get_marker( $post );
 		ob_end_clean();
@@ -160,6 +163,9 @@ class FSE_Map_API_Controller extends FSE_Base_Controller {
 				'message' => 'Post not found',
 			], 404 );
 		}
+
+		// Set post context so VoxelScript tags resolve
+		\Voxel\set_current_post( $post );
 
 		// Generate marker template
 		ob_start();
@@ -224,6 +230,9 @@ class FSE_Map_API_Controller extends FSE_Base_Controller {
 			if ( ! ( is_numeric( $location['latitude'] ?? null ) && is_numeric( $location['longitude'] ?? null ) ) ) {
 				continue;
 			}
+
+			// Set post context so VoxelScript tags resolve (e.g. {post.product.price})
+			\Voxel\set_current_post( $post );
 
 			// Generate marker template
 			ob_start();

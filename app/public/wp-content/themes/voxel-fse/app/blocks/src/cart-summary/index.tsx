@@ -8,7 +8,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
@@ -18,6 +18,17 @@ import type { CartSummaryBlockAttributes } from './types';
 
 // Type assertion for block.json metadata
 const blockMetadata = metadata as unknown as BlockConfiguration<CartSummaryBlockAttributes>;
+
+const deprecated = [
+	{
+		attributes: {
+			...blockMetadata.attributes,
+			...advancedTabAttributes,
+			...voxelTabAttributes,
+		},
+		save: saveWithPlaceholder,
+	},
+];
 
 registerBlockType<CartSummaryBlockAttributes>(blockMetadata.name, {
 	...blockMetadata,
@@ -29,4 +40,5 @@ registerBlockType<CartSummaryBlockAttributes>(blockMetadata.name, {
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
+	deprecated,
 });

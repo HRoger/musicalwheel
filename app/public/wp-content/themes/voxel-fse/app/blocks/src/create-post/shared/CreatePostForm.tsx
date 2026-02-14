@@ -1001,6 +1001,12 @@ export const CreatePostForm = ({
 				const formDataObj = new FormData();
 				const postdataForJson: Record<string, any> = {};
 
+				// File deduplication tracking - matches Voxel's _vx_file_aliases system
+				// Evidence: voxel-create-post.beautified.js lines 4173-4221
+				// Voxel deduplicates files across FormData using JSON.stringify({name,type,size,lastModified})
+				const fileAliases: Record<string, string> = {};
+				const appendedFileKeys: Set<string> = new Set();
+
 				// Process each field in submissionData
 				Object.keys(submissionData).forEach((fieldKey) => {
 					let value = submissionData[fieldKey];
@@ -1022,14 +1028,32 @@ export const CreatePostForm = ({
 						// Get the actual File objects from the ref
 						const fileObjects = fileObjectsRef.current[fieldKey] || [];
 
+						// Determine FormData key - supports repeater nested paths
+						// Evidence: Voxel uses files[field_id::row-path][] for repeater files
+						const fileFormKey = field.repeater_id
+							? `files[${field.id}::row-${field.repeater_index}][]`
+							: `files[${field.id}][]`;
+
 						// Initialize postdata array for this field
 						postdataForJson[fieldKey] = [];
 
 						// Process each file object
 						fileObjects.forEach((fileObj) => {
 							if (fileObj.source === 'new_upload' && fileObj.file) {
-								// Add File object to FormData (Channel 2)
-								formDataObj.append(`files[${field.id}][]`, fileObj.file);
+								// Deduplication check - same file may appear in multiple fields
+								const fileSignature = JSON.stringify({
+									name: fileObj.file.name,
+									type: fileObj.file.type,
+									size: fileObj.file.size,
+									lastModified: fileObj.file.lastModified,
+								});
+
+								if (!appendedFileKeys.has(fileSignature)) {
+									// First occurrence: append to FormData
+									formDataObj.append(fileFormKey, fileObj.file);
+									appendedFileKeys.add(fileSignature);
+									fileAliases[fileSignature] = fileFormKey;
+								}
 								// Add marker to postdata (Channel 1)
 								(postdataForJson[fieldKey] as (string | number)[]).push('uploaded_file');
 							} else if (fileObj.source === 'existing' && fileObj.id) {
@@ -1042,6 +1066,11 @@ export const CreatePostForm = ({
 						postdataForJson[fieldKey] = value;
 					}
 				});
+
+				// Append file aliases for deduplication (Voxel's _vx_file_aliases system)
+				if (Object.keys(fileAliases).length > 0) {
+					formDataObj.append('_vx_file_aliases', JSON.stringify(fileAliases));
+				}
 
 				// Append JSON-stringified postdata
 				formDataObj.append('postdata', JSON.stringify(postdataForJson));
@@ -1140,9 +1169,9 @@ export const CreatePostForm = ({
 					status: result.status,
 				});
 
-				// Notify parent window (for admin metabox) - 1:1 match with Voxel
-				// Wrap in try-catch to prevent browser extension errors
-				if (window.parent !== window) {
+				// Notify parent window (for admin metabox only) - 1:1 match with Voxel
+				// Evidence: Voxel only sends postMessage when in admin iframe context
+				if (isAdminMode && window.parent !== window) {
 					try {
 						window.parent.postMessage('create-post:submitted', '*');
 					} catch (error) {
@@ -1152,9 +1181,9 @@ export const CreatePostForm = ({
 				}
 
 				// Scroll to top (matches Voxel's scrollIntoView behavior)
-				setTimeout(() => {
+				requestAnimationFrame(() => {
 					window.scrollTo({ top: 0, behavior: 'smooth' });
-				}, 100);
+				});
 
 				// DO NOT redirect automatically - Voxel shows success screen with buttons
 				if (attributes.redirectAfterSubmit && !result.edit_link && !result.view_link) {
@@ -1177,9 +1206,9 @@ export const CreatePostForm = ({
 				});
 
 				// Scroll to top to show inline error notification (works in all contexts)
-				setTimeout(() => {
+				requestAnimationFrame(() => {
 					window.scrollTo({ top: 0, behavior: 'smooth' });
-				}, 100);
+				});
 
 				// Also show Voxel.alert if available (for frontend consistency)
 				// @ts-expect-error - Window interface conflicts across files
@@ -1200,9 +1229,9 @@ export const CreatePostForm = ({
 			});
 
 			// Scroll to top to show inline error notification (works in all contexts)
-			setTimeout(() => {
+			requestAnimationFrame(() => {
 				window.scrollTo({ top: 0, behavior: 'smooth' });
-			}, 100);
+			});
 
 			// Also show Voxel.alert if available (for frontend consistency)
 			// @ts-expect-error - Window interface conflicts across files
@@ -1217,6 +1246,10 @@ export const CreatePostForm = ({
 	 * Handle save as draft
 	 */
 	const handleSaveDraft = async () => {
+		// Voxel pattern: Skip required field validation for drafts
+		// Evidence: voxel-create-post.beautified.js lines 4139-4143
+		// this.validateRequired = false; → allows empty required fields
+		// We skip validateForm() entirely for drafts — Voxel only validates non-required constraints
 		setSubmission({ ...submission, processing: true });
 
 		try {

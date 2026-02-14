@@ -26,40 +26,40 @@ body[data-form-style="minimal"].woocommerce form .required {
 }
 
 
-.woocommerce #respond input#submit:hover, 
-.woocommerce a.button:hover, 
-.woocommerce button.button:hover, 
-.woocommerce input.button:hover, 
-.woocommerce #respond input#submit.disabled:hover, 
-.woocommerce #respond input#submit:disabled:hover, 
-.woocommerce #respond input#submit:disabled[disabled]:hover, 
-.woocommerce a.button.disabled:hover, 
-.woocommerce a.button:disabled:hover, 
-.woocommerce a.button:disabled[disabled]:hover, 
-.woocommerce button.button.disabled:hover, 
-.woocommerce button.button:disabled:hover, 
-.woocommerce button.button:disabled[disabled]:hover, 
-.woocommerce input.button.disabled:hover, 
-.woocommerce input.button:disabled:hover, 
+.woocommerce #respond input#submit:hover,
+.woocommerce a.button:hover,
+.woocommerce button.button:hover,
+.woocommerce input.button:hover,
+.woocommerce #respond input#submit.disabled:hover,
+.woocommerce #respond input#submit:disabled:hover,
+.woocommerce #respond input#submit:disabled[disabled]:hover,
+.woocommerce a.button.disabled:hover,
+.woocommerce a.button:disabled:hover,
+.woocommerce a.button:disabled[disabled]:hover,
+.woocommerce button.button.disabled:hover,
+.woocommerce button.button:disabled:hover,
+.woocommerce button.button:disabled[disabled]:hover,
+.woocommerce input.button.disabled:hover,
+.woocommerce input.button:disabled:hover,
 .woocommerce input.button:disabled[disabled]:hover {
 	color: var(--nectar-accent-text-color, #fff);
 }
 
-.woocommerce-page:not([data-form-b-style="see-through"]) div[data-project-style="classic"] button[type="submit"].single_add_to_cart_button:hover, 
-.woocommerce input[type="submit"][name="apply_coupon"]:hover, 
-.woocommerce input[type="submit"][name="update_cart"]:hover, 
+.woocommerce-page:not([data-form-b-style="see-through"]) div[data-project-style="classic"] button[type="submit"].single_add_to_cart_button:hover,
+.woocommerce input[type="submit"][name="apply_coupon"]:hover,
+.woocommerce input[type="submit"][name="update_cart"]:hover,
 .woocommerce button[type="submit"][name="calc_shipping"]:hover {
 	background-color: #333333!important;
 }
 
-.woocommerce input[type="submit"][name="apply_coupon"]:hover, 
-.woocommerce input[type="submit"][name="update_cart"]:hover, 
+.woocommerce input[type="submit"][name="apply_coupon"]:hover,
+.woocommerce input[type="submit"][name="update_cart"]:hover,
 .woocommerce button[type="submit"][name="calc_shipping"]:hover {
 	opacity: 0.8;
 }
 
-.woocommerce .span_4 input[type="submit"].checkout-button:hover, 
-.woocommerce-cart .wc-proceed-to-checkout a.checkout-button:hover, 
+.woocommerce .span_4 input[type="submit"].checkout-button:hover,
+.woocommerce-cart .wc-proceed-to-checkout a.checkout-button:hover,
 .woocommerce #order_review #payment #place_order:hover {
 	opacity: 0.8;
 }
@@ -98,7 +98,7 @@ body[data-button-style="slightly_rounded_shadow"].woocommerce .widget .price_sli
 	box-shadow: none!important;
 }
 
-#nectar-content-wrap .widget_layered_nav_filters ul li a:hover, 
+#nectar-content-wrap .widget_layered_nav_filters ul li a:hover,
 .material #nectar-content-wrap #sidebar .widget_layered_nav_filters ul li a:hover {
 	border: 1px solid rgba(0, 0, 0, 0.25);
 }
@@ -107,8 +107,8 @@ body[data-button-style="slightly_rounded_shadow"].woocommerce .widget .price_sli
 	opacity: 0.8;
 }
 
-body .widget_layered_nav ul.yith-wcan-label li a:hover, 
-body #sidebar .widget_layered_nav ul.yith-wcan-label li a:hover, 
+body .widget_layered_nav ul.yith-wcan-label li a:hover,
+body #sidebar .widget_layered_nav ul.yith-wcan-label li a:hover,
 .ascend.woocommerce #sidebar .widget_layered_nav ul.yith-wcan-label li a:hover {
 	color: #fff!important;
 	border-color: transparent;
@@ -147,21 +147,21 @@ body .woocommerce.add_to_cart_inline a.button.add_to_cart_button:hover {
 
 @media only screen and (max-width: 1024px) {
 
-	.products[data-rm-m-hover="1"] li.product.minimal.hover-bound:hover .product-meta, 
+	.products[data-rm-m-hover="1"] li.product.minimal.hover-bound:hover .product-meta,
   .products[data-rm-m-hover="1"] li.product.minimal:hover .product-add-to-cart a,
-   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover h3, 
-   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover .product-meta>.price, 
-   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover h2, 
+   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover h3,
+   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover .product-meta>.price,
+   .woocommerce .products[data-rm-m-hover="1"] .material.product:hover h2,
    ul.products li.product.minimal:hover .product-image-wrap:not(.has-hover-image) img {
 		transform: none!important;
 	}
-	.woocommerce .products[data-rm-m-hover="1"] li.product .product-wrap:hover img.hover-gallery-image, 
-  .woocommerce .products[data-rm-m-hover="1"] li.product .product-wrap:hover picture.hover-gallery-image, 
+	.woocommerce .products[data-rm-m-hover="1"] li.product .product-wrap:hover img.hover-gallery-image,
+  .woocommerce .products[data-rm-m-hover="1"] li.product .product-wrap:hover picture.hover-gallery-image,
   .products[data-rm-m-hover="1"] .material.product:hover .product-wrap .product-add-to-cart,
   .products[data-rm-m-hover="1"] li.product.minimal:hover .product-add-to-cart a {
 		opacity: 0;
 	}
-	.products[data-rm-m-hover="1"] li.product.minimal:hover .product-meta .price, 
+	.products[data-rm-m-hover="1"] li.product.minimal:hover .product-meta .price,
   .products[data-rm-m-hover="1"] .material.product:hover .product-wrap .product-meta>.price {
 		opacity: 1;
 	}
@@ -945,7 +945,7 @@ body .nectar-quick-view-box div.product .bundled_product_summary .bundled_produc
 
 .nectar-quick-view-box.add-content .single_add_to_cart_button_wrap,
 .nectar-quick-view-box.add-content .close  {
-	animation-delay: 0.02s; 
+	animation-delay: 0.02s;
 }
 
 .nectar-quick-view-box div.product .summary p.price,
@@ -979,7 +979,7 @@ body .nectar-quick-view-box a.button.disabled {
 .nectar-quick-view-box .single_add_to_cart_button_wrap > * {
 	width: 50%;
 }
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 767px) {
 	.nectar-quick-view-box .single_add_to_cart_button_wrap > * {
 		width: 100%;
 	}

@@ -7,7 +7,6 @@
  * @package VoxelFSE
  */
 
-import { useState } from 'react';
 import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import DimensionsControl from './DimensionsControl';
@@ -77,12 +76,12 @@ export default function BorderGroupControl({
                         textTransform: 'none',
                     }}
                 >
-                    {__('Border Type', 'voxel-fse')}
+                    {label}
                 </label>
                 <SelectControl
                     value={borderType || ''}
                     options={BORDER_TYPES}
-                    onChange={(newType) => updateValue('borderType', newType)}
+                    onChange={(newType: string) => updateValue('borderType', newType)}
                     __nextHasNoMarginBottom
                     hideLabelFromVision
                 />

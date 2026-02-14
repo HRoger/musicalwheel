@@ -387,6 +387,12 @@ export function generateNestedTabsResponsiveCSS(
 		mobileRules.push(`${selector} { --n-tabs-content-border-radius: ${cbr.top || '0'} ${cbr.right || '0'} ${cbr.bottom || '0'} ${cbr.left || '0'}; }`);
 	}
 
+	// Transition Duration on tab buttons (for hover animation)
+	const transitionVal = attributes.tabsTransitionDuration?.desktop;
+	if (transitionVal !== undefined && transitionVal !== '') {
+		cssRules.push(`${selector} .e-n-tab-title { transition-duration: ${transitionVal}s; }`);
+	}
+
 	// ============================================
 	// Combine CSS with media queries
 	// ============================================

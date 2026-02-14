@@ -14,8 +14,15 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
+
+const deprecated = [
+	{
+		attributes: metadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
 
 // Register the block
 registerBlockType(metadata.name, {
@@ -23,4 +30,5 @@ registerBlockType(metadata.name, {
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
+	deprecated,
 });

@@ -17,10 +17,10 @@ import {
 	AccordionPanel,
 	BorderGroupControl,
 	ResponsiveRangeControl,
-	ColorControl,
+	ResponsiveColorControl,
 	BoxShadowPopup,
 	SectionHeading,
-	DimensionsControl,
+	ResponsiveDimensionsControl,
 	TypographyControl,
 	StateTabPanel,
 } from '@shared/controls';
@@ -68,10 +68,11 @@ export function StyleTab({
 					units={['px', '%']}
 				/>
 
-				<ColorControl
+				<ResponsiveColorControl
 					label={__('Background', 'voxel-fse')}
-					value={attributes.panelBg}
-					onChange={(value) => setAttributes({ panelBg: value })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="panelBg"
 				/>
 
 				<BoxShadowPopup
@@ -83,10 +84,11 @@ export function StyleTab({
 
 				<SectionHeading label={__('Panel head', 'voxel-fse')} />
 
-				<DimensionsControl
+				<ResponsiveDimensionsControl
 					label={__('Padding', 'voxel-fse')}
-					values={attributes.headPadding || {}}
-					onChange={(values) => setAttributes({ headPadding: values })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="headPadding"
 				/>
 
 				<ResponsiveRangeControl
@@ -109,10 +111,11 @@ export function StyleTab({
 					units={['px']}
 				/>
 
-				<ColorControl
+				<ResponsiveColorControl
 					label={__('Icon color', 'voxel-fse')}
-					value={attributes.headIcoCol}
-					onChange={(value) => setAttributes({ headIcoCol: value })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="headIcoCol"
 				/>
 
 				<TypographyControl
@@ -122,16 +125,18 @@ export function StyleTab({
 					attributePrefix="headTypo"
 				/>
 
-				<ColorControl
+				<ResponsiveColorControl
 					label={__('Text color', 'voxel-fse')}
-					value={attributes.headTypoCol}
-					onChange={(value) => setAttributes({ headTypoCol: value })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="headTypoCol"
 				/>
 
-				<ColorControl
+				<ResponsiveColorControl
 					label={__('Separator color', 'voxel-fse')}
-					value={attributes.headBorderCol}
-					onChange={(value) => setAttributes({ headBorderCol: value })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="headBorderCol"
 				/>
 
 				<SectionHeading label={__('Panel body', 'voxel-fse')} />
@@ -174,10 +179,11 @@ export function StyleTab({
 					attributePrefix="bodyTypo"
 				/>
 
-				<ColorControl
+				<ResponsiveColorControl
 					label={__('Text color', 'voxel-fse')}
-					value={attributes.bodyTypoCol}
-					onChange={(value) => setAttributes({ bodyTypoCol: value })}
+					attributes={attributes}
+					setAttributes={setAttributes}
+					attributeBaseName="bodyTypoCol"
 				/>
 
 				<SectionHeading label={__('Panel buttons', 'voxel-fse')} />
@@ -224,16 +230,18 @@ export function StyleTab({
 									units={['px', '%']}
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Text color', 'voxel-fse')}
-									value={attributes.scndBtnC}
-									onChange={(value) => setAttributes({ scndBtnC: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnC"
 								/>
 
-								<DimensionsControl
+								<ResponsiveDimensionsControl
 									label={__('Padding', 'voxel-fse')}
-									values={attributes.scndBtnPadding || {}}
-									onChange={(values) => setAttributes({ scndBtnPadding: values })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnPadding"
 								/>
 
 								<ResponsiveRangeControl
@@ -246,10 +254,11 @@ export function StyleTab({
 									units={['px']}
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Background color', 'voxel-fse')}
-									value={attributes.scndBtnBg}
-									onChange={(value) => setAttributes({ scndBtnBg: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnBg"
 								/>
 
 								<BorderGroupControl
@@ -279,37 +288,42 @@ export function StyleTab({
 									units={['px']}
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Icon color', 'voxel-fse')}
-									value={attributes.scndBtnIconColor}
-									onChange={(value) => setAttributes({ scndBtnIconColor: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnIconColor"
 								/>
 							</>
 						) : (
 							<>
 								{/* Hover State */}
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Text color', 'voxel-fse')}
-									value={attributes.scndBtnCH}
-									onChange={(value) => setAttributes({ scndBtnCH: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnCH"
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Background color', 'voxel-fse')}
-									value={attributes.scndBtnBgH}
-									onChange={(value) => setAttributes({ scndBtnBgH: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnBgH"
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Border color', 'voxel-fse')}
-									value={attributes.scndBtnBorderH}
-									onChange={(value) => setAttributes({ scndBtnBorderH: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnBorderH"
 								/>
 
-								<ColorControl
+								<ResponsiveColorControl
 									label={__('Icon color', 'voxel-fse')}
-									value={attributes.scndBtnIconColorH}
-									onChange={(value) => setAttributes({ scndBtnIconColorH: value })}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="scndBtnIconColorH"
 								/>
 							</>
 						)

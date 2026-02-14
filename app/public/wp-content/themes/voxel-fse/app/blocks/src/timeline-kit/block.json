@@ -303,6 +303,5 @@
 			"default": ""
 		}
 	},
-	"editorScript": "file:./index.tsx",
 	"render": "file:./render.php"
 }

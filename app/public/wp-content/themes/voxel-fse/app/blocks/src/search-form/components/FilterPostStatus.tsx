@@ -61,6 +61,12 @@ export default function FilterPostStatus( {
 		setIsOpen( false );
 	}, [ onChange ] );
 
+	// Evidence: voxel-search-form.beautified.js:1708 — onClear() { this.value = "" }
+	const handleClear = useCallback( () => {
+		onChange( '' );
+		setIsOpen( false );
+	}, [ onChange ] );
+
 	const openPopup = useCallback( () => {
 		setIsOpen( true );
 	}, [] );
@@ -176,7 +182,8 @@ export default function FilterPostStatus( {
 				icon={ filterIcon }
 				saveLabel="Save"
 				showSave={ false }
-				showClear={ false }
+				showClear={ hasValue }
+				onClear={ handleClear }
 				onSave={ () => setIsOpen( false ) }
 				onClose={ () => setIsOpen( false ) }
 				className={ `hide-head ${popupClassName}${config.popupCenterPosition ? ' ts-popup-centered' : ''}`.trim() }

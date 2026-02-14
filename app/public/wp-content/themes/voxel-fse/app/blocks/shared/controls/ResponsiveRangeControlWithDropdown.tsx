@@ -214,7 +214,7 @@ export default function ResponsiveRangeControlWithDropdown({
 							size="small"
 							style={{
 								marginTop: '0',
-								color: '#0073aa',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 								padding: '4px',
 								minWidth: 'auto',
 								width: '32px',

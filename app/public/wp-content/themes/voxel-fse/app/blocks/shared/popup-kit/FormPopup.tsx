@@ -52,6 +52,8 @@ export interface FormPopupProps {
 	popupClass?: string;
 	/** Minimum width for popup (overrides CSS min-width) */
 	minWidth?: number;
+	/** Custom header action buttons (rendered as <li> items before close button) */
+	headerActions?: React.ReactNode;
 }
 
 export const FormPopup: React.FC<FormPopupProps> = ({
@@ -71,6 +73,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 	children,
 	popupClass = '',
 	minWidth: propMinWidth,
+	headerActions,
 }) => {
 	const popupRef = useRef<HTMLDivElement>(null); // .ts-form element (receives positioning styles)
 	const popupBoxRef = useRef<HTMLDivElement>(null); // .ts-field-popup element
@@ -293,6 +296,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 										<span>{title}</span>
 									</div>
 									<ul className="flexify simplify-ul">
+										{headerActions}
 										<li className="flexify ts-popup-close">
 											<a
 												href="#"

@@ -21,7 +21,7 @@ $page_404_home_button = ( ! empty( $nectar_options['page-404-home-button'] ) ) ?
 ?>
 
 <div id="nectar-content-wrap" class="container-wrap">
-    
+
     <?php
     if ( ! empty( $page_404_bg_image ) ) {
         echo '<div class="error-404-bg-img" style="background-image: url(' . esc_url( $page_404_bg_image ) . ');"></div>';
@@ -31,16 +31,16 @@ $page_404_home_button = ( ! empty( $nectar_options['page-404-home-button'] ) ) ?
         }
     }
     ?>
-    
+
     <div class="container main-content">
-        
+
         <div class="row">
-            
+
             <div class="col span_12">
-                
+
                 <?php nectar_hook_404_content(); ?>
-                <?php if ( ! has_action('nectar_hook_404_content') ) { ?>
-                    <div id="error-404" 
+                <?php if ( ! has_action('nectar_template__404') ) { ?>
+                    <div id="error-404"
                     <?php
                     if ( ! empty( $page_404_font_color ) ) {
                         echo 'data-cc="true"'; }
@@ -48,17 +48,17 @@ $page_404_home_button = ( ! empty( $nectar_options['page-404-home-button'] ) ) ?
                     >
                         <h1><?php echo esc_html__( '404', 'nectar-blocks-theme' ); ?></h1>
                         <h2><?php echo esc_html__( 'Page Not Found', 'nectar-blocks-theme' ); ?></h2>
-                        
+
                         <?php if ( $page_404_home_button === '1' ) { ?>
                             <a class="nectar-button large regular-button accent-color has-icon" data-color-override="false" data-hover-color-override="false" href="<?php echo esc_url( home_url() ); ?>"><span><?php echo esc_html__( 'Back Home', 'nectar-blocks-theme' ); ?> </span><i class="icon-button-arrow"></i></a>
                             <?php } ?>
                     </div>
                 <?php } ?>
-                
+
             </div>
-            
+
         </div>
-        
+
     </div>
     <?php nectar_hook_before_container_wrap_close(); ?>
 </div>

@@ -16,9 +16,11 @@ import {
 	AdvancedIconControl,
 	ResponsiveRangeControl,
 	StateTabPanel,
+	TypographyControl,
 } from '@shared/controls';
 import type { GalleryBlockAttributes } from '../types';
 import type { IconValue } from '@shared/types';
+import type { TypographyValue } from '@shared/controls/TypographyPopup';
 
 interface StyleTabProps {
 	attributes: GalleryBlockAttributes;
@@ -194,6 +196,14 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 									value={attributes.viewAllTextColor}
 									onChange={(value: string | undefined) =>
 										setAttributes({ viewAllTextColor: value ?? '' })
+									}
+								/>
+
+								<TypographyControl
+									label={__('Typography', 'voxel-fse')}
+									value={attributes.viewAllTypography as TypographyValue}
+									onChange={(value: TypographyValue) =>
+										setAttributes({ viewAllTypography: value })
 									}
 								/>
 							</>

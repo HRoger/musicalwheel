@@ -77,7 +77,7 @@
 import { createRoot } from 'react-dom/client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import SearchFormComponent from './shared/SearchFormComponent';
-import type { SearchFormAttributes, PostTypeConfig, IconConfig, FilterConfig } from './types';
+import type { SearchFormAttributes, PostTypeConfig, IconConfig, FilterConfig, FilterData } from './types';
 import type { SearchFormDataset, SearchFormRawConfig } from './types/dataset';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
@@ -362,6 +362,14 @@ function normalizeConfig(rawInput: Record<string, unknown>): SearchFormAttribute
 			raw.post_type_filter_width_tablet) as number | undefined,
 		postTypeFilterWidth_mobile: (raw.postTypeFilterWidth_mobile ??
 			raw.post_type_filter_width_mobile) as number | undefined,
+		// Map/Feed switcher settings
+		// Evidence: themes/voxel/templates/widgets/search-form.php:194-222
+		mfSwitcherDesktop: normalizeBool(raw.mfSwitcherDesktop ?? raw.mf_switcher_desktop, false),
+		mfSwitcherDesktopDefault: (raw.mfSwitcherDesktopDefault ?? raw.mf_switcher_desktop_default ?? 'feed') as 'feed' | 'map',
+		mfSwitcherTablet: normalizeBool(raw.mfSwitcherTablet ?? raw.mf_switcher_tablet, false),
+		mfSwitcherTabletDefault: (raw.mfSwitcherTabletDefault ?? raw.mf_switcher_tablet_default ?? 'feed') as 'feed' | 'map',
+		mfSwitcherMobile: normalizeBool(raw.mfSwitcherMobile ?? raw.mf_switcher_mobile, false),
+		mfSwitcherMobileDefault: (raw.mfSwitcherMobileDefault ?? raw.mf_switcher_mobile_default ?? 'feed') as 'feed' | 'map',
 	};
 }
 
@@ -405,30 +413,57 @@ function parseVxConfig(container: HTMLElement): SearchFormAttributes {
 interface SearchFormWrapperProps {
 	attributes: SearchFormAttributes;
 	onSubmit: (values: Record<string, unknown>) => void;
+	inlinePostTypes?: PostTypeConfig[] | null;
 }
 
-function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
-	const [postTypes, setPostTypes] = useState<PostTypeConfig[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+function SearchFormWrapper({ attributes, onSubmit, inlinePostTypes }: SearchFormWrapperProps) {
+	const [postTypes, setPostTypes] = useState<PostTypeConfig[]>(inlinePostTypes || []);
+	const [isLoading, setIsLoading] = useState(!inlinePostTypes || inlinePostTypes.length === 0);
 	const [error, setError] = useState<string | null>(null);
 	const hasDispatchedInitial = useRef(false);
 
 	// Function to dispatch initial values to connected Post Feed
+	// NOTE: This is now mainly used for the "ready" event handshake, not initial page load.
+	// The Post Feed now fetches on mount using attributes.postType (matching Voxel's PHP behavior).
 	const dispatchInitialValues = useCallback(() => {
 		if (hasDispatchedInitial.current) return;
 
 		const defaultPostType = attributes.postTypes?.[0] || '';
 		if (!defaultPostType) return;
 
-		// Call onSubmit with initial values (empty filters, default post type)
+		// Don't dispatch if still loading - wait for data
+		if (isLoading || postTypes.length === 0) {
+			return;
+		}
+
+		// Build initial filter values from loaded post type config
+		// The REST API returns filterData.value for each filter based on defaultValue config
+		const initialFilterValues: Record<string, unknown> = {};
+		const postTypeConfig = postTypes.find((pt) => pt.key === defaultPostType);
+		if (postTypeConfig?.filters) {
+			postTypeConfig.filters.forEach((filterData: FilterData) => {
+				if (filterData.value !== null && filterData.value !== undefined) {
+					initialFilterValues[filterData.key] = filterData.value;
+				}
+			});
+		}
+
+		// Call onSubmit with initial values INCLUDING default filters
 		onSubmit({
 			postType: defaultPostType,
+			...initialFilterValues,
 		});
 
 		hasDispatchedInitial.current = true;
-	}, [attributes.postTypes, onSubmit]);
+	}, [attributes.postTypes, onSubmit, isLoading, postTypes]);
 
 	useEffect(() => {
+		// Skip REST fetch if we have inline data from server-side config injection
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		if (inlinePostTypes && inlinePostTypes.length > 0) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadPostTypes() {
@@ -458,9 +493,11 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [attributes.postTypes, attributes.filterLists]);
+	}, [inlinePostTypes, attributes.postTypes, attributes.filterLists]);
 
 	// Register this Search Form in the global registry for Post Feed connection
+	// NOTE: The Post Feed now fetches on mount, so this registry is mainly for edge cases
+	// where the Post Feed needs to get filter values after the initial load.
 	useEffect(() => {
 		const blockId = attributes.blockId;
 		if (!blockId) return;
@@ -468,19 +505,14 @@ function SearchFormWrapper({ attributes, onSubmit }: SearchFormWrapperProps) {
 		// Register the dispatch function
 		searchFormRegistry.set(blockId, dispatchInitialValues);
 
-		// Check if there are any pending Post Feed ready events
-		// This handles the case where Post Feed mounted before Search Form
-		const pendingTargetId = (window as any).__voxelFsePendingPostFeedReady?.[blockId];
-		if (pendingTargetId) {
-			// Dispatch initial values to the waiting Post Feed
-			dispatchInitialValues();
-			delete (window as any).__voxelFsePendingPostFeedReady[blockId];
-		}
-
 		return () => {
 			searchFormRegistry.delete(blockId);
 		};
 	}, [attributes.blockId, dispatchInitialValues]);
+
+	// NOTE: Removed the "auto-dispatch on mount" effect.
+	// The Post Feed now fetches on mount using attributes.postType, matching Voxel's PHP behavior.
+	// The Search Form only needs to dispatch when filters CHANGE (handled by useSearchForm hook).
 
 	// Loading state - matches Voxel's v-cloak pattern (display: none until ready)
 	// Since React renders when ready, we just show a simple loader without custom classes
@@ -557,6 +589,11 @@ function initSearchForms() {
 								targetId: attributes.postToFeedId,
 								postType,
 								filters,
+								// Map integration: tell Post Feed to include marker data
+								// Evidence: voxel-search-form.beautified.js:2086-2091
+								// Voxel adds __load_markers=yes when mapWidget !== null
+								hasMapWidget: !!attributes.postToMapId,
+								mapAdditionalMarkers: attributes.mapAdditionalMarkers ?? 0,
 							},
 							bubbles: true,
 						});
@@ -600,12 +637,30 @@ function initSearchForms() {
 			}
 		};
 
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlinePostTypes: PostTypeConfig[] | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlinePostTypes = JSON.parse(hydrateScript.textContent);
+			} catch {
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
 		// Clear placeholder and create React root
 		container.innerHTML = '';
 		dataset.hydrated = 'true';
 
 		const root = createRoot(container);
-		root.render(<SearchFormWrapper attributes={attributes} onSubmit={handleSubmit} />);
+		root.render(
+			<SearchFormWrapper
+				attributes={attributes}
+				onSubmit={handleSubmit}
+				inlinePostTypes={inlinePostTypes}
+			/>
+		);
 	});
 }
 
@@ -700,9 +755,11 @@ function redirectToPage(values: Record<string, unknown>, attributes: SearchFormA
 }
 
 /**
- * Handle Post Feed ready events
- * When a Post Feed dispatches 'voxel-fse:post-feed-ready', the connected Search Form
- * should respond with its initial values.
+ * Handle Post Feed ready events (LEGACY - kept for backwards compatibility)
+ *
+ * NOTE: The Post Feed now fetches on mount using attributes.postType, matching Voxel's
+ * server-side PHP rendering pattern. This handler is kept for edge cases where a
+ * Post Feed might need to get filter values from Search Form after initial load.
  */
 function handlePostFeedReady(event: Event) {
 	const customEvent = event as CustomEvent<{
@@ -714,18 +771,10 @@ function handlePostFeedReady(event: Event) {
 
 	const { searchFormId } = customEvent.detail;
 
-	// Check if the Search Form is already registered
+	// Try to dispatch if Search Form is registered
 	const dispatchFn = searchFormRegistry.get(searchFormId);
 	if (dispatchFn) {
-		// Search Form is ready, dispatch initial values
 		dispatchFn();
-	} else {
-		// Search Form hasn't mounted yet, store the pending request
-		// The Search Form will check for pending requests when it mounts
-		if (!(window as any).__voxelFsePendingPostFeedReady) {
-			(window as any).__voxelFsePendingPostFeedReady = {};
-		}
-		(window as any).__voxelFsePendingPostFeedReady[searchFormId] = customEvent.detail.blockId;
 	}
 }
 

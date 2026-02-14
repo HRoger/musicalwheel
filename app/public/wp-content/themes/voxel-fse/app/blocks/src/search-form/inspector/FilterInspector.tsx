@@ -512,9 +512,9 @@ export default function FilterInspector({
 				/>
 			)}
 
-			{/* Switcher filter: open_in_popup toggle instead of display_as select */}
-			{/* Evidence: switcher-filter.php:14-21 */}
-			{filterData?.type === 'switcher' && (
+			{/* Switcher/Open Now filter: open_in_popup toggle instead of display_as select */}
+			{/* Evidence: switcher-filter.php:176, open-now-filter.php:111-116 */}
+			{(filterData?.type === 'switcher' || filterData?.type === 'open-now') && (
 				<ToggleControl
 					label={__('Open in popup', 'voxel-fse')}
 					checked={filter.openInPopup ?? false}

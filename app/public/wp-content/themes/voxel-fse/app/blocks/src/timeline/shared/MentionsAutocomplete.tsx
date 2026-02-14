@@ -2,21 +2,30 @@
  * MentionsAutocomplete Component
  *
  * Dropdown autocomplete for @mentions in timeline composer.
- * Searches users and posts via API.
+ * Matches Voxel's mention dropdown HTML structure EXACTLY for CSS compatibility.
+ *
+ * Voxel HTML Structure (from status-composer.php lines 100-113):
+ * <div class="vxfeed__mentions" :style="mentions.style">
+ *   <ul class="simplify-ul">
+ *     <li v-for="mention in mentions.list">
+ *       <a href="#" :class="{'is-active': focused}">
+ *         <strong>display_name</strong>
+ *         <span>@username</span>
+ *       </a>
+ *     </li>
+ *   </ul>
+ * </div>
  *
  * VOXEL PARITY: Global mentions cache (window._vx_mentions_cache)
- * Voxel caches mention search results globally to avoid redundant API calls.
- * When a search is performed, results are stored in window._vx_mentions_cache[query].
- * Before making an API call, we check if results exist in the cache.
  * See: timeline-composer.beautified.js lines 77-92, 107-109
  *
  * @package VoxelFSE
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { searchMentions } from '../api';
 import type { MentionResult } from '../api';
-import { getInitials, stringToColor } from '../utils';
 
 // Declare global mentions cache type
 declare global {
@@ -27,7 +36,6 @@ declare global {
 
 /**
  * Initialize global mentions cache if not exists
- * This matches Voxel's initialization in timeline-main.beautified.js line 1367
  */
 function initMentionsCache(): Record<string, MentionResult[]> {
 	if (typeof window._vx_mentions_cache !== 'object') {
@@ -44,46 +52,41 @@ interface MentionsAutocompleteProps {
 	isActive: boolean;
 	onSelect: (mention: MentionResult) => void;
 	onClose: () => void;
-	position?: { top: number; left: number };
-	className?: string;
+	style?: React.CSSProperties;
 }
 
 /**
  * MentionsAutocomplete Component
+ * Matches Voxel's vxfeed__mentions structure (teleported to body)
  */
 export function MentionsAutocomplete({
 	query,
 	isActive,
 	onSelect,
 	onClose,
-	position,
-	className = '',
+	style,
 }: MentionsAutocompleteProps): JSX.Element | null {
 	const [results, setResults] = useState<MentionResult[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 
 	const containerRef = useRef<HTMLDivElement>(null);
 	const abortControllerRef = useRef<AbortController | null>(null);
 
-	// Debounced search with global cache (matches Voxel's behavior)
-	// See: timeline-composer.beautified.js lines 77-92, 107-109
+	// Debounced search with global cache
 	useEffect(() => {
 		if (!isActive || !query || query.length < 1) {
 			setResults([]);
 			return;
 		}
 
-		// Cancel previous request
 		if (abortControllerRef.current) {
 			abortControllerRef.current.abort();
 		}
 
-		// Initialize global cache
 		const cache = initMentionsCache();
 
-		// Check cache first (matches Voxel's check at line 107)
+		// Check cache first
 		if (Array.isArray(cache[query])) {
 			setResults(cache[query]);
 			setSelectedIndex(0);
@@ -91,10 +94,9 @@ export function MentionsAutocomplete({
 			return;
 		}
 
-		// Debounce API call (200ms like Voxel's debounce at line 78)
+		// Debounce API call (200ms like Voxel)
 		const timeoutId = setTimeout(async () => {
 			setIsLoading(true);
-			setError(null);
 
 			const controller = new AbortController();
 			abortControllerRef.current = controller;
@@ -102,15 +104,11 @@ export function MentionsAutocomplete({
 			try {
 				const response = await searchMentions(query, controller.signal);
 				const searchResults = response.results || [];
-
-				// Cache the results (matches Voxel's caching at line 90)
 				cache[query] = searchResults;
-
 				setResults(searchResults);
 				setSelectedIndex(0);
 			} catch (err) {
 				if (err instanceof Error && err.name !== 'AbortError') {
-					setError('Failed to search');
 					setResults([]);
 				}
 			} finally {
@@ -185,18 +183,6 @@ export function MentionsAutocomplete({
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [isActive, onClose]);
 
-	// Scroll selected item into view
-	useEffect(() => {
-		if (!containerRef.current) return;
-
-		const selectedElement = containerRef.current.querySelector(
-			'.vxf-mention-item--selected'
-		);
-		if (selectedElement) {
-			selectedElement.scrollIntoView({ block: 'nearest' });
-		}
-	}, [selectedIndex]);
-
 	// Handle selection
 	const handleSelect = useCallback(
 		(mention: MentionResult) => {
@@ -205,85 +191,37 @@ export function MentionsAutocomplete({
 		[onSelect]
 	);
 
-	// Don't render if not active
-	if (!isActive) return null;
+	// Don't render if not active or no results
+	if (!isActive || (!isLoading && results.length === 0)) return null;
 
-	// Position styles
-	const positionStyles = position
-		? {
-				position: 'absolute' as const,
-				top: position.top,
-				left: position.left,
-			}
-		: {};
-
-	return (
+	// Render with portal to body (matches Voxel's teleport to body)
+	const dropdown = (
 		<div
 			ref={containerRef}
-			className={`vxf-mentions-autocomplete ${className}`}
-			style={positionStyles}
-			role="listbox"
-			aria-label="Mention suggestions"
+			className="vxfeed__mentions"
+			style={style}
 		>
-			{/* Loading state - matches Voxel standard */}
-			{isLoading && (
-				<div className="ts-no-posts">
-					<span className="ts-loader" />
-				</div>
-			)}
-
-			{/* Error state */}
-			{error && (
-				<div className="vxf-mentions-autocomplete-error">
-					{error}
-				</div>
-			)}
-
-			{/* Results */}
-			{!isLoading && !error && results.length > 0 && (
-				<ul className="vxf-mentions-autocomplete-list">
+			{!isLoading && results.length > 0 && (
+				<ul className="simplify-ul">
 					{results.map((result, index) => (
-						<li
-							key={`${result.type}-${result.id}`}
-							className={`vxf-mention-item ${index === selectedIndex ? 'vxf-mention-item--selected' : ''}`}
-							role="option"
-							aria-selected={index === selectedIndex}
-							onClick={() => handleSelect(result)}
-							onMouseEnter={() => setSelectedIndex(index)}
-						>
-							<div className="vxf-mention-item-avatar">
-								{result.avatar_url ? (
-									<img src={result.avatar_url} alt="" />
-								) : (
-									<span
-										className="vxf-mention-item-avatar-placeholder"
-										style={{ backgroundColor: stringToColor(result.name) }}
-									>
-										{getInitials(result.name)}
-									</span>
-								)}
-							</div>
-							<div className="vxf-mention-item-info">
-								<span className="vxf-mention-item-name">
-									{result.name}
-								</span>
-								<span className="vxf-mention-item-type">
-									{result.type === 'user' ? 'User' : 'Post'}
-								</span>
-							</div>
+						<li key={`${result.type}-${result.id}`}>
+							<a
+								href="#"
+								className={index === selectedIndex ? 'is-active' : ''}
+								onClick={(e) => { e.preventDefault(); handleSelect(result); }}
+								onMouseEnter={() => setSelectedIndex(index)}
+							>
+								<strong>{result.name}</strong>
+								<span>@{result.username ?? result.name}</span>
+							</a>
 						</li>
 					))}
 				</ul>
 			)}
-
-			{/* No results */}
-			{!isLoading && !error && query.length > 0 && results.length === 0 && (
-				<div className="vxf-mentions-autocomplete-empty">
-					No matches found for "@{query}"
-				</div>
-			)}
 		</div>
 	);
+
+	return createPortal(dropdown, document.body);
 }
 
 export default MentionsAutocomplete;

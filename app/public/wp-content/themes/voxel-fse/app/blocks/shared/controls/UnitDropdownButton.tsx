@@ -17,7 +17,7 @@
 import { DropdownMenu, MenuGroup, MenuItem } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-export type UnitType = 'px' | '%' | 'em' | 'rem' | 'vw' | 'vh' | 'fr' | 'auto' | 'minmax' | 'custom' | 'ms' | 's';
+export type UnitType = 'px' | '%' | 'em' | 'rem' | 'vw' | 'vh' | 'fr' | 'auto' | 'minmax' | 'custom' | 'ms' | 's' | 'deg';
 
 interface UnitDropdownButtonProps {
 	currentUnit: UnitType;
@@ -60,6 +60,8 @@ const getUnitLabel = (unit: UnitType): React.ReactNode => {
 			return 'ms';
 		case 's':
 			return 's';
+		case 'deg':
+			return 'deg';
 		case 'custom':
 			return <PencilIcon />;
 		default:
@@ -86,22 +88,22 @@ export default function UnitDropdownButton({
 					children: getUnitLabel(currentUnit),
 				}}
 			>
-			{({ onClose }: { onClose: () => void }) => (
-				<MenuGroup>
-					{availableUnits.map((unit) => (
-						<MenuItem
-							key={unit}
-							onClick={() => {
-								onUnitChange(unit);
-								onClose();
-							}}
-							isSelected={currentUnit === unit}
-						>
-							{getUnitLabel(unit)}
-						</MenuItem>
-					))}
-				</MenuGroup>
-			)}
+				{({ onClose }: { onClose: () => void }) => (
+					<MenuGroup>
+						{availableUnits.map((unit) => (
+							<MenuItem
+								key={unit}
+								onClick={() => {
+									onUnitChange(unit);
+									onClose();
+								}}
+								isSelected={currentUnit === unit}
+							>
+								{getUnitLabel(unit)}
+							</MenuItem>
+						))}
+					</MenuGroup>
+				)}
 			</DropdownMenu>
 			<style>{`
 				.e-units-wrapper button {

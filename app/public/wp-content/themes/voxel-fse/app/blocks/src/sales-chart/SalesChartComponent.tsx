@@ -138,7 +138,14 @@ export function SalesChartComponent({
       setActiveItem(item);
       if (popupRef.current) {
         const rect = event.currentTarget.getBoundingClientRect();
-        popupRef.current.style.left = `${rect.left + rect.width + 10}px`;
+        const isRtl = document.documentElement.dir === 'rtl';
+        if (isRtl) {
+          popupRef.current.style.right = `${window.innerWidth - rect.left + 10}px`;
+          popupRef.current.style.left = 'auto';
+        } else {
+          popupRef.current.style.left = `${rect.left + rect.width + 10}px`;
+          popupRef.current.style.right = 'auto';
+        }
         popupRef.current.style.top = `${rect.top}px`;
       }
     },

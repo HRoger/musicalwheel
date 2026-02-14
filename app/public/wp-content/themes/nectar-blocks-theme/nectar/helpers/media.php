@@ -111,8 +111,11 @@ if ( ! function_exists( 'fjarrett_get_attachment_id_from_url' ) ) {
         $parse_url = explode( parse_url( WP_CONTENT_URL, PHP_URL_PATH ), $url );
 
         // Get the host of the current site and the host of the $url, ignoring www.
-        $this_host = str_ireplace( 'www.', '', parse_url( esc_url( home_url() ), PHP_URL_HOST ) );
-        $file_host = str_ireplace( 'www.', '', parse_url( $url, PHP_URL_HOST ) );
+        $home_host = parse_url( esc_url( home_url() ), PHP_URL_HOST );
+        $url_host = parse_url( $url, PHP_URL_HOST );
+
+        $this_host = str_ireplace( 'www.', '', (string) $home_host );
+        $file_host = str_ireplace( 'www.', '', (string) $url_host );
 
         // Return nothing if there aren't any $url parts or if the current host and $url host do not match.
         if ( ! isset( $parse_url[1] ) || empty( $parse_url[1] ) || ( $this_host != $file_host ) ) {

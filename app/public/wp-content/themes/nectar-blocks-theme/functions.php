@@ -11,7 +11,7 @@
  * Define Constants.
 */
 require_once( 'nectar-vars.php' );
-define( 'NB_THEME_VERSION', '1.3.7' );
+define( 'NB_THEME_VERSION', '2.5.3' );
 define( 'NECTAR_THEME_DIRECTORY', get_template_directory() );
 define( 'NECTAR_FRAMEWORK_DIRECTORY', get_template_directory_uri() . '/nectar/' );
 define( 'NECTAR_THEME_NAME', 'nectar-blocks' );

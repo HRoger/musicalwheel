@@ -42,7 +42,7 @@ export default function Edit({
 		{ value: '', label: __('Select menu', 'voxel-fse') },
 	]);
 
-	// Load nav menus on mount
+	// Load nav menus and userbar config on mount
 	useEffect(() => {
 		// Fetch available nav menu locations from WordPress using navbar API
 		const fetchMenus = async () => {
@@ -69,6 +69,32 @@ export default function Edit({
 			}
 		};
 		fetchMenus();
+
+		// Fetch userbar server config for editor context
+		// This provides nonces, user data, menus, and unread counts
+		// that window.VoxelFSEUserbar normally provides on the frontend
+		const fetchUserbarConfig = async () => {
+			try {
+				const config = await apiFetch({ path: '/voxel-fse/v1/userbar/context' });
+				if (config) {
+					(window as any).VoxelFSEUserbar = config;
+					// Also set VoxelFSEUser for avatar fallback
+					const typedConfig = config as any;
+					if (typedConfig.user) {
+						(window as any).VoxelFSEUser = {
+							isLoggedIn: true,
+							id: typedConfig.user.id,
+							displayName: typedConfig.user.displayName,
+							avatarUrl: typedConfig.user.avatarUrl,
+							avatarMarkup: typedConfig.user.avatarMarkup,
+						};
+					}
+				}
+			} catch (error) {
+				console.error('Could not fetch userbar config:', error);
+			}
+		};
+		fetchUserbarConfig();
 	}, []);
 
 	// Set blockId if not set
