@@ -169,6 +169,9 @@ export interface ImageBlockAttributes {
 	imageBorderRadius?: BoxDimensions;
 	imageBoxShadow?: BoxShadowValue;
 	imageTransitionDuration?: number;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

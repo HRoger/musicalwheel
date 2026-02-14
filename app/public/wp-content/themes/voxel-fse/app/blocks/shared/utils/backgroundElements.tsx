@@ -130,11 +130,7 @@ const SHAPE_DATA: Record<string, ShapeData> = {
 	},
 };
 
-// Backwards compatibility: simple path map for single-path shapes
-const SHAPE_PATHS: Record<string, string> = Object.entries(SHAPE_DATA).reduce((acc, [key, data]) => {
-	acc[key] = data.paths[0].d;
-	return acc;
-}, {} as Record<string, string>);
+
 
 export interface OverlayAttributes {
 	// Normal state

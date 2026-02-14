@@ -25,7 +25,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -59,14 +58,33 @@
 			"items": {
 				"type": "object",
 				"properties": {
-					"id": { "type": "string" },
-					"term_id": { "type": "number" },
-					"loopSource": { "type": "string" },
-					"loopProperty": { "type": "string" },
-					"loopLimit": { "type": "string" },
-					"loopOffset": { "type": "string" },
-					"rowVisibility": { "type": "string" },
-					"visibilityRules": { "type": "array", "items": { "type": "object" } }
+					"id": {
+						"type": "string"
+					},
+					"term_id": {
+						"type": "number"
+					},
+					"loopSource": {
+						"type": "string"
+					},
+					"loopProperty": {
+						"type": "string"
+					},
+					"loopLimit": {
+						"type": "string"
+					},
+					"loopOffset": {
+						"type": "string"
+					},
+					"rowVisibility": {
+						"type": "string"
+					},
+					"visibilityRules": {
+						"type": "array",
+						"items": {
+							"type": "object"
+						}
+					}
 				}
 			}
 		},

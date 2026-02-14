@@ -12,7 +12,7 @@ import { __ } from '@wordpress/i18n';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
-import type { SearchFormAttributes } from './types';
+
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 
@@ -30,8 +30,8 @@ const deprecated = [
 	// v1: Old placeholder with emoji icon and text spans
 	{
 		attributes: metadata.attributes,
-		save({ attributes }: { attributes: SearchFormAttributes }) {
-			const blockProps = useBlockProps.save({
+		save({ attributes }: { attributes: any }) {
+			const blockProps = (useBlockProps as any).save({
 				className: 'ts-form ts-search-widget voxel-fse-search-form',
 				'data-post-types': JSON.stringify(attributes.postTypes || []),
 				'data-on-submit': attributes.onSubmit,
@@ -80,7 +80,7 @@ const deprecated = [
 ];
 
 // Register the block
-registerBlockType<SearchFormAttributes>(metadata.name, {
+registerBlockType(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Search Form (VX)', 'voxel-fse'),
@@ -88,4 +88,4 @@ registerBlockType<SearchFormAttributes>(metadata.name, {
 	edit: Edit,
 	save, // Option C+ - saves data attributes for Next.js hydration
 	deprecated,
-} as Parameters<typeof registerBlockType<SearchFormAttributes>>[1]);
+} as any);

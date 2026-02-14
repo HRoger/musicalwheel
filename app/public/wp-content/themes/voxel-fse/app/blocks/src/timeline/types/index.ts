@@ -77,6 +77,9 @@ export interface TimelineAttributes {
 
 	// Inspector state persistence
 	contentTabOpenPanel?: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

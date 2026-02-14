@@ -155,6 +155,9 @@ export interface GalleryBlockAttributes extends Partial<CombinedStyleAttributes>
 	contentTabOpenPanel?: string;
 	styleTabOpenPanel?: string;
 	generalStateTab?: 'normal' | 'hover';
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

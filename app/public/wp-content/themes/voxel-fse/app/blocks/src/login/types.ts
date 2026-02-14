@@ -1020,6 +1020,9 @@ export interface LoginAttributes {
 	animationDelay?: number;
 
 	loginActiveTab?: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

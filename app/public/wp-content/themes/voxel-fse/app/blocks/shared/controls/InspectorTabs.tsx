@@ -275,7 +275,7 @@ export default function InspectorTabs({
 					left: 0;
 					height: 0;
 					width: calc(100% / var(--tab-count, 4));
-					border-bottom: 2px solid #007cba;
+					border-bottom: 2px solid var(--vxfse-accent-color, #3858e9);
 					transition: transform 0.2s ease;
 					transform-origin: left top;
 					pointer-events: none;

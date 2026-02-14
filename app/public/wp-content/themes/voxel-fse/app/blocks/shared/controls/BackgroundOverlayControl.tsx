@@ -278,7 +278,7 @@ export default function BackgroundOverlayControl({
 	setAttributes,
 }: BackgroundOverlayControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useSelect((select: any) => getCurrentDeviceType(select));
 
 	const wpDevice = wpDeviceType
 		? (wpDeviceType.toLowerCase() as DeviceType)

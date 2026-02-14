@@ -30,6 +30,8 @@ import {
 	EmptyPlaceholder,
 } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
+import { getBlocksByNameRecursive, getBlockByBlockIdRecursive } from '../../shared/utils/blockSelectors';
+
 
 import type { MapEditProps } from './types';
 import { buildVxConfig, applyMapStyles } from './utils';
@@ -118,45 +120,15 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 
 	// Find all search form blocks on the page for RelationControl
 	const searchFormBlocks = useSelect(
-		(select) => {
-			const { getBlocks } = select('core/block-editor') as {
-				getBlocks: () => Array<{
-					clientId: string;
-					name: string;
-					attributes: Record<string, unknown>;
-					innerBlocks: Array<unknown>;
-				}>;
-			};
+		(select: any) => {
+			const { getBlocks } = select('core/block-editor');
+			const allBlocks = getBlocks();
 
-			// Recursive function to find blocks by name
-			const findBlocksRecursive = (
-				blocks: Array<{
-					clientId: string;
-					name: string;
-					attributes: Record<string, unknown>;
-					innerBlocks: Array<unknown>;
-				}>,
-				targetName: string
-			): Array<{ clientId: string; name: string; attributes: Record<string, unknown> }> => {
-				let found: Array<{ clientId: string; name: string; attributes: Record<string, unknown> }> = [];
-				blocks.forEach((block) => {
-					if (block.name === targetName && block.clientId !== clientId) {
-						found.push(block);
-					}
-					if (block.innerBlocks && block.innerBlocks.length > 0) {
-						found = found.concat(
-							findBlocksRecursive(
-								block.innerBlocks as typeof blocks,
-								targetName
-							)
-						);
-					}
-				});
-				return found;
-			};
-
-			return findBlocksRecursive(getBlocks(), 'voxel-fse/search-form');
+			// Filter out current block to avoid self-reference
+			return getBlocksByNameRecursive(allBlocks, 'voxel-fse/search-form')
+				.filter((block: any) => block.clientId !== clientId);
 		},
+		// @ts-ignore - Dependency array supported in runtime
 		[clientId]
 	);
 
@@ -165,31 +137,26 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 	// CRITICAL: We must use getBlockAttributes() inside the selector (not rely on searchFormBlocks array)
 	// because searchFormBlocks is derived from getBlocks() which may not trigger re-renders
 	// when only an attribute changes on a nested block.
+	// Read the linked search-form's mapEnableClusters attribute DIRECTLY from the store
+	// This makes the editor preview reactive to toggling the clustering switch on the search-form block.
+	// Read the linked search-form's mapEnableClusters attribute DIRECTLY from the store
+	// This makes the editor preview reactive to toggling the clustering switch on the search-form block.
 	const enableClustersInEditor = useSelect(
-		(select) => {
+		(select: any) => {
 			if (!attributes.searchFormId || attributes.source !== 'search-form') {
 				return true; // default: enabled (matches Voxel default 'yes')
 			}
-			const { getBlocksByClientId, getBlocks } = select('core/block-editor') as {
-				getBlocksByClientId: (clientIds: string[]) => Array<{ clientId: string; attributes: Record<string, unknown> } | null>;
-				getBlocks: () => Array<{ clientId: string; name: string; attributes: Record<string, unknown>; innerBlocks: Array<unknown> }>;
-			};
+			const { getBlocksByClientId, getBlocks } = select('core/block-editor');
 
-			// Find the search-form block's clientId by matching its blockId attribute
-			const findSearchFormClientId = (blocks: Array<{ clientId: string; name: string; attributes: Record<string, unknown>; innerBlocks: Array<unknown> }>): string | null => {
-				for (const block of blocks) {
-					if (block.name === 'voxel-fse/search-form' && (block.attributes.blockId as string) === attributes.searchFormId) {
-						return block.clientId;
-					}
-					if (block.innerBlocks?.length > 0) {
-						const found = findSearchFormClientId(block.innerBlocks as typeof blocks);
-						if (found) return found;
-					}
-				}
-				return null;
-			};
+			// Find client ID using memoized recursive search
+			const allBlocks = getBlocks();
+			const foundBlock = getBlockByBlockIdRecursive(
+				allBlocks,
+				attributes.searchFormId,
+				'voxel-fse/search-form'
+			);
 
-			const sfClientId = findSearchFormClientId(getBlocks());
+			const sfClientId = foundBlock ? foundBlock.clientId : null;
 			if (!sfClientId) return true;
 
 			// Read the attribute fresh from the store - this will trigger re-render when it changes
@@ -199,6 +166,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 
 			return sfBlock.attributes.mapEnableClusters !== false;
 		},
+		// @ts-ignore - Dependency array supported in runtime
 		[attributes.searchFormId, attributes.source]
 	);
 
@@ -465,7 +433,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 					<>
 						<RelationControl
 							label={__('Link to search form', 'voxel-fse')}
-							items={searchFormBlocks.map((block) => ({
+							items={searchFormBlocks.map((block: any) => ({
 								// Use persistent blockId (not temporary clientId) for proper save/load
 								id: (block.attributes.blockId as string) || block.clientId,
 								clientId: block.clientId,
@@ -609,7 +577,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 				<RangeControl
 					label={__('Default zoom level', 'voxel-fse')}
 					value={attributes.defaultZoom}
-					onChange={(value) => setAttributes({ defaultZoom: value })}
+					onChange={(value: number) => setAttributes({ defaultZoom: value })}
 					min={0}
 					max={30}
 				/>
@@ -634,46 +602,48 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 		</AccordionPanelGroup>
 	);
 
+	const inspectorTabs = useMemo(() => [
+		{
+			id: 'content',
+			label: __('Content', 'voxel-fse'),
+			icon: '\ue92c',
+			render: ContentTab,
+		},
+		{
+			id: 'style',
+			label: __('Style', 'voxel-fse'),
+			icon: '\ue921',
+			render: () => (
+				<StyleTab
+					attributes={attributes}
+					setAttributes={setAttributes}
+					context="editor"
+				/>
+			),
+		},
+		{
+			id: 'advanced',
+			label: __('Advanced', 'voxel-fse'),
+			icon: '\ue916',
+			render: () => (
+				<AdvancedTab attributes={attributes as any} setAttributes={setAttributes} />
+			),
+		},
+		{
+			id: 'voxel',
+			label: __('Voxel', 'voxel-fse'),
+			icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
+			render: () => (
+				<VoxelTab attributes={attributes} setAttributes={setAttributes} />
+			),
+		},
+	], [attributes, setAttributes]); // Attributes needed for Style/Advanced/Voxel tabs
+
 	return (
 		<>
 			<InspectorControls>
 				<InspectorTabs
-					tabs={[
-						{
-							id: 'content',
-							label: __('Content', 'voxel-fse'),
-							icon: '\ue92c',
-							render: ContentTab,
-						},
-						{
-							id: 'style',
-							label: __('Style', 'voxel-fse'),
-							icon: '\ue921',
-							render: () => (
-								<StyleTab
-									attributes={attributes}
-									setAttributes={setAttributes}
-									context="editor"
-								/>
-							),
-						},
-						{
-							id: 'advanced',
-							label: __('Advanced', 'voxel-fse'),
-							icon: '\ue916',
-							render: () => (
-								<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
-							),
-						},
-						{
-							id: 'voxel',
-							label: __('Voxel', 'voxel-fse'),
-							icon: '/wp-content/themes/voxel/assets/images/post-types/logo.svg',
-							render: () => (
-								<VoxelTab attributes={attributes} setAttributes={setAttributes} />
-							),
-						},
-					]}
+					tabs={inspectorTabs}
 				/>
 			</InspectorControls>
 
@@ -713,7 +683,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 				)}
 
 				{/* Geolocate button - matches Voxel's map.php:55 */}
-			{/* FUNCTIONAL: Triggers real browser geolocation, matching Voxel's Elementor editor behavior */}
+				{/* FUNCTIONAL: Triggers real browser geolocation, matching Voxel's Elementor editor behavior */}
 				<a
 					href="#"
 					rel="nofollow"
@@ -764,7 +734,7 @@ export default function Edit({ attributes, setAttributes, clientId }: MapEditPro
 								console.log('[Map Block] Geolocation success:', latitude, longitude);
 							},
 							// Error callback
-							(error) => {
+							(_error) => {
 								btn.classList.remove('loading');
 								// PARITY: Use Voxel's exact localized message (voxel-map.beautified.js:516)
 								const errorMsg = (window as any).Voxel_Config?.l10n?.positionFail || 'Could not determine your location.';

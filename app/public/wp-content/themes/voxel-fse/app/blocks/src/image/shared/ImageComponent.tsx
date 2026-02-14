@@ -30,7 +30,6 @@ interface VoxelLightboxAPI {
 interface ImageComponentProps {
 	attributes: ImageBlockAttributes;
 	context: 'editor' | 'frontend';
-	onSelectImage?: (media: any) => void;
 }
 
 /**
@@ -49,17 +48,6 @@ function buildImageStyles(attributes: ImageBlockAttributes): React.CSSProperties
 	if (attributes.aspectRatio) {
 		styles.aspectRatio = attributes.aspectRatio;
 	}
-
-	return styles;
-}
-
-/**
- * Build inline styles for the wrapper
- */
-function buildWrapperStyles(_attributes: ImageBlockAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	// Text Align handled via generated CSS in styles.ts
 
 	return styles;
 }
@@ -156,9 +144,8 @@ function getLinkUrl(attributes: ImageBlockAttributes): string | null {
 	return null;
 }
 
-export default function ImageComponent({ attributes, context, onSelectImage }: ImageComponentProps) {
+export default function ImageComponent({ attributes, context }: ImageComponentProps) {
 	const imageStyles = buildImageStyles(attributes);
-	const wrapperStyles = buildWrapperStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 	const imageClass = getImageClass(attributes);
 	const caption = getCaption(attributes, context);
@@ -192,7 +179,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	if (!attributes.image.url) {
 		if (context === 'editor') {
 			return (
-				<div className={wrapperClass} style={wrapperStyles}>
+				<div className={wrapperClass}>
 					<EmptyPlaceholder />
 				</div>
 			);
@@ -221,7 +208,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	// Evidence: .elementor-clickable is editor-only in Elementor (image.php:746-749)
 	let content = imageElement;
 	if (linkUrl) {
-		const linkAttributes: Record<string, unknown> = {
+		const linkAttributes: any = {
 			href: linkUrl,
 			className: context === 'editor' ? 'elementor-clickable' : undefined,
 		};
@@ -258,7 +245,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	// Wrap with figure if has caption
 	if (showCaption) {
 		return (
-			<div className={wrapperClass} style={wrapperStyles}>
+			<div className={wrapperClass}>
 				<figure className="wp-caption">
 					{content}
 					{caption && (
@@ -273,7 +260,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 
 	// No caption - just the image (possibly linked)
 	return (
-		<div className={wrapperClass} style={wrapperStyles}>
+		<div className={wrapperClass}>
 			{content}
 		</div>
 	);

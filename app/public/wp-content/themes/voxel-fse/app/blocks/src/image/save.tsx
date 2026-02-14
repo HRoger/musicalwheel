@@ -49,17 +49,6 @@ function buildImageStyles(attributes: ImageBlockAttributes): React.CSSProperties
 }
 
 /**
- * Build inline styles for the wrapper
- */
-function buildWrapperStyles(_attributes: ImageBlockAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	// Text Align handled via generated CSS in styles.ts
-
-	return styles;
-}
-
-/**
  * Build inline styles for the caption
  */
 function buildCaptionStyles(attributes: ImageBlockAttributes): React.CSSProperties {
@@ -100,11 +89,10 @@ export default function save({ attributes }: SaveProps) {
 
 	// Build styles
 	const imageStyles = buildImageStyles(attributes);
-	const wrapperStyles = buildWrapperStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 
-	// Merge advanced styles with wrapper styles
-	const mergedWrapperStyles = { ...advancedStyles, ...wrapperStyles };
+	// Use advanced styles for wrapper
+	const mergedWrapperStyles = advancedStyles;
 
 	// Build image classes - matches WordPress + Elementor pattern
 	// Evidence: plugins/elementor/includes/controls/groups/image-size.php:99-127
@@ -152,14 +140,14 @@ export default function save({ attributes }: SaveProps) {
 	const combinedCSS = [advancedResponsiveCSS, styleTabCSS].filter(Boolean).join('\n');
 
 	// Parse custom attributes
-	const customAttrs = parseCustomAttributes(attributes.customAttributes);
+	const customAttrs = parseCustomAttributes(attributes['customAttributes']);
 
 	// Block props - matches .elementor-widget-image
-	const blockProps = useBlockProps.save({
-		id: attributes.elementId || undefined,
+	const blockProps = (useBlockProps as any).save({
+		id: attributes['elementId'] || undefined,
 		className: combineBlockClasses(
 			`voxel-fse-image voxel-fse-image-wrapper-${blockId}`,
-			attributes
+			attributes as any
 		),
 		style: mergedWrapperStyles,
 		...customAttrs,
@@ -183,7 +171,7 @@ export default function save({ attributes }: SaveProps) {
 	// Frontend <a> has NO class attribute by default
 	let content = imageElement;
 	if (hasLink && linkUrl) {
-		const linkAttributes: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
+		const linkAttributes: any = {
 			href: linkUrl,
 		};
 

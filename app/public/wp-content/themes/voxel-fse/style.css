@@ -47,7 +47,7 @@ Supports project-specific branding via PROJECT_NAMESPACE constant.
 	position: fixed !important;
 }
 
-/* 
+/*
  * Carousel Navigation Fix
  * Ensure arrows are visible (but dimmed) even when disabled/no-scroll
  * Fix z-index to prevent click-through to cards

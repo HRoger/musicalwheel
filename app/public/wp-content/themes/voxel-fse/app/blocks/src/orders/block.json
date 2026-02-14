@@ -24,7 +24,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -48,7 +47,6 @@
 			"type": "string",
 			"default": "View all orders related to your account"
 		},
-
 		"_comment_icons": "Icon attributes",
 		"searchIcon": {
 			"type": "object",
@@ -141,13 +139,11 @@
 				"value": ""
 			}
 		},
-
 		"_comment_style_tab": "Style Tab panel state and general styles",
 		"styleTabOpenPanel": {
 			"type": "string",
 			"default": "general"
 		},
-
 		"_comment_section_1": "Section 1: General",
 		"generalTitleTypography": {
 			"type": "object",
@@ -177,7 +173,6 @@
 			"type": "number",
 			"default": 0
 		},
-
 		"_comment_section_2": "Section 2: Primary button",
 		"primaryBtnState": {
 			"type": "string",
@@ -263,7 +258,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_3": "Section 3: Secondary button",
 		"secondaryBtnState": {
 			"type": "string",
@@ -341,7 +335,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_4": "Section 4: Cards",
 		"cardState": {
 			"type": "string",
@@ -455,7 +448,6 @@
 			"type": "object",
 			"default": {}
 		},
-
 		"_comment_section_5": "Section 5: Order statuses",
 		"statusPadding": {
 			"type": "object",
@@ -517,7 +509,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_6": "Section 6: Filters common styles",
 		"filterCommonState": {
 			"type": "string",
@@ -599,7 +590,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_7": "Section 7: Filter dropdown",
 		"filterDropdownState": {
 			"type": "string",
@@ -641,7 +631,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_8": "Section 8: Filter input",
 		"filterInputState": {
 			"type": "string",
@@ -687,7 +676,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_9": "Section 9: Single order event",
 		"singleEventAvatarSize": {
 			"type": "number",
@@ -749,7 +737,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_10": "Section 10: Single event box",
 		"singleEventBoxPadding": {
 			"type": "object",
@@ -775,7 +762,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_11": "Section 11: Single order items",
 		"singleItemSpacing": {
 			"type": "number",
@@ -841,7 +827,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_12": "Section 12: Single table",
 		"singleTableListSpacing": {
 			"type": "number",
@@ -871,7 +856,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_13": "Section 13: Single accordion title",
 		"singleAccordionTitleTypography": {
 			"type": "object",
@@ -889,7 +873,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_14": "Section 14: Single notes",
 		"singleNotesTypography": {
 			"type": "object",
@@ -903,7 +886,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_15": "Section 15: No results",
 		"noResultsContentGap": {
 			"type": "number",
@@ -945,7 +927,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_section_16": "Section 16: Loading spinner",
 		"loadingSpinnerColor1": {
 			"type": "string",
@@ -955,7 +936,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_legacy": "Legacy attributes (kept for backward compatibility)",
 		"titleTypography": {
 			"type": "object",
@@ -1005,7 +985,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_block_spacing": "Block spacing and visibility",
 		"blockMargin": {
 			"type": "object",
@@ -1051,7 +1030,6 @@
 			"type": "string",
 			"default": ""
 		},
-
 		"_comment_voxel_tab": "VoxelTab attributes for visibility and loop features",
 		"visibilityBehavior": {
 			"type": "string",

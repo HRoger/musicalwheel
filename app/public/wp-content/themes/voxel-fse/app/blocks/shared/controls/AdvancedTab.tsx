@@ -606,7 +606,6 @@ const MASK_REPEAT_OPTIONS = [
 ];
 
 export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabProps) {
-	// Get WordPress's current device type from the store
 	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Convert WordPress device type to our format (Desktop -> desktop)
@@ -1606,9 +1605,9 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 											width: '100%',
 											aspectRatio: '1 / 1',
 											padding: '4px',
-											border: attributes.maskShape === shape.value ? '2px solid var(--wp-admin-theme-color, #007cba)' : '1px solid #ddd',
+											border: attributes.maskShape === shape.value ? '2px solid var(--vxfse-accent-color, #3858e9)' : '1px solid #ddd',
 											borderRadius: '4px',
-											backgroundColor: attributes.maskShape === shape.value ? 'rgba(0, 124, 186, 0.1)' : '#fff',
+											backgroundColor: attributes.maskShape === shape.value ? 'color-mix(in srgb, var(--vxfse-accent-color, #3858e9) 10%, #fff)' : '#fff',
 											cursor: 'pointer',
 											display: 'flex',
 											alignItems: 'center',

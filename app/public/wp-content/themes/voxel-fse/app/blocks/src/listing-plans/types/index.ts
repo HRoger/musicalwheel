@@ -337,6 +337,9 @@ export interface ListingPlansAttributes {
 	directPurchaseRedirect: 'order' | 'new_post' | 'custom';
 	directPurchasePostType?: string;
 	directPurchaseCustomUrl?: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

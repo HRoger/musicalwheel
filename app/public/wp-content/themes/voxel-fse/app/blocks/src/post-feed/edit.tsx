@@ -4,13 +4,15 @@
  * @package VoxelFSE
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 
 import { InspectorTabs } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
+import { getBlocksByNameRecursive, getBlockByBlockIdRecursive } from '../../shared/utils/blockSelectors';
+
 
 import PostFeedComponent from './shared/PostFeedComponent';
 import { usePostFeedConfig } from './hooks/usePostFeedConfig';
@@ -57,7 +59,7 @@ export default function Edit({
 	});
 
 	// Fetch configuration from REST API
-	const { config, isLoading, error } = usePostFeedConfig();
+	const { config, error } = usePostFeedConfig();
 
 	// Fetch card templates based on selected post type
 	// Evidence: Voxel post-feed.php:204-212 - templates are per post type
@@ -87,105 +89,43 @@ export default function Edit({
 	}, []);
 
 	// Get search form blocks on the page for RelationControl
+	// OPTIMIZATION: Use memoized recursive search to prevent traversing the entire block tree
+	// on every store update (e.g. viewport change). Returns stable array reference if blocks haven't changed.
+	// @ts-ignore - Dependency array supported in runtime
 	const searchFormBlocks = useSelect(
-		(select) => {
-			const { getBlocks } = select('core/block-editor') as {
-				getBlocks: () => Array<{
-					clientId: string;
-					name: string;
-					attributes: { blockId?: string; postTypes?: string[]; selectedPostType?: string };
-					innerBlocks?: Array<unknown>;
-				}>;
-			};
+		(select: any) => {
+			const { getBlocks } = select('core/block-editor');
+			const allBlocks = getBlocks();
 
-			// Recursive function to find blocks (including nested ones)
-			const findBlocksRecursive = (
-				blocks: Array<{
-					clientId: string;
-					name: string;
-					attributes: { blockId?: string; postTypes?: string[]; selectedPostType?: string };
-					innerBlocks?: Array<unknown>;
-				}>,
-				targetName: string
-			): Array<{ clientId: string; name: string; attributes: { blockId?: string; postTypes?: string[]; selectedPostType?: string } }> => {
-				let found: Array<{ clientId: string; name: string; attributes: { blockId?: string; postTypes?: string[]; selectedPostType?: string } }> = [];
-				blocks.forEach((block) => {
-					if (block.name === targetName && block.clientId !== clientId) {
-						found.push(block);
-					}
-					if (block.innerBlocks && block.innerBlocks.length > 0) {
-						found = found.concat(
-							findBlocksRecursive(
-								block.innerBlocks as Array<{
-									clientId: string;
-									name: string;
-									attributes: { blockId?: string; postTypes?: string[]; selectedPostType?: string };
-									innerBlocks?: Array<unknown>;
-								}>,
-								targetName
-							)
-						);
-					}
-				});
-				return found;
-			};
-
-			return findBlocksRecursive(getBlocks(), 'voxel-fse/search-form');
+			// Filter out current block to avoid self-reference (though Name mismatch handles it mostly)
+			return getBlocksByNameRecursive(allBlocks, 'voxel-fse/search-form')
+				.filter((block: any) => block.clientId !== clientId);
 		},
+		// @ts-ignore - Dependency array supported in runtime
 		[clientId]
 	);
 
-	// Step 1: Find the linked Search Form's clientId from the store
-	// This lets us use getBlock(clientId) which properly subscribes to attribute changes
+
+	// @ts-ignore - Dependency array supported in runtime
 	const linkedSearchFormClientId = useSelect(
-		(select) => {
+		(select: any) => {
 			if (attributes.source !== 'search-form' || !attributes.searchFormId) {
 				return null;
 			}
 
-			const { getBlocks } = select('core/block-editor') as {
-				getBlocks: () => Array<{
-					clientId: string;
-					name: string;
-					attributes: { blockId?: string };
-					innerBlocks?: Array<unknown>;
-				}>;
-			};
+			const { getBlocks } = select('core/block-editor');
+			const allBlocks = getBlocks();
 
-			// Recursive function to find a specific search form block's clientId
-			const findSearchFormClientId = (
-				blocks: Array<{
-					clientId: string;
-					name: string;
-					attributes: { blockId?: string };
-					innerBlocks?: Array<unknown>;
-				}>,
-				targetId: string
-			): string | null => {
-				for (const block of blocks) {
-					if (block.name === 'voxel-fse/search-form') {
-						if (block.attributes.blockId === targetId || block.clientId === targetId) {
-							return block.clientId;
-						}
-					}
-					if (block.innerBlocks && block.innerBlocks.length > 0) {
-						const found = findSearchFormClientId(
-							block.innerBlocks as Array<{
-								clientId: string;
-								name: string;
-								attributes: { blockId?: string };
-								innerBlocks?: Array<unknown>;
-							}>,
-							targetId
-						);
-						if (found) return found;
-					}
-				}
-				return null;
-			};
+			// Use memoized search for block by ID (checks clientId and blockId attribute)
+			const foundBlock = getBlockByBlockIdRecursive(
+				allBlocks,
+				attributes.searchFormId,
+				'voxel-fse/search-form'
+			);
 
-			return findSearchFormClientId(getBlocks(), attributes.searchFormId);
+			return foundBlock ? foundBlock.clientId : null;
 		},
+		// @ts-ignore - Dependency array supported in runtime
 		[attributes.source, attributes.searchFormId]
 	);
 
@@ -193,7 +133,7 @@ export default function Edit({
 	// IMPORTANT: No dependency array - this ensures selector re-runs on every store change
 	// so we catch when selectedPostType attribute changes on the linked Search Form
 	const linkedPostType = useSelect(
-		(select) => {
+		(select: any) => {
 			if (!linkedSearchFormClientId) {
 				return '';
 			}
@@ -217,7 +157,7 @@ export default function Edit({
 	// Step 3: Watch linked Search Form's editorFilterValues for editor preview sync
 	// This enables filter values (price, keywords, etc.) to update the Post Feed preview
 	const linkedFilters = useSelect(
-		(select) => {
+		(select: any) => {
 			if (!linkedSearchFormClientId) {
 				return {};
 			}
@@ -246,39 +186,41 @@ export default function Edit({
 		})
 	);
 
+	const inspectorTabs = useMemo(() => [
+		{
+			id: 'content',
+			label: __('Content', 'voxel-fse'),
+			icon: '\ue92c',
+			render: (props: any) => (
+				<ContentTab
+					attributes={props.attributes}
+					setAttributes={props.setAttributes}
+					config={config}
+					searchFormItems={searchFormItems}
+					cardTemplates={cardTemplates}
+					isLoadingTemplates={isLoadingTemplates}
+				/>
+			),
+		},
+		{
+			id: 'style',
+			label: __('Style', 'voxel-fse'),
+			icon: '\ue921',
+			render: (props: any) => (
+				<StyleTab
+					attributes={props.attributes}
+					setAttributes={props.setAttributes}
+				/>
+			),
+		},
+	], [config, searchFormItems, cardTemplates, isLoadingTemplates]);
+
 	return (
 		<>
 			{/* Inspector Controls with proper tab navigation */}
 			<InspectorControls>
 				<InspectorTabs
-					tabs={[
-						{
-							id: 'content',
-							label: __('Content', 'voxel-fse'),
-							icon: '\ue92c',
-							render: () => (
-								<ContentTab
-									attributes={attributes}
-									setAttributes={setAttributes}
-									config={config}
-									searchFormItems={searchFormItems}
-									cardTemplates={cardTemplates}
-									isLoadingTemplates={isLoadingTemplates}
-								/>
-							),
-						},
-						{
-							id: 'style',
-							label: __('Style', 'voxel-fse'),
-							icon: '\ue921',
-							render: () => (
-								<StyleTab
-									attributes={attributes}
-									setAttributes={setAttributes}
-								/>
-							),
-						},
-					]}
+					tabs={inspectorTabs}
 					includeAdvancedTab={true}
 					includeVoxelTab={true}
 					attributes={attributes}

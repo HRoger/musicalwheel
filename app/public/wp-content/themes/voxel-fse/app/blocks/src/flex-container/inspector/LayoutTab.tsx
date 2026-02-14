@@ -342,9 +342,9 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 									style={{
 										padding: '4px 12px',
 										height: '28px',
-										backgroundColor: attributes.gridOutline ? '#2271b1' : '#f0f0f1',
+										backgroundColor: attributes.gridOutline ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
 										color: attributes.gridOutline ? '#ffffff' : '#1e1e1e',
-										borderColor: attributes.gridOutline ? '#2271b1' : '#dcdcde',
+										borderColor: attributes.gridOutline ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
 										fontSize: '12px',
 									}}
 								>

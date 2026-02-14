@@ -209,6 +209,9 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 
 	// Tab persistence
 	postFeedActiveTab?: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**

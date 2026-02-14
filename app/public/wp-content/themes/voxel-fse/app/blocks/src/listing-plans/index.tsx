@@ -14,6 +14,7 @@ import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import { VoxelGridIcon } from '@shared/VoxelGridIcon';
+import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
 
 /**
  * Register the block
@@ -38,8 +39,14 @@ const deprecated = [
 ];
 
 registerBlockType(metadata.name, {
+	...metadata,
+	attributes: {
+		...metadata.attributes,
+		...advancedTabAttributes,
+		...voxelTabAttributes,
+	},
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
 	deprecated,
-});
+} as any);

@@ -258,7 +258,7 @@ export default function ResponsiveColorControl({
 								border: 'none',
 								background: 'transparent',
 								cursor: 'pointer',
-								color: '#007cba',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 							}}
 						>
 							<span

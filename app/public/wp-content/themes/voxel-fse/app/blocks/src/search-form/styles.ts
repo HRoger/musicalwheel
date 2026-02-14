@@ -122,7 +122,7 @@ interface BorderGroupValue {
  * 2. BorderGroupControl format: { borderType: 'solid', borderWidth: {...}, borderColor: '...' }
  */
 function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined): string {
-	if (!border) return '';
+	if (!border || Object.keys(border).length === 0) return '';
 
 	// Check if it's BorderGroupControl format
 	if ('borderType' in border) {

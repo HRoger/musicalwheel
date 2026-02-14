@@ -75,6 +75,7 @@ class Block_Loader
         add_action('init', [__CLASS__, 'load_blocks']);
         add_filter('block_categories_all', [__CLASS__, 'add_block_categories']);
         add_action('rest_api_init', [__CLASS__, 'register_rest_endpoints']);
+        add_action('admin_footer', [__CLASS__, 'inject_category_icon_gradient']);
         add_action('init', [__CLASS__, 'register_yarl_assets']);
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_frontend_shims_patched'], 20);
 
@@ -93,8 +94,12 @@ class Block_Loader
         $manifest_path = get_stylesheet_directory() . '/assets/dist/.vite/manifest.json';
         self::$vite_loader = new Vite_Loader($manifest_path, 'http://localhost:3000');
 
-        // Enqueue Voxel core styles in block editor (priority 10 to load early)
-        add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_voxel_core_styles'], 10);
+        // NOTE: Voxel core styles are now loaded via enqueue_block_assets (enqueue_voxel_styles_for_iframe)
+        // NOT via enqueue_block_editor_assets. Loading via enqueue_block_editor_assets causes
+        // getCompatibilityStyles() in block-editor.js to clone ALL Voxel CSS into the iframe as
+        // extra <style> elements, on top of the <link> elements from _wp_get_iframed_editor_assets().
+        // This duplication (19 extra <style> tags) causes 251ms long tasks = visible flicker.
+        // Using enqueue_block_assets instead loads CSS properly in BOTH main page AND iframe.
 
         // CRITICAL: Inject GoogleMaps callback stub directly in <head> at priority 1
         // Must run BEFORE any scripts are output because Google Maps has loading=async
@@ -149,6 +154,10 @@ class Block_Loader
         // Priority 30 to run at same time as other editor assets
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_shared_control_styles'], 30);
 
+        // Override accent color to NectarBlocks blue when plugin is active
+        // Priority 31 to load AFTER shared-controls.css so CSS variables win
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'maybe_override_accent_color'], 31);
+
         // Use add_editor_style() to control CSS order in FSE iframe
         // Files are loaded IN ORDER: commons first, social-feed LAST
         // This ensures .vxf-link overrides .flexify in the cascade
@@ -196,7 +205,18 @@ class Block_Loader
 
         // Enqueue viewport subscriber (PeepSo-style pattern) to dispatch custom events on viewport change
         // Priority 5 to load early, before blocks are rendered
-        add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_viewport_subscriber'], 5);
+
+
+        // SINGLE EDITOR BUNDLE: Enqueue one IIFE editor.js for all blocks (NectarBlocks pattern)
+        // Uses enqueue_block_editor_assets — fires ONLY on the main admin page, never inside the
+        // editor iframe. NectarBlocks uses this same hook (Blocks.php:590, priority 9999999).
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_global_editor_script'], 15);
+
+        // GLOBAL VOXEL CSS: Load Voxel core styles via enqueue_block_assets (NectarBlocks pattern)
+        // enqueue_block_assets fires on BOTH the main editor page AND inside the editor iframe.
+        // This replaces per-block editor_style registrations that caused 27+ stylesheet iframe loads.
+        // Using is_admin() gate to prevent loading on frontend (frontend has its own per-block deps).
+        add_action('enqueue_block_assets', [__CLASS__, 'enqueue_voxel_styles_for_iframe']);
 
         // Disable REST API caching for block render requests
         // This ensures ServerSideRender always fetches fresh content on viewport change
@@ -252,6 +272,160 @@ class Block_Loader
             }
         }
         return $tag;
+    }
+
+    /**
+     * Enqueue the single editor.js IIFE bundle that registers all blocks.
+     * Follows NectarBlocks pattern: one global classic script (NOT ES module).
+     *
+     * CRITICAL: Must be IIFE format, not ES module. ES modules with type="module"
+     * cause viewport flicker because they get deferred and re-evaluated differently
+     * during iframe rebuilds on viewport switch. Classic IIFE scripts do not.
+     * Evidence: NectarBlocks uses IIFE editor.js (~2.7MB) with zero flicker.
+     */
+    public static function enqueue_global_editor_script()
+    {
+        // No gates needed — enqueue_block_editor_assets hook only fires on the main admin page,
+        // never inside the editor iframe or on the frontend.
+
+        $build_dir = get_stylesheet_directory() . '/assets/dist';
+        $build_url = get_stylesheet_directory_uri() . '/assets/dist';
+
+        // editor.js is built as IIFE via vite.editor.config.js (no manifest)
+        $script_path = $build_dir . '/editor.js';
+        if (!file_exists($script_path)) {
+            return;
+        }
+
+        $script_url = $build_url . '/editor.js';
+        $script_handle = 'voxel-fse-editor';
+        // Match NectarBlocks dependency pattern — include all WP packages used by blocks
+        // CRITICAL: 'react', 'react-dom', 'react-jsx-runtime' expose window.React,
+        // window.ReactDOM, window.ReactJSXRuntime (NOT wp.element)
+        $script_deps = [
+            'react', 'react-dom', 'react-jsx-runtime',
+            'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components',
+            'wp-compose', 'wp-primitives',
+            'wp-i18n', 'wp-data', 'wp-core-data', 'wp-api-fetch',
+            'wp-server-side-render', 'nouislider',
+        ];
+        $version = defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($script_path);
+
+        wp_register_script($script_handle, $script_url, $script_deps, $version, true);
+        // NOTE: Do NOT mark as module — IIFE format is critical to prevent viewport flicker
+        wp_enqueue_script($script_handle);
+
+        // Enqueue extracted editor CSS (built by vite.editor.config.js with cssCodeSplit: false).
+        // CSS is extracted to a separate file instead of inline JS injection to prevent
+        // viewport flicker when switching Desktop/Tablet/Mobile with 7+ blocks.
+        $css_path = $build_dir . '/editor.css';
+        if (file_exists($css_path)) {
+            wp_register_style('voxel-fse-editor', $build_url . '/editor.css', [], $version);
+            wp_enqueue_style('voxel-fse-editor');
+        }
+    }
+
+    /**
+     * Enqueue Voxel core CSS for block editor AND iframe (NectarBlocks pattern)
+     *
+     * Uses enqueue_block_assets hook which fires on:
+     * - Main editor admin page (for non-iframed Desktop preview)
+     * - Editor iframe (for Tablet/Mobile iframed preview via _wp_get_iframed_editor_assets)
+     * - Frontend (gated with is_admin())
+     *
+     * CRITICAL: This method intentionally runs in BOTH main page and iframe contexts.
+     * DO NOT add a should_load_block_editor_scripts_and_styles gate here.
+     *
+     * Why: If Voxel CSS is loaded on the main page via enqueue_block_editor_assets (separate hook),
+     * WordPress's getCompatibilityStyles() in block-editor.js will CLONE those stylesheets into
+     * the iframe as extra <style> elements (19+ clones). This duplication causes 251ms long tasks
+     * and visible flicker on viewport switch.
+     *
+     * By loading Voxel CSS ONLY via enqueue_block_assets (this method), the CSS:
+     * - On main page: loads as <link> elements (for Desktop non-iframed mode)
+     * - In iframe: loads as <link> elements via _wp_get_iframed_editor_assets()
+     * - No duplication via compatibility styles cloning
+     *
+     * NectarBlocks reference: includes/Editor/Blocks.php:591, nectar_editor_assets()
+     * Same pattern: enqueue_block_assets + is_admin() gate for CSS.
+     */
+    public static function enqueue_voxel_styles_for_iframe()
+    {
+        // Only load in admin context, not on frontend
+        if (!is_admin()) {
+            return;
+        }
+
+        // Detect iframe vs main admin page context.
+        // WordPress sets filter to false inside _wp_get_iframed_editor_assets().
+        $is_iframe_context = !apply_filters('should_load_block_editor_scripts_and_styles', true);
+
+        // INLINE CSS STRATEGY: Eliminates HTTP requests in the iframe.
+        //
+        // Previously: wp_enqueue_style('voxel-fse-combined') created a <link> tag
+        // that required an HTTP fetch inside the iframe blob, causing white flash.
+        //
+        // Now: wp_add_inline_style('wp-edit-blocks') injects the CSS as a <style> tag
+        // directly into the iframe HTML — instant rendering, zero network latency.
+        // 'wp-edit-blocks' is always loaded in the iframe (line 330 of block-editor.php).
+        //
+        // On the MAIN admin page, we still load via <link> tag (cacheable, standard).
+        $combined_css_path = get_stylesheet_directory() . '/assets/dist/voxel-editor-combined.css';
+        if (file_exists($combined_css_path)) {
+            if ($is_iframe_context) {
+                // IFRAME: Inline the CSS for instant rendering (no HTTP request)
+                $css_content = file_get_contents($combined_css_path);
+                if ($css_content) {
+                    wp_add_inline_style('wp-edit-blocks', $css_content);
+                }
+            } else {
+                // MAIN PAGE: Load via <link> tag (cacheable)
+                wp_register_style(
+                    'voxel-fse-combined',
+                    get_stylesheet_directory_uri() . '/assets/dist/voxel-editor-combined.css',
+                    [],
+                    defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($combined_css_path)
+                );
+                wp_enqueue_style('voxel-fse-combined');
+            }
+        }
+
+        // Elementor Icons (separate file, not in Voxel parent dist)
+        self::ensure_voxel_styles_registered();
+        if (wp_style_is('elementor-icons', 'registered')) {
+            wp_enqueue_style('elementor-icons');
+        }
+
+        // Mark individual Voxel CSS handles as "done" so WordPress doesn't load them
+        // again when resolving per-block style_handles dependencies in the iframe.
+        // The combined/inlined CSS already contains all of these.
+        //
+        // CRITICAL: Only in IFRAME context. On the main admin page, other hooks
+        // (enqueue_pikaday_styles, enqueue_nouislider_assets) need these handles.
+        if ($is_iframe_context) {
+            $already_combined = [
+                'vx:commons.css', 'vx:forms.css', 'vx:popup-kit.css', 'vx:product-form.css',
+                'vx:social-feed.css', 'vx:post-feed.css', 'vx:work-hours.css', 'vx:map.css',
+                'vx:pikaday.css', 'vx:nouislider.css', 'vx:create-post.css', 'vx:review-stats.css',
+                'vx:bar-chart.css', 'vx:ring-chart.css', 'vx:pricing-plan.css', 'vx:fse-commons.css',
+                'pikaday', 'nouislider',
+                // Per-block handles
+                'mw-block-image-style', 'mw-block-login-style', 'mw-block-nested-accordion-style',
+                'mw-block-nested-tabs-style', 'mw-block-search-form-style', 'mw-block-timeline-style',
+                'mw-block-print-template-style',
+                // Child theme handles
+                'voxel-fse-editor-styles', 'voxel-fse-responsive-visibility',
+            ];
+
+            global $wp_styles;
+            if ($wp_styles) {
+                foreach ($already_combined as $handle) {
+                    if (!in_array($handle, $wp_styles->done)) {
+                        $wp_styles->done[] = $handle;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1318,14 +1492,8 @@ CSS;
             defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0'
         );
 
-        // Enqueue RepeaterControl CSS (code-split chunk)
-        // Used by advanced-list, search-form, and other blocks with repeater fields
-        wp_enqueue_style(
-            'voxel-fse-repeater-control',
-            $build_url . '/RepeaterControl.css',
-            [],
-            defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : '1.0.0'
-        );
+        // NOTE: RepeaterControl.css is bundled into shared-controls.css by Vite.
+        // No separate enqueue needed — it's already loaded via shared-controls above.
 
         // Enqueue Elementor Icons (eicons) for IconPickerControl buttons
         // Uses eicon-ban, eicon-upload, eicon-circle-o classes
@@ -1336,6 +1504,77 @@ CSS;
             [],
             '5.44.0'
         );
+    }
+
+    /**
+     * Override Gutenberg accent color when NectarBlocks plugin is active.
+     *
+     * NectarBlocks uses #3452ff as its brand color. When active, we override
+     * WordPress's --wp-components-color-accent and our --vxfse-accent-color
+     * to match, ensuring a consistent inspector UI.
+     *
+     * Also overrides inline styles on .components-button (which Gutenberg applies
+     * via React style prop) using !important CSS selectors.
+     *
+     * @since 1.0.0
+     */
+    public static function maybe_override_accent_color()
+    {
+        // Only apply when NectarBlocks is active
+        if ( ! function_exists( 'is_plugin_active' ) ) {
+            include_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        if ( ! is_plugin_active( 'nectar-blocks/nectar-blocks.php' ) ) {
+            return;
+        }
+
+        $accent       = '#3452ff';
+        $accent_darker = '#2a42cc';
+
+        $css = "
+            :root {
+                --wp-admin-theme-color: {$accent} !important;
+                --wp-admin-theme-color-darker-10: {$accent_darker} !important;
+                --wp-admin-theme-color-darker-20: {$accent_darker} !important;
+                --wp-components-color-accent: {$accent} !important;
+                --wp-components-color-accent-darker-10: {$accent_darker} !important;
+                --wp-components-color-accent-darker-20: {$accent_darker} !important;
+                --vxfse-accent-color: {$accent};
+                --vxfse-accent-color-darker: {$accent_darker};
+            }
+
+            /* Override Gutenberg inline styles on .components-button-group active buttons */
+            .components-button-group .components-button.is-primary,
+            .components-button-group .components-button[aria-pressed='true'] {
+                background-color: {$accent} !important;
+                border-color: {$accent} !important;
+            }
+
+            .components-button-group .components-button.is-primary:hover,
+            .components-button-group .components-button[aria-pressed='true']:hover {
+                background-color: {$accent_darker} !important;
+                border-color: {$accent_darker} !important;
+            }
+
+            /* Toggle controls */
+            .components-form-toggle.is-checked .components-form-toggle__track {
+                background-color: {$accent} !important;
+                border-color: {$accent} !important;
+            }
+
+            /* Tertiary buttons (reset icons, responsive device icons) - Gutenberg applies inline color */
+            .block-editor-block-inspector .components-button.is-tertiary,
+            .block-editor-block-inspector .components-button.is-small.has-icon {
+                color: {$accent} !important;
+            }
+            .block-editor-block-inspector .components-button.is-tertiary:hover,
+            .block-editor-block-inspector .components-button.is-small.has-icon:hover {
+                color: {$accent_darker} !important;
+            }
+        ";
+
+        wp_add_inline_style( 'voxel-fse-shared-controls-main', $css );
     }
 
     /**
@@ -1355,13 +1594,9 @@ CSS;
      */
     public static function add_editor_styles_for_fse()
     {
-        // Only load child theme's global CSS variables
-        // Parent theme styles are loaded via block dependencies when blocks are used
-        add_editor_style('assets/css/voxel-fse-commons.css');
-
-        // Vendor CSS (pikaday, nouislider) and Voxel parent CSS (product-form) are loaded
-        // into the FSE editor iframe via the editorStyle dependency chain using vx: prefixed handles.
-        // See ensure_voxel_styles_registered() for handle registration and load_blocks() for deps.
+        // NOTE: voxel-fse-commons.css is now part of voxel-editor-combined.css loaded via
+        // enqueue_block_assets. No longer using add_editor_style() to avoid duplicate loading.
+        // add_editor_style() inlines CSS into iframe blob HTML — we want ONE combined file instead.
     }
 
     /**
@@ -3164,69 +3399,7 @@ JAVASCRIPT;
         }
     }
 
-    /**
-     * Enqueue viewport subscriber (PeepSo-style pattern)
-     *
-     * Watches for Gutenberg viewport changes and dispatches a custom event
-     * that blocks can listen to for forcing re-renders.
-     */
-    public static function enqueue_viewport_subscriber()
-    {
-        // Check if we're in admin area (covers both post editor and FSE template editor)
-        if (!is_admin()) {
-            return;
-        }
 
-        // Additional check: Only run in block editor contexts
-        // This includes both post editor and FSE template editor
-        if (function_exists('get_current_screen')) {
-            $screen = get_current_screen();
-            // is_block_editor() returns true for post editor, but false for FSE template editor
-            // So we also check for 'site-editor' which is the FSE template editor
-            $is_block_editor_context = ($screen && $screen->is_block_editor()) ||
-                    ($screen && $screen->id === 'site-editor');
-
-            if (!$is_block_editor_context) {
-                return;
-            }
-        }
-
-        $script = "
-		(function() {
-			if (typeof wp === 'undefined' || !wp.data || !wp.data.subscribe) {
-				return;
-			}
-
-			let lastDevice = null;
-
-			wp.data.subscribe(function() {
-				const editPost = wp.data.select('core/edit-post');
-				const editSite = wp.data.select('core/edit-site');
-				
-				let currentDevice = null;
-				
-				if (editPost && typeof editPost.getPreviewDeviceType === 'function') {
-					currentDevice = editPost.getPreviewDeviceType();
-				} else if (editSite && typeof editSite.getPreviewDeviceType === 'function') {
-					currentDevice = editSite.getPreviewDeviceType();
-				} else if (editPost && typeof editPost.__experimentalGetPreviewDeviceType === 'function') {
-					currentDevice = editPost.__experimentalGetPreviewDeviceType();
-				}
-
-				if (currentDevice && currentDevice !== lastDevice) {
-					lastDevice = currentDevice;
-					window.dispatchEvent(new CustomEvent('voxel-fse:editorPreviewChanged', { 
-						detail: { device: currentDevice } 
-					}));
-				}
-			});
-		})();
-		";
-
-        // Enqueue wp-blocks first to ensure wp.data is available
-        wp_enqueue_script('wp-blocks');
-        wp_add_inline_script('wp-blocks', $script);
-    }
 
     /**
      * Disable REST API caching for block render requests
@@ -3351,6 +3524,28 @@ JAVASCRIPT;
         ];
 
         return array_merge($custom_categories, $categories);
+    }
+
+    /**
+     * Inject hidden SVG gradient definitions for block category icons.
+     *
+     * Mirrors the NectarBlocks pattern: a hidden SVG in admin_footer provides
+     * gradient definitions that block icons reference via fill: url(#id).
+     * The Voxel brand gradient matches the colorful gradient used for dynamic tags.
+     */
+    public static function inject_category_icon_gradient()
+    {
+        echo '<svg style="visibility: hidden; pointer-events: none; position: absolute; z-index: -999; width: 0; height: 0;">
+            <defs>
+                <linearGradient id="voxel-fse-icon-gradient" gradientTransform="rotate(45)">
+                    <stop offset="0%" stop-color="#38beed" />
+                    <stop offset="30%" stop-color="#458dd4" />
+                    <stop offset="50%" stop-color="#b471e8" />
+                    <stop offset="75%" stop-color="#ff638f" />
+                    <stop offset="100%" stop-color="#ffc298" />
+                </linearGradient>
+            </defs>
+        </svg>';
     }
 
     /**
@@ -3507,77 +3702,24 @@ JAVASCRIPT;
      */
     private static function register_block_with_vite($block_dir, $block_name, $block_config)
     {
-        // Get script file from block.json
-        $editor_script = $block_config['editorScript'] ?? '';
+        // NOTE: Per-block editor script registration REMOVED.
+        // All block registrations are now in a single editor.ts bundle
+        // served from Vite dev server via enqueue_global_editor_script().
+        // CRITICAL: Must unset ALL file: references to prevent WordPress
+        // from auto-discovering and enqueuing them (causes flicker).
 
-        if (empty($editor_script)) {
-            // Fallback: Try common patterns
-            $possible_files = ['index.js', 'index.jsx', $block_name . '.js', $block_name . '.jsx'];
-            foreach ($possible_files as $file) {
-                if (file_exists($block_dir . '/' . $file)) {
-                    $editor_script = 'file:./' . $file;
-                    break;
-                }
-            }
+        $block_args = $block_config;
+        unset($block_args['editorScript']);
+        // Unset file: references that WordPress would auto-process
+        if (isset($block_args['viewScript']) && strpos($block_args['viewScript'], 'file:') === 0) {
+            unset($block_args['viewScript']);
         }
-
-        if (empty($editor_script)) {
-            return;
+        if (isset($block_args['style']) && is_string($block_args['style']) && strpos($block_args['style'], 'file:') === 0) {
+            unset($block_args['style']);
         }
-
-        // Convert file:./script.js to actual filename
-        $script_file = str_replace('file:./', '', $editor_script);
-
-        // Find the actual file extension (.js, .jsx, .ts, .tsx)
-        // block.json might say "index.js" but the actual file is "index.tsx"
-        $possible_extensions = ['.js', '.jsx', '.ts', '.tsx'];
-        $base_name = pathinfo($script_file, PATHINFO_FILENAME);
-        $actual_file = $script_file; // Default to original
-
-        foreach ($possible_extensions as $ext) {
-            $test_file = $block_dir . '/' . $base_name . $ext;
-            if (file_exists($test_file)) {
-                $actual_file = $base_name . $ext;
-                break;
-            }
+        if (isset($block_args['editorStyle']) && strpos($block_args['editorStyle'], 'file:') === 0) {
+            unset($block_args['editorStyle']);
         }
-
-        $script_handle = 'mw-block-' . $block_name;
-
-        // Enqueue script from Vite dev server
-        // Vite serves files based on the input path in vite.config.ts
-        // Input: 'create-post': 'app/blocks/src/create-post/index.tsx'
-        // URL: http://localhost:3000/app/blocks/src/create-post/index.tsx
-        add_action('enqueue_block_editor_assets', function () use ($script_handle, $block_name, $actual_file) {
-            $script_url = 'http://localhost:3000/app/blocks/src/' . $block_name . '/' . $actual_file;
-
-            // Base dependencies for all blocks
-            $script_deps = ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'];
-
-            // Add nouislider dependency for search-form block (uses range slider filter)
-            if ($block_name === 'search-form') {
-                $script_deps[] = 'nouislider';
-            }
-
-            wp_enqueue_script(
-                    $script_handle,
-                    $script_url,
-                    $script_deps,
-                    null,
-                    true
-            );
-
-            // Add type="module" attribute for ES module format
-            self::mark_script_as_module($script_handle);
-        });
-
-        // Register block type with custom script handle
-        $block_args = array_merge(
-                $block_config,
-                ['editor_script' => $script_handle]
-        );
-
-        unset($block_args['editorScript']); // Remove file reference
 
         register_block_type($block_config['name'], $block_args);
     }
@@ -3591,276 +3733,36 @@ JAVASCRIPT;
      */
     private static function register_block_with_manifest($block_dir, $block_name, $block_config)
     {
-        // Get editor script from block.json
-        $editor_script = $block_config['editorScript'] ?? '';
+        // NOTE: Per-block editor scripts have been consolidated into a single editor.js IIFE bundle
+        // (NectarBlocks pattern). The manifest no longer has per-block entries.
+        // We MUST still process block metadata here to properly unset file: references
+        // (editorScript, viewScript, style, editorStyle) before calling register_block_type().
+        // If we pass $block_dir to register_block_type(), WordPress reads block.json raw
+        // and auto-enqueues file: references — causing flicker on viewport switch.
 
-        if (empty($editor_script)) {
-            // No editor script defined, just register the block
-            register_block_type($block_dir);
-            return;
-        }
-
-        // Convert file:./index.js to app/blocks/src/block-name/index.js format
-        $script_file = str_replace('file:./', '', $editor_script);
-
-        // Try to find the actual file extension (.js, .jsx, .ts, .tsx)
-        $possible_extensions = ['.js', '.jsx', '.ts', '.tsx'];
-        $base_name = pathinfo($script_file, PATHINFO_FILENAME);
-        $actual_file = $script_file; // Default to original
-
-        foreach ($possible_extensions as $ext) {
-            $test_file = $block_dir . '/' . $base_name . $ext;
-            if (file_exists($test_file)) {
-                $actual_file = $base_name . $ext;
-                break;
-            }
-        }
-
-        // Try two possible entry key formats:
-        // 1. vite.config.ts format: just the block name (e.g., 'create-post') - PRIMARY
-        // 2. vite.blocks.config.js format: full path (e.g., 'app/blocks/src/create-post/index.tsx') - FALLBACK
-        $entry_key_vite_config = $block_name;
-        $entry_key_blocks_config = 'app/blocks/src/' . $block_name . '/' . $actual_file;
-
-        // Build directory
         $build_dir = get_stylesheet_directory() . '/assets/dist';
         $build_url = get_stylesheet_directory_uri() . '/assets/dist';
-
-        // Try to find the built file using manifest.json
         $manifest_path = $build_dir . '/.vite/manifest.json';
-        $built_script = null;
-        $built_script_url = null;
         $manifest = null;
-        $entry_key = 'app/blocks/src/' . $block_name . '/' . $actual_file;
 
         if (file_exists($manifest_path)) {
             $manifest = json_decode(file_get_contents($manifest_path), true);
-
-            if (isset($manifest[$entry_key]) && isset($manifest[$entry_key]['file'])) {
-                $built_script = $build_dir . '/' . $manifest[$entry_key]['file'];
-                $built_script_url = $build_url . '/' . $manifest[$entry_key]['file'];
-            }
         }
 
-        // Fallback: Check old location (for backwards compatibility)
-        if (!$built_script || !file_exists($built_script)) {
-            $built_script = $build_dir . '/' . $block_name . '/index.js';
-            $built_script_url = $build_url . '/' . $block_name . '/index.js';
-        }
-
-        if ($built_script && file_exists($built_script)) {
-            // Register with built assets from assets/dist/ directory
-            $script_handle = 'mw-block-' . $block_name;
-            $version = defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($built_script);
-
-            // Determine script dependencies based on block type
-            $script_deps = ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'];
-
-            // Add nouislider dependency for search-form block (uses range slider filter)
-            if ($block_name === 'search-form') {
-                $script_deps[] = 'nouislider';
-            }
-
-            // Register the script
-            wp_register_script(
-                    $script_handle,
-                    $built_script_url,
-                    $script_deps,
-                    $version,
-                    true
-            );
-
-            // Add type="module" attribute for ES module format
-            // WordPress editor provides import maps for @wordpress/* packages
-            // Add type="module" attribute for ES module format
-            // WordPress editor provides import maps for @wordpress/* packages
-            self::mark_script_as_module($script_handle);
-
-            // Check for CSS file in manifest
-            $built_css = null;
-            $built_css_url = null;
-
-            if ($manifest && isset($manifest[$entry_key]['css']) && is_array($manifest[$entry_key]['css'])) {
-                // Use first CSS file from manifest
-                $css_file = $manifest[$entry_key]['css'][0];
-                $built_css = $build_dir . '/' . $css_file;
-                $built_css_url = $build_url . '/' . $css_file;
-            }
-
-            // Note: voxel-fse.css fallback removed - it was overriding styles in page editor
-            // Individual block CSS files from manifest are used instead
-
-            // Use merged $block_config (includes voxel tab attributes like visibility rules)
-            // instead of re-reading block.json which would lose merged attributes
-            $block_metadata = $block_config;
+        // Use merged $block_config (includes voxel tab attributes like visibility rules)
+        // instead of re-reading block.json which would lose merged attributes
+        $block_metadata = $block_config;
 
             if (!empty($block_metadata)) {
 
-                // Handle editorStyle from source (for blocks with ServerSideRender)
-                if (isset($block_metadata['editorStyle']) && strpos($block_metadata['editorStyle'], 'file:') === 0) {
-                    $editor_style_file = str_replace('file:./', '', $block_metadata['editorStyle']);
-                    $editor_style_path = $block_dir . '/' . $editor_style_file;
-
-                    if (file_exists($editor_style_path)) {
-                        $editor_style_handle = 'mw-block-' . $block_name . '-editor';
-                        $editor_style_url = get_stylesheet_directory_uri() . '/app/blocks/src/' . $block_name . '/' . $editor_style_file;
-
-                        // Dependencies: Voxel core styles for popup block
-                        // Register them NOW so they're available as dependencies
-                        // IMPORTANT: These dependencies ensure styles load in FSE template editor iframe
-                        // The iframe uses _wp_get_iframed_editor_assets() which only includes styles
-                        // registered as dependencies of the block's editorStyle
-                        $editor_style_deps = [];
-                        if ($block_name === 'popup-kit') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include all Voxel core styles and vendor CSS as dependencies
-                            // This ensures they load in both post editor and FSE template editor iframe
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:popup-kit.css',
-                                    'vx:product-form.css',
-                                    'vx:nouislider.css',
-                                    'vx:pikaday.css'
-                            ];
-                        } elseif ($block_name === 'create-post') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include Voxel form styles for create-post preview
-                            // This ensures the editor preview matches the frontend exactly
-                            // CRITICAL: popup-kit.css required for field popups (multiselect, taxonomy, timezone, etc.)
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:create-post.css',
-                                    'vx:popup-kit.css'
-                            ];
-                        } elseif ($block_name === 'search-form') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include Voxel form/popup styles for search form preview
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:popup-kit.css'
-                            ];
-                        } elseif ($block_name === 'timeline') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include Voxel social feed and form styles for timeline preview
-                            // Matches timeline widget dependencies from app/widgets/timeline.php
-                            $editor_style_deps = [
-                                    'vx:forms.css',
-                                    'vx:social-feed.css'
-                            ];
-                        } elseif ($block_name === 'timeline-kit') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // ONLY list social-feed.css - it has transitive deps: forms → commons → fse-commons
-                            // WordPress resolves: fse-commons → commons → forms → social-feed → editor.css
-                            // This ensures social-feed.css loads LAST so .vxf-link overrides .flexify
-                            $editor_style_deps = [
-                                    'vx:social-feed.css'  // Transitive: pulls in forms → commons → fse-commons
-                            ];
-                        } elseif ($block_name === 'work-hours') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include Voxel work-hours styles for editor preview
-                            // Matches work-hours widget dependencies from parent theme
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:work-hours.css'
-                            ];
-                        } elseif ($block_name === 'review-stats') {
-                            // Ensure Voxel styles are registered before using them as dependencies
-                            self::ensure_voxel_styles_registered();
-                            // Include Voxel review-stats styles for editor preview
-                            // Evidence: themes/voxel/app/widgets/review-stats.php uses get_style_depends() -> ['vx:review-stats.css']
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:review-stats.css'
-                            ];
-                        } elseif ($block_name === 'quick-search') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:popup-kit.css'
-                            ];
-                        } elseif ($block_name === 'userbar') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css'
-                            ];
-                        } elseif ($block_name === 'login') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css'
-                            ];
-                        } elseif ($block_name === 'product-form') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:product-form.css'
-                            ];
-                        } elseif ($block_name === 'navbar') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css'
-                            ];
-                        } elseif ($block_name === 'messages') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css'
-                            ];
-                        } elseif ($block_name === 'term-feed') {
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:post-feed.css'
-                            ];
-                        } elseif ($block_name === 'print-template') {
-                            // Print-template can embed ANY content, so it needs all core Voxel styles
-                            // to render the embedded template correctly in the editor (ServerSideRender)
-                            self::ensure_voxel_styles_registered();
-                            $editor_style_deps = [
-                                    'vx:commons.css',
-                                    'vx:forms.css',
-                                    'vx:popup-kit.css'
-                            ];
-                        }
-
-                        // WordPress requires 'wp-edit-blocks' dependency for editor styles
-                        $final_deps = array_merge(['wp-edit-blocks'], $editor_style_deps);
-
-                        wp_register_style(
-                                $editor_style_handle,
-                                $editor_style_url,
-                                $final_deps,
-                                filemtime($editor_style_path)
-                        );
-
-                        // Note: pikaday is enqueued in enqueue_voxel_core_styles()
-                        // which runs at priority 10, ensuring it loads after editor.css (priority 20)
-
-                        // Explicitly enqueue for editor (WordPress auto-enqueue might not respect deps)
-                        add_action('enqueue_block_editor_assets', function () use ($editor_style_handle, $final_deps) {
-                            // Ensure dependencies are loaded first
-                            foreach ($final_deps as $dep) {
-                                if (wp_style_is($dep, 'registered') && !wp_style_is($dep, 'enqueued')) {
-                                    wp_enqueue_style($dep);
-                                }
-                            }
-                            wp_enqueue_style($editor_style_handle);
-                        }, 20); // Priority 20 to load after Voxel styles (priority 10)
-
-                        $block_metadata['editor_style'] = $editor_style_handle;
-                    }
-                }
+                // NOTE: Per-block editorStyle registrations have been REMOVED to fix viewport flicker.
+                // Previously, each block registered editor_style with heavy Voxel CSS dependency chains.
+                // _wp_get_iframed_editor_assets() iterates ALL blocks' editor_style_handles on every
+                // viewport switch, loading 27+ stylesheets into the iframe blob (207ms long task).
+                //
+                // FIX (NectarBlocks pattern): Voxel CSS is now loaded globally via enqueue_block_assets
+                // + is_admin() gate (see enqueue_voxel_styles_for_iframe). Per-block editor CSS is
+                // bundled into the single editor.css via Vite. No blocks have editor_style_handles.
 
                 // Handle viewScript from source (for frontend JavaScript)
                 if (isset($block_metadata['viewScript']) && strpos($block_metadata['viewScript'], 'file:') === 0) {
@@ -4404,18 +4306,12 @@ JAVASCRIPT;
                         );
 
                         // Set the style handle in block metadata
-                        // WordPress will automatically enqueue it when the block is rendered
+                        // WordPress will automatically enqueue it when the block is rendered on frontend
                         $block_metadata['style'] = $style_handle;
 
-                        // Also enqueue in block editor for preview to match frontend
-                        add_action('enqueue_block_editor_assets', function () use ($style_handle, $style_deps) {
-                            foreach ($style_deps as $dep) {
-                                if (wp_style_is($dep, 'registered') && !wp_style_is($dep, 'enqueued')) {
-                                    wp_enqueue_style($dep);
-                                }
-                            }
-                            wp_enqueue_style($style_handle);
-                        }, 25); // Priority 25 to load after editorStyle (priority 20)
+                        // NOTE: Per-block enqueue_block_editor_assets closures for Voxel CSS deps removed.
+                        // Voxel CSS is now loaded globally via enqueue_voxel_styles_for_iframe()
+                        // on enqueue_block_assets hook (NectarBlocks pattern).
                     }
                 }
 
@@ -4446,134 +4342,13 @@ JAVASCRIPT;
                     }
                 }
 
-                // Add our custom editor script
-                $block_metadata['editor_script'] = $script_handle;
+                // NOTE: editor_script NOT assigned per block — single global editor.js handles all blocks
 
                 // Register the block
                 if (isset($block_metadata['name'])) {
                     register_block_type($block_metadata['name'], $block_metadata);
                 }
             }
-
-            return;
-        }
-
-        // Fallback: check for manifest-based build
-        if (self::$vite_loader) {
-            // Load manifest directly to bypass Vite_Loader's dev server detection
-            // Vite outputs manifest.json in the .vite/ subdirectory
-            $manifest_path = get_stylesheet_directory() . '/assets/dist/.vite/manifest.json';
-            if (!file_exists($manifest_path)) {
-                // No manifest and no built files - register from block.json
-                register_block_type($block_dir);
-                return;
-            }
-
-            $manifest = json_decode(file_get_contents($manifest_path), true);
-
-            // Try both entry key formats
-            $entry_key = null;
-            $asset_data = null;
-
-            if (isset($manifest[$entry_key_vite_config])) {
-                $entry_key = $entry_key_vite_config;
-                $asset_data = $manifest[$entry_key];
-            } elseif (isset($manifest[$entry_key_blocks_config])) {
-                $entry_key = $entry_key_blocks_config;
-                $asset_data = $manifest[$entry_key];
-            }
-
-            if (!$asset_data) {
-                // Fallback to block.json if entry not in manifest
-                register_block_type($block_dir);
-                return;
-            }
-
-            // Build production URL
-            $asset_path = $asset_data['file'] ?? null;
-            if (!$asset_path) {
-                register_block_type($block_dir);
-                return;
-            }
-
-            $asset_url = defined('MWFSE_URL')
-                    ? MWFSE_URL . '/assets/dist/' . $asset_path
-                    : get_stylesheet_directory_uri() . '/assets/dist/' . $asset_path;
-
-            if ($asset_url) {
-                // Register custom script with built asset
-                $script_handle = 'mw-block-' . $block_name;
-
-                // Use manifest file modification time as version for cache busting
-                $version = defined('MWFSE_VERSION') ? MWFSE_VERSION : filemtime($manifest_path);
-
-                // Base dependencies for all blocks
-                $script_deps = ['wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n'];
-
-                // Add nouislider dependency for search-form block (uses range slider filter)
-                if ($block_name === 'search-form') {
-                    $script_deps[] = 'nouislider';
-                }
-
-                wp_register_script(
-                        $script_handle,
-                        $asset_url,
-                        $script_deps,
-                        $version,
-                        true
-                );
-
-                // Add type="module" attribute for ES module format
-                self::mark_script_as_module($script_handle);
-
-                // Enqueue CSS for this entry and its imports
-                self::enqueue_manifest_css($entry_key, $block_name, $version);
-
-                // Use merged $block_config (includes voxel tab attributes like visibility rules)
-                // instead of re-reading block.json which would lose merged attributes
-                $block_metadata = $block_config;
-
-                // Remove script/style entries that reference source files
-                // CSS is handled by enqueue_manifest_css() from Vite build
-                unset($block_metadata['editorScript']);
-                unset($block_metadata['style']);
-                unset($block_metadata['editorStyle']);
-
-                // Convert render file: reference to a callback
-                if (isset($block_metadata['render']) && strpos($block_metadata['render'], 'file:') === 0) {
-                    $render_file = str_replace('file:', '', $block_metadata['render']);
-                    $render_path = $block_dir . '/' . $render_file;
-
-                    // Create a render callback that includes the file
-                    // Note: render.php files use 'return' statements, not 'echo'
-                    // So we capture the return value from include, not output buffer
-                    if (file_exists($render_path)) {
-                        $block_metadata['render_callback'] = function ($attributes, $content, $block) use ($render_path) {
-                            // Include returns the value from render.php's return statement
-                            $result = include $render_path;
-                            // If result is a string, return it; otherwise return empty
-                            return is_string($result) ? $result : '';
-                        };
-                        unset($block_metadata['render']);
-                    }
-                }
-
-                // Add our custom editor script handle
-                $block_metadata['editor_script'] = $script_handle;
-
-                // Register block type by name with fully processed metadata
-                // Do NOT pass directory - that would cause WordPress to re-read block.json
-                if (isset($block_metadata['name'])) {
-                    register_block_type($block_metadata['name'], $block_metadata);
-                }
-            } else {
-                // Fallback: register normally if asset not found in manifest
-                register_block_type($block_dir);
-            }
-        } else {
-            // No vite loader, fallback to block.json
-            register_block_type($block_dir);
-        }
     }
 
     /**

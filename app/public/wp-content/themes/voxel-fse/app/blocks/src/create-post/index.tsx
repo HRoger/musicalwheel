@@ -8,7 +8,7 @@
  */
 
 import { registerBlockType } from '@wordpress/blocks';
-import { useBlockProps } from '@wordpress/block-editor';
+// import { useBlockProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';

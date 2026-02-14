@@ -7,13 +7,14 @@
 /* ============================================
    View Port fix
    ============================================ */
-
-
 .edit-post-sidebar,
 .interface-interface-skeleton__sidebar {
     transition: none !important;
 }
 
+body.block-editor-iframe__body {
+    overflow-y: auto;
+}
 
 .interface-complementary-area {
     background: #fff;
@@ -58,37 +59,6 @@ body.block-editor-page #vx-alert .alert-msg {
  *FIX EDITOR STYLING
  * ============================================ */
 
-/* Editor canvas styles */
-.editor-styles-wrapper {
-    font-family: var(--wp--preset--font-family--system);
-    font-size: var(--wp--preset--font-size--base);
-    line-height: 1.6;
-}
-
-/* Block toolbar enhancements */
-.block-editor-block-toolbar {
-    border-radius: var(--wp--custom--border-radius--base);
-}
-
-/* Custom block category icon */
-.block-editor-inserter__panel-header .components-panel__body-title {
-    /* MusicalWheel FSE category styling */
-}
-
-/* DynamicTag input styling in editor */
-.mw-dynamic-tag-input {
-    font-family: var(--wp--preset--font-family--monospace);
-    background: var(--wp--preset--color--neutral-50);
-    border: 1px solid var(--wp--preset--color--neutral-200);
-    border-radius: var(--wp--custom--border-radius--base);
-    padding: var(--wp--preset--spacing--2);
-}
-
-/* FSE block previews */
-.block-editor-block-preview__content {
-    border-radius: var(--wp--custom--border-radius--md);
-}
-
 /* Fix sidebar panel header overlapping DynamicTagBuilder modal */
 .interface-complementary-area .components-panel__header {
     z-index: 0 !important;
@@ -115,10 +85,8 @@ body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
     text-decoration: none;
 }
 
-
 body .vxf-create-post {
     flex-wrap: nowrap !important;
-
 }
 
 /**
@@ -221,7 +189,7 @@ body.block-editor-page [class*="wp-block-voxel-"] input[type=url]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] input[type=week]:focus,
 body.block-editor-page [class*="wp-block-voxel-"] select:focus,
 body.block-editor-page [class*="wp-block-voxel-"] textarea:focus {
-    box-shadow: none!important;
+    box-shadow: none !important;
     outline: none;
     border: 1px solid var(--ts-shade-3);
     border-radius: .375rem;
@@ -458,28 +426,7 @@ body.block-editor-page .interface-interface-skeleton__sidebar .inside {
 
 /* ============================================
  * Fix: Reduce flicker when switching viewport
- * WordPress uses iframe for tablet/mobile preview,
- * causing inspector unmount/remount on desktop<->tablet/mobile
  * ============================================ */
-
-/* Prevent sidebar collapse during viewport switch */
-.interface-interface-skeleton__sidebar {
-    min-height: 100%;
-}
-
-/* Smooth fade-in for inspector content after remount */
-.block-editor-block-inspector {
-    animation: vxfse-inspector-fade-in 0.15s ease-out;
-}
-
-@keyframes vxfse-inspector-fade-in {
-    from {
-        opacity: 0.5;
-    }
-    to {
-        opacity: 1;
-    }
-}
 
 
 /* ============================================
@@ -516,3 +463,124 @@ body .block-editor-block-list__layout.is-root-container > .alignfull {
     max-width: none;
 }
 
+
+/**
+ * Fix for Voxel's :where(svg) { color: var(--ts-icon-color) } rule in commons.css
+ * which causes icon color conflicts in the Gutenberg editor, specifically affecting
+ * NectarBlocks carousel sidebar icons and other third-party block library UIs.
+ *
+ * Strategy:
+ * 1. Reset Voxel's SVG color inheritance for all editor contexts
+ * 2. Preserve fill="none" attributes (bounding boxes, transparent paths)
+ * 3. Let SVG paths use their original colors or inherit from parent contexts
+ */
+
+/* ============================================
+ * RESET: Override Voxel's :where(svg) color rule globally in editor
+ * ============================================ */
+body.block-editor-page svg,
+#editor svg,
+.editor-styles-wrapper svg,
+.block-editor-block-list__layout svg,
+.interface-interface-skeleton svg,
+.edit-post-visual-editor svg,
+.components-popover svg,
+.components-popover__content svg,
+.components-tooltip svg,
+.components-dropdown-menu__popover svg,
+.components-modal__screen-overlay svg,
+.block-editor-inserter__menu svg,
+.block-editor-inserter__panel-content svg,
+.block-editor-block-inspector svg,
+.interface-interface-skeleton__sidebar svg,
+.block-editor-inserter__preview svg,
+.block-editor-block-card svg {
+    color: unset !important;
+}
+
+/* Additional specificity for popover content rendered in portals */
+body .components-popover svg,
+body .components-popover__content svg,
+body .components-tooltip svg,
+body .components-dropdown-menu__popover svg {
+    color: unset !important;
+}
+
+/* CRITICAL: Block inserter preview popovers (carousel, flexbox, gallery, tabs, etc.) */
+body .block-editor-inserter__preview-container__popover svg,
+body .block-editor-inserter__preview-container__popover .block-editor-block-icon svg,
+body .block-editor-inserter__preview-container__popover .nectar-icon {
+    color: unset !important;
+}
+
+/* Block card icons in all contexts */
+body .block-editor-block-card .block-editor-block-icon svg,
+body .block-editor-block-card__title svg,
+body .nectar-icon {
+    color: unset !important;
+}
+
+/* ============================================
+ * PRESERVE: Keep fill="none" on transparent/bounding-box paths
+ * ============================================ */
+body.block-editor-page svg path[fill="none"],
+body.block-editor-page svg rect[fill="none"],
+body.block-editor-page svg circle[fill="none"],
+body.block-editor-page svg ellipse[fill="none"],
+body.block-editor-page svg polygon[fill="none"],
+body .components-popover svg path[fill="none"],
+body .components-popover svg rect[fill="none"],
+body .components-popover svg circle[fill="none"],
+body .components-popover__content svg path[fill="none"],
+body .components-popover__content svg rect[fill="none"],
+body .components-tooltip svg path[fill="none"],
+body .components-tooltip svg rect[fill="none"],
+body .components-dropdown-menu__popover svg path[fill="none"],
+body .components-dropdown-menu__popover svg rect[fill="none"],
+#editor svg path[fill="none"],
+#editor svg rect[fill="none"],
+#editor svg circle[fill="none"],
+.editor-styles-wrapper svg path[fill="none"],
+.editor-styles-wrapper svg rect[fill="none"],
+.block-editor-inserter__panel-content svg path[fill="none"],
+.block-editor-inserter__panel-content svg rect[fill="none"],
+.block-editor-inserter__panel-content svg circle[fill="none"],
+.nectar-blocks-template-library svg path[fill="none"],
+.nectar-blocks-template-library svg rect[fill="none"],
+.nectar-blocks-template-library svg circle[fill="none"],
+.react-tabs svg path[fill="none"],
+.react-tabs svg rect[fill="none"],
+.interface-interface-skeleton__sidebar svg path[fill="none"],
+.interface-interface-skeleton__sidebar svg rect[fill="none"],
+.block-editor-block-inspector svg path[fill="none"],
+.block-editor-block-inspector svg rect[fill="none"] {
+    fill: none !important;
+}
+
+
+body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg,
+body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:hover {
+    fill: rgb(255 255 255);
+    outline: none;
+}
+
+/* ============================================
+ * THIRD-PARTY BLOCKS: Specific fixes for known conflicts
+ * ============================================ */
+body .nectar-blocks-template-library__sidebar__item__link {
+    font-weight: 400;
+}
+
+/* NectarBlocks carousel icons - let them use their original colors */
+.nectar-blocks-template-library svg,
+.nectar-blocks-template-library svg path,
+.nectar-blocks-template-library svg rect,
+.nectar-blocks-template-library svg circle {
+    color: inherit;
+}
+
+/* React Tabs - reset color inheritance */
+.react-tabs svg,
+.react-tabs svg path {
+    color: inherit;
+}

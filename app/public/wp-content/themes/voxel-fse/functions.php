@@ -489,8 +489,9 @@ function voxel_fse_setup()
     // Add support for custom units
     add_theme_support('custom-units');
 
-    // Load editor overrides as editor-style for FSE iframe
-    add_editor_style('assets/gutenberg-editor-overrides.css');
+    // NOTE: gutenberg-editor-overrides.css is now part of voxel-editor-combined.css
+    // loaded via enqueue_block_assets. No longer using add_editor_style() to avoid
+    // duplicate loading (add_editor_style inlines into iframe blob HTML).
 }
 
 add_action('after_setup_theme', 'voxel_fse_setup');
@@ -500,28 +501,19 @@ add_action('after_setup_theme', 'voxel_fse_setup');
  */
 function voxel_fse_enqueue_block_editor_assets()
 {
-    // Block editor styles
-    wp_enqueue_style(
-            'voxel-fse-editor-styles',
-            VOXEL_FSE_URL . '/assets/gutenberg-editor-overrides.css',
-            array(),
-            VOXEL_FSE_VERSION
-    );
-    
-    // Enqueue Line Awesome for block editor (needed for icon fonts in components)
+    // NOTE: gutenberg-editor-overrides.css and responsive-visibility.css are now
+    // bundled into voxel-editor-combined.css (loaded via enqueue_block_assets).
+    // Loading them here via enqueue_block_editor_assets caused getCompatibilityStyles()
+    // to clone them into the iframe as duplicate <style> tags.
+
+    // Line Awesome: needed on main admin page for icon rendering in sidebar/toolbar.
+    // This is intentionally on the main page only (not iframe) — icons are in the
+    // WordPress admin UI, not the block content preview.
     wp_enqueue_style(
             'voxel-line-awesome',
             get_template_directory_uri() . '/assets/icons/line-awesome/line-awesome.css',
             array(),
             wp_get_theme()->parent()->get('Version')
-    );
-
-    // Enqueue responsive visibility classes in editor (needed for map/feed switcher toggle)
-    wp_enqueue_style(
-            'voxel-fse-responsive-visibility',
-            VOXEL_FSE_URL . '/assets/css/responsive-visibility.css',
-            array(),
-            VOXEL_FSE_VERSION
     );
 }
 

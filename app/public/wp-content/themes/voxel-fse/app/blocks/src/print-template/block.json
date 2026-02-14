@@ -24,7 +24,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"editorStyle": "file:./editor.css",
 	"render": "file:./render.php",
 	"style": "file:./style.css",

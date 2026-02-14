@@ -12,24 +12,7 @@ import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import type { SliderBlockAttributes } from './types';
-
-// Import editor styles
-
-
-/**
- * Slider block icon - gallery/carousel representation
- */
-const icon = (
-	<svg
-		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		width="24"
-		height="24"
-		fill="currentColor"
-	>
-		<path d="M2 6h4v12H2V6zm6-2h8v16H8V4zm10 2h4v12h-4V6z" />
-	</svg>
-);
+import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 /**
  * Register the Slider block
@@ -43,7 +26,7 @@ const deprecated = [
 
 registerBlockType(metadata.name, {
 	...metadata,
-	icon,
+	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
 	deprecated,
