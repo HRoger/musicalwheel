@@ -355,6 +355,14 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controlle
 new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
+ * Load FSE Print Template API Controller
+ * Provides REST endpoint for server-side template rendering in editor preview.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-print-template-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Print_Template_API_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all
@@ -481,8 +489,9 @@ function voxel_fse_setup()
     // Add support for custom units
     add_theme_support('custom-units');
 
-    // Load editor overrides as editor-style for FSE iframe
-    add_editor_style('assets/gutenberg-editor-overrides.css');
+    // NOTE: gutenberg-editor-overrides.css is now part of voxel-editor-combined.css
+    // loaded via enqueue_block_assets. No longer using add_editor_style() to avoid
+    // duplicate loading (add_editor_style inlines into iframe blob HTML).
 }
 
 add_action('after_setup_theme', 'voxel_fse_setup');
@@ -492,15 +501,14 @@ add_action('after_setup_theme', 'voxel_fse_setup');
  */
 function voxel_fse_enqueue_block_editor_assets()
 {
-    // Block editor styles
-    wp_enqueue_style(
-            'voxel-fse-editor-styles',
-            VOXEL_FSE_URL . '/assets/gutenberg-editor-overrides.css',
-            array(),
-            VOXEL_FSE_VERSION
-    );
-    
-    // Enqueue Line Awesome for block editor (needed for icon fonts in components)
+    // NOTE: gutenberg-editor-overrides.css and responsive-visibility.css are now
+    // bundled into voxel-editor-combined.css (loaded via enqueue_block_assets).
+    // Loading them here via enqueue_block_editor_assets caused getCompatibilityStyles()
+    // to clone them into the iframe as duplicate <style> tags.
+
+    // Line Awesome: needed on main admin page for icon rendering in sidebar/toolbar.
+    // This is intentionally on the main page only (not iframe) — icons are in the
+    // WordPress admin UI, not the block content preview.
     wp_enqueue_style(
             'voxel-line-awesome',
             get_template_directory_uri() . '/assets/icons/line-awesome/line-awesome.css',
@@ -740,3 +748,6 @@ add_action('after_switch_theme', function() {
     // Templates should be auto-discovered from templates/ directory
     // If not found immediately, WordPress will create them on first request to Site Editor
 });
+
+
+

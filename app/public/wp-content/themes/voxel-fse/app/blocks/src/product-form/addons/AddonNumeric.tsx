@@ -142,7 +142,31 @@ export default function AddonNumeric( {
 		: '';
 
 	const currentQty = value.quantity ?? 0;
+	const displayMode = addon.props.display_mode ?? 'stepper';
 
+	// Input mode: simple number input without stepper buttons
+	// Evidence: templates/widgets/product-form/form-addons/numeric.php:6-11
+	if ( displayMode === 'input' ) {
+		return (
+			<div className="ts-form-group ts-addon-numeric">
+				<label>{ addon.label }</label>
+				<div className="input-container">
+					<input
+						type="number"
+						value={ currentQty }
+						onChange={ handleInputChange }
+						onBlur={ validateValueInBounds }
+						min={ addon.required ? minUnits : 0 }
+						max={ maxUnits }
+						className="ts-filter"
+					/>
+				</div>
+			</div>
+		);
+	}
+
+	// Stepper mode (default): +/- buttons with number input
+	// Evidence: templates/widgets/product-form/form-addons/numeric.php:12-25
 	return (
 		<div className="ts-form-group ts-addon-numeric">
 			<label>
@@ -151,31 +175,27 @@ export default function AddonNumeric( {
 					<span className="addon-price"> ({ formattedPrice } each)</span>
 				) }
 			</label>
-			<div className="ts-stepper-input">
+			<div className="ts-stepper-input flexify">
 				<button
 					type="button"
-					className="ts-stepper-btn ts-stepper-minus"
+					className={ `ts-stepper-left ts-icon-btn${ addon.required && currentQty <= minUnits ? ' vx-disabled' : '' }` }
 					onClick={ decrement }
-					disabled={ addon.required && currentQty <= minUnits }
 				>
-					<span className="ts-icon">-</span>
+					<i className="las la-minus" />
 				</button>
 				<input
 					type="number"
 					value={ currentQty }
 					onChange={ handleInputChange }
 					onBlur={ validateValueInBounds }
-					min={ addon.required ? minUnits : 0 }
-					max={ maxUnits }
-					className="ts-stepper-value"
+					className="ts-input-box"
 				/>
 				<button
 					type="button"
-					className="ts-stepper-btn ts-stepper-plus"
+					className={ `ts-stepper-right ts-icon-btn${ currentQty >= maxUnits ? ' vx-disabled' : '' }` }
 					onClick={ increment }
-					disabled={ currentQty >= maxUnits }
 				>
-					<span className="ts-icon">+</span>
+					<i className="las la-plus" />
 				</button>
 			</div>
 			{ addon.props.charge_after?.enabled && addon.props.charge_after.quantity > 0 && (

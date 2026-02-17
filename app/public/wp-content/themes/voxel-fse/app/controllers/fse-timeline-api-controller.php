@@ -582,8 +582,26 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 			'upload_config'    => [
 				'max_file_size'       => absint( \Voxel\get( 'settings.timeline.posts.images.max_size', 2000 ) ) * 1024, // Convert KB to bytes
 				'max_files'           => absint( \Voxel\get( 'settings.timeline.posts.images.max_count', 5 ) ),
-				'allowed_types'       => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
+				'allowed_types'       => (array) \Voxel\get( 'settings.timeline.posts.images.allowed_formats', [
+					'image/jpeg',
+					'image/gif',
+					'image/png',
+					'image/webp',
+				] ),
 				'allowed_extensions'  => [ 'jpg', 'jpeg', 'png', 'gif', 'webp' ],
+			],
+			// Reply-specific upload config - Evidence: timeline.php L447-459
+			// Voxel has separate settings for replies (different max_count, enabled, formats)
+			'reply_upload_config' => [
+				'max_file_size'       => absint( \Voxel\get( 'settings.timeline.posts.images.max_size', 2000 ) ) * 1024,
+				'max_files'           => absint( \Voxel\get( 'settings.timeline.replies.images.max_count', 1 ) ),
+				'enabled'             => (bool) \Voxel\get( 'settings.timeline.replies.images.enabled', true ),
+				'allowed_types'       => (array) \Voxel\get( 'settings.timeline.replies.images.allowed_formats', [
+					'image/jpeg',
+					'image/gif',
+					'image/png',
+					'image/webp',
+				] ),
 			],
 			'features'         => [
 				'mentions'         => true,
@@ -599,8 +617,30 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 				'posts_editable'   => (bool) \Voxel\get( 'settings.timeline.posts.editable', true ),
 				'replies_editable' => (bool) \Voxel\get( 'settings.timeline.replies.editable', true ),
 			],
+			// Truncation settings - Evidence: timeline.php L437, L450
+			'truncate_at'       => [
+				'posts'   => (int) \Voxel\get( 'settings.timeline.posts.truncate_at', 280 ),
+				'replies' => (int) \Voxel\get( 'settings.timeline.replies.truncate_at', 280 ),
+			],
+			// Quotes config - Evidence: timeline.php L464-467
+			'quotes'            => [
+				'truncate_at' => (int) \Voxel\get( 'settings.timeline.posts.quotes.truncate_at', 160 ),
+				'placeholder' => _x( 'What\'s on your mind?', 'timeline', 'voxel' ),
+			],
+			// Asset URLs - Evidence: timeline.php L468-479
+			'asset_urls'        => [
+				'emojis'                => trailingslashit( get_template_directory_uri() ) . 'assets/vendor/emoji-list/emoji-list.json?v=' . \Voxel\get_assets_version(),
+				'link_preview_default'  => \Voxel\get_image( 'link-preview.webp' ),
+				'mentions'              => home_url( '/?vx=1&action=user.profile' ),
+				'hashtags'              => get_permalink( \Voxel\get( 'templates.timeline' ) ),
+			],
+			// Search config - Evidence: timeline.php L480-484
+			'search'            => [
+				'maxlength'     => (int) apply_filters( 'voxel/keyword-search/max-query-length', 128 ),
+			],
 			'statuses_per_page' => absint( \Voxel\get( 'settings.timeline.posts.per_page', 10 ) ),
 			'comments_per_page' => absint( \Voxel\get( 'settings.timeline.replies.per_page', 5 ) ),
+			'show_usernames'    => (bool) \Voxel\get( 'settings.timeline.author.show_username', true ),
 			'strings'           => $this->get_i18n_strings(),
 			'icons'             => $this->get_icons(),
 		];
@@ -704,6 +744,36 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 			'file_type_not_allowed'    => _x( 'File type not allowed', 'timeline', 'voxel-fse' ),
 			'search_placeholder'       => _x( 'Search posts...', 'timeline', 'voxel-fse' ),
 			'search_no_results'        => _x( 'No results found', 'timeline', 'voxel-fse' ),
+			// Voxel-exact l10n strings - Evidence: timeline.php L491-507
+			'no_activity'              => _x( 'No activity yet', 'timeline', 'voxel-fse' ),
+			'editedOn'                 => _x( 'Edited on @date', 'timeline', 'voxel' ),
+			'oneLike'                  => _x( '1 like', 'timeline', 'voxel' ),
+			'countLikes'               => _x( '@count likes', 'timeline', 'voxel' ),
+			'oneReply'                 => _x( '1 reply', 'timeline', 'voxel' ),
+			'countReplies'             => _x( '@count replies', 'timeline', 'voxel' ),
+			'cancelEdit'               => _x( 'Your changes will be lost. Do you wish to proceed?', 'timeline', 'voxel' ),
+			// Emoji group translations - Evidence: timeline.php L492-500
+			'emoji_groups'             => [
+				'Smileys & Emotion' => _x( 'Smileys & Emotion', 'emoji popup', 'voxel' ),
+				'People & Body'     => _x( 'People & Body', 'emoji popup', 'voxel' ),
+				'Animals & Nature'  => _x( 'Animals & Nature', 'emoji popup', 'voxel' ),
+				'Food & Drink'      => _x( 'Food & Drink', 'emoji popup', 'voxel' ),
+				'Travel & Places'   => _x( 'Travel & Places', 'emoji popup', 'voxel' ),
+				'Activities'        => _x( 'Activities', 'emoji popup', 'voxel' ),
+				'Objects'           => _x( 'Objects', 'emoji popup', 'voxel' ),
+			],
+			// Additional action strings
+			'copied'                   => _x( 'Copied!', 'timeline', 'voxel-fse' ),
+			'copy_link'                => _x( 'Copy link', 'timeline', 'voxel-fse' ),
+			'share_via'                => _x( 'Share via', 'timeline', 'voxel-fse' ),
+			'remove_link_preview'      => _x( 'Remove link preview', 'timeline', 'voxel-fse' ),
+			'restricted_visibility'    => _x( 'Restricted visibility', 'timeline', 'voxel-fse' ),
+			'yes'                      => _x( 'Yes', 'timeline', 'voxel-fse' ),
+			'no'                       => _x( 'No', 'timeline', 'voxel-fse' ),
+			'reposted'                 => _x( 'Reposted', 'timeline', 'voxel-fse' ),
+			'cancel'                   => _x( 'Cancel', 'timeline', 'voxel-fse' ),
+			'update'                   => _x( 'Update', 'timeline', 'voxel-fse' ),
+			'is_deleting'              => _x( 'Deleting...', 'timeline', 'voxel-fse' ),
 		];
 	}
 
@@ -769,6 +839,12 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 				'allowed_types'       => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
 				'allowed_extensions'  => [ 'jpg', 'jpeg', 'png', 'gif', 'webp' ],
 			],
+			'reply_upload_config' => [
+				'max_file_size'       => 2048000,
+				'max_files'           => 1,
+				'enabled'             => true,
+				'allowed_types'       => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
+			],
 			'features'         => [
 				'mentions'         => true,
 				'hashtags'         => true,
@@ -783,8 +859,26 @@ class FSE_Timeline_API_Controller extends FSE_Base_Controller {
 				'posts_editable'   => true,
 				'replies_editable' => true,
 			],
+			'truncate_at'       => [
+				'posts'   => 280,
+				'replies' => 280,
+			],
+			'quotes'            => [
+				'truncate_at' => 160,
+				'placeholder' => "What's on your mind?",
+			],
+			'asset_urls'        => [
+				'emojis'                => '',
+				'link_preview_default'  => '',
+				'mentions'              => home_url( '/?vx=1&action=user.profile' ),
+				'hashtags'              => '',
+			],
+			'search'            => [
+				'maxlength'     => 128,
+			],
 			'statuses_per_page' => 10,
 			'comments_per_page' => 5,
+			'show_usernames'    => true,
 			'strings'           => $this->get_i18n_strings(),
 			'icons'             => $this->get_icons(),
 		];

@@ -421,7 +421,7 @@ export const RecurringDateField: React.FC<RecurringDateFieldProps> = ({
 }) => {
 	// Get field props with defaults
 	const props: RecurringDateFieldPropsConfig = {
-		max_date_count: field.props?.max_date_count ?? 3,
+		max_date_count: field.props?.max_date_count ?? 1,
 		allow_recurrence: field.props?.allow_recurrence ?? true,
 		enable_timepicker: field.props?.enable_timepicker ?? true,
 		units: field.props?.units ?? DEFAULT_UNITS,

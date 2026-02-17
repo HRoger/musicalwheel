@@ -93,6 +93,19 @@ export interface FlexContainerAttributes {
     gridRowsUnit?: string;
     gridAutoFlow?: string;
     gridOutline?: boolean;
+    // Grid alignment
+    gridJustifyItems?: string;
+    gridJustifyItems_tablet?: string;
+    gridJustifyItems_mobile?: string;
+    gridAlignItems?: string;
+    gridAlignItems_tablet?: string;
+    gridAlignItems_mobile?: string;
+    gridJustifyContent?: string;
+    gridJustifyContent_tablet?: string;
+    gridJustifyContent_mobile?: string;
+    gridAlignContent?: string;
+    gridAlignContent_tablet?: string;
+    gridAlignContent_mobile?: string;
     // Sticky position attributes (VoxelTab)
     stickyEnabled?: boolean;
     stickyDesktop?: 'sticky' | 'initial';
@@ -469,6 +482,7 @@ export function generateInnerStyles(attributes: FlexContainerAttributes): CSSPro
     const styles: CSSProperties = {
         display: isGrid ? 'grid' : 'flex',
         width: '100%', // Fill parent by default
+        minHeight: 'inherit', // Inherit parent's min-height so justify-content/align-items work correctly
     };
 
     // Content Width - the key boxed/full width logic
@@ -520,6 +534,20 @@ export function generateInnerStyles(attributes: FlexContainerAttributes): CSSPro
         // Grid Auto Flow
         if (attributes.gridAutoFlow) {
             styles.gridAutoFlow = attributes.gridAutoFlow as CSSProperties['gridAutoFlow'];
+        }
+
+        // Grid Alignment
+        if (attributes.gridJustifyItems) {
+            styles.justifyItems = attributes.gridJustifyItems;
+        }
+        if (attributes.gridAlignItems) {
+            styles.alignItems = attributes.gridAlignItems;
+        }
+        if (attributes.gridJustifyContent) {
+            styles.justifyContent = attributes.gridJustifyContent;
+        }
+        if (attributes.gridAlignContent) {
+            styles.alignContent = attributes.gridAlignContent;
         }
     } else {
         // Flex-specific properties
@@ -825,6 +853,7 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
     const desktopStyles: string[] = [
         isGrid ? 'display: grid' : 'display: flex',
         'width: 100%',
+        'min-height: inherit', // Inherit parent's min-height so justify-content/align-items work correctly
     ];
 
     // Content Width - boxed vs full
@@ -861,6 +890,19 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
         }
         if (attributes.gridAutoFlow) {
             desktopStyles.push(`grid-auto-flow: ${attributes.gridAutoFlow}`);
+        }
+        // Grid alignment
+        if (attributes.gridJustifyItems) {
+            desktopStyles.push(`justify-items: ${attributes.gridJustifyItems}`);
+        }
+        if (attributes.gridAlignItems) {
+            desktopStyles.push(`align-items: ${attributes.gridAlignItems}`);
+        }
+        if (attributes.gridJustifyContent) {
+            desktopStyles.push(`justify-content: ${attributes.gridJustifyContent}`);
+        }
+        if (attributes.gridAlignContent) {
+            desktopStyles.push(`align-content: ${attributes.gridAlignContent}`);
         }
     } else {
         // Flex-specific properties
@@ -899,6 +941,14 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
 
     cssRules.push(`${selector} { ${desktopStyles.join('; ')}; }`);
 
+    // Editor-only: Make WordPress block wrappers behave as proper flex items
+    // WordPress wraps each child block with .block-editor-block-list__block which
+    // gets max-width/width styles that prevent justify-content from working in row mode.
+    // These rules override that so child blocks size to their content.
+    const childSelector = `.voxel-fse-flex-container-${blockId} > .e-con-inner > .block-editor-block-list__layout > .wp-block`;
+    const childSelectorAlt = `.voxel-fse-flex-container-${blockId} > .e-con-inner > .wp-block`;
+    cssRules.push(`${childSelector}, ${childSelectorAlt} { max-width: none; width: auto; }`);
+
     // Tablet styles
     if (attributes.contentWidth_tablet) {
         tabletRules.push(`max-width: ${attributes.contentWidth_tablet}${attributes.contentWidthUnit || 'px'}`);
@@ -914,6 +964,19 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
             const unit = attributes.gridRowsUnit || 'fr';
             const rowValue = unit === 'auto' ? 'auto' : `1${unit}`;
             tabletRules.push(`grid-template-rows: repeat(${attributes.gridRows_tablet}, ${rowValue})`);
+        }
+        // Grid alignment - tablet
+        if (attributes.gridJustifyItems_tablet) {
+            tabletRules.push(`justify-items: ${attributes.gridJustifyItems_tablet}`);
+        }
+        if (attributes.gridAlignItems_tablet) {
+            tabletRules.push(`align-items: ${attributes.gridAlignItems_tablet}`);
+        }
+        if (attributes.gridJustifyContent_tablet) {
+            tabletRules.push(`justify-content: ${attributes.gridJustifyContent_tablet}`);
+        }
+        if (attributes.gridAlignContent_tablet) {
+            tabletRules.push(`align-content: ${attributes.gridAlignContent_tablet}`);
         }
     } else {
         if (attributes.flexDirection_tablet) {
@@ -971,6 +1034,19 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
             const unit = attributes.gridRowsUnit || 'fr';
             const rowValue = unit === 'auto' ? 'auto' : `1${unit}`;
             mobileRules.push(`grid-template-rows: repeat(${attributes.gridRows_mobile}, ${rowValue})`);
+        }
+        // Grid alignment - mobile
+        if (attributes.gridJustifyItems_mobile) {
+            mobileRules.push(`justify-items: ${attributes.gridJustifyItems_mobile}`);
+        }
+        if (attributes.gridAlignItems_mobile) {
+            mobileRules.push(`align-items: ${attributes.gridAlignItems_mobile}`);
+        }
+        if (attributes.gridJustifyContent_mobile) {
+            mobileRules.push(`justify-content: ${attributes.gridJustifyContent_mobile}`);
+        }
+        if (attributes.gridAlignContent_mobile) {
+            mobileRules.push(`align-content: ${attributes.gridAlignContent_mobile}`);
         }
     } else {
         if (attributes.flexDirection_mobile) {

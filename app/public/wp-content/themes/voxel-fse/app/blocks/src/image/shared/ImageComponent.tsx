@@ -3,7 +3,7 @@
  *
  * 1:1 match with Elementor Widget_Image HTML structure:
  * - figure.wp-caption wrapper (when has caption)
- * - a.elementor-clickable link (when linked)
+ * - a link (when linked; .elementor-clickable editor-only per Elementor image.php:746-749)
  * - img with elementor-animation-* class (when hover animation set)
  * - figcaption.widget-image-caption (when has caption)
  *
@@ -14,14 +14,22 @@
  * @package VoxelFSE
  */
 
+import { useCallback } from 'react';
 import { __ } from '@wordpress/i18n';
 import type { ImageBlockAttributes, SliderValue } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
+
 interface ImageComponentProps {
 	attributes: ImageBlockAttributes;
 	context: 'editor' | 'frontend';
-	onSelectImage?: (media: any) => void;
 }
 
 /**
@@ -40,17 +48,6 @@ function buildImageStyles(attributes: ImageBlockAttributes): React.CSSProperties
 	if (attributes.aspectRatio) {
 		styles.aspectRatio = attributes.aspectRatio;
 	}
-
-	return styles;
-}
-
-/**
- * Build inline styles for the wrapper
- */
-function buildWrapperStyles(_attributes: ImageBlockAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	// Text Align handled via generated CSS in styles.ts
 
 	return styles;
 }
@@ -107,15 +104,19 @@ function getImageClass(attributes: ImageBlockAttributes): string {
 
 /**
  * Get caption text
+ * Evidence: Elementor image.php:710-722 uses wp_get_attachment_caption() for 'attachment' source
  */
-function getCaption(attributes: ImageBlockAttributes): string {
+function getCaption(attributes: ImageBlockAttributes, context: 'editor' | 'frontend'): string {
 	if (attributes.captionSource === 'custom') {
 		return attributes.caption || '';
 	}
 	if (attributes.captionSource === 'attachment') {
-		// For frontend, this would be resolved from the image attachment
-		// For editor, we return the alt text as a fallback
-		return attributes.image.alt || '';
+		// Frontend: render.php resolves wp_get_attachment_caption() server-side
+		// Editor: show placeholder text so the user knows a caption will appear
+		if (context === 'editor') {
+			return attributes.image.alt || '(Attachment caption)';
+		}
+		return '';
 	}
 	return '';
 }
@@ -143,14 +144,26 @@ function getLinkUrl(attributes: ImageBlockAttributes): string | null {
 	return null;
 }
 
-export default function ImageComponent({ attributes, context, onSelectImage }: ImageComponentProps) {
+export default function ImageComponent({ attributes, context }: ImageComponentProps) {
 	const imageStyles = buildImageStyles(attributes);
-	const wrapperStyles = buildWrapperStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 	const imageClass = getImageClass(attributes);
-	const caption = getCaption(attributes);
+	const caption = getCaption(attributes, context);
 	const showCaption = hasCaption(attributes);
 	const linkUrl = getLinkUrl(attributes);
+
+	// Lightbox click handler for "file" link type
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement | HTMLImageElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox && attributes.image.url) {
+				lightbox.open([{ src: attributes.image.url, alt: attributes.image.alt || '' }], 0);
+			}
+		},
+		[attributes.image.url, attributes.image.alt]
+	);
 
 	// Visibility classes
 	const visibilityClasses: string[] = [];
@@ -166,7 +179,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	if (!attributes.image.url) {
 		if (context === 'editor') {
 			return (
-				<div className={wrapperClass} style={wrapperStyles}>
+				<div className={wrapperClass}>
 					<EmptyPlaceholder />
 				</div>
 			);
@@ -174,6 +187,9 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 		// Frontend with no image - return empty
 		return null;
 	}
+
+	// Determine if image should open lightbox in editor
+	const isEditorLightbox = context === 'editor' && attributes.linkTo === 'file' && attributes.openLightbox !== 'no';
 
 	// Build the image element - matches Elementor output exactly
 	// Evidence: plugins/elementor/includes/widgets/image.php:752
@@ -189,16 +205,22 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	);
 
 	// Wrap with link if needed
+	// Evidence: .elementor-clickable is editor-only in Elementor (image.php:746-749)
 	let content = imageElement;
 	if (linkUrl) {
-		const linkAttributes: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
+		const linkAttributes: any = {
 			href: linkUrl,
-			className: 'elementor-clickable',
+			className: context === 'editor' ? 'elementor-clickable' : undefined,
 		};
 
-		// Add lightbox data attribute
+		// Add lightbox data attributes and click handler
+		// Evidence: Elementor image.php:752-754
 		if (attributes.linkTo === 'file' && attributes.openLightbox !== 'no') {
 			linkAttributes['data-elementor-open-lightbox'] = attributes.openLightbox;
+			if (attributes.lightboxGroup) {
+				linkAttributes['data-elementor-lightbox-slideshow'] = attributes.lightboxGroup;
+			}
+			linkAttributes.onClick = handleLightboxClick;
 		}
 
 		// Add target/rel for custom links
@@ -211,13 +233,19 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 			}
 		}
 
-		content = <a {...linkAttributes}>{imageElement}</a>;
+		// In editor: override display:contents from style.css so <a> has a box
+		// and can receive click events. Same pattern as GalleryComponent.
+		if (context === 'editor' && isEditorLightbox) {
+			linkAttributes.style = { display: 'inline-block', cursor: 'pointer' };
+		}
+
+		content = <a {...(linkAttributes as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>{imageElement}</a>;
 	}
 
 	// Wrap with figure if has caption
 	if (showCaption) {
 		return (
-			<div className={wrapperClass} style={wrapperStyles}>
+			<div className={wrapperClass}>
 				<figure className="wp-caption">
 					{content}
 					{caption && (
@@ -232,7 +260,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 
 	// No caption - just the image (possibly linked)
 	return (
-		<div className={wrapperClass} style={wrapperStyles}>
+		<div className={wrapperClass}>
 			{content}
 		</div>
 	);

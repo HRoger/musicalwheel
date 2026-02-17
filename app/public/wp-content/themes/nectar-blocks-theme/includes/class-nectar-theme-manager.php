@@ -30,6 +30,8 @@ if( ! class_exists('NectarThemeManager') ) {
 
     public static $column_gap = '';
 
+    public static $header_hover_effect = '';
+
     public static $global_seciton_options = [
       'global-section-after-header-navigation',
       'global-section-above-footer'
@@ -37,7 +39,7 @@ if( ! class_exists('NectarThemeManager') ) {
 
     private function __construct() {
 
-      add_action('init', ['NectarThemeManager', 'setup']);
+      $this->hooks();
 
     }
 
@@ -86,6 +88,8 @@ if( ! class_exists('NectarThemeManager') ) {
       // Column Gap.
       self::$column_gap = ( isset( self::$options['column-spacing']) ) ? self::$options['column-spacing'] : 'default';
 
+      self::$header_hover_effect = ( isset( self::$options['header-hover-effect'] ) ) ? self::$options['header-hover-effect'] : 'default';
+
       // Theme Colors.
       self::$available_theme_colors = [
         'accent-color' => 'Nectar Accent Color',
@@ -124,6 +128,44 @@ if( ! class_exists('NectarThemeManager') ) {
         self::$colors['overall_font_color'] = $overall_font_color;
       }
 
+    }
+
+    public function hooks() {
+
+      add_action('init', ['NectarThemeManager', 'setup']);
+
+      // Store available post types in a transient
+      add_action( 'wp_loaded', [ $this, 'set_available_post_types' ] );
+
+      add_action( 'switch_theme', function() {
+        delete_transient( 'nectar_available_post_types' );
+      } );
+
+      add_action( 'activated_plugin', function() {
+          delete_transient( 'nectar_available_post_types' );
+      } );
+
+      add_action( 'deactivated_plugin', function() {
+          delete_transient( 'nectar_available_post_types' );
+      } );
+
+    }
+
+    public function set_available_post_types() {
+      $post_types = get_post_types( [ 'public' => true ], 'objects' );
+      $post_types = array_filter( $post_types, function( $post_type ) {
+        return ! in_array( $post_type->name, [
+          'attachment',
+          'product', // products for now until we extend WooCommerce templates to accommodate.
+          'elementor_library',
+          'salient_g_sections',
+          'nectar_sections',
+          'nectar_templates',
+          'wp_block',
+          'page'
+        ] );
+      } );
+      set_transient( 'nectar_available_post_types', $post_types, DAY_IN_SECONDS );
     }
 
     public static function get_active_special_locations() {

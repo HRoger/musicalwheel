@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite build --config vite.frontend.config.js --watch",
     "dev:frontend": "vite build --config vite.frontend.config.js --watch",
-    "build": "vite build --config vite.blocks.config.js && npm run build:frontend",
+    "build": "vite build --config vite.blocks.config.js && npm run build:editor && npm run build:voxel-css && npm run build:yarl && npm run build:frontend",
+    "build:editor": "vite build --config vite.editor.config.js",
+    "build:voxel-css": "node scripts/build-voxel-editor-css.js",
+    "build:yarl": "npm run build:yarl-js && npm run build:yarl-css",
+    "build:yarl-js": "vite build --config vite.yarl.config.js",
+    "build:yarl-css": "node scripts/build-yarl-css.js",
     "build:blocks": "vite build --config vite.blocks.config.js",
     "build:frontend": "npm run build:frontend:advanced-list && npm run build:frontend:cart-summary && npm run build:frontend:countdown && npm run build:frontend:create-post && npm run build:frontend:current-plan && npm run build:frontend:current-role && npm run build:frontend:flex-container && npm run build:frontend:gallery && npm run build:frontend:image && npm run build:frontend:listing-plans && npm run build:frontend:login && npm run build:frontend:map && npm run build:frontend:membership-plans && npm run build:frontend:messages && npm run build:frontend:navbar && npm run build:frontend:nested-accordion && npm run build:frontend:nested-tabs && npm run build:frontend:orders && npm run build:frontend:post-feed && npm run build:frontend:print-template && npm run build:frontend:product-form && npm run build:frontend:product-price && npm run build:frontend:quick-search && npm run build:frontend:review-stats && npm run build:frontend:ring-chart && npm run build:frontend:sales-chart && npm run build:frontend:search-form && npm run build:frontend:slider && npm run build:frontend:stripe-account && npm run build:frontend:term-feed && npm run build:frontend:timeline && npm run build:frontend:userbar && npm run build:frontend:visit-chart && npm run build:frontend:work-hours",
     "build:frontend:advanced-list": "vite build --config vite.frontend.config.js -- --block=advanced-list",
@@ -104,6 +109,7 @@
     "pikaday": "^1.8.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "yet-another-react-lightbox": "^3.28.0"
   }
 }

@@ -206,8 +206,16 @@ function parseVxConfig(container: HTMLElement): CurrentPlanVxConfig | null {
  */
 async function fetchPlanData(): Promise<CurrentPlanApiResponse> {
 	const restUrl = getRestUrl();
+
+	const headers: HeadersInit = {};
+	const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+	if (nonce) {
+		headers['X-WP-Nonce'] = nonce;
+	}
+
 	const response = await fetch(`${restUrl}voxel-fse/v1/current-plan`, {
 		credentials: 'same-origin', // Include cookies for auth
+		headers,
 	});
 
 	if (!response.ok) {

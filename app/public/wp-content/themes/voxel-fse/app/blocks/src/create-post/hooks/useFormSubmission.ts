@@ -185,7 +185,8 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 			const value = formData[field.key];
 
 			// Required field validation - matches Voxel text (create-post.php:5100)
-			if (field.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+			// Skip work-hours here as it has custom validation below
+			if (field.required && field.type !== 'work-hours' && (!value || (typeof value === 'string' && value.trim() === ''))) {
 				errors[field.key] = 'Required';
 			}
 
@@ -203,6 +204,37 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 					new URL(value);
 				} catch {
 					errors[field.key] = 'You must provide a valid URL';
+				}
+			}
+
+			// Work-hours validation - 1:1 match with Voxel
+			// Evidence: voxel-create-post.beautified.js:1200-1226
+			if (field.type === 'work-hours' && field.required) {
+				let isEmpty = true;
+				if (Array.isArray(value)) {
+					for (const group of value) {
+						if (group.days && group.days.length) {
+							// Non-hours statuses are valid if days are selected
+							if (['open', 'closed', 'appointments_only'].includes(group.status)) {
+								isEmpty = false;
+								break;
+							}
+							// Hours status requires at least one valid time slot
+							if (group.status === 'hours' && Array.isArray(group.hours) && group.hours.length) {
+								for (const slot of group.hours) {
+									if (typeof slot.from === 'string' && slot.from.length &&
+										typeof slot.to === 'string' && slot.to.length) {
+										isEmpty = false;
+										break;
+									}
+								}
+								if (!isEmpty) break;
+							}
+						}
+					}
+				}
+				if (isEmpty) {
+					errors[field.key] = 'Required';
 				}
 			}
 		});

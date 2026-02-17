@@ -606,7 +606,6 @@ const MASK_REPEAT_OPTIONS = [
 ];
 
 export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabProps) {
-	// Get WordPress's current device type from the store
 	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
 
 	// Convert WordPress device type to our format (Desktop -> desktop)
@@ -827,6 +826,65 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 						min={0}
 						max={10}
 						step={1}
+					/>
+				)}
+
+				{/* Grid Item Heading - common-base.php L377-L473 */}
+				<SectionHeading label={__('Grid Item', 'voxel-fse')} />
+
+				{/* Column Span (responsive) */}
+				<div style={{ marginBottom: '16px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+						<span style={{ fontWeight: 500, fontSize: '13px' }}>{__('Column Span', 'voxel-fse')}</span>
+						<ResponsiveDropdownButton onDeviceChange={setCurrentDevice} controlKey="gridColumn" />
+					</div>
+					<ChooseControl
+						label=""
+						value={getResponsiveValue<string>('gridColumn')}
+						onChange={(value) => setResponsiveValue('gridColumn', value)}
+						options={[
+							{ value: '', icon: 'eicon-ban', title: __('None', 'voxel-fse') },
+							{ value: 'custom', icon: 'eicon-ellipsis-v', title: __('Custom', 'voxel-fse') },
+						]}
+					/>
+				</div>
+
+				{/* Column Custom (responsive) - shown when Column Span is 'custom' */}
+				{attributes.gridColumn === 'custom' && (
+					<ResponsiveTextControl
+						label={__('Custom Column', 'voxel-fse')}
+						attributes={attributes}
+						setAttributes={setAttributes}
+						attributeBaseName="gridColumnCustom"
+						placeholder="1 / -1"
+					/>
+				)}
+
+				{/* Row Span (responsive) */}
+				<div style={{ marginBottom: '16px' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+						<span style={{ fontWeight: 500, fontSize: '13px' }}>{__('Row Span', 'voxel-fse')}</span>
+						<ResponsiveDropdownButton onDeviceChange={setCurrentDevice} controlKey="gridRow" />
+					</div>
+					<ChooseControl
+						label=""
+						value={getResponsiveValue<string>('gridRow')}
+						onChange={(value) => setResponsiveValue('gridRow', value)}
+						options={[
+							{ value: '', icon: 'eicon-ban', title: __('None', 'voxel-fse') },
+							{ value: 'custom', icon: 'eicon-ellipsis-v', title: __('Custom', 'voxel-fse') },
+						]}
+					/>
+				</div>
+
+				{/* Row Custom (responsive) - shown when Row Span is 'custom' */}
+				{attributes.gridRow === 'custom' && (
+					<ResponsiveTextControl
+						label={__('Custom Row', 'voxel-fse')}
+						attributes={attributes}
+						setAttributes={setAttributes}
+						attributeBaseName="gridRowCustom"
+						placeholder="1 / -1"
 					/>
 				)}
 
@@ -1547,9 +1605,9 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 											width: '100%',
 											aspectRatio: '1 / 1',
 											padding: '4px',
-											border: attributes.maskShape === shape.value ? '2px solid var(--wp-admin-theme-color, #007cba)' : '1px solid #ddd',
+											border: attributes.maskShape === shape.value ? '2px solid var(--vxfse-accent-color, #3858e9)' : '1px solid #ddd',
 											borderRadius: '4px',
-											backgroundColor: attributes.maskShape === shape.value ? 'rgba(0, 124, 186, 0.1)' : '#fff',
+											backgroundColor: attributes.maskShape === shape.value ? 'color-mix(in srgb, var(--vxfse-accent-color, #3858e9) 10%, #fff)' : '#fff',
 											cursor: 'pointer',
 											display: 'flex',
 											alignItems: 'center',

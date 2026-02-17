@@ -20,6 +20,8 @@ import type {
 	NavbarMenuApiResponse,
 	NavbarMenuItem,
 	NavbarVxConfig,
+	LinkedTabData,
+	LinkedPostTypeData,
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
@@ -30,6 +32,10 @@ interface NavbarComponentProps {
 	isLoading: boolean;
 	error: string | null;
 	context: 'editor' | 'frontend';
+	// Linked block data for template_tabs and search_form sources
+	linkedTabs?: LinkedTabData[];
+	linkedPostTypes?: LinkedPostTypeData[];
+	linkedBlockId?: string;
 }
 
 /**
@@ -74,9 +80,10 @@ interface MenuItemProps {
 	depth: number;
 	attributes: NavbarAttributes;
 	onSubmenuToggle?: (itemId: number, isOpen: boolean) => void;
+	popupScopeClass?: string;
 }
 
-function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
+function MenuItem({ item, depth, attributes, onSubmenuToggle, popupScopeClass }: MenuItemProps) {
 	const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
 	const itemRef = useRef<HTMLLIElement>(null);
 	const triggerRef = useRef<HTMLAnchorElement | null>(null);
@@ -142,6 +149,9 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 				ref={triggerRef}
 				href={item.url}
 				target={item.target || undefined}
+				rel={item.rel || undefined} // Voxel walker lines 118-122: noopener for _blank, or xfn
+				title={item.attrTitle || undefined} // Voxel walker line 116: tooltip
+				aria-current={item.isCurrent ? 'page' : undefined} // Voxel walker line 124: accessibility
 				className={depth === 0 ? 'ts-item-link' : 'flexify'}
 				onClick={handleItemClick}
 			>
@@ -159,6 +169,7 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 					showHeader={false}
 					showFooter={false}
 					clearButton={false}
+					popupClass={popupScopeClass}
 					onClose={() => {
 						setIsSubmenuOpen(false);
 						onSubmenuToggle?.(item.id, false);
@@ -168,14 +179,19 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 						<ul className="simplify-ul ts-term-dropdown-list sub-menu">
 							{/* Parent item link */}
 							<li className="ts-parent-menu">
-								<a href={item.url} className="flexify">
+								<a
+									href={item.url}
+									rel={item.rel || undefined}
+									title={item.attrTitle || undefined}
+									className="flexify"
+								>
 									{item.icon && <span dangerouslySetInnerHTML={{ __html: item.icon }} />}
 									<span>{item.title}</span>
 								</a>
 							</li>
 							{/* Child items */}
 							{item.children.map((child) => (
-								<MenuItem key={child.id} item={child} depth={depth + 1} attributes={attributes} />
+								<MenuItem key={child.id} item={child} depth={depth + 1} attributes={attributes} popupScopeClass={popupScopeClass} />
 							))}
 						</ul>
 					</div>
@@ -191,9 +207,10 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 interface MobileMenuProps {
 	attributes: NavbarAttributes;
 	menuData: NavbarMenuApiResponse | null;
+	popupScopeClass?: string;
 }
 
-function MobileMenu({ attributes, menuData }: MobileMenuProps) {
+function MobileMenu({ attributes, menuData, popupScopeClass }: MobileMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [activeScreen, setActiveScreen] = useState('main');
 	const [, setSlideFrom] = useState<'left' | 'right'>('right');
@@ -245,6 +262,7 @@ function MobileMenu({ attributes, menuData }: MobileMenuProps) {
 				showHeader={true}
 				showFooter={false}
 				clearButton={false}
+				popupClass={popupScopeClass}
 				onClose={() => setIsOpen(false)}
 			>
 				{/* Popup header (mobile only) */}
@@ -298,6 +316,10 @@ function MobileMenuItem({ item, attributes: _attributes, activeScreen: _activeSc
 		<li className={`menu-item ${item.isCurrent ? 'current-menu-item' : ''}`}>
 			<a
 				href={item.hasChildren ? '#' : item.url}
+				target={item.hasChildren ? undefined : item.target || undefined}
+				rel={item.hasChildren ? undefined : item.rel || undefined} // Voxel walker lines 118-122
+				title={item.attrTitle || undefined} // Voxel walker line 116
+				aria-current={item.isCurrent ? 'page' : undefined} // Voxel walker line 124
 				className="flexify"
 				onClick={(e) => {
 					if (item.hasChildren) {
@@ -327,8 +349,35 @@ export default function NavbarComponent({
 	mobileMenuData,
 	isLoading,
 	error,
-	context: _context,
+	context,
+	linkedTabs,
+	linkedPostTypes,
+	linkedBlockId,
 }: NavbarComponentProps) {
+	// Track active post type for search_form source (bidirectional sync with search-form block)
+	// Evidence: voxel-search-form.beautified.js:2367-2373 $watch('post_type') updates navbar active state
+	const [activePostType, setActivePostType] = useState<string | null>(
+		linkedPostTypes?.find(pt => pt.isActive)?.key || linkedPostTypes?.[0]?.key || null
+	);
+
+	useEffect(() => {
+		if (attributes.source !== 'search_form' || context !== 'frontend' || !linkedBlockId) return;
+
+		const handlePostTypeChanged = (event: Event) => {
+			const { searchFormId, postType } = (event as CustomEvent).detail || {};
+			if (searchFormId !== linkedBlockId) return;
+			if (postType) setActivePostType(postType);
+		};
+
+		window.addEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+		return () => window.removeEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+	}, [attributes.source, context, linkedBlockId]);
+
+	// Compute popup scope class for custom popup styling (portaled popups)
+	const popupScopeClass = attributes.customPopupEnabled
+		? `voxel-popup-navbar-${attributes.blockId || 'default'}`
+		: undefined;
+
 	// Build vxconfig for re-render (required for DevTools visibility)
 	const vxConfig: NavbarVxConfig = {
 		source: attributes.source,
@@ -374,7 +423,7 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -388,7 +437,7 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -441,12 +490,12 @@ export default function NavbarComponent({
 					<ul className={navClasses}>
 						{/* Mobile menu trigger */}
 						{(attributes.showBurgerDesktop || attributes.showBurgerTablet) && (
-							<MobileMenu attributes={attributes} menuData={effectiveMenuData} />
+							<MobileMenu attributes={attributes} menuData={effectiveMenuData} popupScopeClass={popupScopeClass} />
 						)}
 
 						{/* Desktop menu items */}
 						{menuData?.items.map((item) => (
-							<MenuItem key={item.id} item={item} depth={0} attributes={attributes} />
+							<MenuItem key={item.id} item={item} depth={0} attributes={attributes} popupScopeClass={popupScopeClass} />
 						))}
 					</ul>
 				</nav>
@@ -454,8 +503,31 @@ export default function NavbarComponent({
 		);
 	}
 
-	// Template tabs / Search form modes (placeholder for now)
+	// Template tabs mode - render linked tabs or placeholder
 	if (attributes.source === 'template_tabs') {
+		// No linked tabs yet - show placeholder
+		if (!linkedTabs || linkedTabs.length === 0) {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<nav className="ts-nav-menu ts-tab-triggers flexify">
+						<ul className={navClasses}>
+							<li className="menu-item">
+								<span className="ts-item-link">
+									<span>Template Tabs (link widget to use)</span>
+								</span>
+							</li>
+						</ul>
+					</nav>
+				</>
+			);
+		}
+
+		// Render linked tabs (1:1 with Voxel navbar.php lines 27-43)
 		return (
 			<>
 				<script
@@ -463,20 +535,67 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<nav className="ts-nav-menu ts-tab-triggers flexify">
+				<nav className={`ts-nav-menu ts-tab-triggers ts-tab-triggers-${linkedBlockId || ''} flexify`}>
 					<ul className={navClasses}>
-						<li className="menu-item">
-							<span className="ts-item-link">
-								<span>Template Tabs (link widget to use)</span>
-							</span>
-						</li>
+						{linkedTabs.map((tab) => (
+							<li
+								key={tab.id}
+								className={`menu-item ${tab.isActive ? 'current-menu-item' : ''}`}
+								data-tab={tab.urlKey}
+							>
+								<a
+									href={`#${tab.urlKey}`}
+									className="ts-item-link"
+									onClick={(e) => {
+										e.preventDefault();
+										// Dispatch event for linked tabs block to handle
+										// Matches Voxel's Voxel.loadTab(event, id, urlKey)
+										window.dispatchEvent(new CustomEvent('voxel-load-tab', {
+											detail: {
+												tabsId: linkedBlockId,
+												urlKey: tab.urlKey,
+											}
+										}));
+									}}
+								>
+									<div className="ts-item-icon flexify">
+										{tab.icon && <span dangerouslySetInnerHTML={{ __html: tab.icon }} />}
+									</div>
+									<span>{tab.title}</span>
+								</a>
+							</li>
+						))}
 					</ul>
 				</nav>
 			</>
 		);
 	}
 
+	// Search form mode - render linked post types or placeholder
 	if (attributes.source === 'search_form') {
+		// No linked post types yet - show placeholder
+		if (!linkedPostTypes || linkedPostTypes.length === 0) {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
+						<ul className={navClasses}>
+							<li className="menu-item">
+								<span className="ts-item-link">
+									<span>Search Form (link widget to use)</span>
+								</span>
+							</li>
+						</ul>
+					</nav>
+				</>
+			);
+		}
+
+		// Render linked post types (1:1 with Voxel navbar.php lines 46-75)
 		return (
 			<>
 				<script
@@ -484,13 +603,37 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<nav className="ts-nav-menu ts-nav-sf flexify">
+				<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
 					<ul className={navClasses}>
-						<li className="menu-item">
-							<span className="ts-item-link">
-								<span>Search Form (link widget to use)</span>
-							</span>
-						</li>
+						{linkedPostTypes.map((postType) => (
+							<li
+								key={postType.key}
+								className={`menu-item ${(activePostType ? postType.key === activePostType : postType.isActive) ? 'current-menu-item' : ''}`}
+								data-post-type={postType.key}
+							>
+								<a
+									href="#"
+									className="ts-item-link"
+									onClick={(e) => {
+										e.preventDefault();
+										// Update local active state immediately
+										setActivePostType(postType.key);
+										// Dispatch event for linked search form to handle post type switch
+										window.dispatchEvent(new CustomEvent('voxel-switch-post-type', {
+											detail: {
+												searchFormId: linkedBlockId,
+												postType: postType.key,
+											}
+										}));
+									}}
+								>
+									<div className="ts-item-icon flexify">
+										{postType.icon && <span dangerouslySetInnerHTML={{ __html: postType.icon }} />}
+									</div>
+									<span>{postType.label}</span>
+								</a>
+							</li>
+						))}
 					</ul>
 				</nav>
 			</>

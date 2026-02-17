@@ -191,6 +191,7 @@ interface NotificationsItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 }
 
 /**
@@ -200,7 +201,7 @@ interface NotificationsItemProps {
  * PARITY: notifications.php:12 checks \Voxel\current_user()->get_notification_count()['unread']
  * Server config provides this initial state so indicator shows immediately without API call
  */
-function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
+function NotificationsItem({ item, icons, context, popupScopeClass }: NotificationsItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -249,15 +250,13 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 	 * Reference: voxel-user-bar.beautified.js lines 33-37
 	 */
 	const handleOpen = useCallback(() => {
-		if (context !== 'frontend') return;
-
 		if (list === null) {
 			setList([]);
 			indicatorRef.current?.classList.add('hidden');
 			getList(1);
 		}
 		setIsOpen(true);
-	}, [context, list, getList]);
+	}, [list, getList]);
 
 	/**
 	 * Load more notifications
@@ -469,72 +468,76 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 
 	/**
 	 * Render notification item
+	 * PARITY: notifications.php:110-125 - <li> in <ul class="ts-notification-list simplify-ul">
 	 */
 	const renderNotificationItem = (notification: NotificationItem) => (
-		<div
+		<li
 			key={notification.id}
-			className={`ts-notification-item ${notification.seen ? '' : 'ts-unread'} ${notification._loading ? 'vx-pending' : ''}`}
-			onClick={() => openItem(notification)}
+			className={`${notification.is_new ? 'ts-new-notification' : ''} ${!notification.seen ? 'ts-unread-notification' : ''} ${notification._loading ? 'vx-loading' : ''}`.trim() || undefined}
 		>
-			{notification.image_url && (
-				<div className="ts-notification-image">
-					<img src={notification.image_url} alt="" />
+			<a href="#" onClick={(e) => { e.preventDefault(); openItem(notification); }}>
+				<div className="notification-image">
+					{notification.image_url ? (
+						<img src={notification.image_url} alt="" />
+					) : (
+						renderIcon(item.icon)
+					)}
 				</div>
-			)}
-			<div className="ts-notification-body">
-				<span className="ts-notification-subject">{notification.subject}</span>
-				<span className="ts-notification-time">{notification.time}</span>
-			</div>
-		</div>
+				<div className="notification-details">
+					<b>{notification.subject}</b>
+					<span>{notification.time}</span>
+				</div>
+			</a>
+		</li>
 	);
 
 	/**
 	 * Render notification action
+	 * PARITY: notifications.php:58-89 - <li> items in <ul class="ts-notification-list simplify-ul">
 	 */
 	const renderAction = (action: NotificationAction, notification: NotificationItem) => {
 		if (action.type === 'list-item') {
 			return (
-				<div
-					key={action.key}
-					className={`ts-action-item ${action._loading ? 'vx-pending' : ''}`}
-					onClick={() => action.links_to ? window.location.href = action.links_to : doItemAction(notification, action)}
-				>
-					{action.image_markup && (
-						<div className="ts-action-image" dangerouslySetInnerHTML={{ __html: action.image_markup }} />
-					)}
-					<div className="ts-action-body">
-						{action.subject && <span className="ts-action-subject">{action.subject}</span>}
-						{action.details && <span className="ts-action-details">{action.details}</span>}
-					</div>
+				<li key={action.key}>
+					<a href={action.links_to || '#'} onClick={(e) => {
+						if (!action.links_to) {
+							e.preventDefault();
+							doItemAction(notification, action);
+						}
+					}}>
+						{action.image_markup ? (
+							<div className="notification-image" dangerouslySetInnerHTML={{ __html: action.image_markup }} />
+						) : (
+							<div className="notification-image">
+								{renderIcon(item.icon)}
+							</div>
+						)}
+						<div className="notification-details">
+							{action.subject && <b>{action.subject}</b>}
+							{action.details && <span>{action.details}</span>}
+						</div>
+					</a>
 					{action.actions && action.actions.length > 0 && (
-						<div className="ts-action-buttons">
+						<div
+							className={`ts-notification-actions ${action._loading ? 'vx-disabled' : ''}`}
+						>
 							{action.actions.map((subAction) => (
-								<button
+								<a
 									key={subAction.key}
-									className="ts-btn ts-btn-1"
+									href="#"
+									className={`ts-btn ts-btn-1 ${subAction.type === 'plain' ? 'vx-disabled' : ''}`}
 									onClick={(e) => {
+										e.preventDefault();
 										e.stopPropagation();
 										doItemAction(notification, action, subAction);
 									}}
 								>
 									{subAction.label}
-								</button>
+								</a>
 							))}
 						</div>
 					)}
-				</div>
-			);
-		}
-
-		if (action.type === 'button') {
-			return (
-				<button
-					key={action.key}
-					className={`ts-btn ts-btn-1 ${action._loading ? 'vx-pending' : ''}`}
-					onClick={() => doItemAction(notification, action)}
-				>
-					{action.label}
-				</button>
+				</li>
 			);
 		}
 
@@ -556,7 +559,7 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 				<div className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
 					{/* PARITY: notifications.php:12-13 - show indicator if unread > 0 */}
-					{context === 'frontend' && isLoggedIn() && (
+					{isLoggedIn() && (
 						<span
 							ref={indicatorRef}
 							className="unread-indicator"
@@ -567,7 +570,7 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 				<span className="ts_comp_label">{item.notificationsTitle || 'Notifications'}</span>
 			</a>
 
-			{context === 'frontend' && (
+			{(
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`notifications-popup-${item._id}`}
@@ -576,65 +579,80 @@ function NotificationsItem({ item, icons, context }: NotificationsItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => { setIsOpen(false); setActiveItem(null); }}
 					showFooter={false}
-					popupClass="md-width"
+					popupClass={`md-width ${popupScopeClass || ''}`.trim()}
+					headerActions={
+						activeItem ? (
+							<li className="flexify">
+								<a href="#" onClick={(e) => { e.preventDefault(); goBack(); }} className="ts-icon-btn" role="button">
+									<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.746 6.00002C10.746 5.69663 10.5632 5.42312 10.2829 5.30707C10.0026 5.19101 9.67996 5.25526 9.4655 5.46986L3.51254 11.4266C3.35184 11.5642 3.25 11.7685 3.25 11.9966V11.9982C3.24959 12.1906 3.32276 12.3831 3.46949 12.53L9.46548 18.5302C9.67994 18.7448 10.0026 18.809 10.2829 18.693C10.5632 18.5769 10.746 18.3034 10.746 18L10.746 12.7466L20.0014 12.7466C20.4156 12.7466 20.7514 12.4108 20.7514 11.9966C20.7514 11.5824 20.4156 11.2466 20.0014 11.2466L10.746 11.2466V6.00002Z" fill="currentColor"/></svg>
+								</a>
+							</li>
+						) : (
+							<li className="flexify">
+								<a href="#" onClick={(e) => { e.preventDefault(); clearAll(); }} className="ts-icon-btn" role="button">
+									<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 2C9.08579 2 8.75 2.33579 8.75 2.75C8.75 3.16421 9.08579 3.5 9.5 3.5H14.5C14.9142 3.5 15.25 3.16421 15.25 2.75C15.25 2.33579 14.9142 2 14.5 2H9.5Z" fill="currentColor"/><path d="M4 5C3.74924 5 3.51506 5.12533 3.37597 5.33397C3.23687 5.54262 3.21125 5.80699 3.3077 6.03846L4.44231 8.76154C4.4804 8.85294 4.5 8.95098 4.5 9.05V19.75C4.5 20.9926 5.50736 22 6.75 22H17.25C18.4926 22 19.5 20.9926 19.5 19.75V9.04978C19.5 8.95083 19.5196 8.85286 19.5576 8.76151L20.6914 6.03827C20.7878 5.8068 20.7621 5.54249 20.623 5.33389C20.4839 5.12529 20.2498 5 19.999 5H4ZM10.75 10.5V16.5C10.75 16.9142 10.4142 17.25 10 17.25C9.58579 17.25 9.25 16.9142 9.25 16.5V10.5C9.25 10.0858 9.58579 9.75 10 9.75C10.4142 9.75 10.75 10.0858 10.75 10.5ZM14.75 10.5V16.5C14.75 16.9142 14.4142 17.25 14 17.25C13.5858 17.25 13.25 16.9142 13.25 16.5V10.5C13.25 10.0858 13.5858 9.75 14 9.75C14.4142 9.75 14.75 10.0858 14.75 10.5Z" fill="currentColor"/></svg>
+								</a>
+							</li>
+						)
+					}
 				>
-					<div className="ts-notifications-list min-scroll">
-						{/* Header with clear all button */}
-						{list && list.length > 0 && !activeItem && (
-							<div className="ts-notifications-header flexify">
-								<button className="ts-btn ts-btn-1" onClick={clearAll}>
-									{getL10n('clearAll', 'Clear all')}
-								</button>
-							</div>
-						)}
-
-						{/* Loading state */}
-						{loading && <EmptyPlaceholder />}
-
-						{/* Active item detail view */}
-						{activeItem && (
-							<div className="ts-notification-details">
-								<button className="ts-btn ts-btn-1 ts-back-btn" onClick={goBack}>
-									<i className="las la-arrow-left" />
-									{getL10n('back', 'Back')}
-								</button>
-								<div className="ts-notification-content">
-									<span className="ts-notification-subject">{activeItem.subject}</span>
-									<span className="ts-notification-time">{activeItem.time}</span>
-								</div>
-								{activeItem.actions && (
-									<div className="ts-notification-actions">
-										{activeItem.actions.map((action) => renderAction(action, activeItem))}
+					{/* PARITY: notifications.php:57-100 - detail view */}
+					{activeItem && (
+						<>
+							<ul className="ts-notification-list simplify-ul">
+								{activeItem.actions?.map((action) => renderAction(action, activeItem))}
+							</ul>
+							{activeItem.actions_page !== undefined && activeItem.total_pages !== undefined && activeItem.actions_page < activeItem.total_pages && (
+								<div className="ts-form-group">
+									<div className="n-load-more">
+										<a href="#" onClick={(e) => { e.preventDefault(); loadActions(activeItem, (activeItem.actions_page || 1) + 1); }} className={`ts-btn ts-btn-4 ${activeItem._loading ? 'vx-pending' : ''}`}>
+											<svg width="80" height="80" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.6009 10.4593C22.001 10.3521 22.2384 9.94088 22.1312 9.54078C21.59 7.52089 20.3974 5.73603 18.7384 4.46302C17.0793 3.19001 15.0466 2.5 12.9555 2.5C10.8644 2.5 8.83164 3.19001 7.17262 4.46302C6.12405 5.26762 5.26179 6.2767 4.63257 7.42036L2.86504 6.92617C2.76093 6.89707 2.65423 6.89133 2.55153 6.9068C2.46222 6.91962 2.37374 6.94889 2.29039 6.99582C1.92945 7.19903 1.80158 7.65636 2.00479 8.0173L3.73942 11.0983C3.83701 11.2717 3.99946 11.3991 4.19104 11.4527C4.30333 11.4841 4.42023 11.4886 4.53266 11.4673C4.61373 11.4524 4.69254 11.4242 4.7657 11.383L7.84641 9.64831C8.11073 9.49948 8.25936 9.20608 8.22302 8.90493C8.18668 8.60378 7.9725 8.35417 7.68037 8.27249L6.1241 7.83737C6.6343 6.99996 7.29751 6.2579 8.08577 5.65305C9.48282 4.58106 11.1946 4 12.9555 4C14.7164 4 16.4282 4.58106 17.8252 5.65305C19.2223 6.72504 20.2266 8.22807 20.6823 9.92901C20.7895 10.3291 21.2008 10.5665 21.6009 10.4593Z" fill="currentColor"/><path d="M4.30739 13.5387C3.90729 13.6459 3.66985 14.0572 3.77706 14.4573C4.31829 16.4771 5.51089 18.262 7.16991 19.535C8.82892 20.808 10.8616 21.498 12.9528 21.498C15.0439 21.498 17.0766 20.808 18.7356 19.535C19.7859 18.7291 20.6493 17.7181 21.2787 16.5722L23.0083 17.0557C23.1218 17.0961 23.2447 17.1091 23.3661 17.0917C23.5554 17.0658 23.7319 16.968 23.8546 16.8116C24.0419 16.573 24.0669 16.245 23.9181 15.9807L22.1835 12.8996C22.0859 12.7263 21.9234 12.5988 21.7319 12.5453C21.64 12.5196 21.5451 12.5119 21.4521 12.5216C21.3493 12.5317 21.2488 12.5629 21.1571 12.6146L18.0764 14.3493C17.7155 14.5525 17.5876 15.0099 17.7909 15.3708C17.9016 15.5675 18.0879 15.695 18.2929 15.7373L19.7875 16.1552C19.2768 16.9949 18.6125 17.7388 17.8225 18.345C16.4255 19.417 14.7137 19.998 12.9528 19.998C11.1918 19.998 9.4801 19.417 8.08305 18.345C6.686 17.273 5.68171 15.77 5.22595 14.069C5.11874 13.6689 4.70749 13.4315 4.30739 13.5387Z" fill="currentColor"/></svg>
+											{getL10n('loadMore', 'Load more')}
+										</a>
 									</div>
-								)}
-								{activeItem._loading && (
-									<div className="ts-loader" />
-								)}
-							</div>
-						)}
+								</div>
+							)}
+						</>
+					)}
 
-						{/* Notification list */}
-						{!loading && !activeItem && (
-							<>
-								{list && list.length > 0 ? (
-									<>
-										{list.map(renderNotificationItem)}
-										{hasMore && (
-											<button
-												className={`ts-btn ts-btn-1 ts-load-more ${loadingMore ? 'vx-pending' : ''}`}
-												onClick={loadMore}
-												disabled={loadingMore}
-											>
-												{loadingMore ? <span className="ts-loader" /> : getL10n('loadMore', 'Load more')}
-											</button>
-										)}
-									</>
-								) : (
-									<EmptyPlaceholder />
-								)}
-							</>
-						)}
-					</div>
+					{/* PARITY: notifications.php:101-135 - main list view */}
+					{!activeItem && (
+						<>
+							{/* Loading state - PARITY: notifications.php:102-104 */}
+							{loading && (
+								<div className="ts-empty-user-tab">
+									<span className="ts-loader" />
+								</div>
+							)}
+
+							{/* Empty state - PARITY: notifications.php:105-108 */}
+							{!loading && list && list.length === 0 && (
+								<div className="ts-empty-user-tab">
+									{renderIcon(item.icon)}
+									<p>{getL10n('noNotifications', 'No notifications received')}</p>
+								</div>
+							)}
+
+							{/* Notification list - PARITY: notifications.php:109-126 */}
+							{!loading && list && list.length > 0 && (
+								<ul className="ts-notification-list simplify-ul">
+									{list.map(renderNotificationItem)}
+								</ul>
+							)}
+
+							{/* Load more - PARITY: notifications.php:127-134 */}
+							{!loading && hasMore && (
+								<div className="ts-form-group">
+									<div className="n-load-more">
+										<a href="#" onClick={(e) => { e.preventDefault(); loadMore(); }} className={`ts-btn ts-btn-4 ${loadingMore ? 'vx-pending' : ''}`}>
+											<svg width="80" height="80" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.6009 10.4593C22.001 10.3521 22.2384 9.94088 22.1312 9.54078C21.59 7.52089 20.3974 5.73603 18.7384 4.46302C17.0793 3.19001 15.0466 2.5 12.9555 2.5C10.8644 2.5 8.83164 3.19001 7.17262 4.46302C6.12405 5.26762 5.26179 6.2767 4.63257 7.42036L2.86504 6.92617C2.76093 6.89707 2.65423 6.89133 2.55153 6.9068C2.46222 6.91962 2.37374 6.94889 2.29039 6.99582C1.92945 7.19903 1.80158 7.65636 2.00479 8.0173L3.73942 11.0983C3.83701 11.2717 3.99946 11.3991 4.19104 11.4527C4.30333 11.4841 4.42023 11.4886 4.53266 11.4673C4.61373 11.4524 4.69254 11.4242 4.7657 11.383L7.84641 9.64831C8.11073 9.49948 8.25936 9.20608 8.22302 8.90493C8.18668 8.60378 7.9725 8.35417 7.68037 8.27249L6.1241 7.83737C6.6343 6.99996 7.29751 6.2579 8.08577 5.65305C9.48282 4.58106 11.1946 4 12.9555 4C14.7164 4 16.4282 4.58106 17.8252 5.65305C19.2223 6.72504 20.2266 8.22807 20.6823 9.92901C20.7895 10.3291 21.2008 10.5665 21.6009 10.4593Z" fill="currentColor"/><path d="M4.30739 13.5387C3.90729 13.6459 3.66985 14.0572 3.77706 14.4573C4.31829 16.4771 5.51089 18.262 7.16991 19.535C8.82892 20.808 10.8616 21.498 12.9528 21.498C15.0439 21.498 17.0766 20.808 18.7356 19.535C19.7859 18.7291 20.6493 17.7181 21.2787 16.5722L23.0083 17.0557C23.1218 17.0961 23.2447 17.1091 23.3661 17.0917C23.5554 17.0658 23.7319 16.968 23.8546 16.8116C24.0419 16.573 24.0669 16.245 23.9181 15.9807L22.1835 12.8996C22.0859 12.7263 21.9234 12.5988 21.7319 12.5453C21.64 12.5196 21.5451 12.5119 21.4521 12.5216C21.3493 12.5317 21.2488 12.5629 21.1571 12.6146L18.0764 14.3493C17.7155 14.5525 17.5876 15.0099 17.7909 15.3708C17.9016 15.5675 18.0879 15.695 18.2929 15.7373L19.7875 16.1552C19.2768 16.9949 18.6125 17.7388 17.8225 18.345C16.4255 19.417 14.7137 19.998 12.9528 19.998C11.1918 19.998 9.4801 19.417 8.08305 18.345C6.686 17.273 5.68171 15.77 5.22595 14.069C5.11874 13.6689 4.70749 13.4315 4.30739 13.5387Z" fill="currentColor"/></svg>
+											{getL10n('loadMore', 'Load more')}
+										</a>
+									</div>
+								</div>
+							)}
+						</>
+					)}
 				</FormPopup>
 			)}
 		</li>
@@ -649,6 +667,7 @@ interface MessagesItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	nonce?: string;
 }
 
@@ -659,7 +678,7 @@ interface MessagesItemProps {
  * PARITY: messages.php:1-3 provides data-config with nonce
  * PARITY: messages.php:7 checks \Voxel\current_user()->get_inbox_meta()['unread']
  */
-function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
+function MessagesItem({ item, icons, context, popupScopeClass, nonce }: MessagesItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -724,15 +743,13 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 	 * Reference: voxel-user-bar.beautified.js lines 157-163
 	 */
 	const handleOpen = useCallback(() => {
-		if (context !== 'frontend') return;
-
 		setIsOpen(true);
 		if (chats.list === null) {
 			setChats((prev) => ({ ...prev, list: [] }));
 			indicatorRef.current?.classList.add('hidden');
 			getChats(1);
 		}
-	}, [context, chats.list, getChats]);
+	}, [chats.list, getChats]);
 
 	/**
 	 * Load more chats
@@ -746,18 +763,21 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 
 	/**
 	 * Render chat item
+	 * PARITY: messages.php:52-62 - <li> in <ul class="ts-notification-list simplify-ul ts-message-notifications">
 	 */
 	const renderChatItem = (chat: ChatItem) => (
-		<a key={chat.id} href={chat.link} className={`ts-chat-item ${chat.seen ? '' : 'ts-unread'}`}>
-			<div className="ts-chat-avatar">
-				<img src={chat.target.avatar} alt={chat.target.name} />
-			</div>
-			<div className="ts-chat-body">
-				<span className="ts-chat-name">{chat.target.name}</span>
-				<span className="ts-chat-excerpt">{chat.excerpt}</span>
-				<span className="ts-chat-time">{chat.time}</span>
-			</div>
-		</a>
+		<li key={chat.id} className={`${chat.is_new ? 'ts-new-notification' : ''} ${!chat.seen ? 'ts-unread-notification' : ''}`.trim() || undefined}>
+			<a href={chat.link}>
+				{chat.target.avatar && (
+					<div className="notification-image" dangerouslySetInnerHTML={{ __html: chat.target.avatar }} />
+				)}
+				<div className="notification-details">
+					<b>{chat.target.name}</b>
+					<span>{chat.excerpt}</span>
+					<span>{chat.time}</span>
+				</div>
+			</a>
+		</li>
 	);
 
 	return (
@@ -775,7 +795,7 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 				<div className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
 					{/* PARITY: messages.php:7-8 - show indicator if unread */}
-					{context === 'frontend' && isLoggedIn() && (
+					{isLoggedIn() && (
 						<span
 							ref={indicatorRef}
 							className="unread-indicator"
@@ -786,7 +806,7 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 				<span className="ts_comp_label">{item.messagesTitle || 'Messages'}</span>
 			</a>
 
-			{context === 'frontend' && (
+			{(
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`messages-popup-${item._id}`}
@@ -795,38 +815,48 @@ function MessagesItem({ item, icons, context, nonce }: MessagesItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
-					popupClass="md-width"
+					popupClass={`md-width ${popupScopeClass || ''}`.trim()}
+					headerActions={
+						<li className="flexify">
+							<a href={serverConfig?.templates?.inbox || '#'} className="ts-icon-btn">
+								<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.73592 4.5C2.77726 4.5 2.00014 5.27724 2.00031 6.2359L2.00031 6.26829C2.01064 6.81904 2.28199 7.33272 2.732 7.65165L2.74287 7.65929L10.7131 13.2171C11.3897 13.689 12.2609 13.7479 12.9861 13.3941C13.0897 13.3435 13.1904 13.2845 13.287 13.2171L21.2569 7.65949C21.7225 7.33485 21.9999 6.8031 21.9998 6.23554C21.9997 5.27702 21.2229 4.5 20.2644 4.5H3.73592Z" fill="currentColor"/><path d="M22.0001 8.96994L14.145 14.4475C12.8562 15.3462 11.1438 15.3462 9.85507 14.4475L2.00023 8.97012L2 17.25C2 18.4926 3.00736 19.5 4.25 19.5H19.75C20.9926 19.5 22 18.4926 22 17.25L22.0001 8.96994Z" fill="currentColor"/></svg>
+							</a>
+						</li>
+					}
 				>
-					<div className="ts-chats-list min-scroll">
-						{/* Loading state */}
-						{chats.loading && (
-							<div className="ts-empty-user-tab">
-								<div className="ts-loader" />
-							</div>
-						)}
+					{/* PARITY: messages.php:44-46 - loading state */}
+					{chats.loading && (
+						<div className="ts-empty-user-tab">
+							<span className="ts-loader" />
+						</div>
+					)}
 
-						{/* Chat list */}
-						{!chats.loading && (
-							<>
-								{chats.list && chats.list.length > 0 ? (
-									<>
-										{chats.list.map(renderChatItem)}
-										{chats.hasMore && (
-											<button
-												className={`ts-btn ts-btn-1 ts-load-more ${chats.loadingMore ? 'vx-pending' : ''}`}
-												onClick={loadMoreChats}
-												disabled={chats.loadingMore}
-											>
-												{chats.loadingMore ? <span className="ts-loader" /> : getL10n('loadMore', 'Load more')}
-											</button>
-										)}
-									</>
-								) : (
-									<EmptyPlaceholder />
-								)}
-							</>
-						)}
-					</div>
+					{/* PARITY: messages.php:47-49 - empty state */}
+					{!chats.loading && chats.list && chats.list.length === 0 && (
+						<div className="ts-empty-user-tab">
+							{renderIcon(item.icon)}
+							<p>{getL10n('noChats', 'No chats available')}</p>
+						</div>
+					)}
+
+					{/* PARITY: messages.php:51-63 - chat list */}
+					{!chats.loading && chats.list && chats.list.length > 0 && (
+						<ul className="ts-notification-list simplify-ul ts-message-notifications">
+							{chats.list.map(renderChatItem)}
+						</ul>
+					)}
+
+					{/* PARITY: messages.php:65-71 - load more */}
+					{!chats.loading && chats.hasMore && (
+						<div className="ts-form-group">
+							<div className="n-load-more">
+								<a href="#" onClick={(e) => { e.preventDefault(); loadMoreChats(); }} className={`ts-btn ts-btn-4 ${chats.loadingMore ? 'vx-pending' : ''}`}>
+									<svg width="80" height="80" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21.6009 10.4593C22.001 10.3521 22.2384 9.94088 22.1312 9.54078C21.59 7.52089 20.3974 5.73603 18.7384 4.46302C17.0793 3.19001 15.0466 2.5 12.9555 2.5C10.8644 2.5 8.83164 3.19001 7.17262 4.46302C6.12405 5.26762 5.26179 6.2767 4.63257 7.42036L2.86504 6.92617C2.76093 6.89707 2.65423 6.89133 2.55153 6.9068C2.46222 6.91962 2.37374 6.94889 2.29039 6.99582C1.92945 7.19903 1.80158 7.65636 2.00479 8.0173L3.73942 11.0983C3.83701 11.2717 3.99946 11.3991 4.19104 11.4527C4.30333 11.4841 4.42023 11.4886 4.53266 11.4673C4.61373 11.4524 4.69254 11.4242 4.7657 11.383L7.84641 9.64831C8.11073 9.49948 8.25936 9.20608 8.22302 8.90493C8.18668 8.60378 7.9725 8.35417 7.68037 8.27249L6.1241 7.83737C6.6343 6.99996 7.29751 6.2579 8.08577 5.65305C9.48282 4.58106 11.1946 4 12.9555 4C14.7164 4 16.4282 4.58106 17.8252 5.65305C19.2223 6.72504 20.2266 8.22807 20.6823 9.92901C20.7895 10.3291 21.2008 10.5665 21.6009 10.4593Z" fill="currentColor"/><path d="M4.30739 13.5387C3.90729 13.6459 3.66985 14.0572 3.77706 14.4573C4.31829 16.4771 5.51089 18.262 7.16991 19.535C8.82892 20.808 10.8616 21.498 12.9528 21.498C15.0439 21.498 17.0766 20.808 18.7356 19.535C19.7859 18.7291 20.6493 17.7181 21.2787 16.5722L23.0083 17.0557C23.1218 17.0961 23.2447 17.1091 23.3661 17.0917C23.5554 17.0658 23.7319 16.968 23.8546 16.8116C24.0419 16.573 24.0669 16.245 23.9181 15.9807L22.1835 12.8996C22.0859 12.7263 21.9234 12.5988 21.7319 12.5453C21.64 12.5196 21.5451 12.5119 21.4521 12.5216C21.3493 12.5317 21.2488 12.5629 21.1571 12.6146L18.0764 14.3493C17.7155 14.5525 17.5876 15.0099 17.7909 15.3708C17.9016 15.5675 18.0879 15.695 18.2929 15.7373L19.7875 16.1552C19.2768 16.9949 18.6125 17.7388 17.8225 18.345C16.4255 19.417 14.7137 19.998 12.9528 19.998C11.1918 19.998 9.4801 19.417 8.08305 18.345C6.686 17.273 5.68171 15.77 5.22595 14.069C5.11874 13.6689 4.70749 13.4315 4.30739 13.5387Z" fill="currentColor"/></svg>
+									{getL10n('loadMore', 'Load more')}
+								</a>
+							</div>
+						</div>
+					)}
 				</FormPopup>
 			)}
 		</li>
@@ -841,6 +871,7 @@ interface CartItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	nonce?: string;
 	isCartEmpty?: boolean;
 }
@@ -858,7 +889,7 @@ interface CartItemProps {
  * - nonce: wp_create_nonce('vx_cart')
  * - is_cart_empty: from metadata_exists check
  */
-function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartItemProps) {
+function CartItemComponent({ item, icons, context, popupScopeClass, nonce, isCartEmpty }: CartItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const iconRef = useRef<HTMLDivElement>(null);
@@ -992,8 +1023,6 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 	 * Reference: voxel-user-bar.beautified.js lines 218-223
 	 */
 	const handleOpen = useCallback(() => {
-		if (context !== 'frontend') return;
-
 		// Check if on checkout page
 		const checkoutEl = document.querySelector('.ts-checkout');
 		if (checkoutEl) {
@@ -1007,7 +1036,7 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 			setItems({});
 			getItems();
 		}
-	}, [context, items, getItems]);
+	}, [items, getItems]);
 
 	/**
 	 * Remove cart item
@@ -1235,52 +1264,38 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 
 	/**
 	 * Render cart item row
+	 * PARITY: cart.php:56-84 - <li> in <ul class="ts-cart-list simplify-ul">
 	 */
 	const renderCartItemRow = (cartItem: CartItem) => (
-		<div key={cartItem.key} className={`ts-cart-item ${cartItem._disabled ? 'vx-pending' : ''}`}>
-			<div className="ts-cart-item-image">
-				<a href={cartItem.link}>
-					<img src={cartItem.logo} alt={cartItem.title} />
-				</a>
-			</div>
-			<div className="ts-cart-item-body">
-				<a href={cartItem.link} className="ts-cart-item-title">{cartItem.title}</a>
-				{cartItem.subtitle && (
-					<span className="ts-cart-item-subtitle">{cartItem.subtitle}</span>
+		<li key={cartItem.key} className={cartItem._disabled ? 'vx-disabled' : undefined}>
+			<div className="cart-image" dangerouslySetInnerHTML={{ __html: cartItem.logo }} />
+			<div className="cart-item-details">
+				<a href={cartItem.link}>{cartItem.title}</a>
+				{cartItem.subtitle && <span>{cartItem.subtitle}</span>}
+				{cartItem.pricing.total_amount === 0 ? (
+					<span>{getL10n('free', 'Free')}</span>
+				) : (
+					<span dangerouslySetInnerHTML={{ __html: currencyFormat(cartItem.pricing.total_amount, cartItem.pricing._currency) }} />
 				)}
-				<span className="ts-cart-item-price">
-					{currencyFormat(cartItem.pricing.total_amount, cartItem.pricing._currency)}
-				</span>
 			</div>
-			<div className="ts-cart-item-actions">
-				{cartItem.quantity.enabled && (
-					<div className="ts-quantity-control">
-						<button
-							className="ts-qty-btn ts-qty-minus"
-							onClick={() => minusOne(cartItem)}
-							disabled={cartItem._disabled}
-						>
-							<i className="las la-minus" />
-						</button>
-						<span className="ts-qty-value">{getItemQuantity(cartItem)}</span>
-						<button
-							className="ts-qty-btn ts-qty-plus"
-							onClick={() => plusOne(cartItem)}
-							disabled={cartItem._disabled || !hasStockLeft(cartItem)}
-						>
-							<i className="las la-plus" />
-						</button>
-					</div>
-				)}
-				<button
-					className="ts-remove-btn"
-					onClick={() => removeItem(cartItem)}
-					disabled={cartItem._disabled}
-				>
-					<i className="las la-times" />
-				</button>
-			</div>
-		</div>
+			{cartItem.quantity.enabled ? (
+				<div className="cart-stepper">
+					<a href="#" onClick={(e) => { e.preventDefault(); minusOne(cartItem); }} className="ts-icon-btn ts-smaller">
+						<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.875 12C4.875 11.3787 5.37868 10.875 6 10.875H18.0007C18.622 10.875 19.1257 11.3787 19.1257 12C19.1257 12.6213 18.622 13.125 18.0007 13.125H6C5.37868 13.125 4.875 12.6213 4.875 12Z" fill="currentColor"/></svg>
+					</a>
+					<span>{getItemQuantity(cartItem)}</span>
+					<a href="#" onClick={(e) => { e.preventDefault(); plusOne(cartItem); }} className={`ts-icon-btn ts-smaller ${!hasStockLeft(cartItem) ? 'vx-disabled' : ''}`}>
+						<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.0002 4.875C12.6216 4.875 13.1252 5.37868 13.1252 6V10.8752H18.0007C18.622 10.8752 19.1257 11.3789 19.1257 12.0002C19.1257 12.6216 18.622 13.1252 18.0007 13.1252H13.1252V18.0007C13.1252 18.622 12.6216 19.1257 12.0002 19.1257C11.3789 19.1257 10.8752 18.622 10.8752 18.0007V13.1252H6C5.37868 13.1252 4.875 12.6216 4.875 12.0002C4.875 11.3789 5.37868 10.8752 6 10.8752H10.8752V6C10.8752 5.37868 11.3789 4.875 12.0002 4.875Z" fill="currentColor"/></svg>
+					</a>
+				</div>
+			) : (
+				<div className="cart-stepper">
+					<a href="#" className="ts-icon-btn ts-smaller" onClick={(e) => { e.preventDefault(); removeItem(cartItem); }}>
+						<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 2C9.08579 2 8.75 2.33579 8.75 2.75C8.75 3.16421 9.08579 3.5 9.5 3.5H14.5C14.9142 3.5 15.25 3.16421 15.25 2.75C15.25 2.33579 14.9142 2 14.5 2H9.5Z" fill="currentColor"/><path d="M4 5C3.74924 5 3.51506 5.12533 3.37597 5.33397C3.23687 5.54262 3.21125 5.80699 3.3077 6.03846L4.44231 8.76154C4.4804 8.85294 4.5 8.95098 4.5 9.05V19.75C4.5 20.9926 5.50736 22 6.75 22H17.25C18.4926 22 19.5 20.9926 19.5 19.75V9.04978C19.5 8.95083 19.5196 8.85286 19.5576 8.76151L20.6914 6.03827C20.7878 5.8068 20.7621 5.54249 20.623 5.33389C20.4839 5.12529 20.2498 5 19.999 5H4ZM10.75 10.5V16.5C10.75 16.9142 10.4142 17.25 10 17.25C9.58579 17.25 9.25 16.9142 9.25 16.5V10.5C9.25 10.0858 9.58579 9.75 10 9.75C10.4142 9.75 10.75 10.0858 10.75 10.5ZM14.75 10.5V16.5C14.75 16.9142 14.4142 17.25 14 17.25C13.5858 17.25 13.25 16.9142 13.25 16.5V10.5C13.25 10.0858 13.5858 9.75 14 9.75C14.4142 9.75 14.75 10.0858 14.75 10.5Z" fill="currentColor"/></svg>
+					</a>
+				</div>
+			)}
+		</li>
 	);
 
 	return (
@@ -1297,14 +1312,14 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 			>
 				<div ref={iconRef} className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
-					{context === 'frontend' && showIndicator() && (
+					{showIndicator() && (
 						<span className="unread-indicator" />
 					)}
 				</div>
 				<span className="ts_comp_label">{item.cartTitle || 'Cart'}</span>
 			</a>
 
-			{context === 'frontend' && (
+			{(
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`cart-popup-${item._id}`}
@@ -1313,50 +1328,56 @@ function CartItemComponent({ item, icons, context, nonce, isCartEmpty }: CartIte
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
-					popupClass="lg-width ts-cart-popup"
+					popupClass={`ts-cart-popup lg-width ${popupScopeClass || ''}`.trim()}
+					headerActions={
+						hasItems() ? (
+							<li className="flexify">
+								<a href="#" className="ts-icon-btn" role="button" onClick={(e) => { e.preventDefault(); emptyCart(); }}>
+									<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 2C9.08579 2 8.75 2.33579 8.75 2.75C8.75 3.16421 9.08579 3.5 9.5 3.5H14.5C14.9142 3.5 15.25 3.16421 15.25 2.75C15.25 2.33579 14.9142 2 14.5 2H9.5Z" fill="currentColor"/><path d="M4 5C3.74924 5 3.51506 5.12533 3.37597 5.33397C3.23687 5.54262 3.21125 5.80699 3.3077 6.03846L4.44231 8.76154C4.4804 8.85294 4.5 8.95098 4.5 9.05V19.75C4.5 20.9926 5.50736 22 6.75 22H17.25C18.4926 22 19.5 20.9926 19.5 19.75V9.04978C19.5 8.95083 19.5196 8.85286 19.5576 8.76151L20.6914 6.03827C20.7878 5.8068 20.7621 5.54249 20.623 5.33389C20.4839 5.12529 20.2498 5 19.999 5H4ZM10.75 10.5V16.5C10.75 16.9142 10.4142 17.25 10 17.25C9.58579 17.25 9.25 16.9142 9.25 16.5V10.5C9.25 10.0858 9.58579 9.75 10 9.75C10.4142 9.75 10.75 10.0858 10.75 10.5ZM14.75 10.5V16.5C14.75 16.9142 14.4142 17.25 14 17.25C13.5858 17.25 13.25 16.9142 13.25 16.5V10.5C13.25 10.0858 13.5858 9.75 14 9.75C14.4142 9.75 14.75 10.0858 14.75 10.5Z" fill="currentColor"/></svg>
+								</a>
+							</li>
+						) : null
+					}
 				>
-					<div className="ts-cart-content min-scroll">
-						{/* Loading state */}
-						{loading && <EmptyPlaceholder />}
+					{/* PARITY: cart.php:47-49 - loading state */}
+					{loading && (
+						<div className="ts-empty-user-tab">
+							<span className="ts-loader" />
+						</div>
+					)}
 
-						{/* Cart items */}
-						{!loading && (
-							<>
-								{hasItems() && items ? (
-									<>
-										<div className="ts-cart-items">
-											{Object.values(items).map(renderCartItemRow)}
-										</div>
+					{/* PARITY: cart.php:50-53 - empty state */}
+					{!loading && !hasItems() && (
+						<div className="ts-empty-user-tab">
+							{renderIcon(item.icon)}
+							<p>{getL10n('noCartItems', 'No items added to cart')}</p>
+						</div>
+					)}
 
-										<div className="ts-cart-footer">
-											<div className="ts-cart-subtotal">
-												<span>{getL10n('subtotal', 'Subtotal')}</span>
-												<span className="ts-subtotal-amount">
-													{currencyFormat(getSubtotal())}
-												</span>
-											</div>
-											<div className="ts-cart-actions">
-												<button
-													className={`ts-btn ts-btn-1 ts-empty-cart ${disabled ? 'vx-pending' : ''}`}
-													onClick={emptyCart}
-													disabled={disabled}
-												>
-													{getL10n('emptyCart', 'Empty cart')}
-												</button>
-												{checkoutLink && (
-													<a href={checkoutLink} className="ts-btn ts-btn-2">
-														{getL10n('checkout', 'Checkout')}
-													</a>
-												)}
-											</div>
-										</div>
-									</>
-								) : (
-									<EmptyPlaceholder />
-								)}
-							</>
-						)}
-					</div>
+					{/* PARITY: cart.php:54-87 - cart list */}
+					{!loading && hasItems() && items && (
+						<div className={`ts-form-group ${disabled ? 'vx-disabled' : ''}`}>
+							<ul className="ts-cart-list simplify-ul">
+								{Object.values(items).map(renderCartItemRow)}
+							</ul>
+						</div>
+					)}
+
+					{/* PARITY: cart.php:88-101 - cart controller (subtotal + checkout) */}
+					{loaded && hasItems() && (
+						<div className={`ts-cart-controller ${disabled ? 'vx-disabled' : ''}`}>
+							{getSubtotal() !== 0 && (
+								<div className="cart-subtotal">
+									<span>{getL10n('subtotal', 'Subtotal')}</span>
+									<span dangerouslySetInnerHTML={{ __html: currencyFormat(getSubtotal()) }} />
+								</div>
+							)}
+							<a href={checkoutLink} className="ts-btn ts-btn-2">
+								{getL10n('continue', 'Continue')}
+								<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5359 5.46986C14.3214 5.25526 13.9988 5.19101 13.7185 5.30707C13.4382 5.42312 13.2554 5.69663 13.2554 6.00002V11.2466L4 11.2466C3.58579 11.2466 3.25 11.5824 3.25 11.9966C3.25 12.4108 3.58579 12.7466 4 12.7466L13.2554 12.7466V18C13.2554 18.3034 13.4382 18.5769 13.7185 18.693C13.9988 18.809 14.3214 18.7448 14.5359 18.5302L20.5319 12.53C20.6786 12.3831 20.7518 12.1905 20.7514 11.9981L20.7514 11.9966C20.7514 11.7685 20.6495 11.5642 20.4888 11.4266L14.5359 5.46986Z" fill="currentColor"/></svg>
+							</a>
+						</div>
+					)}
 				</FormPopup>
 			)}
 		</li>
@@ -1371,6 +1392,7 @@ interface UserMenuItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 	hideChevron: boolean;
 }
 
@@ -1380,7 +1402,7 @@ interface UserMenuItemProps {
  * - $user->get_avatar_markup()
  * - $user->get_display_name()
  */
-function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) {
+function UserMenuItem({ item, icons, context, popupScopeClass, hideChevron }: UserMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
@@ -1391,10 +1413,11 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 	const avatarUrl = userData?.avatarUrl || '';
 
 	const handleOpen = useCallback(() => {
-		if (context === 'frontend') {
-			setIsOpen(true);
-		}
-	}, [context]);
+		setIsOpen(true);
+	}, []);
+
+	// Get menu HTML from server config
+	const menuHtml = serverConfig?.menus?.[item.chooseMenu] || '';
 
 	return (
 		<li className={`ts-popup-component ts-user-area-avatar elementor-repeater-item-${item._id}`}>
@@ -1409,7 +1432,12 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 				aria-label={displayName}
 			>
 				<div className="ts-comp-icon flexify">
-					{context === 'editor' ? (
+					{/* PARITY: user-bar.php:24 - $user->get_avatar_markup() */}
+					{userData?.avatarMarkup ? (
+						<span dangerouslySetInnerHTML={{ __html: userData.avatarMarkup }} />
+					) : avatarUrl ? (
+						<img src={avatarUrl} alt={displayName} />
+					) : (
 						<div
 							style={{
 								width: '32px',
@@ -1423,49 +1451,33 @@ function UserMenuItem({ item, icons, context, hideChevron }: UserMenuItemProps) 
 						>
 							<i className="las la-user" />
 						</div>
-					) : (
-						avatarUrl ? (
-							<img
-								src={avatarUrl}
-								alt={displayName}
-								style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-							/>
-						) : (
-							<div
-								style={{
-									width: '32px',
-									height: '32px',
-									borderRadius: '50%',
-									background: '#ccc',
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-								}}
-							>
-								<i className="las la-user" />
-							</div>
-						)
 					)}
 				</div>
 				<span className="ts_comp_label">{displayName}</span>
 				{!hideChevron && <div className="ts-down-icon" />}
 			</a>
 
-			{/* PARITY: user-bar.php:31-58 - popup with avatar and display name in header */}
-			{context === 'frontend' && (
+			{/* PARITY: user-bar.php:31-58 - popup with avatar+name header, menu via wp_nav_menu */}
+			{(
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`user-menu-popup-${item._id}`}
 					target={targetRef.current}
 					title={displayName}
-					icon={avatarUrl ? `<img src="${avatarUrl}" alt="" style="width:24px;height:24px;border-radius:50%;">` : ''}
+					icon={userData?.avatarMarkup || (avatarUrl ? `<img src="${avatarUrl}" alt="">` : '')}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
+					popupClass={popupScopeClass || ''}
 				>
+					{/* PARITY: user-bar.php:46-56 - ts-term-dropdown with menu HTML */}
 					<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
-						<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
-							Menu not configured
-						</p>
+						{menuHtml ? (
+							<div dangerouslySetInnerHTML={{ __html: menuHtml }} />
+						) : (
+							<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
+								{getL10n('menuNotConfigured', 'Menu not configured')}
+							</p>
+						)}
 					</div>
 				</FormPopup>
 			)}
@@ -1481,17 +1493,20 @@ interface WpMenuItemProps {
 	item: UserbarItem;
 	icons: UserbarAttributes['icons'];
 	context: 'editor' | 'frontend';
+	popupScopeClass?: string;
 }
 
-function WpMenuItem({ item, icons, context }: WpMenuItemProps) {
+function WpMenuItem({ item, icons, context, popupScopeClass }: WpMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
+	// Get menu HTML from server config
+	const serverConfig = getServerConfig();
+	const menuHtml = serverConfig?.menus?.[item.chooseMenu] || '';
+
 	const handleOpen = useCallback(() => {
-		if (context === 'frontend') {
-			setIsOpen(true);
-		}
-	}, [context]);
+		setIsOpen(true);
+	}, []);
 
 	return (
 		<li className={`ts-popup-component elementor-repeater-item-${item._id}`}>
@@ -1511,7 +1526,8 @@ function WpMenuItem({ item, icons, context }: WpMenuItemProps) {
 				<span className="ts_comp_label">{item.wpMenuTitle || 'Menu'}</span>
 			</a>
 
-			{context === 'frontend' && (
+			{/* PARITY: user-bar.php:72-101 - popup with menu via wp_nav_menu */}
+			{(
 				<FormPopup
 					isOpen={isOpen}
 					popupId={`wp-menu-popup-${item._id}`}
@@ -1520,11 +1536,16 @@ function WpMenuItem({ item, icons, context }: WpMenuItemProps) {
 					icon={item.icon?.value ? `<i class="${item.icon.value}"></i>` : ''}
 					onClose={() => setIsOpen(false)}
 					showFooter={false}
+					popupClass={popupScopeClass || ''}
 				>
 					<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
-						<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
-							Menu not configured
-						</p>
+						{menuHtml ? (
+							<div dangerouslySetInnerHTML={{ __html: menuHtml }} />
+						) : (
+							<p style={{ padding: '16px', textAlign: 'center', color: '#666' }}>
+								{getL10n('menuNotConfigured', 'Menu not configured')}
+							</p>
+						)}
 					</div>
 				</FormPopup>
 			)}
@@ -1577,6 +1598,7 @@ function renderItem(
 	icons: UserbarAttributes['icons'],
 	context: 'editor' | 'frontend',
 	hideChevron: boolean,
+	popupScopeClass: string,
 	nonce?: string,
 	isCartEmpty?: boolean
 ): React.ReactNode {
@@ -1588,6 +1610,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'messages':
@@ -1597,6 +1620,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 					nonce={nonce}
 				/>
 			);
@@ -1607,6 +1631,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 					nonce={nonce}
 					isCartEmpty={isCartEmpty}
 				/>
@@ -1619,6 +1644,7 @@ function renderItem(
 					icons={icons}
 					context={context}
 					hideChevron={hideChevron}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'select_wp_menu':
@@ -1628,6 +1654,7 @@ function renderItem(
 					item={item}
 					icons={icons}
 					context={context}
+					popupScopeClass={popupScopeClass}
 				/>
 			);
 		case 'link':
@@ -1662,16 +1689,12 @@ export default function UserbarComponent({
 		customPopupEnable: attributes.customPopupEnable,
 	};
 
-	// Get nonce and cart empty status from window config (injected by PHP)
-	const windowConfig = (window as unknown as {
-		VoxelFSEUserbar?: {
-			nonce?: string;
-			is_cart_empty?: boolean;
-		};
-	}).VoxelFSEUserbar;
+	// Get cart empty status from server config (injected by PHP)
+	const serverConfig = getServerConfig();
+	const isCartEmpty = serverConfig?.isCartEmpty ?? true;
 
-	const nonce = windowConfig?.nonce;
-	const isCartEmpty = windowConfig?.is_cart_empty ?? true;
+	// Popup scope class for CSS targeting portaled popups from this block instance
+	const popupScopeClass = `voxel-popup-userbar-${attributes.blockId || 'default'}`;
 
 	// Build inline styles for the list
 	const listStyle: React.CSSProperties = {
@@ -1715,7 +1738,7 @@ export default function UserbarComponent({
 			{/* Main user bar structure - 1:1 Voxel match */}
 			<ul className="flexify simplify-ul user-area-menu" style={listStyle}>
 				{items.map((item) =>
-					renderItem(item, icons, context, settings.hideChevron, nonce, isCartEmpty)
+					renderItem(item, icons, context, settings.hideChevron, popupScopeClass, undefined, isCartEmpty)
 				)}
 			</ul>
 		</>

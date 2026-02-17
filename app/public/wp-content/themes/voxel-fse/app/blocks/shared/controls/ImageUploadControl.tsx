@@ -134,7 +134,7 @@ export default function ImageUploadControl({
 	renderPreview,
 }: ImageUploadControlProps) {
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useSelect((select: any) => getCurrentDeviceType(select));
 
 	const wpDevice = wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);
@@ -283,7 +283,7 @@ export default function ImageUploadControl({
 					onSelect={handleSelect}
 					allowedTypes={btn.allowedTypes || ['image']}
 					value={currentValue?.id}
-					render={({ open }) => (
+					render={({ open }: { open: () => void }) => (
 						<div
 							className="voxel-fse-image-upload-button-wrapper"
 							onClick={(e) => {
@@ -432,7 +432,7 @@ export default function ImageUploadControl({
 								onSelect={handleSelect}
 								allowedTypes={uploadButtons[0].allowedTypes || ['image']}
 								value={currentValue?.id}
-								render={({ open }) => (
+								render={({ open }: { open: () => void }) => (
 									<div
 										className="voxel-fse-image-upload-preview"
 										onClick={() => {
