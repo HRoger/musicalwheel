@@ -1,8 +1,0 @@
-{% set blockDataAttrs = '' %}
-{% if bgAnimation %}
-  {% set blockDataAttrs = ' data-nectar-bg-scroll-animation="' ~ bgAnimation|raw ~ '"'%}
-{% endif %}
-
-<div class="{{ blockClassName }}__item__featured-media"{{ blockDataAttrs|raw }}>
-  <a href="{{ post.permalink|e }}">{{ post.featured_image|raw }}</a>
-</div>

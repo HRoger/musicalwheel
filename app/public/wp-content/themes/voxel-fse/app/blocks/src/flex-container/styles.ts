@@ -482,6 +482,7 @@ export function generateInnerStyles(attributes: FlexContainerAttributes): CSSPro
     const styles: CSSProperties = {
         display: isGrid ? 'grid' : 'flex',
         width: '100%', // Fill parent by default
+        minHeight: 'inherit', // Inherit parent's min-height so justify-content/align-items work correctly
     };
 
     // Content Width - the key boxed/full width logic
@@ -852,6 +853,7 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
     const desktopStyles: string[] = [
         isGrid ? 'display: grid' : 'display: flex',
         'width: 100%',
+        'min-height: inherit', // Inherit parent's min-height so justify-content/align-items work correctly
     ];
 
     // Content Width - boxed vs full
@@ -938,6 +940,14 @@ export function generateInnerResponsiveCSS(attributes: FlexContainerAttributes, 
     }
 
     cssRules.push(`${selector} { ${desktopStyles.join('; ')}; }`);
+
+    // Editor-only: Make WordPress block wrappers behave as proper flex items
+    // WordPress wraps each child block with .block-editor-block-list__block which
+    // gets max-width/width styles that prevent justify-content from working in row mode.
+    // These rules override that so child blocks size to their content.
+    const childSelector = `.voxel-fse-flex-container-${blockId} > .e-con-inner > .block-editor-block-list__layout > .wp-block`;
+    const childSelectorAlt = `.voxel-fse-flex-container-${blockId} > .e-con-inner > .wp-block`;
+    cssRules.push(`${childSelector}, ${childSelectorAlt} { max-width: none; width: auto; }`);
 
     // Tablet styles
     if (attributes.contentWidth_tablet) {

@@ -17801,6 +17801,7 @@ class Style_Generator {
         $desktop_inner = [
             $is_grid ? 'display: grid' : 'display: flex',
             'width: 100%',
+            'min-height: inherit', // Inherit parent's min-height so justify-content/align-items work correctly
         ];
 
         // Content Width - boxed vs full vs custom

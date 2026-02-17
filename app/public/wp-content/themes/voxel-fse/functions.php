@@ -748,3 +748,6 @@ add_action('after_switch_theme', function() {
     // Templates should be auto-discovered from templates/ directory
     // If not found immediately, WordPress will create them on first request to Site Editor
 });
+
+
+

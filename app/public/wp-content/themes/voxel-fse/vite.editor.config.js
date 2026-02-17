@@ -62,6 +62,7 @@ export default defineConfig({
         '@wordpress/api-fetch',
         '@wordpress/compose',
         '@wordpress/primitives',
+        '@wordpress/hooks',
         'nouislider',
       ],
       output: {
@@ -92,6 +93,7 @@ export default defineConfig({
           '@wordpress/api-fetch': 'wp.apiFetch',
           '@wordpress/compose': 'wp.compose',
           '@wordpress/primitives': 'wp.primitives',
+          '@wordpress/hooks': 'wp.hooks',
           'nouislider': 'noUiSlider',
         },
       },

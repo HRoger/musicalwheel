@@ -59,6 +59,15 @@ class Block_Loader
     private static $module_script_handles = [];
 
     /**
+     * Collected CSS from all blocks during render_block filter.
+     * Output as a single <style> tag in wp_footer instead of scattered per-block <style> tags.
+     * NOTE: map and slider blocks are excluded (they keep inline styles for JS timing reasons).
+     *
+     * @var array
+     */
+    private static $collected_css = [];
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -235,6 +244,12 @@ class Block_Loader
         // GLOBAL ABSTRACTION: Handle Visibility, Loop, and VoxelScript for all voxel-fse blocks
         // Priority 10 ensures it runs for all blocks, including those without render_callback
         add_filter('render_block', [__CLASS__, 'apply_voxel_tab_features'], 10, 2);
+
+        // Output collected block CSS as a single <style> tag in wp_footer.
+        // CSS is collected during render_block (above) and flushed once at end of page.
+        // NOTE: map and slider blocks are excluded — they keep inline <style> tags
+        // because their JS reads container dimensions before Google Maps / Swiper init.
+        add_action('wp_footer', [__CLASS__, 'output_collected_css'], 1);
     }
 
     /**
@@ -307,7 +322,7 @@ class Block_Loader
             'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components',
             'wp-compose', 'wp-primitives',
             'wp-i18n', 'wp-data', 'wp-core-data', 'wp-api-fetch',
-            'wp-server-side-render', 'nouislider',
+            'wp-server-side-render', 'nouislider', 'wp-hooks',
         ];
         $version = defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($script_path);
 
@@ -4675,8 +4690,7 @@ JAVASCRIPT;
         }
 
         if (!empty($all_css)) {
-            $style_tag = '<style>' . $all_css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Block ' . esc_attr($block_id) . ' AdvancedTab/VoxelTab */' . "\n" . $all_css;
         }
 
         return $block_content;
@@ -4700,8 +4714,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_search_form_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Search Form Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Search Form */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4759,8 +4772,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_post_feed_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Post Feed Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Post Feed */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4781,8 +4793,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_navbar_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Navbar Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Navbar */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4795,8 +4806,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_userbar_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Userbar Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Userbar */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4809,8 +4819,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_messages_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Messages Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Messages */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4823,8 +4832,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_create_post_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Create Post Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Create Post */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4837,8 +4845,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_product_form_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Product Form Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Product Form */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4851,8 +4858,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_login_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Login Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Login */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4865,8 +4871,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_stripe_account_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Stripe Account Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Stripe Account */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4879,8 +4884,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_review_stats_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Review Stats Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Review Stats */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4893,8 +4897,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_cart_summary_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Cart Summary Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Cart Summary */' . "\n" . $css;
         }
 
         return $block_content;
@@ -4921,8 +4924,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_term_feed_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Term Feed Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Term Feed */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5043,8 +5045,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_image_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Image Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Image */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5065,8 +5066,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_advanced_list_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Advanced List Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Advanced List */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5087,8 +5087,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_product_price_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Product Price Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Product Price */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5109,8 +5108,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_current_plan_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Current Plan Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Current Plan */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5131,8 +5129,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_current_role_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Current Role Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Current Role */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5153,8 +5150,7 @@ JAVASCRIPT;
         $css = Style_Generator::generate_work_hours_css($attributes, $block_id);
 
         if (!empty($css)) {
-            $style_tag = '<style>/* Work Hours Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Work Hours */' . "\n" . $css;
         }
 
         return $block_content;
@@ -5165,8 +5161,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_ring_chart_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Ring Chart Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Ring Chart */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5176,8 +5171,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_nested_accordion_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Nested Accordion Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Nested Accordion */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5187,8 +5181,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_nested_tabs_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Nested Tabs Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Nested Tabs */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5198,8 +5191,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_orders_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Orders Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Orders */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5209,8 +5201,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_quick_search_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Quick Search Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Quick Search */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5220,8 +5211,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_listing_plans_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Listing Plans Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Listing Plans */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5231,8 +5221,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_membership_plans_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Membership Plans Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Membership Plans */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5242,8 +5231,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_flex_container_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Flex Container Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Flex Container */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5253,8 +5241,7 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_visit_chart_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Visit Chart Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Visit Chart */' . "\n" . $css;
         }
         return $block_content;
     }
@@ -5264,10 +5251,31 @@ JAVASCRIPT;
         require_once __DIR__ . '/shared/style-generator.php';
         $css = Style_Generator::generate_sales_chart_css($attributes, $block_id);
         if (!empty($css)) {
-            $style_tag = '<style>/* Sales Chart Inline Styles */' . $css . '</style>';
-            $block_content = $style_tag . $block_content;
+            self::$collected_css[] = '/* Sales Chart */' . "\n" . $css;
         }
         return $block_content;
+    }
+
+    /**
+     * Output all collected CSS as a single <style> tag.
+     * Hooked to wp_footer at priority 1.
+     *
+     * CSS is collected during render_block filter from apply_block_styles()
+     * and apply_*_styles() methods. Map and slider blocks are excluded
+     * (they keep inline styles because JS reads container dimensions at init).
+     */
+    public static function output_collected_css()
+    {
+        if (empty(self::$collected_css)) {
+            return;
+        }
+
+        $css = implode("\n", self::$collected_css);
+
+        echo '<style id="voxel-fse-dynamic-css">' . "\n" . $css . "\n" . '</style>';
+
+        // Clear buffer after output
+        self::$collected_css = [];
     }
 
     /**
