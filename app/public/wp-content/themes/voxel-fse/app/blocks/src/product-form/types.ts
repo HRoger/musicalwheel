@@ -11,9 +11,11 @@
  * @package VoxelFSE
  */
 
-import type { IconValue } from '@shared/types';
-import type { TypographyValue } from '@shared/controls/TypographyControl';
-import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
+import type {
+	IconValue,
+	TypographyValue,
+	BorderGroupValue
+} from '@shared/controls';
 
 /**
  * Box spacing values (padding/margin)
@@ -298,6 +300,9 @@ export interface ProductFormAttributes {
 	inputBackgroundActive: string;
 	inputBorderColorActive: string;
 	inputTextColorActive: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**
@@ -396,7 +401,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 	dropdownBoxShadow: {},
 	dropdownBackground: '',
 	dropdownTextColor: '',
-	dropdownBorder: { type: 'default', width: 0, color: '' },
+	dropdownBorder: { borderType: 'default', borderWidth: {}, borderColor: '' },
 	dropdownBorderRadius: 0,
 	dropdownIconColor: '',
 	dropdownIconSize: 24,
@@ -447,7 +452,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 	inputValueColor: '',
 	inputValueTypography: {},
 	inputBackground: '',
-	inputBorder: { type: 'default', width: 0, color: '' },
+	inputBorder: { borderType: 'default', borderWidth: {}, borderColor: '' },
 	inputBorderRadius: 0,
 	inputBackgroundHover: '',
 	inputBorderColorHover: '',
@@ -545,7 +550,8 @@ export interface AddonChoice {
 	value: string;
 	label: string;
 	price: number;
-	image?: string;
+	image?: string | { url: string; alt?: string } | null;
+	subheading?: string | null;
 	quantity?: {
 		enabled: boolean;
 		min: number;
@@ -685,10 +691,10 @@ export interface AddonPricingSummary {
 export interface AddonComponentProps {
 	addon: AddonConfig;
 	value: AddonValue;
-	onChange: ( value: AddonValue ) => void;
-	getRepeatConfig: ( addon: AddonConfig ) => RepeatConfig | null;
-	getCustomPrice: ( addon: AddonConfig ) => CustomPriceConfig | null;
-	getCustomPriceForDate: ( date: Date ) => CustomPriceConfig | null;
+	onChange: (value: AddonValue) => void;
+	getRepeatConfig: (addon: AddonConfig) => RepeatConfig | null;
+	getCustomPrice: (addon: AddonConfig) => CustomPriceConfig | null;
+	getCustomPriceForDate: (date: Date) => CustomPriceConfig | null;
 }
 
 /**
@@ -737,8 +743,9 @@ export interface SearchContextConfig {
 export interface VariationChoice {
 	value: string;
 	label: string;
-	image?: string;
+	image?: string | { url: string; alt?: string; id?: number } | null;
 	color?: string;
+	subheading?: string | null;
 }
 
 /**
@@ -748,8 +755,9 @@ export interface VariationChoice {
 export interface VariationAttribute {
 	key: string;
 	label: string;
-	display_type: 'dropdown' | 'buttons' | 'images' | 'colors';
+	display_type: 'dropdown' | 'buttons' | 'radio' | 'cards' | 'images' | 'colors';
 	props: {
+		display_mode?: 'dropdown' | 'buttons' | 'radio' | 'cards' | 'images' | 'colors';
 		choices: Record<string, VariationChoice>;
 	};
 }
@@ -801,6 +809,9 @@ export interface VariationsFieldConfig {
 		selections: Record<string, string>;
 		stock: {
 			enabled: boolean;
+		};
+		l10n?: {
+			select_quantity?: string;
 		};
 	};
 }

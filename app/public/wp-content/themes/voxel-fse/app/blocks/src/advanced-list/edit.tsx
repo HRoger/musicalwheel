@@ -12,6 +12,7 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { InspectorTabs } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
+import { useExpandedLoopItems } from '../../shared/utils/useExpandedLoopItems';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
 import ContentTab from './inspector/ContentTab';
 import StyleTab from './inspector/StyleTab';
@@ -35,6 +36,11 @@ function generateBlockId(): string {
  */
 export default function Edit({ attributes, setAttributes }: EditProps) {
 	const blockId = attributes.blockId || 'advanced-list';
+
+	// Expand items with loop configuration for editor preview
+	const { items: expandedItems } = useExpandedLoopItems({
+		items: attributes.items,
+	});
 
 	// Generate block ID on mount if not set
 	useEffect(() => {
@@ -111,7 +117,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 				{combinedCSS && (
 					<style dangerouslySetInnerHTML={{ __html: combinedCSS }} />
 				)}
-				<AdvancedListComponent attributes={attributes} context="editor" />
+				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" />
 			</div>
 		</>
 	);

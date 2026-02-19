@@ -20,11 +20,11 @@ import {
 	AccordionPanel,
 	BorderGroupControl,
 } from '@shared/controls';
-import type { PopupKitBlockAttributes } from '../types';
+import type { PopupKitAttributes } from '../types';
 
 interface StyleTabProps {
-	attributes: PopupKitBlockAttributes;
-	setAttributes: (attrs: Partial<PopupKitBlockAttributes>) => void;
+	attributes: PopupKitAttributes;
+	setAttributes: (attrs: Partial<PopupKitAttributes>) => void;
 }
 
 export function StyleTab({
@@ -83,7 +83,7 @@ export function StyleTab({
 							setAttributes({ pgBorder: undefined });
 						} else if (value.borderType === 'none') {
 							// For 'none', we still need to store the type so CSS can output 'border: none'
-							setAttributes({ pgBorder: { type: 'none' } });
+							setAttributes({ pgBorder: { type: 'none', width: 0, color: '' } });
 						} else {
 							// For actual border types, store all values
 							setAttributes({

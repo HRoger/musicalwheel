@@ -96,6 +96,7 @@ import type {
 	NavbarMenuApiResponse,
 	VoxelIcon,
 	NavbarManualItem,
+	LinkedPostTypeData,
 } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
@@ -124,7 +125,7 @@ const DEFAULT_ICON: VoxelIcon = {
  *
  * Reference: themes/voxel/app/widgets/navbar.php control names
  */
-function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
+function normalizeConfig(raw: Record<string, unknown>): any {
 	// Helper for boolean normalization
 	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
@@ -154,7 +155,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 		if (val && typeof val === 'object') {
 			const iconObj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(iconObj.library, ''),
+				library: normalizeString(iconObj.library, '') as any,
 				value: normalizeString(iconObj.value, ''),
 			};
 		}
@@ -177,7 +178,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 						isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
 						nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
 						isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
-					};
+					} as any;
 				});
 			}
 			return [];
@@ -192,7 +193,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 				isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
 				nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
 				isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
-			};
+			} as any;
 		});
 	};
 
@@ -252,6 +253,10 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 		customPopupEnabled: normalizeBool(raw.customPopupEnabled ?? raw.custom_popup_enabled ?? raw.custom_popup_enable, false),
 		multiColumnMenu: normalizeBool(raw.multiColumnMenu ?? raw.multi_column_menu ?? raw.custom_menu_cols, false),
 		menuColumns: normalizeNumber(raw.menuColumns ?? raw.menu_columns ?? raw.set_menu_cols, 1),
+
+		// Linked block IDs
+		searchFormId: normalizeString(raw.searchFormId ?? raw.search_form_id, ''),
+		templateTabsId: normalizeString(raw.templateTabsId ?? raw.template_tabs_id, ''),
 	};
 }
 
@@ -288,8 +293,18 @@ async function fetchMenuItems(
 	const restUrl = getRestUrl();
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/navbar/menu?location=${encodeURIComponent(location)}`
+			`${restUrl}voxel-fse/v1/navbar/menu?location=${encodeURIComponent(location)}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {
@@ -306,19 +321,40 @@ async function fetchMenuItems(
 /**
  * Wrapper component that handles data fetching
  */
-interface NavbarWrapperProps {
-	config: NavbarVxConfig;
+interface InlineNavbarData {
+	mainMenu?: NavbarMenuApiResponse;
+	mobileMenu?: NavbarMenuApiResponse;
+	searchFormId?: string;
+	linkedPostTypes?: Array<{ key: string; label: string; icon: string | null; isActive: boolean }>;
 }
 
-function NavbarWrapper({ config }: NavbarWrapperProps) {
-	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(null);
+interface NavbarWrapperProps {
+	config: NavbarVxConfig;
+	inlineData?: InlineNavbarData | null;
+	blockId: string;
+}
+
+function NavbarWrapper({ config, inlineData, blockId }: NavbarWrapperProps) {
+	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(
+		inlineData?.mainMenu || null
+	);
 	const [mobileMenuData, setMobileMenuData] =
-		useState<NavbarMenuApiResponse | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+		useState<NavbarMenuApiResponse | null>(
+			inlineData?.mobileMenu || null
+		);
+	const [isLoading, setIsLoading] = useState(
+		!inlineData && config.source === 'select_wp_menu'
+	);
 	const [error, setError] = useState<string | null>(null);
 
-	// Fetch menu data on mount
+	// Fetch menu data on mount (skip if inline data present)
 	useEffect(() => {
+		// Skip REST fetch if we have inline data from server-side config injection
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		if (inlineData) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadMenuData() {
@@ -361,11 +397,11 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [config.source, config.menuLocation, config.mobileMenuLocation]);
+	}, [inlineData, config.source, config.menuLocation, config.mobileMenuLocation]);
 
 	// Build attributes from config
-	const attributes: NavbarAttributes = {
-		blockId: '',
+	const attributes: any = {
+		blockId,
 		source: config.source,
 		menuLocation: config.menuLocation,
 		mobileMenuLocation: config.mobileMenuLocation,
@@ -386,7 +422,13 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 		customPopupEnabled: config.customPopupEnabled,
 		multiColumnMenu: config.multiColumnMenu,
 		menuColumns: config.menuColumns,
+		searchFormId: config.searchFormId,
+		templateTabsId: config.templateTabsId,
 	};
+
+	// Resolve linked post types from inline hydration data (search_form source)
+	const linkedPostTypes: LinkedPostTypeData[] | undefined = inlineData?.linkedPostTypes || undefined;
+	const linkedBlockId: string | undefined = config.searchFormId || inlineData?.searchFormId || undefined;
 
 	return (
 		<NavbarComponent
@@ -396,6 +438,8 @@ function NavbarWrapper({ config }: NavbarWrapperProps) {
 			isLoading={isLoading}
 			error={error}
 			context="frontend"
+			linkedPostTypes={linkedPostTypes}
+			linkedBlockId={linkedBlockId}
 		/>
 	);
 }
@@ -420,13 +464,61 @@ function initNavbars() {
 			return;
 		}
 
-		// Mark as hydrated and clear placeholder
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlineData: InlineNavbarData | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlineData = JSON.parse(hydrateScript.textContent);
+			} catch {
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
+		// Extract blockId from container className (set by getAdvancedVoxelTabProps)
+		// Container has class "voxel-fse-navbar-{uuid}"
+		const blockIdMatch = container.className.match(/voxel-fse-navbar-([a-f0-9-]{36})/);
+		const blockId = blockIdMatch ? blockIdMatch[1] : 'default';
+
+		// Mark as hydrated
 		container.dataset.hydrated = 'true';
+
+		// Preserve <style> elements before createRoot replaces all children.
+		// save.tsx outputs responsive CSS as <style> tags inside the container.
+		const styleElements = container.querySelectorAll<HTMLStyleElement>(':scope > style');
+		styleElements.forEach((style) => {
+			container.parentNode?.insertBefore(style, container);
+		});
+
+		// Clear remaining placeholder content
 		container.innerHTML = '';
+
+		// Prevent Voxel's render_static_popups (commons.js) from mounting Vue
+		// on .ts-popup-component elements inside this React tree.
+		// MutationObserver fires synchronously during DOM mutation.
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of Array.from(mutation.addedNodes)) {
+					if (node instanceof HTMLElement) {
+						if (node.classList.contains('ts-popup-component')) {
+							(node as any).__vue_app__ = true;
+						}
+						node.querySelectorAll('.ts-popup-component').forEach((el) => {
+							(el as any).__vue_app__ = true;
+						});
+					}
+				}
+			}
+		});
+		observer.observe(container, { childList: true, subtree: true });
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<NavbarWrapper config={config} />);
+		root.render(<NavbarWrapper config={config} inlineData={inlineData} blockId={blockId} />);
+
+		// Disconnect observer after initial render is committed
+		requestAnimationFrame(() => observer.disconnect());
 	});
 }
 

@@ -60,6 +60,7 @@ declare module '@wordpress/block-editor' {
     export const PanelColorSettings: ComponentType<any>;
     export const URLInput: ComponentType<any>;
     export const PlainText: ComponentType<any>;
+    export const BlockPreview: ComponentType<any>;
 }
 
 declare module '@wordpress/blocks' {
@@ -77,6 +78,7 @@ declare module '@wordpress/blocks' {
     }
 
     export function registerBlockType(name: string, settings: any): any;
+    export function parse(content: string): any[];
 }
 
 declare module '@wordpress/server-side-render' {

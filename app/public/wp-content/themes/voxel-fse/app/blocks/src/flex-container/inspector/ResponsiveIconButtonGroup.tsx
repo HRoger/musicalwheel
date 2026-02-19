@@ -34,7 +34,7 @@ export function ResponsiveIconButtonGroup({
 	note,
 }: ResponsiveIconButtonGroupProps): JSX.Element {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => {
+	const wpDeviceType = (useSelect as any)((select: any) => {
 		const editPostStore = select('core/edit-post');
 		if (editPostStore && typeof (editPostStore as any).getPreviewDeviceType === 'function') {
 			return (editPostStore as any).getPreviewDeviceType();
@@ -115,7 +115,6 @@ export function ResponsiveIconButtonGroup({
 						{label}
 					</span>
 					<ResponsiveDropdownButton
-						currentDevice={currentDevice}
 						onDeviceChange={setCurrentDevice}
 					/>
 				</div>
@@ -133,9 +132,9 @@ export function ResponsiveIconButtonGroup({
 							minWidth: '36px',
 							height: '36px',
 							padding: '0',
-							backgroundColor: currentValue === opt.value ? '#2271b1' : '#f0f0f1',
+							backgroundColor: currentValue === opt.value ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
 							color: currentValue === opt.value ? '#ffffff' : '#1e1e1e',
-							borderColor: currentValue === opt.value ? '#2271b1' : '#dcdcde',
+							borderColor: currentValue === opt.value ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
 							transition: 'all 0.2s ease',
 						}}
 						label={opt.label}

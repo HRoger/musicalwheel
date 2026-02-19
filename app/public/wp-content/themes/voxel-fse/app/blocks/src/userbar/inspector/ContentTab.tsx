@@ -16,6 +16,7 @@ import {
     ElementVisibilityModal,
     LoopElementModal,
 } from '@shared/controls';
+import type { LoopConfig } from '@shared/controls/LoopElementModal';
 import type {
     UserbarAttributes,
     UserbarItem,
@@ -55,21 +56,9 @@ export default function ContentTab({
     const [activeLoopItemIndex, setActiveLoopItemIndex] = useState<number | null>(null);
 
     const getItemLabel = (item: UserbarItem): string => {
-        switch (item.componentType) {
-            case 'notifications':
-                return item.notificationsTitle || 'Notifications';
-            case 'messages':
-                return item.messagesTitle || 'Messages';
-            case 'cart':
-                return item.cartTitle || 'Cart';
-            case 'user_menu':
-            case 'select_wp_menu':
-                return item.wpMenuTitle || 'Menu';
-            case 'link':
-                return item.componentTitle || 'Link';
-            default:
-                return item.componentType;
-        }
+        // Show the component type value (e.g. "user_menu", "notifications")
+        // matching Elementor's pattern of showing the select value
+        return item.componentType || 'Item';
     };
 
     const updateIcons = (field: keyof UserbarAttributes['icons'], value: any) => {
@@ -381,14 +370,16 @@ export default function ContentTab({
                 <LoopElementModal
                     isOpen={true}
                     config={{
-                        source: attributes.items[activeLoopItemIndex].loopSource,
-                        property: attributes.items[activeLoopItemIndex].loopProperty,
-                    } as any}
+                        loopSource: attributes.items[activeLoopItemIndex].loopSource || '',
+                        loopProperty: attributes.items[activeLoopItemIndex].loopProperty || '',
+                        loopLimit: attributes.items[activeLoopItemIndex].loopLimit || '',
+                        loopOffset: attributes.items[activeLoopItemIndex].loopOffset || '',
+                    }}
                     onClose={() => setActiveLoopItemIndex(null)}
-                    onSave={(newConfig: any) => {
+                    onSave={(newConfig: LoopConfig) => {
                         updateItem(activeLoopItemIndex, {
-                            loopSource: newConfig.source,
-                            loopProperty: newConfig.property,
+                            loopSource: newConfig.loopSource,
+                            loopProperty: newConfig.loopProperty,
                         });
                     }}
                 />

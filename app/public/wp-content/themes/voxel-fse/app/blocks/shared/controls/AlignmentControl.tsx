@@ -9,7 +9,7 @@
  * @package VoxelFSE
  */
 
-import { Button, BaseControl } from '@wordpress/components';
+import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 export type AlignmentValue = 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
@@ -52,9 +52,9 @@ export default function AlignmentControl({
 	return (
 		<div className="voxel-fse-alignment-control">
 			{label && (
-				<BaseControl.VisualLabel>
+				<label className="components-base-control__label" style={{ display: 'block', marginBottom: '8px' }}>
 					{label}
-				</BaseControl.VisualLabel>
+				</label>
 			)}
 			<div className="voxel-fse-alignment-control__buttons">
 				{options.map((option) => (

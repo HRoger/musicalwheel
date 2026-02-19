@@ -199,6 +199,8 @@ export interface MapAttributes extends AdvancedStyleAttributes {
 	searchBtnRadius_tablet?: number;
 	searchBtnRadius_mobile?: number;
 	checkmarkIcon: IconValue;
+	searchIcon: IconValue;
+	geolocationIcon: IconValue;
 
 	// Style - Next/Prev Buttons
 	navBtnIconColor?: string;
@@ -277,6 +279,7 @@ export interface MapStyleConfig {
 	popup: PopupStyleConfig;
 	searchBtn: SearchBtnStyleConfig;
 	navBtn: NavBtnStyleConfig;
+	geolocationIcon: IconValue;
 }
 
 /**
@@ -357,6 +360,7 @@ export interface SearchBtnStyleConfig {
 	iconColorActive: ResponsiveValue<string>;
 	radius: ResponsiveValue<number>;
 	checkmarkIcon: IconValue;
+	searchIcon: IconValue;
 }
 
 /**
@@ -415,6 +419,8 @@ export interface SearchSubmitEventDetail {
 	targetId: string;
 	postType: string;
 	filters: Record<string, unknown>;
+	mapEnableClusters?: boolean;
+	mapAdditionalMarkers?: number;
 }
 
 /**

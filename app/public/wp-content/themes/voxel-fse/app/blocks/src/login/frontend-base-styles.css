@@ -1,0 +1,450 @@
+/**
+ * Login Block - Base CSS (Frontend)
+ *
+ * Critical structural styles for login form layout.
+ * Based on Voxel's login.css from themes/voxel/assets/dist/login.css
+ *
+ * @package VoxelFSE
+ */
+
+/* ========================================================================
+   BASE CONTAINER & LAYOUT
+   ======================================================================== */
+
+.wp-block-voxel-fse-login {
+	width: 100%;
+}
+
+.ts-auth {
+	/* Base container */
+}
+
+.ts-form.ts-login {
+	/* Form wrapper */
+	display: grid;
+	grid-gap: 20px;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.ts-form {
+	/* Generic form styling */
+}
+
+.ts-login form {
+	display: grid;
+	grid-gap: 20px;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+/* ========================================================================
+   SECTIONS & GROUPS
+   ======================================================================== */
+
+.ts-login .login-section {
+	margin-bottom: 15px;
+	display: grid;
+	grid-gap: 20px;
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.ts-login .ts-form-group {
+	padding: 0;
+}
+
+.ts-login .ts-form-group p.field-info {
+	font-size: var(--e-global-typography-text-font-size, 16px);
+	display: flex;
+	flex-wrap: wrap;
+	text-overflow: ellipsis;
+	color: var(--ts-shade-1, #666);
+	overflow: hidden;
+	white-space: normal;
+	grid-gap: 5px;
+	margin: 0;
+}
+
+/* ========================================================================
+   BUTTONS
+   ======================================================================== */
+
+.ts-login button {
+	font-weight: 600;
+	border: none;
+	outline: none;
+	cursor: pointer;
+}
+
+.ts-login .ts-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 10px 20px;
+	border-radius: 4px;
+	font-size: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.ts-login .ts-btn-2 {
+	background-color: var(--ts-accent-1, #db1f66);
+	color: white;
+	width: 100%;
+}
+
+.ts-login .ts-btn-2:hover {
+	opacity: 0.9;
+}
+
+.ts-login .ts-btn-1 {
+	background-color: transparent;
+	color: var(--ts-accent-1, #db1f66);
+	border: 1px solid var(--ts-shade-4, #ddd);
+	width: 100%;
+}
+
+.ts-login .ts-btn-1:hover {
+	background-color: var(--ts-shade-5, #f9f9f9);
+}
+
+.ts-login .ts-btn-large {
+	min-height: 44px;
+	padding: 0 20px;
+}
+
+.ts-login .ts-btn.vx-pending {
+	opacity: 0.7;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+/* ========================================================================
+   SOCIAL CONNECT
+   ======================================================================== */
+
+.ts-login .ts-social-connect .ts-btn i {
+	font-size: 24px;
+}
+
+.ts-login .ts-social-connect .ts-btn img,
+.ts-login .ts-social-connect .ts-btn svg {
+	width: 24px;
+	height: 24px;
+	object-fit: contain;
+}
+
+.ts-login .ts-social-connect .ts-google-btn i,
+.ts-login .ts-social-connect .ts-google-btn svg {
+	fill: #db4437;
+	color: #db4437;
+}
+
+/* ========================================================================
+   DIVIDERS (OR GROUP)
+   ======================================================================== */
+
+.or-group {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	grid-gap: 10px;
+	width: 100%;
+	margin: 5px 0;
+}
+
+.or-group .or-text {
+	color: var(--ts-shade-3, #999);
+	text-align: center;
+	flex-basis: auto;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.or-group .or-line {
+	height: 1px;
+	flex-basis: 0;
+	flex-grow: 1;
+	background: var(--ts-shade-5, #f0f0f0);
+}
+
+/* ========================================================================
+   TITLE / HEADING
+   ======================================================================== */
+
+.ts-login-head {
+	display: block;
+}
+
+.ts-login-head span.vx-step-title {
+	margin: 0;
+	color: var(--ts-shade-1, #333);
+	font-size: 32px;
+	font-weight: 600;
+}
+
+/* ========================================================================
+   INPUT FIELDS WITH ICONS
+   ======================================================================== */
+
+.ts-input-icon {
+	display: flex;
+	align-items: center;
+	position: relative;
+	gap: 10px;
+	width: 100%;
+}
+
+.ts-input-icon > i {
+	font-size: 18px;
+	color: inherit;
+	flex-shrink: 0;
+	margin-right: 0;
+}
+
+.ts-input-icon > svg,
+.ts-input-icon > img {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
+	flex-shrink: 0;
+	object-fit: contain;
+}
+
+.ts-input-icon.flexify {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.ts-filter {
+	flex: 1;
+	padding: 10px 15px;
+	border: 1px solid var(--ts-shade-4, #ddd);
+	border-radius: 4px;
+	font-size: inherit;
+	font-family: inherit;
+	background-color: white;
+	color: var(--ts-shade-1, #333);
+	transition: all 0.3s ease;
+}
+
+.ts-filter:focus {
+	outline: none;
+	border-color: var(--ts-accent-1, #db1f66);
+	box-shadow: 0 0 0 3px rgba(219, 31, 102, 0.1);
+}
+
+.ts-filter::placeholder {
+	color: var(--ts-shade-3, #999);
+}
+
+.ts-password-field {
+	position: relative;
+}
+
+.view-password {
+	position: absolute;
+	right: 15px;
+	display: flex;
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.2s ease;
+	z-index: 1;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+}
+
+.view-password:hover,
+.view-password.active {
+	opacity: 1;
+}
+
+.view-password i {
+	font-size: 18px;
+}
+
+.view-password svg {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
+}
+
+/* ========================================================================
+   WELCOME MESSAGE
+   ======================================================================== */
+
+.ts-welcome-message {
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+	align-items: center;
+	gap: 10px;
+}
+
+.ts-welcome-message i {
+	font-size: 80px;
+	color: var(--ts-accent-1, #db1f66);
+}
+
+.ts-welcome-message img,
+.ts-welcome-message svg {
+	width: 100px;
+	height: 100px;
+	fill: var(--ts-accent-1, #db1f66);
+	object-fit: contain;
+}
+
+.ts-welcome-message h2 {
+	font-size: 32px;
+	font-weight: 600;
+	color: var(--ts-shade-1, #333);
+	margin: 20px 0 0;
+}
+
+.ts-welcome-message label {
+	display: block;
+	margin-top: 10px;
+}
+
+/* ========================================================================
+   TWO-FACTOR AUTHENTICATION
+   ======================================================================== */
+
+.two-fa-codes {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+	font-family: monospace;
+	font-size: 14px;
+}
+
+.qr-code-image {
+	justify-content: center;
+	align-items: center;
+	display: flex;
+}
+
+.qr-code-image img {
+	width: 100%;
+	margin: auto;
+	max-width: 200px;
+	justify-self: center;
+	border: 1px solid var(--ts-shade-4, #ddd);
+	border-radius: 8px;
+}
+
+/* ========================================================================
+   ROLE SELECTION
+   ======================================================================== */
+
+.role-selection-hold {
+	border: 1px solid var(--ts-shade-4, #ddd);
+	border-radius: 7px;
+	overflow: hidden;
+	--rolemin: 100px;
+}
+
+.role-selection {
+	display: grid;
+	margin: -1px;
+	grid-template-columns: repeat(auto-fit, minmax(var(--rolemin), 1fr));
+}
+
+.role-selection a {
+	text-align: center;
+	background: white;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--ts-shade-1, #333);
+	font-size: var(--e-global-typography-text-font-size, 16px);
+	color: var(--ts-shade-2, #666);
+	transition: all 0.3s cubic-bezier(0, 0.23, 0.29, 1) 0s;
+	border-bottom: 1px solid var(--ts-shade-4, #ddd);
+	border-right: 1px solid var(--ts-shade-4, #ddd);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.role-selection a:hover {
+	background: var(--ts-shade-5, #f9f9f9);
+}
+
+.role-selection a.selected-role {
+	background: var(--ts-shade-5, #f9f9f9);
+	font-weight: 600;
+}
+
+/* ========================================================================
+   CHECKBOX / TERMS
+   ======================================================================== */
+
+.terms-checkbox .container-checkbox {
+	align-items: initial;
+}
+
+.ts-form .ts-form-group.tos-group {
+	display: flex;
+	flex-direction: row;
+	grid-gap: 15px;
+	align-items: center;
+}
+
+.ts-form .ts-form-group.tos-group .container-checkbox {
+	overflow: hidden;
+}
+
+.ts-form .ts-form-group.tos-group .container-checkbox .checkmark {
+	width: 26px;
+	height: 26px;
+	min-width: 26px;
+}
+
+/* ========================================================================
+   TEXTAREA
+   ======================================================================== */
+
+.ts-login textarea {
+	min-width: 100%;
+	min-height: 120px;
+	white-space: inherit;
+	padding: 10px 15px;
+	border: 1px solid var(--ts-shade-4, #ddd);
+	border-radius: 4px;
+	font-family: inherit;
+	font-size: inherit;
+	color: var(--ts-shade-1, #333);
+	transition: all 0.3s ease;
+}
+
+.ts-login textarea:focus {
+	outline: none;
+	border-color: var(--ts-accent-1, #db1f66);
+	box-shadow: 0 0 0 3px rgba(219, 31, 102, 0.1);
+}
+
+/* ========================================================================
+   LINKS
+   ======================================================================== */
+
+.ts-login a {
+	color: var(--ts-accent-1, #db1f66);
+	text-decoration: none;
+	transition: opacity 0.3s ease;
+}
+
+.ts-login a:hover {
+	opacity: 0.8;
+}
+
+.ts-login a.ts-btn {
+	color: inherit;
+}

@@ -36,7 +36,7 @@
  * @package VoxelFSE
  */
 
-import { forwardRef } from '@wordpress/element';
+import type { ForwardedRef } from 'react';
 
 export interface LoaderProps {
 	/**
@@ -62,6 +62,11 @@ export interface LoaderProps {
 	 * Optional text to display below the spinner (only for centered variant)
 	 */
 	text?: string;
+
+	/**
+	 * Forwarded ref to the root element
+	 */
+	ref?: ForwardedRef<HTMLSpanElement>;
 }
 
 /**
@@ -84,8 +89,7 @@ export interface LoaderProps {
  * </button>
  * ```
  */
-export const Loader = forwardRef<HTMLSpanElement, LoaderProps>(
-	({ variant = 'inline', className = '', ariaLabel = 'Loading', text }, ref) => {
+export function Loader({ variant = 'inline', className = '', ariaLabel = 'Loading', text, ref }: LoaderProps) {
 		// Inline spinner only
 		if (variant === 'inline') {
 			return (
@@ -138,10 +142,7 @@ export const Loader = forwardRef<HTMLSpanElement, LoaderProps>(
 				aria-label={ariaLabel}
 			></span>
 		);
-	}
-);
-
-Loader.displayName = 'Loader';
+}
 
 /**
  * Utility function for opacity-based loading classes

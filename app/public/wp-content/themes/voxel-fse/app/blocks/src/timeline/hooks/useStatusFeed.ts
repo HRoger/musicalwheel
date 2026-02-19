@@ -1,18 +1,24 @@
 /**
  * useStatusFeed Hook
  *
- * Manages timeline feed state with infinite scroll, filtering, and ordering.
- * Handles pagination, optimistic updates, real-time additions, and polling refresh.
+ * Manages timeline feed state with filtering, pagination, and ordering.
+ * Handles optimistic updates, real-time additions, and polling refresh.
  *
  * VOXEL PARITY: Polling refresh
  * When configured, the feed can automatically poll for new statuses at a set interval.
  * This matches Voxel's optional polling behavior for live feeds.
+ *
+ * VOXEL PARITY: Load More
+ * - Manual click only (no IntersectionObserver)
+ * - has_more from server: queries per_page+1, has_more = count > per_page
+ * - Evidence: status-feed-controller.php lines 36, 327-330
  *
  * @package VoxelFSE
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { getStatusFeed } from '../api';
+import { VoxelApiError } from '../api/voxel-fetch';
 import type { Status, StatusFeedParams, StatusFeedResponse, FeedType } from '../types';
 
 /**
@@ -32,6 +38,7 @@ interface FeedState {
  */
 export interface FeedFilters {
 	mode: string; // Kept for backwards compat but controlled by prop
+	orderId?: string; // _id of the active ordering option (Voxel uses _id for comparison)
 	order: string;
 	time: string;
 	timeCustom?: number;
@@ -87,6 +94,17 @@ const defaultFilters: FeedFilters = {
 };
 
 /**
+ * Check if an error is an abort/cancel error
+ * voxelAjax wraps DOMException AbortError as VoxelApiError with code='abort_error'
+ */
+function isAbortError(error: unknown): boolean {
+	if (error instanceof DOMException && error.name === 'AbortError') return true;
+	if (error instanceof VoxelApiError && error.code === 'abort_error') return true;
+	if (error instanceof Error && error.name === 'AbortError') return true;
+	return false;
+}
+
+/**
  * useStatusFeed hook
  *
  * @param mode - Display mode from block attributes (NOT user controllable)
@@ -108,7 +126,7 @@ export function useStatusFeed(
 		statuses: [],
 		isLoading: true,
 		isLoadingMore: false,
-		hasMore: true,
+		hasMore: false, // Start false; set to true only after API confirms more pages
 		error: null,
 		page: 1,
 	});
@@ -121,6 +139,9 @@ export function useStatusFeed(
 
 	// Track previous mode to detect changes
 	const prevModeRef = useRef(mode);
+
+	// Skip the first run of the filter-change effect (mount effect handles initial fetch)
+	const isFirstFilterRun = useRef(true);
 
 	// Polling state and refs
 	const [isPolling, setIsPolling] = useState(false);
@@ -171,6 +192,7 @@ export function useStatusFeed(
 					isLoading: true,
 					error: null,
 					statuses: [],
+					hasMore: false, // Reset hasMore on fresh load
 					page: 1,
 				}));
 			}
@@ -181,9 +203,11 @@ export function useStatusFeed(
 
 				if (!isMounted.current) return;
 
-				// Defensive: handle both wrapped { data, has_more } and direct array responses
-				// voxelFetch unwraps { success, data } so we should get { data, has_more, meta }
-				// But handle edge cases where response might be array directly or undefined
+				console.log('[useStatusFeed] Raw response:', response);
+
+				// Voxel's status-feed-controller.php returns via wp_send_json():
+				// { success: true, data: [...statuses], has_more: boolean, meta: {...} }
+				// voxelAjax returns this as-is (no unwrapping)
 				const statusData = Array.isArray(response)
 					? (response as unknown as Status[])
 					: (Array.isArray((response as StatusFeedResponse)?.data) ? (response as StatusFeedResponse).data : []);
@@ -191,26 +215,41 @@ export function useStatusFeed(
 					? false
 					: ((response as StatusFeedResponse)?.has_more ?? false);
 
+				console.log('[useStatusFeed] Parsed:', {
+					statusCount: statusData.length,
+					hasMore: hasMoreData,
+					page,
+					append,
+				});
+
+				// Safety: if server says has_more but returned 0 items, stop pagination
+				const effectiveHasMore = hasMoreData && statusData.length > 0;
+
 				setState((prev) => ({
 					...prev,
 					statuses: append ? [...prev.statuses, ...statusData] : statusData,
-					hasMore: hasMoreData,
+					hasMore: effectiveHasMore,
 					page,
 					isLoading: false,
 					isLoadingMore: false,
+					error: null,
 				}));
 			} catch (error) {
 				if (!isMounted.current) return;
 
-				// Ignore abort errors
-				if (error instanceof Error && error.name === 'AbortError') {
+				// Ignore abort/cancel errors — another request superseded this one
+				if (isAbortError(error)) {
+					console.log('[useStatusFeed] Request aborted (superseded by newer request)');
 					return;
 				}
+
+				console.error('[useStatusFeed] Fetch error:', error);
 
 				setState((prev) => ({
 					...prev,
 					isLoading: false,
 					isLoadingMore: false,
+					hasMore: false, // Stop showing Load More on error
 					error: error instanceof Error ? error.message : 'Failed to load feed',
 				}));
 			}
@@ -219,10 +258,11 @@ export function useStatusFeed(
 	);
 
 	/**
-	 * Load more statuses (infinite scroll)
+	 * Load more statuses (manual click — matches Voxel's @click.prevent="loadMore")
 	 */
 	const loadMore = useCallback(async (): Promise<void> => {
 		if (state.isLoadingMore || !state.hasMore) return;
+		console.log('[useStatusFeed] loadMore called, page:', state.page + 1);
 		await fetchFeed(state.page + 1, true);
 	}, [state.isLoadingMore, state.hasMore, state.page, fetchFeed]);
 
@@ -298,21 +338,29 @@ export function useStatusFeed(
 	}, [mode, fetchFeed]);
 
 	/**
-	 * Initial load
+	 * Initial load — runs exactly once on mount
 	 */
 	useEffect(() => {
 		fetchFeed(1, false);
-		// Only run on mount, not when dependencies change
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	/**
 	 * Refetch when user filters change (order, time, search, etc.)
+	 * Skip initial render — that's handled by the mount effect above.
 	 */
 	useEffect(() => {
-		// Skip if this is the initial render (handled by mount effect)
+		// Skip the very first run (mount effect handles the initial fetch).
+		// Both effects fire in the same React commit, so a shared ref set by
+		// the mount effect doesn't work — each effect needs its own guard.
+		if (isFirstFilterRun.current) {
+			isFirstFilterRun.current = false;
+			return;
+		}
+
+		// Only refetch if mode hasn't changed (mode changes handled by mode effect)
 		if (prevModeRef.current === mode) {
-			// Only refetch if filters other than mode changed
+			console.log('[useStatusFeed] Filters changed, refetching');
 			fetchFeed(1, false);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps

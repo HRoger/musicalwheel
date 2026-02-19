@@ -4,7 +4,7 @@
 *
 * @package Nectar Blocks Theme
 * @subpackage Partials
-* @version 13.1
+* @version 2.0.1
 */
 
 // Exit if accessed directly
@@ -28,6 +28,8 @@ $dropdown_func = ( ! empty( $nectar_options['header-slide-out-widget-area-dropdo
 $user_set_side_widget_area = $side_widget_area;
 $separate_mobile_ocm = ( isset( $nectar_options['header-slide-out-widget-area-separate-mobile'] ) && $side_widget_area != '1' ) ? $nectar_options['header-slide-out-widget-area-separate-mobile'] : '0';
 
+$has_ocm_template = has_action('nectar_template__ocm');
+
 if ( $has_main_menu === 'true' ) {
     $side_widget_area = '1';
 }
@@ -48,6 +50,10 @@ if ( $side_widget_class === 'fullscreen' ||
     $dropdown_func = 'default';
 }
 
+$close_icon_escaped = '<a class="slide_out_area_close" role="button" href="#"><span class="screen-reader-text">' . esc_html__('Close Menu', 'nectar-blocks-theme') . '</span>
+                    <span class="close-wrap"> <span class="close-line close-line1"></span> <span class="close-line close-line2"></span> </span>
+                </a>';
+
 // Legacy double mobile menu
 $legacy_double_menu = nectar_legacy_mobile_double_menu();
 if( true === $legacy_double_menu ) {
@@ -57,49 +63,45 @@ if( true === $legacy_double_menu ) {
 // Check if ocm is enabled and the simple style is not selected.
 if ( $side_widget_area === '1' && $side_widget_class !== 'simple' || true === $legacy_double_menu ) {
 
-    $ocm_class = ( in_array($side_widget_class, ['fullscreen-split','fullscreen-inline-images' ]) ) ? $side_widget_class . ' hidden' : $side_widget_class;
+    $ocm_class = $side_widget_class;
+    $ocm_class .= ( $has_ocm_template ) ? ' has-nectar-template' : '';
+    $ocm_class .= ' nectar-allow-scroll';
 
-    ?>
-
-    <div id="slide-out-widget-area-bg" class="<?php echo esc_attr( $ocm_class ) . ' ' . esc_attr( $side_widget_overlay_opacity ); ?>">
+$ocm_bg_markup = '<div id="slide-out-widget-area-bg" class="' . esc_attr( $ocm_class ) . ' ' . esc_attr( $side_widget_overlay_opacity ) . '"></div>';
+$is_fullscreen_ocm = ( $side_widget_class !== 'slide-out-from-right' && $side_widget_class !== 'slide-out-from-right-hover' ) ? true : false;
+?>
         <?php
-
-    nectar_ocm_menu_images();
-
-        if ( $side_widget_class === 'fullscreen-alt' ) {
-            echo '<div class="bg-inner"></div>'; }
-            ?>
-        </div>
-
+            if ( ! $is_fullscreen_ocm  ) {
+                echo $ocm_bg_markup;
+            }
+        ?>
         <div id="slide-out-widget-area" class="<?php echo esc_attr( $ocm_class ); ?>" data-dropdown-func="<?php echo esc_attr( $dropdown_func ); ?>" data-back-txt="<?php echo esc_attr__( 'Back', 'nectar-blocks-theme' ); ?>">
 
             <?php
+
+            if ( $is_fullscreen_ocm  ) {
+                echo $ocm_bg_markup;
+            }
+
             if ( $side_widget_class === 'fullscreen' ||
             $side_widget_class === 'fullscreen-alt' ||
             $side_widget_class === 'fullscreen-split' ||
-            $side_widget_class === 'fullscreen-inline-images' ||
-            ( $theme_skin === 'material' && $side_widget_class === 'slide-out-from-right' ) ||
-            ( $theme_skin === 'material' && $side_widget_class === 'slide-out-from-right-hover' ) ) {
+            $side_widget_class === 'slide-out-from-right' ||
+            $side_widget_class === 'slide-out-from-right-hover' ) {
 
                 echo '<div class="inner-wrap">';
             }
+
+            if ( has_action('nectar_template__ocm') ) {
+                do_action('nectar_template__ocm');
+                echo $close_icon_escaped;
+            } else {
 
             $prepend_mobile_menu = ( $prepend_top_nav_mobile === '1' && $has_main_menu === 'true' && $user_set_side_widget_area !== 'off' ) ? 'true' : 'false'; ?>
 
             <div class="inner" data-prepend-menu-mobile="<?php echo esc_attr( $prepend_mobile_menu ); ?>">
 
-                <a class="slide_out_area_close" role="button" href="#"><span class="screen-reader-text"><?php echo esc_html__('Close Menu', 'nectar-blocks-theme'); ?></span>
-                    <?php
-                    if ( $theme_skin !== 'material' ) {
-                        echo '<span class="icon-nectar-blocks-x icon-default-style"></span>';
-                    } else {
-                        echo '<span class="close-wrap"> <span class="close-line close-line1"></span> <span class="close-line close-line2"></span> </span>';
-                    }
-                    ?>
-                </a>
-
-
-                <?php
+                <?php echo $close_icon_escaped;
 
                 nectar_hook_ocm_before_menu();
 
@@ -262,11 +264,17 @@ if ( $side_widget_area === '1' && $side_widget_class !== 'simple' || true === $l
                 </div>
 
                 <?php
-
                     // Bottom meta.
                     if( $side_widget_class !== 'fullscreen-split' ) {
                         get_template_part( 'includes/partials/footer/off-canvas-navigation-bottom-meta' );
                     }
+                ?>
+
+                <?php
+                    } // end if ocm template is set
+                ?>
+
+                <?php
 
                     if ( $side_widget_class === 'fullscreen' ||
                     $side_widget_class === 'fullscreen-alt' ||

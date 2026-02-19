@@ -23,21 +23,20 @@ $header_secondary_m_attr = ( $using_secondary === 'header_with_secondary' && $he
 $using_img_logo = ( isset($nectar_options['use-logo']) && $nectar_options['use-logo'] === '1' ) ? true : false;
 
 $perma_forced = nectar_is_perma_trans_header_forced();
-
 if (
     $perma_forced ||
     $nectar_header_options['bg_header'] == 'false' ||
     $nectar_header_options['page_full_screen_rows'] === 'on'
 ) { ?>
-    
+
     <div id="nectar-nav-spacer" <?php echo (esc_html($header_secondary_m_attr)) ? 'data-secondary-header-display="full"' : ''; ?> data-header-mobile-fixed='<?php echo esc_attr( $nectar_header_options['mobile_fixed'] ); ?>'>
         <?php if ( ! $using_img_logo ) { ?>
             <span class="logo">
                 <?php echo apply_filters('nectar_logo_text', get_bloginfo( 'name' )); ?>
             </span>
         <?php } ?>
-    </div> 
-    
+    </div>
+
     <?php
 
 }

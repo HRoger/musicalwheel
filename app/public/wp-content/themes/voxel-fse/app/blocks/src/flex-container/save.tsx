@@ -51,7 +51,7 @@ export default function Save({ attributes }: SaveProps) {
     const customAttrs = parseCustomAttributes(attributes.customAttributes);
 
     // OUTER container block props (backgrounds, position, min-height)
-    const blockProps = useBlockProps.save({
+    const blockProps = (useBlockProps as any).save({
         // Use elementId if provided (CSS ID from AdvancedTab), otherwise use blockId
         id: attributes.elementId || undefined,
         className: combineBlockClasses(
@@ -69,11 +69,15 @@ export default function Save({ attributes }: SaveProps) {
         'data-loop-property': attributes.loopProperty || undefined,
         'data-loop-limit': attributes.loopLimit || undefined,
         'data-loop-offset': attributes.loopOffset || undefined,
+        // Entrance animation (attribute names match MotionEffectsControls)
+        'data-animation': attributes.entranceAnimation || undefined,
+        'data-animation-duration': attributes.animationDuration || undefined,
+        'data-animation-delay': attributes.animationDelay ? `${attributes.animationDelay}` : undefined,
         ...customAttrs,
     });
 
     // INNER wrapper props for inner blocks (flex/grid layout, max-width)
-    const innerBlocksProps = useInnerBlocksProps.save({
+    const innerBlocksProps = (useInnerBlocksProps as any).save({
         className: 'e-con-inner',
         style: innerStyles,
     });

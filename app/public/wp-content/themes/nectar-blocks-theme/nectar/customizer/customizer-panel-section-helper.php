@@ -29,6 +29,7 @@ require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/layout/footer.p
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/post-types.php';
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/blog.php';
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/woocommerce.php';
+require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/portfolio.php';
 
 define('NECTAR_CUSTOMIZER_STATUS', 'nectar_customizer_status');
 
@@ -69,6 +70,7 @@ if ( ! class_exists( 'NectarBlocks_Panel_Section_Helper' ) ) {
           NectarBlocks_Customizer_Layout_Footer::get_kirki_partials(),
           NectarBlocks_Customizer_Post_Types_Blog::get_kirki_partials(),
           NectarBlocks_Customizer_Post_Types_WooCommerce::get_kirki_partials(),
+          NectarBlocks_Customizer_Post_Types_Portfolio::get_kirki_partials(),
           NectarBlocks_Customizer_General_WP_Settings::get_kirki_partials()
       );
     }

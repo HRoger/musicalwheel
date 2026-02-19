@@ -7,7 +7,6 @@
  * @package VoxelFSE
  */
 
-import { useState } from 'react';
 import { SelectControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import DimensionsControl from './DimensionsControl';
@@ -53,7 +52,10 @@ export default function BorderGroupControl({
     onChange,
     hideRadius = false,
 }: BorderGroupControlProps) {
-    const { borderType, borderWidth, borderColor, borderRadius } = value;
+    const { borderType: rawBorderType, borderWidth, borderColor, borderRadius } = value;
+
+    // Normalize 'default' to '' for consistent comparison with BORDER_TYPES options
+    const borderType = rawBorderType === 'default' ? '' : rawBorderType;
 
     const hasBorder = borderType && borderType !== 'none' && borderType !== '';
 
@@ -77,12 +79,12 @@ export default function BorderGroupControl({
                         textTransform: 'none',
                     }}
                 >
-                    {__('Border Type', 'voxel-fse')}
+                    {label}
                 </label>
                 <SelectControl
                     value={borderType || ''}
                     options={BORDER_TYPES}
-                    onChange={(newType) => updateValue('borderType', newType)}
+                    onChange={(newType: string) => updateValue('borderType', newType)}
                     __nextHasNoMarginBottom
                     hideLabelFromVision
                 />

@@ -13,6 +13,16 @@
 import React from 'react';
 import type { PopupKitAttributes } from '../types';
 
+// Placeholder matching Voxel's gradient demo image (avoids hardcoded URLs that break across environments)
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">' +
+    '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">' +
+    '<stop offset="0%" stop-color="#818cf8"/><stop offset="50%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/>' +
+    '</linearGradient></defs>' +
+    '<rect fill="url(#g)" width="150" height="150" rx="75"/>' +
+    '</svg>'
+);
+
 interface PopupKitPreviewProps {
     attributes: PopupKitAttributes;
     context: 'editor' | 'frontend';
@@ -331,7 +341,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification ts-new-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unseen and unvisited with image</b>
@@ -342,7 +352,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unvisited with image</b>
@@ -353,7 +363,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Seen and visited with image</b>
@@ -364,7 +374,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li>
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" width="150" height="150" />
+                                    <img src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" width="150" height="150" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Notification prompt with actions</b>
@@ -502,7 +512,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                             <ul className="ts-cart-list simplify-ul">
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>
@@ -527,7 +537,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                                 </li>
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>
@@ -593,12 +603,12 @@ function DatepickerMarkup() {
                         </select>
                         </div>
                         <button className="pika-prev ts-icon-btn is-disabled" type="button">
-                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-left" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{ enableBackground: 'new 0 0 64 64' }} xmlSpace="preserve">
+                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-left" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{} as any} xmlSpace="preserve">
                                 <path d="M56,29.8H13.3l17-17.3c0.9-0.9,0.9-2.3,0-3.2c-0.9-0.9-2.3-0.9-3.2,0l-20.7,21c-0.9,0.9-0.9,2.3,0,3.2l20.7,21 c0.4,0.4,1,0.7,1.6,0.7c0.6,0,1.1-0.2,1.6-0.6c0.9-0.9,0.9-2.3,0-3.2L13.4,34.3H56c1.2,0,2.2-1,2.2-2.2C58.2,30.8,57.2,29.8,56,29.8 z"></path>
                             </svg>
                         </button>
                         <button className="pika-next ts-icon-btn" type="button">
-                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-right" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{ enableBackground: 'new 0 0 64 64' }} xmlSpace="preserve">
+                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-right" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{} as any} xmlSpace="preserve">
                                 <path d="M57.6,30.4l-20.7-21c-0.9-0.9-2.3-0.9-3.2,0c-0.9,0.9-0.9,2.3,0,3.2l16.8,17.1H8c-1.2,0-2.2,1-2.2,2.2s1,2.3,2.2,2.3h42.7 l-17,17.3c-0.9,0.9-0.9,2.3,0,3.2c0.4,0.4,1,0.6,1.6,0.6c0.6,0,1.2-0.2,1.6-0.7l20.7-21C58.5,32.7,58.5,31.3,57.6,30.4z"></path>
                             </svg>
                         </button>

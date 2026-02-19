@@ -8,7 +8,6 @@
  * - Full form testing capabilities
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { Placeholder, Spinner } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
 import { useEffect } from 'react';
@@ -146,50 +145,29 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 					<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
 				)}
 				{!hasPostType ? (
-					<Placeholder
-						icon="edit"
-						label={__('Create Post (VX)', 'voxel-fse')}
-						instructions={__(
-							'Select a post type in the block settings to configure this form.',
-							'voxel-fse'
-						)}
-					>
+					<div className="ts-no-posts">
+						<p>{__('Select a post type in the block settings to configure this form.', 'voxel-fse')}</p>
 						{postTypes.length === 0 && (
-							<div className="voxel-no-post-types-warning">
-								{__(
-									'No Voxel post types found. Make sure Voxel theme is active.',
-									'voxel-fse'
-								)}
-							</div>
+							<p>{__('No Voxel post types found. Make sure Voxel theme is active.', 'voxel-fse')}</p>
 						)}
-					</Placeholder>
+					</div>
 				) : (
 					<>
-						{/* Phase 4: Show loading state while fetching fields */}
+						{/* Show loading state while fetching fields */}
 						{isLoading ? (
-							<Placeholder
-								icon="edit"
-								label={__('Loading form fields...', 'voxel-fse')}
-							>
-								<Spinner />
-							</Placeholder>
+							<div className="ts-no-posts">
+								<span className="ts-loader"></span>
+							</div>
 						) : error ? (
-							<Placeholder
-								icon="warning"
-								label={__('Error loading form', 'voxel-fse')}
-								instructions={error}
-							/>
+							<div className="ts-no-posts">
+								<p>{__('Error loading form: ', 'voxel-fse')}{error}</p>
+							</div>
 						) : fieldsConfig.length === 0 ? (
-							<Placeholder
-								icon="info"
-								label={__('No fields configured', 'voxel-fse')}
-								instructions={__(
-									'This post type has no fields configured yet. Add fields in Voxel > Post Types.',
-									'voxel-fse'
-								)}
-							/>
+							<div className="ts-no-posts">
+								<p>{__('No fields configured for this post type.', 'voxel-fse')}</p>
+							</div>
 						) : (
-							/* Phase 4: Render interactive CreatePostForm - Same as frontend! */
+							/* Render interactive CreatePostForm - Same as frontend! */
 							<CreatePostForm
 								attributes={attributes}
 								fieldsConfig={fieldsConfig}
