@@ -102,9 +102,9 @@ function normalizeConfig(raw: any): UserbarVxConfig {
 /**
  * Build attributes from vxconfig
  */
-function buildAttributes(config: UserbarVxConfig): UserbarAttributes {
+function buildAttributes(config: UserbarVxConfig, blockId: string): any {
 	return {
-		blockId: '',
+		blockId,
 		items: config.items || [],
 		icons: config.icons || {
 			downArrow: { library: '', value: '' },
@@ -115,16 +115,16 @@ function buildAttributes(config: UserbarVxConfig): UserbarAttributes {
 			inbox: { library: '', value: '' },
 			loadMore: { library: '', value: '' },
 		},
-		itemsAlign: config.settings?.itemsAlign || 'left',
+		itemsAlign: config.settings?.itemsAlign || 'left' as any,
 		verticalOrientation: config.settings?.verticalOrientation || false,
 		verticalOrientationTablet:
 			config.settings?.verticalOrientationTablet || false,
 		verticalOrientationMobile:
 			config.settings?.verticalOrientationMobile || false,
-		itemContentAlign: config.settings?.itemContentAlign || 'left',
+		itemContentAlign: config.settings?.itemContentAlign || 'left' as any,
 		itemGap: 0,
-		itemMargin: { top: '', right: '', bottom: '', left: '' },
-		itemPadding: { top: '', right: '', bottom: '', left: '' },
+		itemMargin: { top: '', right: '', bottom: '', left: '', unit: 'px' } as any,
+		itemPadding: { top: '', right: '', bottom: '', left: '', unit: 'px' } as any,
 		itemBackground: '',
 		itemBackgroundHover: '#fff',
 		itemBorderRadius: 0,
@@ -161,10 +161,11 @@ function buildAttributes(config: UserbarVxConfig): UserbarAttributes {
  */
 interface UserbarWrapperProps {
 	config: UserbarVxConfig;
+	blockId: string;
 }
 
-function UserbarWrapper({ config }: UserbarWrapperProps) {
-	const attributes = buildAttributes(config);
+function UserbarWrapper({ config, blockId }: UserbarWrapperProps) {
+	const attributes = buildAttributes(config, blockId);
 
 	return (
 		<UserbarComponent
@@ -197,12 +198,50 @@ function initUserbars() {
 			return;
 		}
 
+		// Extract blockId from container className (e.g. "voxel-fse-userbar-afc5da96-...")
+		const blockIdMatch = container.className.match(/voxel-fse-userbar-([a-f0-9-]{36})/);
+		const blockId = blockIdMatch ? blockIdMatch[1] : 'default';
+
 		// Mark as hydrated
 		container.dataset.hydrated = 'true';
 
+		// Preserve <style> elements before createRoot replaces all children.
+		// save.tsx outputs responsive CSS (label visibility, component visibility,
+		// AdvancedTab styles) as <style> tags inside the container. createRoot()
+		// destroys these when React mounts. Move them before the container as siblings.
+		const styleElements = container.querySelectorAll<HTMLStyleElement>(':scope > style');
+		styleElements.forEach((style) => {
+			container.parentNode?.insertBefore(style, container);
+		});
+
+		// Prevent Voxel's render_static_popups (commons.js) from mounting Vue
+		// on .ts-popup-component elements inside this React tree.
+		//
+		// RACE CONDITION: Voxel's commons.js is deferred, so it runs after
+		// React commits DOM. MutationObserver fires synchronously during
+		// DOM mutation, so we can mark elements BEFORE Voxel sees them.
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of Array.from(mutation.addedNodes)) {
+					if (node instanceof HTMLElement) {
+						if (node.classList.contains('ts-popup-component')) {
+							(node as any).__vue_app__ = true;
+						}
+						node.querySelectorAll('.ts-popup-component').forEach((el) => {
+							(el as any).__vue_app__ = true;
+						});
+					}
+				}
+			}
+		});
+		observer.observe(container, { childList: true, subtree: true });
+
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<UserbarWrapper config={config} />);
+		root.render(<UserbarWrapper config={config} blockId={blockId} />);
+
+		// Disconnect observer after initial render is committed
+		requestAnimationFrame(() => observer.disconnect());
 	});
 }
 
@@ -272,3 +311,37 @@ window.render_voxel_cart = () => {
 	// Re-running initUserbars will update any new cart wrappers
 	initUserbars();
 };
+
+/**
+ * Intercept render_static_popups to prevent Voxel's Vue from mounting
+ * on .ts-popup-component elements inside FSE blocks.
+ *
+ * ROOT CAUSE: Voxel's commons.js (deferred) defines render_static_popups()
+ * which queries ALL .ts-popup-component elements and mounts Vue apps,
+ * destroying React's DOM elements and detaching React fibers.
+ *
+ * TIMING: Our frontend.js loads before commons.js (deferred), so a simple
+ * override gets overwritten. We use Object.defineProperty with a setter trap
+ * to wrap whatever function commons.js assigns.
+ */
+let _renderStaticPopups: (() => void) | undefined;
+Object.defineProperty(window, 'render_static_popups', {
+	configurable: true,
+	get() {
+		return () => {
+			// Mark FSE popup-components so Voxel's Vue skips them
+			document.querySelectorAll('.voxel-fse-userbar .ts-popup-component, .voxel-fse-navbar .ts-popup-component').forEach((el) => {
+				if (!(el as any).__vue_app__) {
+					(el as any).__vue_app__ = true;
+				}
+			});
+			// Call Voxel's original for non-FSE popup components
+			if (typeof _renderStaticPopups === 'function') {
+				_renderStaticPopups();
+			}
+		};
+	},
+	set(fn: () => void) {
+		_renderStaticPopups = fn;
+	},
+});

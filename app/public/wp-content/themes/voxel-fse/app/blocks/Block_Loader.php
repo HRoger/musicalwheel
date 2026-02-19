@@ -155,6 +155,11 @@ class Block_Loader
         // Priority 50 to run after all block scripts are registered
         add_action('enqueue_block_editor_assets', [__CLASS__, 'inject_editor_config_data'], 50);
 
+        // Inject Voxel icon picker config in block editor
+        // Required by AdvancedIconControl / IconPickerControl for icon library modal
+        // Priority 50 to run alongside other config injections
+        add_action('enqueue_block_editor_assets', [__CLASS__, 'inject_icon_picker_config'], 50);
+
         // Enqueue CodeMirror for custom CSS code editor in AdvancedTab
         // Priority 30 to run at same time as other editor assets
         add_action('enqueue_block_editor_assets', [__CLASS__, 'enqueue_code_editor_assets'], 30);
@@ -410,6 +415,14 @@ class Block_Loader
         if (wp_style_is('elementor-icons', 'registered')) {
             wp_enqueue_style('elementor-icons');
         }
+
+        // Line Awesome icons — needed for icon library previews in editor and block output
+        // Loads in both main page AND iframe via enqueue_block_assets hook
+        $la_url = trailingslashit(get_template_directory_uri()) . 'assets/icons/line-awesome/line-awesome.css';
+        if (!wp_style_is('voxel-line-awesome', 'registered')) {
+            wp_register_style('voxel-line-awesome', $la_url, [], '1.3.0');
+        }
+        wp_enqueue_style('voxel-line-awesome');
 
         // Mark individual Voxel CSS handles as "done" so WordPress doesn't load them
         // again when resolving per-block style_handles dependencies in the iframe.
@@ -1415,6 +1428,91 @@ CSS;
         wp_add_inline_script(
             'wp-blocks',
             'window.__voxelFseEditorConfig = ' . $json . ';',
+            'before'
+        );
+    }
+
+    /**
+     * Inject Voxel icon picker config into the block editor.
+     *
+     * Sets window.Voxel_Icon_Picker_Config so AdvancedIconControl and
+     * IconPickerControl can open the icon library modal.
+     *
+     * Evidence:
+     * - Voxel parent: themes/voxel/app/modules/elementor/controllers/elementor-controller.php:259-355
+     * - Voxel parent: themes/voxel/templates/backend/icon-picker.php (sets window global)
+     * - FSE taxonomy: app/controllers/fse-taxonomy-icon-picker-controller.php:62-111
+     */
+    public static function inject_icon_picker_config()
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        $config = [];
+
+        // Try Elementor icons manager first (if Elementor is active)
+        if (class_exists('\Elementor\Plugin')) {
+            $config = \Elementor\Icons_Manager::get_icon_manager_tabs();
+        } else {
+            // Fallback: Build config with Line Awesome if enabled in Voxel settings
+            if (function_exists('\Voxel\get') && \Voxel\get('settings.icons.line_awesome.enabled')) {
+                $base_url = trailingslashit(get_template_directory_uri()) . 'assets/icons/line-awesome/';
+
+                $config['la-regular'] = [
+                    'name'          => 'la-regular',
+                    'label'         => __('Line Awesome - Regular', 'voxel-backend'),
+                    'url'           => $base_url . 'line-awesome.css',
+                    'enqueue'       => [$base_url . 'line-awesome.css'],
+                    'prefix'        => 'la-',
+                    'displayPrefix' => 'lar',
+                    'labelIcon'     => 'fab fa-font-awesome-alt',
+                    'ver'           => '1.3.0',
+                    'fetchJson'     => $base_url . 'line-awesome-regular.js',
+                    'native'        => false,
+                ];
+
+                $config['la-solid'] = [
+                    'name'          => 'la-solid',
+                    'label'         => __('Line Awesome - Solid', 'voxel-backend'),
+                    'url'           => $base_url . 'line-awesome.css',
+                    'enqueue'       => [$base_url . 'line-awesome.css'],
+                    'prefix'        => 'la-',
+                    'displayPrefix' => 'las',
+                    'labelIcon'     => 'fab fa-font-awesome-alt',
+                    'ver'           => '1.3.0',
+                    'fetchJson'     => $base_url . 'line-awesome-solid.js',
+                    'native'        => false,
+                ];
+
+                $config['la-brands'] = [
+                    'name'          => 'la-brands',
+                    'label'         => __('Line Awesome - Brands', 'voxel-backend'),
+                    'url'           => $base_url . 'line-awesome.css',
+                    'enqueue'       => [$base_url . 'line-awesome.css'],
+                    'prefix'        => 'la-',
+                    'displayPrefix' => 'lab',
+                    'labelIcon'     => 'fab fa-font-awesome-alt',
+                    'ver'           => '1.3.0',
+                    'fetchJson'     => $base_url . 'line-awesome-brands.js',
+                    'native'        => false,
+                ];
+            }
+        }
+
+        if (empty($config)) {
+            return;
+        }
+
+        $json = wp_json_encode($config);
+        if ($json === false) {
+            return;
+        }
+
+        // Inject as window global - matches Voxel parent's icon-picker.php pattern
+        wp_add_inline_script(
+            'wp-blocks',
+            'window.Voxel_Icon_Picker_Config = ' . $json . ';',
             'before'
         );
     }
@@ -4541,11 +4639,10 @@ JAVASCRIPT;
         }
 
         // 3. Handle Loop Element
-        if (!empty($attributes['loopEnabled']) && !empty($attributes['loopSource'])) {
+        // Check loopSource directly — loopEnabled is set by VoxelTab but may be missing
+        // on blocks configured before loopEnabled was wired into onSave
+        if (!empty($attributes['loopSource'])) {
             require_once __DIR__ . '/shared/loop-processor.php';
-            // We need the raw inner content if it's a dynamic block,
-            // but for static blocks, $block_content is the saved HTML.
-            // Loop_Processor::render_looped will re-run Voxel\render() on the content.
             return Loop_Processor::render_looped($attributes, $block_content);
         }
 
@@ -4566,8 +4663,10 @@ JAVASCRIPT;
         } elseif ($block_name === 'navbar' && $block_id) {
             $block_content = self::apply_navbar_styles($block_content, $attributes, $block_id);
             $block_content = self::inject_navbar_config($block_content, $attributes);
+            $block_content = self::expand_item_loops($block_content, 'manualItems', 'script');
         } elseif ($block_name === 'userbar' && $block_id) {
             $block_content = self::apply_userbar_styles($block_content, $attributes, $block_id);
+            $block_content = self::expand_item_loops($block_content, 'items', 'script');
         } elseif ($block_name === 'messages' && $block_id) {
             $block_content = self::apply_messages_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'create-post' && $block_id) {
@@ -4591,6 +4690,7 @@ JAVASCRIPT;
             $block_content = self::apply_image_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'advanced-list' && $block_id) {
             $block_content = self::apply_advanced_list_styles($block_content, $attributes, $block_id);
+            $block_content = self::expand_item_loops($block_content, 'items', 'script');
         } elseif ($block_name === 'product-price' && $block_id) {
             $block_content = self::apply_product_price_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'current-plan' && $block_id) {
@@ -4603,8 +4703,10 @@ JAVASCRIPT;
             $block_content = self::apply_ring_chart_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'nested-accordion' && $block_id) {
             $block_content = self::apply_nested_accordion_styles($block_content, $attributes, $block_id);
+            $block_content = self::expand_item_loops($block_content, 'items', 'attr');
         } elseif ($block_name === 'nested-tabs' && $block_id) {
             $block_content = self::apply_nested_tabs_styles($block_content, $attributes, $block_id);
+            $block_content = self::expand_item_loops($block_content, 'tabs', 'attr');
         } elseif ($block_name === 'orders' && $block_id) {
             $block_content = self::apply_orders_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'quick-search' && $block_id) {
@@ -5020,6 +5122,174 @@ JAVASCRIPT;
             '<script type="text/json" class="vxconfig">' . $fresh_json . '</script>',
             $block_content
         );
+
+        return $block_content;
+    }
+
+    /**
+     * Extract loop tag, limit, offset from a repeater item regardless of storage format.
+     *
+     * Handles three formats:
+     * - Flat: loopSource + loopProperty (userbar, navbar, advanced-list)
+     * - Nested loop: loop.source as full tag (nested-accordion)
+     * - Nested loopConfig: loopConfig.loopSource + loopConfig.loopProperty (nested-tabs)
+     *
+     * @param array $item A single repeater item from vxconfig
+     * @return array|null ['tag' => '@source(property)', 'limit' => int|null, 'offset' => int|null] or null
+     */
+    public static function get_item_loop_config($item)
+    {
+        // Format 1: Flat (userbar, navbar, advanced-list)
+        if (!empty($item['loopSource']) && is_string($item['loopSource'])) {
+            $source = $item['loopSource'];
+            $property = $item['loopProperty'] ?? '';
+            $tag = $property ? "@{$source}({$property})" : "@{$source}";
+            return [
+                'tag'    => $tag,
+                'limit'  => isset($item['loopLimit']) && is_numeric($item['loopLimit']) ? absint($item['loopLimit']) : null,
+                'offset' => isset($item['loopOffset']) && is_numeric($item['loopOffset']) ? absint($item['loopOffset']) : null,
+            ];
+        }
+
+        // Format 2: Nested loop object (nested-accordion) — source is already a full tag
+        if (!empty($item['loop']['source']) && is_string($item['loop']['source'])) {
+            return [
+                'tag'    => $item['loop']['source'],
+                'limit'  => isset($item['loop']['limit']) && is_numeric($item['loop']['limit']) ? absint($item['loop']['limit']) : null,
+                'offset' => isset($item['loop']['offset']) && is_numeric($item['loop']['offset']) ? absint($item['loop']['offset']) : null,
+            ];
+        }
+
+        // Format 3: Nested loopConfig object (nested-tabs)
+        if (!empty($item['loopConfig']['loopSource']) && is_string($item['loopConfig']['loopSource'])) {
+            $source = $item['loopConfig']['loopSource'];
+            $property = $item['loopConfig']['loopProperty'] ?? '';
+            $tag = $property ? "@{$source}({$property})" : "@{$source}";
+            return [
+                'tag'    => $tag,
+                'limit'  => isset($item['loopConfig']['loopLimit']) && is_numeric($item['loopConfig']['loopLimit']) ? absint($item['loopConfig']['loopLimit']) : null,
+                'offset' => isset($item['loopConfig']['loopOffset']) && is_numeric($item['loopConfig']['loopOffset']) ? absint($item['loopConfig']['loopOffset']) : null,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Expand per-item loop configurations in vxconfig.
+     *
+     * Mirrors Voxel's Repeater_Control::get_value() (repeater-control.php:22-40).
+     * For each item with loop config, calls Looper::run() to expand into N items.
+     * Items without loop config pass through unchanged.
+     *
+     * @param string $block_content   Rendered block HTML
+     * @param string $items_key       Key in vxconfig JSON (e.g. 'items', 'manualItems', 'tabs')
+     * @param string $vxconfig_format 'script' for <script class="vxconfig">, 'attr' for data-vxconfig
+     * @return string Modified block HTML with expanded items
+     */
+    private static function expand_item_loops($block_content, $items_key, $vxconfig_format = 'script')
+    {
+        // Guard: Voxel Looper must be available
+        if (!class_exists('\Voxel\Dynamic_Data\Looper')) {
+            return $block_content;
+        }
+
+        // 1. Extract vxconfig JSON
+        $vxconfig_json = '';
+        if ($vxconfig_format === 'script') {
+            if (!preg_match('/<script\s+type="text\/json"\s+class="vxconfig"[^>]*>(.*?)<\/script>/s', $block_content, $matches)) {
+                return $block_content;
+            }
+            $vxconfig_json = $matches[1];
+        } elseif ($vxconfig_format === 'attr') {
+            if (!preg_match('/data-vxconfig="([^"]*)"/', $block_content, $matches)) {
+                return $block_content;
+            }
+            $vxconfig_json = htmlspecialchars_decode($matches[1], ENT_QUOTES);
+        }
+
+        $vxconfig = json_decode($vxconfig_json, true);
+        if (!is_array($vxconfig) || empty($vxconfig[$items_key]) || !is_array($vxconfig[$items_key])) {
+            return $block_content;
+        }
+
+        // 2. Check if any item has loop config (skip processing if none)
+        $has_loops = false;
+        foreach ($vxconfig[$items_key] as $item) {
+            if (self::get_item_loop_config($item) !== null) {
+                $has_loops = true;
+                break;
+            }
+        }
+        if (!$has_loops) {
+            return $block_content;
+        }
+
+        // 3. Expand items
+        $expanded_items = [];
+        foreach ($vxconfig[$items_key] as $item) {
+            $loop_config = self::get_item_loop_config($item);
+
+            if ($loop_config === null) {
+                // No loop — pass through as-is
+                $expanded_items[] = $item;
+                continue;
+            }
+
+            // Validate the loop tag
+            $parsed = \Voxel\Dynamic_Data\Looper::parse_loopable(
+                $loop_config['tag'],
+                \Voxel\_get_default_render_groups()
+            );
+
+            if ($parsed === null) {
+                // Invalid loop tag — pass through unchanged
+                $expanded_items[] = $item;
+                continue;
+            }
+
+            // Run the loop — each iteration pushes a clone of the item
+            \Voxel\Dynamic_Data\Looper::run($loop_config['tag'], [
+                'limit'    => $loop_config['limit'],
+                'offset'   => $loop_config['offset'],
+                'callback' => function($index) use ($item, &$expanded_items) {
+                    // Clone item and strip loop config to prevent re-expansion
+                    $cloned = $item;
+                    unset($cloned['loopSource'], $cloned['loopProperty'], $cloned['loopLimit'], $cloned['loopOffset']);
+                    unset($cloned['loop']);
+                    unset($cloned['loopConfig']);
+
+                    // Re-evaluate dynamic data in item fields (title, label, etc.)
+                    // by running Voxel\render() on string fields
+                    foreach ($cloned as $key => $value) {
+                        if (is_string($value) && strpos($value, '@') !== false) {
+                            $cloned[$key] = \Voxel\render($value);
+                        }
+                    }
+
+                    $expanded_items[] = $cloned;
+                },
+            ]);
+        }
+
+        // 4. Replace vxconfig with expanded items
+        $vxconfig[$items_key] = $expanded_items;
+        $fresh_json = wp_json_encode($vxconfig);
+
+        if ($vxconfig_format === 'script') {
+            $block_content = preg_replace(
+                '/<script\s+type="text\/json"\s+class="vxconfig"[^>]*>.*?<\/script>/s',
+                '<script type="text/json" class="vxconfig">' . $fresh_json . '</script>',
+                $block_content
+            );
+        } elseif ($vxconfig_format === 'attr') {
+            $escaped_json = esc_attr($fresh_json);
+            $block_content = preg_replace(
+                '/data-vxconfig="[^"]*"/',
+                'data-vxconfig="' . $escaped_json . '"',
+                $block_content
+            );
+        }
 
         return $block_content;
     }

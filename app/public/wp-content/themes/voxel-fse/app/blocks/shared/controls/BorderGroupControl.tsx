@@ -52,7 +52,10 @@ export default function BorderGroupControl({
     onChange,
     hideRadius = false,
 }: BorderGroupControlProps) {
-    const { borderType, borderWidth, borderColor, borderRadius } = value;
+    const { borderType: rawBorderType, borderWidth, borderColor, borderRadius } = value;
+
+    // Normalize 'default' to '' for consistent comparison with BORDER_TYPES options
+    const borderType = rawBorderType === 'default' ? '' : rawBorderType;
 
     const hasBorder = borderType && borderType !== 'none' && borderType !== '';
 

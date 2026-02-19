@@ -1011,14 +1011,16 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 				/>
 
 				{/* CSS ID - L781-L797 - with Voxel dynamic tags support */}
-				<DynamicTagTextControl
-					label={__('CSS ID', 'voxel-fse')}
-					value={attributes.elementId || ''}
-					onChange={(value: string) => setAttributes({ elementId: value })}
-					help={__('Add your custom id WITHOUT the Pound key. e.g: my-id', 'voxel-fse')}
-					placeholder="my-id"
-					context="post"
-				/>
+				<div style={{ marginTop: '10px' }}>
+					<DynamicTagTextControl
+						label={__('CSS ID', 'voxel-fse')}
+						value={attributes.elementId || ''}
+						onChange={(value: string) => setAttributes({ elementId: value })}
+						help={__('Add your custom id WITHOUT the Pound key. e.g: my-id', 'voxel-fse')}
+						placeholder="my-id"
+						context="post"
+					/>
+				</div>
 
 				{/* CSS Classes - L799-L814 - with Voxel dynamic tags support */}
 				<DynamicTagTextControl

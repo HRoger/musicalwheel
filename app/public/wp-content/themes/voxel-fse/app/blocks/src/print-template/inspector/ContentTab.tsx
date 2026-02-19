@@ -33,14 +33,14 @@ export function ContentTab({
 		>
 			<AccordionPanel
 				id="print-template"
-				title={__('Print an Elementor template', 'voxel-fse')}
+				title={__('Print a template', 'voxel-fse')}
 			>
-				{/* Single unified template selector - matches Voxel's voxel-post-select */}
+				{/* Template selector - searches pages, reusable blocks, and FSE templates */}
 				<PostSelectControl
 					label={__('Template', 'voxel-fse')}
 					value={attributes.templateId}
 					onChange={(value) => setAttributes({ templateId: value })}
-					postTypes={['page', 'wp_block', 'elementor_library']}
+					postTypes={['page', 'wp_block', 'wp_template', 'wp_template_part']}
 					placeholder={__('Search templates', 'voxel-fse')}
 					enableDynamicTags={true}
 					context="post"

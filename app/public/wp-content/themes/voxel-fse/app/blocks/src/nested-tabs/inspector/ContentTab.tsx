@@ -363,7 +363,7 @@ export function ContentTab({
 						setLoopModalOpen(false);
 						setEditingTabIndex(null);
 					}}
-					initialConfig={tabs[editingTabIndex]?.loopConfig || null}
+					config={tabs[editingTabIndex]?.loopConfig || { loopSource: '', loopProperty: '', loopLimit: '', loopOffset: '' }}
 					onSave={handleLoopSave}
 				/>
 			)}

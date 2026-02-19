@@ -41,6 +41,7 @@ export interface NavbarManualItem {
 	url: string;
 	isExternal: boolean;
 	nofollow: boolean;
+	customAttributes?: string;
 	isActive: boolean;
 	// Loop & Visibility
 	visibilityRules: VisibilityRule[];

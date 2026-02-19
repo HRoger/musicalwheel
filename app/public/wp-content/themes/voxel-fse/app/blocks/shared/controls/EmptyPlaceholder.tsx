@@ -51,6 +51,8 @@ export function EmptyPlaceholder({
 				fontSize: '13px',
 				height: '45px',
 				width: '100%',
+				minWidth: '100%',
+				boxSizing: 'border-box',
 				...style,
 			}}
 		>

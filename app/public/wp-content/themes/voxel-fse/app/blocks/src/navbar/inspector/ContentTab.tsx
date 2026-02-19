@@ -19,18 +19,21 @@ import {
     RangeControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     AccordionPanelGroup,
     AccordionPanel,
     SectionHeading,
     AdvancedIconControl,
     DynamicTagTextControl,
+    LinkSearchControl,
     RelationControl,
     RepeaterControl,
     generateRepeaterId,
     LoopVisibilityControl,
+    LoopElementModal,
 } from '@shared/controls';
+import type { LoopConfig } from '@shared/controls/LoopElementModal';
 import type { IconValue } from '@shared/types';
 import type { NavbarAttributes, NavbarManualItem } from '../types';
 
@@ -49,6 +52,9 @@ export function ContentTab({
     setAttributes,
     menuLocationOptions,
 }: ContentTabProps): JSX.Element {
+    // Loop modal state
+    const [loopModalItemIndex, setLoopModalItemIndex] = useState<number | null>(null);
+
     // Force Icons panel to remount when source changes by using key
     // This fixes WordPress PanelBody height calculation issue with dynamic content
     const iconsPanelKey = `icons-${attributes.source}`;
@@ -430,7 +436,7 @@ export function ContentTab({
                                 rowVisibility: 'show',
                             } as NavbarManualItem)}
                             getItemLabel={(item: NavbarManualItem, index: number) => item.text || `Item #${index + 1}`}
-                            renderContent={({ item, onUpdate }: { item: NavbarManualItem, onUpdate: (update: Partial<NavbarManualItem>) => void }) => (
+                            renderContent={({ item, index, onUpdate }: { item: NavbarManualItem, index: number, onUpdate: (update: Partial<NavbarManualItem>) => void }) => (
                                 <>
                                     <DynamicTagTextControl
                                         label={__('Title', 'voxel-fse')}
@@ -444,17 +450,21 @@ export function ContentTab({
                                         onChange={(value: IconValue | null) => onUpdate({ icon: value || { library: '', value: '' } })}
                                     />
 
-                                    <DynamicTagTextControl
+                                    <LinkSearchControl
                                         label={__('Link', 'voxel-fse')}
-                                        value={item.url}
-                                        onChange={(value: string) => onUpdate({ url: value })}
-                                    />
-
-                                    <ToggleControl
-                                        label={__('Open in new tab', 'voxel-fse')}
-                                        checked={item.isExternal}
-                                        onChange={(value: boolean) => onUpdate({ isExternal: value })}
-                                        __nextHasNoMarginBottom
+                                        value={{
+                                            url: item.url,
+                                            isExternal: item.isExternal,
+                                            nofollow: item.nofollow,
+                                            customAttributes: item.customAttributes,
+                                        }}
+                                        onChange={(link) => onUpdate({
+                                            url: link.url,
+                                            isExternal: link.isExternal,
+                                            nofollow: link.nofollow,
+                                            customAttributes: link.customAttributes,
+                                        })}
+                                        enableDynamicTags
                                     />
 
                                     <ToggleControl
@@ -475,7 +485,7 @@ export function ContentTab({
                                         loopProperty={item.loopProperty}
                                         loopLimit={item.loopLimit}
                                         loopOffset={item.loopOffset}
-                                        onEditLoop={() => console.log('Edit loop', item.id)}
+                                        onEditLoop={() => setLoopModalItemIndex(index)}
                                         onClearLoop={() => onUpdate({ loopSource: undefined, loopProperty: undefined, loopLimit: undefined, loopOffset: undefined })}
                                         onLoopLimitChange={(value: string) => onUpdate({ loopLimit: value })}
                                         onLoopOffsetChange={(value: string) => onUpdate({ loopOffset: value })}
@@ -486,6 +496,30 @@ export function ContentTab({
                     </AccordionPanel>
                 )}
             </AccordionPanelGroup>
+
+            {/* Loop Element Modal */}
+            {loopModalItemIndex !== null && (
+                <LoopElementModal
+                    isOpen={true}
+                    config={{
+                        loopSource: attributes.manualItems[loopModalItemIndex]?.loopSource || '',
+                        loopProperty: attributes.manualItems[loopModalItemIndex]?.loopProperty || '',
+                        loopLimit: attributes.manualItems[loopModalItemIndex]?.loopLimit || '',
+                        loopOffset: attributes.manualItems[loopModalItemIndex]?.loopOffset || '',
+                    }}
+                    onClose={() => setLoopModalItemIndex(null)}
+                    onSave={(newConfig: LoopConfig) => {
+                        const newItems = [...attributes.manualItems];
+                        newItems[loopModalItemIndex] = {
+                            ...newItems[loopModalItemIndex],
+                            loopSource: newConfig.loopSource,
+                            loopProperty: newConfig.loopProperty || '',
+                        };
+                        setAttributes({ manualItems: newItems });
+                        setLoopModalItemIndex(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

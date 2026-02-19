@@ -47,10 +47,10 @@ const deprecated = [
 ];
 
 // Register the block
-registerBlockType<NavbarAttributes>(metadata.name, {
+(registerBlockType as any)(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
 	deprecated,
-} as Parameters<typeof registerBlockType<NavbarAttributes>>[1]);
+} as any);

@@ -224,10 +224,12 @@ class FSE_Userbar_API_Controller extends FSE_Base_Controller {
 			return $menus;
 		}
 
-		// Check if Voxel's Popup_Menu_Walker exists
-		$walker_class = class_exists( '\\Voxel\\Utils\\Popup_Menu_Walker' )
-			? '\\Voxel\\Utils\\Popup_Menu_Walker'
-			: null;
+		// Use FSE walker (renders icons without Elementor) or fall back to Voxel's
+		$walker_class = null;
+		if ( class_exists( '\\Voxel\\Utils\\Popup_Menu_Walker' ) ) {
+			require_once VOXEL_FSE_PATH . '/app/utils/fse-popup-menu-walker.php';
+			$walker_class = '\\VoxelFSE\\Utils\\FSE_Popup_Menu_Walker';
+		}
 
 		foreach ( $locations as $location_slug => $menu_id ) {
 			if ( ! $menu_id ) {

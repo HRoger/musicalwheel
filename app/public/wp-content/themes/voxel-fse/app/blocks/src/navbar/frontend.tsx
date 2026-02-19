@@ -125,7 +125,7 @@ const DEFAULT_ICON: VoxelIcon = {
  *
  * Reference: themes/voxel/app/widgets/navbar.php control names
  */
-function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
+function normalizeConfig(raw: Record<string, unknown>): any {
 	// Helper for boolean normalization
 	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
@@ -155,7 +155,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 		if (val && typeof val === 'object') {
 			const iconObj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(iconObj.library, ''),
+				library: normalizeString(iconObj.library, '') as any,
 				value: normalizeString(iconObj.value, ''),
 			};
 		}
@@ -178,7 +178,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 						isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
 						nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
 						isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
-					};
+					} as any;
 				});
 			}
 			return [];
@@ -193,7 +193,7 @@ function normalizeConfig(raw: Record<string, unknown>): NavbarVxConfig {
 				isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
 				nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
 				isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
-			};
+			} as any;
 		});
 	};
 
@@ -331,9 +331,10 @@ interface InlineNavbarData {
 interface NavbarWrapperProps {
 	config: NavbarVxConfig;
 	inlineData?: InlineNavbarData | null;
+	blockId: string;
 }
 
-function NavbarWrapper({ config, inlineData }: NavbarWrapperProps) {
+function NavbarWrapper({ config, inlineData, blockId }: NavbarWrapperProps) {
 	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(
 		inlineData?.mainMenu || null
 	);
@@ -399,8 +400,8 @@ function NavbarWrapper({ config, inlineData }: NavbarWrapperProps) {
 	}, [inlineData, config.source, config.menuLocation, config.mobileMenuLocation]);
 
 	// Build attributes from config
-	const attributes: NavbarAttributes = {
-		blockId: '',
+	const attributes: any = {
+		blockId,
 		source: config.source,
 		menuLocation: config.menuLocation,
 		mobileMenuLocation: config.mobileMenuLocation,
@@ -475,13 +476,49 @@ function initNavbars() {
 			}
 		}
 
-		// Mark as hydrated and clear placeholder
+		// Extract blockId from container className (set by getAdvancedVoxelTabProps)
+		// Container has class "voxel-fse-navbar-{uuid}"
+		const blockIdMatch = container.className.match(/voxel-fse-navbar-([a-f0-9-]{36})/);
+		const blockId = blockIdMatch ? blockIdMatch[1] : 'default';
+
+		// Mark as hydrated
 		container.dataset.hydrated = 'true';
+
+		// Preserve <style> elements before createRoot replaces all children.
+		// save.tsx outputs responsive CSS as <style> tags inside the container.
+		const styleElements = container.querySelectorAll<HTMLStyleElement>(':scope > style');
+		styleElements.forEach((style) => {
+			container.parentNode?.insertBefore(style, container);
+		});
+
+		// Clear remaining placeholder content
 		container.innerHTML = '';
+
+		// Prevent Voxel's render_static_popups (commons.js) from mounting Vue
+		// on .ts-popup-component elements inside this React tree.
+		// MutationObserver fires synchronously during DOM mutation.
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of Array.from(mutation.addedNodes)) {
+					if (node instanceof HTMLElement) {
+						if (node.classList.contains('ts-popup-component')) {
+							(node as any).__vue_app__ = true;
+						}
+						node.querySelectorAll('.ts-popup-component').forEach((el) => {
+							(el as any).__vue_app__ = true;
+						});
+					}
+				}
+			}
+		});
+		observer.observe(container, { childList: true, subtree: true });
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<NavbarWrapper config={config} inlineData={inlineData} />);
+		root.render(<NavbarWrapper config={config} inlineData={inlineData} blockId={blockId} />);
+
+		// Disconnect observer after initial render is committed
+		requestAnimationFrame(() => observer.disconnect());
 	});
 }
 

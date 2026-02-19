@@ -130,11 +130,18 @@ export default function ColorPickerControl({
 		});
 
 		const handleClickOutside = (event: MouseEvent) => {
-			if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-				if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-					setIsOpen(false);
-				}
+			const target = event.target as Node;
+			// Don't close if clicking inside our popup or button
+			if (popupRef.current?.contains(target) || buttonRef.current?.contains(target)) {
+				return;
 			}
+			// Don't close if clicking inside a WordPress Popover (e.g. custom color picker)
+			// These render in portals outside our DOM tree
+			const popoverEl = (target as Element).closest?.('.components-popover');
+			if (popoverEl) {
+				return;
+			}
+			setIsOpen(false);
 		};
 
 		window.addEventListener('resize', updatePosition);

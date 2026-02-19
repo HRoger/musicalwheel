@@ -110,6 +110,9 @@ export { default as DynamicTagTextControl } from './DynamicTagTextControl';
 export { default as DynamicTagTextareaControl } from './DynamicTagTextareaControl';
 export { default as DynamicTagDateTimeControl } from './DynamicTagDateTimeControl';
 
+// Link Controls
+export { default as LinkSearchControl, type LinkValue } from './LinkSearchControl';
+
 // Slider Controls
 export { default as RangeSliderControl } from './RangeSliderControl';
 export { default as SliderControl } from './SliderControl';

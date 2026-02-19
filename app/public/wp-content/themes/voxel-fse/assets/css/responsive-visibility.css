@@ -39,6 +39,23 @@
 }
 
 /* Hide editor-only empty state placeholder on frontend (but keep visible in block editor) */
-body:not(.block-editor-page) .voxel-empty-placeholder {
+/* Must exclude both parent frame (.block-editor-page) and editor iframe (.block-editor-iframe__body) */
+body:not(.block-editor-page):not(.block-editor-iframe__body) .voxel-empty-placeholder {
 	display: none !important;
+}
+
+/**
+ * InlineSvg wrapper fix — Voxel uses `.ts-comp-icon>svg` (child selector) for icon sizing.
+ * Our InlineSvg component wraps SVGs in `<span style="display:contents">` to avoid React
+ * DOM errors. The span is visually transparent but still exists in the DOM tree, so the
+ * `>svg` child selector breaks. This rule bridges the gap.
+ *
+ * Only .ts-comp-icon uses a child selector (>svg). All other icon containers
+ * (.ts-item-icon, etc.) use descendant selectors which work through the wrapper.
+ */
+.ts-comp-icon > span[aria-hidden="true"] > svg {
+	height: var(--ts-icon-size);
+	width: var(--ts-icon-size);
+	transition: all .3s ease;
+	fill: var(--ts-icon-color);
 }

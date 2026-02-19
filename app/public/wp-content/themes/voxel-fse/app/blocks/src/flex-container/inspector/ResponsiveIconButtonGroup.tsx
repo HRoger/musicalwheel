@@ -34,7 +34,7 @@ export function ResponsiveIconButtonGroup({
 	note,
 }: ResponsiveIconButtonGroupProps): JSX.Element {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => {
+	const wpDeviceType = (useSelect as any)((select: any) => {
 		const editPostStore = select('core/edit-post');
 		if (editPostStore && typeof (editPostStore as any).getPreviewDeviceType === 'function') {
 			return (editPostStore as any).getPreviewDeviceType();
@@ -115,7 +115,6 @@ export function ResponsiveIconButtonGroup({
 						{label}
 					</span>
 					<ResponsiveDropdownButton
-						currentDevice={currentDevice}
 						onDeviceChange={setCurrentDevice}
 					/>
 				</div>

@@ -20,6 +20,7 @@ import apiFetch from '@wordpress/api-fetch';
 import type { UserbarAttributes } from './types';
 import { InspectorTabs } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
+import { useExpandedLoopItems } from '@shared/utils/useExpandedLoopItems';
 import ContentTab from './inspector/ContentTab';
 import StyleTab from './inspector/StyleTab';
 import UserbarComponent from './shared/UserbarComponent';
@@ -38,9 +39,17 @@ export default function Edit({
 }: EditProps) {
 	const blockId = attributes.blockId || clientId;
 
+	// Expand items with loop configuration for editor preview
+	const { items: expandedItems } = useExpandedLoopItems({
+		items: attributes.items,
+	});
+
 	const [navMenus, setNavMenus] = useState<Array<{ value: string; label: string }>>([
 		{ value: '', label: __('Select menu', 'voxel-fse') },
 	]);
+
+	// Track when server config is loaded to trigger re-render (fixes avatar not showing on first load)
+	const [configLoaded, setConfigLoaded] = useState(false);
 
 	// Load nav menus and userbar config on mount
 	useEffect(() => {
@@ -89,6 +98,8 @@ export default function Edit({
 							avatarMarkup: typedConfig.user.avatarMarkup,
 						};
 					}
+					// Trigger re-render so UserbarComponent picks up the new config
+					setConfigLoaded(true);
 				}
 			} catch (error) {
 				console.error('Could not fetch userbar config:', error);
@@ -143,6 +154,33 @@ export default function Edit({
 		[advancedProps.responsiveCSS, userbarResponsiveCSS]
 	);
 
+	// Inject popup-specific CSS into parent frame for editor live preview.
+	// Popup elements are portaled to the parent frame's body, so CSS in the
+	// editor iframe doesn't reach them. Extract .voxel-popup-* rules and
+	// inject into the parent document.
+	useEffect(() => {
+		if (!combinedResponsiveCSS) return;
+
+		const popupCssLines = combinedResponsiveCSS
+			.split('\n')
+			.filter(line => line.includes('.voxel-popup-'));
+
+		if (popupCssLines.length === 0) return;
+
+		const styleId = `userbar-popup-css-${blockId}`;
+		let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+		if (!styleEl) {
+			styleEl = document.createElement('style');
+			styleEl.id = styleId;
+			document.head.appendChild(styleEl);
+		}
+		styleEl.textContent = popupCssLines.join('\n');
+
+		return () => {
+			styleEl?.remove();
+		};
+	}, [combinedResponsiveCSS, blockId]);
+
 	const blockProps = useBlockProps({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
@@ -189,8 +227,8 @@ export default function Edit({
 				<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
 			)}
 
-			{/* Editor Preview */}
-			<UserbarComponent attributes={attributes} context="editor" />
+			{/* Editor Preview — key changes when config loads to force re-render with avatar */}
+			<UserbarComponent key={configLoaded ? 'loaded' : 'loading'} attributes={{ ...attributes, items: expandedItems }} context="editor" />
 		</div>
 	);
 }

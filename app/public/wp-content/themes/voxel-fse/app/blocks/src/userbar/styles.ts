@@ -124,10 +124,10 @@ export function generateUserbarResponsiveCSS(
 	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a' => 'margin: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'
 	if (attributes.itemMargin) {
 		const m = attributes.itemMargin;
-		const unit = m.unit || 'px';
-		// Only apply if at least one value is set
+		// DimensionsControl values already include units (e.g. "10px"), so use them directly.
+		// Only fall back to "0" if a side is empty/undefined.
 		if (m.top || m.right || m.bottom || m.left) {
-			cssRules.push(`${selector} > ul > li > a { margin: ${m.top || 0}${unit} ${m.right || 0}${unit} ${m.bottom || 0}${unit} ${m.left || 0}${unit}; }`);
+			cssRules.push(`${selector} > ul > li > a { margin: ${m.top || '0px'} ${m.right || '0px'} ${m.bottom || '0px'} ${m.left || '0px'}; }`);
 		}
 	}
 
@@ -135,10 +135,9 @@ export function generateUserbarResponsiveCSS(
 	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};'
 	if (attributes.itemPadding) {
 		const p = attributes.itemPadding;
-		const unit = p.unit || 'px';
-		// Only apply if at least one value is set
+		// DimensionsControl values already include units (e.g. "10px"), so use them directly.
 		if (p.top || p.right || p.bottom || p.left) {
-			cssRules.push(`${selector} > ul > li > a { padding: ${p.top || 0}${unit} ${p.right || 0}${unit} ${p.bottom || 0}${unit} ${p.left || 0}${unit}; }`);
+			cssRules.push(`${selector} > ul > li > a { padding: ${p.top || '0px'} ${p.right || '0px'} ${p.bottom || '0px'} ${p.left || '0px'}; }`);
 		}
 	}
 
@@ -210,31 +209,31 @@ export function generateUserbarResponsiveCSS(
 	// Icon container size - user-bar.php:697
 	// Selector: '{{WRAPPER}} .ts-user-area .ts-comp-icon' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};'
 	if (attributes.iconContainerSize !== undefined) {
-		cssRules.push(`${selector} .ts-comp-icon { width: ${attributes.iconContainerSize}px; height: ${attributes.iconContainerSize}px; }`);
+		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSize}px; height: ${attributes.iconContainerSize}px; }`);
 	}
 	if (attributes.iconContainerSizeTablet !== undefined) {
-		tabletRules.push(`${selector} .ts-comp-icon { width: ${attributes.iconContainerSizeTablet}px; height: ${attributes.iconContainerSizeTablet}px; }`);
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSizeTablet}px; height: ${attributes.iconContainerSizeTablet}px; }`);
 	}
 	if (attributes.iconContainerSizeMobile !== undefined) {
-		mobileRules.push(`${selector} .ts-comp-icon { width: ${attributes.iconContainerSizeMobile}px; height: ${attributes.iconContainerSizeMobile}px; }`);
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSizeMobile}px; height: ${attributes.iconContainerSizeMobile}px; }`);
 	}
 
 	// Icon container border radius - user-bar.php:724
 	// Selector: '{{WRAPPER}} .ts-user-area .ts-comp-icon' => 'border-radius: {{SIZE}}{{UNIT}};'
 	if (attributes.iconContainerRadius !== undefined) {
-		cssRules.push(`${selector} .ts-comp-icon { border-radius: ${attributes.iconContainerRadius}px; }`);
+		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadius}px; }`);
 	}
 	if (attributes.iconContainerRadiusTablet !== undefined) {
-		tabletRules.push(`${selector} .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusTablet}px; }`);
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusTablet}px; }`);
 	}
 	if (attributes.iconContainerRadiusMobile !== undefined) {
-		mobileRules.push(`${selector} .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusMobile}px; }`);
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusMobile}px; }`);
 	}
 
 	// Icon container background - user-bar.php:735
 	// Selector: '{{WRAPPER}} .ts-user-area .ts-comp-icon' => 'background-color: {{VALUE}}'
 	if (attributes.iconContainerBackground) {
-		cssRules.push(`${selector} .ts-comp-icon { background-color: ${attributes.iconContainerBackground}; }`);
+		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { background-color: ${attributes.iconContainerBackground}; }`);
 	}
 
 	// Icon container background (hover) - user-bar.php:976
@@ -251,19 +250,20 @@ export function generateUserbarResponsiveCSS(
 	// Icon size - user-bar.php:755
 	// Selector: '{{WRAPPER}} .ts-user-area .ts-comp-icon' => '--ts-icon-size: {{SIZE}}{{UNIT}};'
 	if (attributes.iconSize !== undefined) {
-		cssRules.push(`${selector} .ts-comp-icon { --ts-icon-size: ${attributes.iconSize}px; }`);
+		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSize}px; }`);
 	}
 	if (attributes.iconSizeTablet !== undefined) {
-		tabletRules.push(`${selector} .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeTablet}px; }`);
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeTablet}px; }`);
 	}
 	if (attributes.iconSizeMobile !== undefined) {
-		mobileRules.push(`${selector} .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeMobile}px; }`);
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeMobile}px; }`);
 	}
 
 	// Icon color - user-bar.php:766
-	// Selector: '{{WRAPPER}} .ts-user-area .ts-comp-icon' => '--ts-icon-color: {{VALUE}}'
+	// Selector: '{{WRAPPER}} .ts-user-area > ul > li > a .ts-comp-icon' => '--ts-icon-color: {{VALUE}}'
+	// Must match Voxel's specificity (.ts-user-area > ul > li > a .ts-comp-icon)
 	if (attributes.iconColor) {
-		cssRules.push(`${selector} .ts-comp-icon { --ts-icon-color: ${attributes.iconColor}; }`);
+		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-color: ${attributes.iconColor}; }`);
 	}
 
 	// Icon color (hover) - user-bar.php:988
@@ -347,18 +347,16 @@ export function generateUserbarResponsiveCSS(
 		const itemSelector = `${selector} .elementor-repeater-item-${item._id}`;
 
 		// Label visibility controls (lines 220-250)
-		// Elementor pattern: generate CSS for each breakpoint when value differs from default (flex)
+		// Voxel base CSS defaults .ts_comp_label to display:none, so we must
+		// always emit the desktop rule when labelVisibility is true.
 		if (item.labelVisibility) {
-			const labelDefault = 'flex';
-			// Desktop
-			if (item.labelVisibilityDesktop && item.labelVisibilityDesktop !== labelDefault) {
-				cssRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityDesktop} !important; }`);
-			}
-			// Tablet — always generate if set, the media query cascade handles inheritance
+			// Desktop — always emit (base CSS is display:none)
+			cssRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityDesktop || 'flex'} !important; }`);
+			// Tablet
 			if (item.labelVisibilityTablet) {
 				tabletRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityTablet} !important; }`);
 			}
-			// Mobile — always generate if set
+			// Mobile
 			if (item.labelVisibilityMobile) {
 				mobileRules.push(`${itemSelector} .ts_comp_label { display: ${item.labelVisibilityMobile} !important; }`);
 			}
@@ -390,17 +388,19 @@ export function generateUserbarResponsiveCSS(
 
 	// Label typography - user-bar.php:891
 	// Selector: '{{WRAPPER}} .ts-user-area .ts_comp_label'
+	// Voxel base: `.ts-user-area>ul>li>a .ts_comp_label` = specificity 0-5-0
+	// Our selector must match or exceed that specificity to override.
 	if (attributes.labelTypography) {
 		const typographyCSS = generateTypographyCSS(attributes.labelTypography);
 		if (typographyCSS) {
-			cssRules.push(`${selector} .ts_comp_label { ${typographyCSS} }`);
+			cssRules.push(`${selector} > ul > li > a .ts_comp_label { ${typographyCSS} }`);
 		}
 	}
 
 	// Label color - user-bar.php:900
-	// Selector: '{{WRAPPER}} .ts-user-area .ts_comp_label' => 'color: {{VALUE}}'
+	// Selector must exceed Voxel's `.ts-user-area>ul>li>a .ts_comp_label` (0-5-0)
 	if (attributes.labelColor) {
-		cssRules.push(`${selector} .ts_comp_label { color: ${attributes.labelColor}; }`);
+		cssRules.push(`${selector} > ul > li > a .ts_comp_label { color: ${attributes.labelColor}; }`);
 	}
 
 	// Label color (hover) - user-bar.php:1000

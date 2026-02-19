@@ -32,6 +32,7 @@ require_once VOXEL_FSE_PATH . '/app/utils/theme-detector.php';
 require_once VOXEL_FSE_PATH . '/app/utils/admin-metabox.php';
 require_once VOXEL_FSE_PATH . '/app/utils/fse-template-editor.php';
 require_once VOXEL_FSE_PATH . '/app/utils/icon-processor.php';
+// Note: fse-popup-menu-walker.php is loaded on demand (extends Voxel's Popup_Menu_Walker)
 
 
 /**
@@ -361,6 +362,14 @@ new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 require_once VOXEL_FSE_PATH . '/app/controllers/fse-print-template-api-controller.php';
 
 new \VoxelFSE\Controllers\FSE_Print_Template_API_Controller();
+
+/**
+ * FSE Loop API Controller
+ * Provides REST endpoint for expanding per-item loop configurations in the editor.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-loop-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Loop_API_Controller();
 
 /**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme

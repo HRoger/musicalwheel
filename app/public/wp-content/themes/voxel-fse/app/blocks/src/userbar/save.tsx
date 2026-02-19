@@ -41,13 +41,13 @@ function createSaveFn(includePlaceholder: boolean) {
 			.join('\n');
 
 		// Build class list matching Voxel's user-bar pattern
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,
 			// Headless-ready: Visibility rules configuration
 			'data-visibility-behavior': attributes.visibilityBehavior || undefined,
-			'data-visibility-rules': attributes.visibilityRules?.length
+			'data-visibility-rules': ((attributes as any).visibilityRules as any)?.length
 				? JSON.stringify(attributes.visibilityRules)
 				: undefined,
 			// Headless-ready: Loop element configuration

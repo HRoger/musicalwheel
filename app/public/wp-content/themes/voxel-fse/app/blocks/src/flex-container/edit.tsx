@@ -48,8 +48,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	}, []);
 
 	// Check if block has inner blocks (to determine if preset selector should show)
-	const hasInnerBlocks = useSelect(
-		(select) => {
+	const hasInnerBlocks = (useSelect as any)(
+		(select: any) => {
 			const { getBlockCount } = select('core/block-editor') as {
 				getBlockCount: (clientId: string) => number;
 			};
@@ -75,7 +75,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	// Scroll position preservation when device type changes
 	// =================================================================
 	// Get current device type from WordPress
-	const currentDeviceType = useSelect((select) => {
+	const currentDeviceType = (useSelect as any)((select: any) => {
 		const editPostStore = select('core/edit-post');
 		if (editPostStore && typeof (editPostStore as any).getPreviewDeviceType === 'function') {
 			return (editPostStore as any).getPreviewDeviceType();

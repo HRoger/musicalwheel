@@ -159,7 +159,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 					label={__('Container Layout', 'voxel-fse')}
 					value={attributes.containerLayout || 'flexbox'}
 					options={containerLayoutOptions}
-					onChange={(value) => setAttributes({ containerLayout: value })}
+					onChange={(value: any) => setAttributes({ containerLayout: value })}
 					__nextHasNoMarginBottom
 				/>
 
@@ -168,7 +168,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 					label={__('Content Width', 'voxel-fse')}
 					value={attributes.contentWidthType || 'boxed'}
 					options={contentWidthOptions}
-					onChange={(value) => {
+					onChange={(value: any) => {
 						// Auto-set width values based on content width type
 						if (value === 'full') {
 							setAttributes({
@@ -402,7 +402,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 								{ label: __('Row', 'voxel-fse'), value: 'row' },
 								{ label: __('Column', 'voxel-fse'), value: 'column' },
 							]}
-							onChange={(value) => setAttributes({ gridAutoFlow: value })}
+							onChange={(value: any) => setAttributes({ gridAutoFlow: value })}
 							__nextHasNoMarginBottom
 						/>
 
@@ -504,7 +504,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{ label: 'nav', value: 'nav' },
 						{ label: 'a', value: 'a' },
 					]}
-					onChange={(value) => setAttributes({ htmlTag: value })}
+					onChange={(value: any) => setAttributes({ htmlTag: value })}
 					__nextHasNoMarginBottom
 				/>
 
@@ -513,7 +513,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 					<TextControl
 						label={__('Link', 'voxel-fse')}
 						value={attributes.containerLink?.url || ''}
-						onChange={(url) =>
+						onChange={(url: any) =>
 							setAttributes({
 								containerLink: {
 									...(attributes.containerLink || {}),
@@ -536,7 +536,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{ label: __('Scroll', 'voxel-fse'), value: 'scroll' },
 						{ label: __('Auto', 'voxel-fse'), value: 'auto' },
 					]}
-					onChange={(value) => setAttributes({ overflow: value })}
+					onChange={(value: any) => setAttributes({ overflow: value })}
 					__nextHasNoMarginBottom
 				/>
 			</AccordionPanel>

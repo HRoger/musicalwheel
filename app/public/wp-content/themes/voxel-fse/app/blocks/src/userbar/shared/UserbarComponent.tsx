@@ -46,8 +46,10 @@ import type {
 	CartItemsResponse,
 	VoxelFSEUserbarConfig,
 } from '../types';
+import type { VisibilityRule } from '@shared/controls';
 import FormPopup from '@shared/popup-kit/FormPopup';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import { InlineSvg } from '@shared/InlineSvg';
 
 // ============================================================================
 // SERVER CONFIG ACCESS
@@ -96,6 +98,40 @@ function isLoggedIn(): boolean {
 	}
 	const voxelConfig = (window as unknown as { Voxel_Config?: { is_logged_in?: boolean } }).Voxel_Config;
 	return voxelConfig?.is_logged_in ?? false;
+}
+
+/**
+ * Evaluate visibility rules for a repeater item
+ * PARITY: utils.php:673 — evaluate_visibility_rules()
+ *
+ * Rules are grouped: all rules in a group use AND logic,
+ * groups use OR logic (first passing group returns true).
+ *
+ * Currently supports client-side evaluation of:
+ * - user:logged_in
+ * - user:logged_out
+ */
+function evaluateVisibilityRules(rules: VisibilityRule[], loggedIn: boolean): boolean {
+	if (!rules || rules.length === 0) return true;
+
+	// Evaluate each rule — all rules must pass (AND logic within a single group)
+	for (const rule of rules) {
+		const result = evaluateSingleRule(rule, loggedIn);
+		if (!result) return false;
+	}
+	return true;
+}
+
+function evaluateSingleRule(rule: VisibilityRule, loggedIn: boolean): boolean {
+	switch (rule.filterKey) {
+		case 'user:logged_in':
+			return loggedIn;
+		case 'user:logged_out':
+			return !loggedIn;
+		default:
+			// Unknown rules pass by default (server-side rules we can't evaluate client-side)
+			return true;
+	}
 }
 
 /**
@@ -173,7 +209,7 @@ function renderIcon(icon: { library: string; value: string } | undefined): React
 	}
 
 	if (icon.library === 'svg' && icon.value) {
-		return <img src={icon.value} alt="" style={{ width: '1em', height: '1em' }} />;
+		return <InlineSvg url={icon.value} />;
 	}
 
 	if (icon.library === 'icon' && icon.value) {
@@ -525,7 +561,7 @@ function NotificationsItem({ item, icons, context, popupScopeClass }: Notificati
 								<a
 									key={subAction.key}
 									href="#"
-									className={`ts-btn ts-btn-1 ${subAction.type === 'plain' ? 'vx-disabled' : ''}`}
+									className={`ts-btn ts-btn-1 ${(subAction.type as any) === 'plain' ? 'vx-disabled' : ''}`}
 									onClick={(e) => {
 										e.preventDefault();
 										e.stopPropagation();
@@ -1574,6 +1610,11 @@ function LinkItem({ item, context }: LinkItemProps) {
 		linkProps.rel = 'nofollow';
 	}
 
+	// In editor: prevent link navigation (links should NOT navigate away in Gutenberg)
+	if (context === 'editor') {
+		linkProps.onClick = (e: React.MouseEvent) => e.preventDefault();
+	}
+
 	return (
 		<li className={`elementor-repeater-item-${item._id}`}>
 			<a {...linkProps}>
@@ -1693,6 +1734,28 @@ export default function UserbarComponent({
 	const serverConfig = getServerConfig();
 	const isCartEmpty = serverConfig?.isCartEmpty ?? true;
 
+	// Filter items based on login state and visibility rules (frontend only)
+	// PARITY: user-bar.php line 18 — user_menu is hardcoded to require is_user_logged_in()
+	// PARITY: notifications/messages use Row Visibility rules (e.g. "Show this row if User is logged in")
+	const loggedIn = isLoggedIn();
+	const filteredItems = context === 'frontend'
+		? (items || []).filter((item) => {
+			// user_menu is hardcoded in Voxel PHP to only show for logged-in users
+			if (!loggedIn && item.componentType === 'user_menu') {
+				return false;
+			}
+			// Evaluate visibility rules for all items
+			if (item.visibilityRules && item.visibilityRules.length > 0) {
+				const rulesPassed = evaluateVisibilityRules(item.visibilityRules, loggedIn);
+				if (item.rowVisibility === 'hide') {
+					return !rulesPassed; // Hide this row if rules pass
+				}
+				return rulesPassed; // Show this row if rules pass
+			}
+			return true;
+		})
+		: items;
+
 	// Popup scope class for CSS targeting portaled popups from this block instance
 	const popupScopeClass = `voxel-popup-userbar-${attributes.blockId || 'default'}`;
 
@@ -1702,7 +1765,7 @@ export default function UserbarComponent({
 	};
 
 	// Empty state
-	if (!items || items.length === 0) {
+	if (!filteredItems || filteredItems.length === 0) {
 		return (
 			<div className="ts-user-area">
 				<div
@@ -1737,7 +1800,7 @@ export default function UserbarComponent({
 
 			{/* Main user bar structure - 1:1 Voxel match */}
 			<ul className="flexify simplify-ul user-area-menu" style={listStyle}>
-				{items.map((item) =>
+				{filteredItems.map((item) =>
 					renderItem(item, icons, context, settings.hideChevron, popupScopeClass, undefined, isCartEmpty)
 				)}
 			</ul>

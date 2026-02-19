@@ -27,6 +27,7 @@ import NavbarComponent from './shared/NavbarComponent';
 import { InspectorTabs } from '@shared/controls';
 import { ContentTab, StyleTab } from './inspector';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
+import { useExpandedLoopItems } from '@shared/utils/useExpandedLoopItems';
 import { generateNavbarResponsiveCSS } from './styles';
 
 interface EditProps {
@@ -95,16 +96,23 @@ export default function Edit({
 }: EditProps) {
 	const blockId = attributes.blockId || clientId;
 
+	// Expand manualItems with loop configuration for editor preview
+	const { items: expandedManualItems } = useExpandedLoopItems({
+		items: attributes.manualItems || [],
+	});
+
 	// State for menu data
 	const [menuLocations, setMenuLocations] = useState<MenuLocation[]>([]);
 	const [menuData, setMenuData] = useState<NavbarMenuApiResponse | null>(null);
 	const [mobileMenuData, setMobileMenuData] =
 		useState<NavbarMenuApiResponse | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(
+		attributes.source === 'select_wp_menu' && !!attributes.menuLocation
+	);
 	const [error, setError] = useState<string | null>(null);
 
 	// Get linked block data for template_tabs and search_form sources
-	const { linkedTabs, linkedPostTypes, linkedBlockId } = useSelect(
+	const { linkedTabs, linkedPostTypes, linkedBlockId } = (useSelect as any)(
 		(select: any) => {
 			const { getBlock, getBlocks } = select('core/block-editor');
 
@@ -170,7 +178,7 @@ export default function Edit({
 			};
 		},
 		[attributes.source, attributes.templateTabsId, attributes.searchFormId]
-	);
+	) as any;
 
 	// Set blockId if not set
 	useEffect(() => {
@@ -180,7 +188,7 @@ export default function Edit({
 	}, [attributes.blockId, clientId, setAttributes]);
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'voxel-fse-navbar',
 		selectorPrefix: 'voxel-fse-navbar',
@@ -198,6 +206,34 @@ export default function Edit({
 		() => [advancedProps.responsiveCSS, navbarResponsiveCSS].filter(Boolean).join('\n'),
 		[advancedProps.responsiveCSS, navbarResponsiveCSS]
 	);
+
+	// Inject popup-specific CSS into parent frame for editor live preview.
+	// Popup elements are portaled to the parent frame's body, so CSS in the
+	// editor iframe doesn't reach them. Extract .voxel-popup-* rules and
+	// inject into the parent document.
+	useEffect(() => {
+		if (!combinedResponsiveCSS) return;
+
+		// Extract lines containing popup selectors
+		const popupCssLines = combinedResponsiveCSS
+			.split('\n')
+			.filter(line => line.includes('.voxel-popup-'));
+
+		if (popupCssLines.length === 0) return;
+
+		const styleId = `navbar-popup-css-${blockId}`;
+		let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
+		if (!styleEl) {
+			styleEl = document.createElement('style');
+			styleEl.id = styleId;
+			document.head.appendChild(styleEl);
+		}
+		styleEl.textContent = popupCssLines.join('\n');
+
+		return () => {
+			styleEl?.remove();
+		};
+	}, [combinedResponsiveCSS, blockId]);
 
 	const blockProps = useBlockProps({
 		id: advancedProps.elementId,
@@ -348,7 +384,7 @@ export default function Edit({
 
 			{/* Editor Preview */}
 			<NavbarComponent
-				attributes={attributes}
+				attributes={{ ...attributes, manualItems: expandedManualItems }}
 				menuData={menuData}
 				mobileMenuData={mobileMenuData}
 				isLoading={isLoading}

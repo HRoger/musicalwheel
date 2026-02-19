@@ -8,11 +8,11 @@
  * @package VoxelFSE
  */
 
-import type { PopupKitSaveProps } from './types';
+import type { PopupKitEditProps } from './types';
 import { generatePopupKitCSS } from './shared/generateCSS';
 import PopupKitPreview from './shared/PopupKitPreview';
 
-export default function save({ attributes }: PopupKitSaveProps) {
+export default function save({ attributes }: PopupKitEditProps) {
     // Generate global CSS from attributes
     const css = generatePopupKitCSS(attributes);
 

@@ -23,12 +23,17 @@ function generateDimensionsCSS(
 	property: string
 ): string {
 	if (!dimensions) return '';
+	// If all values are empty/unset, return nothing (don't emit 0px defaults)
+	const hasTop = dimensions.top !== undefined && dimensions.top !== '' && dimensions.top !== null;
+	const hasRight = dimensions.right !== undefined && dimensions.right !== '' && dimensions.right !== null;
+	const hasBottom = dimensions.bottom !== undefined && dimensions.bottom !== '' && dimensions.bottom !== null;
+	const hasLeft = dimensions.left !== undefined && dimensions.left !== '' && dimensions.left !== null;
+	if (!hasTop && !hasRight && !hasBottom && !hasLeft) return '';
 	const { unit = 'px' } = dimensions;
-	// Parse to handle empty strings from DimensionsControl
-	const top = parseFloat(String(dimensions.top)) || 0;
-	const right = parseFloat(String(dimensions.right)) || 0;
-	const bottom = parseFloat(String(dimensions.bottom)) || 0;
-	const left = parseFloat(String(dimensions.left)) || 0;
+	const top = hasTop ? parseFloat(String(dimensions.top)) : 0;
+	const right = hasRight ? parseFloat(String(dimensions.right)) : 0;
+	const bottom = hasBottom ? parseFloat(String(dimensions.bottom)) : 0;
+	const left = hasLeft ? parseFloat(String(dimensions.left)) : 0;
 	return `${property}: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit};`;
 }
 
@@ -166,6 +171,27 @@ export function generateNavbarResponsiveCSS(
 	}
 
 	// ============================================
+	// CONTENT TAB - Hamburger Menu Visibility
+	// Source: navbar.php show_burger_desktop / show_burger_tablet
+	// Voxel: (desktop){{WRAPPER}} .ts-mobile-menu { display: flex; }
+	//        (desktop){{WRAPPER}} .ts-wp-menu .menu-item { display: none; }
+	// ============================================
+
+	// Show hamburger on desktop (hide regular menu items)
+	// Voxel hides with `.ts-nav-menu > ul > li.ts-mobile-menu { display: none }` (specificity 0-4-0)
+	// Our selector must exceed that specificity to override.
+	if (attributes.showBurgerDesktop) {
+		cssRules.push(`${selector} .ts-nav-menu > ul > li.ts-mobile-menu { display: flex; }`);
+		cssRules.push(`${selector} .ts-wp-menu .menu-item:not(.ts-mobile-menu) { display: none; }`);
+	}
+
+	// Show hamburger on tablet & mobile (hide regular menu items)
+	if (attributes.showBurgerTablet) {
+		tabletRules.push(`${selector} .ts-nav-menu > ul > li.ts-mobile-menu { display: flex; }`);
+		tabletRules.push(`${selector} .ts-wp-menu .menu-item:not(.ts-mobile-menu) { display: none; }`);
+	}
+
+	// ============================================
 	// STYLE TAB - Menu Item (Normal State)
 	// Source: navbar.php (ts_menu_item section)
 	// ============================================
@@ -273,6 +299,13 @@ export function generateNavbarResponsiveCSS(
 	}
 	if (attributes.linkGap_mobile !== undefined) {
 		mobileRules.push(`${selector} .ts-item-link { gap: ${attributes.linkGap_mobile}px; }`);
+	}
+
+	// Icon on top (flex-direction: column)
+	// Source: navbar.php 'action_icon_orient' => '{{WRAPPER}} .ts-item-link' => 'flex-direction: column;'
+	if (attributes.iconOnTop) {
+		cssRules.push(`${selector} .ts-item-link { flex-direction: column; }`);
+		cssRules.push(`${selector} .ts-down-icon { display: none; }`);
 	}
 
 	// ============================================

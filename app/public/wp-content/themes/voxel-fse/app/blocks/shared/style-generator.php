@@ -3458,12 +3458,25 @@ class Style_Generator {
             }
         }
 
-        // Border style
+        // Border (style, width, color)
         if ( ! empty( $attributes['linkBorderStyle'] ) && $attributes['linkBorderStyle'] !== 'default' ) {
             if ( $attributes['linkBorderStyle'] === 'none' ) {
                 $css_rules[] = "{$selector} .ts-item-link { border: none; }";
             } else {
                 $css_rules[] = "{$selector} .ts-item-link { border-style: {$attributes['linkBorderStyle']}; }";
+
+                // Border width
+                if ( ! empty( $attributes['linkBorderWidth'] ) ) {
+                    $border_width = self::generate_dimensions_css( $attributes['linkBorderWidth'], 'border-width' );
+                    if ( $border_width ) {
+                        $css_rules[] = "{$selector} .ts-item-link { {$border_width} }";
+                    }
+                }
+
+                // Border color
+                if ( ! empty( $attributes['linkBorderColor'] ) ) {
+                    $css_rules[] = "{$selector} .ts-item-link { border-color: {$attributes['linkBorderColor']}; }";
+                }
             }
         }
 
@@ -3593,6 +3606,95 @@ class Style_Generator {
         if ( ! empty( $attributes['chevronColor'] ) ) {
             $css_rules[] = "{$selector} .ts-down-icon { border-top-color: {$attributes['chevronColor']}; }";
             $css_rules[] = "{$selector} .ts-right-icon { border-left-color: {$attributes['chevronColor']}; }";
+        }
+
+        // ============================================
+        // STYLE TAB - Popups: Custom Style
+        // Popups are portaled to document.body, scoped via popupScopeClass
+        // Matches styles.ts popup section (lines 474-587)
+        // ============================================
+
+        if ( ! empty( $attributes['customPopupEnabled'] ) ) {
+            $popup_selector = '.voxel-popup-navbar-' . $block_id;
+
+            // Backdrop background color
+            // Voxel dist/ selector: .ts-popup-root > div:after { background }
+            if ( ! empty( $attributes['popupBackdropBackground'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-popup-root > div::after { background-color: {$attributes['popupBackdropBackground']} !important; }";
+            }
+
+            // Backdrop pointer events
+            if ( ! empty( $attributes['popupBackdropPointerEvents'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-popup-root > div::after { pointer-events: all; }";
+            }
+
+            // Box shadow
+            // Voxel dist/ selector: .ts-field-popup { box-shadow }
+            if ( ! empty( $attributes['popupBoxShadow'] ) && is_array( $attributes['popupBoxShadow'] ) ) {
+                $bs = $attributes['popupBoxShadow'];
+                $inset = ( ! empty( $bs['position'] ) && $bs['position'] === 'inset' ) ? 'inset ' : '';
+                $h      = isset( $bs['horizontal'] ) ? intval( $bs['horizontal'] ) : 0;
+                $v      = isset( $bs['vertical'] ) ? intval( $bs['vertical'] ) : 0;
+                $blur   = isset( $bs['blur'] ) ? intval( $bs['blur'] ) : 0;
+                $spread = isset( $bs['spread'] ) ? intval( $bs['spread'] ) : 0;
+                $color  = ! empty( $bs['color'] ) ? $bs['color'] : 'rgba(0,0,0,0.5)';
+                $css_rules[] = "{$popup_selector} .ts-field-popup { box-shadow: {$inset}{$h}px {$v}px {$blur}px {$spread}px {$color}; }";
+            }
+
+            // Top/Bottom margin (responsive)
+            // Voxel dist/ selector: .ts-field-popup-container { margin }
+            if ( isset( $attributes['popupTopBottomMargin'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-field-popup-container { margin: {$attributes['popupTopBottomMargin']}px 0; }";
+            }
+            if ( isset( $attributes['popupTopBottomMargin_tablet'] ) ) {
+                $tablet_rules[] = "{$popup_selector} .ts-field-popup-container { margin: {$attributes['popupTopBottomMargin_tablet']}px 0; }";
+            }
+            if ( isset( $attributes['popupTopBottomMargin_mobile'] ) ) {
+                $mobile_rules[] = "{$popup_selector} .ts-field-popup-container { margin: {$attributes['popupTopBottomMargin_mobile']}px 0; }";
+            }
+
+            // Min width (responsive)
+            // Voxel dist/ selector: .ts-field-popup { min-width }
+            if ( isset( $attributes['popupMinWidth'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-field-popup { min-width: {$attributes['popupMinWidth']}px; }";
+            }
+            if ( isset( $attributes['popupMinWidth_tablet'] ) ) {
+                $tablet_rules[] = "{$popup_selector} .ts-field-popup { min-width: {$attributes['popupMinWidth_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMinWidth_mobile'] ) ) {
+                $mobile_rules[] = "{$popup_selector} .ts-field-popup { min-width: {$attributes['popupMinWidth_mobile']}px; }";
+            }
+
+            // Max width (responsive)
+            // Voxel dist/ selector: .ts-field-popup { max-width }
+            if ( isset( $attributes['popupMaxWidth'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-field-popup { max-width: {$attributes['popupMaxWidth']}px; }";
+            }
+            if ( isset( $attributes['popupMaxWidth_tablet'] ) ) {
+                $tablet_rules[] = "{$popup_selector} .ts-field-popup { max-width: {$attributes['popupMaxWidth_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMaxWidth_mobile'] ) ) {
+                $mobile_rules[] = "{$popup_selector} .ts-field-popup { max-width: {$attributes['popupMaxWidth_mobile']}px; }";
+            }
+
+            // Max height (responsive)
+            // Voxel dist/ selector: .ts-popup-content-wrapper { max-height }
+            if ( isset( $attributes['popupMaxHeight'] ) ) {
+                $css_rules[] = "{$popup_selector} .ts-popup-content-wrapper { max-height: {$attributes['popupMaxHeight']}px; }";
+            }
+            if ( isset( $attributes['popupMaxHeight_tablet'] ) ) {
+                $tablet_rules[] = "{$popup_selector} .ts-popup-content-wrapper { max-height: {$attributes['popupMaxHeight_tablet']}px; }";
+            }
+            if ( isset( $attributes['popupMaxHeight_mobile'] ) ) {
+                $mobile_rules[] = "{$popup_selector} .ts-popup-content-wrapper { max-height: {$attributes['popupMaxHeight_mobile']}px; }";
+            }
+
+            // Multi-column menu
+            // Voxel dist/ selector: .ts-term-dropdown-list { grid-template-columns }
+            if ( ! empty( $attributes['multiColumnMenu'] ) && ! empty( $attributes['menuColumns'] ) && intval( $attributes['menuColumns'] ) > 1 ) {
+                $cols = intval( $attributes['menuColumns'] );
+                $css_rules[] = "{$popup_selector} .ts-term-dropdown-list { display: grid; grid-template-columns: repeat({$cols}, minmax(0, 1fr)); }";
+            }
         }
 
         // ============================================
@@ -3726,29 +3828,29 @@ class Style_Generator {
 
         // Icon container size
         if ( isset( $attributes['iconContainerSize'] ) ) {
-            $css_rules[] = "{$selector} .ts-comp-icon { width: {$attributes['iconContainerSize']}px; height: {$attributes['iconContainerSize']}px; }";
+            $css_rules[] = "{$selector} > ul > li > a .ts-comp-icon { width: {$attributes['iconContainerSize']}px; height: {$attributes['iconContainerSize']}px; }";
         }
         if ( isset( $attributes['iconContainerSizeTablet'] ) ) {
-            $tablet_rules[] = "{$selector} .ts-comp-icon { width: {$attributes['iconContainerSizeTablet']}px; height: {$attributes['iconContainerSizeTablet']}px; }";
+            $tablet_rules[] = "{$selector} > ul > li > a .ts-comp-icon { width: {$attributes['iconContainerSizeTablet']}px; height: {$attributes['iconContainerSizeTablet']}px; }";
         }
         if ( isset( $attributes['iconContainerSizeMobile'] ) ) {
-            $mobile_rules[] = "{$selector} .ts-comp-icon { width: {$attributes['iconContainerSizeMobile']}px; height: {$attributes['iconContainerSizeMobile']}px; }";
+            $mobile_rules[] = "{$selector} > ul > li > a .ts-comp-icon { width: {$attributes['iconContainerSizeMobile']}px; height: {$attributes['iconContainerSizeMobile']}px; }";
         }
 
         // Icon container border radius
         if ( isset( $attributes['iconContainerRadius'] ) ) {
-            $css_rules[] = "{$selector} .ts-comp-icon { border-radius: {$attributes['iconContainerRadius']}px; }";
+            $css_rules[] = "{$selector} > ul > li > a .ts-comp-icon { border-radius: {$attributes['iconContainerRadius']}px; }";
         }
         if ( isset( $attributes['iconContainerRadiusTablet'] ) ) {
-            $tablet_rules[] = "{$selector} .ts-comp-icon { border-radius: {$attributes['iconContainerRadiusTablet']}px; }";
+            $tablet_rules[] = "{$selector} > ul > li > a .ts-comp-icon { border-radius: {$attributes['iconContainerRadiusTablet']}px; }";
         }
         if ( isset( $attributes['iconContainerRadiusMobile'] ) ) {
-            $mobile_rules[] = "{$selector} .ts-comp-icon { border-radius: {$attributes['iconContainerRadiusMobile']}px; }";
+            $mobile_rules[] = "{$selector} > ul > li > a .ts-comp-icon { border-radius: {$attributes['iconContainerRadiusMobile']}px; }";
         }
 
         // Icon container background
         if ( ! empty( $attributes['iconContainerBackground'] ) ) {
-            $css_rules[] = "{$selector} .ts-comp-icon { background-color: {$attributes['iconContainerBackground']}; }";
+            $css_rules[] = "{$selector} > ul > li > a .ts-comp-icon { background-color: {$attributes['iconContainerBackground']}; }";
         }
         if ( ! empty( $attributes['iconContainerBackgroundHover'] ) ) {
             $css_rules[] = "{$selector} > ul > li > a:hover .ts-comp-icon { background-color: {$attributes['iconContainerBackgroundHover']}; }";
@@ -3756,17 +3858,19 @@ class Style_Generator {
 
         // Icon size & color (CSS variables)
         if ( isset( $attributes['iconSize'] ) ) {
-            $css_rules[] = "{$selector} .ts-comp-icon { --ts-icon-size: {$attributes['iconSize']}px; }";
+            $css_rules[] = "{$selector} > ul > li > a .ts-comp-icon { --ts-icon-size: {$attributes['iconSize']}px; }";
         }
         if ( isset( $attributes['iconSizeTablet'] ) ) {
-            $tablet_rules[] = "{$selector} .ts-comp-icon { --ts-icon-size: {$attributes['iconSizeTablet']}px; }";
+            $tablet_rules[] = "{$selector} > ul > li > a .ts-comp-icon { --ts-icon-size: {$attributes['iconSizeTablet']}px; }";
         }
         if ( isset( $attributes['iconSizeMobile'] ) ) {
-            $mobile_rules[] = "{$selector} .ts-comp-icon { --ts-icon-size: {$attributes['iconSizeMobile']}px; }";
+            $mobile_rules[] = "{$selector} > ul > li > a .ts-comp-icon { --ts-icon-size: {$attributes['iconSizeMobile']}px; }";
         }
 
+        // Icon color — must match Voxel's selector specificity:
+        // .ts-user-area > ul > li > a .ts-comp-icon
         if ( ! empty( $attributes['iconColor'] ) ) {
-            $css_rules[] = "{$selector} .ts-comp-icon { --ts-icon-color: {$attributes['iconColor']}; }";
+            $css_rules[] = "{$selector} > ul > li > a .ts-comp-icon { --ts-icon-color: {$attributes['iconColor']}; }";
         }
         if ( ! empty( $attributes['iconColorHover'] ) ) {
             $css_rules[] = "{$selector} > ul > li > a:hover .ts-comp-icon { --ts-icon-color: {$attributes['iconColorHover']}; }";
@@ -3824,10 +3928,12 @@ class Style_Generator {
                 $item_selector = "{$selector} .elementor-repeater-item-{$item['_id']}";
 
                 // Label visibility
+                // Voxel base CSS defaults .ts_comp_label to display:none, so we must
+                // always emit the desktop rule when labelVisibility is enabled.
                 if ( ! empty( $item['labelVisibility'] ) ) {
-                    if ( ! empty( $item['labelVisibilityDesktop'] ) && $item['labelVisibilityDesktop'] === 'none' ) {
-                        $css_rules[] = "{$item_selector} .ts_comp_label { display: none; }";
-                    }
+                    $desktop_display = ! empty( $item['labelVisibilityDesktop'] ) ? $item['labelVisibilityDesktop'] : 'flex';
+                    $css_rules[] = "{$item_selector} .ts_comp_label { display: {$desktop_display}; }";
+
                     if ( ! empty( $item['labelVisibilityTablet'] ) && $item['labelVisibilityTablet'] === 'none' ) {
                         $tablet_rules[] = "{$item_selector} .ts_comp_label { display: none; }";
                     } elseif ( ! empty( $item['labelVisibilityTablet'] ) && $item['labelVisibilityTablet'] === 'flex' ) {
@@ -17778,18 +17884,66 @@ class Style_Generator {
             }
         }
 
+        // Border - Normal state
+        if ( ! empty( $attributes['borderType'] ) && $attributes['borderType'] !== 'none' ) {
+            $desktop_outer[] = "border-style: {$attributes['borderType']}";
+            if ( ! empty( $attributes['borderWidth'] ) ) {
+                $border_width = self::generate_dimensions_css( $attributes['borderWidth'], 'border-width' );
+                if ( $border_width ) {
+                    $desktop_outer[] = $border_width;
+                }
+            }
+            if ( ! empty( $attributes['borderColor'] ) ) {
+                $desktop_outer[] = "border-color: {$attributes['borderColor']}";
+            }
+        }
+
+        // Border Radius - Normal (always applies, even without border)
+        if ( ! empty( $attributes['borderRadiusDimensions'] ) ) {
+            $border_radius = self::generate_dimensions_css( $attributes['borderRadiusDimensions'], 'border-radius' );
+            if ( $border_radius ) {
+                $desktop_outer[] = $border_radius;
+            }
+        }
+
         $css_rules[] = "{$selector} { " . implode( '; ', $desktop_outer ) . "; }";
 
-        // Desktop Hover transforms
+        // Desktop Hover state
+        $hover_styles = [];
+
+        // Transform hover
         $transform_desktop_hover = self::build_transform_css( $attributes, '', true );
         if ( ! empty( $transform_desktop_hover['transform'] ) ) {
-            $hover_styles = [ "transform: {$transform_desktop_hover['transform']}" ];
+            $hover_styles[] = "transform: {$transform_desktop_hover['transform']}";
             if ( ! empty( $transform_desktop_hover['transformOrigin'] ) && $transform_desktop_hover['transformOrigin'] !== '50% 50%' ) {
                 $hover_styles[] = "transform-origin: {$transform_desktop_hover['transformOrigin']}";
             }
             if ( ! empty( $transform_desktop_hover['perspective'] ) ) {
                 $hover_styles[] = "perspective: {$transform_desktop_hover['perspective']}";
             }
+        }
+
+        // Border hover
+        if ( ! empty( $attributes['borderTypeHover'] ) && $attributes['borderTypeHover'] !== 'none' ) {
+            $hover_styles[] = "border-style: {$attributes['borderTypeHover']}";
+            if ( ! empty( $attributes['borderWidthHover'] ) ) {
+                $border_width_hover = self::generate_dimensions_css( $attributes['borderWidthHover'], 'border-width' );
+                if ( $border_width_hover ) {
+                    $hover_styles[] = $border_width_hover;
+                }
+            }
+            if ( ! empty( $attributes['borderColorHover'] ) ) {
+                $hover_styles[] = "border-color: {$attributes['borderColorHover']}";
+            }
+        }
+        if ( ! empty( $attributes['borderRadiusHover'] ) ) {
+            $border_radius_hover = self::generate_dimensions_css( $attributes['borderRadiusHover'], 'border-radius' );
+            if ( $border_radius_hover ) {
+                $hover_styles[] = $border_radius_hover;
+            }
+        }
+
+        if ( ! empty( $hover_styles ) ) {
             $css_rules[] = "{$selector}:hover { " . implode( '; ', $hover_styles ) . "; }";
         }
 

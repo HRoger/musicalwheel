@@ -2,9 +2,10 @@
 /**
  * FSE Print Template API Controller
  *
- * Provides a REST endpoint that renders template content server-side,
- * matching the exact logic of render.php. This ensures the editor preview
- * gets fully-rendered HTML with proper Voxel/WordPress styling.
+ * Provides a REST endpoint for rendering template content (JSON).
+ * The editor fetches rendered HTML and injects it inline into the
+ * editor DOM — matching Elementor's approach where print_template()
+ * outputs content inline within the editor canvas.
  *
  * Evidence:
  * - Voxel widget: themes/voxel/app/widgets/print-template.php
@@ -49,11 +50,11 @@ class FSE_Print_Template_API_Controller extends FSE_Base_Controller {
 	}
 
 	/**
-	 * Render template content server-side.
+	 * Render template content server-side (JSON response).
 	 *
-	 * Uses the same logic as render.php:
-	 * 1. Try Voxel's print_template() (Elementor templates with CSS)
-	 * 2. Fallback to apply_filters('the_content', ...) for WordPress content
+	 * Sets up proper global post context so NectarBlocks and other
+	 * plugins can find their per-post CSS via get_the_ID().
+	 * Resolves wp_template → template-part references.
 	 */
 	public function render_template( \WP_REST_Request $request ): \WP_REST_Response {
 		$template_id = $request->get_param( 'template_id' );
@@ -65,28 +66,64 @@ class FSE_Print_Template_API_Controller extends FSE_Base_Controller {
 			], 400 );
 		}
 
-		$template_id      = (int) $template_id;
-		$template_content = '';
+		$template_id = (int) $template_id;
+		$post        = get_post( $template_id );
 
-		// Try Voxel's print_template() first (handles Elementor templates with CSS enqueuing).
-		if ( function_exists( '\Voxel\is_elementor_active' ) && \Voxel\is_elementor_active() && function_exists( '\Voxel\print_template' ) ) {
-			ob_start();
-			\Voxel\print_template( $template_id );
-			$template_content = ob_get_clean();
+		if ( ! $post || ! in_array( $post->post_status, [ 'publish', 'draft', 'private' ], true ) ) {
+			return new \WP_REST_Response( [
+				'success' => false,
+				'message' => 'Template not found',
+			], 404 );
 		}
 
-		// Fallback: render as WordPress content (pages, reusable blocks, posts).
-		if ( empty( $template_content ) ) {
-			$post = get_post( $template_id );
-			if ( $post && $post->post_status === 'publish' ) {
-				$template_content = apply_filters( 'the_content', $post->post_content );
+		// Set up global post context so NectarBlocks (and other plugins) can
+		// find their per-post CSS via get_the_ID() / get_post_meta().
+		global $wp_query;
+		$wp_query->post  = $post;
+		$wp_query->posts = [ $post ];
+		$GLOBALS['post'] = $post;
+		setup_postdata( $post );
+
+		// Resolve template content.
+		$raw_content = $post->post_content;
+
+		// For wp_template posts that reference a template-part, resolve the part content.
+		if ( $post->post_type === 'wp_template' && preg_match( '/<!--\s*wp:template-part\s+(\{[^}]+\})\s*\/-->/', $raw_content, $m ) ) {
+			$part_attrs = json_decode( $m[1], true );
+			if ( ! empty( $part_attrs['slug'] ) ) {
+				$theme      = $part_attrs['theme'] ?? get_stylesheet();
+				$part_posts = get_posts( [
+					'post_type'   => 'wp_template_part',
+					'post_status' => [ 'publish', 'draft', 'private' ],
+					'name'        => $part_attrs['slug'],
+					'tax_query'   => [ [
+						'taxonomy' => 'wp_theme',
+						'field'    => 'name',
+						'terms'    => $theme,
+					] ],
+					'numberposts' => 1,
+				] );
+
+				if ( ! empty( $part_posts ) ) {
+					$raw_content = $part_posts[0]->post_content;
+
+					// Update global post context to the resolved template-part
+					// so NectarBlocks finds its per-post CSS.
+					$wp_query->post  = $part_posts[0];
+					$wp_query->posts = [ $part_posts[0] ];
+					$GLOBALS['post'] = $part_posts[0];
+					setup_postdata( $part_posts[0] );
+				}
 			}
 		}
+
+		// Render the blocks.
+		$template_content = do_blocks( $raw_content );
 
 		if ( empty( $template_content ) ) {
 			return new \WP_REST_Response( [
 				'success' => false,
-				'message' => 'Template not found or empty',
+				'message' => 'Template rendered as empty',
 			], 404 );
 		}
 

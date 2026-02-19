@@ -227,12 +227,11 @@ class FSE_Navbar_API_Controller extends FSE_Base_Controller {
 		$icon_markup = '';
 
 		if ( ! empty( $icon_string ) ) {
-			// Use Voxel's icon markup if available
-			if ( function_exists( '\Voxel\get_icon_markup' ) ) {
-				$icon_markup = \Voxel\get_icon_markup( $icon_string );
-			} elseif ( class_exists( '\VoxelFSE\Utils\Icon_Processor' ) ) {
-				// Fallback to FSE Icon Processor
+			// Use FSE Icon Processor (works without Elementor)
+			if ( class_exists( '\VoxelFSE\Utils\Icon_Processor' ) ) {
 				$icon_markup = \VoxelFSE\Utils\Icon_Processor::get_icon_markup( $icon_string );
+			} elseif ( function_exists( '\Voxel\get_icon_markup' ) ) {
+				$icon_markup = \Voxel\get_icon_markup( $icon_string );
 			}
 		}
 

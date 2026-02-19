@@ -59,6 +59,7 @@
     color: #1e1e1e;
     margin-bottom: 0;
     flex-shrink: 0;
+    text-transform: none;
 }
 
 .voxel-fse-loop-field .components-base-control__help {

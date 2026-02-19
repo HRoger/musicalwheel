@@ -142,7 +142,8 @@ export default function ResponsiveRangeControlWithDropdown({
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
 	// When unit is % and no value is set, use max as the initial position
-	const initialPosition = isPercentUnit ? effectiveMax : undefined;
+	// Otherwise, use min so the handle starts at the beginning of the bar (not the middle)
+	const initialPosition = isPercentUnit ? effectiveMax : min;
 
 	// Handle reset - always clear to undefined so inheritance can work
 	const handleReset = () => {

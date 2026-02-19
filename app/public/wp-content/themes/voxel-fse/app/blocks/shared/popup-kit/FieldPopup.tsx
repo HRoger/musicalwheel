@@ -114,17 +114,35 @@ export function FieldPopup({
 		const popupElement = popupRef.current;
 		const popupBox = popupBoxRef.current;
 
+		// Detect FSE editor: In the block editor, React runs in the parent frame
+		// but trigger elements live inside the editor iframe. The portal renders
+		// to the parent frame's body, so we need to offset iframe-relative coords.
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+		const isEditor = !!editorIframe;
+
+		// Get iframe offset in parent viewport (editor toolbar height)
+		let iframeOffsetTop = 0;
+		let iframeOffsetLeft = 0;
+		if (isEditor && editorIframe) {
+			const iframeRect = editorIframe.getBoundingClientRect();
+			iframeOffsetTop = iframeRect.top;
+			iframeOffsetLeft = iframeRect.left;
+		}
+
 		// STEP 1: Get trigger element dimensions and position
-		const bodyWidth = document.body.clientWidth;
-		const triggerRect = targetElement.getBoundingClientRect(); // Viewport-relative
+		const bodyWidth = isEditor
+			? (editorIframe?.contentDocument?.documentElement.clientWidth ?? document.body.clientWidth)
+			: document.body.clientWidth;
+		const triggerRect = targetElement.getBoundingClientRect(); // Viewport-relative (iframe context)
 		const triggerOuterWidth = targetElement.offsetWidth;
 
-		// Get document-relative position (like jQuery.offset())
-		// CRITICAL: jQuery.offset() uses getBoundingClientRect() + scroll position
-		// The offsetParent traversal was causing incorrect positioning when scrolled
+		// Get document-relative position for popup placement
+		// In editor: add iframe offset to convert iframe coords → parent frame coords
+		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
 		const triggerOffset = {
-			left: triggerRect.left + window.pageXOffset,
-			top: triggerRect.top + window.pageYOffset,
+			left: triggerRect.left + scrollX + iframeOffsetLeft,
+			top: triggerRect.top + scrollY + iframeOffsetTop,
 		};
 
 		// STEP 2: Get popup box dimensions
@@ -156,7 +174,7 @@ export function FieldPopup({
 
 		// STEP 3: Calculate horizontal position (left)
 		const triggerCenterX = triggerOffset.left + triggerOuterWidth / 2;
-		const viewportCenterX = bodyWidth / 2;
+		const viewportCenterX = (bodyWidth + iframeOffsetLeft) / 2;
 
 		let leftPosition: number;
 		if (triggerCenterX > viewportCenterX + 1) {
@@ -174,9 +192,11 @@ export function FieldPopup({
 		// Default: position below trigger
 		let topPosition = triggerOffset.top + triggerRect.height;
 
-		// Check if there's room to position below
-		const isBottomTruncated = triggerRect.bottom + popupHeight > viewportHeight;
-		const isRoomAbove = triggerRect.top - popupHeight >= 0;
+		// Check if there's room to position below (use parent-frame-adjusted coords)
+		const triggerBottomInParent = triggerRect.bottom + iframeOffsetTop;
+		const triggerTopInParent = triggerRect.top + iframeOffsetTop;
+		const isBottomTruncated = triggerBottomInParent + popupHeight > viewportHeight;
+		const isRoomAbove = triggerTopInParent - popupHeight >= 0;
 
 		if (isBottomTruncated && isRoomAbove) {
 			// Position above trigger
@@ -208,48 +228,78 @@ export function FieldPopup({
 
 	// EXACT Voxel: Handle backdrop clicks to close popup (blurable mixin)
 	// Evidence: themes/voxel/assets/dist/commons.js (Voxel.mixins.blurable)
-	// Logic: Click anywhere outside .triggers-blur closes the popup
-	// FIX: In Gutenberg editor, also exclude clicks in inspector panel/popovers
+	//
+	// Editor vs Frontend strategy:
+	// The popup portal lives in the parent frame's document.body. Voxel's CSS creates
+	// a full-screen ::after backdrop on .ts-popup-root > div with pointer-events:all,
+	// which intercepts all clicks in the parent frame. In the editor we inject a <style>
+	// that disables pointer-events on the ::after, so clicks pass through to the actual
+	// sidebar elements. The Gutenberg selector checks then correctly identify sidebar
+	// clicks and keep the popup open.
+	const isEditor = !!document.querySelector('iframe[name="editor-canvas"]');
+
 	useEffect(() => {
 		if (!isOpen) return;
 
-		const handleClickOutside = (event: MouseEvent) => {
-			const target = event.target as HTMLElement;
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+		const iframeDoc = editorIframe?.contentDocument;
 
-			// Check if click is inside the popup box (.triggers-blur)
-			if (popupBoxRef.current?.contains(target)) {
-				return; // Click inside popup, don't close
+		const handleClickOutside = (event: MouseEvent) => {
+			const clickTarget = event.target as HTMLElement;
+
+			// Click inside the popup box — don't close
+			if (popupBoxRef.current?.contains(clickTarget)) {
+				return;
 			}
 
-			// FIX: In Gutenberg editor, don't close popup when clicking in inspector/sidebar
-			// This allows users to use inspector controls while the popup is open
-			const gutenbergSelectors = [
-				'.interface-interface-skeleton__sidebar', // Main sidebar container
-				'.block-editor-block-inspector',         // Inspector panel
-				'.components-popover',                   // Gutenberg popovers (color picker, etc.)
-				'.components-modal__screen-overlay',    // Modal overlays
-				'.edit-post-sidebar',                    // Edit post sidebar
-			];
+			// Click on the trigger element — don't close
+			if (target.current && target.current.contains(clickTarget)) {
+				return;
+			}
 
-			for (const selector of gutenbergSelectors) {
-				if (target.closest(selector)) {
-					return; // Click inside Gutenberg UI, don't close popup
+			// In editor: don't close when clicking sidebar/toolbar
+			if (editorIframe) {
+				const gutenbergSelectors = [
+					'.interface-interface-skeleton__sidebar',
+					'.block-editor-block-inspector',
+					'.components-popover',
+					'.components-modal__screen-overlay',
+					'.edit-post-sidebar',
+					'.interface-interface-skeleton__header',
+					'.interface-interface-skeleton__secondary-sidebar',
+				];
+				for (const selector of gutenbergSelectors) {
+					if (clickTarget.closest(selector)) {
+						return;
+					}
 				}
 			}
 
-			// Click outside popup and Gutenberg UI, close it
 			onClose();
 		};
 
-		// Use mousedown event (same as Voxel) instead of click
-		// requestAnimationFrame ensures popup is fully rendered before adding listener
+		// Editor: also close when clicking the editor canvas (iframe body)
+		const handleIframeClick = (event: MouseEvent) => {
+			const clickTarget = event.target as HTMLElement;
+
+			if (target.current && target.current.contains(clickTarget)) {
+				return;
+			}
+
+			onClose();
+		};
+
 		const rafId = requestAnimationFrame(() => {
 			document.addEventListener('mousedown', handleClickOutside);
+			if (editorIframe) {
+				iframeDoc?.addEventListener('mousedown', handleIframeClick);
+			}
 		});
 
 		return () => {
 			cancelAnimationFrame(rafId);
 			document.removeEventListener('mousedown', handleClickOutside);
+			iframeDoc?.removeEventListener('mousedown', handleIframeClick);
 		};
 	}, [isOpen, onClose]);
 
@@ -314,16 +364,29 @@ export function FieldPopup({
 		</svg>
 	);
 
-	// Render popup via React Portal to document.body
+	// Portal target: always use document.body
+	// In editor: React runs in parent frame, portal goes to parent body
+	// On frontend: portal goes to frontend body (standard Voxel behavior)
+	const portalTarget = document.body;
+
+	// Render popup via React Portal
 	// EXACT Voxel HTML structure from themes/voxel/templates/components/popup.php
 	// CRITICAL: Apply dynamic styles to ts-form element (like Vue's :style="styles")
 	// CRITICAL: Size classes (lg-width, md-height, xl-width, xl-height) go on outer vx-popup wrapper
 	return createPortal(
 		<div className={`elementor vx-popup ${className}`.trim()}>
+			{/* Editor: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
+			{isEditor && (
+				<style>{`.vx-popup .ts-popup-root > div::after { pointer-events: none !important; }`}</style>
+			)}
 			<div className="ts-popup-root elementor-element">
-				<div className="ts-form elementor-element" style={styles} ref={popupRef}>
+				<div
+					className="ts-form elementor-element"
+					style={styles}
+					ref={popupRef}
+				>
 					<div className="ts-field-popup-container">
-						{/* Popup box - backdrop clicks handled by document-level listener */}
+						{/* Popup box - backdrop clicks handled by event listeners */}
 						<div
 							className="ts-field-popup triggers-blur"
 							ref={popupBoxRef}
@@ -457,7 +520,7 @@ export function FieldPopup({
 				</div>
 			</div>
 		</div>,
-		document.body
+		portalTarget
 	);
 }
 

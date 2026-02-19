@@ -119,16 +119,16 @@ export default function StyleTab({
                         {/* Item Margin - user-bar.php:584-594 */}
                         <DimensionsControl
                             label={__('Margin', 'voxel-fse')}
-                            values={attributes.itemMargin || { top: '', right: '', bottom: '', left: '' }}
-                            onChange={(values) => setAttributes({ itemMargin: { ...values, unit: 'px' } })}
+                            values={attributes.itemMargin || { top: '', right: '', bottom: '', left: '', unit: 'px' }}
+                            onChange={(values: any) => setAttributes({ itemMargin: { ...values, unit: values.unit || 'px' } })}
                             availableUnits={['px', '%', 'em']}
                         />
 
                         {/* Item Padding - user-bar.php:596-606 */}
                         <DimensionsControl
                             label={__('Padding', 'voxel-fse')}
-                            values={attributes.itemPadding || { top: '', right: '', bottom: '', left: '' }}
-                            onChange={(values) => setAttributes({ itemPadding: { ...values, unit: 'px' } })}
+                            values={attributes.itemPadding || { top: '', right: '', bottom: '', left: '', unit: 'px' }}
+                            onChange={(values: any) => setAttributes({ itemPadding: { ...values, unit: values.unit || 'px' } })}
                             availableUnits={['px', '%', 'em']}
                         />
 

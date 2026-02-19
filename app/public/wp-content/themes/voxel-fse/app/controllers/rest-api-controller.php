@@ -413,6 +413,36 @@ class REST_API_Controller extends FSE_Base_Controller {
 				],
 			],
 		] );
+
+		// Endpoint: /wp-json/voxel-fse/v1/post-search
+		// Editor-only: Searches posts by title or ID across multiple post types.
+		// Matches Voxel's voxel-post-select custom control behavior using WP_Query.
+		register_rest_route( 'voxel-fse/v1', '/post-search', [
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'search_posts_for_select' ],
+			'permission_callback' => function () {
+				return current_user_can( 'edit_posts' );
+			},
+			'args'                => [
+				'search' => [
+					'required'          => true,
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
+				'post_types' => [
+					'required'          => false,
+					'type'              => 'string',
+					'default'           => 'page,wp_block,wp_template,wp_template_part',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
+				'per_page' => [
+					'required'          => false,
+					'type'              => 'integer',
+					'default'           => 20,
+					'sanitize_callback' => 'absint',
+				],
+			],
+		] );
 	}
 
 	/**
@@ -3220,5 +3250,81 @@ class REST_API_Controller extends FSE_Base_Controller {
 			return \Voxel\get_redirect_url();
 		}
 		return home_url( '/' );
+	}
+
+	/**
+	 * Search posts for PostSelectControl
+	 *
+	 * Matches Voxel's voxel-post-select control behavior:
+	 * - Searches by title (LIKE query)
+	 * - Searches by ID (exact match when input is numeric or starts with #)
+	 * - Searches across multiple post types (page, wp_block, wp_template, wp_template_part)
+	 * - Returns results in Voxel format: #ID: Title
+	 *
+	 * Evidence: themes/voxel/app/modules/elementor/custom-controls/post-select-control.php
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response
+	 */
+	public function search_posts_for_select( $request ) {
+		$search     = $request->get_param( 'search' );
+		$post_types = array_filter( array_map( 'trim', explode( ',', $request->get_param( 'post_types' ) ) ) );
+		$per_page   = min( (int) $request->get_param( 'per_page' ), 50 );
+
+		if ( empty( $post_types ) ) {
+			$post_types = [ 'page', 'wp_block', 'wp_template', 'wp_template_part' ];
+		}
+
+		$results = [];
+
+		// Check if searching by ID (e.g., "#175", "175", or just a number)
+		$search_id = null;
+		$clean_search = ltrim( $search, '#' );
+		if ( is_numeric( $clean_search ) ) {
+			$search_id = (int) $clean_search;
+		}
+
+		// 1. If searching by ID, fetch that post directly (no post_type restriction for explicit ID search)
+		if ( $search_id ) {
+			$post = get_post( $search_id );
+			if ( $post && in_array( $post->post_status, [ 'publish', 'draft', 'private' ], true ) ) {
+				$results[] = [
+					'id'    => (string) $post->ID,
+					'title' => '#' . $post->ID . ': ' . $post->post_title,
+					'type'  => $post->post_type,
+				];
+			}
+		}
+
+		// 2. Search by title across all specified post types
+		$query_args = [
+			'post_type'      => $post_types,
+			'post_status'    => [ 'publish', 'draft', 'private' ],
+			's'              => $search,
+			'posts_per_page' => $per_page,
+			'orderby'        => 'ID',
+			'order'          => 'DESC',
+		];
+
+		$query = new \WP_Query( $query_args );
+
+		if ( $query->have_posts() ) {
+			foreach ( $query->posts as $post ) {
+				// Skip if already added by ID search
+				if ( $search_id && (int) $post->ID === $search_id ) {
+					continue;
+				}
+
+				$results[] = [
+					'id'    => (string) $post->ID,
+					'title' => '#' . $post->ID . ': ' . $post->post_title,
+					'type'  => $post->post_type,
+				];
+			}
+		}
+
+		wp_reset_postdata();
+
+		return new \WP_REST_Response( $results, 200 );
 	}
 }
