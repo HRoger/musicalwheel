@@ -86,7 +86,7 @@ export const EmailField: React.FC<EmailFieldProps> = ({ field, value, onChange, 
 					value={value || ''}
 					onChange={(e) => handleChange(e.target.value)}
 					onBlur={onBlur}
-					placeholder={field.props?.placeholder || field.label}
+					placeholder={String(field.props?.['placeholder'] ?? field.label ?? '')}
 					required={field.required}
 					title={field.label}
 				/>

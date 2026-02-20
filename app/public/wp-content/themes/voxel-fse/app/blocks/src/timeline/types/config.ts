@@ -97,6 +97,8 @@ export interface TimelineNonces {
 	status_delete: string;
 	status_like: string;
 	status_repost: string;
+	status_quote?: string;
+	status_moderate?: string;
 	comment_publish: string;
 	comment_edit: string;
 	comment_delete: string;
@@ -113,6 +115,7 @@ export interface CurrentUser {
 	display_name: string;
 	avatar_url: string;
 	profile_url: string;
+	link?: string;
 	is_verified: boolean;
 }
 
@@ -218,6 +221,7 @@ export interface CurrentPost {
 	avatar_url: string;
 	link: string;
 	post_type?: string; // Post type key for review config lookup
+	author_id?: number;
 }
 
 /**

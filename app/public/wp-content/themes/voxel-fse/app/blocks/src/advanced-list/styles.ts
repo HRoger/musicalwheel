@@ -547,41 +547,41 @@ export function generateAdvancedListStyles(
 	// Source: advanced-list.php - Tooltips accordion
 	// ============================================
 
-	// Tooltip position (bottom)
+	// Tooltip position (bottom) — Source: advanced-list.php:1103-1104
 	if (attributes.tooltipBottom) {
-		cssRules.push(`${selector} .ts-action[data-tooltip]::after { top: auto; bottom: 100%; transform: translateX(-50%); }`);
+		cssRules.push(`${selector} .ts-action::after { top: calc(100% + 5px); bottom: auto; }`);
 	}
 
-	// Tooltip text color
+	// Tooltip text color — Source: advanced-list.php:1116
 	if (attributes.tooltipTextColor) {
-		cssRules.push(`${selector} .ts-action[data-tooltip]::after { color: ${attributes.tooltipTextColor}; }`);
+		cssRules.push(`${selector} .ts-action::after { color: ${attributes.tooltipTextColor}; }`);
 	}
 
-	// Tooltip typography
+	// Tooltip typography — Source: advanced-list.php:1126
 	if (hasTypography(attributes.tooltipTypography)) {
 		const typo = generateTypographyCSS(attributes.tooltipTypography);
 		if (typo) {
-			cssRules.push(`${selector} .ts-action[data-tooltip]::after { ${typo} }`);
+			cssRules.push(`${selector} .ts-action::after { ${typo} }`);
 		}
 	}
 
-	// Tooltip background color
+	// Tooltip background color — Source: advanced-list.php:1135
 	if (attributes.tooltipBackgroundColor) {
-		cssRules.push(`${selector} .ts-action[data-tooltip]::after { background-color: ${attributes.tooltipBackgroundColor}; }`);
+		cssRules.push(`${selector} .ts-action::after { background-color: ${attributes.tooltipBackgroundColor}; }`);
 	}
 
-	// Tooltip border radius (responsive)
+	// Tooltip border radius (responsive) — Source: advanced-list.php:1158
 	if (attributes.tooltipBorderRadius !== undefined) {
 		const unit = attributes.tooltipBorderRadiusUnit || 'px';
-		cssRules.push(`${selector} .ts-action[data-tooltip]::after { border-radius: ${attributes.tooltipBorderRadius}${unit}; }`);
+		cssRules.push(`${selector} .ts-action::after { border-radius: ${attributes.tooltipBorderRadius}${unit}; }`);
 	}
 	if (attributes.tooltipBorderRadius_tablet !== undefined) {
 		const unit = attributes.tooltipBorderRadiusUnit || 'px';
-		tabletRules.push(`${selector} .ts-action[data-tooltip]::after { border-radius: ${attributes.tooltipBorderRadius_tablet}${unit}; }`);
+		tabletRules.push(`${selector} .ts-action::after { border-radius: ${attributes.tooltipBorderRadius_tablet}${unit}; }`);
 	}
 	if (attributes.tooltipBorderRadius_mobile !== undefined) {
 		const unit = attributes.tooltipBorderRadiusUnit || 'px';
-		mobileRules.push(`${selector} .ts-action[data-tooltip]::after { border-radius: ${attributes.tooltipBorderRadius_mobile}${unit}; }`);
+		mobileRules.push(`${selector} .ts-action::after { border-radius: ${attributes.tooltipBorderRadius_mobile}${unit}; }`);
 	}
 
 	// ============================================

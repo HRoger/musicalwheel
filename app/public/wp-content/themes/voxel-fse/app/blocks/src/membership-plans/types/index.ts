@@ -19,15 +19,9 @@ export interface IconValue {
 	value: string;
 }
 
-/**
- * Visibility rule type (matches ElementVisibilityModal)
- */
-export interface VisibilityRule {
-	id: string;
-	type: string;
-	condition: string;
-	value?: string;
-}
+// Import and re-export VisibilityRule from shared controls to avoid type conflict
+import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
+export type { VisibilityRule };
 
 /**
  * Feature item in a plan

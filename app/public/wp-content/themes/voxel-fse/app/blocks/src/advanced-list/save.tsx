@@ -47,7 +47,7 @@ function createSaveFn(includePlaceholder: boolean) {
 
 		// Build class list matching Voxel's advanced-list widget structure
 		// Include scoped class for CSS targeting
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,

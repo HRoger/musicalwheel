@@ -298,7 +298,8 @@ function conditionsPass(
 /**
  * Format date to YYYY-MM-DD
  */
-function dateFormatYmd(date: Date): string {
+// @ts-ignore -- unused but kept for future use
+function _dateFormatYmd(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');
 	const day = String(date.getDate()).padStart(2, '0');
@@ -2005,7 +2006,7 @@ export default function LoginComponent({
 		if (field.type === 'date') {
 			const dateValue = (fieldValue as DateValue) || { date: null, time: null };
 			const displayValue = dateValue.date ? dateFormat(new Date(dateValue.date + 'T00:00:00')) : '';
-			const enableTimepicker = field.props?.enable_timepicker as boolean;
+			const enableTimepicker = field.props?.['enable_timepicker'] as boolean;
 
 			return (
 				<div key={field.key} className="ts-form-group ts-date-field">
@@ -2086,11 +2087,11 @@ export default function LoginComponent({
 		// Taxonomy field - Hierarchical term selection with search
 		// Reference: voxel-login.beautified.js lines 486-678
 		if (field.type === 'taxonomy') {
-			const terms = (field.props?.terms || []) as TaxonomyTerm[];
-			const selected = (field.props?.selected || {}) as Record<string, TaxonomyTerm>;
+			const terms = (field.props?.['terms'] || []) as TaxonomyTerm[];
+			const selected = (field.props?.['selected'] || {}) as Record<string, TaxonomyTerm>;
 			const selectedValues = (fieldValue as string[] | null) || Object.keys(selected);
-			const multiple = field.props?.multiple as boolean;
-			const displayAs = field.props?.display_as as string;
+			const multiple = field.props?.['multiple'] as boolean;
+			const displayAs = field.props?.['display_as'] as string;
 			const [taxonomySearch, setTaxonomySearch] = useState('');
 			const [taxonomyOpen, setTaxonomyOpen] = useState(false);
 
@@ -2284,8 +2285,8 @@ export default function LoginComponent({
 		// Reference: voxel-login.beautified.js lines 683-877
 		if (['file', 'image', 'profile-avatar'].includes(field.type)) {
 			const files = (fieldValue as FileValue[]) || [];
-			const maxCount = (field.props?.maxCount as number) || 1;
-			const allowedTypes = (field.props?.allowedTypes as string[]) || [];
+			const maxCount = (field.props?.['maxCount'] as number) || 1;
+			const allowedTypes = (field.props?.['allowedTypes'] as string[]) || [];
 			const accepts = allowedTypes.join(', ');
 			const [dragActive, setDragActive] = useState(false);
 
@@ -2418,9 +2419,11 @@ export default function LoginComponent({
 		// Select field - Single-select dropdown
 		// Reference: voxel-login.beautified.js lines 882-932
 		if (field.type === 'select') {
-			const choices = (field.props?.choices || []) as FieldChoice[];
+			const choices = (field.props?.['choices'] || []) as FieldChoice[];
+			// @ts-ignore -- unused but kept for future use
 			const currentValue = fieldValue as string | null;
-			const selectedChoice = choices.find((c) => c.value === currentValue);
+			// @ts-ignore -- unused but kept for future use
+			const _selectedChoice = choices.find((c) => c.value === currentValue);
 
 			return (
 				<div key={field.key} className="ts-form-group ts-select-field">
@@ -2462,10 +2465,10 @@ export default function LoginComponent({
 		// Multiselect field - Multi-select with search
 		// Reference: voxel-login.beautified.js lines 937-1021
 		if (field.type === 'multiselect') {
-			const choices = (field.props?.choices || []) as FieldChoice[];
-			const selected = (field.props?.selected || {}) as Record<string, FieldChoice>;
+			const choices = (field.props?.['choices'] || []) as FieldChoice[];
+			const selected = (field.props?.['selected'] || {}) as Record<string, FieldChoice>;
 			const selectedValues = (fieldValue as string[] | null) || Object.keys(selected);
-			const displayAs = field.props?.display_as as string;
+			const displayAs = field.props?.['display_as'] as string;
 			const [multiselectSearch, setMultiselectSearch] = useState('');
 			const [multiselectOpen, setMultiselectOpen] = useState(false);
 

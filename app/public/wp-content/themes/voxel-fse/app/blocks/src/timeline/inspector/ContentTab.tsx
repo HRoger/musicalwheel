@@ -14,7 +14,6 @@
 import { __ } from '@wordpress/i18n';
 import {
 	SelectControl,
-	TextControl,
 	ToggleControl,
 } from '@wordpress/components';
 import { useState } from 'react';
@@ -172,7 +171,7 @@ export function ContentTab({
 
 				{/* No posts text - maps to: timeline.php:L100-108 */}
 				<div style={{ marginTop: '16px' }}>
-					<TextControl
+					<DynamicTagTextControl
 						label={__('No posts text', 'voxel-fse')}
 						value={attributes.noStatusText}
 						onChange={(value: string) => setAttributes({ noStatusText: value })}

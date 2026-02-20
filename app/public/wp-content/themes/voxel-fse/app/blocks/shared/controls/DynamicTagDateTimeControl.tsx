@@ -128,7 +128,7 @@ export default function DynamicTagDateTimeControl({
 			dateFormat: 'Y-m-d H:i:S',
 			time_24hr: true,
 			defaultDate: value || undefined,
-			onChange: (selectedDates, dateStr) => {
+			onChange: (_selectedDates, dateStr) => {
 				onChange(dateStr);
 			},
 		});

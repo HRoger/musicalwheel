@@ -11,7 +11,6 @@ import { __ } from '@wordpress/i18n';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
-import type { VisitChartAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 

@@ -12,8 +12,7 @@
  * - Error handling
  */
 import { useState } from 'react';
-import type { FormData, SubmissionState, VoxelField, CreatePostAttributes, FieldValue, RepeaterRow } from '../types';
-import type { SubmissionResult } from '../shared/CreatePostForm';
+import type { FormData, SubmissionState, VoxelField, CreatePostAttributes, FieldValue, RepeaterRow, SubmissionResult } from '../types';
 import { getSiteBaseUrl } from '@shared/utils/siteUrl';
 
 /**
@@ -24,9 +23,6 @@ declare global {
 		voxelFseCreatePost?: {
 			ajaxUrl?: string;
 			nonce?: string;
-		};
-		Voxel?: {
-			alert: (message: string, type: 'error' | 'success' | 'warning') => void;
 		};
 	}
 }
@@ -67,7 +63,7 @@ interface FileAliasEntry {
  *
  * @param formData - The FormData object to deduplicate
  */
-function deduplicateFiles(formData: FormData): void {
+function deduplicateFiles(formData: globalThis.FormData): void {
 	const entries = Object.fromEntries(formData);
 	const fileAliasMap: Record<string, FileAliasEntry> = {};
 
@@ -212,7 +208,8 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 			if (field.type === 'work-hours' && field.required) {
 				let isEmpty = true;
 				if (Array.isArray(value)) {
-					for (const group of value) {
+					for (const groupItem of value) {
+						const group = groupItem as any;
 						if (group.days && group.days.length) {
 							// Non-hours statuses are valid if days are selected
 							if (['open', 'closed', 'appointments_only'].includes(group.status)) {
@@ -341,7 +338,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 						postdataForJson[fieldKey] = [];
 
 						// Process each file object
-						value.forEach((fileObj: FileUploadObject) => {
+						(value as any[]).forEach((fileObj: FileUploadObject) => {
 							if (fileObj.source === 'new_upload' && fileObj.file) {
 								// Add File object to FormData (Channel 2)
 								// CRITICAL: Use field?.id with fallback to fieldKey to ensure uniqueness
@@ -388,7 +385,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 										// This is a file field - process it
 										const processedFiles: ProcessedFileValue[] = [];
 
-										(nestedValue as FileUploadObject[]).forEach((fileObj: FileUploadObject) => {
+										(nestedValue as unknown as FileUploadObject[]).forEach((fileObj: FileUploadObject) => {
 											if (fileObj.source === 'new_upload' && fileObj.file) {
 												// Add to FormData with proper key
 												const fileKey = `${fieldKey}[${rowIndex}][${nestedFieldKey}]`;
@@ -403,7 +400,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 
 										// Update row with processed files array
 										if (processedFiles.length > 0) {
-											postdataForJson[fieldKey][rowIndex][nestedFieldKey] = processedFiles;
+											(postdataForJson[fieldKey] as any)[rowIndex][nestedFieldKey] = processedFiles;
 										}
 									}
 								}
@@ -585,7 +582,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 					const fileValues: ProcessedFileValue[] = [];
 
 					// Process each file object
-					value.forEach((fileObj: FileUploadObject) => {
+					(value as any[]).forEach((fileObj: FileUploadObject) => {
 						if (fileObj.source === 'new_upload' && fileObj.file) {
 							// Add File object to FormData (Channel 2)
 							// CRITICAL: Use field?.id with fallback to fieldKey to ensure uniqueness
@@ -632,7 +629,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 									// This is a file field - process it
 									const processedFiles: ProcessedFileValue[] = [];
 
-									(nestedValue as FileUploadObject[]).forEach((fileObj: FileUploadObject) => {
+									(nestedValue as unknown as FileUploadObject[]).forEach((fileObj: FileUploadObject) => {
 										if (fileObj.source === 'new_upload' && fileObj.file) {
 											// Add to FormData with proper key
 											const fileKey = `${fieldKey}[${rowIndex}][${nestedFieldKey}]`;
@@ -647,7 +644,7 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 
 									// Update row with processed files array
 									if (processedFiles.length > 0) {
-										postdataForJson[fieldKey][rowIndex][nestedFieldKey] = processedFiles;
+										(postdataForJson[fieldKey] as any)[rowIndex][nestedFieldKey] = processedFiles;
 									}
 								}
 							}

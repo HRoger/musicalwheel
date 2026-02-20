@@ -42,8 +42,8 @@ declare const Voxel_Config: {
  */
 export default function ItemPromotionDetails({
 	item,
-	order,
-	config,
+	order: _order,
+	config: _config,
 	onCancelPromotion,
 	isRunningAction,
 	infoIcon,

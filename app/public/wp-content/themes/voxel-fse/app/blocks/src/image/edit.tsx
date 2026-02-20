@@ -29,6 +29,7 @@ import {
 	generateAdvancedStyles,
 	combineBlockClasses,
 } from '../../shared/utils/generateAdvancedStyles';
+import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
 
 interface EditProps {
 	attributes: ImageBlockAttributes;
@@ -37,9 +38,13 @@ interface EditProps {
 }
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
-	// Set blockId if not set
+	// Detect template context for dynamic tag preview resolution
+	const templateContext = useTemplateContext();
+	const templatePostType = useTemplatePostType();
+
+	// Always sync blockId to clientId (handles duplicated blocks that inherit the original's blockId)
 	useEffect(() => {
-		if (!attributes.blockId) {
+		if (attributes.blockId !== clientId) {
 			setAttributes({ blockId: clientId });
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
@@ -97,7 +102,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 			</InspectorControls>
 
 			{/* Editor Preview */}
-			<ImageComponent attributes={attributes} context="editor" />
+			<ImageComponent attributes={attributes} context="editor" templateContext={templateContext} templatePostType={templatePostType} />
 		</div>
 	);
 }

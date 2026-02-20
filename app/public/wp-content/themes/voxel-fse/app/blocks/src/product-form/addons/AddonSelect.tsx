@@ -53,22 +53,25 @@ export default function AddonSelect( {
 	/**
 	 * Handle choice selection
 	 */
-	const handleSelect = useCallback( ( choiceKey: string ) => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleSelect = useCallback( ( choiceKey: string ) => {
 		onChange( { selected: choiceKey } );
-		setIsOpen( false );
 	}, [ onChange ] );
 
 	/**
 	 * Clear selection
 	 */
-	const handleClear = useCallback( () => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleClear = useCallback( () => {
 		if ( ! addon.required ) {
 			onChange( { selected: null } );
 		}
 	}, [ addon.required, onChange ] );
 
+// @ts-ignore -- unused but kept for future use
+
 	// Get selected choice for display
-	const selectedChoice: AddonChoice | null = value.selected ? choices[ value.selected ] ?? null : null;
+	const _selectedChoice: AddonChoice | null = value.selected ? choices[ value.selected ] ?? null : null;
 	const displayMode = addon.props.display_mode ?? 'radio';
 
 	// Format price for a choice

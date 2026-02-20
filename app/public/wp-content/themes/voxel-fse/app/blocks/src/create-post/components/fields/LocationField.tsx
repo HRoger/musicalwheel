@@ -148,10 +148,10 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 				// Reverse geocode using Voxel.Maps.getGeocoder() - EXACT Voxel pattern
 				// Evidence: themes/voxel/assets/dist/create-post.js - geocode() method
 				if (window.Voxel?.Maps) {
-					const geocoder = window.Voxel.Maps.getGeocoder();
+					const geocoder = (window.Voxel?.Maps as any)?.getGeocoder?.();
 					geocoder.geocode(
 						{ lat, lng },
-						(result) => {
+						(result: any) => {
 							// Success callback
 							const addressFromGeo = result.address || '';
 							setAddress(addressFromGeo);
@@ -181,7 +181,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 					setIsGeolocating(false);
 				}
 			},
-			(error) => {
+			(_error) => {
 				setIsGeolocating(false);
 				// EXACT Voxel: Use positionFail message for all geolocation errors
 				// Evidence: themes/voxel/app/controllers/assets-controller.php:244
@@ -231,7 +231,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 						onChange={handleAddressChange}
 						onSelect={handleAddressSelect}
 						onBlur={onBlur}
-						placeholder={field.props?.placeholder || 'Enter address'}
+						placeholder={String(field.props?.['placeholder'] ?? 'Enter address')}
 						iconHtml={markerIconHtml}
 					/>
 				</div>
@@ -286,7 +286,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 							latitude={latitude || 40.7128}
 							longitude={longitude || -74.0060}
 							onLocationChange={handleMapLocationChange}
-							zoom={field.props?.default_zoom || 13}
+							zoom={Number(field.props?.['default_zoom'] ?? 13)}
 						/>
 					</div>
 

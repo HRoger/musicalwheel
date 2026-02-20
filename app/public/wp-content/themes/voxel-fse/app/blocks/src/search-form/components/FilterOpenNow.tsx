@@ -36,12 +36,12 @@ export default function FilterOpenNow( {
 		onChange( isChecked ? null : 1 );
 	};
 
-	const placeholder = filterData.props?.placeholder || filterData.label || 'Open now';
+	const placeholder = ( filterData.props?.['placeholder'] as string ) || filterData.label || 'Open now';
 
 	// Check openInPopup from inspector config (Gutenberg attribute) or from backend props
 	// Evidence: open-now-filter.php:126 → frontend_props() returns openInPopup
 	// Evidence: open-now-filter.php:111-116 → Elementor control 'open_in_popup'
-	const openInPopup = config.openInPopup || filterData.props?.openInPopup || false;
+	const openInPopup = config.openInPopup || filterData.props?.['openInPopup'] || false;
 
 	if ( openInPopup ) {
 		// Popup mode: button trigger

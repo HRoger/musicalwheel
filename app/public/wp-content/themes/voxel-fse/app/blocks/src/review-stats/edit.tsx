@@ -73,8 +73,8 @@ export default function Edit({
 
 	// Get post context from FSE or block editor
 	// @ts-ignore - select type
-	const editorPostId = useSelect(
-		(select) => {
+	const editorPostId = (useSelect as any)(
+		(select: any) => {
 			const editorStore = select('core/editor') as { getCurrentPostId?: () => number } | undefined;
 			return editorStore?.getCurrentPostId?.() ?? null;
 		},
@@ -88,7 +88,7 @@ export default function Edit({
 	const postId = contextPostId || (typeof editorPostId === 'number' ? editorPostId : null);
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'vxfse-review-stats',
 		selectorPrefix: 'vxfse-review-stats',

@@ -91,7 +91,85 @@ class Post_Data_Group extends Base_Data_Group {
 				}
 				return $url;
 			default:
-				return '';
+				// Voxel custom post fields — stored as post meta.
+				// Supports sub-properties like @post(gallery.ids), @post(gallery.url), @post(gallery.id)
+				//
+				// How Voxel stores file/image/gallery fields:
+				//   update_post_meta($post_id, $field_key, join(',', $file_ids))
+				//   e.g. get_post_meta($id, 'gallery', true) → "96,97,98"
+				//
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:77 (update)
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:89-93 (get_value_from_post)
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:139-184 (dynamic_data exports)
+				return $this->resolve_voxel_field( $key, array_slice( $property_path, 1 ) );
+		}
+	}
+
+	/**
+	 * Resolve a Voxel custom post field with optional sub-property.
+	 *
+	 * Matches Voxel's dynamic_data() exports for File_Field (file/image/gallery):
+	 *   - ids  → comma-separated attachment IDs (e.g. "96,97,98")
+	 *   - id   → first attachment ID
+	 *   - url  → URL of first attachment
+	 *   - name → filename of first attachment
+	 *   - (no sub-property) → raw meta value
+	 *
+	 * Also handles any other post meta field as a simple string fallback.
+	 *
+	 * @param string $field_key  The field key (e.g. "gallery", "logo", "cover_image").
+	 * @param array  $sub_path   Remaining property path after the field key (e.g. ["ids"]).
+	 * @return string Resolved value.
+	 */
+	protected function resolve_voxel_field( string $field_key, array $sub_path ): string {
+		$meta_value = get_post_meta( $this->post_id, $field_key, true );
+
+		if ( $meta_value === '' || $meta_value === false ) {
+			return '';
+		}
+
+		$sub_key = ! empty( $sub_path ) ? strtolower( trim( (string) $sub_path[0] ) ) : '';
+
+		switch ( $sub_key ) {
+			case 'ids':
+				// Return all attachment IDs as comma-separated string
+				// Evidence: file-field.php:156-163
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				return ! empty( $ids ) ? implode( ',', $ids ) : '';
+
+			case 'id':
+				// Return first attachment ID
+				// Evidence: file-field.php:146-148 (loopable), 169-171 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				return ! empty( $ids ) ? (string) $ids[0] : '';
+
+			case 'url':
+				// Return URL of first attachment
+				// Evidence: file-field.php:149-151 (loopable), 173-175 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				if ( empty( $ids ) ) {
+					return '';
+				}
+				$url = wp_get_attachment_url( $ids[0] );
+				return $url ? $url : '';
+
+			case 'name':
+				// Return filename of first attachment
+				// Evidence: file-field.php:152-155 (loopable), 177-180 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				if ( empty( $ids ) ) {
+					return '';
+				}
+				$attachment = get_post( $ids[0] );
+				if ( ! $attachment ) {
+					return '';
+				}
+				$file = get_attached_file( $attachment->ID );
+				return $file ? wp_basename( $file ) : '';
+
+			default:
+				// No sub-property — return raw meta value as string
+				return (string) $meta_value;
 		}
 	}
 

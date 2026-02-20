@@ -27,6 +27,7 @@ export interface BoxShadowValue {
  * Typography value structure
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSizeUnit?: string;
@@ -373,6 +374,9 @@ export interface NavBtnStyleConfig {
 	bgColor?: string;
 	bgColorHover?: string;
 	border?: BorderGroupValue;
+	borderType?: string;
+	borderWidth?: ResponsiveValue<number>;
+	borderColor?: string;
 	borderColorHover?: string;
 	radius: ResponsiveValue<number>;
 	shadow: BoxShadowValue;

@@ -484,7 +484,7 @@ export function applyMapStyles(wrapper: HTMLElement, config: MapVxConfig): void 
         // Checkmark icon is applied via data attribute for DOM replacement
         if (styles.searchBtn.checkmarkIcon) {
             const icon = styles.searchBtn.checkmarkIcon as any;
-            wrapper.dataset.checkmarkIcon = JSON.stringify(icon);
+            wrapper.dataset['checkmarkIcon'] = JSON.stringify(icon);
         }
     }
 

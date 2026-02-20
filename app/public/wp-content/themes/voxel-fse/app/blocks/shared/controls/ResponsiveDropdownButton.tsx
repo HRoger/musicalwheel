@@ -21,7 +21,7 @@
  */
 
 import { useRef, useEffect } from 'react';
-import { dispatch, useSelect } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { usePersistentPopupState, notifyDeviceChange } from './usePersistentPopupState';
 import { getCurrentDeviceType, setDeviceType as setDeviceTypeUtil, type DeviceType } from '@shared/utils/deviceType';

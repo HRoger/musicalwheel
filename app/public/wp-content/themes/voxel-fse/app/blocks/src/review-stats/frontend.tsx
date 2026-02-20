@@ -170,12 +170,12 @@ function normalizeConfig(raw: Record<string, unknown>): ReviewStatsVxConfig {
 		columns_tablet: columnsRes.tablet,
 		columns_mobile: columnsRes.mobile,
 
-		itemGap: typeof raw['itemGap'] === 'number' ? raw['itemGap'] : extractNumber(itemGapRes.desktop),
+		itemGap: typeof raw['itemGap'] === 'number' ? raw['itemGap'] : extractNumber(itemGapRes.desktop) ?? 0,
 		itemGap_tablet: typeof raw['itemGap_tablet'] === 'number' ? raw['itemGap_tablet'] as number : extractNumber(itemGapRes.tablet),
 		itemGap_mobile: typeof raw['itemGap_mobile'] === 'number' ? raw['itemGap_mobile'] as number : extractNumber(itemGapRes.mobile),
 
 		// Icon styling
-		iconSize: typeof raw['iconSize'] === 'number' ? raw['iconSize'] : extractNumber(iconSizeRes.desktop),
+		iconSize: typeof raw['iconSize'] === 'number' ? raw['iconSize'] : extractNumber(iconSizeRes.desktop) ?? 0,
 		iconSize_tablet: typeof raw['iconSize_tablet'] === 'number' ? raw['iconSize_tablet'] as number : extractNumber(iconSizeRes.tablet),
 		iconSize_mobile: typeof raw['iconSize_mobile'] === 'number' ? raw['iconSize_mobile'] as number : extractNumber(iconSizeRes.mobile),
 
@@ -204,11 +204,11 @@ function normalizeConfig(raw: Record<string, unknown>): ReviewStatsVxConfig {
 			''
 		),
 
-		chartHeight: typeof raw['chartHeight'] === 'number' ? raw['chartHeight'] : extractNumber(chartHeightRes.desktop),
+		chartHeight: typeof raw['chartHeight'] === 'number' ? raw['chartHeight'] : extractNumber(chartHeightRes.desktop) ?? 0,
 		chartHeight_tablet: typeof raw['chartHeight_tablet'] === 'number' ? raw['chartHeight_tablet'] as number : extractNumber(chartHeightRes.tablet),
 		chartHeight_mobile: typeof raw['chartHeight_mobile'] === 'number' ? raw['chartHeight_mobile'] as number : extractNumber(chartHeightRes.mobile),
 
-		chartRadius: typeof raw['chartRadius'] === 'number' ? raw['chartRadius'] : extractNumber(chartRadiusRes.desktop),
+		chartRadius: typeof raw['chartRadius'] === 'number' ? raw['chartRadius'] : extractNumber(chartRadiusRes.desktop) ?? 0,
 		chartRadius_tablet: typeof raw['chartRadius_tablet'] === 'number' ? raw['chartRadius_tablet'] as number : extractNumber(chartRadiusRes.tablet),
 		chartRadius_mobile: typeof raw['chartRadius_mobile'] === 'number' ? raw['chartRadius_mobile'] as number : extractNumber(chartRadiusRes.mobile),
 	};
@@ -299,10 +299,10 @@ function buildAttributesFromVxConfig(
 		columns_tablet: vxconfig.columns_tablet,
 		columns_mobile: vxconfig.columns_mobile,
 		// Don't default to 0 — undefined means "use Voxel CSS default"
-		itemGap: vxconfig.itemGap || undefined,
+		itemGap: vxconfig.itemGap || 0,
 		itemGap_tablet: vxconfig.itemGap_tablet,
 		itemGap_mobile: vxconfig.itemGap_mobile,
-		iconSize: vxconfig.iconSize || undefined,
+		iconSize: vxconfig.iconSize || 0,
 		iconSize_tablet: vxconfig.iconSize_tablet,
 		iconSize_mobile: vxconfig.iconSize_mobile,
 		iconSpacing: vxconfig.iconSpacing,
@@ -311,10 +311,10 @@ function buildAttributesFromVxConfig(
 		scoreTypography: vxconfig.scoreTypography || {},
 		scoreColor: vxconfig.scoreColor || '',
 		chartBgColor: vxconfig.chartBgColor || '',
-		chartHeight: vxconfig.chartHeight || undefined,
+		chartHeight: vxconfig.chartHeight || 0,
 		chartHeight_tablet: vxconfig.chartHeight_tablet,
 		chartHeight_mobile: vxconfig.chartHeight_mobile,
-		chartRadius: vxconfig.chartRadius || undefined,
+		chartRadius: vxconfig.chartRadius || 0,
 		chartRadius_tablet: vxconfig.chartRadius_tablet,
 		chartRadius_mobile: vxconfig.chartRadius_mobile,
 		hideDesktop: false,

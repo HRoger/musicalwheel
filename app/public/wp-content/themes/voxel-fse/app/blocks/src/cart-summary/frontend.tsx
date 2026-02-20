@@ -330,8 +330,8 @@ function normalizeConfig(raw: Record<string, unknown>): CartSummaryVxConfig {
 		if (val && typeof val === 'object') {
 			const obj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(obj.library, fallback.library) as IconValue['library'],
-				value: normalizeString(obj.value, fallback.value),
+				library: normalizeString(obj['library'], fallback.library) as IconValue['library'],
+				value: normalizeString(obj['value'], fallback.value),
 			};
 		}
 		return fallback;
@@ -359,181 +359,181 @@ function normalizeConfig(raw: Record<string, unknown>): CartSummaryVxConfig {
 		}
 		const obj = val as Record<string, unknown>;
 		return {
-			deleteIcon: normalizeIcon(obj.deleteIcon ?? obj.delete_icon ?? obj.ts_delete_icon, defaultIcon),
-			noProductsIcon: normalizeIcon(obj.noProductsIcon ?? obj.no_products_icon ?? obj.nostock_ico, defaultIcon),
-			loginIcon: normalizeIcon(obj.loginIcon ?? obj.login_icon ?? obj.ts_enter, defaultIcon),
-			emailIcon: normalizeIcon(obj.emailIcon ?? obj.email_icon ?? obj.auth_email_ico, defaultIcon),
-			userIcon: normalizeIcon(obj.userIcon ?? obj.user_icon ?? obj.auth_user_ico, defaultIcon),
-			uploadIcon: normalizeIcon(obj.uploadIcon ?? obj.upload_icon ?? obj.ts_upload_ico, defaultIcon),
-			shippingIcon: normalizeIcon(obj.shippingIcon ?? obj.shipping_icon ?? obj.ts_shipping_ico, defaultIcon),
-			minusIcon: normalizeIcon(obj.minusIcon ?? obj.minus_icon ?? obj.ts_minus_icon, defaultIcon),
-			plusIcon: normalizeIcon(obj.plusIcon ?? obj.plus_icon ?? obj.ts_plus_icon, defaultIcon),
-			checkoutIcon: normalizeIcon(obj.checkoutIcon ?? obj.checkout_icon ?? obj.ts_checkout_icon, defaultIcon),
-			continueIcon: normalizeIcon(obj.continueIcon ?? obj.continue_icon ?? obj.ts_continue_icon, defaultIcon),
+			deleteIcon: normalizeIcon(obj['deleteIcon'] ?? obj['delete_icon'] ?? obj['ts_delete_icon'], defaultIcon),
+			noProductsIcon: normalizeIcon(obj['noProductsIcon'] ?? obj['no_products_icon'] ?? obj['nostock_ico'], defaultIcon),
+			loginIcon: normalizeIcon(obj['loginIcon'] ?? obj['login_icon'] ?? obj['ts_enter'], defaultIcon),
+			emailIcon: normalizeIcon(obj['emailIcon'] ?? obj['email_icon'] ?? obj['auth_email_ico'], defaultIcon),
+			userIcon: normalizeIcon(obj['userIcon'] ?? obj['user_icon'] ?? obj['auth_user_ico'], defaultIcon),
+			uploadIcon: normalizeIcon(obj['uploadIcon'] ?? obj['upload_icon'] ?? obj['ts_upload_ico'], defaultIcon),
+			shippingIcon: normalizeIcon(obj['shippingIcon'] ?? obj['shipping_icon'] ?? obj['ts_shipping_ico'], defaultIcon),
+			minusIcon: normalizeIcon(obj['minusIcon'] ?? obj['minus_icon'] ?? obj['ts_minus_icon'], defaultIcon),
+			plusIcon: normalizeIcon(obj['plusIcon'] ?? obj['plus_icon'] ?? obj['ts_plus_icon'], defaultIcon),
+			checkoutIcon: normalizeIcon(obj['checkoutIcon'] ?? obj['checkout_icon'] ?? obj['ts_checkout_icon'], defaultIcon),
+			continueIcon: normalizeIcon(obj['continueIcon'] ?? obj['continue_icon'] ?? obj['ts_continue_icon'], defaultIcon),
 		};
 	};
 
 	return {
 		// Icons
-		icons: normalizeIcons(raw.icons),
+		icons: normalizeIcons(raw['icons']),
 
 		// General
-		sectionSpacing: normalizeNumber(raw.sectionSpacing ?? raw.section_spacing ?? raw.field_spacing_value, null) ?? undefined,
-		titleColor: normalizeString(raw.titleColor ?? raw.title_color ?? raw.wt_color, '') || undefined,
+		sectionSpacing: normalizeNumber(raw['sectionSpacing'] ?? raw['section_spacing'] ?? raw['field_spacing_value'], null) ?? undefined,
+		titleColor: normalizeString(raw['titleColor'] ?? raw['title_color'] ?? raw['wt_color'], '') || undefined,
 
 		// Empty cart
-		emptyCartGap: normalizeNumber(raw.emptyCartGap ?? raw.empty_cart_gap ?? raw.ts_nopost_content_Gap, null) ?? undefined,
-		emptyCartIconSize: normalizeNumber(raw.emptyCartIconSize ?? raw.empty_cart_icon_size ?? raw.ts_nopost_ico_size, null) ?? undefined,
-		emptyCartIconColor: normalizeString(raw.emptyCartIconColor ?? raw.empty_cart_icon_color ?? raw.ts_nopost_ico_col, '') || undefined,
-		emptyCartTextColor: normalizeString(raw.emptyCartTextColor ?? raw.empty_cart_text_color ?? raw.ts_nopost_typo_col, '') || undefined,
+		emptyCartGap: normalizeNumber(raw['emptyCartGap'] ?? raw['empty_cart_gap'] ?? raw['ts_nopost_content_Gap'], null) ?? undefined,
+		emptyCartIconSize: normalizeNumber(raw['emptyCartIconSize'] ?? raw['empty_cart_icon_size'] ?? raw['ts_nopost_ico_size'], null) ?? undefined,
+		emptyCartIconColor: normalizeString(raw['emptyCartIconColor'] ?? raw['empty_cart_icon_color'] ?? raw['ts_nopost_ico_col'], '') || undefined,
+		emptyCartTextColor: normalizeString(raw['emptyCartTextColor'] ?? raw['empty_cart_text_color'] ?? raw['ts_nopost_typo_col'], '') || undefined,
 
 		// Primary button
-		primaryBtnTextColor: normalizeString(raw.primaryBtnTextColor ?? raw.primary_btn_text_color ?? raw.ts_sf_form_btn_c, '') || undefined,
-		primaryBtnBgColor: normalizeString(raw.primaryBtnBgColor ?? raw.primary_btn_bg_color ?? raw.ts_sf_form_btn_bg, '') || undefined,
-		primaryBtnBorderColor: normalizeString(raw.primaryBtnBorderColor ?? raw.primary_btn_border_color, '') || undefined,
-		primaryBtnRadius: normalizeNumber(raw.primaryBtnRadius ?? raw.primary_btn_radius ?? raw.ts_sf_form_btn_radius, null) ?? undefined,
-		primaryBtnIconSize: normalizeNumber(raw.primaryBtnIconSize ?? raw.primary_btn_icon_size ?? raw.ts_sf_form_btn_icon_size, null) ?? undefined,
-		primaryBtnIconColor: normalizeString(raw.primaryBtnIconColor ?? raw.primary_btn_icon_color ?? raw.ts_sf_form_btn_icon_color, '') || undefined,
-		primaryBtnIconSpacing: normalizeNumber(raw.primaryBtnIconSpacing ?? raw.primary_btn_icon_spacing ?? raw.ts_sf_form_btn_icon_spacing, null) ?? undefined,
-		primaryBtnTextColorHover: normalizeString(raw.primaryBtnTextColorHover ?? raw.primary_btn_text_color_hover ?? raw.ts_sf_form_btn_c_h, '') || undefined,
-		primaryBtnBgColorHover: normalizeString(raw.primaryBtnBgColorHover ?? raw.primary_btn_bg_color_hover ?? raw.ts_sf_form_btn_bg_h, '') || undefined,
-		primaryBtnBorderColorHover: normalizeString(raw.primaryBtnBorderColorHover ?? raw.primary_btn_border_color_hover ?? raw.ts_sf_form_btn_border_h, '') || undefined,
-		primaryBtnIconColorHover: normalizeString(raw.primaryBtnIconColorHover ?? raw.primary_btn_icon_color_hover ?? raw.ts_sf_form_btn_icon_color_h, '') || undefined,
+		primaryBtnTextColor: normalizeString(raw['primaryBtnTextColor'] ?? raw['primary_btn_text_color'] ?? raw['ts_sf_form_btn_c'], '') || undefined,
+		primaryBtnBgColor: normalizeString(raw['primaryBtnBgColor'] ?? raw['primary_btn_bg_color'] ?? raw['ts_sf_form_btn_bg'], '') || undefined,
+		primaryBtnBorderColor: normalizeString(raw['primaryBtnBorderColor'] ?? raw['primary_btn_border_color'], '') || undefined,
+		primaryBtnRadius: normalizeNumber(raw['primaryBtnRadius'] ?? raw['primary_btn_radius'] ?? raw['ts_sf_form_btn_radius'], null) ?? undefined,
+		primaryBtnIconSize: normalizeNumber(raw['primaryBtnIconSize'] ?? raw['primary_btn_icon_size'] ?? raw['ts_sf_form_btn_icon_size'], null) ?? undefined,
+		primaryBtnIconColor: normalizeString(raw['primaryBtnIconColor'] ?? raw['primary_btn_icon_color'] ?? raw['ts_sf_form_btn_icon_color'], '') || undefined,
+		primaryBtnIconSpacing: normalizeNumber(raw['primaryBtnIconSpacing'] ?? raw['primary_btn_icon_spacing'] ?? raw['ts_sf_form_btn_icon_spacing'], null) ?? undefined,
+		primaryBtnTextColorHover: normalizeString(raw['primaryBtnTextColorHover'] ?? raw['primary_btn_text_color_hover'] ?? raw['ts_sf_form_btn_c_h'], '') || undefined,
+		primaryBtnBgColorHover: normalizeString(raw['primaryBtnBgColorHover'] ?? raw['primary_btn_bg_color_hover'] ?? raw['ts_sf_form_btn_bg_h'], '') || undefined,
+		primaryBtnBorderColorHover: normalizeString(raw['primaryBtnBorderColorHover'] ?? raw['primary_btn_border_color_hover'] ?? raw['ts_sf_form_btn_border_h'], '') || undefined,
+		primaryBtnIconColorHover: normalizeString(raw['primaryBtnIconColorHover'] ?? raw['primary_btn_icon_color_hover'] ?? raw['ts_sf_form_btn_icon_color_h'], '') || undefined,
 
 		// Secondary button
-		secondaryBtnTextColor: normalizeString(raw.secondaryBtnTextColor ?? raw.secondary_btn_text_color ?? raw.scnd_btn_c, '') || undefined,
-		secondaryBtnBgColor: normalizeString(raw.secondaryBtnBgColor ?? raw.secondary_btn_bg_color ?? raw.scnd_btn_bg, '') || undefined,
-		secondaryBtnBorderColor: normalizeString(raw.secondaryBtnBorderColor ?? raw.secondary_btn_border_color, '') || undefined,
-		secondaryBtnRadius: normalizeNumber(raw.secondaryBtnRadius ?? raw.secondary_btn_radius ?? raw.scnd_btn_radius, null) ?? undefined,
-		secondaryBtnIconSize: normalizeNumber(raw.secondaryBtnIconSize ?? raw.secondary_btn_icon_size ?? raw.scnd_btn_icon_size, null) ?? undefined,
-		secondaryBtnIconColor: normalizeString(raw.secondaryBtnIconColor ?? raw.secondary_btn_icon_color ?? raw.scnd_btn_icon_color, '') || undefined,
-		secondaryBtnIconSpacing: normalizeNumber(raw.secondaryBtnIconSpacing ?? raw.secondary_btn_icon_spacing ?? raw.scnd_btn_icon_pad, null) ?? undefined,
-		secondaryBtnTextColorHover: normalizeString(raw.secondaryBtnTextColorHover ?? raw.secondary_btn_text_color_hover ?? raw.scnd_btn_c_h, '') || undefined,
-		secondaryBtnBgColorHover: normalizeString(raw.secondaryBtnBgColorHover ?? raw.secondary_btn_bg_color_hover ?? raw.scnd_btn_bg_h, '') || undefined,
-		secondaryBtnBorderColorHover: normalizeString(raw.secondaryBtnBorderColorHover ?? raw.secondary_btn_border_color_hover ?? raw.scnd_btn_border_h, '') || undefined,
-		secondaryBtnIconColorHover: normalizeString(raw.secondaryBtnIconColorHover ?? raw.secondary_btn_icon_color_hover ?? raw.scnd_btn_icon_color_h, '') || undefined,
+		secondaryBtnTextColor: normalizeString(raw['secondaryBtnTextColor'] ?? raw['secondary_btn_text_color'] ?? raw['scnd_btn_c'], '') || undefined,
+		secondaryBtnBgColor: normalizeString(raw['secondaryBtnBgColor'] ?? raw['secondary_btn_bg_color'] ?? raw['scnd_btn_bg'], '') || undefined,
+		secondaryBtnBorderColor: normalizeString(raw['secondaryBtnBorderColor'] ?? raw['secondary_btn_border_color'], '') || undefined,
+		secondaryBtnRadius: normalizeNumber(raw['secondaryBtnRadius'] ?? raw['secondary_btn_radius'] ?? raw['scnd_btn_radius'], null) ?? undefined,
+		secondaryBtnIconSize: normalizeNumber(raw['secondaryBtnIconSize'] ?? raw['secondary_btn_icon_size'] ?? raw['scnd_btn_icon_size'], null) ?? undefined,
+		secondaryBtnIconColor: normalizeString(raw['secondaryBtnIconColor'] ?? raw['secondary_btn_icon_color'] ?? raw['scnd_btn_icon_color'], '') || undefined,
+		secondaryBtnIconSpacing: normalizeNumber(raw['secondaryBtnIconSpacing'] ?? raw['secondary_btn_icon_spacing'] ?? raw['scnd_btn_icon_pad'], null) ?? undefined,
+		secondaryBtnTextColorHover: normalizeString(raw['secondaryBtnTextColorHover'] ?? raw['secondary_btn_text_color_hover'] ?? raw['scnd_btn_c_h'], '') || undefined,
+		secondaryBtnBgColorHover: normalizeString(raw['secondaryBtnBgColorHover'] ?? raw['secondary_btn_bg_color_hover'] ?? raw['scnd_btn_bg_h'], '') || undefined,
+		secondaryBtnBorderColorHover: normalizeString(raw['secondaryBtnBorderColorHover'] ?? raw['secondary_btn_border_color_hover'] ?? raw['scnd_btn_border_h'], '') || undefined,
+		secondaryBtnIconColorHover: normalizeString(raw['secondaryBtnIconColorHover'] ?? raw['secondary_btn_icon_color_hover'] ?? raw['scnd_btn_icon_color_h'], '') || undefined,
 
 		// Loading
-		loaderColor1: normalizeString(raw.loaderColor1 ?? raw.loader_color1 ?? raw.tm_color1, '') || undefined,
-		loaderColor2: normalizeString(raw.loaderColor2 ?? raw.loader_color2 ?? raw.tm_color2, '') || undefined,
+		loaderColor1: normalizeString(raw['loaderColor1'] ?? raw['loader_color1'] ?? raw['tm_color1'], '') || undefined,
+		loaderColor2: normalizeString(raw['loaderColor2'] ?? raw['loader_color2'] ?? raw['tm_color2'], '') || undefined,
 
 		// Checkbox
-		checkboxBorderColor: normalizeString(raw.checkboxBorderColor ?? raw.checkbox_border_color, '') || undefined,
-		checkboxSelectedBgColor: normalizeString(raw.checkboxSelectedBgColor ?? raw.checkbox_selected_bg_color ?? raw.ts_checkbox_checked, '') || undefined,
+		checkboxBorderColor: normalizeString(raw['checkboxBorderColor'] ?? raw['checkbox_border_color'], '') || undefined,
+		checkboxSelectedBgColor: normalizeString(raw['checkboxSelectedBgColor'] ?? raw['checkbox_selected_bg_color'] ?? raw['ts_checkbox_checked'], '') || undefined,
 
 		// Cart styling
-		cartItemSpacing: normalizeNumber(raw.cartItemSpacing ?? raw.cart_item_spacing ?? raw.cart_spacing, null) ?? undefined,
-		cartItemContentSpacing: normalizeNumber(raw.cartItemContentSpacing ?? raw.cart_item_content_spacing ?? raw.cart_item_spacing, null) ?? undefined,
-		cartPictureSize: normalizeNumber(raw.cartPictureSize ?? raw.cart_picture_size ?? raw.ts_cart_img_size, null) ?? undefined,
-		cartPictureRadius: normalizeNumber(raw.cartPictureRadius ?? raw.cart_picture_radius ?? raw.ts_cart_img_radius, null) ?? undefined,
-		cartTitleColor: normalizeString(raw.cartTitleColor ?? raw.cart_title_color ?? raw.ts_cart_title_col, '') || undefined,
-		cartSubtitleColor: normalizeString(raw.cartSubtitleColor ?? raw.cart_subtitle_color ?? raw.ts_cart_sub_col, '') || undefined,
+		cartItemSpacing: normalizeNumber(raw['cartItemSpacing'] ?? raw['cart_item_spacing'] ?? raw['cart_spacing'], null) ?? undefined,
+		cartItemContentSpacing: normalizeNumber(raw['cartItemContentSpacing'] ?? raw['cart_item_content_spacing'] ?? raw['cart_item_spacing'], null) ?? undefined,
+		cartPictureSize: normalizeNumber(raw['cartPictureSize'] ?? raw['cart_picture_size'] ?? raw['ts_cart_img_size'], null) ?? undefined,
+		cartPictureRadius: normalizeNumber(raw['cartPictureRadius'] ?? raw['cart_picture_radius'] ?? raw['ts_cart_img_radius'], null) ?? undefined,
+		cartTitleColor: normalizeString(raw['cartTitleColor'] ?? raw['cart_title_color'] ?? raw['ts_cart_title_col'], '') || undefined,
+		cartSubtitleColor: normalizeString(raw['cartSubtitleColor'] ?? raw['cart_subtitle_color'] ?? raw['ts_cart_sub_col'], '') || undefined,
 
 		// Icon button
-		iconBtnColor: normalizeString(raw.iconBtnColor ?? raw.icon_btn_color ?? raw.ts_cart_btn_color, '') || undefined,
-		iconBtnBgColor: normalizeString(raw.iconBtnBgColor ?? raw.icon_btn_bg_color ?? raw.ts_cart_btn_bg, '') || undefined,
-		iconBtnBorderColor: normalizeString(raw.iconBtnBorderColor ?? raw.icon_btn_border_color, '') || undefined,
-		iconBtnRadius: normalizeNumber(raw.iconBtnRadius ?? raw.icon_btn_radius ?? raw.ts_cart_btn_radius, null) ?? undefined,
-		iconBtnValueSize: normalizeNumber(raw.iconBtnValueSize ?? raw.icon_btn_value_size ?? raw.ts_cart_btn_val_size, null) ?? undefined,
-		iconBtnValueColor: normalizeString(raw.iconBtnValueColor ?? raw.icon_btn_value_color ?? raw.ts_cart_btn_val_col, '') || undefined,
-		iconBtnColorHover: normalizeString(raw.iconBtnColorHover ?? raw.icon_btn_color_hover ?? raw.ts_cart_btn_color_h, '') || undefined,
-		iconBtnBgColorHover: normalizeString(raw.iconBtnBgColorHover ?? raw.icon_btn_bg_color_hover ?? raw.ts_cart_btn_bg_h, '') || undefined,
-		iconBtnBorderColorHover: normalizeString(raw.iconBtnBorderColorHover ?? raw.icon_btn_border_color_hover ?? raw.ts_cart_btn_border_h, '') || undefined,
+		iconBtnColor: normalizeString(raw['iconBtnColor'] ?? raw['icon_btn_color'] ?? raw['ts_cart_btn_color'], '') || undefined,
+		iconBtnBgColor: normalizeString(raw['iconBtnBgColor'] ?? raw['icon_btn_bg_color'] ?? raw['ts_cart_btn_bg'], '') || undefined,
+		iconBtnBorderColor: normalizeString(raw['iconBtnBorderColor'] ?? raw['icon_btn_border_color'], '') || undefined,
+		iconBtnRadius: normalizeNumber(raw['iconBtnRadius'] ?? raw['icon_btn_radius'] ?? raw['ts_cart_btn_radius'], null) ?? undefined,
+		iconBtnValueSize: normalizeNumber(raw['iconBtnValueSize'] ?? raw['icon_btn_value_size'] ?? raw['ts_cart_btn_val_size'], null) ?? undefined,
+		iconBtnValueColor: normalizeString(raw['iconBtnValueColor'] ?? raw['icon_btn_value_color'] ?? raw['ts_cart_btn_val_col'], '') || undefined,
+		iconBtnColorHover: normalizeString(raw['iconBtnColorHover'] ?? raw['icon_btn_color_hover'] ?? raw['ts_cart_btn_color_h'], '') || undefined,
+		iconBtnBgColorHover: normalizeString(raw['iconBtnBgColorHover'] ?? raw['icon_btn_bg_color_hover'] ?? raw['ts_cart_btn_bg_h'], '') || undefined,
+		iconBtnBorderColorHover: normalizeString(raw['iconBtnBorderColorHover'] ?? raw['icon_btn_border_color_hover'] ?? raw['ts_cart_btn_border_h'], '') || undefined,
 
 		// Dropdown button
-		dropdownBgColor: normalizeString(raw.dropdownBgColor ?? raw.dropdown_bg_color ?? raw.pg_trs_bg, '') || undefined,
-		dropdownTextColor: normalizeString(raw.dropdownTextColor ?? raw.dropdown_text_color ?? raw.pg_trs_text, '') || undefined,
-		dropdownBorderColor: normalizeString(raw.dropdownBorderColor ?? raw.dropdown_border_color, '') || undefined,
-		dropdownRadius: normalizeNumber(raw.dropdownRadius ?? raw.dropdown_radius ?? raw.pg_trs_radius, null) ?? undefined,
-		dropdownHeight: normalizeNumber(raw.dropdownHeight ?? raw.dropdown_height ?? raw.pg_trs_height, null) ?? undefined,
-		dropdownIconColor: normalizeString(raw.dropdownIconColor ?? raw.dropdown_icon_color ?? raw.pg_trs_ico, '') || undefined,
-		dropdownIconSize: normalizeNumber(raw.dropdownIconSize ?? raw.dropdown_icon_size ?? raw.pg_trs_ico_size, null) ?? undefined,
-		dropdownIconSpacing: normalizeNumber(raw.dropdownIconSpacing ?? raw.dropdown_icon_spacing ?? raw.pg_trs_ico_spacing, null) ?? undefined,
-		dropdownHideChevron: normalizeBoolean(raw.dropdownHideChevron ?? raw.dropdown_hide_chevron ?? raw.pg_trs_chevron_hide, false),
-		dropdownChevronColor: normalizeString(raw.dropdownChevronColor ?? raw.dropdown_chevron_color ?? raw.pg_trs_chevron_col, '') || undefined,
-		dropdownBgColorHover: normalizeString(raw.dropdownBgColorHover ?? raw.dropdown_bg_color_hover ?? raw.pg_trs_bg_h, '') || undefined,
-		dropdownTextColorHover: normalizeString(raw.dropdownTextColorHover ?? raw.dropdown_text_color_hover ?? raw.pg_trs_text_h, '') || undefined,
-		dropdownBorderColorHover: normalizeString(raw.dropdownBorderColorHover ?? raw.dropdown_border_color_hover ?? raw.pg_trs_border_h, '') || undefined,
-		dropdownIconColorHover: normalizeString(raw.dropdownIconColorHover ?? raw.dropdown_icon_color_hover ?? raw.pg_trs_ico_h, '') || undefined,
-		dropdownBgColorFilled: normalizeString(raw.dropdownBgColorFilled ?? raw.dropdown_bg_color_filled ?? raw.pg_trs_bg_f, '') || undefined,
-		dropdownTextColorFilled: normalizeString(raw.dropdownTextColorFilled ?? raw.dropdown_text_color_filled ?? raw.pg_trs_text_f, '') || undefined,
-		dropdownIconColorFilled: normalizeString(raw.dropdownIconColorFilled ?? raw.dropdown_icon_color_filled ?? raw.pg_trs_ico_f, '') || undefined,
-		dropdownBorderColorFilled: normalizeString(raw.dropdownBorderColorFilled ?? raw.dropdown_border_color_filled ?? raw.pg_trs_border_f, '') || undefined,
+		dropdownBgColor: normalizeString(raw['dropdownBgColor'] ?? raw['dropdown_bg_color'] ?? raw['pg_trs_bg'], '') || undefined,
+		dropdownTextColor: normalizeString(raw['dropdownTextColor'] ?? raw['dropdown_text_color'] ?? raw['pg_trs_text'], '') || undefined,
+		dropdownBorderColor: normalizeString(raw['dropdownBorderColor'] ?? raw['dropdown_border_color'], '') || undefined,
+		dropdownRadius: normalizeNumber(raw['dropdownRadius'] ?? raw['dropdown_radius'] ?? raw['pg_trs_radius'], null) ?? undefined,
+		dropdownHeight: normalizeNumber(raw['dropdownHeight'] ?? raw['dropdown_height'] ?? raw['pg_trs_height'], null) ?? undefined,
+		dropdownIconColor: normalizeString(raw['dropdownIconColor'] ?? raw['dropdown_icon_color'] ?? raw['pg_trs_ico'], '') || undefined,
+		dropdownIconSize: normalizeNumber(raw['dropdownIconSize'] ?? raw['dropdown_icon_size'] ?? raw['pg_trs_ico_size'], null) ?? undefined,
+		dropdownIconSpacing: normalizeNumber(raw['dropdownIconSpacing'] ?? raw['dropdown_icon_spacing'] ?? raw['pg_trs_ico_spacing'], null) ?? undefined,
+		dropdownHideChevron: normalizeBoolean(raw['dropdownHideChevron'] ?? raw['dropdown_hide_chevron'] ?? raw['pg_trs_chevron_hide'], false),
+		dropdownChevronColor: normalizeString(raw['dropdownChevronColor'] ?? raw['dropdown_chevron_color'] ?? raw['pg_trs_chevron_col'], '') || undefined,
+		dropdownBgColorHover: normalizeString(raw['dropdownBgColorHover'] ?? raw['dropdown_bg_color_hover'] ?? raw['pg_trs_bg_h'], '') || undefined,
+		dropdownTextColorHover: normalizeString(raw['dropdownTextColorHover'] ?? raw['dropdown_text_color_hover'] ?? raw['pg_trs_text_h'], '') || undefined,
+		dropdownBorderColorHover: normalizeString(raw['dropdownBorderColorHover'] ?? raw['dropdown_border_color_hover'] ?? raw['pg_trs_border_h'], '') || undefined,
+		dropdownIconColorHover: normalizeString(raw['dropdownIconColorHover'] ?? raw['dropdown_icon_color_hover'] ?? raw['pg_trs_ico_h'], '') || undefined,
+		dropdownBgColorFilled: normalizeString(raw['dropdownBgColorFilled'] ?? raw['dropdown_bg_color_filled'] ?? raw['pg_trs_bg_f'], '') || undefined,
+		dropdownTextColorFilled: normalizeString(raw['dropdownTextColorFilled'] ?? raw['dropdown_text_color_filled'] ?? raw['pg_trs_text_f'], '') || undefined,
+		dropdownIconColorFilled: normalizeString(raw['dropdownIconColorFilled'] ?? raw['dropdown_icon_color_filled'] ?? raw['pg_trs_ico_f'], '') || undefined,
+		dropdownBorderColorFilled: normalizeString(raw['dropdownBorderColorFilled'] ?? raw['dropdown_border_color_filled'] ?? raw['pg_trs_border_f'], '') || undefined,
 
 		// Ship to
-		shipToTextColor: normalizeString(raw.shipToTextColor ?? raw.ship_to_text_color ?? raw.shipto_color, '') || undefined,
-		shipToLinkColor: normalizeString(raw.shipToLinkColor ?? raw.ship_to_link_color ?? raw.shipto_link_color, '') || undefined,
+		shipToTextColor: normalizeString(raw['shipToTextColor'] ?? raw['ship_to_text_color'] ?? raw['shipto_color'], '') || undefined,
+		shipToLinkColor: normalizeString(raw['shipToLinkColor'] ?? raw['ship_to_link_color'] ?? raw['shipto_link_color'], '') || undefined,
 
 		// Section divider
-		dividerTextColor: normalizeString(raw.dividerTextColor ?? raw.divider_text_color ?? raw.sd_color, '') || undefined,
-		dividerLineColor: normalizeString(raw.dividerLineColor ?? raw.divider_line_color ?? raw.sd_div_color, '') || undefined,
-		dividerLineHeight: normalizeNumber(raw.dividerLineHeight ?? raw.divider_line_height ?? raw.sd_div_height, null) ?? undefined,
+		dividerTextColor: normalizeString(raw['dividerTextColor'] ?? raw['divider_text_color'] ?? raw['sd_color'], '') || undefined,
+		dividerLineColor: normalizeString(raw['dividerLineColor'] ?? raw['divider_line_color'] ?? raw['sd_div_color'], '') || undefined,
+		dividerLineHeight: normalizeNumber(raw['dividerLineHeight'] ?? raw['divider_line_height'] ?? raw['sd_div_height'], null) ?? undefined,
 
 		// Subtotal
-		subtotalTextColor: normalizeString(raw.subtotalTextColor ?? raw.subtotal_text_color ?? raw.calc_text_color_total, '') || undefined,
+		subtotalTextColor: normalizeString(raw['subtotalTextColor'] ?? raw['subtotal_text_color'] ?? raw['calc_text_color_total'], '') || undefined,
 
 		// Field label
-		fieldLabelColor: normalizeString(raw.fieldLabelColor ?? raw.field_label_color ?? raw.auth_label_col, '') || undefined,
-		fieldLabelLinkColor: normalizeString(raw.fieldLabelLinkColor ?? raw.field_label_link_color ?? raw.auth_label_link, '') || undefined,
+		fieldLabelColor: normalizeString(raw['fieldLabelColor'] ?? raw['field_label_color'] ?? raw['auth_label_col'], '') || undefined,
+		fieldLabelLinkColor: normalizeString(raw['fieldLabelLinkColor'] ?? raw['field_label_link_color'] ?? raw['auth_label_link'], '') || undefined,
 
 		// Input
-		inputPlaceholderColor: normalizeString(raw.inputPlaceholderColor ?? raw.input_placeholder_color ?? raw.auth_placeholder_color, '') || undefined,
-		inputValueColor: normalizeString(raw.inputValueColor ?? raw.input_value_color ?? raw.auth_input_color, '') || undefined,
-		inputBgColor: normalizeString(raw.inputBgColor ?? raw.input_bg_color ?? raw.auth_input_bg, '') || undefined,
-		inputBorderColor: normalizeString(raw.inputBorderColor ?? raw.input_border_color, '') || undefined,
-		inputHeight: normalizeNumber(raw.inputHeight ?? raw.input_height ?? raw.auth_input_height, null) ?? undefined,
-		inputRadius: normalizeNumber(raw.inputRadius ?? raw.input_radius ?? raw.auth_input_radius, null) ?? undefined,
-		inputIconColor: normalizeString(raw.inputIconColor ?? raw.input_icon_color ?? raw.auth_icon_color, '') || undefined,
-		inputIconSize: normalizeNumber(raw.inputIconSize ?? raw.input_icon_size ?? raw.auth_icon_size, null) ?? undefined,
-		inputIconMargin: normalizeNumber(raw.inputIconMargin ?? raw.input_icon_margin ?? raw.auth_icon_margin, null) ?? undefined,
-		textareaRadius: normalizeNumber(raw.textareaRadius ?? raw.textarea_radius ?? raw.auth_textarea_radius, null) ?? undefined,
-		inputBgColorHover: normalizeString(raw.inputBgColorHover ?? raw.input_bg_color_hover ?? raw.auth_input_bg_h, '') || undefined,
-		inputBorderColorHover: normalizeString(raw.inputBorderColorHover ?? raw.input_border_color_hover ?? raw.auth_input_border_h, '') || undefined,
-		inputPlaceholderColorHover: normalizeString(raw.inputPlaceholderColorHover ?? raw.input_placeholder_color_hover ?? raw.auth_placeholder_color_h, '') || undefined,
-		inputValueColorHover: normalizeString(raw.inputValueColorHover ?? raw.input_value_color_hover ?? raw.auth_input_color_h, '') || undefined,
-		inputIconColorHover: normalizeString(raw.inputIconColorHover ?? raw.input_icon_color_hover ?? raw.auth_icon_color_h, '') || undefined,
-		inputBgColorActive: normalizeString(raw.inputBgColorActive ?? raw.input_bg_color_active ?? raw.auth_input_bg_a, '') || undefined,
-		inputBorderColorActive: normalizeString(raw.inputBorderColorActive ?? raw.input_border_color_active ?? raw.auth_input_border_a, '') || undefined,
-		inputPlaceholderColorActive: normalizeString(raw.inputPlaceholderColorActive ?? raw.input_placeholder_color_active ?? raw.auth_placeholder_color_a, '') || undefined,
-		inputValueColorActive: normalizeString(raw.inputValueColorActive ?? raw.input_value_color_active ?? raw.auth_input_color_a, '') || undefined,
+		inputPlaceholderColor: normalizeString(raw['inputPlaceholderColor'] ?? raw['input_placeholder_color'] ?? raw['auth_placeholder_color'], '') || undefined,
+		inputValueColor: normalizeString(raw['inputValueColor'] ?? raw['input_value_color'] ?? raw['auth_input_color'], '') || undefined,
+		inputBgColor: normalizeString(raw['inputBgColor'] ?? raw['input_bg_color'] ?? raw['auth_input_bg'], '') || undefined,
+		inputBorderColor: normalizeString(raw['inputBorderColor'] ?? raw['input_border_color'], '') || undefined,
+		inputHeight: normalizeNumber(raw['inputHeight'] ?? raw['input_height'] ?? raw['auth_input_height'], null) ?? undefined,
+		inputRadius: normalizeNumber(raw['inputRadius'] ?? raw['input_radius'] ?? raw['auth_input_radius'], null) ?? undefined,
+		inputIconColor: normalizeString(raw['inputIconColor'] ?? raw['input_icon_color'] ?? raw['auth_icon_color'], '') || undefined,
+		inputIconSize: normalizeNumber(raw['inputIconSize'] ?? raw['input_icon_size'] ?? raw['auth_icon_size'], null) ?? undefined,
+		inputIconMargin: normalizeNumber(raw['inputIconMargin'] ?? raw['input_icon_margin'] ?? raw['auth_icon_margin'], null) ?? undefined,
+		textareaRadius: normalizeNumber(raw['textareaRadius'] ?? raw['textarea_radius'] ?? raw['auth_textarea_radius'], null) ?? undefined,
+		inputBgColorHover: normalizeString(raw['inputBgColorHover'] ?? raw['input_bg_color_hover'] ?? raw['auth_input_bg_h'], '') || undefined,
+		inputBorderColorHover: normalizeString(raw['inputBorderColorHover'] ?? raw['input_border_color_hover'] ?? raw['auth_input_border_h'], '') || undefined,
+		inputPlaceholderColorHover: normalizeString(raw['inputPlaceholderColorHover'] ?? raw['input_placeholder_color_hover'] ?? raw['auth_placeholder_color_h'], '') || undefined,
+		inputValueColorHover: normalizeString(raw['inputValueColorHover'] ?? raw['input_value_color_hover'] ?? raw['auth_input_color_h'], '') || undefined,
+		inputIconColorHover: normalizeString(raw['inputIconColorHover'] ?? raw['input_icon_color_hover'] ?? raw['auth_icon_color_h'], '') || undefined,
+		inputBgColorActive: normalizeString(raw['inputBgColorActive'] ?? raw['input_bg_color_active'] ?? raw['auth_input_bg_a'], '') || undefined,
+		inputBorderColorActive: normalizeString(raw['inputBorderColorActive'] ?? raw['input_border_color_active'] ?? raw['auth_input_border_a'], '') || undefined,
+		inputPlaceholderColorActive: normalizeString(raw['inputPlaceholderColorActive'] ?? raw['input_placeholder_color_active'] ?? raw['auth_placeholder_color_a'], '') || undefined,
+		inputValueColorActive: normalizeString(raw['inputValueColorActive'] ?? raw['input_value_color_active'] ?? raw['auth_input_color_a'], '') || undefined,
 
 		// Cards
-		cardsGap: normalizeNumber(raw.cardsGap ?? raw.cards_gap ?? raw.ts_method_cards_gap, null) ?? undefined,
-		cardsBgColor: normalizeString(raw.cardsBgColor ?? raw.cards_bg_color ?? raw.ts_method_cards_bg, '') || undefined,
-		cardsBorderColor: normalizeString(raw.cardsBorderColor ?? raw.cards_border_color, '') || undefined,
-		cardsRadius: normalizeNumber(raw.cardsRadius ?? raw.cards_radius ?? raw.ts_method_cards_radius, null) ?? undefined,
-		cardsPrimaryColor: normalizeString(raw.cardsPrimaryColor ?? raw.cards_primary_color ?? raw.ts_method_cards_col, '') || undefined,
-		cardsSecondaryColor: normalizeString(raw.cardsSecondaryColor ?? raw.cards_secondary_color ?? raw.ts_method_cards_scnd_col, '') || undefined,
-		cardsPriceColor: normalizeString(raw.cardsPriceColor ?? raw.cards_price_color ?? raw.ts_method_cards_price_col, '') || undefined,
-		cardsImageRadius: normalizeNumber(raw.cardsImageRadius ?? raw.cards_image_radius ?? raw.ts_method_cards_img_radius, null) ?? undefined,
-		cardsImageSize: normalizeNumber(raw.cardsImageSize ?? raw.cards_image_size ?? raw.ts_method_cards_img_size, null) ?? undefined,
-		cardsSelectedBgColor: normalizeString(raw.cardsSelectedBgColor ?? raw.cards_selected_bg_color ?? raw.ts_method_cards_bg_a, '') || undefined,
-		cardsSelectedBorderColor: normalizeString(raw.cardsSelectedBorderColor ?? raw.cards_selected_border_color ?? raw.ts_method_cards_border_a, '') || undefined,
+		cardsGap: normalizeNumber(raw['cardsGap'] ?? raw['cards_gap'] ?? raw['ts_method_cards_gap'], null) ?? undefined,
+		cardsBgColor: normalizeString(raw['cardsBgColor'] ?? raw['cards_bg_color'] ?? raw['ts_method_cards_bg'], '') || undefined,
+		cardsBorderColor: normalizeString(raw['cardsBorderColor'] ?? raw['cards_border_color'], '') || undefined,
+		cardsRadius: normalizeNumber(raw['cardsRadius'] ?? raw['cards_radius'] ?? raw['ts_method_cards_radius'], null) ?? undefined,
+		cardsPrimaryColor: normalizeString(raw['cardsPrimaryColor'] ?? raw['cards_primary_color'] ?? raw['ts_method_cards_col'], '') || undefined,
+		cardsSecondaryColor: normalizeString(raw['cardsSecondaryColor'] ?? raw['cards_secondary_color'] ?? raw['ts_method_cards_scnd_col'], '') || undefined,
+		cardsPriceColor: normalizeString(raw['cardsPriceColor'] ?? raw['cards_price_color'] ?? raw['ts_method_cards_price_col'], '') || undefined,
+		cardsImageRadius: normalizeNumber(raw['cardsImageRadius'] ?? raw['cards_image_radius'] ?? raw['ts_method_cards_img_radius'], null) ?? undefined,
+		cardsImageSize: normalizeNumber(raw['cardsImageSize'] ?? raw['cards_image_size'] ?? raw['ts_method_cards_img_size'], null) ?? undefined,
+		cardsSelectedBgColor: normalizeString(raw['cardsSelectedBgColor'] ?? raw['cards_selected_bg_color'] ?? raw['ts_method_cards_bg_a'], '') || undefined,
+		cardsSelectedBorderColor: normalizeString(raw['cardsSelectedBorderColor'] ?? raw['cards_selected_border_color'] ?? raw['ts_method_cards_border_a'], '') || undefined,
 
 		// File/Gallery
-		fileFieldGap: normalizeNumber(raw.fileFieldGap ?? raw.file_field_gap, null) ?? undefined,
-		fileSelectIconColor: normalizeString(raw.fileSelectIconColor ?? raw.file_select_icon_color, '') || undefined,
-		fileSelectIconSize: normalizeNumber(raw.fileSelectIconSize ?? raw.file_select_icon_size, null) ?? undefined,
-		fileSelectBgColor: normalizeString(raw.fileSelectBgColor ?? raw.file_select_bg_color ?? raw.file_select_bg, '') || undefined,
-		fileSelectBorderColor: normalizeString(raw.fileSelectBorderColor ?? raw.file_select_border_color, '') || undefined,
-		fileSelectRadius: normalizeNumber(raw.fileSelectRadius ?? raw.file_select_radius, null) ?? undefined,
-		fileSelectTextColor: normalizeString(raw.fileSelectTextColor ?? raw.file_select_text_color, '') || undefined,
-		addedFileRadius: normalizeNumber(raw.addedFileRadius ?? raw.added_file_radius, null) ?? undefined,
-		addedFileBgColor: normalizeString(raw.addedFileBgColor ?? raw.added_file_bg_color ?? raw.added_file_bg, '') || undefined,
-		addedFileIconColor: normalizeString(raw.addedFileIconColor ?? raw.added_file_icon_color, '') || undefined,
-		addedFileIconSize: normalizeNumber(raw.addedFileIconSize ?? raw.added_file_icon_size, null) ?? undefined,
-		addedFileTextColor: normalizeString(raw.addedFileTextColor ?? raw.added_file_text_color, '') || undefined,
-		removeFileBgColor: normalizeString(raw.removeFileBgColor ?? raw.remove_file_bg_color ?? raw.remove_file_bg, '') || undefined,
-		removeFileBgColorHover: normalizeString(raw.removeFileBgColorHover ?? raw.remove_file_bg_color_hover ?? raw.remove_file_bg_h, '') || undefined,
-		removeFileColor: normalizeString(raw.removeFileColor ?? raw.remove_file_color, '') || undefined,
-		removeFileColorHover: normalizeString(raw.removeFileColorHover ?? raw.remove_file_color_hover ?? raw.remove_file_color_h, '') || undefined,
-		removeFileRadius: normalizeNumber(raw.removeFileRadius ?? raw.remove_file_radius, null) ?? undefined,
-		removeFileSize: normalizeNumber(raw.removeFileSize ?? raw.remove_file_size, null) ?? undefined,
-		removeFileIconSize: normalizeNumber(raw.removeFileIconSize ?? raw.remove_file_icon_size, null) ?? undefined,
-		fileSelectIconColorHover: normalizeString(raw.fileSelectIconColorHover ?? raw.file_select_icon_color_hover ?? raw.file_select_icon_color_h, '') || undefined,
-		fileSelectBgColorHover: normalizeString(raw.fileSelectBgColorHover ?? raw.file_select_bg_color_hover ?? raw.file_select_bg_h, '') || undefined,
-		fileSelectBorderColorHover: normalizeString(raw.fileSelectBorderColorHover ?? raw.file_select_border_color_hover ?? raw.file_select_border_h, '') || undefined,
-		fileSelectTextColorHover: normalizeString(raw.fileSelectTextColorHover ?? raw.file_select_text_color_hover ?? raw.file_select_text_color_h, '') || undefined,
+		fileFieldGap: normalizeNumber(raw['fileFieldGap'] ?? raw['file_field_gap'], null) ?? undefined,
+		fileSelectIconColor: normalizeString(raw['fileSelectIconColor'] ?? raw['file_select_icon_color'], '') || undefined,
+		fileSelectIconSize: normalizeNumber(raw['fileSelectIconSize'] ?? raw['file_select_icon_size'], null) ?? undefined,
+		fileSelectBgColor: normalizeString(raw['fileSelectBgColor'] ?? raw['file_select_bg_color'] ?? raw['file_select_bg'], '') || undefined,
+		fileSelectBorderColor: normalizeString(raw['fileSelectBorderColor'] ?? raw['file_select_border_color'], '') || undefined,
+		fileSelectRadius: normalizeNumber(raw['fileSelectRadius'] ?? raw['file_select_radius'], null) ?? undefined,
+		fileSelectTextColor: normalizeString(raw['fileSelectTextColor'] ?? raw['file_select_text_color'], '') || undefined,
+		addedFileRadius: normalizeNumber(raw['addedFileRadius'] ?? raw['added_file_radius'], null) ?? undefined,
+		addedFileBgColor: normalizeString(raw['addedFileBgColor'] ?? raw['added_file_bg_color'] ?? raw['added_file_bg'], '') || undefined,
+		addedFileIconColor: normalizeString(raw['addedFileIconColor'] ?? raw['added_file_icon_color'], '') || undefined,
+		addedFileIconSize: normalizeNumber(raw['addedFileIconSize'] ?? raw['added_file_icon_size'], null) ?? undefined,
+		addedFileTextColor: normalizeString(raw['addedFileTextColor'] ?? raw['added_file_text_color'], '') || undefined,
+		removeFileBgColor: normalizeString(raw['removeFileBgColor'] ?? raw['remove_file_bg_color'] ?? raw['remove_file_bg'], '') || undefined,
+		removeFileBgColorHover: normalizeString(raw['removeFileBgColorHover'] ?? raw['remove_file_bg_color_hover'] ?? raw['remove_file_bg_h'], '') || undefined,
+		removeFileColor: normalizeString(raw['removeFileColor'] ?? raw['remove_file_color'], '') || undefined,
+		removeFileColorHover: normalizeString(raw['removeFileColorHover'] ?? raw['remove_file_color_hover'] ?? raw['remove_file_color_h'], '') || undefined,
+		removeFileRadius: normalizeNumber(raw['removeFileRadius'] ?? raw['remove_file_radius'], null) ?? undefined,
+		removeFileSize: normalizeNumber(raw['removeFileSize'] ?? raw['remove_file_size'], null) ?? undefined,
+		removeFileIconSize: normalizeNumber(raw['removeFileIconSize'] ?? raw['remove_file_icon_size'], null) ?? undefined,
+		fileSelectIconColorHover: normalizeString(raw['fileSelectIconColorHover'] ?? raw['file_select_icon_color_hover'] ?? raw['file_select_icon_color_h'], '') || undefined,
+		fileSelectBgColorHover: normalizeString(raw['fileSelectBgColorHover'] ?? raw['file_select_bg_color_hover'] ?? raw['file_select_bg_h'], '') || undefined,
+		fileSelectBorderColorHover: normalizeString(raw['fileSelectBorderColorHover'] ?? raw['file_select_border_color_hover'] ?? raw['file_select_border_h'], '') || undefined,
+		fileSelectTextColorHover: normalizeString(raw['fileSelectTextColorHover'] ?? raw['file_select_text_color_hover'] ?? raw['file_select_text_color_h'], '') || undefined,
 	};
 }
 
@@ -900,7 +900,18 @@ function buildAttributes(vxConfig: CartSummaryVxConfig): CartSummaryBlockAttribu
 		// Custom
 		customClasses: '',
 		customCSS: '',
-	};
+
+		// Responsive file fields (not in vxconfig)
+		removeFileSize_tablet: null,
+		removeFileSize_mobile: null,
+		removeFileIconSize_tablet: null,
+		removeFileIconSize_mobile: null,
+
+		// z-index (advanced tab)
+		zIndex: '',
+		zIndex_tablet: '',
+		zIndex_mobile: '',
+	} as CartSummaryBlockAttributes;
 }
 
 /**
@@ -1221,7 +1232,8 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 			const defaultCountry = configData.shipping.default_country;
 			const shippingCountries = configData.shipping.countries;
 
-			let initialCountry: string | null = null;
+			// @ts-ignore -- unused but kept for future use
+		let initialCountry: string | null = null;
 
 			if (savedAddress && savedAddress.country && shippingCountries[savedAddress.country]) {
 				// Use saved address
@@ -1612,12 +1624,12 @@ function CartSummaryWrapper({ attributes }: CartSummaryWrapperProps) {
 
 				// Add shipping method based on responsibility
 				if (config.shipping.responsibility === 'platform' && shipping.zone && shipping.rate) {
-					shippingData.method = {
+					shippingData['method'] = {
 						zone: shipping.zone,
 						rate: shipping.rate,
 					};
 				} else if (config.shipping.responsibility === 'vendor' && Object.keys(shipping.vendors).length > 0) {
-					shippingData.vendors = shipping.vendors;
+					shippingData['vendors'] = shipping.vendors;
 				}
 
 				formData.append('shipping', JSON.stringify(shippingData));

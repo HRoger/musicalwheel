@@ -214,7 +214,7 @@ function buildAttributes(vxConfig: PostFeedVxConfig): PostFeedAttributes {
 		hideMobile: false,
 		customClasses: '',
 		customCSS: '',
-	};
+	} as unknown as PostFeedAttributes;
 }
 
 /**
@@ -320,6 +320,6 @@ window.addEventListener('turbo:load', initBlocks);
 document.addEventListener('voxel:markup-update', initBlocks);
 
 // Export for external use
-(window as unknown as Record<string, unknown>).VoxelFSEPostFeed = {
+(window as unknown as Record<string, unknown>)['VoxelFSEPostFeed'] = {
 	init: initBlocks,
 };

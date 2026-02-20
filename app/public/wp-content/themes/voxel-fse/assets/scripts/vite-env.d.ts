@@ -27,8 +27,17 @@ declare module '@wordpress/element' {
 }
 
 declare module '@wordpress/blocks' {
-	export const registerBlockType: (name: string, settings: any) => any;
-	export const unregisterBlockType: (name: string) => any;
+	export function registerBlockType<T = Record<string, any>>(name: string, settings: any): any;
+	export function unregisterBlockType(name: string): any;
+	export type BlockConfiguration<T = Record<string, any>> = {
+		title: string;
+		category?: string;
+		icon?: any;
+		description?: string;
+		keywords?: string[];
+		attributes?: Record<string, any>;
+		[key: string]: any;
+	};
 }
 
 declare module '@wordpress/block-editor' {
@@ -46,20 +55,10 @@ declare module '@wordpress/components' {
 	export const TextControl: React.ComponentType<any>;
 }
 
-declare module '@wordpress/data' {
-	export const useSelect: (fn: any) => any;
-	export const useDispatch: (storeName: string) => any;
-}
-
 declare module '@wordpress/i18n' {
 	export const __: (text: string, domain?: string) => string;
 	export const _x: (text: string, context: string, domain?: string) => string;
 	export const _n: (singular: string, plural: string, number: number, domain?: string) => string;
-}
-
-declare module '@wordpress/api-fetch' {
-	const apiFetch: (options: any) => Promise<any>;
-	export default apiFetch;
 }
 
 declare module '@wordpress/dom-ready' {

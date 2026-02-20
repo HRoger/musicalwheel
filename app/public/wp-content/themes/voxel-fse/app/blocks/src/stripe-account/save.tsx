@@ -34,7 +34,7 @@ import { generateBlockResponsiveCSS } from './styles';
 function createSaveFn(includePlaceholder: boolean) {
 	return function save({ attributes }: SaveProps) {
 		// Use shared utility for AdvancedTab + VoxelTab wiring
-		const advancedProps = getAdvancedVoxelTabProps(attributes, {
+		const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 			blockId: attributes.blockId || 'stripe-account',
 			baseClass: 'ts-vendor-settings voxel-fse-stripe-account-frontend',
 		});
@@ -51,7 +51,7 @@ function createSaveFn(includePlaceholder: boolean) {
 			: styleTabCSS;
 
 		// Save wrapper element with vxconfig (matching Voxel pattern)
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,

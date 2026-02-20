@@ -60,14 +60,14 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="axisTypography"
+					typographyAttributeName="axisTypography"
 				/>
 
 				{/* Axis Text color */}
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.axisTextColor || ''}
-					onChange={(value) => setAttributes({ axisTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ axisTextColor: value })}
 				/>
 
 				{/* Vertical axis width */}
@@ -95,7 +95,7 @@ export function StyleTab({
 						{ value: 'dotted', label: __('Dotted', 'voxel-fse') },
 						{ value: 'double', label: __('Double', 'voxel-fse') },
 					]}
-					onChange={(value) => setAttributes({ chartLineBorderType: value })}
+					onChange={(value: string | undefined) => setAttributes({ chartLineBorderType: value })}
 				/>
 
 				<SectionHeading label={__('Chart Bars', 'voxel-fse')} />
@@ -138,15 +138,13 @@ export function StyleTab({
 					label={__('Background color', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="barBackground"
-					types={['classic', 'gradient']}
 				/>
 
 				{/* Background color (Hover) */}
 				<ColorControl
 					label={__('Background color (Hover)', 'voxel-fse')}
 					value={attributes.barBackgroundHover || ''}
-					onChange={(value) => setAttributes({ barBackgroundHover: value })}
+					onChange={(value: string | undefined) => setAttributes({ barBackgroundHover: value })}
 				/>
 
 				{/* Box Shadow */}
@@ -163,7 +161,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background color', 'voxel-fse')}
 					value={attributes.barPopupBackground || ''}
-					onChange={(value) => setAttributes({ barPopupBackground: value })}
+					onChange={(value: string | undefined) => setAttributes({ barPopupBackground: value })}
 				/>
 
 				{/* Bar popup Border */}
@@ -216,14 +214,14 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="barPopupValueTypography"
+					typographyAttributeName="barPopupValueTypography"
 				/>
 
 				{/* Bar popup Value Color */}
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.barPopupValueColor || ''}
-					onChange={(value) => setAttributes({ barPopupValueColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ barPopupValueColor: value })}
 				/>
 
 				<SectionHeading label={__('Bar popup: Label', 'voxel-fse')} />
@@ -233,14 +231,14 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="barPopupLabelTypography"
+					typographyAttributeName="barPopupLabelTypography"
 				/>
 
 				{/* Bar popup Label Color */}
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.barPopupLabelColor || ''}
-					onChange={(value) => setAttributes({ barPopupLabelColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ barPopupLabelColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -277,21 +275,21 @@ export function StyleTab({
 											label: __('Space around', 'voxel-fse'),
 										},
 									]}
-									onChange={(value) => setAttributes({ tabsJustify: value })}
+									onChange={(value: string | undefined) => setAttributes({ tabsJustify: value })}
 								/>
 
 								{/* Padding */}
 								<DimensionsControl
 									label={__('Padding', 'voxel-fse')}
 									values={attributes.tabsPadding || {}}
-									onChange={(values) => setAttributes({ tabsPadding: values })}
+									onChange={(values: any) => setAttributes({ tabsPadding: values })}
 								/>
 
 								{/* Margin */}
 								<DimensionsControl
 									label={__('Margin', 'voxel-fse')}
 									values={attributes.tabsMargin || {}}
-									onChange={(values) => setAttributes({ tabsMargin: values })}
+									onChange={(values: any) => setAttributes({ tabsMargin: values })}
 								/>
 
 								{/* Tab typography */}
@@ -301,7 +299,7 @@ export function StyleTab({
 									setAttributes={
 										setAttributes as (attrs: Record<string, any>) => void
 									}
-									attributeName="tabsTypography"
+									typographyAttributeName="tabsTypography"
 								/>
 
 								{/* Active tab typography */}
@@ -311,14 +309,14 @@ export function StyleTab({
 									setAttributes={
 										setAttributes as (attrs: Record<string, any>) => void
 									}
-									attributeName="tabsActiveTypography"
+									typographyAttributeName="tabsActiveTypography"
 								/>
 
 								{/* Text color */}
 								<ColorControl
 									label={__('Text color', 'voxel-fse')}
 									value={attributes.tabsTextColor || ''}
-									onChange={(value) => setAttributes({ tabsTextColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ tabsTextColor: value })}
 								/>
 
 								{/* Active text color */}
@@ -334,7 +332,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Background', 'voxel-fse')}
 									value={attributes.tabsBackground || ''}
-									onChange={(value) => setAttributes({ tabsBackground: value })}
+									onChange={(value: string | undefined) => setAttributes({ tabsBackground: value })}
 								/>
 
 								{/* Active background */}
@@ -358,7 +356,7 @@ export function StyleTab({
 										{ value: 'dotted', label: __('Dotted', 'voxel-fse') },
 										{ value: 'double', label: __('Double', 'voxel-fse') },
 									]}
-									onChange={(value) => setAttributes({ tabsBorderType: value })}
+									onChange={(value: string | undefined) => setAttributes({ tabsBorderType: value })}
 								/>
 
 								{/* Active border color */}
@@ -469,7 +467,7 @@ export function StyleTab({
 									setAttributes={
 										setAttributes as (attrs: Record<string, any>) => void
 									}
-									attributeName="weekRangeTypography"
+									typographyAttributeName="weekRangeTypography"
 								/>
 
 								{/* Range Text color */}
@@ -628,7 +626,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.noActivityIconColor || ''}
-					onChange={(value) => setAttributes({ noActivityIconColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ noActivityIconColor: value })}
 				/>
 
 				{/* Typography */}
@@ -636,14 +634,14 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="noActivityTypography"
+					typographyAttributeName="noActivityTypography"
 				/>
 
 				{/* Text color */}
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.noActivityTextColor || ''}
-					onChange={(value) => setAttributes({ noActivityTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ noActivityTextColor: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

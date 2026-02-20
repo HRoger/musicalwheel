@@ -45,11 +45,11 @@ function createSaveFn(includePlaceholder: boolean) {
 			.join('\n');
 
 		// Parse custom attributes (key|value format)
-		const customAttrs = parseCustomAttributes(attributes.customAttributes);
+		const customAttrs = parseCustomAttributes(attributes['customAttributes']);
 
 		// Build class list matching Voxel's listing-plans pattern
-		const blockProps = useBlockProps.save({
-			id: attributes.elementId || undefined,
+		const blockProps = (useBlockProps as any).save({
+			id: attributes['elementId'] || undefined,
 			className: combineBlockClasses(
 				`voxel-fse-listing-plans voxel-fse-listing-plans-${blockId}`,
 				attributes
@@ -57,14 +57,14 @@ function createSaveFn(includePlaceholder: boolean) {
 			style: mergedStyles,
 			...customAttrs,
 			// Headless-ready: Visibility rules configuration
-			'data-visibility-behavior': attributes.visibilityBehavior || undefined,
-			'data-visibility-rules': attributes.visibilityRules?.length
-				? JSON.stringify(attributes.visibilityRules)
+			'data-visibility-behavior': attributes['visibilityBehavior'] || undefined,
+			'data-visibility-rules': attributes['visibilityRules']?.length
+				? JSON.stringify(attributes['visibilityRules'])
 				: undefined,
 			// Headless-ready: Loop element configuration
-			'data-loop-source': attributes.loopSource || undefined,
-			'data-loop-limit': attributes.loopLimit || undefined,
-			'data-loop-offset': attributes.loopOffset || undefined,
+			'data-loop-source': attributes['loopSource'] || undefined,
+			'data-loop-limit': attributes['loopLimit'] || undefined,
+			'data-loop-offset': attributes['loopOffset'] || undefined,
 		});
 
 		// Build vxconfig JSON (matching Voxel pattern)

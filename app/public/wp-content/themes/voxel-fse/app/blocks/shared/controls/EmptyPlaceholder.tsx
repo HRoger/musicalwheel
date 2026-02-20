@@ -49,9 +49,9 @@ export function EmptyPlaceholder({
 				borderRadius: '0',
 				color: '#666',
 				fontSize: '13px',
-				height: '45px',
+				height: '100%',
+				minHeight: '45px',
 				width: '100%',
-				minWidth: '100%',
 				boxSizing: 'border-box',
 				...style,
 			}}

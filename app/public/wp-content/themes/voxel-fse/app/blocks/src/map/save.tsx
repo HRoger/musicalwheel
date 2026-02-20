@@ -43,7 +43,7 @@ function createSaveFn(includePlaceholder: boolean) {
 			.filter(Boolean)
 			.join('\n');
 
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,

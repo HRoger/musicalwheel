@@ -22,6 +22,7 @@ export interface DimensionsConfig {
 }
 
 export interface BorderGroupValue {
+    [key: string]: unknown;
     borderType?: string; // '' (default), 'solid', 'double', 'dotted', 'dashed', 'groove', 'none'
     borderWidth?: DimensionsConfig;
     borderColor?: string;

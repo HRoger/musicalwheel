@@ -25,7 +25,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useTimelineConfig, useCurrentUser, useCommentFeed } from '../hooks';
 import { CommentItem } from './CommentItem';
 import { CommentComposer } from './CommentComposer';
@@ -76,7 +76,7 @@ export function CommentFeed({
 	} = useCommentFeed(status.id, parentComment?.id ?? undefined);
 
 	// Get l10n strings
-	const l10n = config?.strings ?? {};
+	const l10n = (config?.strings ?? {}) as any;
 
 	// Is this a nested level?
 	const isNested = depth > 0;

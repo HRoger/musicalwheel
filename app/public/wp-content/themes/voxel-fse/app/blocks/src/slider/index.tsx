@@ -11,7 +11,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
-import type { SliderBlockAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 /**

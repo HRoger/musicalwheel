@@ -66,7 +66,8 @@ export default function AddonMultiselect( {
 	/**
 	 * Clear all selections
 	 */
-	const handleClear = useCallback( () => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleClear = useCallback( () => {
 		onChange( { selected: [] } );
 	}, [ onChange ] );
 

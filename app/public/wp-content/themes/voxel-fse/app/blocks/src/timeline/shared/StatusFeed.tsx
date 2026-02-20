@@ -96,7 +96,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 	showFilters = true,
 	showSearch = true,
 	emptyMessage,
-	className = '',
+	className: _className = '',
 	onLoadingChange,
 }, ref): JSX.Element {
 	const attributes = useTimelineAttributes();
@@ -128,7 +128,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		// Use prop first, fallback to current post from config
 		const resolvedPostId = postId ?? config?.current_post?.id;
 		if (resolvedPostId) {
-			initialFilters.postId = resolvedPostId;
+			initialFilters.postId = Number(resolvedPostId);
 			console.log(`[StatusFeed] Mode "${feedMode}" requires post_id, using:`, resolvedPostId);
 		} else {
 			console.warn(`[StatusFeed] Mode "${feedMode}" requires post_id but none available!`);
@@ -142,7 +142,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 	if (feedMode === 'author_timeline') {
 		const resolvedAuthorId = authorId ?? config?.current_post?.author_id;
 		if (resolvedAuthorId) {
-			initialFilters.authorId = resolvedAuthorId;
+			initialFilters.authorId = Number(resolvedAuthorId);
 			console.log(`[StatusFeed] Mode "author_timeline" requires author_id, using:`, resolvedAuthorId);
 		} else {
 			console.warn(`[StatusFeed] Mode "author_timeline" requires author_id but none available!`);
@@ -159,7 +159,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		initialFilters.order = firstOption.order;
 		initialFilters.time = firstOption.time;
 		if (firstOption.time === 'custom') {
-			initialFilters.timeCustom = firstOption.timeCustom;
+			initialFilters.timeCustom = Number(firstOption.timeCustom);
 		}
 	}
 
@@ -170,7 +170,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 		isLoading,
 		isLoadingMore,
 		hasMore,
-		error,
+		error: _error,
 		loadMore,
 		refresh,
 		setFilters,
@@ -193,7 +193,7 @@ export const StatusFeed = forwardRef<StatusFeedHandle, StatusFeedProps>(function
 				orderId: first._id,
 				order: first.order,
 				time: first.time,
-				timeCustom: first.time === 'custom' ? first.timeCustom : undefined,
+				timeCustom: first.time === 'custom' ? Number(first.timeCustom) : undefined,
 			});
 		}
 	}, [firstOrderingId, attributes.orderingOptions, setFilters]);

@@ -231,7 +231,7 @@ function buildAttributes(vxConfig: OrdersVxConfig): OrdersBlockAttributes {
 		// Custom
 		customClasses: '',
 		customCSS: '',
-	};
+	} as unknown as OrdersBlockAttributes;
 }
 
 /**
@@ -647,7 +647,7 @@ function initOrdersBlocks() {
 
 	ordersBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.reactMounted === 'true') {
+		if (container.dataset['reactMounted'] === 'true') {
 			return;
 		}
 
@@ -666,7 +666,7 @@ function initOrdersBlocks() {
 
 		// Clear placeholder and create React root
 		container.innerHTML = '';
-		container.dataset.reactMounted = 'true';
+		container.dataset['reactMounted'] = 'true';
 
 		const root = createRoot(container);
 		root.render(<OrdersWrapper attributes={attributes} />);

@@ -48,7 +48,7 @@ interface MediaGalleryProps {
  */
 export function MediaGallery({
 	files,
-	galleryIcon,
+	galleryIcon: _galleryIcon,
 	statusId,
 	className = '',
 }: MediaGalleryProps): JSX.Element | null {

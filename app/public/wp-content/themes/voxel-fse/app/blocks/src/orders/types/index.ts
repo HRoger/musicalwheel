@@ -41,6 +41,7 @@ export interface BoxValues {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontWeight?: string;

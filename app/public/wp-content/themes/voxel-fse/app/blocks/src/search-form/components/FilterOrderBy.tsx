@@ -76,13 +76,13 @@ export default function FilterOrderBy( {
 	const [ loading, setLoading ] = useState< string | false >( false );
 
 	const props = filterData.props || {};
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
-	const placeholder = props.placeholder || filterData.label || 'Order By';
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
+	const placeholder = String(props['placeholder'] || filterData.label || 'Order By');
 
 	// Parse choices from props (comes from Voxel PHP)
 	// Evidence: order-by-filter.php:63-76 returns choices as object with key, label, placeholder, icon, requires_location
 	const options: OrderByOption[] = useMemo( () => {
-		const choices = props.choices || {};
+		const choices = props['choices'] || {};
 		if ( Array.isArray( choices ) ) {
 			return choices;
 		}
@@ -94,7 +94,7 @@ export default function FilterOrderBy( {
 			requires_location: choice.requires_location || false,
 			has_location: choice.has_location || false,
 		} ) );
-	}, [ props.choices ] );
+	}, [ props['choices'] ] );
 
 	// Get filter icon
 	const filterIcon = filterData.icon || '';
@@ -189,7 +189,7 @@ export default function FilterOrderBy( {
 		if ( method === 'radius' && lat && lng && currentSortKey ) {
 			onChange( `${ currentSortKey }(${ lat },${ lng })` );
 		}
-	}, [ locationFilterValue?.lat, locationFilterValue?.lng ] ); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ locationFilterValue?.['lat'], locationFilterValue?.['lng'] ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const openPopup = useCallback( () => {
 		setIsOpen( true );
@@ -406,7 +406,7 @@ export default function FilterOrderBy( {
 
 			<FieldPopup
 				isOpen={ isOpen }
-				target={ triggerRef }
+				target={ triggerRef as any }
 				title=""
 				icon={ filterIcon }
 				saveLabel="Save"
@@ -430,14 +430,14 @@ export default function FilterOrderBy( {
  * Evidence: order-by-filter.php template line 29-62
  */
 function PostFeedOrderBy( {
-	filterData,
+	filterData: _filterData,
 	filterIcon,
 	placeholder,
-	options,
-	currentKey,
+	options: _options,
+	currentKey: _currentKey,
 	hasValue,
 	displayValue,
-	loading,
+	loading: _loading,
 	selectDropdownChoice,
 	handleClear,
 	renderRadioList,
@@ -477,7 +477,7 @@ function PostFeedOrderBy( {
 
 			<FieldPopup
 				isOpen={ isOpen }
-				target={ triggerRef }
+				target={ triggerRef as any }
 				title=""
 				icon={ filterIcon }
 				saveLabel="Save"

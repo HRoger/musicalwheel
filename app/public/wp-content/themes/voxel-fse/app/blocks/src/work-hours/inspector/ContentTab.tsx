@@ -21,17 +21,11 @@ import {
 	AdvancedIconControl,
 	StateTabPanel,
 } from '@shared/controls';
-import type { WorkHoursAttributes } from '../types';
+import type { WorkHoursAttributes, BorderWidthValue } from '../types';
 import { useState, useEffect } from 'react';
 import { useSelect } from '@wordpress/data';
 import apiFetch from '@wordpress/api-fetch';
 
-// Declare window type for voxelPostTypes
-declare global {
-	interface Window {
-		voxelPostTypes?: Array<{ label: string; value: string }>;
-	}
-}
 
 interface ContentTabProps {
 	attributes: WorkHoursAttributes;
@@ -73,7 +67,7 @@ export function ContentTab({
 	const [isLoadingFields, setIsLoadingFields] = useState(false);
 
 	// Get the current template slug from FSE editor
-	const templateSlug = useSelect((select) => {
+	const templateSlug = useSelect((select: any) => {
 		// Try Site Editor store first (FSE templates)
 		const editSite = select('core/edit-site') as {
 			getEditedPostId?: () => string;
@@ -89,7 +83,7 @@ export function ContentTab({
 		}
 
 		return null;
-	}, []);
+	});
 
 	// Fetch work-hours fields when template changes
 	useEffect(() => {
@@ -105,16 +99,16 @@ export function ContentTab({
 
 		setIsLoadingFields(true);
 
-		apiFetch<{ fields: Array<{ value: string; label: string }> }>({
+		(apiFetch as any)({
 			path: `/voxel-fse/v1/work-hours-fields/${postType}`,
 		})
-			.then((response) => {
+			.then((response: any) => {
 				const options: Array<{ label: string; value: string }> = [
 					{ label: __('Choose field', 'voxel-fse'), value: '' },
 				];
 
 				if (response.fields && Array.isArray(response.fields)) {
-					response.fields.forEach((field) => {
+					response.fields.forEach((field: any) => {
 						options.push({
 							label: field.label,
 							value: field.value,
@@ -124,7 +118,7 @@ export function ContentTab({
 
 				setWorkHoursFields(options);
 			})
-			.catch((error) => {
+			.catch((error: any) => {
 				console.error('Failed to fetch work-hours fields:', error);
 				// Reset to default on error
 				setWorkHoursFields([
@@ -167,7 +161,7 @@ export function ContentTab({
 						{ label: __('Yes', 'voxel-fse'), value: 'wh-default' },
 						{ label: __('No', 'voxel-fse'), value: 'wh-expanded' },
 					]}
-					onChange={(value: string) => setAttributes({ collapse: value })}
+					onChange={(value: string) => setAttributes({ collapse: value as 'wh-default' | 'wh-expanded' })}
 				/>
 
 				<BorderGroupControl
@@ -183,7 +177,7 @@ export function ContentTab({
 							updates.borderType = value.borderType;
 						}
 						if (value.borderWidth !== undefined) {
-							updates.borderWidth = value.borderWidth;
+							updates.borderWidth = value.borderWidth as BorderWidthValue;
 						}
 						if (value.borderColor !== undefined) {
 							updates.borderColor = value.borderColor;
@@ -233,7 +227,7 @@ export function ContentTab({
 					label={__('Label typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="labelTypography"
+					typographyAttributeName="labelTypography"
 				/>
 
 				<ColorControl
@@ -246,7 +240,7 @@ export function ContentTab({
 					label={__('Current hours typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="currentHoursTypography"
+					typographyAttributeName="currentHoursTypography"
 				/>
 
 				<ColorControl
@@ -281,7 +275,7 @@ export function ContentTab({
 					label={__('Day typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="dayTypography"
+					typographyAttributeName="dayTypography"
 				/>
 
 				<ColorControl
@@ -294,7 +288,7 @@ export function ContentTab({
 					label={__('Hours typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="hoursTypography"
+					typographyAttributeName="hoursTypography"
 				/>
 
 				<ColorControl
@@ -510,7 +504,7 @@ export function ContentTab({
 											updates.accordionButtonBorderType = value.borderType;
 										}
 										if (value.borderWidth !== undefined) {
-											updates.accordionButtonBorderWidth = value.borderWidth;
+											updates.accordionButtonBorderWidth = value.borderWidth as BorderWidthValue;
 										}
 										if (value.borderColor !== undefined) {
 											updates.accordionButtonBorderColor = value.borderColor;

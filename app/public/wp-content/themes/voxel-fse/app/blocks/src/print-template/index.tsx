@@ -48,7 +48,7 @@ const deprecated = [
 		attributes: metadata.attributes,
 		save({ attributes }: { attributes: LegacyPrintTemplateAttributes }) {
 			// Old version did NOT have data-template-id attribute
-			const blockProps = useBlockProps.save({
+			const blockProps = (useBlockProps as any).save({
 				className: 'voxel-fse-print-template ts-print-template',
 			});
 
@@ -76,7 +76,7 @@ const deprecated = [
 	{
 		attributes: metadata.attributes,
 		save({ attributes }: { attributes: LegacyPrintTemplateAttributes }) {
-			const blockProps = useBlockProps.save({
+			const blockProps = (useBlockProps as any).save({
 				className: 'voxel-fse-print-template',
 				'data-template-id': attributes.templateId || '',
 			});

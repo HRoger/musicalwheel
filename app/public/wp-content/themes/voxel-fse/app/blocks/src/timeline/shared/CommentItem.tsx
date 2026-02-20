@@ -230,7 +230,7 @@ export function CommentItem({
 					<a href={profileUrl}>
 						{displayName}
 						{publisher.is_verified && (
-							<div className="vxf-icon vxf-verified" dangerouslySetInnerHTML={{ __html: config?.icons?.verified ?? '' }} />
+							<div className="vxf-icon vxf-verified" dangerouslySetInnerHTML={{ __html: config?.icons?.['verified'] ?? '' }} />
 						)}
 					</a>
 					<span>
@@ -258,7 +258,7 @@ export function CommentItem({
 					ref={moreButtonRef}
 					onClick={(e) => e.preventDefault()}
 					onMouseDown={() => setShowActions((prev) => !prev)}
-					dangerouslySetInnerHTML={{ __html: config?.icons?.more ?? '' }}
+					dangerouslySetInnerHTML={{ __html: config?.icons?.['more'] ?? '' }}
 				/>
 
 				{/* Actions dropdown - matches Voxel comment.php lines 40-72 */}
@@ -378,7 +378,7 @@ export function CommentItem({
 						onClick={handleLikeClick}
 						className={`vxf-icon ${hasLiked ? 'vxf-liked' : ''} ${actionState.isLiking ? 'vx-inert' : ''} ${(status.is_pending || comment.is_pending) && !hasLiked ? 'vx-pending' : ''}`}
 					>
-						<span dangerouslySetInnerHTML={{ __html: hasLiked ? (config?.icons?.liked ?? '') : (config?.icons?.like ?? '') }} />
+						<span dangerouslySetInnerHTML={{ __html: hasLiked ? (config?.icons?.['liked'] ?? '') : (config?.icons?.['like'] ?? '') }} />
 						<RayHolder />
 					</a>
 
@@ -388,7 +388,7 @@ export function CommentItem({
 							href="#"
 							onClick={(e) => { e.preventDefault(); onReplyClick?.(); }}
 							className={`vxf-icon ${status.is_pending || comment.is_pending ? 'vx-pending' : ''}`}
-							dangerouslySetInnerHTML={{ __html: config?.icons?.reply ?? '' }}
+							dangerouslySetInnerHTML={{ __html: config?.icons?.['reply'] ?? '' }}
 						/>
 					)}
 

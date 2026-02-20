@@ -868,6 +868,9 @@ export interface FilterData {
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:103
 	// 'resets_to' => $this->parse_value( $this->resets_to )
 	resets_to?: unknown;
+	// Description text shown below the heading
+	// Evidence: base-filter.php:99 get_frontend_config() returns description
+	description?: string;
 }
 
 export interface SearchFormState {

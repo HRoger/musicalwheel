@@ -44,6 +44,9 @@ interface ResponsiveRangeControlProps {
 	/** Attribute name for storing custom CSS value (e.g., 'calc(100vh - 80px)'). Only used when unit is 'custom'. */
 	customValueAttributeName?: string;
 	enableDynamicTags?: boolean;
+	dynamicTagValue?: string;
+	onDynamicTagChange?: (value: string | undefined) => void;
+	dynamicTagContext?: string;
 	/** Optional prefix for the control key used in popup state persistence. Useful when the same attributeBaseName is used in multiple instances (e.g., inside repeater items). */
 	controlKeyPrefix?: string;
 }

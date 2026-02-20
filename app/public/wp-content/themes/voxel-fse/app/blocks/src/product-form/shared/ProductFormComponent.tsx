@@ -23,11 +23,9 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type {
 	ProductFormAttributes,
-	ProductFormConfig,
-	ProductFormVxConfig,
+		ProductFormVxConfig,
 	PricingSummary,
-	PricingSummaryItem,
-	AddonValue,
+		AddonValue,
 	AddonPricingSummary,
 	ExtendedProductFormConfig,
 	VariationsValue,
@@ -188,7 +186,7 @@ export default function ProductFormComponent({
 	});
 	const [bookingValue, setBookingValue] = useState<BookingValue>(DEFAULT_BOOKING_VALUE);
 	const [dataInputValues, setDataInputValues] = useState<Record<string, DataInputValue>>({});
-	const [isLoading, setIsLoading] = useState(context === 'frontend');
+	const [isLoading, _setIsLoading] = useState(context === 'frontend');
 
 	/**
 	 * Inject Voxel Product Form CSS for both Editor and Frontend
@@ -359,7 +357,7 @@ export default function ProductFormComponent({
 						config={productConfig}
 						values={addonValues}
 						onValueChange={handleAddonValueChange}
-						bookingValue={bookingValue}
+						bookingValue={bookingValue as any}
 						bookingRangeLength={bookingRangeLength}
 						searchContext={productConfig.settings?.search_context}
 					/>
@@ -387,7 +385,7 @@ export default function ProductFormComponent({
 
 				{/* Quantity Field (for regular products) */}
 				{/* Evidence: form-quantity-field.php:53 - sold_individually hides quantity selector */}
-				{hasQuantity && productMode === 'regular' && !quantityField?.props?.sold_individually && (
+				{hasQuantity && productMode === 'regular' && !(quantityField as any)?.props?.sold_individually && (
 					<FieldQuantity
 						maxQuantity={maxQuantity}
 						value={quantity}
@@ -402,7 +400,7 @@ export default function ProductFormComponent({
 						field={productConfig.props.fields['form-data-inputs']}
 						values={dataInputValues}
 						onValueChange={handleDataInputValueChange}
-						icons={icons}
+						icons={icons as any}
 					/>
 				)}
 
@@ -467,7 +465,7 @@ export default function ProductFormComponent({
 				choice={externalChoice.choice}
 				onClose={closeExternalChoice}
 				onConfirm={updateExternalChoiceQuantity}
-				icons={icons}
+				icons={icons as any}
 			/>
 		</>
 	);

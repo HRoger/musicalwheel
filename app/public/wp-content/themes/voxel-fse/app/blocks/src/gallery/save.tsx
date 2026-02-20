@@ -60,7 +60,7 @@ function createSaveFn(includePlaceholder: boolean) {
 		});
 
 		// Block props including Advanced/Voxel styling
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,

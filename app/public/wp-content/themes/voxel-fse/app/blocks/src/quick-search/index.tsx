@@ -30,7 +30,7 @@ const deprecated = [
 	{
 		attributes: metadata.attributes,
 		save({ attributes }: { attributes: QuickSearchAttributes }) {
-			const blockProps = useBlockProps.save({
+			const blockProps = (useBlockProps as any).save({
 				className: 'ts-form quick-search voxel-fse-quick-search',
 			});
 
@@ -70,7 +70,7 @@ const deprecated = [
 ];
 
 // Register the block
-registerBlockType<QuickSearchAttributes>(metadata.name, {
+(registerBlockType as any)(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Quick Search (VX)', 'voxel-fse'),
@@ -81,4 +81,4 @@ registerBlockType<QuickSearchAttributes>(metadata.name, {
 	edit: Edit,
 	save,
 	deprecated,
-} as Parameters<typeof registerBlockType<QuickSearchAttributes>>[1]);
+});

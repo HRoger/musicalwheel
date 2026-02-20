@@ -15,13 +15,12 @@ import { __ } from '@wordpress/i18n';
 import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
-import type { ProductFormAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 
 
 // Register the block
-registerBlockType<ProductFormAttributes>(metadata.name, {
+(registerBlockType as any)(metadata.name, {
 	...metadata,
 	icon: VoxelGridIcon,
 	title: __('Product Form (VX)', 'voxel-fse'),
@@ -31,4 +30,4 @@ registerBlockType<ProductFormAttributes>(metadata.name, {
 	),
 	edit: Edit,
 	save,
-} as Parameters<typeof registerBlockType<ProductFormAttributes>>[1]);
+} as any);

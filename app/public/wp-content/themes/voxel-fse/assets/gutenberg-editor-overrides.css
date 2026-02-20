@@ -23,6 +23,10 @@ body.block-editor-iframe__body {
     overflow-y: scroll !important;
 }
 
+.interface-complementary-area h3{
+    text-transform: none;
+}
+
 
 /* Input field width */
 body .components-number-control .components-input-control__container {
@@ -567,6 +571,12 @@ body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:
 /* ============================================
  * THIRD-PARTY BLOCKS: Specific fixes for known conflicts
  * ============================================ */
+/*fix plus icon insert block button*/
+.wp-block-nectar-blocks-column .nectar-blocks-column__content-wrap .block-list-appender:only-child>.block-editor-inserter>button svg {
+    background-color: #3452ff;
+    border-radius: 100px;
+    color: #fff!important;
+}
 body .nectar-blocks-template-library__sidebar__item__link {
     font-weight: 400;
 }

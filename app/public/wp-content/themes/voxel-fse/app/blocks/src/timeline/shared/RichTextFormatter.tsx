@@ -165,7 +165,7 @@ export function RichTextFormatter({
 	isExpanded = true,
 	mentionBaseUrl = '/members/',
 	hashtagBaseUrl = '/search/',
-	className = '',
+	className: _className = '',
 	linkTarget = '_blank',
 	linkPreviewUrl,
 }: RichTextFormatterProps): JSX.Element {

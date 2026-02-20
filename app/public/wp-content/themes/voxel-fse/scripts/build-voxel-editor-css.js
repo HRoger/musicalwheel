@@ -36,6 +36,7 @@ const voxelParentDistFiles = [
   'bar-chart.css',
   'ring-chart.css',
   'pricing-plan.css',
+  'action.css',
 ];
 
 // Vendor CSS files (in assets/vendor/, use .prod suffix for production)

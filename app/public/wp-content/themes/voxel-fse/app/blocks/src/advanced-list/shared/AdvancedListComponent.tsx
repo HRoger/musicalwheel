@@ -19,6 +19,8 @@
 
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { InlineSvg } from '@shared/InlineSvg';
+import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import type {
 	AdvancedListAttributes,
 	AdvancedListComponentProps,
@@ -302,7 +304,7 @@ function PopupPortal({
 }) {
 	const popupRef = useRef<HTMLDivElement>(null);
 	const popupBoxRef = useRef<HTMLDivElement>(null);
-	const styles = usePopupPosition(isOpen, targetRef, popupRef, popupBoxRef);
+	const styles = usePopupPosition(isOpen, targetRef, popupRef as React.RefObject<HTMLDivElement>, popupBoxRef as React.RefObject<HTMLDivElement>);
 
 	// ESC key to close
 	useEffect(() => {
@@ -360,7 +362,7 @@ interface EditStepsPopupProps {
 	targetRef: React.RefObject<HTMLElement>;
 }
 
-function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
+function EditStepsPopup({ editSteps, icon, text: _text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
 	return (
 		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
@@ -502,28 +504,17 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 
 /**
  * Render icon from IconValue
+ * Uses InlineSvg for SVG URLs (matching navbar/userbar pattern)
+ * so CSS fill/color variables work correctly.
  */
 function renderIcon(icon: IconValue | null): React.ReactNode {
 	if (!icon || !icon.value) {
 		return null;
 	}
-
-	// Handle SVG icons (inline SVG)
-	if (icon.library === 'svg' || icon.value.startsWith('<svg')) {
-		return <span dangerouslySetInnerHTML={{ __html: icon.value }} />;
+	if (icon.library === 'svg') {
+		return <InlineSvg url={icon.value} />;
 	}
-
-	// Handle Font Awesome icons
-	if (icon.library === 'fa-solid' || icon.library === 'fa-regular' || icon.library === 'fa-brands') {
-		return <i className={icon.value} />;
-	}
-
-	// Handle icon class names
-	if (icon.value) {
-		return <i className={icon.value} />;
-	}
-
-	return null;
+	return <i className={icon.value} aria-hidden="true" />;
 }
 
 /**
@@ -1235,6 +1226,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isShareAction = item.actionType === 'share_post';
 	const needsWrapper = isEditAction || isShareAction;
 
+	const TagEl = Tag as any;
 	if (needsWrapper) {
 		// Wrapper class varies by action type (edit-post-action.php:17, share-post-action.php:10)
 		const wrapperClass = isShareAction
@@ -1248,7 +1240,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				{...tooltipAttrs}
 			>
 				<div className={wrapperClass}>
-					<Tag
+					<TagEl
 						{...actionProps}
 						className={actionClasses}
 						style={itemStyles}
@@ -1256,7 +1248,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						role={Tag === 'a' ? undefined : 'button'}
 					>
 						{renderContent()}
-					</Tag>
+					</TagEl>
 					{/* Edit steps popup (edit-post-action.php:22-49) */}
 					{isEditAction && postContext && (
 						<EditStepsPopup
@@ -1292,7 +1284,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			style={itemWidthStyle}
 			{...tooltipAttrs}
 		>
-			<Tag
+			<TagEl
 				{...actionProps}
 				className={actionClasses}
 				style={itemStyles}
@@ -1300,7 +1292,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				role={Tag === 'a' ? undefined : 'button'}
 			>
 				{renderContent()}
-			</Tag>
+			</TagEl>
 		</li>
 	);
 }
@@ -1410,19 +1402,7 @@ export function AdvancedListComponent({
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 				<li className="flexify ts-action">
-					<div
-						className="ts-action-con"
-						style={{
-							padding: '16px 24px',
-							color: '#666',
-							background: '#f5f5f5',
-							borderRadius: '8px',
-						}}
-					>
-						{context === 'editor'
-							? 'Click "+ Add Item" in the sidebar to add actions'
-							: 'No actions configured'}
-					</div>
+					<EmptyPlaceholder />
 				</li>
 			</ul>
 		);

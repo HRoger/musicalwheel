@@ -96,7 +96,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 	const displayMode = field.props?.['display_as'] || 'popup';
 	// Evidence: taxonomy-field.php:326 — (bool) $this->props['multiple'], defaults to false
 	const multiple = field.props?.['multiple'] === true;
-	const terms: Term[] = field.props?.['terms'] || [];
+	const terms: Term[] = (field.props?.['terms'] as Term[] | undefined) || [];
 	// Evidence: taxonomy-field.php:329-330 — min/max selection counts from admin config
 	const minSelections = field.props?.['min'] as number | null | undefined;
 	const maxSelections = field.props?.['max'] as number | null | undefined;
@@ -338,14 +338,14 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 						openPopup();
 					}
 				}}
-				aria-label={`Select ${field.props?.['taxonomy']?.label || 'terms'}: ${displayValue || field.props?.['placeholder']}`}
+				aria-label={`Select ${(field.props?.['taxonomy'] as any)?.label || 'terms'}: ${displayValue || field.props?.['placeholder']}`}
 			>
 				<span dangerouslySetInnerHTML={{ __html: triggerIconHtml }} />
 				<div className="ts-filter-text">
 					{displayValue ? (
 						<span>{displayValue}</span>
 					) : (
-						<span>{field.props?.['placeholder']}</span>
+						<span>{String(field.props?.['placeholder'] || '')}</span>
 					)}
 				</div>
 				<div className="ts-down-icon"></div>
@@ -376,7 +376,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 								ref={searchInputRef}
 								type="text"
 								className="autofocus"
-								placeholder={`Search ${field.props?.['taxonomy']?.label || ''}`}
+								placeholder={`Search ${(field.props?.['taxonomy'] as any)?.label || ''}`}
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 							/>

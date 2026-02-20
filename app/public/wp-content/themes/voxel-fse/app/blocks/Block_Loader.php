@@ -435,7 +435,8 @@ class Block_Loader
                 'vx:commons.css', 'vx:forms.css', 'vx:popup-kit.css', 'vx:product-form.css',
                 'vx:social-feed.css', 'vx:post-feed.css', 'vx:work-hours.css', 'vx:map.css',
                 'vx:pikaday.css', 'vx:nouislider.css', 'vx:create-post.css', 'vx:review-stats.css',
-                'vx:bar-chart.css', 'vx:ring-chart.css', 'vx:pricing-plan.css', 'vx:fse-commons.css',
+                'vx:bar-chart.css', 'vx:ring-chart.css', 'vx:pricing-plan.css', 'vx:action.css',
+                'vx:fse-commons.css',
                 'pikaday', 'nouislider',
                 // Per-block handles
                 'mw-block-image-style', 'mw-block-login-style', 'mw-block-nested-accordion-style',
@@ -603,6 +604,20 @@ class Block_Loader
                         'vx:social-feed.css',
                         $assets_url . $social_feed_file,
                         ['vx:forms.css'],  // Depends on forms.css → loads AFTER commons.css
+                        $version
+                );
+            }
+        }
+
+        // Register action.css (depends on commons) — used by advanced-list block
+        if (!wp_style_is('vx:action.css', 'registered')) {
+            $action_file = 'action' . $suffix;
+            $action_path = $assets_dir . $action_file;
+            if (file_exists($action_path)) {
+                wp_register_style(
+                        'vx:action.css',
+                        $assets_url . $action_file,
+                        ['vx:commons.css'],
                         $version
                 );
             }
@@ -1139,6 +1154,9 @@ CSS;
         if (wp_style_is('vx:map.css', 'registered') && !wp_style_is('vx:map.css', 'enqueued')) {
             wp_enqueue_style('vx:map.css');
         }
+
+        // NOTE: action.css is loaded via voxel-editor-combined.css (build-voxel-editor-css.js)
+        // No separate editor enqueue needed.
 
         // Enqueue nouislider CSS (pikaday is enqueued separately at priority 30)
         if (wp_style_is('nouislider', 'registered')) {
@@ -4056,6 +4074,16 @@ JAVASCRIPT;
                                 });
                             }
 
+                            // advanced-list needs Voxel's action.css (ts-action-con, ts-action-icon styles)
+                            if ($block_name === 'advanced-list') {
+                                add_action('wp_enqueue_scripts', function () {
+                                    self::ensure_voxel_styles_registered();
+                                    if (wp_style_is('vx:action.css', 'registered')) {
+                                        wp_enqueue_style('vx:action.css');
+                                    }
+                                });
+                            }
+
                             // navbar needs Voxel's commons.css
                             if ($block_name === 'navbar') {
                                 add_action('wp_enqueue_scripts', function () {
@@ -5140,10 +5168,15 @@ JAVASCRIPT;
     public static function get_item_loop_config($item)
     {
         // Format 1: Flat (userbar, navbar, advanced-list)
+        // Both loopSource AND loopProperty are required for a valid loop tag.
+        // A bare @source without (property) is a group, not a loopable Data_Object_List.
         if (!empty($item['loopSource']) && is_string($item['loopSource'])) {
             $source = $item['loopSource'];
             $property = $item['loopProperty'] ?? '';
-            $tag = $property ? "@{$source}({$property})" : "@{$source}";
+            if (empty($property)) {
+                return null; // Incomplete loop config — skip
+            }
+            $tag = "@{$source}({$property})";
             return [
                 'tag'    => $tag,
                 'limit'  => isset($item['loopLimit']) && is_numeric($item['loopLimit']) ? absint($item['loopLimit']) : null,
@@ -5164,7 +5197,10 @@ JAVASCRIPT;
         if (!empty($item['loopConfig']['loopSource']) && is_string($item['loopConfig']['loopSource'])) {
             $source = $item['loopConfig']['loopSource'];
             $property = $item['loopConfig']['loopProperty'] ?? '';
-            $tag = $property ? "@{$source}({$property})" : "@{$source}";
+            if (empty($property)) {
+                return null; // Incomplete loop config — skip
+            }
+            $tag = "@{$source}({$property})";
             return [
                 'tag'    => $tag,
                 'limit'  => isset($item['loopConfig']['loopLimit']) && is_numeric($item['loopConfig']['loopLimit']) ? absint($item['loopConfig']['loopLimit']) : null,

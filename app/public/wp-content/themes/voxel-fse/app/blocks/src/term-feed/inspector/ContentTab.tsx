@@ -148,7 +148,7 @@ export function ContentTab({
 				}
 				: item
 		);
-		setAttributes({ manualTerms: updatedItems });
+		setAttributes({ manualTerms: updatedItems as any });
 		setLoopModalOpen(false);
 		setEditingLoopItemId(null);
 	}, [editingLoopItemId, attributes.manualTerms, setAttributes]);
@@ -193,7 +193,7 @@ export function ContentTab({
 							label: __('Manual selection', 'voxel-fse'),
 						},
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({
 							source: value as 'filters' | 'manual',
 						})
@@ -206,7 +206,7 @@ export function ContentTab({
 						label={__('Choose taxonomy', 'voxel-fse')}
 						value={attributes.taxonomy}
 						options={taxonomyOptions}
-						onChange={(value) => setAttributes({ taxonomy: value })}
+						onChange={(value: string) => setAttributes({ taxonomy: value })}
 					/>
 				)}
 
@@ -222,7 +222,7 @@ export function ContentTab({
 						<TextControl
 							type="number"
 							value={String(attributes.parentTermId || '')}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({
 									parentTermId: parseInt(value || '0', 10),
 								})
@@ -248,7 +248,7 @@ export function ContentTab({
 								label: __('Alphabetical', 'voxel-fse'),
 							},
 						]}
-						onChange={(value) =>
+						onChange={(value: string) =>
 							setAttributes({
 								order: value as 'default' | 'name',
 							})
@@ -268,7 +268,7 @@ export function ContentTab({
 						<TextControl
 							type="number"
 							value={String(attributes.perPage || '')}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({
 									perPage: parseInt(value || '10', 10),
 								})
@@ -308,7 +308,7 @@ export function ContentTab({
 								<TextControl
 									type="number"
 									value={String(item.term_id || '')}
-									onChange={(value) =>
+									onChange={(value: string) =>
 										onUpdate({ term_id: parseInt(value || '0', 10) } as Partial<ManualTermItem>)
 									}
 									label=""
@@ -348,7 +348,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Hide empty terms?', 'voxel-fse')}
 					checked={attributes.hideEmpty}
-					onChange={(value) => setAttributes({ hideEmpty: value })}
+					onChange={(value: boolean) => setAttributes({ hideEmpty: value })}
 				/>
 
 				{/* Hide terms without a post in: - ts_hide_empty_pt (shown when hideEmpty is true) */}
@@ -357,7 +357,7 @@ export function ContentTab({
 						label={__('Hide terms without a post in:', 'voxel-fse')}
 						value={attributes.hideEmptyPostType}
 						options={postTypeOptions}
-						onChange={(value) => setAttributes({ hideEmptyPostType: value })}
+						onChange={(value: string) => setAttributes({ hideEmptyPostType: value })}
 					/>
 				)}
 
@@ -366,7 +366,7 @@ export function ContentTab({
 					label={__('Preview card template', 'voxel-fse')}
 					value={attributes.cardTemplate}
 					options={cardTemplateOptions}
-					onChange={(value) => setAttributes({ cardTemplate: value })}
+					onChange={(value: string) => setAttributes({ cardTemplate: value })}
 				/>
 			</AccordionPanel>
 
@@ -386,7 +386,7 @@ export function ContentTab({
 							label: __('Carousel', 'voxel-fse'),
 						},
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({
 							layoutMode: value as 'ts-feed-grid-default' | 'ts-feed-nowrap',
 						})
@@ -419,7 +419,7 @@ export function ContentTab({
 						<ToggleControl
 							label={__('Auto slide?', 'voxel-fse')}
 							checked={attributes.carouselAutoplay}
-							onChange={(value) => setAttributes({ carouselAutoplay: value })}
+							onChange={(value: boolean) => setAttributes({ carouselAutoplay: value })}
 						/>
 
 						{/* Auto slide interval (ms) - carousel_autoplay_interval */}
@@ -428,7 +428,7 @@ export function ContentTab({
 								label={__('Auto slide interval (ms)', 'voxel-fse')}
 								type="number"
 								value={String(attributes.carouselAutoplayInterval || '')}
-								onChange={(value) =>
+								onChange={(value: string) =>
 									setAttributes({
 										carouselAutoplayInterval: parseInt(
 											value || '3000',
@@ -502,7 +502,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Replace accent color?', 'voxel-fse')}
 					checked={attributes.replaceAccentColor}
-					onChange={(value) => setAttributes({ replaceAccentColor: value })}
+					onChange={(value: boolean) => setAttributes({ replaceAccentColor: value })}
 					help={__(
 						'Replaces the color of any element utilizing accent color to the term color',
 						'voxel-fse'
@@ -516,7 +516,7 @@ export function ContentTab({
 				<AdvancedIconControl
 					label={__('Right chevron', 'voxel-fse')}
 					value={attributes.rightChevronIcon}
-					onChange={(value) => setAttributes({ rightChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ rightChevronIcon: value })}
 					supportsDynamicTags={true}
 				/>
 
@@ -524,7 +524,7 @@ export function ContentTab({
 				<AdvancedIconControl
 					label={__('Left chevron', 'voxel-fse')}
 					value={attributes.leftChevronIcon}
-					onChange={(value) => setAttributes({ leftChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ leftChevronIcon: value })}
 					supportsDynamicTags={true}
 				/>
 			</AccordionPanel>
@@ -534,7 +534,7 @@ export function ContentTab({
 		{parentTermIdModalOpen && (
 			<DynamicTagBuilder
 				value={String(attributes.parentTermId || '')}
-				onSave={(value) => {
+				onChange={(value: string) => {
 					setAttributes({ parentTermId: parseInt(value || '0', 10) });
 					setParentTermIdModalOpen(false);
 				}}
@@ -546,7 +546,7 @@ export function ContentTab({
 		{perPageModalOpen && (
 			<DynamicTagBuilder
 				value={String(attributes.perPage || '')}
-				onSave={(value) => {
+				onChange={(value: string) => {
 					setAttributes({ perPage: parseInt(value || '10', 10) });
 					setPerPageModalOpen(false);
 				}}
@@ -559,7 +559,7 @@ export function ContentTab({
 		{termIdModalOpen && editingTermItem && (
 			<DynamicTagBuilder
 				value={String(editingTermItem.term_id || '')}
-				onSave={(value) => {
+				onChange={(value: string) => {
 					const updatedItems = attributes.manualTerms.map((item) =>
 						item.id === editingTermItemId
 							? { ...item, term_id: parseInt(value || '0', 10) }

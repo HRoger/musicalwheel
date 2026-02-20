@@ -22,6 +22,7 @@ import { useState, useEffect } from 'react';
 import QuickSearchComponent from './shared/QuickSearchComponent';
 import type { QuickSearchAttributes, PostTypeConfig, VxConfig } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
+declare const jQuery: any;
 
 /**
  * Get the REST API base URL
@@ -195,14 +196,14 @@ function buildAttributes(config: VxConfig): QuickSearchAttributes {
 		buttonBorderColorFilled: '',
 		buttonBorderWidthFilled: 0,
 		suffixHide: false,
-		suffixPadding: undefined,
+		suffixPadding: {},
 		suffixTextColor: '',
 		suffixBackground: '',
-		suffixBorderRadius: undefined,
-		suffixMargin: undefined,
+		suffixBorderRadius: 0,
+		suffixMargin: 0,
 		tabsJustify: 'center',
 		tabsPadding: {},
-		tabsMargin: { top: 10, right: 0, bottom: 10, left: 0 },
+		tabsMargin: { top: '10', right: '0', bottom: '10', left: '0' },
 		tabsTextColor: '',
 		tabsActiveTextColor: '',
 		tabsBackground: '',
@@ -221,7 +222,7 @@ function buildAttributes(config: VxConfig): QuickSearchAttributes {
 		hideTablet: false,
 		hideMobile: false,
 		customClasses: '',
-	};
+	} as unknown as QuickSearchAttributes;
 }
 
 /**
@@ -312,7 +313,7 @@ function initQuickSearchBlocks() {
 
 	quickSearchBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -331,7 +332,7 @@ function initQuickSearchBlocks() {
 		const attributes = buildAttributes(vxConfig);
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Clear placeholder content
 		container.innerHTML = '';

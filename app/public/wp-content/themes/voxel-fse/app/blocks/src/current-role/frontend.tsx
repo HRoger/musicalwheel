@@ -120,8 +120,8 @@ function normalizeConfig(raw: Record<string, unknown>): CurrentRoleVxConfig {
 		if (val && typeof val === 'object') {
 			const obj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(obj.library, fallback.library) as IconValue['library'],
-				value: normalizeString(obj.value, fallback.value),
+				library: normalizeString(obj['library'], fallback.library) as IconValue['library'],
+				value: normalizeString(obj['value'], fallback.value),
 			};
 		}
 		return fallback;
@@ -133,11 +133,11 @@ function normalizeConfig(raw: Record<string, unknown>): CurrentRoleVxConfig {
 	return {
 		// Icons - support both camelCase (FSE) and snake_case (Voxel)
 		roleIcon: normalizeIcon(
-			raw.roleIcon ?? raw.role_icon ?? raw.ts_role_ico,
+			raw['roleIcon'] ?? raw['role_icon'] ?? raw['ts_role_ico'],
 			defaultIcon
 		),
 		switchIcon: normalizeIcon(
-			raw.switchIcon ?? raw.switch_icon ?? raw.ts_switch_ico,
+			raw['switchIcon'] ?? raw['switch_icon'] ?? raw['ts_switch_ico'],
 			defaultIcon
 		),
 	};
@@ -270,7 +270,7 @@ function initCurrentRoleBlocks(): void {
 
 	currentRoleBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -282,7 +282,7 @@ function initCurrentRoleBlocks(): void {
 		}
 
 		// Mark as hydrated and clear placeholder
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render

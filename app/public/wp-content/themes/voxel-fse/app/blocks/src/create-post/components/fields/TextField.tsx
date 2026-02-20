@@ -31,7 +31,7 @@ export const TextField: React.FC<TextFieldProps> = ({ field, value, onChange, on
 
 	// Check if this text field has suffix support
 	// Profile-name extends Text_Field, so it can have suffix too
-	const hasSuffix = field.props?.['suffix'];
+	const hasSuffix = field.props?.['suffix'] !== undefined ? String(field.props['suffix']) : undefined;
 
 	// Regex pattern validation from admin config
 	// Evidence: text-field.php:98 — returns regex pattern string for client-side validation
@@ -43,8 +43,8 @@ export const TextField: React.FC<TextFieldProps> = ({ field, value, onChange, on
 
 		// Validate minlength/maxlength/pattern if there's a value
 		if (newValue && newValue.length > 0) {
-			const minlength = field.props?.['minlength'];
-			const maxlength = field.props?.['maxlength'];
+			const minlength = Number(field.props?.['minlength'] ?? 0);
+			const maxlength = Number(field.props?.['maxlength'] ?? 0);
 
 			if (minlength && newValue.length < minlength) {
 				setLocalError(`Value cannot be shorter than ${minlength} characters`);
@@ -109,12 +109,12 @@ export const TextField: React.FC<TextFieldProps> = ({ field, value, onChange, on
 					value={value || ''}
 					onChange={(e) => handleChange(e.target.value)}
 					onBlur={onBlur}
-					placeholder={field.props?.['placeholder'] || field.placeholder || field.label}
+					placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? field.label ?? '')}
 					required={field.required}
 					title={field.label}
 				/>
 				{/* Suffix support - Voxel text-field.php line 15 */}
-				{hasSuffix && <span className="input-suffix">{hasSuffix}</span>}
+				{hasSuffix && <span className="input-suffix">{String(hasSuffix)}</span>}
 			</div>
 		</div>
 	);

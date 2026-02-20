@@ -28,7 +28,8 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import apiFetch from '@wordpress/api-fetch';
 import type {
 	GalleryBlockAttributes,
 	GalleryComponentProps,
@@ -200,12 +201,103 @@ export default function GalleryComponent({
 	attributes,
 	context,
 	blockId,
+	templateContext = 'post',
+	templatePostType,
 }: GalleryComponentProps) {
-	// Process images
-	const processedImages = useMemo(
+	// Dynamic tag resolution for editor preview
+	const hasDynamicImages = attributes.imagesDynamicTag && attributes.imagesDynamicTag.includes('@');
+	const [dynamicImages, setDynamicImages] = useState<ProcessedImage[]>([]);
+
+	useEffect(() => {
+		if (context !== 'editor' || !hasDynamicImages || attributes.images.length > 0) {
+			setDynamicImages([]);
+			return;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get comma-separated attachment IDs
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: attributes.imagesDynamicTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				// Strip @tags()...@endtags() wrapper
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				// Parse comma-separated IDs
+				const ids = rendered.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => n > 0);
+				if (ids.length === 0) {
+					setDynamicImages([]);
+					return;
+				}
+
+				// Step 2: Fetch media data for each ID
+				const images: ProcessedImage[] = [];
+				for (const id of ids) {
+					if (cancelled) return;
+					try {
+						const media = await apiFetch<{ source_url: string; alt_text?: string; caption?: { rendered?: string }; title?: { rendered?: string }; description?: { rendered?: string }; media_details?: { sizes?: Record<string, { source_url: string }> } }>({
+							path: `/wp/v2/media/${id}`,
+						});
+						if (media?.source_url) {
+							const sizes = media.media_details?.sizes || {};
+							const displayUrl = sizes[attributes.displaySize]?.source_url || media.source_url;
+							const lightboxUrl = sizes[attributes.lightboxSize]?.source_url || media.source_url;
+							images.push({
+								id,
+								src_display: displayUrl,
+								src_lightbox: lightboxUrl,
+								alt: media.alt_text || '',
+								caption: media.caption?.rendered?.replace(/<[^>]*>/g, '') || '',
+								description: media.description?.rendered?.replace(/<[^>]*>/g, '') || '',
+								title: media.title?.rendered || '',
+								display_size: attributes.displaySize,
+							});
+						}
+					} catch {
+						// Skip failed media fetches
+					}
+				}
+
+				if (!cancelled) {
+					setDynamicImages(images);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('Failed to resolve dynamic gallery images:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [context, attributes.imagesDynamicTag, hasDynamicImages, templateContext, templatePostType, attributes.images.length, attributes.displaySize, attributes.lightboxSize]);
+
+	// Process static images
+	const staticProcessedImages = useMemo(
 		() => processImagesForRender(attributes),
 		[attributes.images, attributes.displaySize, attributes.lightboxSize]
 	);
+
+	// Use dynamic images when no static images but dynamic tag is set
+	const processedImages = staticProcessedImages.length > 0 ? staticProcessedImages : dynamicImages;
 
 	// Calculate visible/hidden images
 	const visibleCount = attributes.visibleCount;

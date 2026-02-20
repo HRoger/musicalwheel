@@ -196,10 +196,10 @@ export function ContentTab({
                         <ToggleControl
                             label={__('Mark as featured', 'voxel-fse')}
                             checked={config.featured ?? false}
-                            onChange={(val) => updatePlanConfig(planKey, { featured: val })}
+                            onChange={(val: any) => updatePlanConfig(planKey, { featured: val })}
                         />
                         {config.featured && (
-                            <TextControl
+                            <DynamicTagTextControl
                                 label={__('Featured text', 'voxel-fse')}
                                 value={config.featuredText ?? 'Featured'}
                                 onChange={(val) => updatePlanConfig(planKey, { featuredText: val })}
@@ -273,7 +273,7 @@ export function ContentTab({
                     <TextControl
                         label={__('Post type', 'voxel-fse')}
                         value={attributes.directPurchasePostType ?? ''}
-                        onChange={(value) => setAttributes({ directPurchasePostType: value })}
+                        onChange={(value: any) => setAttributes({ directPurchasePostType: value })}
                         help={__('Enter the post type key (e.g. "post", "listing")', 'voxel-fse')}
                     />
                 )}
@@ -281,7 +281,7 @@ export function ContentTab({
                     <TextControl
                         label={__('Custom redirect URL', 'voxel-fse')}
                         value={attributes.directPurchaseCustomUrl ?? ''}
-                        onChange={(value) => setAttributes({ directPurchaseCustomUrl: value })}
+                        onChange={(value: any) => setAttributes({ directPurchaseCustomUrl: value })}
                         placeholder="https://"
                     />
                 )}

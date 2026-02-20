@@ -56,8 +56,8 @@ export const UIField: React.FC<UIFieldProps> = ({ field }) => {
 
 		case 'ui-image':
 			// Matches: themes/voxel/templates/widgets/create-post/ui-image-field.php:1-5
-			const imageUrl = field.props?.['url'];
-			const altText = field.props?.['alt'] || '';
+			const imageUrl = field.props?.['url'] !== undefined ? String(field.props['url']) : undefined;
+			const altText = String(field.props?.['alt'] ?? '');
 
 			// Only render if URL exists (matches Voxel v-if="field.props.url")
 			if (!imageUrl) {

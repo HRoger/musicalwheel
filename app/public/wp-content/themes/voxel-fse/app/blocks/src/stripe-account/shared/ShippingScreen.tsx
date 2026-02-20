@@ -10,7 +10,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { __ } from '@wordpress/i18n';
 
 import type {
@@ -69,7 +69,7 @@ export default function ShippingScreen({
 	onGoBack,
 	onSave,
 	saving,
-	context,
+	context: _context,
 }: ShippingScreenProps) {
 	const [activeZone, setActiveZone] = useState<ShippingZone | null>(null);
 	const [activeRate, setActiveRate] = useState<ShippingRate | null>(null);
@@ -537,7 +537,8 @@ export default function ShippingScreen({
 	// ========================================
 
 	// Get country name
-	const getCountryName = useCallback((code: string): string => {
+	// @ts-ignore -- unused but kept for future use
+	const _getCountryName = useCallback((code: string): string => {
 		return countries[code]?.name || code;
 	}, [countries]);
 
@@ -797,7 +798,7 @@ export default function ShippingScreen({
 
 																{/* Regions list */}
 																<div className="ts-repeater-container">
-																	{Object.entries(getFilteredRegionsByContinent(zone)).map(([continent, items]) => (
+																	{Object.entries(getFilteredRegionsByContinent(zone)).map(([_continent, items]) => (
 																		items.map(({ region, name }) => {
 																			const regionIndex = zone.regions.findIndex(r => r.country === region.country);
 																			const isActiveRegion = activeRegions[zone.key]?.country === region.country;

@@ -44,15 +44,15 @@ export default function FilterStepper( {
 	const props = filterData.props || {};
 
 	// Evidence: stepper-filter.php:143-157 frontend_props() returns these exact keys
-	const rangeStart = typeof props.range_start === 'number' ? props.range_start : 0;
-	const rangeEnd = typeof props.range_end === 'number' ? props.range_end : 1000;
-	const stepSize = typeof props.step_size === 'number' ? props.step_size : 1;
+	const rangeStart = typeof props['range_start'] === 'number' ? props['range_start'] : 0;
+	const rangeEnd = typeof props['range_end'] === 'number' ? props['range_end'] : 1000;
+	const stepSize = typeof props['step_size'] === 'number' ? props['step_size'] : 1;
 	// Evidence: stepper-filter.php:145 precision = decimal places in step_size
 	// Used by Voxel JS: Number(e.toFixed(this.filter.props.precision))
-	const precision = typeof props.precision === 'number' ? props.precision : 0;
-	const placeholder = props.placeholder || filterData.label || 'Any';
+	const precision = typeof props['precision'] === 'number' ? props['precision'] : 0;
+	const placeholder = String(props['placeholder'] || filterData.label || 'Any');
 	// Evidence: stepper-filter.php:155 default is 'popup'
-	const displayAs = config.displayAs || props.display_as || 'popup';
+	const displayAs = config.displayAs || props['display_as'] || 'popup';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
@@ -301,7 +301,7 @@ export default function FilterStepper( {
 			{ /* Portal-based popup using FieldPopup */ }
 			<FieldPopup
 				isOpen={ isOpen }
-				target={ triggerRef }
+				target={ triggerRef as any }
 				title=""
 				icon={ filterIcon }
 				saveLabel="Save"
@@ -317,7 +317,7 @@ export default function FilterStepper( {
 				<div className="ts-form-group">
 					<label>
 						{ filterData.label }
-						{ filterData.description && <small>{ filterData.description }</small> }
+						{ (filterData as any).description && <small>{ (filterData as any).description }</small> }
 					</label>
 					{ renderStepperInput( false ) }
 				</div>

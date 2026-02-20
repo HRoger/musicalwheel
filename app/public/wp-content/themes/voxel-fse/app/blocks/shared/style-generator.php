@@ -11209,36 +11209,37 @@ class Style_Generator {
         // TOOLTIP STYLES
         // ============================================
 
+        // Tooltip position: below item — Source: advanced-list.php:1103-1104
         if ( ! empty( $attributes['tooltipBottom'] ) ) {
-            $css_rules[] = "{$selector} .ts-action[data-tooltip]::after { top: auto; bottom: 100%; transform: translateX(-50%); }";
+            $css_rules[] = "{$selector} .ts-action::after { top: calc(100% + 5px); bottom: auto; }";
         }
 
         if ( ! empty( $attributes['tooltipTextColor'] ) ) {
-            $css_rules[] = "{$selector} .ts-action[data-tooltip]::after { color: {$attributes['tooltipTextColor']}; }";
+            $css_rules[] = "{$selector} .ts-action::after { color: {$attributes['tooltipTextColor']}; }";
         }
 
         if ( $has_typography( $attributes['tooltipTypography'] ?? null ) ) {
             $typo = $generate_typography( $attributes['tooltipTypography'] );
             if ( $typo ) {
-                $css_rules[] = "{$selector} .ts-action[data-tooltip]::after { {$typo}; }";
+                $css_rules[] = "{$selector} .ts-action::after { {$typo}; }";
             }
         }
 
         if ( ! empty( $attributes['tooltipBackgroundColor'] ) ) {
-            $css_rules[] = "{$selector} .ts-action[data-tooltip]::after { background-color: {$attributes['tooltipBackgroundColor']}; }";
+            $css_rules[] = "{$selector} .ts-action::after { background-color: {$attributes['tooltipBackgroundColor']}; }";
         }
 
         if ( isset( $attributes['tooltipBorderRadius'] ) && $attributes['tooltipBorderRadius'] !== '' ) {
             $unit = $attributes['tooltipBorderRadiusUnit'] ?? 'px';
-            $css_rules[] = "{$selector} .ts-action[data-tooltip]::after { border-radius: {$attributes['tooltipBorderRadius']}{$unit}; }";
+            $css_rules[] = "{$selector} .ts-action::after { border-radius: {$attributes['tooltipBorderRadius']}{$unit}; }";
         }
         if ( isset( $attributes['tooltipBorderRadius_tablet'] ) && $attributes['tooltipBorderRadius_tablet'] !== '' ) {
             $unit = $attributes['tooltipBorderRadiusUnit'] ?? 'px';
-            $tablet_rules[] = "{$selector} .ts-action[data-tooltip]::after { border-radius: {$attributes['tooltipBorderRadius_tablet']}{$unit}; }";
+            $tablet_rules[] = "{$selector} .ts-action::after { border-radius: {$attributes['tooltipBorderRadius_tablet']}{$unit}; }";
         }
         if ( isset( $attributes['tooltipBorderRadius_mobile'] ) && $attributes['tooltipBorderRadius_mobile'] !== '' ) {
             $unit = $attributes['tooltipBorderRadiusUnit'] ?? 'px';
-            $mobile_rules[] = "{$selector} .ts-action[data-tooltip]::after { border-radius: {$attributes['tooltipBorderRadius_mobile']}{$unit}; }";
+            $mobile_rules[] = "{$selector} .ts-action::after { border-radius: {$attributes['tooltipBorderRadius_mobile']}{$unit}; }";
         }
 
         // Margin (Deprecated but supported)

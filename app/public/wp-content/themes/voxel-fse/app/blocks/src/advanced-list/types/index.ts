@@ -54,6 +54,7 @@ export interface LinkConfig {
 	url: string;
 	isExternal: boolean;
 	nofollow: boolean;
+	customAttributes?: string;
 }
 
 /**
@@ -81,6 +82,7 @@ export interface BoxShadowValue {
  * Typography value structure
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSizeUnit?: string;

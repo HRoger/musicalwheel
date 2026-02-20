@@ -206,33 +206,6 @@ import type {
 } from './types';
 import { getSiteBaseUrl, getRestBaseUrl } from '@shared/utils/siteUrl';
 
-/**
- * Window extension for WordPress API settings
- */
-interface WpApiSettings {
-	root: string;
-	nonce: string;
-}
-
-interface VoxelStripeAccountData {
-	ajaxUrl?: string;
-	nonce?: string;
-}
-
-declare global {
-	interface Window {
-		wp: {
-			element: {
-				createRoot: (container: Element) => {
-					render: (element: React.ReactNode) => void;
-					unmount: () => void;
-				};
-			};
-		};
-		wpApiSettings?: WpApiSettings;
-		voxelStripeAccount?: VoxelStripeAccountData;
-	}
-}
 
 /**
  * Get the REST API base URL
@@ -247,8 +220,8 @@ function getRestUrl(): string {
  * MULTISITE FIX: Uses getSiteBaseUrl() for multisite subdirectory support
  */
 function getAjaxUrl(): string {
-	if (typeof window !== 'undefined' && window.voxelStripeAccount?.ajaxUrl) {
-		return window.voxelStripeAccount.ajaxUrl;
+	if (typeof window !== 'undefined' && (window as any).voxelStripeAccount?.ajaxUrl) {
+		return (window as any).voxelStripeAccount.ajaxUrl;
 	}
 	// MULTISITE FIX: Use getSiteBaseUrl() which properly detects site path
 	return getSiteBaseUrl();
@@ -258,8 +231,8 @@ function getAjaxUrl(): string {
  * Get WordPress REST API nonce
  */
 function getRestNonce(): string {
-	if (typeof window !== 'undefined' && window.wpApiSettings?.nonce) {
-		return window.wpApiSettings.nonce;
+	if (typeof window !== 'undefined' && (window as any).wpApiSettings?.nonce) {
+		return (window as any).wpApiSettings.nonce;
 	}
 	return '';
 }

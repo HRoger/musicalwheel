@@ -421,7 +421,7 @@ export function useSearchForm({
 				const filterData = currentPostTypeConfig?.filters?.find(
 					(f: FilterData) => f.key === filter.filterKey
 				);
-				if (filterData?.props?.terms) {
+				if (filterData?.props?.['terms']) {
 					// Collect all term_taxonomy_ids from the taxonomy
 					const collectIds = (terms: Array<{ term_taxonomy_id?: number; children?: unknown[] }>) => {
 						terms.forEach((term) => {
@@ -433,7 +433,7 @@ export function useSearchForm({
 							}
 						});
 					};
-					collectIds(filterData.props.terms as Array<{ term_taxonomy_id?: number; children?: unknown[] }>);
+					collectIds(filterData.props['terms'] as Array<{ term_taxonomy_id?: number; children?: unknown[] }>);
 				}
 			}
 		});
@@ -595,6 +595,7 @@ export function useSearchForm({
 				clearTimeout(timer);
 			};
 		}
+		return undefined;
 	}, [state.filterValues, state.currentPostType, attributes.searchOn, context, handleSubmitInternal]);
 
 	// VOXEL PARITY: Listen for PostFeed loading events to show spinner on submit button
@@ -687,7 +688,7 @@ function clearUrlParams(postType?: string) {
  * Check if a URL parameter key matches a filter key
  */
 function isFilterKey(key: string, filterValues: Record<string, unknown>): boolean {
-	return Object.hasOwn(filterValues, key);
+	return Object.prototype.hasOwnProperty.call(filterValues, key);
 }
 
 /**

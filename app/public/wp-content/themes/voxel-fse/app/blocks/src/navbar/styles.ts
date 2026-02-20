@@ -24,16 +24,16 @@ function generateDimensionsCSS(
 ): string {
 	if (!dimensions) return '';
 	// If all values are empty/unset, return nothing (don't emit 0px defaults)
-	const hasTop = dimensions.top !== undefined && dimensions.top !== '' && dimensions.top !== null;
-	const hasRight = dimensions.right !== undefined && dimensions.right !== '' && dimensions.right !== null;
-	const hasBottom = dimensions.bottom !== undefined && dimensions.bottom !== '' && dimensions.bottom !== null;
-	const hasLeft = dimensions.left !== undefined && dimensions.left !== '' && dimensions.left !== null;
+	const hasTop = dimensions['top'] !== undefined && dimensions['top'] !== '' && dimensions['top'] !== null;
+	const hasRight = dimensions['right'] !== undefined && dimensions['right'] !== '' && dimensions['right'] !== null;
+	const hasBottom = dimensions['bottom'] !== undefined && dimensions['bottom'] !== '' && dimensions['bottom'] !== null;
+	const hasLeft = dimensions['left'] !== undefined && dimensions['left'] !== '' && dimensions['left'] !== null;
 	if (!hasTop && !hasRight && !hasBottom && !hasLeft) return '';
 	const { unit = 'px' } = dimensions;
-	const top = hasTop ? parseFloat(String(dimensions.top)) : 0;
-	const right = hasRight ? parseFloat(String(dimensions.right)) : 0;
-	const bottom = hasBottom ? parseFloat(String(dimensions.bottom)) : 0;
-	const left = hasLeft ? parseFloat(String(dimensions.left)) : 0;
+	const top = hasTop ? parseFloat(String(dimensions['top'])) : 0;
+	const right = hasRight ? parseFloat(String(dimensions['right'])) : 0;
+	const bottom = hasBottom ? parseFloat(String(dimensions['bottom'])) : 0;
+	const left = hasLeft ? parseFloat(String(dimensions['left'])) : 0;
 	return `${property}: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit};`;
 }
 
@@ -56,10 +56,10 @@ function generateBorderCSS(
 	// Border width
 	if (borderWidth) {
 		const { unit = 'px' } = borderWidth;
-		const top = parseFloat(String(borderWidth.top)) || 0;
-		const right = parseFloat(String(borderWidth.right)) || 0;
-		const bottom = parseFloat(String(borderWidth.bottom)) || 0;
-		const left = parseFloat(String(borderWidth.left)) || 0;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
 		css += `border-width: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit}; `;
 	}
 

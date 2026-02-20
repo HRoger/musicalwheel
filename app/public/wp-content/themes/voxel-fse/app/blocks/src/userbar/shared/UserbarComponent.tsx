@@ -48,7 +48,6 @@ import type {
 } from '../types';
 import type { VisibilityRule } from '@shared/controls';
 import FormPopup from '@shared/popup-kit/FormPopup';
-import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { InlineSvg } from '@shared/InlineSvg';
 
 // ============================================================================
@@ -237,7 +236,7 @@ interface NotificationsItemProps {
  * PARITY: notifications.php:12 checks \Voxel\current_user()->get_notification_count()['unread']
  * Server config provides this initial state so indicator shows immediately without API call
  */
-function NotificationsItem({ item, icons, context, popupScopeClass }: NotificationsItemProps) {
+function NotificationsItem({ item, icons: _icons, context: _context, popupScopeClass }: NotificationsItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -714,7 +713,7 @@ interface MessagesItemProps {
  * PARITY: messages.php:1-3 provides data-config with nonce
  * PARITY: messages.php:7 checks \Voxel\current_user()->get_inbox_meta()['unread']
  */
-function MessagesItem({ item, icons, context, popupScopeClass, nonce }: MessagesItemProps) {
+function MessagesItem({ item, icons: _icons, context: _context, popupScopeClass, nonce }: MessagesItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -925,7 +924,7 @@ interface CartItemProps {
  * - nonce: wp_create_nonce('vx_cart')
  * - is_cart_empty: from metadata_exists check
  */
-function CartItemComponent({ item, icons, context, popupScopeClass, nonce, isCartEmpty }: CartItemProps) {
+function CartItemComponent({ item, icons: _icons, context, popupScopeClass, nonce, isCartEmpty }: CartItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 	const iconRef = useRef<HTMLDivElement>(null);
@@ -1438,7 +1437,7 @@ interface UserMenuItemProps {
  * - $user->get_avatar_markup()
  * - $user->get_display_name()
  */
-function UserMenuItem({ item, icons, context, popupScopeClass, hideChevron }: UserMenuItemProps) {
+function UserMenuItem({ item, icons: _icons, context: _context, popupScopeClass, hideChevron }: UserMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
@@ -1532,7 +1531,7 @@ interface WpMenuItemProps {
 	popupScopeClass?: string;
 }
 
-function WpMenuItem({ item, icons, context, popupScopeClass }: WpMenuItemProps) {
+function WpMenuItem({ item, icons: _icons, context: _context, popupScopeClass }: WpMenuItemProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const targetRef = useRef<HTMLAnchorElement>(null);
 
@@ -1610,6 +1609,15 @@ function LinkItem({ item, context }: LinkItemProps) {
 		linkProps.rel = 'nofollow';
 	}
 
+	// Parse custom attributes (key|value format, comma-separated)
+	const customAttrs: Record<string, string> = {};
+	if (item.componentUrl.customAttributes) {
+		item.componentUrl.customAttributes.split(',').forEach((pair) => {
+			const [key, val] = pair.split('|').map((s) => s.trim());
+			if (key) customAttrs[key] = val || '';
+		});
+	}
+
 	// In editor: prevent link navigation (links should NOT navigate away in Gutenberg)
 	if (context === 'editor') {
 		linkProps.onClick = (e: React.MouseEvent) => e.preventDefault();
@@ -1617,7 +1625,7 @@ function LinkItem({ item, context }: LinkItemProps) {
 
 	return (
 		<li className={`elementor-repeater-item-${item._id}`}>
-			<a {...linkProps}>
+			<a {...linkProps} {...customAttrs}>
 				<div className="ts-comp-icon flexify">
 					{renderIcon(item.icon)}
 				</div>

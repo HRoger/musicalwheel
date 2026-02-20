@@ -111,7 +111,8 @@ import type { IconValue } from '@shared/types';
 /**
  * Default icon structure
  */
-const DEFAULT_ICON: IconValue = {
+// @ts-ignore -- unused but kept for future use
+const _DEFAULT_ICON: IconValue = {
 	library: '',
 	value: '',
 };
@@ -167,14 +168,14 @@ function normalizeConfig(raw: Record<string, unknown>): SliderVxConfig {
 		return val.map((img: unknown) => {
 			const imgObj = (img ?? {}) as Record<string, unknown>;
 			return {
-				id: normalizeNumber(imgObj.id, 0),
-				src: normalizeString(imgObj.src ?? imgObj.src_display ?? imgObj.url, ''),
-				srcLightbox: normalizeString(imgObj.srcLightbox ?? imgObj.src_lightbox, ''),
-				srcThumbnail: normalizeString(imgObj.srcThumbnail ?? imgObj.src_thumbnail, ''),
-				alt: normalizeString(imgObj.alt, ''),
-				caption: normalizeString(imgObj.caption, ''),
-				description: normalizeString(imgObj.description, ''),
-				title: normalizeString(imgObj.title, ''),
+				id: normalizeNumber(imgObj['id'], 0),
+				src: normalizeString(imgObj['src'] ?? imgObj['src_display'] ?? imgObj['url'], ''),
+				srcLightbox: normalizeString(imgObj['srcLightbox'] ?? imgObj['src_lightbox'], ''),
+				srcThumbnail: normalizeString(imgObj['srcThumbnail'] ?? imgObj['src_thumbnail'], ''),
+				alt: normalizeString(imgObj['alt'], ''),
+				caption: normalizeString(imgObj['caption'], ''),
+				description: normalizeString(imgObj['description'], ''),
+				title: normalizeString(imgObj['title'], ''),
 			};
 		});
 	};
@@ -190,69 +191,69 @@ function normalizeConfig(raw: Record<string, unknown>): SliderVxConfig {
 
 	return {
 		// Images
-		images: normalizeImages(raw.images ?? raw.ts_slider_images),
-		visibleCount: normalizeNumber(raw.visibleCount ?? raw.visible_count ?? raw.ts_visible_count, 3),
-		displaySize: normalizeString(raw.displaySize ?? raw.display_size ?? raw.ts_display_size, 'medium'),
-		lightboxSize: normalizeString(raw.lightboxSize ?? raw.lightbox_size ?? raw.ts_lightbox_size, 'large'),
+		images: normalizeImages(raw['images'] ?? raw['ts_slider_images']),
+		visibleCount: normalizeNumber(raw['visibleCount'] ?? raw['visible_count'] ?? raw['ts_visible_count'], 3),
+		displaySize: normalizeString(raw['displaySize'] ?? raw['display_size'] ?? raw['ts_display_size'], 'medium'),
+		lightboxSize: normalizeString(raw['lightboxSize'] ?? raw['lightbox_size'] ?? raw['ts_lightbox_size'], 'large'),
 
 		// Link settings
-		linkType: normalizeLinkType(raw.linkType ?? raw.link_type ?? raw.ts_link_type),
+		linkType: normalizeLinkType(raw['linkType'] ?? raw['link_type'] ?? raw['ts_link_type']),
 		customLinkUrl: normalizeString(
-			raw.customLinkUrl ?? raw.custom_link_url ?? (raw.ts_link_src as Record<string, unknown>)?.url,
+			raw['customLinkUrl'] ?? raw['custom_link_url'] ?? (raw['ts_link_src'] as Record<string, unknown>)?.['url'],
 			''
 		),
 		customLinkTarget: normalizeString(
-			raw.customLinkTarget ?? raw.custom_link_target ?? (raw.ts_link_src as Record<string, unknown>)?.is_external,
+			raw['customLinkTarget'] ?? raw['custom_link_target'] ?? (raw['ts_link_src'] as Record<string, unknown>)?.['is_external'],
 			''
 		),
 
 		// Thumbnails and autoplay
-		showThumbnails: normalizeBool(raw.showThumbnails ?? raw.show_thumbnails ?? raw.ts_show_navigation, true),
-		autoSlide: normalizeBool(raw.autoSlide ?? raw.auto_slide ?? raw.carousel_autoplay, false),
+		showThumbnails: normalizeBool(raw['showThumbnails'] ?? raw['show_thumbnails'] ?? raw['ts_show_navigation'], true),
+		autoSlide: normalizeBool(raw['autoSlide'] ?? raw['auto_slide'] ?? raw['carousel_autoplay'], false),
 		autoSlideInterval: normalizeNumber(
-			raw.autoSlideInterval ?? raw.auto_slide_interval ?? raw.carousel_autoplay_interval,
+			raw['autoSlideInterval'] ?? raw['auto_slide_interval'] ?? raw['carousel_autoplay_interval'],
 			3000
 		),
 
 		// Icons (as CSS class strings for frontend)
 		rightChevronIcon: normalizeString(
-			raw.rightChevronIcon ?? raw.right_chevron_icon ?? (raw.ts_chevron_right as Record<string, unknown>)?.value,
+			raw['rightChevronIcon'] ?? raw['right_chevron_icon'] ?? (raw['ts_chevron_right'] as Record<string, unknown>)?.['value'],
 			''
 		),
 		leftChevronIcon: normalizeString(
-			raw.leftChevronIcon ?? raw.left_chevron_icon ?? (raw.ts_chevron_left as Record<string, unknown>)?.value,
+			raw['leftChevronIcon'] ?? raw['left_chevron_icon'] ?? (raw['ts_chevron_left'] as Record<string, unknown>)?.['value'],
 			''
 		),
 
 		// Gallery ID for lightbox grouping
-		galleryId: normalizeString(raw.galleryId ?? raw.gallery_id, ''),
+		galleryId: normalizeString(raw['galleryId'] ?? raw['gallery_id'], ''),
 
 		// Style - General
-		imageAspectRatio: raw.imageAspectRatio !== undefined || raw.image_aspect_ratio !== undefined || raw.image_slider_ratio !== undefined
-			? normalizeString(raw.imageAspectRatio ?? raw.image_aspect_ratio ?? raw.image_slider_ratio, '')
+		imageAspectRatio: raw['imageAspectRatio'] !== undefined || raw['image_aspect_ratio'] !== undefined || raw['image_slider_ratio'] !== undefined
+			? normalizeString(raw['imageAspectRatio'] ?? raw['image_aspect_ratio'] ?? raw['image_slider_ratio'], '')
 			: undefined,
 		imageBorderRadius: normalizeOptionalNumber(
-			raw.imageBorderRadius ?? raw.image_border_radius ?? raw.ts_gl_general_image_radius
+			raw['imageBorderRadius'] ?? raw['image_border_radius'] ?? raw['ts_gl_general_image_radius']
 		),
 		imageOpacity: normalizeOptionalNumber(
-			raw.imageOpacity ?? raw.image_opacity ?? raw.ts_gl_general_image_opacity
+			raw['imageOpacity'] ?? raw['image_opacity'] ?? raw['ts_gl_general_image_opacity']
 		),
 		imageOpacityHover: normalizeOptionalNumber(
-			raw.imageOpacityHover ?? raw.image_opacity_hover ?? raw.ts_gl_general_image_opacity_hover
+			raw['imageOpacityHover'] ?? raw['image_opacity_hover'] ?? raw['ts_gl_general_image_opacity_hover']
 		),
 
 		// Style - Thumbnails
 		thumbnailSize: normalizeOptionalNumber(
-			raw.thumbnailSize ?? raw.thumbnail_size ?? raw.ts_thumbnail_size
+			raw['thumbnailSize'] ?? raw['thumbnail_size'] ?? raw['ts_thumbnail_size']
 		),
 		thumbnailBorderRadius: normalizeOptionalNumber(
-			raw.thumbnailBorderRadius ?? raw.thumbnail_border_radius ?? raw.ts_thumbnails_radius
+			raw['thumbnailBorderRadius'] ?? raw['thumbnail_border_radius'] ?? raw['ts_thumbnails_radius']
 		),
 		thumbnailOpacity: normalizeOptionalNumber(
-			raw.thumbnailOpacity ?? raw.thumbnail_opacity ?? raw.ts_thumbnail_opacity
+			raw['thumbnailOpacity'] ?? raw['thumbnail_opacity'] ?? raw['ts_thumbnail_opacity']
 		),
 		thumbnailOpacityHover: normalizeOptionalNumber(
-			raw.thumbnailOpacityHover ?? raw.thumbnail_opacity_hover ?? raw.ts_thumbnail_opacity_h
+			raw['thumbnailOpacityHover'] ?? raw['thumbnail_opacity_hover'] ?? raw['ts_thumbnail_opacity_h']
 		),
 	};
 }
@@ -395,7 +396,7 @@ function initSliderBlocks() {
 
 	sliderBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -407,7 +408,7 @@ function initSliderBlocks() {
 		}
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Clear placeholder content
 		container.innerHTML = '';

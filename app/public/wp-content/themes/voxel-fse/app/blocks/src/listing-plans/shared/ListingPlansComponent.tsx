@@ -22,28 +22,12 @@ import type {
 	PlanConfig,
 	PriceData,
 	PackageData,
-	IconValue,
 } from '../types';
 import { defaultIconValue, defaultPlanConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
 
-/**
- * Declare global types for Voxel
- */
-declare global {
-	interface Window {
-		jQuery?: JQueryStatic;
-		Voxel?: {
-			alert: (message: string, type: 'error' | 'success' | 'info') => void;
-		};
-		Voxel_Config?: {
-			l10n: {
-				ajaxError: string;
-			};
-		};
-	}
-}
+// Use (window as any) to access Voxel and Voxel_Config to avoid type conflicts
 
 /**
  * Handle plan button click - matches Voxel listing-plans-widget.js exactly
@@ -78,7 +62,7 @@ function handlePlanClick(
 	const href = buttonElement.href;
 
 	// Use jQuery for AJAX request to match Voxel's pattern
-	const jQuery = window.jQuery;
+	const jQuery = (window as any).jQuery;
 	if (!jQuery) {
 		console.error('[ListingPlans] jQuery not available');
 		planContainer.classList.remove('vx-pending');
@@ -123,11 +107,11 @@ function handlePlanClick(
 			// Show error using Voxel alert system
 			const errorMessage =
 				response.message ||
-				window.Voxel_Config?.l10n?.ajaxError ||
+				(window as any).Voxel_Config?.l10n?.ajaxError ||
 				'An error occurred';
 
-			if (window.Voxel?.alert) {
-				window.Voxel.alert(errorMessage, 'error');
+			if ((window as any).Voxel?.alert) {
+				(window as any).Voxel.alert(errorMessage, 'error');
 			} else {
 				console.error('[ListingPlans] Error:', errorMessage);
 			}
@@ -459,6 +443,7 @@ export default function ListingPlansComponent({
 		priceGroups: attributes.priceGroups ?? [],
 		planConfigs: attributes.planConfigs ?? {},
 		arrowIcon: attributes.arrowIcon ?? defaultIconValue,
+		directPurchaseRedirect: attributes.directPurchaseRedirect ?? 'order',
 		style: {
 			plansColumns: attributes.plansColumns ?? 3,
 			plansColumns_tablet: attributes.plansColumns_tablet,

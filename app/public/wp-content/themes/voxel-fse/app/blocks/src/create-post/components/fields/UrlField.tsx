@@ -82,7 +82,7 @@ export const UrlField: React.FC<UrlFieldProps> = ({ field, value, onChange, onBl
 					value={value || ''}
 					onChange={(e) => handleChange(e.target.value)}
 					onBlur={onBlur}
-					placeholder={field.props?.placeholder || field.label}
+					placeholder={String(field.props?.['placeholder'] ?? field.label ?? '')}
 					required={field.required}
 					title={field.label}
 				/>

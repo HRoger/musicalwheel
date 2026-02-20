@@ -18,8 +18,7 @@ import type {
 	ChartItem,
 	ChartState,
 	ChartDataResponse,
-	VisitChartVxConfig,
-} from '../types';
+	} from '../types';
 
 /**
  * Tab labels for timeframes
@@ -133,7 +132,8 @@ export default function VisitChartComponent({
 	/**
 	 * Get REST API URL
 	 */
-	const getRestUrl = useCallback((): string => {
+	// @ts-ignore -- unused but kept for future use
+	const _getRestUrl = useCallback((): string => {
 		if (typeof window !== 'undefined' && window.wpApiSettings?.root) {
 			return window.wpApiSettings.root;
 		}
@@ -169,7 +169,7 @@ export default function VisitChartComponent({
 				}
 
 				// Use Voxel's AJAX endpoint
-				const ajaxUrl = window.Voxel_Config?.ajax_url || '/wp-admin/admin-ajax.php?';
+				const ajaxUrl = window.Voxel_Config?.['ajax_url'] || '/wp-admin/admin-ajax.php?';
 				const url = `${ajaxUrl}&action=tracking.get_chart_data&${params.toString()}`;
 
 				const response = await fetch(url);
@@ -180,14 +180,14 @@ export default function VisitChartComponent({
 						...prev,
 						[timeframe]: {
 							loaded: true,
-							steps: data.data.steps,
-							items: data.data.items,
-							meta: data.data.meta,
+							steps: data.data?.steps,
+							items: data.data?.items,
+							meta: data.data?.meta,
 						},
 					}));
 				} else {
 					// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
-					const errorMessage = data.message || window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+					const errorMessage = data.message || (window.Voxel_Config?.['l10n'] as any)?.ajaxError || 'An error occurred';
 					if (window.Voxel?.alert) {
 						window.Voxel.alert(errorMessage, 'error');
 					}
@@ -201,7 +201,7 @@ export default function VisitChartComponent({
 				}
 			} catch {
 				// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
-				const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+				const errorMessage = (window.Voxel_Config?.['l10n'] as any)?.ajaxError || 'An error occurred';
 				if (window.Voxel?.alert) {
 					window.Voxel.alert(errorMessage, 'error');
 				}

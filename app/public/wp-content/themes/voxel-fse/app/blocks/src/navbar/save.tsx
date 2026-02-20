@@ -18,7 +18,7 @@
 
 import { useBlockProps } from '@wordpress/block-editor';
 import { getAdvancedVoxelTabProps, renderBackgroundElements } from '@shared/utils';
-import type { NavbarAttributes, NavbarVxConfig } from './types';
+import type { NavbarAttributes } from './types';
 import { generateNavbarResponsiveCSS } from './styles';
 
 interface SaveProps {

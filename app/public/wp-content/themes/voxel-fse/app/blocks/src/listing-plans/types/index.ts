@@ -12,11 +12,12 @@
  */
 
 import { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
+import type { IconValue } from '@shared/types';
 
 /**
  * Icon value interface (matches Voxel's icon structure)
  */
-import { IconValue } from '../../../shared/types';
+export type { IconValue } from '../../../shared/types';
 
 /**
  * Feature item in a plan

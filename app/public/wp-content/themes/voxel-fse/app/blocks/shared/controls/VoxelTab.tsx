@@ -30,7 +30,7 @@
 // This is idempotent and will only register once, even if imported multiple times
 import '../filters/editorWrapperFilters';
 
-import { ToggleControl, SelectControl, Button, TextControl, RangeControl } from '@wordpress/components';
+import { ToggleControl, SelectControl, Button } from '@wordpress/components';
 import { AccordionPanelGroup, AccordionPanel } from './AccordionPanelGroup';
 import { useState } from 'react';
 import { __ } from '@wordpress/i18n';
@@ -183,7 +183,7 @@ export default function VoxelTab({
 						<ToggleControl
 							label={__('Enable?', 'voxel-fse')}
 							checked={attributes.stickyEnabled ?? false}
-							onChange={(value) => setAttributes({ stickyEnabled: value })}
+							onChange={(value: boolean) => setAttributes({ stickyEnabled: value })}
 						/>
 
 						{attributes.stickyEnabled && (
@@ -195,7 +195,7 @@ export default function VoxelTab({
 										{ label: __('Enable', 'voxel-fse'), value: 'sticky' },
 										{ label: __('Disable', 'voxel-fse'), value: 'initial' },
 									]}
-									onChange={(value) =>
+									onChange={(value: string) =>
 										setAttributes({ stickyDesktop: value as 'sticky' | 'initial' })
 									}
 								/>
@@ -207,7 +207,7 @@ export default function VoxelTab({
 										{ label: __('Enable', 'voxel-fse'), value: 'sticky' },
 										{ label: __('Disable', 'voxel-fse'), value: 'initial' },
 									]}
-									onChange={(value) =>
+									onChange={(value: string) =>
 										setAttributes({ stickyTablet: value as 'sticky' | 'initial' })
 									}
 								/>
@@ -219,7 +219,7 @@ export default function VoxelTab({
 										{ label: __('Enable', 'voxel-fse'), value: 'sticky' },
 										{ label: __('Disable', 'voxel-fse'), value: 'initial' },
 									]}
-									onChange={(value) =>
+									onChange={(value: string) =>
 										setAttributes({ stickyMobile: value as 'sticky' | 'initial' })
 									}
 								/>
@@ -351,7 +351,7 @@ export default function VoxelTab({
 										<ColorPickerControl
 											label={__('Color', 'voxel-fse')}
 											value={attributes.scrollbarColor}
-											onChange={(value) => setAttributes({ scrollbarColor: value })}
+											onChange={(value: string | undefined) => setAttributes({ scrollbarColor: value })}
 										/>
 									</>
 								)}
@@ -374,7 +374,6 @@ export default function VoxelTab({
 										min={0}
 										max={100}
 										step={1}
-										showUnit={false}
 									/>
 								)}
 							</>
@@ -393,7 +392,7 @@ export default function VoxelTab({
 								{ label: __('Show this element if', 'voxel-fse'), value: 'show' },
 								{ label: __('Hide this element if', 'voxel-fse'), value: 'hide' },
 							]}
-							onChange={(value) => setAttributes({ visibilityBehavior: value as 'show' | 'hide' })}
+							onChange={(value: string) => setAttributes({ visibilityBehavior: value as 'show' | 'hide' })}
 						/>
 
 						<div className="voxel-fse-visibility-rules-list">

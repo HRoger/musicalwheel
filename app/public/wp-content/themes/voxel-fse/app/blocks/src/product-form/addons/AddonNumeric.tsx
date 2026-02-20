@@ -44,9 +44,9 @@ export default function AddonNumeric( {
 	addon,
 	value,
 	onChange,
-	getRepeatConfig,
-	getCustomPrice,
-	getCustomPriceForDate,
+	getRepeatConfig: _getRepeatConfig,
+	getCustomPrice: _getCustomPrice,
+	getCustomPriceForDate: _getCustomPriceForDate,
 	searchContext,
 }: AddonNumericProps ) {
 	const minUnits = addon.props.min_units ?? 1;
@@ -249,7 +249,7 @@ AddonNumeric.getPricingSummary = function(
 
 			if ( priceDate !== null ) {
 				const addonPrices = priceDate.prices.addons?.[ addon.key ];
-				const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+				const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 				amount += cp != null ? cp : ( addon.props.price ?? 0 );
 			} else {
 				amount += addon.props.price ?? 0;
@@ -265,7 +265,7 @@ AddonNumeric.getPricingSummary = function(
 		let finalPrice = addon.props.price ?? 0;
 		if ( customPrice !== null ) {
 			const addonPrices = customPrice.prices.addons?.[ addon.key ];
-			const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+			const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 			if ( cp != null ) {
 				finalPrice = cp;
 			}

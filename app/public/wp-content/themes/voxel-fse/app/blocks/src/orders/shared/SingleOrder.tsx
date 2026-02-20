@@ -8,7 +8,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-import type { SingleOrderProps, Order, OrderAction, OrderItem } from '../types';
+import type { SingleOrderProps, OrderAction } from '../types';
 
 /**
  * Type declarations for Voxel global objects

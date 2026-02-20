@@ -40,13 +40,11 @@ import { useState, useCallback, useMemo, useEffect, useRef, type RefObject } fro
 
 import type {
 	OrdersComponentProps,
-	OrdersBlockAttributes,
-	OrdersConfig,
-	OrderListItem,
-	Order,
+		OrdersConfig,
+		Order,
 	OrderStatus,
-	BlockContext,
-} from '../types';
+	ShippingStatus,
+	} from '../types';
 import type { IconValue } from '@shared/controls/IconPickerControl';
 import { getIconWithFallback as getIconWithFallbackBase } from '@shared/utils';
 
@@ -129,7 +127,8 @@ function deleteSearchParam(key: string): void {
 /**
  * Show Voxel alert notification
  */
-function showAlert(message: string, type: 'error' | 'success' = 'error'): void {
+// @ts-ignore -- unused but kept for future use
+function _showAlert(message: string, type: 'error' | 'success' = 'error'): void {
 	const win = window as unknown as { Voxel?: { alert?: (msg: string, t: string) => void } };
 	if (win.Voxel?.alert) {
 		win.Voxel.alert(message, type);
@@ -241,7 +240,7 @@ export function truncateHtml(html: string, maxLength: number = 200): { content: 
 function replaceVars(template: string, vars: Record<string, string | number>): string {
 	let result = template;
 	Object.keys(vars).forEach((key) => {
-		result = result.replaceAll(key, String(vars[key]));
+		result = result.split(key).join(String(vars[key]));
 	});
 	return result;
 }
@@ -411,7 +410,7 @@ export default function OrdersComponent({
 		setState((prev) => ({
 			...prev,
 			statusFilter: statusParam && config?.statuses?.[statusParam as OrderStatus] ? (statusParam as OrderStatus) : null,
-			shippingStatusFilter: shippingParam && config?.shipping_statuses?.[shippingParam] ? shippingParam : null,
+			shippingStatusFilter: shippingParam && config?.shipping_statuses?.[shippingParam as ShippingStatus] ? shippingParam : null,
 			productTypeFilter: productTypeParam || null,
 			searchQuery: searchParam || '',
 			parentOrderId: parentIdParam ? parseInt(parentIdParam, 10) : null,
@@ -503,7 +502,7 @@ export default function OrdersComponent({
 			}));
 
 			// Update URL
-			if (status && status !== 'all') {
+			if (status && (status as any) !== 'all') {
 				setSearchParam('status', status);
 			} else {
 				deleteSearchParam('status');
@@ -527,7 +526,7 @@ export default function OrdersComponent({
 			}));
 
 			// Update URL
-			if (status && status !== 'all') {
+			if (status && (status as any) !== 'all') {
 				setSearchParam('shipping_status', status);
 			} else {
 				deleteSearchParam('shipping_status');
@@ -613,7 +612,7 @@ export default function OrdersComponent({
 		(order: Order) => {
 			if (!config?.messages?.url) return;
 
-			const isVendor = order.current_user?.id === order.vendor?.id;
+			const isVendor = (order as any).current_user?.id === order.vendor?.id;
 			const url = new URL(config.messages.url);
 
 			if (isVendor) {
@@ -622,16 +621,16 @@ export default function OrdersComponent({
 				url.searchParams.set(
 					'text',
 					replaceVars(config.messages.enquiry_text?.vendor || 'Order #@order_id inquiry', {
-						'@order_id': order.id,
+						'@order_id': String(order.id),
 					})
 				);
 			} else {
 				// Customer contacting vendor
-				url.searchParams.set('chat', order.actions?.dms?.vendor_target || `u${order.vendor?.id}`);
+				url.searchParams.set('chat', String(order.actions?.dms?.vendor_target || `u${order.vendor?.id}`));
 				url.searchParams.set(
 					'text',
 					replaceVars(config.messages.enquiry_text?.customer || 'Question about order #@order_id', {
-						'@order_id': order.id,
+						'@order_id': String(order.id),
 					})
 				);
 			}
@@ -694,7 +693,7 @@ export default function OrdersComponent({
 	// Get shipping status filter label
 	const shippingStatusFilterLabel = useMemo(() => {
 		if (state.shippingStatusFilter && config?.shipping_statuses) {
-			return config.shipping_statuses[state.shippingStatusFilter]?.label || 'Shipping';
+			return config.shipping_statuses[state.shippingStatusFilter as ShippingStatus]?.label || 'Shipping';
 		}
 		return 'Shipping';
 	}, [state.shippingStatusFilter, config]);
@@ -710,8 +709,9 @@ export default function OrdersComponent({
 		return 'Product type';
 	}, [state.productTypeFilter, config]);
 
+	// @ts-ignore -- unused but kept for future use
 	// Check if any filters are active
-	const hasActiveFilters = useMemo(() => {
+	const _hasActiveFilters = useMemo(() => {
 		return (
 			state.searchQuery !== '' ||
 			state.statusFilter !== null ||

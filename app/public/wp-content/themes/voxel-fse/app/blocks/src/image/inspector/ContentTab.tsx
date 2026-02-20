@@ -19,7 +19,9 @@ import {
 	ImageUploadControl,
 	DynamicTagTextControl,
 	ImageSizeWithCustomControl,
+	LinkSearchControl,
 } from '@shared/controls';
+import type { LinkValue } from '@shared/controls/LinkSearchControl';
 import type { ImageBlockAttributes } from '../types';
 
 interface ContentTabProps {
@@ -139,12 +141,14 @@ export function ContentTab({
 				/>
 
 				{/* Caption controls within Image accordion */}
-				<SelectControl
-					label={__('Caption', 'voxel-fse')}
-					value={attributes.captionSource}
-					options={CAPTION_OPTIONS}
-					onChange={(value: any) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
-				/>
+				<div style={{ marginTop: 10 }}>
+					<SelectControl
+						label={__('Caption', 'voxel-fse')}
+						value={attributes.captionSource}
+						options={CAPTION_OPTIONS}
+						onChange={(value: any) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
+					/>
+				</div>
 
 				{attributes.captionSource === 'custom' && (
 					<DynamicTagTextControl
@@ -165,12 +169,23 @@ export function ContentTab({
 				/>
 
 				{attributes.linkTo === 'custom' && (
-					<DynamicTagTextControl
-						label={__('Link URL', 'voxel-fse')}
-						value={attributes.link.url}
-						onChange={(value) => setAttributes({ link: { ...attributes.link, url: value } })}
+					<LinkSearchControl
+						label={__('Link', 'voxel-fse')}
+						value={{
+							url: attributes.link.url || '',
+							isExternal: attributes.link.target === '_blank',
+							nofollow: (attributes.link.rel || '').includes('nofollow'),
+							customAttributes: '',
+						}}
+						onChange={(linkVal: LinkValue) => setAttributes({
+							link: {
+								url: linkVal.url,
+								target: linkVal.isExternal ? '_blank' : '',
+								rel: linkVal.nofollow ? 'nofollow' : '',
+							},
+						})}
 						placeholder={__('Type or paste your URL', 'voxel-fse')}
-						context="post"
+						enableDynamicTags={true}
 					/>
 				)}
 

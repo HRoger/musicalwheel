@@ -32,15 +32,6 @@ import { VoxelIcons, renderIcon } from '@shared/utils';
 declare global {
 	interface Window {
 		jQuery?: JQueryStatic;
-		Voxel?: {
-			alert: (message: string, type: 'error' | 'success' | 'info') => void;
-			dialog: (options: VoxelDialogOptions) => void;
-		};
-		Voxel_Config?: {
-			l10n: {
-				ajaxError: string;
-			};
-		};
 	}
 }
 
@@ -199,7 +190,7 @@ function handlePlanClick(
 										// Show error using Voxel alert system
 										const errorMessage =
 											confirmResponse.message ||
-											window.Voxel_Config?.l10n?.ajaxError ||
+											(window as any).Voxel_Config?.l10n?.ajaxError ||
 											'An error occurred';
 
 										if (window.Voxel?.alert) {
@@ -219,7 +210,7 @@ function handlePlanClick(
 
 				// Show the dialog with modified actions
 				if (window.Voxel?.dialog) {
-					window.Voxel.dialog(response.dialog);
+					(window as any).Voxel.dialog(response.dialog);
 				} else {
 					console.error('[MembershipPlans] Voxel.dialog not available');
 				}
@@ -265,7 +256,7 @@ function handlePlanClick(
 			// ========================================
 			const errorMessage =
 				response.message ||
-				window.Voxel_Config?.l10n?.ajaxError ||
+				(window as any).Voxel_Config?.l10n?.ajaxError ||
 				'An error occurred';
 
 			if (window.Voxel?.alert) {
@@ -730,7 +721,7 @@ export default function MembershipPlansComponent({
 							pricingAlign={attributes.pricingAlign}
 							descAlign={attributes.descAlign}
 							listAlign={attributes.listAlign}
-							arrowIconElement={arrowIconElement}
+							arrowIconElement={arrowIconElement as any}
 							context={context}
 						/>
 					));

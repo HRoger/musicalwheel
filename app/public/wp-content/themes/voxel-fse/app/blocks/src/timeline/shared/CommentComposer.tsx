@@ -104,8 +104,8 @@ export function CommentComposer({
 
 	// File state
 	const [existingFiles, setExistingFiles] = useState<MediaFile[]>(comment?.files ?? []);
-	const [newFiles, setNewFiles] = useState<File[]>([]); // To be implemented with Upload
-	const [showMediaPopup, setShowMediaPopup] = useState(false);
+	const [_newFiles, _setNewFiles] = useState<File[]>([]); // To be implemented with Upload
+	const [_showMediaPopup, _setShowMediaPopup] = useState(false);
 
 	const isEditMode = !!comment;
 
@@ -114,7 +114,7 @@ export function CommentComposer({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const emojiButtonRef = useRef<HTMLAnchorElement>(null);
 
-	const l10n = config?.strings ?? {};
+	const l10n = (config?.strings ?? {}) as any;
 
 	/**
 	 * Handle content change

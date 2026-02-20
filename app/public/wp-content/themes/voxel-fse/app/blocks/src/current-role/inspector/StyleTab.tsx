@@ -53,7 +53,7 @@ export function StyleTab({
 			<AccordionPanel id="panel" title={__('Panel', 'voxel-fse')}>
 				<BorderGroupControl
 					label={__('Border', 'voxel-fse')}
-					value={attributes.panelBorder || {}}
+					value={(attributes.panelBorder as any) || {}}
 					onChange={(value) => setAttributes({ panelBorder: value })}
 				hideRadius={true}
 				/>
@@ -122,7 +122,7 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes}
 					setAttributes={setAttributes}
-					attributePrefix="headTypo"
+					typographyAttributeName="headTypo"
 				/>
 
 				<ResponsiveColorControl
@@ -169,14 +169,14 @@ export function StyleTab({
 						{ label: __('Center', 'voxel-fse'), value: 'center' },
 						{ label: __('Right', 'voxel-fse'), value: 'right' },
 					]}
-					onChange={(value) => setAttributes({ textAlign: value })}
+					onChange={(value: any) => setAttributes({ textAlign: value })}
 				/>
 
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes}
 					setAttributes={setAttributes}
-					attributePrefix="bodyTypo"
+					typographyAttributeName="bodyTypo"
 				/>
 
 				<ResponsiveColorControl
@@ -217,7 +217,7 @@ export function StyleTab({
 									label={__('Button typography', 'voxel-fse')}
 									attributes={attributes}
 									setAttributes={setAttributes}
-									attributePrefix="scndBtnTypo"
+									typographyAttributeName="scndBtnTypo"
 								/>
 
 								<ResponsiveRangeControl
@@ -263,7 +263,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Border', 'voxel-fse')}
-									value={attributes.scndBtnBorder || {}}
+									value={(attributes.scndBtnBorder as any) || {}}
 									onChange={(value) => setAttributes({ scndBtnBorder: value })}
 								hideRadius={true}
 								/>

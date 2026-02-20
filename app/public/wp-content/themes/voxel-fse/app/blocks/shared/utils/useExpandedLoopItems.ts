@@ -28,12 +28,12 @@ interface UseExpandedLoopItemsResult {
  */
 function itemHasLoop(item: any): boolean {
 	if (!item || typeof item !== 'object') return false;
-	// Flat format (userbar, navbar, advanced-list)
-	if (item.loopSource) return true;
-	// Nested loop format (nested-accordion)
+	// Flat format (userbar, navbar, advanced-list) — requires both source AND property
+	if (item.loopSource && item.loopProperty) return true;
+	// Nested loop format (nested-accordion) — source is already a full tag
 	if (item.loop?.source) return true;
-	// Nested loopConfig format (nested-tabs)
-	if (item.loopConfig?.loopSource) return true;
+	// Nested loopConfig format (nested-tabs) — requires both source AND property
+	if (item.loopConfig?.loopSource && item.loopConfig?.loopProperty) return true;
 	return false;
 }
 

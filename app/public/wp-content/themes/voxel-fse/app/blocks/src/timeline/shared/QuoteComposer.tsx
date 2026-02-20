@@ -16,7 +16,7 @@ import { useState, useCallback, useRef, useEffect, type ChangeEvent, type FormEv
 import { useTimelineContext, useStrings, useFileUpload } from '../hooks';
 import { quoteStatusApi } from '../api';
 import { countCharacters } from '../utils';
-import type { Status, MediaFile } from '../types';
+import type { Status } from '../types';
 import EmojiPicker from './EmojiPicker';
 
 /**

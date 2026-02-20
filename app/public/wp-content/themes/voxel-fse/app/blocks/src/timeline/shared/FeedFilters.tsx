@@ -152,7 +152,7 @@ export function FeedFilters({
 				orderId: option._id,
 				order: option.order,
 				time: option.time,
-				timeCustom: option.time === 'custom' ? option.timeCustom : undefined,
+				timeCustom: option.time === 'custom' ? Number(option.timeCustom) : undefined,
 			});
 			setShowOrderDropdown(false);
 		},

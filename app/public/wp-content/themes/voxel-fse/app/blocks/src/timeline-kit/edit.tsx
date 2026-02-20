@@ -18,7 +18,7 @@ import { EditProps } from './types';
 import Demofeed from './Demofeed';
 import { StyleTab } from './inspector';
 
-export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+export default function Edit({ attributes, setAttributes, clientId: _clientId }: EditProps) {
 	// Inject Voxel Editor Styles
 	useEffect(() => {
 		const cssId = 'voxel-social-feed-css';

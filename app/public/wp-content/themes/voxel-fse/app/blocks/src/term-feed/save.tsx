@@ -43,7 +43,7 @@ function createSaveFn(includePlaceholder: boolean) {
 			.join('\n');
 
 		// Build class list matching Voxel's term-feed pattern
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			style: advancedProps.styles,

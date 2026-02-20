@@ -35,9 +35,9 @@ export default function FilterKeywords( {
 	const [ inlineValue, setInlineValue ] = useState( '' );
 
 	const stringValue = typeof value === 'string' ? value : '';
-	const placeholder = filterData.props?.placeholder || filterData.label || 'Type keywords...';
+	const placeholder = String(filterData.props?.['placeholder'] || filterData.label || 'Type keywords...');
 	// Evidence: keywords-filter.php:278 default is 'popup'
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
@@ -167,7 +167,7 @@ export default function FilterKeywords( {
 			{ /* Portal-based popup using FieldPopup from create-post */ }
 			<FieldPopup
 				isOpen={ isOpen }
-				target={ triggerRef }
+				target={ triggerRef as any }
 				title=""
 				icon={ filterIcon }
 				saveLabel="Save"

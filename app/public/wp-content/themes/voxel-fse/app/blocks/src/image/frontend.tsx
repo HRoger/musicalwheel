@@ -37,14 +37,14 @@ function initImageLightbox() {
 
 	lightboxLinks.forEach((link) => {
 		// Mark as initialized to prevent double binding
-		link.dataset.vxLightbox = 'true';
+		link.dataset['vxLightbox'] = 'true';
 
 		link.addEventListener('click', (e) => {
 			e.preventDefault();
 			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
 			if (!lightbox) return;
 
-			const group = link.dataset.elementorLightboxSlideshow;
+			const group = link.dataset['elementorLightboxSlideshow'];
 
 			if (group) {
 				// Slideshow mode: collect all images in the same group

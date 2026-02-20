@@ -118,10 +118,6 @@ import WorkHoursComponent from './shared/WorkHoursComponent';
 import { WorkHoursAttributes, VxConfig } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
-interface Window {
-	__voxelFseFrontend?: boolean;
-	__post_id?: number;
-}
 
 /**
  * Normalize config from various sources (vxconfig, REST API, data attributes)
@@ -149,7 +145,8 @@ function normalizeConfig(raw: Record<string, unknown>): VxConfig {
 	};
 
 	// Helper for boolean normalization
-	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
+	// @ts-ignore -- unused but kept for future use
+	const _normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
 		if (val === 'true' || val === '1' || val === 1 || val === 'yes') return true;
 		if (val === 'false' || val === '0' || val === 0 || val === 'no' || val === '') return false;
@@ -157,69 +154,69 @@ function normalizeConfig(raw: Record<string, unknown>): VxConfig {
 	};
 
 	// Normalize attributes object
-	const rawAttrs = (raw.attributes ?? {}) as Record<string, unknown>;
-	const attributes: WorkHoursAttributes = {
-		blockId: normalizeString(rawAttrs.blockId ?? rawAttrs.block_id, ''),
-		fieldKey: normalizeString(rawAttrs.fieldKey ?? rawAttrs.field_key ?? rawAttrs.ts_source_field, ''),
-		collapseMode: normalizeString(rawAttrs.collapseMode ?? rawAttrs.collapse_mode ?? rawAttrs.ts_wh_collapse, 'full') as 'full' | 'toggle',
+	const rawAttrs = (raw['attributes'] ?? {}) as Record<string, unknown>;
+	const attributes = {
+		blockId: normalizeString(rawAttrs['blockId'] ?? rawAttrs['block_id'], ''),
+		fieldKey: normalizeString(rawAttrs['fieldKey'] ?? rawAttrs['field_key'] ?? rawAttrs['ts_source_field'], ''),
+		collapseMode: normalizeString(rawAttrs['collapseMode'] ?? rawAttrs['collapse_mode'] ?? rawAttrs['ts_wh_collapse'], 'full') as 'full' | 'toggle',
 		// Wrapper styling
-		wrapperBorder: rawAttrs.wrapperBorder ?? rawAttrs.wrapper_border ?? rawAttrs.wh_wrapper_border,
-		wrapperBorderRadius: rawAttrs.wrapperBorderRadius ?? rawAttrs.wrapper_border_radius ?? rawAttrs.wh_wrapper_border_radius,
-		wrapperShadow: rawAttrs.wrapperShadow ?? rawAttrs.wrapper_shadow ?? rawAttrs.wh_wrapper_shadow,
+		wrapperBorder: rawAttrs['wrapperBorder'] ?? rawAttrs['wrapper_border'] ?? rawAttrs['wh_wrapper_border'],
+		wrapperBorderRadius: rawAttrs['wrapperBorderRadius'] ?? rawAttrs['wrapper_border_radius'] ?? rawAttrs['wh_wrapper_border_radius'],
+		wrapperShadow: rawAttrs['wrapperShadow'] ?? rawAttrs['wrapper_shadow'] ?? rawAttrs['wh_wrapper_shadow'],
 		// Top area styling
-		statusBg: normalizeString(rawAttrs.statusBg ?? rawAttrs.status_bg ?? rawAttrs.wh_status_bg, ''),
-		statusIconSize: rawAttrs.statusIconSize ?? rawAttrs.status_icon_size ?? rawAttrs.wh_status_icon_size,
-		labelTypo: rawAttrs.labelTypo ?? rawAttrs.label_typo ?? rawAttrs.wh_status_label_typo,
-		labelColor: normalizeString(rawAttrs.labelColor ?? rawAttrs.label_color ?? rawAttrs.wh_status_label_color, ''),
-		currentHoursTypo: rawAttrs.currentHoursTypo ?? rawAttrs.current_hours_typo ?? rawAttrs.wh_current_hours_typo,
-		currentHoursColor: normalizeString(rawAttrs.currentHoursColor ?? rawAttrs.current_hours_color ?? rawAttrs.wh_current_hours_color, ''),
-		topPadding: rawAttrs.topPadding ?? rawAttrs.top_padding ?? rawAttrs.wh_top_padding,
+		statusBg: normalizeString(rawAttrs['statusBg'] ?? rawAttrs['status_bg'] ?? rawAttrs['wh_status_bg'], ''),
+		statusIconSize: rawAttrs['statusIconSize'] ?? rawAttrs['status_icon_size'] ?? rawAttrs['wh_status_icon_size'],
+		labelTypo: rawAttrs['labelTypo'] ?? rawAttrs['label_typo'] ?? rawAttrs['wh_status_label_typo'],
+		labelColor: normalizeString(rawAttrs['labelColor'] ?? rawAttrs['label_color'] ?? rawAttrs['wh_status_label_color'], ''),
+		currentHoursTypo: rawAttrs['currentHoursTypo'] ?? rawAttrs['current_hours_typo'] ?? rawAttrs['wh_current_hours_typo'],
+		currentHoursColor: normalizeString(rawAttrs['currentHoursColor'] ?? rawAttrs['current_hours_color'] ?? rawAttrs['wh_current_hours_color'], ''),
+		topPadding: rawAttrs['topPadding'] ?? rawAttrs['top_padding'] ?? rawAttrs['wh_top_padding'],
 		// Body styling
-		bodyBg: normalizeString(rawAttrs.bodyBg ?? rawAttrs.body_bg ?? rawAttrs.wh_body_bg, ''),
-		separatorColor: normalizeString(rawAttrs.separatorColor ?? rawAttrs.separator_color ?? rawAttrs.wh_separator_color, ''),
-		dayTypo: rawAttrs.dayTypo ?? rawAttrs.day_typo ?? rawAttrs.wh_day_typo,
-		dayColor: normalizeString(rawAttrs.dayColor ?? rawAttrs.day_color ?? rawAttrs.wh_day_color, ''),
-		hoursTypo: rawAttrs.hoursTypo ?? rawAttrs.hours_typo ?? rawAttrs.wh_hours_typo,
-		hoursColor: normalizeString(rawAttrs.hoursColor ?? rawAttrs.hours_color ?? rawAttrs.wh_hours_color, ''),
-		bodyPadding: rawAttrs.bodyPadding ?? rawAttrs.body_padding ?? rawAttrs.wh_body_padding,
+		bodyBg: normalizeString(rawAttrs['bodyBg'] ?? rawAttrs['body_bg'] ?? rawAttrs['wh_body_bg'], ''),
+		separatorColor: normalizeString(rawAttrs['separatorColor'] ?? rawAttrs['separator_color'] ?? rawAttrs['wh_separator_color'], ''),
+		dayTypo: rawAttrs['dayTypo'] ?? rawAttrs['day_typo'] ?? rawAttrs['wh_day_typo'],
+		dayColor: normalizeString(rawAttrs['dayColor'] ?? rawAttrs['day_color'] ?? rawAttrs['wh_day_color'], ''),
+		hoursTypo: rawAttrs['hoursTypo'] ?? rawAttrs['hours_typo'] ?? rawAttrs['wh_hours_typo'],
+		hoursColor: normalizeString(rawAttrs['hoursColor'] ?? rawAttrs['hours_color'] ?? rawAttrs['wh_hours_color'], ''),
+		bodyPadding: rawAttrs['bodyPadding'] ?? rawAttrs['body_padding'] ?? rawAttrs['wh_body_padding'],
 		// Status states
-		openIcon: rawAttrs.openIcon ?? rawAttrs.open_icon ?? rawAttrs.wh_open_icon,
-		openText: normalizeString(rawAttrs.openText ?? rawAttrs.open_text ?? rawAttrs.wh_open_text, 'Open now'),
-		openIconColor: normalizeString(rawAttrs.openIconColor ?? rawAttrs.open_icon_color ?? rawAttrs.wh_open_icon_color, ''),
-		openTextColor: normalizeString(rawAttrs.openTextColor ?? rawAttrs.open_text_color ?? rawAttrs.wh_open_text_color, ''),
-		openBg: normalizeString(rawAttrs.openBg ?? rawAttrs.open_bg ?? rawAttrs.wh_open_bg, ''),
-		closedIcon: rawAttrs.closedIcon ?? rawAttrs.closed_icon ?? rawAttrs.wh_closed_icon,
-		closedText: normalizeString(rawAttrs.closedText ?? rawAttrs.closed_text ?? rawAttrs.wh_closed_text, 'Closed now'),
-		closedIconColor: normalizeString(rawAttrs.closedIconColor ?? rawAttrs.closed_icon_color ?? rawAttrs.wh_closed_icon_color, ''),
-		closedTextColor: normalizeString(rawAttrs.closedTextColor ?? rawAttrs.closed_text_color ?? rawAttrs.wh_closed_text_color, ''),
-		closedBg: normalizeString(rawAttrs.closedBg ?? rawAttrs.closed_bg ?? rawAttrs.wh_closed_bg, ''),
-		appointmentIcon: rawAttrs.appointmentIcon ?? rawAttrs.appointment_icon ?? rawAttrs.wh_appointment_icon,
-		appointmentText: normalizeString(rawAttrs.appointmentText ?? rawAttrs.appointment_text ?? rawAttrs.wh_appointment_text, 'By appointment only'),
-		appointmentIconColor: normalizeString(rawAttrs.appointmentIconColor ?? rawAttrs.appointment_icon_color ?? rawAttrs.wh_appointment_icon_color, ''),
-		appointmentTextColor: normalizeString(rawAttrs.appointmentTextColor ?? rawAttrs.appointment_text_color ?? rawAttrs.wh_appointment_text_color, ''),
-		appointmentBg: normalizeString(rawAttrs.appointmentBg ?? rawAttrs.appointment_bg ?? rawAttrs.wh_appointment_bg, ''),
-		naIcon: rawAttrs.naIcon ?? rawAttrs.na_icon ?? rawAttrs.wh_na_icon,
-		naText: normalizeString(rawAttrs.naText ?? rawAttrs.na_text ?? rawAttrs.wh_na_text, ''),
-		naIconColor: normalizeString(rawAttrs.naIconColor ?? rawAttrs.na_icon_color ?? rawAttrs.wh_na_icon_color, ''),
-		naTextColor: normalizeString(rawAttrs.naTextColor ?? rawAttrs.na_text_color ?? rawAttrs.wh_na_text_color, ''),
-		naBg: normalizeString(rawAttrs.naBg ?? rawAttrs.na_bg ?? rawAttrs.wh_na_bg, ''),
+		openIcon: rawAttrs['openIcon'] ?? rawAttrs['open_icon'] ?? rawAttrs['wh_open_icon'],
+		openText: normalizeString(rawAttrs['openText'] ?? rawAttrs['open_text'] ?? rawAttrs['wh_open_text'], 'Open now'),
+		openIconColor: normalizeString(rawAttrs['openIconColor'] ?? rawAttrs['open_icon_color'] ?? rawAttrs['wh_open_icon_color'], ''),
+		openTextColor: normalizeString(rawAttrs['openTextColor'] ?? rawAttrs['open_text_color'] ?? rawAttrs['wh_open_text_color'], ''),
+		openBg: normalizeString(rawAttrs['openBg'] ?? rawAttrs['open_bg'] ?? rawAttrs['wh_open_bg'], ''),
+		closedIcon: rawAttrs['closedIcon'] ?? rawAttrs['closed_icon'] ?? rawAttrs['wh_closed_icon'],
+		closedText: normalizeString(rawAttrs['closedText'] ?? rawAttrs['closed_text'] ?? rawAttrs['wh_closed_text'], 'Closed now'),
+		closedIconColor: normalizeString(rawAttrs['closedIconColor'] ?? rawAttrs['closed_icon_color'] ?? rawAttrs['wh_closed_icon_color'], ''),
+		closedTextColor: normalizeString(rawAttrs['closedTextColor'] ?? rawAttrs['closed_text_color'] ?? rawAttrs['wh_closed_text_color'], ''),
+		closedBg: normalizeString(rawAttrs['closedBg'] ?? rawAttrs['closed_bg'] ?? rawAttrs['wh_closed_bg'], ''),
+		appointmentIcon: rawAttrs['appointmentIcon'] ?? rawAttrs['appointment_icon'] ?? rawAttrs['wh_appointment_icon'],
+		appointmentText: normalizeString(rawAttrs['appointmentText'] ?? rawAttrs['appointment_text'] ?? rawAttrs['wh_appointment_text'], 'By appointment only'),
+		appointmentIconColor: normalizeString(rawAttrs['appointmentIconColor'] ?? rawAttrs['appointment_icon_color'] ?? rawAttrs['wh_appointment_icon_color'], ''),
+		appointmentTextColor: normalizeString(rawAttrs['appointmentTextColor'] ?? rawAttrs['appointment_text_color'] ?? rawAttrs['wh_appointment_text_color'], ''),
+		appointmentBg: normalizeString(rawAttrs['appointmentBg'] ?? rawAttrs['appointment_bg'] ?? rawAttrs['wh_appointment_bg'], ''),
+		naIcon: rawAttrs['naIcon'] ?? rawAttrs['na_icon'] ?? rawAttrs['wh_na_icon'],
+		naText: normalizeString(rawAttrs['naText'] ?? rawAttrs['na_text'] ?? rawAttrs['wh_na_text'], ''),
+		naIconColor: normalizeString(rawAttrs['naIconColor'] ?? rawAttrs['na_icon_color'] ?? rawAttrs['wh_na_icon_color'], ''),
+		naTextColor: normalizeString(rawAttrs['naTextColor'] ?? rawAttrs['na_text_color'] ?? rawAttrs['wh_na_text_color'], ''),
+		naBg: normalizeString(rawAttrs['naBg'] ?? rawAttrs['na_bg'] ?? rawAttrs['wh_na_bg'], ''),
 		// Toggle/accordion button
-		downIcon: rawAttrs.downIcon ?? rawAttrs.down_icon ?? rawAttrs.wh_down_icon,
-		accBtnSize: rawAttrs.accBtnSize ?? rawAttrs.acc_btn_size ?? rawAttrs.wh_acc_btn_size,
-		accBtnIconSize: rawAttrs.accBtnIconSize ?? rawAttrs.acc_btn_icon_size ?? rawAttrs.wh_acc_btn_icon_size,
-		accBtnIconColor: normalizeString(rawAttrs.accBtnIconColor ?? rawAttrs.acc_btn_icon_color ?? rawAttrs.wh_acc_btn_icon_color, ''),
-		accBtnIconColorHover: normalizeString(rawAttrs.accBtnIconColorHover ?? rawAttrs.acc_btn_icon_color_hover ?? rawAttrs.wh_acc_btn_icon_color_hover, ''),
-		accBtnBg: normalizeString(rawAttrs.accBtnBg ?? rawAttrs.acc_btn_bg ?? rawAttrs.wh_acc_btn_bg, ''),
-		accBtnBgHover: normalizeString(rawAttrs.accBtnBgHover ?? rawAttrs.acc_btn_bg_hover ?? rawAttrs.wh_acc_btn_bg_hover, ''),
-		accBtnBorder: rawAttrs.accBtnBorder ?? rawAttrs.acc_btn_border ?? rawAttrs.wh_acc_btn_border,
-		accBtnBorderHover: rawAttrs.accBtnBorderHover ?? rawAttrs.acc_btn_border_hover ?? rawAttrs.wh_acc_btn_border_hover,
-		accBtnBorderRadius: rawAttrs.accBtnBorderRadius ?? rawAttrs.acc_btn_border_radius ?? rawAttrs.wh_acc_btn_border_radius,
-	} as WorkHoursAttributes;
+		downIcon: rawAttrs['downIcon'] ?? rawAttrs['down_icon'] ?? rawAttrs['wh_down_icon'],
+		accBtnSize: rawAttrs['accBtnSize'] ?? rawAttrs['acc_btn_size'] ?? rawAttrs['wh_acc_btn_size'],
+		accBtnIconSize: rawAttrs['accBtnIconSize'] ?? rawAttrs['acc_btn_icon_size'] ?? rawAttrs['wh_acc_btn_icon_size'],
+		accBtnIconColor: normalizeString(rawAttrs['accBtnIconColor'] ?? rawAttrs['acc_btn_icon_color'] ?? rawAttrs['wh_acc_btn_icon_color'], ''),
+		accBtnIconColorHover: normalizeString(rawAttrs['accBtnIconColorHover'] ?? rawAttrs['acc_btn_icon_color_hover'] ?? rawAttrs['wh_acc_btn_icon_color_hover'], ''),
+		accBtnBg: normalizeString(rawAttrs['accBtnBg'] ?? rawAttrs['acc_btn_bg'] ?? rawAttrs['wh_acc_btn_bg'], ''),
+		accBtnBgHover: normalizeString(rawAttrs['accBtnBgHover'] ?? rawAttrs['acc_btn_bg_hover'] ?? rawAttrs['wh_acc_btn_bg_hover'], ''),
+		accBtnBorder: rawAttrs['accBtnBorder'] ?? rawAttrs['acc_btn_border'] ?? rawAttrs['wh_acc_btn_border'],
+		accBtnBorderHover: rawAttrs['accBtnBorderHover'] ?? rawAttrs['acc_btn_border_hover'] ?? rawAttrs['wh_acc_btn_border_hover'],
+		accBtnBorderRadius: rawAttrs['accBtnBorderRadius'] ?? rawAttrs['acc_btn_border_radius'] ?? rawAttrs['wh_acc_btn_border_radius'],
+	} as unknown as WorkHoursAttributes;
 
 	return {
 		attributes,
-		postId: normalizeNumber(raw.postId ?? raw.post_id, 0),
-		fieldKey: normalizeString(raw.fieldKey ?? raw.field_key ?? rawAttrs.fieldKey ?? rawAttrs.field_key, ''),
+		postId: normalizeNumber(raw['postId'] ?? raw['post_id'], 0),
+		fieldKey: normalizeString(raw['fieldKey'] ?? raw['field_key'] ?? rawAttrs['fieldKey'] ?? rawAttrs['field_key'], ''),
 	};
 }
 
@@ -291,7 +288,7 @@ function initBlocks() {
 
 	blocks.forEach((block) => {
 		// Check if already initialized
-		if (block.dataset.reactMounted === 'true') {
+		if (block.dataset['reactMounted'] === 'true') {
 			return;
 		}
 
@@ -332,7 +329,7 @@ function initBlocks() {
 								isPreview={false}
 							/>
 						);
-						block.dataset.reactMounted = 'true';
+						block.dataset['reactMounted'] = 'true';
 					}
 				})
 				.catch((error) => {

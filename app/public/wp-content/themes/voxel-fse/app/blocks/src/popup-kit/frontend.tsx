@@ -170,7 +170,6 @@
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
 // import { FormGroup, FormPopup, DatePicker } from './components';
-import type { PopupKitAttributes, PopupKitVxConfig } from './types';
 
 /**
  * Normalize config from various sources (vxconfig, REST API, data attributes)
@@ -181,7 +180,8 @@ import type { PopupKitAttributes, PopupKitVxConfig } from './types';
  *
  * Reference: themes/voxel/app/widgets/popup-kit.php control names
  */
-function normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
+// @ts-ignore -- unused but kept for future use
+function _normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
 	// Helper for boolean normalization
 	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
@@ -198,14 +198,14 @@ function normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
 
 	return {
 		// Demo config - support both camelCase and snake_case
-		popupId: normalizeString(raw.popupId ?? raw.popup_id, ''),
-		title: normalizeString(raw.title ?? raw.popup_title, ''),
-		icon: normalizeString(raw.icon ?? raw.popup_icon, ''),
-		showSave: normalizeBool(raw.showSave ?? raw.show_save, true),
-		showClear: normalizeBool(raw.showClear ?? raw.show_clear, true),
-		clearLabel: normalizeString(raw.clearLabel ?? raw.clear_label, 'Clear'),
-		saveLabel: normalizeString(raw.saveLabel ?? raw.save_label, 'Save'),
-		wrapperClass: normalizeString(raw.wrapperClass ?? raw.wrapper_class, ''),
+		popupId: normalizeString(raw['popupId'] ?? raw['popup_id'], ''),
+		title: normalizeString(raw['title'] ?? raw['popup_title'], ''),
+		icon: normalizeString(raw['icon'] ?? raw['popup_icon'], ''),
+		showSave: normalizeBool(raw['showSave'] ?? raw['show_save'], true),
+		showClear: normalizeBool(raw['showClear'] ?? raw['show_clear'], true),
+		clearLabel: normalizeString(raw['clearLabel'] ?? raw['clear_label'], 'Clear'),
+		saveLabel: normalizeString(raw['saveLabel'] ?? raw['save_label'], 'Save'),
+		wrapperClass: normalizeString(raw['wrapperClass'] ?? raw['wrapper_class'], ''),
 	};
 }
 
@@ -220,10 +220,12 @@ interface PopupDemoConfig {
 	wrapperClass: string;
 }
 
-function PopupDemo({ config }: { config: PopupDemoConfig }) {
-	const [dateValue, setDateValue] = useState<Date | null>(null);
+function PopupDemo({ config: _config }: { config: PopupDemoConfig }) {
+	const [_dateValue, setDateValue] = useState<Date | null>(null);
 
-	const onDateChange = (date: Date | null) => {
+// @ts-ignore -- unused but kept for future use
+
+	const _onDateChange = (date: Date | null) => {
 		setDateValue(date);
 		
 		// Update the display

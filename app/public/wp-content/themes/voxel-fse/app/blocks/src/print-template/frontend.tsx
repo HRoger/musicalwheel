@@ -89,11 +89,11 @@ function normalizeConfig(raw: Record<string, unknown>): PrintTemplateVxConfig {
 	return {
 		// Template ID - support both camelCase and snake_case
 		templateId: normalizeString(
-			raw.templateId ?? raw.template_id ?? raw.ts_template_id,
+			raw['templateId'] ?? raw['template_id'] ?? raw['ts_template_id'],
 			''
 		),
 		// Custom classes
-		customClasses: normalizeString(raw.customClasses ?? raw.custom_classes, ''),
+		customClasses: normalizeString(raw['customClasses'] ?? raw['custom_classes'], ''),
 	};
 }
 
@@ -314,7 +314,7 @@ function initPrintTemplates() {
 
 	printTemplates.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -326,7 +326,7 @@ function initPrintTemplates() {
 		}
 
 		// Mark as hydrated and clear placeholder
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render

@@ -8,6 +8,7 @@
  */
 
 import type { IconValue } from '@shared/types';
+export type { IconValue };
 
 // Re-export all types from sub-modules
 export * from './status';

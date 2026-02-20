@@ -23,13 +23,13 @@ interface SaveProps {
 function createSaveFn(includePlaceholder: boolean) {
 	return function save({ attributes }: SaveProps) {
 		// Use shared utility for AdvancedTab + VoxelTab wiring
-		const advancedProps = getAdvancedVoxelTabProps(attributes, {
-			blockId: attributes.blockId || 'product-price',
+		const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
+			blockId: (attributes as any).blockId || 'product-price',
 			baseClass: 'vxfse-product-price',
 		});
 
 		// Generate product-price responsive CSS (tablet/mobile variants)
-		const blockId = attributes.blockId || 'product-price';
+		const blockId = (attributes as any).blockId || 'product-price';
 		const productPriceResponsiveCSS = generateProductPriceResponsiveCSS(attributes, blockId);
 
 		// Combine all responsive CSS
@@ -39,7 +39,7 @@ function createSaveFn(includePlaceholder: boolean) {
 			.join('\n');
 
 		// Build wrapper props with Voxel-compatible classes
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
 			// Note: style will be merged with styleVars below
@@ -94,17 +94,17 @@ function createSaveFn(includePlaceholder: boolean) {
 		return (
 			<div
 				{...blockProps}
-				data-block-id={attributes.blockId}
+				data-block-id={(attributes as any).blockId}
 				style={mergedStyles as React.CSSProperties}
 				// Headless-ready: Visibility rules configuration
-				data-visibility-behavior={attributes.visibilityBehavior || undefined}
-				data-visibility-rules={attributes.visibilityRules?.length
-					? JSON.stringify(attributes.visibilityRules)
+				data-visibility-behavior={(attributes as any).visibilityBehavior || undefined}
+				data-visibility-rules={(attributes as any).visibilityRules?.length
+					? JSON.stringify((attributes as any).visibilityRules)
 					: undefined}
 				// Headless-ready: Loop element configuration
-				data-loop-source={attributes.loopSource || undefined}
-				data-loop-limit={attributes.loopLimit || undefined}
-				data-loop-offset={attributes.loopOffset || undefined}
+				data-loop-source={(attributes as any).loopSource || undefined}
+				data-loop-limit={(attributes as any).loopLimit || undefined}
+				data-loop-offset={(attributes as any).loopOffset || undefined}
 				{...advancedProps.customAttrs}
 			>
 				{/* Responsive CSS from AdvancedTab + VoxelTab + Content Tab */}

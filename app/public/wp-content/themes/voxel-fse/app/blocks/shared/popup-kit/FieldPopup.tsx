@@ -42,7 +42,7 @@ export interface FieldPopupProps {
 	/** Whether popup is open */
 	isOpen: boolean;
 	/** Trigger element ref (for positioning) */
-	target: React.RefObject<HTMLElement>;
+	target: React.RefObject<HTMLElement | null>;
 	/** Popup title */
 	title?: string;
 	/** Icon HTML (optional) */
@@ -62,7 +62,7 @@ export interface FieldPopupProps {
 	/** Called when close button clicked */
 	onClose: () => void;
 	/** Popup content (DatePicker, Multiselect checkboxes, etc.) */
-	children: React.ReactNode;
+	children?: React.ReactNode;
 	/** Additional classes for outer vx-popup wrapper */
 	className?: string;
 	/** Custom popup styles (minWidth, maxWidth, maxHeight) applied to ts-field-popup */

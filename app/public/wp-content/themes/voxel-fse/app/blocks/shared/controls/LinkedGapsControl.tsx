@@ -9,13 +9,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
-import UnitDropdownButton from './UnitDropdownButton';
+import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
-type UnitType = 'px' | 'em' | '%' | 'vw' | 'vh' | 'rem';
 
 export interface LinkedGapsControlProps {
 	label?: string;
@@ -42,29 +41,15 @@ export default function LinkedGapsControl({
 	min = 0,
 	max = 200,
 	availableUnits = ['px', 'em', '%'],
-	showResetButton = true,
+	showResetButton: _showResetButton = true,
 }: LinkedGapsControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => {
-		const editPostStore = select('core/edit-post');
-		if (editPostStore && typeof (editPostStore as any).getPreviewDeviceType === 'function') {
-			return (editPostStore as any).getPreviewDeviceType();
-		}
-		const editorStore = select('core/editor');
-		if (editorStore && typeof (editorStore as any).getDeviceType === 'function') {
-			return (editorStore as any).getDeviceType();
-		}
-		return 'Desktop';
-	}, []);
-
-	const wpDevice = wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
+	const wpDevice = useDeviceType();
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);
 
 	useEffect(() => {
-		if (wpDeviceType) {
-			setCurrentDevice(wpDevice);
-		}
-	}, [wpDeviceType, wpDevice]);
+		setCurrentDevice(wpDevice);
+	}, [wpDevice]);
 
 	// Get attribute names for current device
 	const getColumnGapAttr = () => (currentDevice === 'desktop' ? columnGapAttr : `${columnGapAttr}_${currentDevice}`);

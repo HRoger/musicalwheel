@@ -37,6 +37,9 @@
 /* === Voxel Parent: pricing-plan.css === */
 .ts-plan-tabs{margin-bottom:25px;justify-content:center}.ts-plan-tabs a{padding:8px 12px;font-size:var(--e-global-typography-text-font-size)}.ts-plan-tabs .ts-tab-active a{background:var(--ts-shade-6);border-radius:50px}.ts-plans-list{display:grid;grid-gap:20px;grid-template-columns:repeat(3,1fr)}.plan-purchase-disabled{opacity:.7}.ts-plan-container{display:flex;flex-direction:column;border:1px solid #d5dce2;background:#fff;position:relative;border-radius:7px;overflow:hidden;transition:.15s ease}.ts-plan-container .ts-btn-large{font-weight:600}.ts-plan-container.hidden{display:none}.ts-plan-container.plan-featured{border:2px solid var(--ts-accent-1)}.ts-plan-image{justify-content:center}.ts-plan-image img{height:150px;width:auto;-o-object-fit:contain;object-fit:contain}.ts-plan-body{padding:25px;display:flex;grid-gap:10px;flex-grow:1;flex-direction:column}.ts-plan-details{display:flex}.ts-plan-details .ts-plan-name{color:var(--ts-accent-1);font-weight:600}.ts-plan-desc p{color:var(--e-global-color-text);font-size:var(--e-global-typography-text-font-size);line-height:1.3}.ts-plan-pricing{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.ts-plan-pricing .ts-plan-price{font-size:34px;color:#2e3741}.ts-plan-pricing .ts-plan-price s{opacity:.5;font-weight:300;text-decoration-thickness:2px}.ts-plan-pricing .ts-price-period{color:var(--ts-shade-2)}.ts-plan-footer{margin-top:auto;position:relative}.ts-plan-footer .vx-dialog-content{bottom:calc(100% + 10px);width:100%;display:none}.vx-pick-plan:hover~.vx-dialog-content{display:flex}.ts-plan-features{margin-bottom:5px}.ts-plan-features ul{display:flex;gap:5px;flex-direction:column}.ts-plan-features ul li{display:flex;align-items:center}.ts-plan-features ul li i{color:#b8bdc5;font-size:20px;padding-right:10px;flex-shrink:0}.ts-plan-features ul li img,.ts-plan-features ul li svg{width:20px;height:20px;fill:#b8bdc5;-o-object-fit:contain;object-fit:contain;margin-right:10px;flex-shrink:0}.ts-plan-features ul li span{font-size:var(--e-global-typography-text-font-size);color:var(--ts-shade-2)}.plan-panel{margin-bottom:20px}.active-plan{display:flex;flex-wrap:wrap}.active-plan .ac-head{width:100%}.active-plan .ac-plan-pricing{display:flex;flex-wrap:wrap;align-items:center;width:100%}.active-plan .ac-plan-pricing .ac-plan-price{font-size:38px;padding-right:10px;color:var(--ts-shade-1)}.active-plan .ac-plan-pricing .ac-price-period{color:var(--ts-shade-2)}span.ts-plan-featured-text{position:absolute;top:21px;right:-54px;padding:6px 0;width:170px;text-align:center;background:var(--ts-accent-1);color:#fff;font-weight:600;font-size:12px;letter-spacing:.5px;text-transform:uppercase;transform:rotate(45deg);z-index:2;pointer-events:none}
 
+/* === Voxel Parent: action.css === */
+.ts-action{position:relative;align-items:center;width:auto;font-size:var(--e-global-typography-text-font-size)}.ts-action:focus{outline:none}.ts-action .ts-action-wrap{width:100%}.ts-action>.ts-action-con,.ts-action>.ts-action-wrap>.ts-action-con{color:#54595f;display:flex;width:100%;align-items:center;transition:.2s ease;transition-property:background,color,border-color}.ts-action>.ts-action-con .ts-intermediate,.ts-action>.ts-action-con .ts-reveal,.ts-action>.ts-action-wrap>.ts-action-con .ts-intermediate,.ts-action>.ts-action-wrap>.ts-action-con .ts-reveal{display:none}.ts-action>.ts-action-con.active .ts-reveal,.ts-action>.ts-action-wrap>.ts-action-con.active .ts-reveal{display:flex}.ts-action>.ts-action-con.active .ts-initial,.ts-action>.ts-action-wrap>.ts-action-con.active .ts-initial{display:none}.ts-action>.ts-action-con.intermediate .ts-intermediate,.ts-action>.ts-action-wrap>.ts-action-con.intermediate .ts-intermediate{display:flex}.ts-action>.ts-action-con.intermediate .ts-initial,.ts-action>.ts-action-wrap>.ts-action-con.intermediate .ts-initial{display:none}.ts-action .ts-action-icon{display:flex;align-items:center;justify-content:center;transition:all .3s ease;--ts-icon-color:var(--ts-shade-2);--ts-icon-size:26px;flex-shrink:0}.ts-action .ts-action-icon:empty{display:none}.ts-action .ts-action-icon>i{font-size:var(--ts-icon-size)}.ts-action .ts-action-icon>i,.ts-action .ts-action-icon svg{transition:.2s ease;color:var(--ts-icon-color);pointer-events:none}.ts-action .ts-action-icon svg{width:var(--ts-icon-size);height:var(--ts-icon-size);-o-object-fit:contain;object-fit:contain;fill:var(--ts-icon-color)}.ts-action span{align-items:center;display:flex}
+
 /* === Voxel Vendor: pikaday/pikaday.prod.css === */
 @charset "UTF-8";/*!
  * Pikaday
@@ -204,6 +207,10 @@ body.block-editor-iframe__body {
     color: #1e1e1e;
     height: 100%;
     overflow-y: scroll !important;
+}
+
+.interface-complementary-area h3{
+    text-transform: none;
 }
 
 
@@ -750,6 +757,12 @@ body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:
 /* ============================================
  * THIRD-PARTY BLOCKS: Specific fixes for known conflicts
  * ============================================ */
+/*fix plus icon insert block button*/
+.wp-block-nectar-blocks-column .nectar-blocks-column__content-wrap .block-list-appender:only-child>.block-editor-inserter>button svg {
+    background-color: #3452ff;
+    border-radius: 100px;
+    color: #fff!important;
+}
 body .nectar-blocks-template-library__sidebar__item__link {
     font-weight: 400;
 }

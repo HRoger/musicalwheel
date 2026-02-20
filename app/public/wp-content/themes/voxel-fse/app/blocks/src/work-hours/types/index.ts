@@ -1,5 +1,6 @@
 import { IconValue } from '@shared/types';
 
+
 export interface TypographyValue {
   fontFamily?: string;
   fontSize?: number;

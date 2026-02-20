@@ -254,11 +254,11 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		if (val && typeof val === 'object' && !Array.isArray(val)) {
 			const obj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(obj.library, ''),
-				value: normalizeString(obj.value, ''),
+				library: normalizeString(obj['library'], '') as IconValue['library'],
+				value: normalizeString(obj['value'], ''),
 			};
 		}
-		return { library: '', value: '' };
+		return { library: '' as IconValue['library'], value: '' };
 	};
 
 	// Helper for PlanFeature normalization
@@ -266,9 +266,9 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		if (val && typeof val === 'object' && !Array.isArray(val)) {
 			const obj = val as Record<string, unknown>;
 			return {
-				id: normalizeString(obj.id ?? obj._id, ''),
-				text: normalizeString(obj.text ?? obj.feature_text, ''),
-				icon: normalizeIcon(obj.icon ?? obj.feature_ico),
+				id: normalizeString(obj['id'] ?? obj['_id'], ''),
+				text: normalizeString(obj['text'] ?? obj['feature_text'], ''),
+				icon: normalizeIcon(obj['icon'] ?? obj['feature_ico']),
 			};
 		}
 		return { id: '', text: '', icon: { library: '', value: '' } };
@@ -278,20 +278,20 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 	const normalizePlanConfig = (val: unknown): PlanConfig => {
 		if (val && typeof val === 'object' && !Array.isArray(val)) {
 			const obj = val as Record<string, unknown>;
-			const imageObj = obj.image as Record<string, unknown> | null;
+			const imageObj = obj['image'] as Record<string, unknown> | null;
 
 			return {
 				image: imageObj
 					? {
-							id: normalizeNumber(imageObj.id, 0),
-							url: normalizeString(imageObj.url, ''),
+							id: normalizeNumber(imageObj['id'], 0),
+							url: normalizeString(imageObj['url'], ''),
 						}
 					: null,
-				features: Array.isArray(obj.features)
-					? obj.features.map(normalizeFeature)
+				features: Array.isArray(obj['features'])
+					? obj['features'].map(normalizeFeature)
 					: [],
-				featured: normalizeBoolean(obj.featured, false),
-				featuredText: normalizeString(obj.featuredText ?? obj.featured_text, ''),
+				featured: normalizeBoolean(obj['featured'], false),
+				featuredText: normalizeString(obj['featuredText'] ?? obj['featured_text'], ''),
 			};
 		}
 		return { image: null, features: [] };
@@ -302,11 +302,11 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 		if (val && typeof val === 'object' && !Array.isArray(val)) {
 			const obj = val as Record<string, unknown>;
 			return {
-				id: normalizeString(obj.id ?? obj._id, ''),
-				label: normalizeString(obj.label ?? obj.group_label, ''),
-				icon: normalizeIcon(obj.icon),
-				prices: Array.isArray(obj.prices)
-					? obj.prices.map((p) => normalizeString(p, ''))
+				id: normalizeString(obj['id'] ?? obj['_id'], ''),
+				label: normalizeString(obj['label'] ?? obj['group_label'], ''),
+				icon: normalizeIcon(obj['icon']),
+				prices: Array.isArray(obj['prices'])
+					? obj['prices'].map((p) => normalizeString(p, ''))
 					: [],
 			};
 		}
@@ -324,54 +324,54 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 
 		return {
 			plansColumns: normalizeNumber(
-				styleObj.plansColumns ?? styleObj.plans_columns ?? styleObj.ts_plans_columns,
+				styleObj['plansColumns'] ?? styleObj['plans_columns'] ?? styleObj['ts_plans_columns'],
 				3
 			),
-			plansColumns_tablet: styleObj.plansColumns_tablet !== undefined
-				? normalizeNumber(styleObj.plansColumns_tablet, undefined as unknown as number)
+			plansColumns_tablet: styleObj['plansColumns_tablet'] !== undefined
+				? normalizeNumber(styleObj['plansColumns_tablet'], undefined as unknown as number)
 				: undefined,
-			plansColumns_mobile: styleObj.plansColumns_mobile !== undefined
-				? normalizeNumber(styleObj.plansColumns_mobile, undefined as unknown as number)
+			plansColumns_mobile: styleObj['plansColumns_mobile'] !== undefined
+				? normalizeNumber(styleObj['plansColumns_mobile'], undefined as unknown as number)
 				: undefined,
 			plansGap: normalizeNumber(
-				styleObj.plansGap ?? styleObj.plans_gap ?? styleObj.pplans_gap,
+				styleObj['plansGap'] ?? styleObj['plans_gap'] ?? styleObj['pplans_gap'],
 				20
 			),
 			tabsDisabled: normalizeBoolean(
-				styleObj.tabsDisabled ?? styleObj.tabs_disabled ?? styleObj.pltabs_disable,
+				styleObj['tabsDisabled'] ?? styleObj['tabs_disabled'] ?? styleObj['pltabs_disable'],
 				false
 			),
 			tabsJustify: normalizeString(
-				styleObj.tabsJustify ?? styleObj.tabs_justify ?? styleObj.pltabs_justify,
+				styleObj['tabsJustify'] ?? styleObj['tabs_justify'] ?? styleObj['pltabs_justify'],
 				'flex-start'
 			),
 			pricingAlign: normalizeString(
-				styleObj.pricingAlign ?? styleObj.pricing_align,
+				styleObj['pricingAlign'] ?? styleObj['pricing_align'],
 				'flex-start'
 			),
 			contentAlign: normalizeString(
-				styleObj.contentAlign ?? styleObj.content_align,
+				styleObj['contentAlign'] ?? styleObj['content_align'],
 				'flex-start'
 			),
 			descAlign: normalizeString(
-				styleObj.descAlign ?? styleObj.desc_align,
+				styleObj['descAlign'] ?? styleObj['desc_align'],
 				'left'
 			),
 			listAlign: normalizeString(
-				styleObj.listAlign ?? styleObj.list_align,
+				styleObj['listAlign'] ?? styleObj['list_align'],
 				'flex-start'
 			),
 		};
 	};
 
 	// Normalize price groups
-	const rawPriceGroups = raw.priceGroups ?? raw.price_groups ?? raw.ts_price_groups;
+	const rawPriceGroups = raw['priceGroups'] ?? raw['price_groups'] ?? raw['ts_price_groups'];
 	const priceGroups: PriceGroup[] = Array.isArray(rawPriceGroups)
 		? rawPriceGroups.map(normalizePriceGroup)
 		: [];
 
 	// Normalize plan configs (object keyed by plan key)
-	const rawPlanConfigs = raw.planConfigs ?? raw.plan_configs;
+	const rawPlanConfigs = raw['planConfigs'] ?? raw['plan_configs'];
 	const planConfigs: Record<string, PlanConfig> = {};
 	if (rawPlanConfigs && typeof rawPlanConfigs === 'object' && !Array.isArray(rawPlanConfigs)) {
 		const configsObj = rawPlanConfigs as Record<string, unknown>;
@@ -382,28 +382,28 @@ function normalizeConfig(raw: Record<string, unknown>): ListingPlansVxConfig {
 
 	// Normalize arrow icon
 	const arrowIcon = normalizeIcon(
-		raw.arrowIcon ?? raw.arrow_icon ?? raw.ts_arrow_right
+		raw['arrowIcon'] ?? raw['arrow_icon'] ?? raw['ts_arrow_right']
 	);
 
 	// Normalize direct purchase redirect — Evidence: listing-plans-widget.php:1549-1582
-	const rawRedirect = raw.directPurchaseRedirect ?? raw.direct_purchase_redirect ?? raw.ts_direct_purchase_flow;
+	const rawRedirect = raw['directPurchaseRedirect'] ?? raw['direct_purchase_redirect'] ?? raw['ts_direct_purchase_flow'];
 	const directPurchaseRedirect: 'order' | 'new_post' | 'custom' =
 		rawRedirect === 'new_post' ? 'new_post'
 		: rawRedirect === 'custom' ? 'custom'
 		: 'order';
 
 	const directPurchasePostType = normalizeString(
-		raw.directPurchasePostType ?? raw.direct_purchase_post_type ?? raw.ts_direct_purchase_flow_post_type,
+		raw['directPurchasePostType'] ?? raw['direct_purchase_post_type'] ?? raw['ts_direct_purchase_flow_post_type'],
 		''
 	) || undefined;
 
 	const directPurchaseCustomUrl = normalizeString(
-		raw.directPurchaseCustomUrl ?? raw.direct_purchase_custom_url ?? raw.ts_direct_purchase_flow_custom_redirect,
+		raw['directPurchaseCustomUrl'] ?? raw['direct_purchase_custom_url'] ?? raw['ts_direct_purchase_flow_custom_redirect'],
 		''
 	) || undefined;
 
 	// Normalize style
-	const style = normalizeStyle(raw.style);
+	const style = normalizeStyle(raw['style']);
 
 	return {
 		priceGroups,
@@ -589,7 +589,7 @@ function initListingPlansBlocks(): void {
 
 	listingPlansBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -601,7 +601,7 @@ function initListingPlansBlocks(): void {
 		}
 
 		// Mark as hydrated and clear placeholder
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render

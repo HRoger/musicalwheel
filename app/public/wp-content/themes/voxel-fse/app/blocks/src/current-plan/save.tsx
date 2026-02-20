@@ -45,7 +45,7 @@ function createSaveFn(includePlaceholder: boolean) {
 		// Build class list — DO NOT include ts-panel/plan-panel here,
 		// those are rendered by CurrentPlanComponent inside the container.
 		// Including them here causes a double-border (outer + inner both get .ts-panel border).
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			id: attributes.elementId || undefined,
 			className: combineBlockClasses(
 				`voxel-fse-current-plan voxel-fse-current-plan-${blockId}`,

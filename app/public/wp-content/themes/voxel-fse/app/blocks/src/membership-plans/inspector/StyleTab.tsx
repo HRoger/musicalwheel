@@ -79,7 +79,7 @@ export function StyleTab({
 						borderWidth: attributes.plansBorderWidth || {},
 						borderColor: attributes.plansBorderColor || '',
 					}}
-					onChange={(value) => {
+					onChange={(value: any) => {
 						const updates: Partial<MembershipPlansAttributes> = {};
 						if (value.borderType !== undefined) {
 							updates.plansBorderType = value.borderType;
@@ -99,7 +99,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Background', 'voxel-fse')}
 						value={attributes.plansBg}
-						onChange={(value) => setAttributes({ plansBg: value })}
+						onChange={(value: any) => setAttributes({ plansBg: value })}
 					/>
 				</div>
 
@@ -158,7 +158,7 @@ export function StyleTab({
 						{ value: 'center', label: __('Center', 'voxel-fse') },
 						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							pricingAlign: value as 'flex-start' | 'center' | 'flex-end',
 						})
@@ -176,7 +176,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Price color', 'voxel-fse')}
 						value={attributes.priceColor}
-						onChange={(value) => setAttributes({ priceColor: value })}
+						onChange={(value: any) => setAttributes({ priceColor: value })}
 					/>
 				</div>
 
@@ -191,7 +191,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Period color', 'voxel-fse')}
 						value={attributes.periodColor}
-						onChange={(value) => setAttributes({ periodColor: value })}
+						onChange={(value: any) => setAttributes({ periodColor: value })}
 					/>
 				</div>
 
@@ -205,7 +205,7 @@ export function StyleTab({
 						{ value: 'center', label: __('Center', 'voxel-fse') },
 						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							contentAlign: value as 'flex-start' | 'center' | 'flex-end',
 						})
@@ -223,7 +223,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Name color', 'voxel-fse')}
 						value={attributes.nameColor}
-						onChange={(value) => setAttributes({ nameColor: value })}
+						onChange={(value: any) => setAttributes({ nameColor: value })}
 					/>
 				</div>
 
@@ -237,7 +237,7 @@ export function StyleTab({
 						{ value: 'center', label: __('Center', 'voxel-fse') },
 						{ value: 'right', label: __('Right', 'voxel-fse') },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							descAlign: value as 'left' | 'center' | 'right',
 						})
@@ -255,7 +255,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Description color', 'voxel-fse')}
 						value={attributes.descColor}
-						onChange={(value) => setAttributes({ descColor: value })}
+						onChange={(value: any) => setAttributes({ descColor: value })}
 					/>
 				</div>
 
@@ -269,7 +269,7 @@ export function StyleTab({
 						{ value: 'center', label: __('Center', 'voxel-fse') },
 						{ value: 'flex-end', label: __('Right', 'voxel-fse') },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							listAlign: value as 'flex-start' | 'center' | 'flex-end',
 						})
@@ -287,7 +287,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Feature text color', 'voxel-fse')}
 						value={attributes.listColor}
-						onChange={(value) => setAttributes({ listColor: value })}
+						onChange={(value: any) => setAttributes({ listColor: value })}
 					/>
 				</div>
 
@@ -295,7 +295,7 @@ export function StyleTab({
 					<ColorControl
 						label={__('Feature icon color', 'voxel-fse')}
 						value={attributes.listIconColor}
-						onChange={(value) => setAttributes({ listIconColor: value })}
+						onChange={(value: any) => setAttributes({ listIconColor: value })}
 					/>
 				</div>
 
@@ -346,7 +346,7 @@ export function StyleTab({
 										label={__('Disable tabs', 'voxel-fse')}
 										help={__('Disable label on tablet', 'voxel-fse')}
 										checked={attributes.tabsDisabled}
-										onChange={(value) => setAttributes({ tabsDisabled: value })}
+										onChange={(value: any) => setAttributes({ tabsDisabled: value })}
 									/>
 
 									<SelectControl
@@ -359,7 +359,7 @@ export function StyleTab({
 											{ value: 'space-between', label: __('Space between', 'voxel-fse') },
 											{ value: 'space-around', label: __('Space around', 'voxel-fse') },
 										]}
-										onChange={(value) =>
+										onChange={(value: any) =>
 											setAttributes({
 												tabsJustify: value as MembershipPlansAttributes['tabsJustify'],
 											})
@@ -398,7 +398,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.tabTextColor}
-											onChange={(value) => setAttributes({ tabTextColor: value })}
+											onChange={(value: any) => setAttributes({ tabTextColor: value })}
 										/>
 									</div>
 
@@ -406,7 +406,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active text color', 'voxel-fse')}
 											value={attributes.tabActiveTextColor}
-											onChange={(value) => setAttributes({ tabActiveTextColor: value })}
+											onChange={(value: any) => setAttributes({ tabActiveTextColor: value })}
 										/>
 									</div>
 
@@ -414,7 +414,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background', 'voxel-fse')}
 											value={attributes.tabBackground}
-											onChange={(value) => setAttributes({ tabBackground: value })}
+											onChange={(value: any) => setAttributes({ tabBackground: value })}
 										/>
 									</div>
 
@@ -422,7 +422,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active background', 'voxel-fse')}
 											value={attributes.tabActiveBackground}
-											onChange={(value) => setAttributes({ tabActiveBackground: value })}
+											onChange={(value: any) => setAttributes({ tabActiveBackground: value })}
 										/>
 									</div>
 
@@ -433,7 +433,7 @@ export function StyleTab({
 											borderWidth: attributes.tabBorderWidth || {},
 											borderColor: attributes.tabBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<MembershipPlansAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.tabBorderType = value.borderType;
@@ -453,7 +453,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active border color', 'voxel-fse')}
 											value={attributes.tabActiveBorderColor}
-											onChange={(value) => setAttributes({ tabActiveBorderColor: value })}
+											onChange={(value: any) => setAttributes({ tabActiveBorderColor: value })}
 										/>
 									</div>
 
@@ -477,7 +477,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.tabTextColorHover}
-											onChange={(value) => setAttributes({ tabTextColorHover: value })}
+											onChange={(value: any) => setAttributes({ tabTextColorHover: value })}
 										/>
 									</div>
 
@@ -485,7 +485,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active text color', 'voxel-fse')}
 											value={attributes.tabActiveTextColorHover}
-											onChange={(value) => setAttributes({ tabActiveTextColorHover: value })}
+											onChange={(value: any) => setAttributes({ tabActiveTextColorHover: value })}
 										/>
 									</div>
 
@@ -493,7 +493,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Border color', 'voxel-fse')}
 											value={attributes.tabBorderColorHover}
-											onChange={(value) => setAttributes({ tabBorderColorHover: value })}
+											onChange={(value: any) => setAttributes({ tabBorderColorHover: value })}
 										/>
 									</div>
 
@@ -501,7 +501,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active border color', 'voxel-fse')}
 											value={attributes.tabActiveBorderColorHover}
-											onChange={(value) => setAttributes({ tabActiveBorderColorHover: value })}
+											onChange={(value: any) => setAttributes({ tabActiveBorderColorHover: value })}
 										/>
 									</div>
 
@@ -509,7 +509,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background', 'voxel-fse')}
 											value={attributes.tabBackgroundHover}
-											onChange={(value) => setAttributes({ tabBackgroundHover: value })}
+											onChange={(value: any) => setAttributes({ tabBackgroundHover: value })}
 										/>
 									</div>
 
@@ -517,7 +517,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Active background', 'voxel-fse')}
 											value={attributes.tabActiveBackgroundHover}
-											onChange={(value) => setAttributes({ tabActiveBackgroundHover: value })}
+											onChange={(value: any) => setAttributes({ tabActiveBackgroundHover: value })}
 										/>
 									</div>
 								</>
@@ -560,7 +560,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.primaryBtnTextColor}
-											onChange={(value) => setAttributes({ primaryBtnTextColor: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnTextColor: value })}
 										/>
 									</div>
 
@@ -584,7 +584,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background color', 'voxel-fse')}
 											value={attributes.primaryBtnBgColor}
-											onChange={(value) => setAttributes({ primaryBtnBgColor: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnBgColor: value })}
 										/>
 									</div>
 
@@ -595,7 +595,7 @@ export function StyleTab({
 											borderWidth: attributes.primaryBtnBorderWidth || {},
 											borderColor: attributes.primaryBtnBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<MembershipPlansAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.primaryBtnBorderType = value.borderType;
@@ -633,7 +633,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Icon color', 'voxel-fse')}
 											value={attributes.primaryBtnIconColor}
-											onChange={(value) => setAttributes({ primaryBtnIconColor: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnIconColor: value })}
 										/>
 									</div>
 								</>
@@ -646,7 +646,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.primaryBtnTextColorHover}
-											onChange={(value) => setAttributes({ primaryBtnTextColorHover: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnTextColorHover: value })}
 										/>
 									</div>
 
@@ -654,7 +654,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background color', 'voxel-fse')}
 											value={attributes.primaryBtnBgColorHover}
-											onChange={(value) => setAttributes({ primaryBtnBgColorHover: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnBgColorHover: value })}
 										/>
 									</div>
 
@@ -662,7 +662,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Border color', 'voxel-fse')}
 											value={attributes.primaryBtnBorderColorHover}
-											onChange={(value) => setAttributes({ primaryBtnBorderColorHover: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnBorderColorHover: value })}
 										/>
 									</div>
 
@@ -670,7 +670,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Icon color', 'voxel-fse')}
 											value={attributes.primaryBtnIconColorHover}
-											onChange={(value) => setAttributes({ primaryBtnIconColorHover: value })}
+											onChange={(value: any) => setAttributes({ primaryBtnIconColorHover: value })}
 										/>
 									</div>
 								</>
@@ -713,7 +713,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.secondaryBtnTextColor}
-											onChange={(value) => setAttributes({ secondaryBtnTextColor: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnTextColor: value })}
 										/>
 									</div>
 
@@ -737,7 +737,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background color', 'voxel-fse')}
 											value={attributes.secondaryBtnBgColor}
-											onChange={(value) => setAttributes({ secondaryBtnBgColor: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnBgColor: value })}
 										/>
 									</div>
 
@@ -748,7 +748,7 @@ export function StyleTab({
 											borderWidth: attributes.secondaryBtnBorderWidth || {},
 											borderColor: attributes.secondaryBtnBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<MembershipPlansAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.secondaryBtnBorderType = value.borderType;
@@ -786,7 +786,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Icon color', 'voxel-fse')}
 											value={attributes.secondaryBtnIconColor}
-											onChange={(value) => setAttributes({ secondaryBtnIconColor: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnIconColor: value })}
 										/>
 									</div>
 								</>
@@ -799,7 +799,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Text color', 'voxel-fse')}
 											value={attributes.secondaryBtnTextColorHover}
-											onChange={(value) => setAttributes({ secondaryBtnTextColorHover: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnTextColorHover: value })}
 										/>
 									</div>
 
@@ -807,7 +807,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Background color', 'voxel-fse')}
 											value={attributes.secondaryBtnBgColorHover}
-											onChange={(value) => setAttributes({ secondaryBtnBgColorHover: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnBgColorHover: value })}
 										/>
 									</div>
 
@@ -815,7 +815,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Border color', 'voxel-fse')}
 											value={attributes.secondaryBtnBorderColorHover}
-											onChange={(value) => setAttributes({ secondaryBtnBorderColorHover: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnBorderColorHover: value })}
 										/>
 									</div>
 
@@ -823,7 +823,7 @@ export function StyleTab({
 										<ColorControl
 											label={__('Icon color', 'voxel-fse')}
 											value={attributes.secondaryBtnIconColorHover}
-											onChange={(value) => setAttributes({ secondaryBtnIconColorHover: value })}
+											onChange={(value: any) => setAttributes({ secondaryBtnIconColorHover: value })}
 										/>
 									</div>
 								</>
@@ -837,8 +837,8 @@ export function StyleTab({
 			<AccordionPanel id="icons" title={__('Icons', 'voxel-fse')}>
 				<AdvancedIconControl
 					label={__('Right arrow', 'voxel-fse')}
-					value={attributes.arrowIcon}
-					onChange={(value) => setAttributes({ arrowIcon: value })}
+					value={attributes.arrowIcon as any}
+					onChange={(value: any) => setAttributes({ arrowIcon: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

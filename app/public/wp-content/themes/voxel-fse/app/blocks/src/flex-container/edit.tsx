@@ -37,11 +37,11 @@ interface EditProps {
 }
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
-	const blockId = attributes.blockId || clientId;
+	const blockId = attributes['blockId'] || clientId;
 
 	// Generate stable block ID once
 	useEffect(() => {
-		if (!attributes.blockId) {
+		if (!attributes['blockId']) {
 			const newBlockId = Math.random().toString(36).substring(2, 10);
 			setAttributes({ blockId: newBlockId });
 		}
@@ -60,16 +60,16 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	// Determine if we should show the layout preset selector
 	// Show it when: no preset selected AND no inner blocks AND not a child preset
-	const showPresetSelector = !attributes.layoutPreset && !hasInnerBlocks;
+	const showPresetSelector = !attributes['layoutPreset'] && !hasInnerBlocks;
 
 	// ALWAYS set align="full" so WordPress wrapper doesn't constrain the outer container
 	// The inner wrapper (.e-con-inner) handles the boxed content width constraint
 	// This matches Elementor's behavior where the container is always full-width
 	useEffect(() => {
-		if (attributes.align !== 'full') {
+		if (attributes['align'] !== 'full') {
 			setAttributes({ align: 'full' });
 		}
-	}, [attributes.align]);
+	}, [attributes['align']]);
 
 	// =================================================================
 	// Scroll position preservation when device type changes
@@ -389,18 +389,18 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	// Generate unique root class for targeting the WordPress wrapper element
 	// This is the Essential Blocks pattern - adding a class that we can target with inline styles
-	const rootClass = `root-voxel-fse-flex-container-${attributes.blockId || 'default'}`;
+	const rootClass = `root-voxel-fse-flex-container-${attributes['blockId'] || 'default'}`;
 
 	// Apply styles to the OUTER block wrapper (backgrounds, position, min-height)
 	// The rootClass gets applied to the wrapper element by useBlockProps
 	const blockProps = useBlockProps({
 		className: combineBlockClasses(
-			`${rootClass} voxel-fse-flex-container voxel-fse-flex-container-${attributes.blockId || 'default'}`,
+			`${rootClass} voxel-fse-flex-container voxel-fse-flex-container-${attributes['blockId'] || 'default'}`,
 			attributes
 		),
 		style: mergedStyles,
 		// Grid outline data attribute for editor CSS
-		...(attributes.containerLayout === 'grid' && attributes.gridOutline
+		...(attributes['containerLayout'] === 'grid' && attributes['gridOutline']
 			? { 'data-grid-outline': 'true' }
 			: {}),
 	});
@@ -481,7 +481,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				true,
 				currentSlideIndex,
 				slideshowDragProps,
-				`.voxel-fse-flex-container-${attributes.blockId || 'default'}`
+				`.voxel-fse-flex-container-${attributes['blockId'] || 'default'}`
 			)}
 
 			{/* Inner content wrapper with flex/grid layout and max-width constraint */}

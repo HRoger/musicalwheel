@@ -25,13 +25,8 @@
  * @package VoxelFSE
  */
 
-/**
- * Icon value structure matching IconPickerControl
- */
-export interface IconValue {
-	library: string;
-	value: string;
-}
+import type { IconValue } from '../types/index';
+export type { IconValue };
 
 /**
  * Empty icon constant for comparisons

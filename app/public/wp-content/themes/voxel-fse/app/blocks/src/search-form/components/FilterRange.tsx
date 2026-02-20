@@ -20,7 +20,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { FilterComponentProps } from '../types';
 
 // noUiSlider is loaded from Voxel parent theme's vendor folder via wp_enqueue_script
@@ -37,6 +37,18 @@ interface NoUiSliderAPI {
 	on: (event: string, callback: (values: (string | number)[], handle: number) => void) => void;
 	off: (event: string) => void;
 	updateOptions: (options: Record<string, unknown>, fireSetEvent?: boolean) => void;
+}
+
+// Extend HTMLElement to support noUiSlider
+interface NoUiSliderElement extends HTMLElement {
+	noUiSlider?: NoUiSliderAPI;
+}
+
+// Format config from Voxel range-filter.php
+interface RangeFormat {
+	numeric?: boolean;
+	prefix?: string;
+	suffix?: string;
 }
 // Import shared components (Voxel's commons.js pattern)
 import { getFilterWrapperStyles, getPopupStyles, FieldPopup } from '@shared';
@@ -107,8 +119,8 @@ export default function FilterRange({
 		config.id ? `elementor-repeater-item-${config.id}` : ''
 	].filter(Boolean).join(' ');
 
-	const triggerRef = useRef<HTMLDivElement>(null);
-	const sliderRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLElement | null>(null);
+	const sliderRef = useRef<NoUiSliderElement | null>(null);
 	const sliderInstanceRef = useRef<NoUiSliderAPI | null>(null);
 	const [isOpen, setIsOpen] = useState(false);
 
@@ -116,14 +128,14 @@ export default function FilterRange({
 	// Voxel's frontend_props() returns range_start/range_end/step_size
 	// FSE controller's get_filter_props() returns min/max/step
 	// Support both key formats for compatibility
-	const originalRangeStart = props.range_start ?? props.min ?? 0;
-	const originalRangeEnd = props.range_end ?? props.max ?? 100;
-	const step = props.step_size ?? props.step ?? 1;
-	const placeholder = props.placeholder || filterData.label || 'Range';
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
+	const originalRangeStart = Number(props['range_start'] ?? props['min'] ?? 0);
+	const originalRangeEnd = Number(props['range_end'] ?? props['max'] ?? 100);
+	const step = Number(props['step_size'] ?? props['step'] ?? 1);
+	const placeholder = String(props['placeholder'] || filterData.label || 'Range');
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
 	// Voxel default is 'single' - Evidence: range-filter.php:16
-	const handles = props.handles || 'single';
-	const compare = props.compare || 'in_range'; // 'in_range' | 'outside_range'
+	const handles = props['handles'] || 'single';
+	const compare = props['compare'] || 'in_range'; // 'in_range' | 'outside_range'
 
 	// Adaptive filtering: Use narrowed range if available
 	// Reference: voxel-search-form.beautified.js lines 480-500
@@ -135,7 +147,7 @@ export default function FilterRange({
 	// Format configuration from Voxel
 	// Voxel passes format as object { numeric: bool, prefix: string, suffix: string }
 	// Evidence: range-filter.php:236-240
-	const format = typeof props.format === 'object' ? props.format : { numeric: false, prefix: '', suffix: '' };
+	const format: RangeFormat = (typeof props['format'] === 'object' && props['format'] !== null) ? (props['format'] as RangeFormat) : { numeric: false, prefix: '', suffix: '' };
 	const prefix = format.prefix || '';
 	const suffix = format.suffix || '';
 
@@ -145,11 +157,11 @@ export default function FilterRange({
 
 	// Compute default slider values based on handles and compare mode
 	// Evidence: voxel-search-form.beautified.js lines 420-428
-	const defaultValues: number[] = handles === 'single'
+	const defaultValues: number[] = (handles === 'single'
 		? [compare === 'in_range' ? rangeEnd : rangeStart]
 		: compare === 'in_range'
 			? [rangeStart, rangeEnd]
-			: [rangeStart, rangeStart];
+			: [rangeStart, rangeStart]) as number[];
 
 	// Parse the current filter value into an array of numbers
 	const parsedValue = parseRangeValue(value);
@@ -163,7 +175,7 @@ export default function FilterRange({
 	// Voxel: if (fmt.numeric) v = v.toLocaleString(); return fmt.prefix + v + fmt.suffix;
 	const formatValue = useCallback((val: number): string => {
 		const formatted = format.numeric ? val.toLocaleString() : String(val);
-		return `${prefix}${formatted}${suffix}`;
+		return `${ prefix }${ formatted }${ suffix }`;
 	}, [format.numeric, prefix, suffix]);
 
 	// Format an array of values for display (matching Voxel's formatForDisplay)
@@ -222,7 +234,7 @@ export default function FilterRange({
 			behaviour: 'tap-drag',
 		});
 
-		sliderInstanceRef.current = sliderRef.current.noUiSlider as NoUiSliderAPI;
+		sliderInstanceRef.current = (sliderRef.current as NoUiSliderElement).noUiSlider as NoUiSliderAPI;
 
 		// Handle slider updates — Voxel stores all handle values as number array
 		// Evidence: voxel-search-form.beautified.js line 444-446
@@ -291,6 +303,7 @@ export default function FilterRange({
 			initSlider();
 			return () => destroySlider();
 		}
+		return undefined;
 	}, [displayAs, initSlider, destroySlider]);
 
 	// Apply adaptive filtering: Update slider range when narrowedValues change
@@ -422,7 +435,7 @@ export default function FilterRange({
 	const renderSlider = () => (
 		<div className={`range-slider-wrapper${isNarrowing ? ' ts-loading' : ''}`}>
 			<div className="range-value">{popupDisplayValue}</div>
-			<div ref={sliderRef} className="range-slider"></div>
+			<div ref={sliderRef as React.Ref<HTMLDivElement>} className="range-slider"></div>
 			{ /* Show narrowed range indicator if different from original */}
 			{narrowedRange && (narrowedRange.min !== originalRangeStart || narrowedRange.max !== originalRangeEnd) && (
 				<div className="range-narrowed-indicator">
@@ -467,7 +480,7 @@ export default function FilterRange({
 
 			{ /* Trigger button */}
 			<div
-				ref={triggerRef}
+				ref={triggerRef as React.Ref<HTMLDivElement>}
 				className={`ts-filter ts-popup-target ${isFilled ? 'ts-filled' : ''}`}
 				onClick={openPopup}
 				onMouseDown={(e) => e.preventDefault()}
@@ -486,7 +499,7 @@ export default function FilterRange({
 			{ /* Portal-based popup using FieldPopup from create-post */}
 			<FieldPopup
 				isOpen={isOpen}
-				target={triggerRef}
+				target={triggerRef as React.RefObject<HTMLElement>}
 				title=""
 				icon={filterIcon}
 				saveLabel="Save"
@@ -503,7 +516,7 @@ export default function FilterRange({
 				<div className="ts-form-group">
 					<label>
 						{filterData.label}
-						{filterData.description && <small>{filterData.description}</small>}
+						{(filterData as any).description && <small>{(filterData as any).description}</small>}
 					</label>
 					{renderSlider()}
 				</div>

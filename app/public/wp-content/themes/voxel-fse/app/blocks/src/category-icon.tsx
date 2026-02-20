@@ -8,7 +8,8 @@
  * @package VoxelFSE
  */
 
-import { updateCategory } from '@wordpress/blocks';
+import * as WpBlocks from '@wordpress/blocks';
+const updateCategory = (WpBlocks as any).updateCategory as (slug: string, settings: Record<string, unknown>) => void;
 import './category-icon.css';
 
 /**

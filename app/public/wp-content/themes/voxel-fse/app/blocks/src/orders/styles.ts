@@ -483,7 +483,7 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 
 	// Status padding
 	if (attributes.statusPadding) {
-		const paddingCSS = generateDimensionsCSS(attributes.statusPadding, 'padding');
+		const paddingCSS = generateDimensionsCSS(attributes.statusPadding as any, 'padding');
 		if (paddingCSS) {
 			cssRules.push(`${selector} .order-status { ${paddingCSS} }`);
 		}
@@ -823,7 +823,7 @@ export function generateOrdersResponsiveCSS(attributes: OrdersBlockAttributes, b
 
 	// Single event box padding
 	if (attributes.singleEventBoxPadding) {
-		const paddingCSS = generateDimensionsCSS(attributes.singleEventBoxPadding, 'padding');
+		const paddingCSS = generateDimensionsCSS(attributes.singleEventBoxPadding as any, 'padding');
 		if (paddingCSS) {
 			cssRules.push(`${selector} .order-event-box { ${paddingCSS} }`);
 		}

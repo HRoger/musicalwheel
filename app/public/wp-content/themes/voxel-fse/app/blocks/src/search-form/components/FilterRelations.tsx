@@ -61,7 +61,7 @@ export default function FilterRelations( {
 	const props = filterData.props || {};
 	// Post data from PHP frontend_props() — ONLY prop returned
 	// Evidence: themes/voxel/app/post-types/filters/relations-filter.php:127-138
-	const propsPostData = props.post as PostData | undefined;
+	const propsPostData = props['post'] as PostData | undefined;
 
 	// Get filter icon — from API data (HTML markup)
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100

@@ -14,10 +14,11 @@
  * @package VoxelFSE
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import type { ImageBlockAttributes, SliderValue } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
@@ -30,6 +31,10 @@ interface VoxelLightboxAPI {
 interface ImageComponentProps {
 	attributes: ImageBlockAttributes;
 	context: 'editor' | 'frontend';
+	/** Template context for dynamic tag resolution in editor (e.g., 'term', 'post', 'user') */
+	templateContext?: string;
+	/** Post type extracted from template slug (e.g., 'place') */
+	templatePostType?: string;
 }
 
 /**
@@ -144,7 +149,7 @@ function getLinkUrl(attributes: ImageBlockAttributes): string | null {
 	return null;
 }
 
-export default function ImageComponent({ attributes, context }: ImageComponentProps) {
+export default function ImageComponent({ attributes, context, templateContext = 'post', templatePostType }: ImageComponentProps) {
 	const imageStyles = buildImageStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 	const imageClass = getImageClass(attributes);
@@ -152,17 +157,87 @@ export default function ImageComponent({ attributes, context }: ImageComponentPr
 	const showCaption = hasCaption(attributes);
 	const linkUrl = getLinkUrl(attributes);
 
+	// Dynamic image tag resolution for editor preview
+	const hasDynamicImage = attributes.imageDynamicTag && attributes.imageDynamicTag.includes('@');
+	const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+
+	// templateContext is passed from edit.tsx via useTemplateContext()
+
+	useEffect(() => {
+		if (context !== 'editor' || !hasDynamicImage) {
+			setDynamicImageUrl(null);
+			return;
+		}
+
+		let cancelled = false;
+		
+		(async () => {
+			try {
+				// Build preview context so the server can find a sample term/post
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get the attachment ID
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: attributes.imageDynamicTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				// Strip @tags()...@endtags() wrapper from rendered result
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				const attachmentId = parseInt(rendered, 10);
+				if (!attachmentId || isNaN(attachmentId)) {
+					setDynamicImageUrl(null);
+					return;
+				}
+
+				// Step 2: Get the image URL from the WordPress media REST API
+				const media = await apiFetch<{ source_url: string; alt_text?: string }>({
+					path: `/wp/v2/media/${attachmentId}`,
+				});
+
+				if (cancelled) return;
+
+				if (media?.source_url) {
+					setDynamicImageUrl(media.source_url);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('Failed to resolve dynamic image tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext, templatePostType]);
+
+	// Use resolved dynamic image URL when no static image is set
+	const effectiveImageUrl = attributes.image.url || dynamicImageUrl;
+
 	// Lightbox click handler for "file" link type
 	const handleLightboxClick = useCallback(
 		(e: React.MouseEvent<HTMLAnchorElement | HTMLImageElement>) => {
 			e.preventDefault();
 			e.stopPropagation();
 			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
-			if (lightbox && attributes.image.url) {
-				lightbox.open([{ src: attributes.image.url, alt: attributes.image.alt || '' }], 0);
+			if (lightbox && effectiveImageUrl) {
+				lightbox.open([{ src: effectiveImageUrl, alt: attributes.image.alt || '' }], 0);
 			}
 		},
-		[attributes.image.url, attributes.image.alt]
+		[effectiveImageUrl, attributes.image.alt]
 	);
 
 	// Visibility classes
@@ -175,8 +250,8 @@ export default function ImageComponent({ attributes, context }: ImageComponentPr
 	// Build wrapper class
 	const wrapperClass = ['voxel-fse-image-wrapper', `voxel-fse-image-wrapper-${attributes.blockId}`, ...visibilityClasses].filter(Boolean).join(' ');
 
-	// No image selected - show placeholder
-	if (!attributes.image.url) {
+	// No image selected and no dynamic tag - show placeholder
+	if (!effectiveImageUrl) {
 		if (context === 'editor') {
 			return (
 				<div className={wrapperClass}>
@@ -195,7 +270,7 @@ export default function ImageComponent({ attributes, context }: ImageComponentPr
 	// Evidence: plugins/elementor/includes/widgets/image.php:752
 	const imageElement = (
 		<img
-			src={attributes.image.url}
+			src={effectiveImageUrl}
 			alt={attributes.image.alt}
 			title={attributes.image.alt || ''}
 			loading="lazy"

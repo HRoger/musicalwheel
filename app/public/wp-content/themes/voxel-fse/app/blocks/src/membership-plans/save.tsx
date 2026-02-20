@@ -43,11 +43,11 @@ function createSaveFn(includePlaceholder: boolean) {
 			.join('\n');
 
 		// Parse custom attributes (key|value format)
-		const customAttrs = parseCustomAttributes(attributes.customAttributes);
+		const customAttrs = parseCustomAttributes(attributes['customAttributes'] as string | undefined);
 
 		// Build class list matching Voxel's pricing-plans pattern
-		const blockProps = useBlockProps.save({
-			id: attributes.elementId || undefined,
+		const blockProps = (useBlockProps as any).save({
+			id: attributes['elementId'] || undefined,
 			className: combineBlockClasses(
 				`voxel-fse-membership-plans voxel-fse-membership-plans-${blockId}`,
 				attributes

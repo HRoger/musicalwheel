@@ -11,16 +11,15 @@
 
 import type {
 	BookingFieldConfig,
-	BookingValue,
-	TimeSlotGroup,
-	ComputedTimeSlot,
+			ComputedTimeSlot,
 	BookingTodayConfig,
 } from '../../types';
 
 /**
  * Weekday abbreviation to day number mapping
  */
-const WEEKDAY_MAP: Record<string, number> = {
+// @ts-ignore -- unused but kept for future use
+const _WEEKDAY_MAP: Record<string, number> = {
 	sun: 0,
 	mon: 1,
 	tue: 2,

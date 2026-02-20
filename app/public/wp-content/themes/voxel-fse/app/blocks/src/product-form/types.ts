@@ -79,7 +79,7 @@ export interface ProductFormAttributes {
 	// === CONTENT TAB ===
 
 	// Settings Section
-	showPriceCalculator: 'show' | 'hide';
+	showPriceCalculator: 'show' | 'hide' | 'subtotal';
 	showPriceCalculatorTablet: 'show' | 'hide';
 	showPriceCalculatorMobile: 'show' | 'hide';
 	showSubtotalOnly: boolean;
@@ -510,12 +510,19 @@ export interface ProductFormConfig {
 export interface ProductFormVxConfig {
 	blockId: string;
 	settings: {
-		showPriceCalculator: 'show' | 'hide';
+		showPriceCalculator: 'show' | 'hide' | 'subtotal';
 		showSubtotalOnly: boolean;
 		hideCardSubheading: boolean;
 		cardSelectOnClick: boolean;
+		productMode?: 'regular' | 'variable' | 'booking';
+		cartNonce?: string;
+		searchContext?: Record<string, unknown>;
+		searchContextConfig?: Record<string, unknown> | null;
 	};
 	icons: ProductFormIcons;
+	props?: Record<string, unknown>;
+	value?: Record<string, unknown>;
+	l10n?: Record<string, string>;
 	// Note: Product configuration is fetched from REST API at runtime
 }
 
@@ -557,6 +564,15 @@ export interface AddonChoice {
 		min: number;
 		max: number;
 	};
+	/** External choice popup quantity/display config (from vxconfig) */
+	props?: {
+		quantity?: {
+			enabled: boolean;
+			min: number;
+			max: number;
+		};
+		[key: string]: unknown;
+	};
 }
 
 /**
@@ -585,6 +601,7 @@ export interface AddonConfig {
 		max_units?: number;
 		charge_after?: ChargeAfterConfig;
 		choices?: Record<string, AddonChoice>;
+		display_mode?: string;
 	};
 }
 
@@ -656,6 +673,7 @@ export interface RepeatConfig {
 	end: string;
 	count_mode: 'nights' | 'days';
 	label: string;
+	length?: number;
 }
 
 /**
@@ -1136,6 +1154,7 @@ export interface DataInputConfig {
 		maxlength?: number;
 		min?: number;
 		max?: number;
+		step?: number;
 		display_mode?: 'default' | 'stepper' | 'buttons' | 'radio';
 		choices?: Record<string, DataInputChoice>;
 		l10n?: {

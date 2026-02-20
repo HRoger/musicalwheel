@@ -12,12 +12,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { FileUploadProps, UploadedFile } from '../types';
 
-// Extend window for global file cache
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: UploadedFile[];
-	}
-}
+// Global file cache accessed via (window as any) to avoid type conflict with voxelShim.ts
 
 // Voxel helpers type
 declare const Voxel: {
@@ -70,7 +65,7 @@ export default function FileUpload({
 	field,
 	value,
 	onChange,
-	context,
+	context: _context,
 }: FileUploadProps) {
 	const [dragActive, setDragActive] = useState(false);
 	const [files, setFiles] = useState<UploadedFile[]>(value || []);
@@ -119,13 +114,13 @@ export default function FileUpload({
 			};
 
 			// Initialize global file cache if needed
-			if (window._vx_file_upload_cache === undefined) {
-				window._vx_file_upload_cache = [];
+			if ((window as any)._vx_file_upload_cache === undefined) {
+				(window as any)._vx_file_upload_cache = [];
 			}
 
 			// Check for duplicate file in cache
-			const existingFile = window._vx_file_upload_cache.find(
-				(cached) =>
+			const existingFile = (window as any)._vx_file_upload_cache.find(
+				(cached: any) =>
 					cached.item?.name === file.name &&
 					cached.item?.type === file.type &&
 					cached.item?.size === file.size &&
@@ -137,7 +132,7 @@ export default function FileUpload({
 				newFiles = [...files, existingFile];
 			} else {
 				newFiles = [...files, fileData];
-				window._vx_file_upload_cache.unshift(fileData);
+				(window as any)._vx_file_upload_cache.unshift(fileData);
 			}
 
 			// Respect max file count
@@ -340,7 +335,7 @@ export default function FileUpload({
 							<label htmlFor={inputId.current} className="vx-file-upload-browse">
 								browse
 							</label>
-							{typeof wp !== 'undefined' && wp.media && (
+							{typeof wp !== 'undefined' && (wp as any).media && (
 								<>
 									{' or '}
 									<button

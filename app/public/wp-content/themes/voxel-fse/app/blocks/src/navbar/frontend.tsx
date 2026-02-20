@@ -91,8 +91,7 @@ import { createRoot } from 'react-dom/client';
 import { useState, useEffect } from 'react';
 import NavbarComponent from './shared/NavbarComponent';
 import type {
-	NavbarAttributes,
-	NavbarVxConfig,
+		NavbarVxConfig,
 	NavbarMenuApiResponse,
 	VoxelIcon,
 	NavbarManualItem,
@@ -155,8 +154,8 @@ function normalizeConfig(raw: Record<string, unknown>): any {
 		if (val && typeof val === 'object') {
 			const iconObj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(iconObj.library, '') as any,
-				value: normalizeString(iconObj.value, ''),
+				library: normalizeString(iconObj['library'], '') as any,
+				value: normalizeString(iconObj['value'], ''),
 			};
 		}
 		return { ...DEFAULT_ICON };
@@ -171,13 +170,13 @@ function normalizeConfig(raw: Record<string, unknown>): any {
 				return Object.entries(val).map(([key, item]: [string, unknown]) => {
 					const itemObj = item as Record<string, unknown>;
 					return {
-						id: normalizeString(itemObj.id ?? key, key),
-						text: normalizeString(itemObj.text ?? itemObj.ts_navbar_item_text, ''),
-						icon: normalizeIcon(itemObj.icon ?? itemObj.ts_navbar_item_icon),
-						url: normalizeString(itemObj.url ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.url, ''),
-						isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
-						nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
-						isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
+						id: normalizeString(itemObj['id'] ?? key, key),
+						text: normalizeString(itemObj['text'] ?? itemObj['ts_navbar_item_text'], ''),
+						icon: normalizeIcon(itemObj['icon'] ?? itemObj['ts_navbar_item_icon']),
+						url: normalizeString(itemObj['url'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['url'], ''),
+						isExternal: normalizeBool(itemObj['isExternal'] ?? itemObj['is_external'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['is_external'], false),
+						nofollow: normalizeBool(itemObj['nofollow'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['nofollow'], false),
+						isActive: normalizeBool(itemObj['isActive'] ?? itemObj['is_active'] ?? itemObj['navbar_item__active'], false),
 					} as any;
 				});
 			}
@@ -186,13 +185,13 @@ function normalizeConfig(raw: Record<string, unknown>): any {
 		return val.map((item: unknown, index: number) => {
 			const itemObj = (item ?? {}) as Record<string, unknown>;
 			return {
-				id: normalizeString(itemObj.id, `item-${index}`),
-				text: normalizeString(itemObj.text ?? itemObj.ts_navbar_item_text, ''),
-				icon: normalizeIcon(itemObj.icon ?? itemObj.ts_navbar_item_icon),
-				url: normalizeString(itemObj.url ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.url, ''),
-				isExternal: normalizeBool(itemObj.isExternal ?? itemObj.is_external ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.is_external, false),
-				nofollow: normalizeBool(itemObj.nofollow ?? (itemObj.ts_navbar_item_link as Record<string, unknown>)?.nofollow, false),
-				isActive: normalizeBool(itemObj.isActive ?? itemObj.is_active ?? itemObj.navbar_item__active, false),
+				id: normalizeString(itemObj['id'], `item-${index}`),
+				text: normalizeString(itemObj['text'] ?? itemObj['ts_navbar_item_text'], ''),
+				icon: normalizeIcon(itemObj['icon'] ?? itemObj['ts_navbar_item_icon']),
+				url: normalizeString(itemObj['url'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['url'], ''),
+				isExternal: normalizeBool(itemObj['isExternal'] ?? itemObj['is_external'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['is_external'], false),
+				nofollow: normalizeBool(itemObj['nofollow'] ?? (itemObj['ts_navbar_item_link'] as Record<string, unknown>)?.['nofollow'], false),
+				isActive: normalizeBool(itemObj['isActive'] ?? itemObj['is_active'] ?? itemObj['navbar_item__active'], false),
 			} as any;
 		});
 	};
@@ -200,63 +199,63 @@ function normalizeConfig(raw: Record<string, unknown>): any {
 	return {
 		// Source - support both camelCase and snake_case
 		source: normalizeString(
-			raw.source ?? raw.navbar_choose_source,
+			raw['source'] ?? raw['navbar_choose_source'],
 			'add_links_manually'
 		) as NavbarVxConfig['source'],
 
 		// Menu locations
 		menuLocation: normalizeString(
-			raw.menuLocation ?? raw.menu_location ?? raw.ts_choose_menu,
+			raw['menuLocation'] ?? raw['menu_location'] ?? raw['ts_choose_menu'],
 			''
 		),
 		mobileMenuLocation: normalizeString(
-			raw.mobileMenuLocation ?? raw.mobile_menu_location ?? raw.ts_choose_mobile_menu,
+			raw['mobileMenuLocation'] ?? raw['mobile_menu_location'] ?? raw['ts_choose_mobile_menu'],
 			''
 		),
 
 		// Layout settings
 		orientation: normalizeString(
-			raw.orientation ?? raw.ts_navbar_orientation,
+			raw['orientation'] ?? raw['ts_navbar_orientation'],
 			'horizontal'
 		) as NavbarVxConfig['orientation'],
 		justify: normalizeString(
-			raw.justify ?? raw.ts_navbar_justify,
+			raw['justify'] ?? raw['ts_navbar_justify'],
 			'left'
 		) as NavbarVxConfig['justify'],
 
 		// Collapsible settings
-		collapsible: normalizeBool(raw.collapsible ?? raw.ts_collapsed, false),
-		collapsedWidth: normalizeNumber(raw.collapsedWidth ?? raw.collapsed_width ?? raw.collapsible_min_width, 60),
-		expandedWidth: normalizeNumber(raw.expandedWidth ?? raw.expanded_width ?? raw.collapsible_max_width, 280),
+		collapsible: normalizeBool(raw['collapsible'] ?? raw['ts_collapsed'], false),
+		collapsedWidth: normalizeNumber(raw['collapsedWidth'] ?? raw['collapsed_width'] ?? raw['collapsible_min_width'], 60),
+		expandedWidth: normalizeNumber(raw['expandedWidth'] ?? raw['expanded_width'] ?? raw['collapsible_max_width'], 280),
 
 		// Hamburger settings
-		hamburgerTitle: normalizeString(raw.hamburgerTitle ?? raw.hamburger_title, 'Menu'),
-		showBurgerDesktop: normalizeBool(raw.showBurgerDesktop ?? raw.show_burger_desktop, false),
-		showBurgerTablet: normalizeBool(raw.showBurgerTablet ?? raw.show_burger_tablet, true),
-		showMenuLabel: normalizeBool(raw.showMenuLabel ?? raw.show_menu_label, false),
+		hamburgerTitle: normalizeString(raw['hamburgerTitle'] ?? raw['hamburger_title'], 'Menu'),
+		showBurgerDesktop: normalizeBool(raw['showBurgerDesktop'] ?? raw['show_burger_desktop'], false),
+		showBurgerTablet: normalizeBool(raw['showBurgerTablet'] ?? raw['show_burger_tablet'], true),
+		showMenuLabel: normalizeBool(raw['showMenuLabel'] ?? raw['show_menu_label'], false),
 
 		// Icons
-		hamburgerIcon: normalizeIcon(raw.hamburgerIcon ?? raw.hamburger_icon ?? raw.ts_mobile_menu_icon),
-		closeIcon: normalizeIcon(raw.closeIcon ?? raw.close_icon ?? raw.ts_close_ico),
+		hamburgerIcon: normalizeIcon(raw['hamburgerIcon'] ?? raw['hamburger_icon'] ?? raw['ts_mobile_menu_icon']),
+		closeIcon: normalizeIcon(raw['closeIcon'] ?? raw['close_icon'] ?? raw['ts_close_ico']),
 
 		// Manual items
-		manualItems: normalizeManualItems(raw.manualItems ?? raw.manual_items ?? raw.ts_navbar_items),
+		manualItems: normalizeManualItems(raw['manualItems'] ?? raw['manual_items'] ?? raw['ts_navbar_items']),
 
 		// Icon display
 		showIcon: normalizeString(
-			raw.showIcon ?? raw.show_icon ?? raw.ts_action_icon_show,
+			raw['showIcon'] ?? raw['show_icon'] ?? raw['ts_action_icon_show'],
 			'flex'
 		) as NavbarVxConfig['showIcon'],
-		iconOnTop: normalizeBool(raw.iconOnTop ?? raw.icon_on_top ?? raw.action_icon_orient, false),
+		iconOnTop: normalizeBool(raw['iconOnTop'] ?? raw['icon_on_top'] ?? raw['action_icon_orient'], false),
 
 		// Popup settings
-		customPopupEnabled: normalizeBool(raw.customPopupEnabled ?? raw.custom_popup_enabled ?? raw.custom_popup_enable, false),
-		multiColumnMenu: normalizeBool(raw.multiColumnMenu ?? raw.multi_column_menu ?? raw.custom_menu_cols, false),
-		menuColumns: normalizeNumber(raw.menuColumns ?? raw.menu_columns ?? raw.set_menu_cols, 1),
+		customPopupEnabled: normalizeBool(raw['customPopupEnabled'] ?? raw['custom_popup_enabled'] ?? raw['custom_popup_enable'], false),
+		multiColumnMenu: normalizeBool(raw['multiColumnMenu'] ?? raw['multi_column_menu'] ?? raw['custom_menu_cols'], false),
+		menuColumns: normalizeNumber(raw['menuColumns'] ?? raw['menu_columns'] ?? raw['set_menu_cols'], 1),
 
 		// Linked block IDs
-		searchFormId: normalizeString(raw.searchFormId ?? raw.search_form_id, ''),
-		templateTabsId: normalizeString(raw.templateTabsId ?? raw.template_tabs_id, ''),
+		searchFormId: normalizeString(raw['searchFormId'] ?? raw['search_form_id'], ''),
+		templateTabsId: normalizeString(raw['templateTabsId'] ?? raw['template_tabs_id'], ''),
 	};
 }
 
@@ -453,7 +452,7 @@ function initNavbars() {
 
 	navbars.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -482,7 +481,7 @@ function initNavbars() {
 		const blockId = blockIdMatch ? blockIdMatch[1] : 'default';
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Preserve <style> elements before createRoot replaces all children.
 		// save.tsx outputs responsive CSS as <style> tags inside the container.

@@ -41,7 +41,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	// Fetch Stripe account configuration from REST API
 	const previewUserId = attributes.previewAsUserDynamicTag || attributes.previewAsUser;
-	const { config, isLoading, error } = useStripeAccountConfig(previewUserId);
+	const { config, isLoading: _isLoading, error } = useStripeAccountConfig(previewUserId);
 
 	// Set block ID if not set
 	useEffect(() => {

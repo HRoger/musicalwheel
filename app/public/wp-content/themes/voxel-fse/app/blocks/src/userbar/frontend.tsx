@@ -20,7 +20,7 @@
 
 import { createRoot } from 'react-dom/client';
 import UserbarComponent from './shared/UserbarComponent';
-import type { UserbarAttributes, UserbarVxConfig } from './types';
+import type { UserbarVxConfig } from './types';
 
 // Extend Window interface for global render functions
 declare global {
@@ -62,7 +62,8 @@ function parseVxConfig(container: HTMLElement): UserbarVxConfig | null {
  * @param raw - Raw config from any source
  * @returns Normalized UserbarVxConfig
  */
-function normalizeConfig(raw: any): UserbarVxConfig {
+// @ts-ignore -- unused but kept for future use
+function _normalizeConfig(raw: any): UserbarVxConfig {
 	return {
 		// Items array (repeater field)
 		items: Array.isArray(raw.items)
@@ -187,7 +188,7 @@ function initUserbars() {
 
 	userbarBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -203,7 +204,7 @@ function initUserbars() {
 		const blockId = blockIdMatch ? blockIdMatch[1] : 'default';
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Preserve <style> elements before createRoot replaces all children.
 		// save.tsx outputs responsive CSS (label visibility, component visibility,

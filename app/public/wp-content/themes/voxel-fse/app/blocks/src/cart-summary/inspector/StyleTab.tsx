@@ -26,7 +26,6 @@ import {
 } from '@shared/controls';
 
 import type { StyleTab } from '@shared/controls/StyleTabPanel';
-import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 import type { CartSummaryBlockAttributes } from '../types';
 
 interface StyleTabProps {

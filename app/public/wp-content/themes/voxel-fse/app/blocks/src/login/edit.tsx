@@ -18,7 +18,6 @@ import type { LoginAttributes, AuthConfig, AuthScreen } from './types';
 import { IconPickerControl } from '@shared/controls/IconPickerControl';
 import TagMultiSelect from '@shared/controls/TagMultiSelect';
 import InspectorTabs from '@shared/controls/InspectorTabs';
-import VoxelGridIcon from '@shared/VoxelGridIcon';
 import LoginComponent from './shared/LoginComponent';
 import { DynamicTagTextControl } from '@shared/controls';
 import { StyleTab, FieldStyleTab } from './inspector';

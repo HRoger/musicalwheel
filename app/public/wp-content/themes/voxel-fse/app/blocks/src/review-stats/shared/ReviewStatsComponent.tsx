@@ -23,8 +23,7 @@
 import { __ } from '@wordpress/i18n';
 import type {
 	ReviewStatsAttributes,
-	ReviewStatsData,
-	ReviewStatsComponentProps,
+		ReviewStatsComponentProps,
 	ReviewStatsVxConfig,
 } from '../types';
 
@@ -69,8 +68,8 @@ export default function ReviewStatsComponent({
 	statsData,
 	isLoading,
 	error,
-	context,
-	postId,
+	context: _context,
+	postId: _postId,
 }: ReviewStatsComponentProps) {
 	// Build style variables
 	const styleVars = buildStyleVars(attributes);

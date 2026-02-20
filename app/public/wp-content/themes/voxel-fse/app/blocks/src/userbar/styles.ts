@@ -57,11 +57,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.itemGap !== undefined) {
 		cssRules.push(`${selector} > ul { grid-gap: ${attributes.itemGap}px; }`);
 	}
-	if (attributes.itemGapTablet !== undefined) {
-		tabletRules.push(`${selector} > ul { grid-gap: ${attributes.itemGapTablet}px; }`);
+	if (attributes['itemGapTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul { grid-gap: ${attributes['itemGapTablet']}px; }`);
 	}
-	if (attributes.itemGapMobile !== undefined) {
-		mobileRules.push(`${selector} > ul { grid-gap: ${attributes.itemGapMobile}px; }`);
+	if (attributes['itemGapMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul { grid-gap: ${attributes['itemGapMobile']}px; }`);
 	}
 
 	// ============================================
@@ -177,11 +177,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.itemBorderRadius !== undefined) {
 		cssRules.push(`${selector} > ul > li > a { border-radius: ${attributes.itemBorderRadius}px; }`);
 	}
-	if (attributes.itemBorderRadiusTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li > a { border-radius: ${attributes.itemBorderRadiusTablet}px; }`);
+	if (attributes['itemBorderRadiusTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li > a { border-radius: ${attributes['itemBorderRadiusTablet']}px; }`);
 	}
-	if (attributes.itemBorderRadiusMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li > a { border-radius: ${attributes.itemBorderRadiusMobile}px; }`);
+	if (attributes['itemBorderRadiusMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li > a { border-radius: ${attributes['itemBorderRadiusMobile']}px; }`);
 	}
 
 	// ============================================
@@ -194,11 +194,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.itemContentGap !== undefined) {
 		cssRules.push(`${selector} > ul > li > a { grid-gap: ${attributes.itemContentGap}px; }`);
 	}
-	if (attributes.itemContentGapTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li > a { grid-gap: ${attributes.itemContentGapTablet}px; }`);
+	if (attributes['itemContentGapTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li > a { grid-gap: ${attributes['itemContentGapTablet']}px; }`);
 	}
-	if (attributes.itemContentGapMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li > a { grid-gap: ${attributes.itemContentGapMobile}px; }`);
+	if (attributes['itemContentGapMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li > a { grid-gap: ${attributes['itemContentGapMobile']}px; }`);
 	}
 
 	// ============================================
@@ -211,11 +211,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.iconContainerSize !== undefined) {
 		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSize}px; height: ${attributes.iconContainerSize}px; }`);
 	}
-	if (attributes.iconContainerSizeTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSizeTablet}px; height: ${attributes.iconContainerSizeTablet}px; }`);
+	if (attributes['iconContainerSizeTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes['iconContainerSizeTablet']}px; height: ${attributes['iconContainerSizeTablet']}px; }`);
 	}
-	if (attributes.iconContainerSizeMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes.iconContainerSizeMobile}px; height: ${attributes.iconContainerSizeMobile}px; }`);
+	if (attributes['iconContainerSizeMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { width: ${attributes['iconContainerSizeMobile']}px; height: ${attributes['iconContainerSizeMobile']}px; }`);
 	}
 
 	// Icon container border radius - user-bar.php:724
@@ -223,11 +223,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.iconContainerRadius !== undefined) {
 		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadius}px; }`);
 	}
-	if (attributes.iconContainerRadiusTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusTablet}px; }`);
+	if (attributes['iconContainerRadiusTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes['iconContainerRadiusTablet']}px; }`);
 	}
-	if (attributes.iconContainerRadiusMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes.iconContainerRadiusMobile}px; }`);
+	if (attributes['iconContainerRadiusMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { border-radius: ${attributes['iconContainerRadiusMobile']}px; }`);
 	}
 
 	// Icon container background - user-bar.php:735
@@ -252,11 +252,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.iconSize !== undefined) {
 		cssRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSize}px; }`);
 	}
-	if (attributes.iconSizeTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeTablet}px; }`);
+	if (attributes['iconSizeTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes['iconSizeTablet']}px; }`);
 	}
-	if (attributes.iconSizeMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes.iconSizeMobile}px; }`);
+	if (attributes['iconSizeMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li > a .ts-comp-icon { --ts-icon-size: ${attributes['iconSizeMobile']}px; }`);
 	}
 
 	// Icon color - user-bar.php:766
@@ -288,11 +288,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.unreadIndicatorMargin !== undefined) {
 		cssRules.push(`${selector} span.unread-indicator { top: ${attributes.unreadIndicatorMargin}px; }`);
 	}
-	if (attributes.unreadIndicatorMarginTablet !== undefined) {
-		tabletRules.push(`${selector} span.unread-indicator { top: ${attributes.unreadIndicatorMarginTablet}px; }`);
+	if (attributes['unreadIndicatorMarginTablet'] !== undefined) {
+		tabletRules.push(`${selector} span.unread-indicator { top: ${attributes['unreadIndicatorMarginTablet']}px; }`);
 	}
-	if (attributes.unreadIndicatorMarginMobile !== undefined) {
-		mobileRules.push(`${selector} span.unread-indicator { top: ${attributes.unreadIndicatorMarginMobile}px; }`);
+	if (attributes['unreadIndicatorMarginMobile'] !== undefined) {
+		mobileRules.push(`${selector} span.unread-indicator { top: ${attributes['unreadIndicatorMarginMobile']}px; }`);
 	}
 
 	// Indicator size - user-bar.php:819
@@ -300,11 +300,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.unreadIndicatorSize !== undefined) {
 		cssRules.push(`${selector} span.unread-indicator { width: ${attributes.unreadIndicatorSize}px; height: ${attributes.unreadIndicatorSize}px; }`);
 	}
-	if (attributes.unreadIndicatorSizeTablet !== undefined) {
-		tabletRules.push(`${selector} span.unread-indicator { width: ${attributes.unreadIndicatorSizeTablet}px; height: ${attributes.unreadIndicatorSizeTablet}px; }`);
+	if (attributes['unreadIndicatorSizeTablet'] !== undefined) {
+		tabletRules.push(`${selector} span.unread-indicator { width: ${attributes['unreadIndicatorSizeTablet']}px; height: ${attributes['unreadIndicatorSizeTablet']}px; }`);
 	}
-	if (attributes.unreadIndicatorSizeMobile !== undefined) {
-		mobileRules.push(`${selector} span.unread-indicator { width: ${attributes.unreadIndicatorSizeMobile}px; height: ${attributes.unreadIndicatorSizeMobile}px; }`);
+	if (attributes['unreadIndicatorSizeMobile'] !== undefined) {
+		mobileRules.push(`${selector} span.unread-indicator { width: ${attributes['unreadIndicatorSizeMobile']}px; height: ${attributes['unreadIndicatorSizeMobile']}px; }`);
 	}
 
 	// ============================================
@@ -317,11 +317,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.avatarSize !== undefined) {
 		cssRules.push(`${selector} > ul > li.ts-user-area-avatar img { width: ${attributes.avatarSize}px; height: ${attributes.avatarSize}px; }`);
 	}
-	if (attributes.avatarSizeTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li.ts-user-area-avatar img { width: ${attributes.avatarSizeTablet}px; height: ${attributes.avatarSizeTablet}px; }`);
+	if (attributes['avatarSizeTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li.ts-user-area-avatar img { width: ${attributes['avatarSizeTablet']}px; height: ${attributes['avatarSizeTablet']}px; }`);
 	}
-	if (attributes.avatarSizeMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li.ts-user-area-avatar img { width: ${attributes.avatarSizeMobile}px; height: ${attributes.avatarSizeMobile}px; }`);
+	if (attributes['avatarSizeMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li.ts-user-area-avatar img { width: ${attributes['avatarSizeMobile']}px; height: ${attributes['avatarSizeMobile']}px; }`);
 	}
 
 	// Avatar radius - user-bar.php:870
@@ -329,11 +329,11 @@ export function generateUserbarResponsiveCSS(
 	if (attributes.avatarRadius !== undefined) {
 		cssRules.push(`${selector} > ul > li.ts-user-area-avatar img { border-radius: ${attributes.avatarRadius}%; }`);
 	}
-	if (attributes.avatarRadiusTablet !== undefined) {
-		tabletRules.push(`${selector} > ul > li.ts-user-area-avatar img { border-radius: ${attributes.avatarRadiusTablet}%; }`);
+	if (attributes['avatarRadiusTablet'] !== undefined) {
+		tabletRules.push(`${selector} > ul > li.ts-user-area-avatar img { border-radius: ${attributes['avatarRadiusTablet']}%; }`);
 	}
-	if (attributes.avatarRadiusMobile !== undefined) {
-		mobileRules.push(`${selector} > ul > li.ts-user-area-avatar img { border-radius: ${attributes.avatarRadiusMobile}%; }`);
+	if (attributes['avatarRadiusMobile'] !== undefined) {
+		mobileRules.push(`${selector} > ul > li.ts-user-area-avatar img { border-radius: ${attributes['avatarRadiusMobile']}%; }`);
 	}
 
 	// ============================================

@@ -103,6 +103,7 @@
  */
 
 import type { NestedTabsVxConfig } from './types';
+import type { IconValue } from '@shared/types';
 
 /**
  * Normalize config from various sources (vxconfig, REST API, data attributes)
@@ -130,66 +131,66 @@ function normalizeConfig(raw: Record<string, unknown>): NestedTabsVxConfig {
 
 	// Helper for tab item normalization
 	const normalizeTab = (tab: Record<string, unknown>) => ({
-		id: normalizeString(tab.id ?? tab.tab_id, ''),
-		title: normalizeString(tab.title ?? tab.tab_title, ''),
-		cssId: normalizeString(tab.cssId ?? tab.css_id ?? tab.element_id, ''),
-		icon: tab.icon ?? tab.tab_icon ?? null,
-		iconActive: tab.iconActive ?? tab.icon_active ?? tab.tab_icon_active ?? null,
+		id: normalizeString(tab['id'] ?? tab['tab_id'], ''),
+		title: normalizeString(tab['title'] ?? tab['tab_title'], ''),
+		cssId: normalizeString(tab['cssId'] ?? tab['css_id'] ?? tab['element_id'], ''),
+		icon: (tab['icon'] ?? tab['tab_icon'] ?? null) as IconValue | null,
+		iconActive: (tab['iconActive'] ?? tab['icon_active'] ?? tab['tab_icon_active'] ?? null) as IconValue | null,
 	});
 
 	// Normalize tabs array
-	const rawTabs = raw.tabs ?? raw.tab_items ?? [];
+	const rawTabs = raw['tabs'] ?? raw['tab_items'] ?? [];
 	const tabs = Array.isArray(rawTabs)
 		? rawTabs.map((t) => normalizeTab(t as Record<string, unknown>))
 		: [];
 
 	// Normalize layout object
-	const rawLayout = (raw.layout ?? {}) as Record<string, unknown>;
+	const rawLayout = (raw['layout'] ?? {}) as Record<string, unknown>;
 	const layout = {
 		direction: normalizeString(
-			rawLayout.direction ?? raw.tabsDirection ?? raw.tabs_direction,
+			rawLayout['direction'] ?? raw['tabsDirection'] ?? raw['tabs_direction'],
 			'block-start'
 		) as NestedTabsVxConfig['layout']['direction'],
 		justifyHorizontal: normalizeString(
-			rawLayout.justifyHorizontal ?? raw.tabsJustifyHorizontal ?? raw.tabs_justify_horizontal,
+			rawLayout['justifyHorizontal'] ?? raw['tabsJustifyHorizontal'] ?? raw['tabs_justify_horizontal'],
 			'start'
 		) as NestedTabsVxConfig['layout']['justifyHorizontal'],
 		justifyVertical: normalizeString(
-			rawLayout.justifyVertical ?? raw.tabsJustifyVertical ?? raw.tabs_justify_vertical,
+			rawLayout['justifyVertical'] ?? raw['tabsJustifyVertical'] ?? raw['tabs_justify_vertical'],
 			'start'
 		) as NestedTabsVxConfig['layout']['justifyVertical'],
 		titleAlignment: normalizeString(
-			rawLayout.titleAlignment ?? raw.titleAlignment ?? raw.title_alignment,
+			rawLayout['titleAlignment'] ?? raw['titleAlignment'] ?? raw['title_alignment'],
 			'start'
 		) as NestedTabsVxConfig['layout']['titleAlignment'],
 		horizontalScroll: normalizeString(
-			rawLayout.horizontalScroll ?? raw.horizontalScroll ?? raw.horizontal_scroll,
+			rawLayout['horizontalScroll'] ?? raw['horizontalScroll'] ?? raw['horizontal_scroll'],
 			'disable'
 		) as NestedTabsVxConfig['layout']['horizontalScroll'],
 		breakpoint: normalizeString(
-			rawLayout.breakpoint ?? raw.breakpointSelector ?? raw.breakpoint_selector,
+			rawLayout['breakpoint'] ?? raw['breakpointSelector'] ?? raw['breakpoint_selector'],
 			'none'
 		) as NestedTabsVxConfig['layout']['breakpoint'],
 	};
 
 	// Normalize icons object
-	const rawIcons = (raw.icons ?? {}) as Record<string, unknown>;
+	const rawIcons = (raw['icons'] ?? {}) as Record<string, unknown>;
 	const icons = {
 		position: normalizeString(
-			rawIcons.position ?? raw.iconPosition ?? raw.icon_position,
+			rawIcons['position'] ?? raw['iconPosition'] ?? raw['icon_position'],
 			'inline-start'
 		) as NestedTabsVxConfig['icons']['position'],
 	};
 
 	// Normalize animations object
-	const rawAnimations = (raw.animations ?? {}) as Record<string, unknown>;
+	const rawAnimations = (raw['animations'] ?? {}) as Record<string, unknown>;
 	const animations = {
 		transitionDuration: normalizeNumber(
-			rawAnimations.transitionDuration ?? raw.transitionDuration ?? raw.transition_duration ?? raw.hover_transition,
+			rawAnimations['transitionDuration'] ?? raw['transitionDuration'] ?? raw['transition_duration'] ?? raw['hover_transition'],
 			0.3
 		),
 		hoverAnimation: normalizeString(
-			rawAnimations.hoverAnimation ?? raw.hoverAnimation ?? raw.hover_animation,
+			rawAnimations['hoverAnimation'] ?? raw['hoverAnimation'] ?? raw['hover_animation'],
 			''
 		),
 	};
@@ -202,7 +203,7 @@ function normalizeConfig(raw: Record<string, unknown>): NestedTabsVxConfig {
  * Uses normalizeConfig() for API format compatibility
  */
 function parseVxConfig(container: HTMLElement): NestedTabsVxConfig | null {
-	const vxconfigData = container.dataset.vxconfig;
+	const vxconfigData = container.dataset['vxconfig'];
 
 	if (vxconfigData) {
 		try {
@@ -256,7 +257,7 @@ function initTabs(container: HTMLElement): void {
 	);
 
 	// Set touch mode data attribute
-	tabsWrapper.dataset.touchMode = isTouchDevice() ? 'true' : 'false';
+	tabsWrapper.dataset['touchMode'] = isTouchDevice() ? 'true' : 'false';
 
 	/**
 	 * Activate a specific tab
@@ -328,7 +329,7 @@ function initTabs(container: HTMLElement): void {
 		const currentIndex = tabTitles.indexOf(title);
 		if (currentIndex === -1) return;
 
-		const isVertical = ['inline-start', 'inline-end'].includes(config.layout.direction);
+		const isVertical = ['inline-start', 'inline-end'].includes(config!.layout.direction);
 		let newIndex = currentIndex;
 
 		switch (event.key) {
@@ -391,10 +392,10 @@ function initTabs(container: HTMLElement): void {
 	function handleResize(): void {
 		const currentBreakpoint = getCurrentBreakpoint();
 		const shouldBeAccordion =
-			(config.layout.breakpoint === 'mobile' && currentBreakpoint === 'mobile') ||
-			(config.layout.breakpoint === 'tablet' && (currentBreakpoint === 'mobile' || currentBreakpoint === 'tablet'));
+			(config!.layout.breakpoint === 'mobile' && currentBreakpoint === 'mobile') ||
+			(config!.layout.breakpoint === 'tablet' && (currentBreakpoint === 'mobile' || currentBreakpoint === 'tablet'));
 
-		tabsWrapper.classList.toggle('e-n-tabs-accordion-mode', shouldBeAccordion);
+		tabsWrapper!.classList.toggle('e-n-tabs-accordion-mode', shouldBeAccordion);
 	}
 
 	// Attach event listeners
@@ -426,7 +427,7 @@ function initTabs(container: HTMLElement): void {
 	}
 
 	// Mark as initialized
-	container.dataset.initialized = 'true';
+	container.dataset['initialized'] = 'true';
 }
 
 /**

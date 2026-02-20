@@ -13,11 +13,8 @@ import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
 
-import type { BlockConfiguration } from '@wordpress/blocks';
-import type { CartSummaryBlockAttributes } from './types';
-
 // Type assertion for block.json metadata
-const blockMetadata = metadata as unknown as BlockConfiguration<CartSummaryBlockAttributes>;
+const blockMetadata = metadata as any;
 
 const deprecated = [
 	{
@@ -30,7 +27,7 @@ const deprecated = [
 	},
 ];
 
-registerBlockType<CartSummaryBlockAttributes>(blockMetadata.name, {
+registerBlockType(blockMetadata.name, {
 	...blockMetadata,
 	attributes: {
 		...blockMetadata.attributes,

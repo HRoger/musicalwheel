@@ -300,13 +300,13 @@ interface AdvancedTabProps {
 	setAttributes: (attrs: Partial<AdvancedTabProps['attributes']>) => void;
 }
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 /**
  * Hook to sync with WordPress's responsive preview state
  */
 function useWordPressDevice(): DeviceType {
-	return useSelect((select) => getCurrentDeviceType(select), []);
+	return useDeviceType();
 }
 
 /**
@@ -606,7 +606,7 @@ const MASK_REPEAT_OPTIONS = [
 ];
 
 export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabProps) {
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useDeviceType();
 
 	// Convert WordPress device type to our format (Desktop -> desktop)
 	const wpDevice = wpDeviceType ? wpDeviceType.toLowerCase() as 'desktop' | 'tablet' | 'mobile' : 'desktop';
@@ -622,22 +622,16 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 	}, [wpDeviceType, wpDevice]);
 
 	// Fetch media details for normal background image (for resolution selection)
-	const normalBgImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			const imageId = attributes.backgroundImage?.id;
-			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImage?.id]
-	);
+	const normalBgImageMedia = (useSelect as any)((select: any) => {
+		const imageId = attributes.backgroundImage?.id;
+		return imageId ? select('core').getMedia(imageId) : null;
+	}, [attributes.backgroundImage?.id]);
 
 	// Fetch media details for hover background image (for resolution selection)
-	const hoverBgImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
-			const imageId = attributes.backgroundImageHover?.id;
-			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImageHover?.id]
-	);
+	const hoverBgImageMedia = (useSelect as any)((select: any) => {
+		const imageId = attributes.backgroundImageHover?.id;
+		return imageId ? select('core').getMedia(imageId) : null;
+	}, [attributes.backgroundImageHover?.id]);
 
 	const isPositionSet = attributes.position && attributes.position !== '';
 	const showCustomWidth = attributes.elementWidth === 'initial';
@@ -850,7 +844,7 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 				</div>
 
 				{/* Column Custom (responsive) - shown when Column Span is 'custom' */}
-				{attributes.gridColumn === 'custom' && (
+				{attributes['gridColumn'] === 'custom' && (
 					<ResponsiveTextControl
 						label={__('Custom Column', 'voxel-fse')}
 						attributes={attributes}
@@ -878,7 +872,7 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 				</div>
 
 				{/* Row Custom (responsive) - shown when Row Span is 'custom' */}
-				{attributes.gridRow === 'custom' && (
+				{attributes['gridRow'] === 'custom' && (
 					<ResponsiveTextControl
 						label={__('Custom Row', 'voxel-fse')}
 						attributes={attributes}
@@ -1157,9 +1151,9 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 
 														// Set the resolution attribute
 														if (isHover) {
-															updates.bgImageResolutionHover = value;
+															updates['bgImageResolutionHover'] = value;
 														} else {
-															updates.bgImageResolution = value;
+															updates['bgImageResolution'] = value;
 														}
 
 														// Update the image URL if media details are available
@@ -1174,12 +1168,12 @@ export default function AdvancedTab({ attributes, setAttributes }: AdvancedTabPr
 
 															if (newUrl) {
 																if (isHover) {
-																	updates.backgroundImageHover = {
+																	updates['backgroundImageHover'] = {
 																		...currentImg,
 																		url: newUrl,
 																	};
 																} else {
-																	updates.backgroundImage = {
+																	updates['backgroundImage'] = {
 																		...currentImg,
 																		url: newUrl,
 																	};

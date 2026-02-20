@@ -33,10 +33,10 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 	const max = field.props?.max;
 	const step = field.props?.step || 1;
 	// Evidence: number-field.php:192 — display is 'input' (default) or 'stepper'
-	const displayMode = field.props?.display || 'input';
-	const suffix = field.props?.suffix;
+	const displayMode = field.props?.['display'] || 'input';
+	const suffix = field.props?.['suffix'];
 	// Evidence: number-field.php:185 — precision is calculated from step decimal places
-	const precision = field.props?.precision as number | undefined;
+	const precision = field.props?.['precision'] as number | undefined;
 
 	// EXACT Voxel: Get plus/minus icons from widget settings OR use Voxel defaults
 	// Evidence: themes/voxel/templates/widgets/create-post/number-field.php:15,27
@@ -212,7 +212,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 						value={value || ''}
 						onChange={(e) => handleInputChange(e.target.value)}
 						onBlur={handleBlurWithCorrection}
-						placeholder={field.props?.placeholder || field.placeholder}
+						placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? '')}
 						required={field.required}
 						min={min}
 						max={max}
@@ -268,7 +268,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 						value={value || ''}
 						onChange={(e) => handleInputChange(e.target.value)}
 						onBlur={handleBlurWithCorrection}
-						placeholder={field.props?.placeholder || field.placeholder}
+						placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? '')}
 						required={field.required}
 						min={min}
 						max={max}
@@ -276,7 +276,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 						title={field.label}
 					/>
 					{/* ENHANCEMENT: Suffix support - Voxel line 51 */}
-					<span className="input-suffix">{suffix}</span>
+					<span className="input-suffix">{String(suffix ?? '')}</span>
 				</div>
 			) : (
 				/* Default input without suffix */
@@ -286,7 +286,7 @@ export const NumberField: React.FC<NumberFieldProps> = ({ field, value, onChange
 					value={value || ''}
 					onChange={(e) => handleInputChange(e.target.value)}
 					onBlur={handleBlurWithCorrection}
-					placeholder={field.props?.placeholder || field.placeholder}
+					placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? '')}
 					required={field.required}
 					min={min}
 					max={max}

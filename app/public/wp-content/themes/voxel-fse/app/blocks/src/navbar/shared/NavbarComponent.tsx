@@ -19,8 +19,7 @@ import type {
 	NavbarAttributes,
 	NavbarMenuApiResponse,
 	NavbarMenuItem,
-	NavbarVxConfig,
-	LinkedTabData,
+		LinkedTabData,
 	LinkedPostTypeData,
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
@@ -205,7 +204,7 @@ interface MenuItemProps {
 	context?: 'editor' | 'frontend';
 }
 
-function MenuItem({ item, attributes, onSubmenuToggle, popupScopeClass, context }: MenuItemProps) {
+function MenuItem({ item, attributes: _attributes, onSubmenuToggle, popupScopeClass, context }: MenuItemProps) {
 	const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
 	const screenNav = useScreenNav('main');
 	const itemRef = useRef<HTMLLIElement>(null);

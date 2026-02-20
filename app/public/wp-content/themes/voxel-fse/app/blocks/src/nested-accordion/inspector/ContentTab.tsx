@@ -84,10 +84,10 @@ export function ContentTab({
 				{/* Item Position */}
 				<ChooseControl
 					label={__('Item Position', 'voxel-fse')}
-					value={attributes.itemPosition.desktop || 'start'}
+					value={(attributes.itemPosition.desktop || 'start') as any}
 					onChange={(value) =>
 						setAttributes({
-							itemPosition: { ...attributes.itemPosition, desktop: value },
+							itemPosition: { ...attributes.itemPosition, desktop: value as any },
 						})
 					}
 					controls={<ResponsiveDropdownButton />}
@@ -121,10 +121,10 @@ export function ContentTab({
 				{/* Icon Position */}
 				<ChooseControl
 					label={__('Position', 'voxel-fse')}
-					value={attributes.iconPosition.desktop || 'end'}
+					value={(attributes.iconPosition.desktop || 'end') as any}
 					onChange={(value) =>
 						setAttributes({
-							iconPosition: { ...attributes.iconPosition, desktop: value },
+							iconPosition: { ...attributes.iconPosition, desktop: value as any },
 						})
 					}
 					controls={<ResponsiveDropdownButton />}
@@ -165,7 +165,7 @@ export function ContentTab({
 				<SelectControl
 					label={__('Title HTML Tag', 'voxel-fse')}
 					value={attributes.titleTag}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({ titleTag: value as typeof attributes.titleTag })
 					}
 					options={[
@@ -186,7 +186,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('FAQ Schema', 'voxel-fse')}
 					checked={attributes.faqSchema}
-					onChange={(value) => setAttributes({ faqSchema: value })}
+					onChange={(value: any) => setAttributes({ faqSchema: value })}
 					__nextHasNoMarginBottom
 				/>
 			</AccordionPanel>
@@ -197,7 +197,7 @@ export function ContentTab({
 				<SelectControl
 					label={__('Default State', 'voxel-fse')}
 					value={attributes.defaultState}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							defaultState: value as typeof attributes.defaultState,
 						})
@@ -213,7 +213,7 @@ export function ContentTab({
 				<SelectControl
 					label={__('Max Items Expanded', 'voxel-fse')}
 					value={attributes.maxItemsExpanded}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							maxItemsExpanded: value as typeof attributes.maxItemsExpanded,
 						})
@@ -255,7 +255,7 @@ export function ContentTab({
 					</div>
 					<RangeControl
 						value={attributes.animationDuration.size}
-						onChange={(value) =>
+						onChange={(value: any) =>
 							setAttributes({
 								animationDuration: {
 									...attributes.animationDuration,

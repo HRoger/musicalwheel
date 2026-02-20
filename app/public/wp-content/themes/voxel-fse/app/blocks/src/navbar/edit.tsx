@@ -114,7 +114,8 @@ export default function Edit({
 	// Get linked block data for template_tabs and search_form sources
 	const { linkedTabs, linkedPostTypes, linkedBlockId } = (useSelect as any)(
 		(select: any) => {
-			const { getBlock, getBlocks } = select('core/block-editor');
+			// @ts-ignore -- unused but kept for future use
+			const { _getBlock, getBlocks } = select('core/block-editor');
 
 			// Helper to find block by clientId recursively
 			const findBlockById = (blocks: any[], targetId: string): any | null => {

@@ -233,6 +233,10 @@ export interface GalleryComponentProps {
 	attributes: GalleryBlockAttributes;
 	context: 'editor' | 'frontend';
 	blockId: string;
+	/** Template context for dynamic tag resolution in editor */
+	templateContext?: string;
+	/** Post type extracted from template slug (e.g., 'place') */
+	templatePostType?: string;
 }
 
 /**

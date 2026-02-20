@@ -26,8 +26,7 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import type {
 	TermFeedAttributes,
 	TermFeedVxConfig,
-	TermData,
-	TermFeedComponentProps,
+		TermFeedComponentProps,
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';

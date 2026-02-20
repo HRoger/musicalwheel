@@ -29,11 +29,11 @@ export class ErrorBoundary extends Component<Props, State> {
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error('Timeline ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             if (this.props.fallback) {
                 return this.props.fallback;

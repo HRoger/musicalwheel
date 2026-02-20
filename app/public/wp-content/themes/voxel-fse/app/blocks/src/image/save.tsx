@@ -76,8 +76,11 @@ function buildCaptionStyles(attributes: ImageBlockAttributes): React.CSSProperti
 }
 
 export default function save({ attributes }: SaveProps) {
-	// Return null if no image
-	if (!attributes.image.url) {
+	// Check if a dynamic image tag is set (e.g., @tags()@term(image)@endtags())
+	const hasDynamicImage = attributes.imageDynamicTag && attributes.imageDynamicTag.includes('@');
+
+	// Return null if no static image AND no dynamic tag
+	if (!attributes.image.url && !hasDynamicImage) {
 		return null;
 	}
 
@@ -155,7 +158,18 @@ export default function save({ attributes }: SaveProps) {
 
 	// Build the image element - matches Elementor output exactly
 	// Evidence: plugins/elementor/includes/widgets/image.php:752
-	const imageElement = (
+	// When dynamic image tag is set, render a placeholder <img> with data-dynamic-image
+	// for server-side resolution in render.php
+	const imageElement = hasDynamicImage && !attributes.image.url ? (
+		<img
+			src=""
+			alt=""
+			loading="lazy"
+			data-dynamic-image={attributes.imageDynamicTag}
+			className={imageClasses.length > 0 ? imageClasses.join(' ') : undefined}
+			style={Object.keys(imageStyles).length > 0 ? imageStyles : undefined}
+		/>
+	) : (
 		<img
 			src={attributes.image.url}
 			alt={attributes.image.alt}

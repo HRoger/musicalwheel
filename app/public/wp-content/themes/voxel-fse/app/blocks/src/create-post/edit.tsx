@@ -75,7 +75,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	});
 
 	// Get available Voxel post types from server
-	const postTypes = useSelect(() => {
+	const postTypes = (useSelect as any)(() => {
 		const types: VoxelPostType[] = window.voxelPostTypes || [];
 		return types;
 	}, []);

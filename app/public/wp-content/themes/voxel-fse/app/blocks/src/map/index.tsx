@@ -10,7 +10,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import metadata from './block.json';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
-import type { MapAttributes } from './types';
 import { voxelTabAttributes, advancedTabAttributes } from '../../shared/controls';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
@@ -29,7 +28,7 @@ const deprecated = [
 	},
 ];
 
-registerBlockType<MapAttributes>(metadata.name, {
+(registerBlockType as any)(metadata.name, {
 	...metadata,
 	attributes: {
 		...metadata.attributes,
@@ -40,4 +39,4 @@ registerBlockType<MapAttributes>(metadata.name, {
 	edit: Edit,
 	save,
 	deprecated,
-} as Parameters<typeof registerBlockType<MapAttributes>>[1]);
+} as any);

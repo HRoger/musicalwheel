@@ -61,15 +61,9 @@ interface SessionFile {
 	_id: string;
 }
 
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: SessionFile[];
-	}
-}
-
-// Initialize global cache
-if (typeof window !== 'undefined' && typeof window._vx_file_upload_cache === 'undefined') {
-	window._vx_file_upload_cache = [];
+// Initialize global cache (use any cast to avoid Window interface conflicts)
+if (typeof window !== 'undefined' && typeof (window as any)._vx_file_upload_cache === 'undefined') {
+	(window as any)._vx_file_upload_cache = [];
 }
 
 // Generate unique 8-character session ID (matches Voxel pattern)
@@ -79,21 +73,21 @@ const generateSessionId = (): string => {
 
 // Add file to global cache with deduplication
 const addToSessionCache = (file: File): string => {
-	if (!Array.isArray(window._vx_file_upload_cache)) {
-		window._vx_file_upload_cache = [];
+	if (!Array.isArray((window as any)._vx_file_upload_cache)) {
+		(window as any)._vx_file_upload_cache = [];
 	}
 
 	// Check if file already exists (by name, type, size, lastModified)
-	const exists = window._vx_file_upload_cache.find(
-		(cached) =>
+	const exists = (window as any)._vx_file_upload_cache.find(
+		(cached: SessionFile) =>
 			cached.name === file.name &&
 			cached.type === file.type &&
 			cached.size === file.size &&
-			cached.item.lastModified === file.lastModified
+			cached.item!.lastModified === file.lastModified
 	);
 
 	if (exists) {
-		return exists._id;
+		return exists._id ?? '';
 	}
 
 	// Create new session file
@@ -109,7 +103,7 @@ const addToSessionCache = (file: File): string => {
 	};
 
 	// Add to cache (unshift = add to beginning, most recent first)
-	window._vx_file_upload_cache.unshift(sessionFile);
+	(window as any)._vx_file_upload_cache.unshift(sessionFile);
 
 	return sessionId;
 };
@@ -190,7 +184,7 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		if (!selectedFiles) return;
 
 		const newFiles: FileObject[] = [];
-		const maxSize = (field.props?.['max-size'] || field.props?.['maxSize'] || 2000) * 1000; // Convert KB to bytes
+		const maxSize = Number(field.props?.['max-size'] || field.props?.['maxSize'] || 2000) * 1000; // Convert KB to bytes
 		const validationErrors: string[] = [];
 
 		// Get allowed MIME types for validation
@@ -243,8 +237,8 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		onChange(allFiles);
 
 		// Validate file count AFTER adding files (matches Voxel file-field-trait.php line 65-70)
-		if (allFiles.length > maxCount) {
-			validationErrors.push(`You cannot pick more than ${maxCount} ${maxCount === 1 ? 'file' : 'files'}`);
+		if (allFiles.length > Number(maxCount)) {
+			validationErrors.push(`You cannot pick more than ${Number(maxCount)} ${Number(maxCount) === 1 ? 'file' : 'files'}`);
 		}
 
 		// Set validation errors (matches Voxel: errors displayed in label area)
@@ -336,8 +330,8 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 
 		// Validate file count (same as upload validation)
 		const validationErrors: string[] = [];
-		if (allFiles.length > maxCount) {
-			validationErrors.push(`You cannot pick more than ${maxCount} ${maxCount === 1 ? 'file' : 'files'}`);
+		if (allFiles.length > Number(maxCount)) {
+			validationErrors.push(`You cannot pick more than ${Number(maxCount)} ${Number(maxCount) === 1 ? 'file' : 'files'}`);
 		}
 
 		// Set validation errors
@@ -458,7 +452,7 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 			<div style={{ textAlign: 'center', marginTop: '15px' }}>
 				<MediaPopup
 					onSave={handleMediaPopupSave}
-					multiple={maxCount > 1}
+					multiple={Number(maxCount) > 1}
 					saveLabel="Save"
 				/>
 			</div>
@@ -468,7 +462,7 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 				ref={inputRef}
 				type="file"
 				className="hidden"
-				multiple={maxCount > 1}
+				multiple={Number(maxCount) > 1}
 				accept={getAllowedTypes()}
 				onChange={(e) => handleFileSelect(e.target.files)}
 				onBlur={onBlur}

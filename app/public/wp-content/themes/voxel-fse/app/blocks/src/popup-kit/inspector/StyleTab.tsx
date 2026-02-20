@@ -763,7 +763,7 @@ export function StyleTab({
 								},
 							};
 							if (value.borderWidth?.top !== undefined) {
-								updates.pcCheckboxBorderWidth = parseFloat(String(value.borderWidth.top));
+								updates['pcCheckboxBorderWidth'] = parseFloat(String(value.borderWidth.top));
 							}
 							setAttributes(updates);
 						}
@@ -834,7 +834,7 @@ export function StyleTab({
 								},
 							};
 							if (value.borderWidth?.top !== undefined) {
-								updates.prRadioBorderWidth = parseFloat(String(value.borderWidth.top));
+								updates['prRadioBorderWidth'] = parseFloat(String(value.borderWidth.top));
 							}
 							setAttributes(updates);
 						}
@@ -1013,7 +1013,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pfBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pfBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1275,7 +1275,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.prRangeHandleBorderWidth = parseFloat(String(value.borderWidth.top));
+							updates['prRangeHandleBorderWidth'] = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}
@@ -1354,7 +1354,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pibBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pibBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1782,7 +1782,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pnotUnseenBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pnotUnseenBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1926,7 +1926,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.ptextBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['ptextBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1977,7 +1977,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.palertBorderWidth = parseFloat(String(value.borderWidth.top));
+							updates['palertBorderWidth'] = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}

@@ -27,17 +27,13 @@ interface PostTypeFieldsResponse {
 }
 
 /**
- * Window extension for frontend data
+ * Local type for voxelFseCreatePost window data (using any to avoid global conflict)
  */
-declare global {
-	interface Window {
-		voxelFseCreatePost?: {
-			fieldsConfig?: VoxelField[];
-			ajaxUrl?: string;
-			nonce?: string;
-		};
-	}
-}
+type LocalVoxelFseData = {
+	fieldsConfig?: VoxelField[];
+	ajaxUrl?: string;
+	nonce?: string;
+};
 
 /**
  * Hook return type
@@ -111,7 +107,7 @@ export function useFieldsConfig(
 					setFieldsConfig(data.fields_config || []);
 				} else {
 					// Frontend: Load from window object (wp_localize_script)
-					const wpData = window.voxelFseCreatePost || {};
+					const wpData = ((window as any).voxelFseCreatePost || {}) as LocalVoxelFseData;
 					const fields = wpData.fieldsConfig || [];
 
 					setFieldsConfig(fields);

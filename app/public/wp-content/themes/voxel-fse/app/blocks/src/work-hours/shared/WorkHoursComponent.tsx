@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { WorkHoursAttributes, ScheduleDay, VxConfig } from '../types';
-import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import { useRef, useState } from 'react';
+import { WorkHoursAttributes, ScheduleDay, VxConfig, WorkHoursData } from '../types';
 import { renderIcon } from '@shared/utils/renderIcon';
 import type { IconValue } from '@shared/types';
 
@@ -27,11 +26,11 @@ const getMockData = () => {
   };
 
   const schedule: Record<string, ScheduleDay> = {
-    mon: { status: 'hours', hours: [{ from: '09:00', to: '17:00' }] },
-    tue: { status: 'hours', hours: [{ from: '09:00', to: '17:00' }] },
-    wed: { status: 'hours', hours: [{ from: '09:00', to: '17:00' }] },
-    thu: { status: 'hours', hours: [{ from: '09:00', to: '17:00' }] },
-    fri: { status: 'hours', hours: [{ from: '09:00', to: '17:00' }] },
+    mon: { status: 'hours', hours: [{ from: '09:00', to: '17:00', fromFormatted: '9:00 AM', toFormatted: '5:00 PM' }] },
+    tue: { status: 'hours', hours: [{ from: '09:00', to: '17:00', fromFormatted: '9:00 AM', toFormatted: '5:00 PM' }] },
+    wed: { status: 'hours', hours: [{ from: '09:00', to: '17:00', fromFormatted: '9:00 AM', toFormatted: '5:00 PM' }] },
+    thu: { status: 'hours', hours: [{ from: '09:00', to: '17:00', fromFormatted: '9:00 AM', toFormatted: '5:00 PM' }] },
+    fri: { status: 'hours', hours: [{ from: '09:00', to: '17:00', fromFormatted: '9:00 AM', toFormatted: '5:00 PM' }] },
     sat: { status: 'closed' },
     sun: { status: 'closed' },
   };
@@ -85,7 +84,7 @@ export default function WorkHoursComponent({
   const [isExpanded, setIsExpanded] = useState(attributes.collapse === 'wh-expanded');
 
   // Use mock data in preview mode, actual data otherwise
-  const data = isPreview ? getMockData() : {};
+  const data: Partial<WorkHoursData> = isPreview ? getMockData() : {};
 
   const schedule = scheduleData || data.schedule;
   const open = isOpenNow !== undefined ? isOpenNow : data.isOpenNow;
@@ -99,14 +98,15 @@ export default function WorkHoursComponent({
     setIsExpanded(!isExpanded);
   };
 
-  const currentDayStatus = schedule?.[todayKey];
+  const currentDayStatus = todayKey ? schedule?.[todayKey] : undefined;
 
   // Determine current status for display
   let statusClass = 'not-available';
   let statusIcon = attributes.notAvailableIcon;
   let statusText = attributes.notAvailableText;
   let statusIconColor = attributes.notAvailableIconColor;
-  let statusTextColor = attributes.notAvailableTextColor;
+  // @ts-ignore -- unused but kept for future use
+  let _statusTextColor = attributes.notAvailableTextColor;
 
   if (currentDayStatus) {
     if (currentDayStatus.status === 'hours' && open) {
@@ -114,31 +114,31 @@ export default function WorkHoursComponent({
       statusIcon = attributes.openIcon;
       statusText = attributes.openText;
       statusIconColor = attributes.openIconColor;
-      statusTextColor = attributes.openTextColor;
+      _statusTextColor = attributes.openTextColor;
     } else if (currentDayStatus.status === 'hours' && !open) {
       statusClass = 'closed';
       statusIcon = attributes.closedIcon;
       statusText = attributes.closedText;
       statusIconColor = attributes.closedIconColor;
-      statusTextColor = attributes.closedTextColor;
+      _statusTextColor = attributes.closedTextColor;
     } else if (currentDayStatus.status === 'open') {
       statusClass = 'open';
       statusIcon = attributes.openIcon;
       statusText = attributes.openText;
       statusIconColor = attributes.openIconColor;
-      statusTextColor = attributes.openTextColor;
+      _statusTextColor = attributes.openTextColor;
     } else if (currentDayStatus.status === 'closed') {
       statusClass = 'closed';
       statusIcon = attributes.closedIcon;
       statusText = attributes.closedText;
       statusIconColor = attributes.closedIconColor;
-      statusTextColor = attributes.closedTextColor;
+      _statusTextColor = attributes.closedTextColor;
     } else if (currentDayStatus.status === 'appointments_only') {
       statusClass = 'appt-only';
       statusIcon = attributes.appointmentIcon;
       statusText = attributes.appointmentText;
       statusIconColor = attributes.appointmentIconColor;
-      statusTextColor = attributes.appointmentTextColor;
+      _statusTextColor = attributes.appointmentTextColor;
     }
   }
 
@@ -161,7 +161,7 @@ export default function WorkHoursComponent({
         }
         // PARITY: Use server-formatted times when available (respects WP site settings)
         return currentDayStatus.hours
-          .map((h) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
+          .map((h: import('../types').TimeSlot) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
           .join(', ');
       default:
         return 'Not available';
@@ -246,7 +246,7 @@ export default function WorkHoursComponent({
         <div className="ts-work-hours-list">
           <ul className="simplify-ul flexify">
             {/* Display all weekdays */}
-            {Object.entries(days || {}).map(([key, label]) => {
+            {Object.entries((days || {}) as Record<string, string>).map(([key, label]) => {
               const daySchedule = schedule?.[key];
 
               // Get hours text for this day
@@ -265,7 +265,7 @@ export default function WorkHoursComponent({
                     }
                     // PARITY: Use server-formatted times when available
                     return daySchedule.hours
-                      .map((h) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
+                      .map((h: import('../types').TimeSlot) => `${formatTime(h.from, h.fromFormatted)} - ${formatTime(h.to, h.toFormatted)}`)
                       .join(', ');
                   default:
                     return 'Not available';

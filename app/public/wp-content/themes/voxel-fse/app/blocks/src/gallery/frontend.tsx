@@ -193,8 +193,8 @@ function normalizeConfig(raw: Record<string, unknown>): GalleryVxConfig {
 		if (val && typeof val === 'object') {
 			const iconObj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(iconObj.library, ''),
-				value: normalizeString(iconObj.value, ''),
+				library: normalizeString(iconObj['library'], '') as IconValue['library'],
+				value: normalizeString(iconObj['value'], ''),
 			};
 		}
 		return { ...DEFAULT_ICON };
@@ -210,18 +210,18 @@ function normalizeConfig(raw: Record<string, unknown>): GalleryVxConfig {
 		const suffix = `_${index}`;
 
 		return {
-			colSpan: normalizeOptionalNumber(item.colSpan ?? item[`${snakePrefix}col_span${suffix}`]) ?? null,
-			colStart: normalizeOptionalNumber(item.colStart ?? item[`${snakePrefix}col_start${suffix}`]) ?? null,
-			rowSpan: normalizeOptionalNumber(item.rowSpan ?? item[`${snakePrefix}row_span${suffix}`]) ?? null,
-			rowStart: normalizeOptionalNumber(item.rowStart ?? item[`${snakePrefix}row_start${suffix}`]) ?? null,
-			colSpan_tablet: normalizeOptionalNumber(item.colSpan_tablet) ?? null,
-			colStart_tablet: normalizeOptionalNumber(item.colStart_tablet) ?? null,
-			rowSpan_tablet: normalizeOptionalNumber(item.rowSpan_tablet) ?? null,
-			rowStart_tablet: normalizeOptionalNumber(item.rowStart_tablet) ?? null,
-			colSpan_mobile: normalizeOptionalNumber(item.colSpan_mobile) ?? null,
-			colStart_mobile: normalizeOptionalNumber(item.colStart_mobile) ?? null,
-			rowSpan_mobile: normalizeOptionalNumber(item.rowSpan_mobile) ?? null,
-			rowStart_mobile: normalizeOptionalNumber(item.rowStart_mobile) ?? null,
+			colSpan: normalizeOptionalNumber(item['colSpan'] ?? item[`${snakePrefix}col_span${suffix}`]) ?? null,
+			colStart: normalizeOptionalNumber(item['colStart'] ?? item[`${snakePrefix}col_start${suffix}`]) ?? null,
+			rowSpan: normalizeOptionalNumber(item['rowSpan'] ?? item[`${snakePrefix}row_span${suffix}`]) ?? null,
+			rowStart: normalizeOptionalNumber(item['rowStart'] ?? item[`${snakePrefix}row_start${suffix}`]) ?? null,
+			colSpan_tablet: normalizeOptionalNumber(item['colSpan_tablet']) ?? null,
+			colStart_tablet: normalizeOptionalNumber(item['colStart_tablet']) ?? null,
+			rowSpan_tablet: normalizeOptionalNumber(item['rowSpan_tablet']) ?? null,
+			rowStart_tablet: normalizeOptionalNumber(item['rowStart_tablet']) ?? null,
+			colSpan_mobile: normalizeOptionalNumber(item['colSpan_mobile']) ?? null,
+			colStart_mobile: normalizeOptionalNumber(item['colStart_mobile']) ?? null,
+			rowSpan_mobile: normalizeOptionalNumber(item['rowSpan_mobile']) ?? null,
+			rowStart_mobile: normalizeOptionalNumber(item['rowStart_mobile']) ?? null,
 		};
 	};
 
@@ -231,12 +231,12 @@ function normalizeConfig(raw: Record<string, unknown>): GalleryVxConfig {
 		const mosaic = val as Record<string, unknown>;
 
 		return {
-			item1: normalizeMosaicItem(mosaic.item1 ?? mosaic.ts_gl_mosaic_item_1, 1),
-			item2: normalizeMosaicItem(mosaic.item2 ?? mosaic.ts_gl_mosaic_item_2, 2),
-			item3: normalizeMosaicItem(mosaic.item3 ?? mosaic.ts_gl_mosaic_item_3, 3),
-			item4: normalizeMosaicItem(mosaic.item4 ?? mosaic.ts_gl_mosaic_item_4, 4),
-			item5: normalizeMosaicItem(mosaic.item5 ?? mosaic.ts_gl_mosaic_item_5, 5),
-			item6: normalizeMosaicItem(mosaic.item6 ?? mosaic.ts_gl_mosaic_item_6, 6),
+			item1: normalizeMosaicItem(mosaic['item1'] ?? mosaic['ts_gl_mosaic_item_1'], 1),
+			item2: normalizeMosaicItem(mosaic['item2'] ?? mosaic['ts_gl_mosaic_item_2'], 2),
+			item3: normalizeMosaicItem(mosaic['item3'] ?? mosaic['ts_gl_mosaic_item_3'], 3),
+			item4: normalizeMosaicItem(mosaic['item4'] ?? mosaic['ts_gl_mosaic_item_4'], 4),
+			item5: normalizeMosaicItem(mosaic['item5'] ?? mosaic['ts_gl_mosaic_item_5'], 5),
+			item6: normalizeMosaicItem(mosaic['item6'] ?? mosaic['ts_gl_mosaic_item_6'], 6),
 		};
 	};
 
@@ -246,105 +246,105 @@ function normalizeConfig(raw: Record<string, unknown>): GalleryVxConfig {
 		return val.map((img: unknown) => {
 			const imgObj = (img ?? {}) as Record<string, unknown>;
 			return {
-				id: normalizeNumber(imgObj.id, 0),
-				src_display: normalizeString(imgObj.src_display ?? imgObj.srcDisplay ?? imgObj.url, ''),
-				src_lightbox: normalizeString(imgObj.src_lightbox ?? imgObj.srcLightbox ?? imgObj.url, ''),
-				alt: normalizeString(imgObj.alt, ''),
-				caption: normalizeString(imgObj.caption, ''),
-				description: normalizeString(imgObj.description, ''),
-				title: normalizeString(imgObj.title, ''),
-				display_size: normalizeString(imgObj.display_size ?? imgObj.displaySize, 'medium'),
+				id: normalizeNumber(imgObj['id'], 0),
+				src_display: normalizeString(imgObj['src_display'] ?? imgObj['srcDisplay'] ?? imgObj['url'], ''),
+				src_lightbox: normalizeString(imgObj['src_lightbox'] ?? imgObj['srcLightbox'] ?? imgObj['url'], ''),
+				alt: normalizeString(imgObj['alt'], ''),
+				caption: normalizeString(imgObj['caption'], ''),
+				description: normalizeString(imgObj['description'], ''),
+				title: normalizeString(imgObj['title'], ''),
+				display_size: normalizeString(imgObj['display_size'] ?? imgObj['displaySize'], 'medium'),
 			};
 		});
 	};
 
 	return {
 		// Block ID
-		blockId: normalizeString(raw.blockId ?? raw.block_id, ''),
+		blockId: normalizeString(raw['blockId'] ?? raw['block_id'], ''),
 
 		// Images
-		images: normalizeImages(raw.images ?? raw.ts_gallery_images),
-		visibleCount: normalizeNumber(raw.visibleCount ?? raw.visible_count ?? raw.ts_visible_count, 6),
+		images: normalizeImages(raw['images'] ?? raw['ts_gallery_images']),
+		visibleCount: normalizeNumber(raw['visibleCount'] ?? raw['visible_count'] ?? raw['ts_visible_count'], 6),
 
 		// Columns
-		columnCount: normalizeNumber(raw.columnCount ?? raw.column_count ?? raw.ts_gl_column_no, 3),
-		columnCount_tablet: normalizeOptionalNumber(raw.columnCount_tablet ?? raw.column_count_tablet),
-		columnCount_mobile: normalizeOptionalNumber(raw.columnCount_mobile ?? raw.column_count_mobile),
-		columnGap: normalizeOptionalNumber(raw.columnGap ?? raw.column_gap ?? raw.ts_gl_col_gap),
-		columnGap_tablet: normalizeOptionalNumber(raw.columnGap_tablet ?? raw.column_gap_tablet),
-		columnGap_mobile: normalizeOptionalNumber(raw.columnGap_mobile ?? raw.column_gap_mobile),
-		removeEmpty: normalizeBool(raw.removeEmpty ?? raw.remove_empty ?? raw.ts_remove_empty, false),
-		autoFit: normalizeBool(raw.autoFit ?? raw.auto_fit ?? raw.ts_gl_autofit, false),
+		columnCount: normalizeNumber(raw['columnCount'] ?? raw['column_count'] ?? raw['ts_gl_column_no'], 3),
+		columnCount_tablet: normalizeOptionalNumber(raw['columnCount_tablet'] ?? raw['column_count_tablet']),
+		columnCount_mobile: normalizeOptionalNumber(raw['columnCount_mobile'] ?? raw['column_count_mobile']),
+		columnGap: normalizeOptionalNumber(raw['columnGap'] ?? raw['column_gap'] ?? raw['ts_gl_col_gap']),
+		columnGap_tablet: normalizeOptionalNumber(raw['columnGap_tablet'] ?? raw['column_gap_tablet']),
+		columnGap_mobile: normalizeOptionalNumber(raw['columnGap_mobile'] ?? raw['column_gap_mobile']),
+		removeEmpty: normalizeBool(raw['removeEmpty'] ?? raw['remove_empty'] ?? raw['ts_remove_empty'], false),
+		autoFit: normalizeBool(raw['autoFit'] ?? raw['auto_fit'] ?? raw['ts_gl_autofit'], false),
 
 		// Row Height
-		rowHeight: normalizeNumber(raw.rowHeight ?? raw.row_height ?? raw.ts_gl_row_height, 180),
-		rowHeight_tablet: normalizeOptionalNumber(raw.rowHeight_tablet ?? raw.row_height_tablet),
-		rowHeight_mobile: normalizeOptionalNumber(raw.rowHeight_mobile ?? raw.row_height_mobile),
-		useAspectRatio: normalizeBool(raw.useAspectRatio ?? raw.use_aspect_ratio ?? raw.ts_gl_row_aspect, false),
-		useAspectRatio_tablet: raw.useAspectRatio_tablet !== undefined
-			? normalizeBool(raw.useAspectRatio_tablet, false)
+		rowHeight: normalizeNumber(raw['rowHeight'] ?? raw['row_height'] ?? raw['ts_gl_row_height'], 180),
+		rowHeight_tablet: normalizeOptionalNumber(raw['rowHeight_tablet'] ?? raw['row_height_tablet']),
+		rowHeight_mobile: normalizeOptionalNumber(raw['rowHeight_mobile'] ?? raw['row_height_mobile']),
+		useAspectRatio: normalizeBool(raw['useAspectRatio'] ?? raw['use_aspect_ratio'] ?? raw['ts_gl_row_aspect'], false),
+		useAspectRatio_tablet: raw['useAspectRatio_tablet'] !== undefined
+			? normalizeBool(raw['useAspectRatio_tablet'], false)
 			: undefined,
-		useAspectRatio_mobile: raw.useAspectRatio_mobile !== undefined
-			? normalizeBool(raw.useAspectRatio_mobile, false)
+		useAspectRatio_mobile: raw['useAspectRatio_mobile'] !== undefined
+			? normalizeBool(raw['useAspectRatio_mobile'], false)
 			: undefined,
-		aspectRatio: normalizeString(raw.aspectRatio ?? raw.aspect_ratio ?? raw.ts_aspect_ratio, '16/9'),
-		aspectRatio_tablet: raw.aspectRatio_tablet !== undefined
-			? normalizeString(raw.aspectRatio_tablet, '')
+		aspectRatio: normalizeString(raw['aspectRatio'] ?? raw['aspect_ratio'] ?? raw['ts_aspect_ratio'], '16/9'),
+		aspectRatio_tablet: raw['aspectRatio_tablet'] !== undefined
+			? normalizeString(raw['aspectRatio_tablet'], '')
 			: undefined,
-		aspectRatio_mobile: raw.aspectRatio_mobile !== undefined
-			? normalizeString(raw.aspectRatio_mobile, '')
+		aspectRatio_mobile: raw['aspectRatio_mobile'] !== undefined
+			? normalizeString(raw['aspectRatio_mobile'], '')
 			: undefined,
 
 		// Mosaic
-		mosaic: normalizeMosaic(raw.mosaic),
+		mosaic: normalizeMosaic(raw['mosaic']),
 
 		// Style - Image
-		imageBorderRadius: normalizeNumber(raw.imageBorderRadius ?? raw.borderRadius ?? raw.border_radius ?? raw.ts_gl_img_radius, 0),
-		imageBorderRadius_tablet: normalizeOptionalNumber(raw.imageBorderRadius_tablet ?? raw.borderRadius_tablet ?? raw.border_radius_tablet),
-		imageBorderRadius_mobile: normalizeOptionalNumber(raw.imageBorderRadius_mobile ?? raw.borderRadius_mobile ?? raw.border_radius_mobile),
+		imageBorderRadius: normalizeNumber(raw['imageBorderRadius'] ?? raw['borderRadius'] ?? raw['border_radius'] ?? raw['ts_gl_img_radius'], 0),
+		imageBorderRadius_tablet: normalizeOptionalNumber(raw['imageBorderRadius_tablet'] ?? raw['borderRadius_tablet'] ?? raw['border_radius_tablet']),
+		imageBorderRadius_mobile: normalizeOptionalNumber(raw['imageBorderRadius_mobile'] ?? raw['borderRadius_mobile'] ?? raw['border_radius_mobile']),
 
 		// Style - Overlay
-		overlayColor: normalizeString(raw.overlayColor ?? raw.overlay_color ?? raw.ts_gl_overlay_color, ''),
+		overlayColor: normalizeString(raw['overlayColor'] ?? raw['overlay_color'] ?? raw['ts_gl_overlay_color'], ''),
 		overlayColorHover: normalizeString(
-			raw.overlayColorHover ?? raw.overlay_color_hover ?? raw.ts_gl_overlay_color_h,
+			raw['overlayColorHover'] ?? raw['overlay_color_hover'] ?? raw['ts_gl_overlay_color_h'],
 			''
 		),
 
 		// Style - Empty Item
-		emptyBorderType: normalizeString(raw.emptyBorderType ?? raw.empty_border_type ?? raw.ts_empty_border, 'none'),
-		emptyBorderWidth: normalizeOptionalNumber(raw.emptyBorderWidth ?? raw.empty_border_width ?? raw.ts_empty_border_width),
-		emptyBorderColor: normalizeString(raw.emptyBorderColor ?? raw.empty_border_color ?? raw.ts_empty_border_color, ''),
-		emptyBorderRadius: normalizeOptionalNumber(raw.emptyBorderRadius ?? raw.empty_border_radius ?? raw.ts_empty_radius),
-		emptyBorderRadius_tablet: normalizeOptionalNumber(raw.emptyBorderRadius_tablet ?? raw.empty_border_radius_tablet),
-		emptyBorderRadius_mobile: normalizeOptionalNumber(raw.emptyBorderRadius_mobile ?? raw.empty_border_radius_mobile),
+		emptyBorderType: normalizeString(raw['emptyBorderType'] ?? raw['empty_border_type'] ?? raw['ts_empty_border'], 'none'),
+		emptyBorderWidth: normalizeOptionalNumber(raw['emptyBorderWidth'] ?? raw['empty_border_width'] ?? raw['ts_empty_border_width']),
+		emptyBorderColor: normalizeString(raw['emptyBorderColor'] ?? raw['empty_border_color'] ?? raw['ts_empty_border_color'], ''),
+		emptyBorderRadius: normalizeOptionalNumber(raw['emptyBorderRadius'] ?? raw['empty_border_radius'] ?? raw['ts_empty_radius']),
+		emptyBorderRadius_tablet: normalizeOptionalNumber(raw['emptyBorderRadius_tablet'] ?? raw['empty_border_radius_tablet']),
+		emptyBorderRadius_mobile: normalizeOptionalNumber(raw['emptyBorderRadius_mobile'] ?? raw['empty_border_radius_mobile']),
 
 		// Style - View All Button
-		viewAllBgColor: normalizeString(raw.viewAllBgColor ?? raw.view_all_bg_color ?? raw.ts_viewall_bg, ''),
+		viewAllBgColor: normalizeString(raw['viewAllBgColor'] ?? raw['view_all_bg_color'] ?? raw['ts_viewall_bg'], ''),
 		viewAllBgColorHover: normalizeString(
-			raw.viewAllBgColorHover ?? raw.view_all_bg_color_hover ?? raw.ts_viewall_bg_h,
+			raw['viewAllBgColorHover'] ?? raw['view_all_bg_color_hover'] ?? raw['ts_viewall_bg_h'],
 			''
 		),
 		viewAllIconColor: normalizeString(
-			raw.viewAllIconColor ?? raw.view_all_icon_color ?? raw.ts_viewall_icon_color,
+			raw['viewAllIconColor'] ?? raw['view_all_icon_color'] ?? raw['ts_viewall_icon_color'],
 			''
 		),
 		viewAllIconColorHover: normalizeString(
-			raw.viewAllIconColorHover ?? raw.view_all_icon_color_hover ?? raw.ts_viewall_icon_color_h,
+			raw['viewAllIconColorHover'] ?? raw['view_all_icon_color_hover'] ?? raw['ts_viewall_icon_color_h'],
 			''
 		),
-		viewAllIcon: normalizeIcon(raw.viewAllIcon ?? raw.view_all_icon ?? raw.ts_viewall_ico),
-		viewAllIconSize: normalizeOptionalNumber(raw.viewAllIconSize ?? raw.view_all_icon_size ?? raw.ts_viewall_icon_size),
-		viewAllIconSize_tablet: normalizeOptionalNumber(raw.viewAllIconSize_tablet ?? raw.view_all_icon_size_tablet),
-		viewAllIconSize_mobile: normalizeOptionalNumber(raw.viewAllIconSize_mobile ?? raw.view_all_icon_size_mobile),
+		viewAllIcon: normalizeIcon(raw['viewAllIcon'] ?? raw['view_all_icon'] ?? raw['ts_viewall_ico']),
+		viewAllIconSize: normalizeOptionalNumber(raw['viewAllIconSize'] ?? raw['view_all_icon_size'] ?? raw['ts_viewall_icon_size']),
+		viewAllIconSize_tablet: normalizeOptionalNumber(raw['viewAllIconSize_tablet'] ?? raw['view_all_icon_size_tablet']),
+		viewAllIconSize_mobile: normalizeOptionalNumber(raw['viewAllIconSize_mobile'] ?? raw['view_all_icon_size_mobile']),
 		viewAllTextColor: normalizeString(
-			raw.viewAllTextColor ?? raw.view_all_text_color ?? raw.ts_viewall_text_color,
+			raw['viewAllTextColor'] ?? raw['view_all_text_color'] ?? raw['ts_viewall_text_color'],
 			''
 		),
 		viewAllTextColorHover: normalizeString(
-			raw.viewAllTextColorHover ?? raw.view_all_text_color_hover ?? raw.ts_viewall_text_color_h,
+			raw['viewAllTextColorHover'] ?? raw['view_all_text_color_hover'] ?? raw['ts_viewall_text_color_h'],
 			''
 		),
-		viewAllTypography: raw.viewAllTypography as GalleryVxConfig['viewAllTypography'],
+		viewAllTypography: raw['viewAllTypography'] as GalleryVxConfig['viewAllTypography'],
 	};
 }
 

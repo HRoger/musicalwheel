@@ -16,7 +16,8 @@ import type { ProductFormAttributes } from './types';
 /**
  * Helper: Generate dimensions CSS (padding, margin)
  */
-function generateDimensionsCSS(
+// @ts-ignore -- unused but kept for future use
+function _generateDimensionsCSS(
 	dimensions: any | undefined,
 	property: string
 ): string {

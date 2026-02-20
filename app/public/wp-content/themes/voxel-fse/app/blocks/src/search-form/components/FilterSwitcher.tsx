@@ -31,10 +31,10 @@ export default function FilterSwitcher( {
 
 	// Evidence: switcher-filter.php:191 openInPopup is boolean
 	// Controller default: get_default_elementor_config() line 593 returns open_in_popup => 'no' → false
-	const openInPopup = props.openInPopup === true;
+	const openInPopup = props['openInPopup'] === true;
 
 	// Evidence: switcher-filter.php:192 placeholder falls back to label
-	const placeholder = ( props.placeholder as string ) || filterData.label || '';
+	const placeholder = ( props['placeholder'] as string ) || filterData.label || '';
 
 	// Get filter icon - from API data (HTML markup)
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100

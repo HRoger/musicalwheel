@@ -77,14 +77,6 @@ interface VoxelFseCreatePostData {
 	nonce?: string;
 }
 
-/**
- * Voxel's native configuration object
- * Available on frontend when Voxel is active
- */
-interface VoxelConfig {
-	ajax_url?: string;
-	[key: string]: unknown;
-}
 
 
 /**
@@ -93,9 +85,7 @@ interface VoxelConfig {
  */
 declare global {
 	interface Window {
-		_vx_file_upload_cache?: UploadedFile[];
 		voxelFseCreatePost?: VoxelFseCreatePostData;
-		Voxel_Config?: VoxelConfig;
 		wpApiSettings?: {
 			root: string;
 			nonce?: string;
@@ -121,9 +111,9 @@ function getVoxelAjaxUrl(): string {
 	}
 
 	// 2. Try Voxel's native config (available on frontend)
-	if (window.Voxel_Config?.ajax_url) {
+	if ((window as any).Voxel_Config?.ajax_url) {
 		// Voxel_Config.ajax_url is usually like "http://site.com/subdir/?vx=1"
-		return window.Voxel_Config.ajax_url;
+		return String((window as any).Voxel_Config.ajax_url);
 	}
 
 	// 3. Try extracting site URL from WordPress REST API settings (Gutenberg editor)
@@ -139,8 +129,8 @@ function getVoxelAjaxUrl(): string {
 }
 
 // Initialize global cache if it doesn't exist
-if (typeof window !== 'undefined' && typeof window._vx_file_upload_cache === 'undefined') {
-	window._vx_file_upload_cache = [];
+if (typeof window !== 'undefined' && typeof (window as any)._vx_file_upload_cache === 'undefined') {
+	(window as any)._vx_file_upload_cache = [];
 }
 
 /**
@@ -411,11 +401,13 @@ export default function MediaPopup({
 	 * Matches Voxel's sessionFiles() method
 	 */
 	const getSessionFiles = (): UploadedFile[] => {
-		if (!Array.isArray(window._vx_file_upload_cache)) {
-			window._vx_file_upload_cache = [];
+		const cache = (window as any)._vx_file_upload_cache;
+		if (!Array.isArray(cache)) {
+			(window as any)._vx_file_upload_cache = [];
+			return [];
 		}
 		// Return copy (most recent first)
-		return [...window._vx_file_upload_cache];
+		return [...cache] as UploadedFile[];
 	};
 
 	/**

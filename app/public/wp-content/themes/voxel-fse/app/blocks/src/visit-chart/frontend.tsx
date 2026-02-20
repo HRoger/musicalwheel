@@ -136,6 +136,8 @@ import type {
 	ChartState,
 } from './types';
 
+declare const jQuery: any;
+
 /**
  * Normalize config from various API sources
  *
@@ -215,11 +217,11 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 			unknown
 		>;
 		return {
-			label: normalizeString(item.label, ''),
-			percent: normalizeNumber(item.percent, 0) ?? 0,
-			count: normalizeString(item.count, '0'),
+			label: normalizeString(item['label'], ''),
+			percent: normalizeNumber(item['percent'], 0) ?? 0,
+			count: normalizeString(item['count'], '0'),
 			unique_count: normalizeString(
-				item.unique_count ?? item.uniqueCount,
+				item['unique_count'] ?? item['uniqueCount'],
 				'0'
 			),
 		};
@@ -232,9 +234,9 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 			unknown
 		>;
 		return {
-			label: normalizeString(meta.label, ''),
+			label: normalizeString(meta['label'], ''),
 			has_activity: normalizeBoolean(
-				meta.has_activity ?? meta.hasActivity,
+				meta['has_activity'] ?? meta['hasActivity'],
 				false
 			),
 		};
@@ -249,22 +251,22 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 
 		// Normalize items array
 		let items: ChartItem[] | undefined;
-		if (Array.isArray(state.items)) {
-			items = state.items.map(normalizeChartItem);
+		if (Array.isArray(state['items'])) {
+			items = state['items'].map(normalizeChartItem);
 		}
 
 		// Normalize steps array
 		let steps: string[] | undefined;
-		if (Array.isArray(state.steps)) {
-			steps = state.steps.map((s) => normalizeString(s, ''));
+		if (Array.isArray(state['steps'])) {
+			steps = state['steps'].map((s) => normalizeString(s, ''));
 		}
 
 		return {
-			loaded: normalizeBoolean(state.loaded, false),
-			error: state.error !== undefined ? normalizeBoolean(state.error, false) : undefined,
+			loaded: normalizeBoolean(state['loaded'], false),
+			error: state['error'] !== undefined ? normalizeBoolean(state['error'], false) : undefined,
 			steps,
 			items,
-			meta: state.meta ? normalizeChartMeta(state.meta) : undefined,
+			meta: state['meta'] ? normalizeChartMeta(state['meta']) : undefined,
 		};
 	};
 
@@ -293,17 +295,17 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 	// Support both camelCase and snake_case/ts_* prefixed names
 	return {
 		source: normalizeSource(
-			raw.source ?? raw.ts_source ?? raw.statsSource
+			raw['source'] ?? raw['ts_source'] ?? raw['statsSource']
 		),
 		activeChart: normalizeTimeframe(
-			raw.activeChart ?? raw.active_chart ?? raw.ts_active_chart
+			raw['activeChart'] ?? raw['active_chart'] ?? raw['ts_active_chart']
 		),
 		viewType: normalizeViewType(
-			raw.viewType ?? raw.view_type ?? raw.ts_view_type
+			raw['viewType'] ?? raw['view_type'] ?? raw['ts_view_type']
 		),
-		nonce: normalizeString(raw.nonce, ''),
-		postId: normalizeNumber(raw.postId ?? raw.post_id, undefined),
-		charts: normalizeCharts(raw.charts),
+		nonce: normalizeString(raw['nonce'], ''),
+		postId: normalizeNumber(raw['postId'] ?? raw['post_id'], undefined),
+		charts: normalizeCharts(raw['charts']),
 	};
 }
 
@@ -344,6 +346,8 @@ function buildAttributes(config: VisitChartVxConfig): VisitChartAttributes {
 		chartIcon: { library: '', value: '' },
 		chevronRight: { library: '', value: '' },
 		chevronLeft: { library: '', value: '' },
+		contentTabOpenPanel: '',
+		styleTabOpenPanel: '',
 	};
 }
 
@@ -387,7 +391,7 @@ function initVisitCharts() {
 
 	visitCharts.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.reactMounted === 'true') {
+		if (container.dataset['reactMounted'] === 'true') {
 			return;
 		}
 
@@ -402,7 +406,7 @@ function initVisitCharts() {
 		const attributes = buildAttributes(config);
 
 		// Mark as mounted to prevent double-initialization
-		container.dataset.reactMounted = 'true';
+		container.dataset['reactMounted'] = 'true';
 
 		// Create React root and render
 		const root = createRoot(container);

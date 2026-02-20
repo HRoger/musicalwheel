@@ -11,7 +11,7 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
 import { renderIcon } from '@shared/utils/renderIcon';
 import { VoxelIcons } from '@shared/utils/voxelIcons';
@@ -48,10 +48,10 @@ function currencyFormat(amount: number, currency: string): string {
 function getItemQuantity(item: CartItem): number {
 	if (item.product_mode === 'regular') {
 		const value = item.value as Record<string, Record<string, number>>;
-		return value.stock?.quantity || 1;
+		return value['stock']?.['quantity'] || 1;
 	} else {
 		const value = item.value as Record<string, Record<string, number>>;
-		return value.variations?.quantity || 1;
+		return value['variations']?.['quantity'] || 1;
 	}
 }
 
@@ -347,7 +347,7 @@ export default function CartSummaryComponent({
 		const vendorCount = Object.keys(vendors).length;
 		if (vendorCount < 1) return false;
 		// If only one vendor and it's platform, don't group
-		if (vendorCount === 1 && vendors.platform) return false;
+		if (vendorCount === 1 && vendors['platform']) return false;
 		return true;
 	}, [config, vendors]);
 
@@ -416,7 +416,7 @@ export default function CartSummaryComponent({
 	 */
 	const isAllVendorShippingSelected = useMemo(() => {
 		if (getShippingMethod() !== 'vendor_rates') return true;
-		if (!shipping.country) return false;
+		if (!shipping || !shipping.country) return false;
 
 		const vendorsWithShippable = Object.values(vendors).filter(
 			(v) => v.has_shippable_products
@@ -723,13 +723,13 @@ export default function CartSummaryComponent({
 						{/* Matches Voxel: cart-summary.php:95-113 (suspense > item.components) */}
 						{items && Object.values(items).map((item) =>
 							item.components && Object.entries(item.components).map(([compKey, component]) => {
-								const compData = (component as Record<string, unknown>).data as Record<string, unknown> | undefined;
+								const compData = (component as Record<string, unknown>)['data'] as Record<string, unknown> | undefined;
 								if (component.type === 'file-upload' && compData) {
 									return (
 										<FileUploadField
 											key={`${item.key}-${compKey}`}
-											field={(compData.field as { key: string; label?: string; allowed_types?: string; max_files?: number }) || { key: compKey }}
-											value={(compData.value as []) || []}
+											field={(compData['field'] as { key: string; label?: string; allowed_types?: string; max_files?: number }) || { key: compKey }}
+											value={(compData['value'] as []) || []}
 											onChange={() => {}}
 											uploadIcon={getCartIcon(attributes.uploadIcon, 'uploadIcon')}
 											trashIcon={getCartIcon(attributes.deleteIcon, 'deleteIcon')}

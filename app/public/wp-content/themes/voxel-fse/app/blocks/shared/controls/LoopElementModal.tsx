@@ -227,6 +227,10 @@ export default function LoopElementModal({
 	}, [isOpen]);
 
 	const handleSelectLoop = (source: string, property: string) => {
+		// Guard: both source and property are required for a valid loop config
+		if (!source || !property) {
+			return;
+		}
 		onSave({
 			...config,
 			loopSource: source,

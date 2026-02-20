@@ -10,13 +10,12 @@
  */
 
 import { RangeControl, Button, TextControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
 import UndoIcon from '../icons/UndoIcon';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlWithDropdownProps {
 	label: string;
@@ -49,7 +48,7 @@ export default function ResponsiveRangeControlWithDropdown({
 	customValueAttributeName,
 }: ResponsiveRangeControlWithDropdownProps) {
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = useDeviceType();
 
 	// Get attribute name for current device
 	const getAttributeName = () => {

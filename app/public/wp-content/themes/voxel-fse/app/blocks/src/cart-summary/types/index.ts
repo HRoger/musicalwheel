@@ -23,6 +23,7 @@ export interface BoxValues {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontWeight?: string;
@@ -754,6 +755,7 @@ export interface Vendor {
 	has_shippable_products: boolean;
 	shipping_zones: ShippingZones | null;
 	shipping_countries: ShippingCountries | null;
+	shipping_rates_order?: string[];
 }
 
 /**

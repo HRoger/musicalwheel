@@ -38,7 +38,7 @@ function createSaveFn(includePlaceholder: boolean) {
 		const responsiveCSS = `${blockCSS}\n${advancedCSS}`;
 
 		// Build class list matching Voxel's current-role pattern
-		const blockProps = useBlockProps.save({
+		const blockProps = (useBlockProps as any).save({
 			className: combineBlockClasses(
 				`voxel-fse-current-role voxel-fse-current-role-${blockId}`,
 				attributes

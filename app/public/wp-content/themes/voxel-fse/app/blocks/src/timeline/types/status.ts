@@ -64,6 +64,9 @@ export interface MediaFile {
 	url: string;
 	preview: string;
 	alt: string;
+	type?: string;
+	mime_type?: string;
+	thumbnail_url?: string;
 }
 
 /**

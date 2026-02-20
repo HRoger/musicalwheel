@@ -61,6 +61,8 @@ declare module '@wordpress/block-editor' {
     export const URLInput: ComponentType<any>;
     export const PlainText: ComponentType<any>;
     export const BlockPreview: ComponentType<any>;
+    export const BlockEditorProvider: ComponentType<any>;
+    export const BlockList: ComponentType<any>;
 }
 
 declare module '@wordpress/blocks' {
@@ -77,7 +79,17 @@ declare module '@wordpress/blocks' {
         attributes: T;
     }
 
-    export function registerBlockType(name: string, settings: any): any;
+    export type BlockConfiguration<T = Record<string, any>> = {
+        title: string;
+        category?: string;
+        icon?: any;
+        description?: string;
+        keywords?: string[];
+        attributes?: Record<string, any>;
+        [key: string]: any;
+    };
+
+    export function registerBlockType<T = Record<string, any>>(name: string, settings: any): any;
     export function parse(content: string): any[];
 }
 
@@ -91,19 +103,6 @@ declare module '@wordpress/i18n' {
     export function __(text: string, domain?: string): string;
     export function sprintf(format: string, ...args: any[]): string;
     export function isRTL(): boolean;
-}
-
-declare module '@wordpress/data' {
-    export function useSelect(callback: (select: any) => any, deps?: any[]): any;
-    export function useDispatch(storeName: string): any;
-    export function subscribe(callback: () => void): () => void;
-    export const select: (storeName: string) => any;
-    export const dispatch: (storeName: string) => any;
-}
-
-declare module '@wordpress/api-fetch' {
-    const apiFetch: (options: any) => Promise<any>;
-    export default apiFetch;
 }
 
 declare module '@wordpress/element' {

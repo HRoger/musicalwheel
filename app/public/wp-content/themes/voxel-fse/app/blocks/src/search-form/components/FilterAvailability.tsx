@@ -101,7 +101,7 @@ export default function FilterAvailability({
 		blockId ? `voxel-popup-${blockId}` : '',
 		config.id ? `elementor-repeater-item-${config.id}` : ''
 	].filter(Boolean).join(' ');
-	const triggerRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLElement | null>(null);
 	const pickerInstanceRef = useRef<any>(null); // Store Pikaday instance for setStartRange/setEndRange
 	const [isOpen, setIsOpen] = useState(false);
 
@@ -110,7 +110,7 @@ export default function FilterAvailability({
 	const pickerDateRef = useRef<Date | null>(null);
 	const pickerEndDateRef = useRef<Date | null>(null);
 
-	const props = filterData.props || {};
+	const props = (filterData.props || {}) as any;
 	// Voxel uses 'inputMode' with values 'single-date' or 'date-range'
 	// Evidence: themes/voxel/app/post-types/filters/availability-filter.php:269
 	const inputMode = props.inputMode || 'date-range'; // Default to date-range for bookings
@@ -149,7 +149,7 @@ export default function FilterAvailability({
 	const [pickerDate, setPickerDate] = useState<Date | null>(() => stringToDate(startDate));
 	const [pickerEndDate, setPickerEndDate] = useState<Date | null>(() => stringToDate(endDate));
 	const [activePicker, setActivePicker] = useState<'start' | 'end'>('start'); // For range mode
-	const [localSlots, setLocalSlots] = useState(currentSlots);
+	const [_localSlots, setLocalSlots] = useState(currentSlots);
 
 	// Keep refs in sync with state for the mouseover handler
 	pickerDateRef.current = pickerDate;
@@ -270,7 +270,8 @@ export default function FilterAvailability({
 		}
 	}, [isRangeMode, activePicker, pickerDate, onChange]);
 
-	const handleSlotsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleSlotsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		setLocalSlots(Number(e.target.value) || 1);
 	}, []);
 
@@ -399,7 +400,7 @@ export default function FilterAvailability({
 
 				{ /* Trigger button */}
 				<div
-					ref={triggerRef}
+					ref={triggerRef as React.Ref<HTMLDivElement>}
 					className={`ts-filter ts-popup-target ${triggerIsFilled ? 'ts-filled' : ''}`}
 					onClick={openPopup}
 					onMouseDown={(e) => e.preventDefault()}
@@ -420,7 +421,7 @@ export default function FilterAvailability({
 			{ /* Evidence: themes/voxel/templates/widgets/search-form/availability-filter.php:77-100 */}
 			<FieldPopup
 				isOpen={isOpen}
-				target={triggerRef}
+				target={triggerRef as React.RefObject<HTMLElement>}
 				title=""
 				icon={filterIcon}
 				saveLabel={l10n.save || 'Save'}

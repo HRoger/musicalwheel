@@ -74,6 +74,8 @@ export interface ImageUploadControlProps {
 	dynamicTagContext?: string;
 	/** Custom preview renderer (overrides default image tag) */
 	renderPreview?: (value: ImageUploadValue) => React.ReactNode;
+	/** Allowed media types (e.g. ['image']) */
+	allowedTypes?: string[];
 }
 
 import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';

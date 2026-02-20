@@ -117,34 +117,43 @@
 			"type": "string"
 		},
 		"width": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"width_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"width_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"widthUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"maxWidth": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"maxWidth_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"maxWidth_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"maxWidthUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"height": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"height_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"height_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"heightUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"objectFit": {
 			"type": "string",

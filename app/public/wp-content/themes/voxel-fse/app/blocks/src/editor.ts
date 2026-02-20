@@ -18,7 +18,7 @@ import './countdown/index';
 import './create-post/index';
 import './current-plan/index';
 import './current-role/index';
-import './flex-container/index';
+//import './flex-container/index';
 import './gallery/index';
 import './image/index';
 import './listing-plans/index';

@@ -16,7 +16,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
-import type { NavbarAttributes } from './types';
 
 // Voxel Grid Icon component (standard for all VX blocks)
 const VoxelGridIcon = () => (

@@ -41,7 +41,7 @@ export default function VariationAttribute( {
 	stockEnabled,
 	onSelect,
 }: VariationAttributeProps ) {
-	const [ isOpen, setIsOpen ] = useState( false );
+	const [ _isOpen, setIsOpen ] = useState( false );
 	const choices = Object.values( attribute.props.choices );
 
 	/**

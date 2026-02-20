@@ -25,7 +25,7 @@ const deprecated = [
 	},
 ];
 
-registerBlockType<OrdersBlockAttributes>(blockMetadata.name, {
+registerBlockType<OrdersBlockAttributes>(blockMetadata['name'], {
 	...blockMetadata,
 	icon: VoxelGridIcon,
 	edit: Edit,

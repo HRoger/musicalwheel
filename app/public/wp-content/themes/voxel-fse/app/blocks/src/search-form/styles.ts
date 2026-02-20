@@ -183,7 +183,7 @@ function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined):
 /**
  * Generate block styles for inline styles (minimal - most styling via CSS)
  */
-export function generateBlockStyles(attributes: SearchFormAttributes): React.CSSProperties {
+export function generateBlockStyles(_attributes: SearchFormAttributes): React.CSSProperties {
 	// Search Form uses scoped CSS targeting Voxel classes, not inline styles
 	return {};
 }
@@ -425,7 +425,7 @@ export function generateInlineTabResponsiveCSS(
 
 	// Border - ts_sf_input_border
 	if (attributes.commonBorder) {
-		const border = generateBorderCSS(attributes.commonBorder);
+		const border = generateBorderCSS(attributes.commonBorder as any);
 		if (border) {
 			cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border: ${border}; }`);
 			// Ensure it overrides focus styles if needed
@@ -578,13 +578,13 @@ export function generateInlineTabResponsiveCSS(
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
 		cssRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth)}${unit}; }`);
 	}
-	if (attributes.buttonFilledBorderWidth_tablet !== undefined) {
+	if (attributes['buttonFilledBorderWidth_tablet'] !== undefined) {
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
-		tabletRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth_tablet)}${unit}; }`);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes['buttonFilledBorderWidth_tablet'])}${unit}; }`);
 	}
-	if (attributes.buttonFilledBorderWidth_mobile !== undefined) {
+	if (attributes['buttonFilledBorderWidth_mobile'] !== undefined) {
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
-		mobileRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth_mobile)}${unit}; }`);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes['buttonFilledBorderWidth_mobile'])}${unit}; }`);
 	}
 
 	// Box Shadow (Filled) - ts_sf_input_shadow_active
@@ -625,7 +625,7 @@ export function generateInlineTabResponsiveCSS(
 	// CRITICAL: Must use high-specificity selector to override Voxel's
 	// `.ts-form-submit.ts-form-group button { border: none; }` rule
 	if (attributes.searchBtnBorder) {
-		const border = generateBorderCSS(attributes.searchBtnBorder);
+		const border = generateBorderCSS(attributes.searchBtnBorder as any);
 		if (border) {
 			cssRules.push(`${selector} .ts-form-submit.ts-form-group button.ts-search-btn { border: ${border}; }`);
 		}
@@ -729,8 +729,8 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.termsInlineIconColorHover) {
 		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-term-icon { --ts-icon-color: ${attributes.termsInlineIconColorHover}; }`);
 	}
-	if (attributes.termsInlineChevronColorHover) {
-		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-right-icon, ${selector} .inline-multilevel li > a:hover .ts-left-icon { border-color: ${attributes.termsInlineChevronColorHover}; }`);
+	if (attributes['termsInlineChevronColorHover']) {
+		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-right-icon, ${selector} .inline-multilevel li > a:hover .ts-left-icon { border-color: ${attributes['termsInlineChevronColorHover']}; }`);
 	}
 
 	// Selected state
@@ -935,13 +935,13 @@ export function generateInlineTabResponsiveCSS(
 	}
 
 	// Tablet overrides
-	if (attributes.stepperInputValueSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes.stepperInputValueSize_tablet)}px; }`);
+	if (attributes['stepperInputValueSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes['stepperInputValueSize_tablet'])}px; }`);
 	}
 
 	// Mobile overrides
-	if (attributes.stepperInputValueSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes.stepperInputValueSize_mobile)}px; }`);
+	if (attributes['stepperInputValueSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes['stepperInputValueSize_mobile'])}px; }`);
 	}
 
 	// ============================================
@@ -1055,13 +1055,13 @@ export function generateInlineTabResponsiveCSS(
 	}
 
 	// Tablet overrides
-	if (attributes.rangeValueSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes.rangeValueSize_tablet)}px; }`);
+	if (attributes['rangeValueSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes['rangeValueSize_tablet'])}px; }`);
 	}
 
 	// Mobile overrides
-	if (attributes.rangeValueSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes.rangeValueSize_mobile)}px; }`);
+	if (attributes['rangeValueSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes['rangeValueSize_mobile'])}px; }`);
 	}
 
 	// ============================================
@@ -1267,14 +1267,14 @@ export function generateInlineTabResponsiveCSS(
 		}
 	}
 	// Size (Height)
-	if (attributes.toggleBtnSize !== undefined) {
-		cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize)}px; display: flex; align-items: center; justify-content: center; }`);
+	if (attributes['toggleBtnSize'] !== undefined) {
+		cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize'])}px; display: flex; align-items: center; justify-content: center; }`);
 	}
-	if (attributes.toggleBtnSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize_tablet)}px; }`);
+	if (attributes['toggleBtnSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize_tablet'])}px; }`);
 	}
-	if (attributes.toggleBtnSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize_mobile)}px; }`);
+	if (attributes['toggleBtnSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize_mobile'])}px; }`);
 	}
 	// Padding
 	if (attributes.toggleBtnPadding) {
@@ -1343,20 +1343,20 @@ export function generateInlineTabResponsiveCSS(
 	}
 	// Border (Fixed: uses generateBorderCSS for BorderGroupControl)
 	if (attributes.toggleBtnBorder) {
-		const border = generateBorderCSS(attributes.toggleBtnBorder);
+		const border = generateBorderCSS(attributes.toggleBtnBorder as any);
 		if (border) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { border: ${border}; }`);
 		}
 	}
 
 	// Separator Color
-	if (attributes.toggleBtnSeparatorColor) {
+	if (attributes['toggleBtnSeparatorColor']) {
 		// Only applies to Switcher list items
-		cssRules.push(`${selector} .ts-form-group .ts-switcher li:not(:last-child) { border-right-color: ${attributes.toggleBtnSeparatorColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-switcher li:not(:last-child) { border-right-color: ${attributes['toggleBtnSeparatorColor']}; }`);
 	}
 	// Box Shadow
-	if (attributes.toggleBtnBoxShadow) {
-		const shadow = generateBoxShadowCSS(attributes.toggleBtnBoxShadow);
+	if (attributes['toggleBtnBoxShadow']) {
+		const shadow = generateBoxShadowCSS(attributes['toggleBtnBoxShadow']);
 		if (shadow) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { box-shadow: ${shadow}; }`);
 		}
@@ -1376,8 +1376,8 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.toggleBtnBorderColorHover) {
 		cssRules.push(`${selector} .ts-form-group .ts-switcher li:hover, ${selector} .ts-filter-toggle:hover { border-color: ${attributes.toggleBtnBorderColorHover}; }`);
 	}
-	if (attributes.toggleBtnBoxShadowHover) {
-		const shadow = generateBoxShadowCSS(attributes.toggleBtnBoxShadowHover);
+	if (attributes['toggleBtnBoxShadowHover']) {
+		const shadow = generateBoxShadowCSS(attributes['toggleBtnBoxShadowHover']);
 		if (shadow) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li:hover, ${selector} .ts-filter-toggle:hover { box-shadow: ${shadow}; }`);
 		}
@@ -1393,8 +1393,8 @@ export function generateInlineTabResponsiveCSS(
 		cssRules.push(`${activeSelector} i, ${activeSelector} svg { color: ${attributes.toggleBtnIconColorFilled}; fill: ${attributes.toggleBtnIconColorFilled}; }`);
 	}
 	// Background Filled (Assumed toggleBtnBackgroundColorFilled based on pattern)
-	if (attributes.toggleBtnBackgroundColorFilled || attributes.toggleBtnBackgroundFilled) {
-		const bg = attributes.toggleBtnBackgroundColorFilled || attributes.toggleBtnBackgroundFilled;
+	if (attributes.toggleBtnBackgroundColorFilled || attributes['toggleBtnBackgroundFilled']) {
+		const bg = attributes.toggleBtnBackgroundColorFilled || attributes['toggleBtnBackgroundFilled'];
 		cssRules.push(`${activeSelector} { background-color: ${bg}; }`);
 	}
 	if (attributes.toggleBtnBorderColorFilled) {
@@ -1541,7 +1541,7 @@ export function generateInlineTabResponsiveCSS(
 
 	// Border
 	if (attributes.mapSwitcherBorder) {
-		const border = generateBorderCSS(attributes.mapSwitcherBorder);
+		const border = generateBorderCSS(attributes.mapSwitcherBorder as any);
 		if (border) {
 			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border: ${border}; }`);
 		}
@@ -1549,15 +1549,15 @@ export function generateInlineTabResponsiveCSS(
 
 	// Border radius
 	if (attributes.mapSwitcherBorderRadius !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
 		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_tablet !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
 		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_mobile !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
 		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_mobile)}${unit}; }`);
 	}
 
@@ -1582,15 +1582,15 @@ export function generateInlineTabResponsiveCSS(
 
 	// Icon size (--ts-icon-size CSS variable)
 	if (attributes.mapSwitcherIconSize !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
 		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_tablet !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
 		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_mobile !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
 		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_mobile)}${unit}; }`);
 	}
 
@@ -1621,15 +1621,15 @@ export function generateInlineTabResponsiveCSS(
 	// Max filter width - ks_nowrap_max_width
 	// Selector: .ts-filter (line 3849)
 	if (attributes.maxFilterWidth !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		cssRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth)}${unit}; }`);
 	}
 	if (attributes.maxFilterWidth_tablet !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		tabletRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth_tablet)}${unit}; }`);
 	}
 	if (attributes.maxFilterWidth_mobile !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		mobileRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth_mobile)}${unit}; }`);
 	}
 
@@ -1637,15 +1637,15 @@ export function generateInlineTabResponsiveCSS(
 	// Selector: .ts-inline-filter (line 3870)
 	// Description: Increase the minimum width of inputs, useful when filters have auto width
 	if (attributes.minInputWidth !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		cssRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth)}${unit}; }`);
 	}
 	if (attributes.minInputWidth_tablet !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		tabletRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth_tablet)}${unit}; }`);
 	}
 	if (attributes.minInputWidth_mobile !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		mobileRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth_mobile)}${unit}; }`);
 	}
 
@@ -1708,14 +1708,14 @@ export function generateInlineTabResponsiveCSS(
 
 		// Max height - custom_max_height
 		// Selector: {{WRAPPER}} .ts-popup-content-wrapper
-		if (attributes.popupMaxHeight !== undefined) {
-			cssRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight}px; }`);
+		if (attributes['popupMaxHeight'] !== undefined) {
+			cssRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight']}px; }`);
 		}
-		if (attributes.popupMaxHeight_tablet !== undefined) {
-			tabletRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight_tablet}px; }`);
+		if (attributes['popupMaxHeight_tablet'] !== undefined) {
+			tabletRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight_tablet']}px; }`);
 		}
-		if (attributes.popupMaxHeight_mobile !== undefined) {
-			mobileRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight_mobile}px; }`);
+		if (attributes['popupMaxHeight_mobile'] !== undefined) {
+			mobileRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight_mobile']}px; }`);
 		}
 
 		// Autosuggest top margin - google_top_margin
@@ -1755,9 +1755,9 @@ export function generateInlineTabResponsiveCSS(
 	// ============================================
 	// Iterate over all filters in all post types to generate scoped CSS
 	if (attributes.filterLists) {
-		Object.entries(attributes.filterLists).forEach(([postTypeKey, filters]) => {
+		Object.entries(attributes.filterLists).forEach(([_postTypeKey, filters]) => {
 			if (!Array.isArray(filters)) return;
-			filters.forEach((filter, index) => {
+			filters.forEach((filter, _index) => {
 				// Safety check for ID
 				if (!filter.id) return;
 

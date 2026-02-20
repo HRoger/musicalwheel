@@ -19,20 +19,7 @@ import type {
 	AddonConfig,
 } from '../../../types';
 
-/**
- * Voxel config interface for window global
- */
-interface VoxelConfig {
-	stripe?: {
-		currency?: string;
-	};
-}
-
-declare global {
-	interface Window {
-		Voxel_Config?: VoxelConfig;
-	}
-}
+// Voxel_Config is declared globally in voxelShim.ts
 
 /**
  * Choice item for addon lists
@@ -207,7 +194,7 @@ export const SinglePrice: React.FC<SinglePriceProps> = ({
 		// Convert choices object to list array format
 		// This matches Voxel's Vue component which uses list for custom-select
 		if (addonValue.choices && typeof addonValue.choices === 'object') {
-			const list: AddonChoiceItem[] = Object.entries(addonValue.choices).map(([value, data]) => ({
+			const list: AddonChoiceItem[] = Object.entries(addonValue.choices).map(([value, _data]) => ({
 				value,
 				label: value,
 				enabled: true, // If it's in choices, it's enabled
@@ -244,6 +231,7 @@ export const SinglePrice: React.FC<SinglePriceProps> = ({
 			prices: {
 				...pricing.prices,
 				base_price: {
+					amount: pricing.prices.base_price?.amount ?? null,
 					...pricing.prices.base_price,
 					discount_amount,
 				},
@@ -323,7 +311,7 @@ export const SinglePrice: React.FC<SinglePriceProps> = ({
 	const canAddMoreConditions = (pricing.conditions?.length || 0) < maxConditions;
 
 	// Get currency suffix from Voxel config
-	const currencySuffix = window.Voxel_Config?.stripe?.currency?.toUpperCase() || 'USD';
+	const currencySuffix = (window as any).Voxel_Config?.stripe?.currency?.toUpperCase() || 'USD';
 
 	return (
 		<>
@@ -478,7 +466,7 @@ export const SinglePrice: React.FC<SinglePriceProps> = ({
 											{choices.map((choice) => {
 												if (!isChoiceActive(choice.value, addon.key)) return null;
 
-												const currentPrice = pricing.prices?.addons?.[addon.key]?.[choice.value]?.price ?? null;
+												const currentPrice = (pricing.prices?.addons?.[addon.key]?.[choice.value] as any)?.price ?? null;
 
 												return (
 													<div key={choice.value} className="ts-form-group vx-1-2">
@@ -523,7 +511,7 @@ export const SinglePrice: React.FC<SinglePriceProps> = ({
 											{choices.map((choice) => {
 												if (!isChoiceActive(choice.value, addon.key)) return null;
 
-												const currentPrice = pricing.prices?.addons?.[addon.key]?.[choice.value]?.price ?? null;
+												const currentPrice = (pricing.prices?.addons?.[addon.key]?.[choice.value] as any)?.price ?? null;
 
 												return (
 													<div key={choice.value} className="ts-form-group vx-1-2">

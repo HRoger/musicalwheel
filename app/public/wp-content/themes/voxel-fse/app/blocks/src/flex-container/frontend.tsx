@@ -33,11 +33,11 @@ function initSlideshow(container: HTMLElement): void {
 
 	// Parse config from data attributes
 	const config: SlideshowConfig = {
-		duration: parseInt(container.dataset.duration || '5000', 10),
-		transition: container.dataset.transition || 'fade',
-		transitionDuration: parseInt(container.dataset.transitionDuration || '500', 10),
-		kenBurns: container.dataset.kenBurns === 'true',
-		infinite: container.dataset.infinite !== 'false',
+		duration: parseInt(container.dataset['duration'] || '5000', 10),
+		transition: container.dataset['transition'] || 'fade',
+		transitionDuration: parseInt(container.dataset['transitionDuration'] || '500', 10),
+		kenBurns: container.dataset['kenBurns'] === 'true',
+		infinite: container.dataset['infinite'] !== 'false',
 	};
 
 	let currentIndex = 0;
@@ -289,11 +289,11 @@ function initSlideshow(container: HTMLElement): void {
 		handleDragMove(e.clientX, e.clientY);
 	}
 
-	function onMouseUp(e: MouseEvent): void {
+	function onMouseUp(_e: MouseEvent): void {
 		handleDragEnd();
 	}
 
-	function onMouseLeave(e: MouseEvent): void {
+	function onMouseLeave(_e: MouseEvent): void {
 		if (dragState.isDragging) {
 			handleDragEnd();
 		}
@@ -312,7 +312,7 @@ function initSlideshow(container: HTMLElement): void {
 		handleDragMove(touch.clientX, touch.clientY);
 	}
 
-	function onTouchEnd(e: TouchEvent): void {
+	function onTouchEnd(_e: TouchEvent): void {
 		handleDragEnd();
 	}
 
@@ -404,9 +404,9 @@ function initEntranceAnimations(): void {
 			entries.forEach((entry) => {
 				if (entry.isIntersecting) {
 					const el = entry.target as HTMLElement;
-					const animation = el.dataset.animation;
-					const duration = el.dataset.animationDuration;
-					const delay = el.dataset.animationDelay;
+					const animation = el.dataset['animation'];
+					const duration = el.dataset['animationDuration'];
+					const delay = el.dataset['animationDelay'];
 
 					if (!animation) return;
 

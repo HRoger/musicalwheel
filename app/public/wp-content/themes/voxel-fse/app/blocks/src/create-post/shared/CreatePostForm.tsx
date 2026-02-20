@@ -81,7 +81,6 @@ import { FieldRenderer } from '../components/FieldRenderer';
 import { renderIcon, defaultIcons } from '../utils/iconRenderer';
 import { getSiteBaseUrl } from '@shared/utils/siteUrl';
 import { useConditions } from '../hooks/useConditions';
-import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
 /**
  * Get the Voxel AJAX URL, handling subdirectory installations
@@ -290,7 +289,8 @@ export const CreatePostForm = ({
 	// CRITICAL: Use prop first (from REST API), then fall back to wpData (from wp_localize_script)
 	// Plan C+ pattern: REST API is primary source, wpData is legacy fallback
 	const editingPostId = wpData?.postId || postId;
-	const isEditMode = !!editingPostId && editingPostId > 0;
+	// @ts-ignore -- unused but kept for future use
+	const _isEditMode = !!editingPostId && editingPostId > 0;
 	const postStatus = postStatusProp || wpData?.postStatus || null; // 'draft', 'publish', 'pending', etc.
 	const isPublishedPost = postStatus && postStatus !== 'draft';
 
@@ -346,12 +346,12 @@ export const CreatePostForm = ({
 					const fileObjects: FileObject[] = rawFileObjects.map((fileObj: unknown) => {
 						const obj = fileObj as Record<string, unknown>;
 						return {
-							source: (obj.source as 'existing' | 'new_upload') || 'existing',
-							id: obj.id as number | undefined,
-							name: (obj.name as string) || '',
-							type: (obj.type as string) || '',
+							source: (obj['source'] as 'existing' | 'new_upload') || 'existing',
+							id: obj['id'] as number | undefined,
+							name: (obj['name'] as string) || '',
+							type: (obj['type'] as string) || '',
 							// CRITICAL FIX: Use 'preview' if available, fall back to 'url'
-							preview: (obj.preview as string) || (obj.url as string) || '',
+							preview: (obj['preview'] as string) || (obj['url'] as string) || '',
 						};
 					});
 
@@ -404,7 +404,7 @@ export const CreatePostForm = ({
 		// A product field is considered "empty" if enabled is false (or missing)
 		// For required product fields, enabled must be true
 		if (field.type === 'product' && typeof value === 'object') {
-			return !value.enabled;
+			return !value['enabled'];
 		}
 
 		// Multiselect/object fields - check if object is empty or has no true values
@@ -479,7 +479,7 @@ export const CreatePostForm = ({
 				isEmpty = !subFieldValue ||
 					(subFieldValue.amount === null ||
 						subFieldValue.amount === undefined ||
-						subFieldValue.amount === '');
+						(subFieldValue.amount as any) === '');
 			}
 			// Stock validation (optional by default in many setups)
 			else if (subFieldKey === 'stock') {
@@ -496,7 +496,7 @@ export const CreatePostForm = ({
 			else {
 				isEmpty = subFieldValue === null ||
 					subFieldValue === undefined ||
-					subFieldValue === '' ||
+					(subFieldValue as any) === '' ||
 					(typeof subFieldValue === 'object' && Object.keys(subFieldValue).length === 0);
 			}
 
@@ -527,7 +527,7 @@ export const CreatePostForm = ({
 		// If this is a file field with an array of FileObjects, store actual Files in ref
 		if (isFileField && Array.isArray(value)) {
 			// Type guard: ensure each item has the FileObject structure
-			const fileObjects = value as FileObject[];
+			const fileObjects = value as unknown as FileObject[];
 
 			// Store the File objects in the ref (won't be serialized)
 			fileObjectsRef.current[fieldKey] = fileObjects;
@@ -584,7 +584,7 @@ export const CreatePostForm = ({
 
 			// Number field min/max validation
 			if (field.type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const num = typeof value === 'string' ? parseFloat(value) : value;
+				const num = (typeof value === 'string' ? parseFloat(value) : value) as number;
 				if (!isNaN(num)) {
 					if (field.props?.min !== undefined && num < field.props.min) {
 						errors.push(`Value cannot be less than ${field.props.min}`);
@@ -598,7 +598,7 @@ export const CreatePostForm = ({
 			// Texteditor/Description field minlength validation
 			if ((field.type === 'texteditor' || field.type === 'description') && value && typeof value === 'string') {
 				const minLength = field.props?.['minlength'];
-				if (minLength !== undefined && value.length < minLength) {
+				if (minLength != null && value.length < (minLength as number)) {
 					errors.push(`Value cannot be shorter than ${minLength} characters`);
 				}
 			}
@@ -660,7 +660,7 @@ export const CreatePostForm = ({
 
 			// Number field min/max validation
 			if (field.type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const num = typeof value === 'string' ? parseFloat(value) : value;
+				const num = (typeof value === 'string' ? parseFloat(value) : value) as number;
 				if (!isNaN(num)) {
 					if (field.props?.min !== undefined && num < field.props.min) {
 						errors.push(`Value cannot be less than ${field.props.min}`);
@@ -1211,10 +1211,8 @@ export const CreatePostForm = ({
 				});
 
 				// Also show Voxel.alert if available (for frontend consistency)
-				// @ts-expect-error - Window interface conflicts across files
-				if (window.Voxel?.alert) {
-					// @ts-expect-error - Window interface conflicts across files
-					window.Voxel.alert(errorMessage, 'error');
+				if ((window as any).Voxel?.alert) {
+					(window as any).Voxel.alert(errorMessage, 'error');
 				}
 			}
 		} catch (error) {
@@ -1234,10 +1232,8 @@ export const CreatePostForm = ({
 			});
 
 			// Also show Voxel.alert if available (for frontend consistency)
-			// @ts-expect-error - Window interface conflicts across files
-			if (window.Voxel?.alert) {
-				// @ts-expect-error - Window interface conflicts across files
-				window.Voxel.alert(networkErrorMessage, 'error');
+			if ((window as any).Voxel?.alert) {
+				(window as any).Voxel.alert(networkErrorMessage, 'error');
 			}
 		}
 	};

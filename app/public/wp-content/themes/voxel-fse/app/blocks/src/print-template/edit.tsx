@@ -1,15 +1,20 @@
 /**
  * Print Template Block - Editor Component
  *
- * Renders the selected template inline in the editor by fetching
- * server-rendered HTML via REST API and injecting it into the DOM.
- * This matches Elementor's approach where print_template() outputs
- * content inline within the editor canvas (not in a nested iframe).
+ * Renders the selected template inline in the editor using
+ * BlockEditorProvider + BlockList, which renders blocks via their
+ * edit.tsx components directly in the DOM (no iframe).
+ *
+ * This matches Elementor's approach where print_template() renders
+ * content inline within the editor canvas, making links clickable
+ * and popups interactive.
+ *
+ * Plan C+ blocks (navbar, userbar, etc.) only produce visible
+ * content through their React edit components, not through render.php.
  *
  * Evidence:
  * - Voxel widget: themes/voxel/app/widgets/print-template.php
  * - Voxel helper: themes/voxel/app/utils/template-utils.php:54-84
- * - REST endpoint: themes/voxel-fse/app/controllers/fse-print-template-api-controller.php
  *
  * @package VoxelFSE
  */
@@ -17,10 +22,12 @@
 import {
 	useBlockProps,
 	InspectorControls,
+	BlockEditorProvider,
+	BlockList,
 } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState, useRef } from 'react';
-import { Spinner } from '@wordpress/components';
+import { useEffect, useState } from 'react';
+import { parse } from '@wordpress/blocks';
 import apiFetch from '@wordpress/api-fetch';
 import type { PrintTemplateAttributes } from './types';
 import { InspectorTabs, EmptyPlaceholder } from '@shared/controls';
@@ -33,15 +40,22 @@ interface EditProps {
 }
 
 /**
- * Inline template preview.
- * Fetches server-rendered HTML and injects it directly into the editor DOM,
- * matching how Elementor's print_template() renders content inline.
+ * Interactive template preview using BlockEditorProvider + BlockList.
+ *
+ * Fetches the raw block markup (post_content) from the REST API,
+ * parses it into block objects via parse(), then renders them
+ * inline using BlockEditorProvider + BlockList.
+ *
+ * Unlike BlockPreview (which uses an iframe with pointer-events: none),
+ * this renders blocks directly in the editor DOM, making them fully
+ * interactive - links are clickable, popups work, hover states apply.
  */
 function TemplatePreview({ templateId }: { templateId: string }) {
-	const [html, setHtml] = useState<string>('');
-	const [isLoading, setIsLoading] = useState(true);
+	const [blocks, setBlocks] = useState<any[] | null>(null);
+	const [_isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
+	// Keep loader visible until blocks have had time to mount in the DOM.
+	const [ready, setReady] = useState(false);
 
 	useEffect(() => {
 		const id = parseInt(templateId, 10);
@@ -55,11 +69,15 @@ function TemplatePreview({ templateId }: { templateId: string }) {
 		setError(null);
 
 		(apiFetch({
-			path: `/voxel-fse/v1/print-template/render?template_id=${id}`,
+			path: `/voxel-fse/v1/print-template/content?template_id=${id}`,
 		}) as Promise<{ success: boolean; content?: string; message?: string }>)
 			.then((response) => {
 				if (response.success && response.content) {
-					setHtml(response.content);
+					const parsed = parse(response.content);
+					setBlocks(parsed);
+					// Give BlockEditorProvider + BlockList time to mount
+					// before revealing content (prevents empty flash).
+					setTimeout(() => setReady(true), 150);
 				} else {
 					setError(response.message || __('Template not found or empty.', 'voxel-fse'));
 				}
@@ -71,65 +89,37 @@ function TemplatePreview({ templateId }: { templateId: string }) {
 			});
 	}, [templateId]);
 
-	// Execute inline <script> tags after HTML is injected.
-	useEffect(() => {
-		if (!html || !containerRef.current) return;
-
-		const scripts = containerRef.current.querySelectorAll('script');
-		scripts.forEach((oldScript) => {
-			const newScript = document.createElement('script');
-			Array.from(oldScript.attributes).forEach((attr) => {
-				newScript.setAttribute(attr.name, attr.value);
-			});
-			newScript.textContent = oldScript.textContent;
-			oldScript.parentNode?.replaceChild(newScript, oldScript);
-		});
-	}, [html]);
-
-	if (isLoading) {
-		return (
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					padding: '24px',
-					gap: '8px',
-					color: '#757575',
-					fontSize: '13px',
-				}}
-			>
-				<Spinner />
-				{__('Loading template preview...', 'voxel-fse')}
-			</div>
-		);
-	}
-
 	if (error) {
 		return (
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					padding: '16px',
-					color: '#cc1818',
-					fontSize: '13px',
-					background: '#fcf0f0',
-					borderRadius: '4px',
-				}}
-			>
-				{error}
+			<div className="ts-no-posts">
+				<span style={{ opacity: 0.6 }}>{error}</span>
 			</div>
 		);
 	}
 
+	if (!blocks || blocks.length === 0) {
+		return (
+			<div className="ts-no-posts">
+				<span className="ts-loader"></span>
+			</div>
+		);
+	}
+
+	// Render BlockList hidden behind the loader, then reveal once ready.
 	return (
-		<div
-			ref={containerRef}
-			dangerouslySetInnerHTML={{ __html: html }}
-			style={{ width: '100%' }}
-		/>
+		<div style={{ position: 'relative' }}>
+			{!ready && (
+				<div className="ts-no-posts" style={{
+					position: 'absolute', inset: 0, zIndex: 1,
+					background: '#fff',
+				}}>
+					<span className="ts-loader"></span>
+				</div>
+			)}
+			<BlockEditorProvider value={blocks}>
+				<BlockList renderAppender={false} />
+			</BlockEditorProvider>
+		</div>
 	);
 }
 

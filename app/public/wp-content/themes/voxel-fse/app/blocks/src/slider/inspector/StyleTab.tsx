@@ -270,7 +270,7 @@ export function StyleTab({
 									label={__('Border Type', 'voxel-fse')}
 									value={attributes.navBorderType}
 									options={BORDER_TYPE_OPTIONS}
-									onChange={(value) => setAttributes({ navBorderType: value })}
+									onChange={(value: any) => setAttributes({ navBorderType: value })}
 									__nextHasNoMarginBottom
 								/>
 
@@ -280,7 +280,7 @@ export function StyleTab({
 									<RangeControl
 										label={__('Border width', 'voxel-fse')}
 										value={attributes.navBorderWidth ?? 1}
-										onChange={(value) => setAttributes({ navBorderWidth: value })}
+										onChange={(value: any) => setAttributes({ navBorderWidth: value })}
 										min={0}
 										max={10}
 										step={1}

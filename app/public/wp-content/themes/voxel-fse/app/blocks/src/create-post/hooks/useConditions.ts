@@ -8,7 +8,7 @@
  */
 
 import { useMemo, useEffect, useRef } from 'react';
-import type { CreatePostField } from '../types';
+import type { CreatePostField } from '../types'; // CreatePostField = VoxelField alias
 
 /**
  * Condition object structure
@@ -38,13 +38,13 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 	// Text conditions
 	'text:equals': (c, v) => v === c.value,
 	'text:not_equals': (c, v) => v !== c.value,
-	'text:empty': (c, v) => !v?.trim()?.length,
-	'text:not_empty': (c, v) => !!v?.trim()?.length,
+	'text:empty': (_c, v) => !v?.trim()?.length,
+	'text:not_empty': (_c, v) => !!v?.trim()?.length,
 	'text:contains': (c, v) => !!v?.match(new RegExp(c.value, 'i')),
 
 	// Switcher conditions
-	'switcher:checked': (c, v) => !!v,
-	'switcher:unchecked': (c, v) => !v,
+	'switcher:checked': (_c, v) => !!v,
+	'switcher:unchecked': (_c, v) => !v,
 
 	// Number conditions
 	'number:equals': (c, v) => v === parseFloat(c.value),
@@ -53,28 +53,28 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 	'number:less_than': (c, v) => v < parseFloat(c.value),
 	'number:gte': (c, v) => v >= parseFloat(c.value),
 	'number:lte': (c, v) => v <= parseFloat(c.value),
-	'number:empty': (c, v) => v === null || v === undefined,
-	'number:not_empty': (c, v) => v !== null && v !== undefined,
+	'number:empty': (_c, v) => v === null || v === undefined,
+	'number:not_empty': (_c, v) => v !== null && v !== undefined,
 
 	// Select conditions
 	'select:equals': (c, v) => v === c.value,
 	'select:not_equals': (c, v) => v !== c.value,
 	'select:any_of': (c, v) => c.value.includes(v),
 	'select:none_of': (c, v) => !c.value.includes(v),
-	'select:empty': (c, v) => !v,
-	'select:not_empty': (c, v) => !!v,
+	'select:empty': (_c, v) => !v,
+	'select:not_empty': (_c, v) => !!v,
 
 	// Date conditions
 	'date:equals': (c, v) => v === c.value,
 	'date:not_equals': (c, v) => v !== c.value,
 	'date:after': (c, v) => v > c.value,
 	'date:before': (c, v) => v < c.value,
-	'date:empty': (c, v) => !v,
-	'date:not_empty': (c, v) => !!v,
+	'date:empty': (_c, v) => !v,
+	'date:not_empty': (_c, v) => !!v,
 
 	// File conditions
-	'file:empty': (c, v) => !Array.isArray(v) || !v.length,
-	'file:not_empty': (c, v) => Array.isArray(v) && v.length > 0,
+	'file:empty': (_c, v) => !Array.isArray(v) || !v.length,
+	'file:not_empty': (_c, v) => Array.isArray(v) && v.length > 0,
 
 	// Taxonomy conditions
 	'taxonomy:contains': (c, v) => Array.isArray(v) && v.includes(c.value),
@@ -87,8 +87,8 @@ const conditionHandlers: Record<string, ConditionHandler> = {
 		if (!Array.isArray(v) || !v.length) return true;
 		return !v.some((term: any) => c.value.includes(term));
 	},
-	'taxonomy:empty': (c, v) => !Array.isArray(v) || !v.length,
-	'taxonomy:not_empty': (c, v) => Array.isArray(v) && v.length > 0,
+	'taxonomy:empty': (_c, v) => !Array.isArray(v) || !v.length,
+	'taxonomy:not_empty': (_c, v) => Array.isArray(v) && v.length > 0,
 };
 
 /**
@@ -140,13 +140,13 @@ function conditionsPass(
 	}
 
 	// No conditions → always visible
-	if (!field.conditions || !field.conditions.length) {
+	if (!(field as any).conditions || !(field as any).conditions.length) {
 		return true;
 	}
 
 	// OR groups: at least one group must pass
 	let pass = false;
-	field.conditions.forEach((group: Condition[]) => {
+	(field as any).conditions.forEach((group: Condition[]) => {
 		if (group.length) {
 			// AND within group: all conditions must pass
 			let groupPass = true;
@@ -192,8 +192,8 @@ export function useConditions(
 	// Evidence: lines 1566-1596 (setupConditions method)
 	useEffect(() => {
 		Object.values(fields).forEach((field) => {
-			if (field.conditions) {
-				field.conditions.forEach((group: Condition[]) => {
+			if ((field as any).conditions) {
+				(field as any).conditions.forEach((group: Condition[]) => {
 					group.forEach((condition: Condition) => {
 						// Parse source: "field_key" or "field_key.property"
 						const [sourceKey, sourceProp] = condition.source.split('.');

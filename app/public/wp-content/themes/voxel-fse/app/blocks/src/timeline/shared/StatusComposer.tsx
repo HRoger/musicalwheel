@@ -159,7 +159,7 @@ export function StatusComposer({
 	const [mentionStyle, setMentionStyle] = useState<React.CSSProperties>({});
 
 	// Media popup state
-	const [showMediaPopup, setShowMediaPopup] = useState(false);
+	const [_showMediaPopup, _setShowMediaPopup] = useState(false);
 
 	// Link preview state (for client-side detection while typing)
 	// Matches Voxel's timeline-main.beautified.js lines 696-720

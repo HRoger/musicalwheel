@@ -6,7 +6,6 @@
  * @package VoxelFSE
  */
 
-import React from 'react';
 import type { IconValue } from './types';
 
 /**

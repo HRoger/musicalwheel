@@ -118,7 +118,7 @@ export default function InspectorTabs({
 				render: (props) => (
 					<AdvancedTab
 						attributes={props?.attributes}
-						setAttributes={props?.setAttributes}
+						setAttributes={props?.setAttributes as any}
 					/>
 				),
 			});
@@ -133,7 +133,7 @@ export default function InspectorTabs({
 				render: (props) => (
 					<VoxelTab
 						attributes={props?.attributes}
-						setAttributes={props?.setAttributes}
+						setAttributes={props?.setAttributes as any}
 					/>
 				),
 			});
@@ -143,7 +143,7 @@ export default function InspectorTabs({
 	}, [tabs, includeAdvancedTab, includeVoxelTab]);
 
 	// Get current client ID to key persistence
-	const clientId = useSelect((select) => select('core/block-editor').getSelectedBlockClientId(), []);
+	const clientId = (useSelect as any)((select: any) => select('core/block-editor').getSelectedBlockClientId(), []);
 	const persistenceKey = clientId ? `voxel_inspector_tab_${clientId}` : null;
 
 	// Internal state initialized from Attributes > Session Storage > Default
@@ -183,7 +183,7 @@ export default function InspectorTabs({
 				setInternalState(stored);
 			}
 		}
-	}, [activeTabAttribute, attributes?.[activeTabAttribute], internalState, persistenceKey, allTabs]);
+	}, [activeTabAttribute, attributes?.[activeTabAttribute as string], internalState, persistenceKey, allTabs]);
 
 	const activeTab = internalState || defaultTab || allTabs[0]?.id || '';
 

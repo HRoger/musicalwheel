@@ -73,6 +73,7 @@ export interface BoxShadowValue {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: SliderValue;
 	fontWeight?: string;
@@ -118,15 +119,18 @@ export interface ImageBlockAttributes {
 	imageAlign: string;
 	imageAlign_tablet?: string;
 	imageAlign_mobile?: string;
-	width: SliderValue;
-	width_tablet?: SliderValue;
-	width_mobile?: SliderValue;
-	maxWidth: SliderValue;
-	maxWidth_tablet?: SliderValue;
-	maxWidth_mobile?: SliderValue;
-	height: SliderValue;
-	height_tablet?: SliderValue;
-	height_mobile?: SliderValue;
+	width?: number;
+	width_tablet?: number;
+	width_mobile?: number;
+	widthUnit?: string;
+	maxWidth?: number;
+	maxWidth_tablet?: number;
+	maxWidth_mobile?: number;
+	maxWidthUnit?: string;
+	height?: number;
+	height_tablet?: number;
+	height_mobile?: number;
+	heightUnit?: string;
 	objectFit: string;
 	objectFit_tablet?: string;
 	objectFit_mobile?: string;
@@ -197,15 +201,18 @@ export interface ImageVxConfig {
 	imageAlign: string;
 	imageAlign_tablet?: string;
 	imageAlign_mobile?: string;
-	width: SliderValue;
-	width_tablet?: SliderValue;
-	width_mobile?: SliderValue;
-	maxWidth: SliderValue;
-	maxWidth_tablet?: SliderValue;
-	maxWidth_mobile?: SliderValue;
-	height: SliderValue;
-	height_tablet?: SliderValue;
-	height_mobile?: SliderValue;
+	width?: number;
+	width_tablet?: number;
+	width_mobile?: number;
+	widthUnit?: string;
+	maxWidth?: number;
+	maxWidth_tablet?: number;
+	maxWidth_mobile?: number;
+	maxWidthUnit?: string;
+	height?: number;
+	height_tablet?: number;
+	height_mobile?: number;
+	heightUnit?: string;
 	objectFit: string;
 	objectFit_tablet?: string;
 	objectFit_mobile?: string;

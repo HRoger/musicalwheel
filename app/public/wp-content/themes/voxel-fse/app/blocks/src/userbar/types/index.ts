@@ -11,6 +11,7 @@ import type { IconValue } from '@shared/types';
 import type { VisibilityRule } from '@shared/controls';
 
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontWeight?: string;
 	fontSize?: { size: number; unit: string };
@@ -53,6 +54,7 @@ export interface ComponentUrl {
 	url: string;
 	is_external: boolean;
 	nofollow: boolean;
+	customAttributes?: string;
 }
 
 /**

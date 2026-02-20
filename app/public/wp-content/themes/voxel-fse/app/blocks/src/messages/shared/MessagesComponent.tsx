@@ -1349,7 +1349,7 @@ export default function MessagesComponent({
 
 		// Collect all image URLs from active chat messages into slides
 		const slides: Array<{ src: string; alt?: string }> = [];
-		state.activeChat.messages.forEach((msg: VoxelMessage) => {
+		state.activeChat.messages.list.forEach((msg: VoxelMessage) => {
 			if (msg.files) {
 				msg.files.forEach((file: VoxelMessageFile) => {
 					if (file.is_image) {

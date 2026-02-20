@@ -565,7 +565,21 @@ function voxel_fse_inject_dynamic_data_store()
     // Determine which namespace to use (project-specific or generic)
     $api_namespace = defined('PROJECT_NAMESPACE') ? PROJECT_NAMESPACE . '/v1' : 'voxel-fse/v1';
 
-    // Fetch top-level groups via REST API internally
+    // Fetch top-level groups for all contexts (post, term, user)
+    $contexts = array('post', 'term', 'user');
+    $groups_by_context = array();
+    foreach ($contexts as $ctx) {
+        $ctx_request = new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/groups");
+        $ctx_request->set_param('context', $ctx);
+        $ctx_response = rest_do_request($ctx_request);
+        if (!is_wp_error($ctx_response) && $ctx_response->get_status() === 200) {
+            $groups_by_context[$ctx] = $ctx_response->get_data();
+        } else {
+            $groups_by_context[$ctx] = array();
+        }
+    }
+
+    // Default groups for backward compatibility (post context)
     $groups_response = rest_do_request(new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/groups"));
     $modifiers_response = rest_do_request(new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/modifiers"));
 
@@ -636,14 +650,19 @@ function voxel_fse_inject_dynamic_data_store()
         return $children;
     };
 
-    // Pre-load children for all groups (up to 5 levels deep)
-    if (!empty($groups) && is_array($groups)) {
-        foreach ($groups as $group) {
-            if (isset($group['type'])) {
-                $group_type = $group['type'];
-                $fetch_children_recursive($group_type, null, 0, 5);
+    // Pre-load children for all groups across all contexts (up to 5 levels deep)
+    $all_group_types = array();
+    foreach ($groups_by_context as $ctx_groups) {
+        if (is_array($ctx_groups)) {
+            foreach ($ctx_groups as $group) {
+                if (isset($group['type']) && !in_array($group['type'], $all_group_types, true)) {
+                    $all_group_types[] = $group['type'];
+                }
             }
         }
+    }
+    foreach ($all_group_types as $group_type) {
+        $fetch_children_recursive($group_type, null, 0, 5);
     }
 
     // Inject into JavaScript global object (Voxel pattern)
@@ -651,6 +670,7 @@ function voxel_fse_inject_dynamic_data_store()
     <script type="text/javascript">
         window.VoxelFSE_Dynamic_Data_Store = <?php echo wp_json_encode(array(
                 'groups' => $groups,
+                'groupsByContext' => $groups_by_context,
                 'modifiers' => $modifiers,
                 'flatTags' => $flat_tags,
                 'groupChildren' => $group_children,

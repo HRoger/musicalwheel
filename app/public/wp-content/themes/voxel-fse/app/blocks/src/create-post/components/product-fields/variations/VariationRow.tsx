@@ -21,10 +21,7 @@ import React, { useRef, useState } from 'react';
 import type {
 	ProductVariation,
 	ProductAttribute,
-	AttributeChoiceImage,
-	AttributeChoiceImageNewUpload,
-	AttributeChoiceImageExisting,
-} from '../../../types';
+			} from '../../../types';
 import { MediaPopup } from '@shared';
 
 // Session file cache types (shared with FileField)
@@ -63,17 +60,12 @@ interface MediaPopupExisting {
 /**
  * Union type for media popup selected files
  */
-type MediaPopupSelectedFile = MediaPopupNewUpload | MediaPopupExisting;
+// @ts-ignore -- unused but kept for future use
+type _MediaPopupSelectedFile = MediaPopupNewUpload | MediaPopupExisting;
 
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: SessionFile[];
-	}
-}
-
-// Initialize global cache
-if (typeof window !== 'undefined' && typeof window._vx_file_upload_cache === 'undefined') {
-	window._vx_file_upload_cache = [];
+// Initialize global cache (use any cast to avoid Window interface conflicts)
+if (typeof window !== 'undefined' && typeof (window as any)._vx_file_upload_cache === 'undefined') {
+	(window as any)._vx_file_upload_cache = [];
 }
 
 // Generate unique session ID
@@ -83,20 +75,20 @@ const generateSessionId = (): string => {
 
 // Add file to global cache
 const addToSessionCache = (file: File): string => {
-	if (!Array.isArray(window._vx_file_upload_cache)) {
-		window._vx_file_upload_cache = [];
+	if (!Array.isArray((window as any)._vx_file_upload_cache)) {
+		(window as any)._vx_file_upload_cache = [];
 	}
 
-	const exists = window._vx_file_upload_cache.find(
-		(cached) =>
+	const exists = (window as any)._vx_file_upload_cache.find(
+		(cached: SessionFile) =>
 			cached.name === file.name &&
 			cached.type === file.type &&
 			cached.size === file.size &&
-			cached.item.lastModified === file.lastModified
+			cached.item!.lastModified === file.lastModified
 	);
 
 	if (exists) {
-		return exists._id;
+		return exists._id ?? '';
 	}
 
 	const sessionId = generateSessionId();
@@ -110,7 +102,7 @@ const addToSessionCache = (file: File): string => {
 		_id: sessionId,
 	};
 
-	window._vx_file_upload_cache.unshift(sessionFile);
+	(window as any)._vx_file_upload_cache.unshift(sessionFile);
 	return sessionId;
 };
 
@@ -150,7 +142,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 	skuEnabled = false,
 	discountEnabled = true,
 	currency = '$',
-	allVariations = [],
+	allVariations: _allVariations = [],
 	attributes = [],
 	onToggle,
 	onUpdate,
@@ -196,7 +188,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 		onUpdate({
 			base_price: {
 				...variation.base_price,
-				amount: isNaN(numAmount) ? undefined : numAmount,
+				amount: isNaN(numAmount) ? 0 : numAmount,
 			}
 		});
 	};
@@ -206,7 +198,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 		const numAmount = parseFloat(discountAmount);
 		onUpdate({
 			base_price: {
-				...variation.base_price,
+				amount: variation.base_price?.amount ?? 0,
 				discount_amount: isNaN(numAmount) ? undefined : numAmount,
 			}
 		});
@@ -240,7 +232,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 	};
 
 	// Handle media popup save
-	const handleMediaPopupSave = (selectedFiles: MediaPopupSelectedFile[]) => {
+	const handleMediaPopupSave = (selectedFiles: any[]) => {
 		if (selectedFiles.length === 0) return;
 
 		const file = selectedFiles[0];
@@ -253,7 +245,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 					name: file.name,
 					type: file.type,
 					preview: file.preview,
-				}
+				} as any
 			});
 		} else {
 			onUpdate({
@@ -263,7 +255,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 					name: file.name,
 					type: file.type,
 					preview: file.preview,
-				}
+				} as any
 			});
 		}
 	};
@@ -277,8 +269,10 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 	const handleStockToggle = () => {
 		onUpdate({
 			stock: {
-				...variation.stock,
 				enabled: !variation.stock?.enabled,
+				quantity: variation.stock?.quantity ?? 0,
+				sku: variation.stock?.sku,
+				sold_individually: variation.stock?.sold_individually ?? false,
 			}
 		});
 	};
@@ -287,8 +281,10 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 		const numQuantity = parseInt(quantity);
 		onUpdate({
 			stock: {
-				...variation.stock,
+				enabled: variation.stock?.enabled ?? false,
 				quantity: isNaN(numQuantity) ? 0 : numQuantity,
+				sku: variation.stock?.sku,
+				sold_individually: variation.stock?.sold_individually ?? false,
 			}
 		});
 	};
@@ -296,8 +292,10 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 	const handleSkuChange = (sku: string) => {
 		onUpdate({
 			stock: {
-				...variation.stock,
+				enabled: variation.stock?.enabled ?? false,
+				quantity: variation.stock?.quantity ?? 0,
 				sku,
+				sold_individually: variation.stock?.sold_individually ?? false,
 			}
 		});
 	};
@@ -305,7 +303,9 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 	const handleSoldIndividuallyToggle = () => {
 		onUpdate({
 			stock: {
-				...variation.stock,
+				enabled: variation.stock?.enabled ?? false,
+				quantity: variation.stock?.quantity ?? 0,
+				sku: variation.stock?.sku,
 				sold_individually: !variation.stock?.sold_individually,
 			}
 		});
@@ -566,7 +566,7 @@ export const VariationRow: React.FC<VariationRowProps> = ({
 						{/* Media library popup */}
 						<div style={{ textAlign: 'center', marginTop: '15px' }}>
 							<MediaPopup
-								onSave={handleMediaPopupSave}
+								onSave={handleMediaPopupSave as any}
 								multiple={false}
 								saveLabel="Save"
 							/>

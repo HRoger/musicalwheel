@@ -15,7 +15,6 @@ import {
 	ResponsiveRangeControlWithDropdown,
 	LinkedGapsControl,
 	SectionHeading,
-	ResponsiveRangeControl,
 } from '@shared/controls';
 import { AccordionPanelGroup, AccordionPanel } from '@shared/controls/AccordionPanelGroup';
 
@@ -67,7 +66,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 	];
 
 	// Get current flex direction to determine which icon set to use
-	const currentFlexDirection = attributes.flexDirection || 'row';
+	const currentFlexDirection = attributes['flexDirection'] || 'row';
 	const isColumn = isColumnDirection(currentFlexDirection);
 
 	// Justify Content Options - icons change based on flex direction
@@ -157,7 +156,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				{/* Container Layout - Dropdown */}
 				<SelectControl
 					label={__('Container Layout', 'voxel-fse')}
-					value={attributes.containerLayout || 'flexbox'}
+					value={attributes['containerLayout'] || 'flexbox'}
 					options={containerLayoutOptions}
 					onChange={(value: any) => setAttributes({ containerLayout: value })}
 					__nextHasNoMarginBottom
@@ -166,7 +165,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				{/* Content Width - Dropdown */}
 				<SelectControl
 					label={__('Content Width', 'voxel-fse')}
-					value={attributes.contentWidthType || 'boxed'}
+					value={attributes['contentWidthType'] || 'boxed'}
 					options={contentWidthOptions}
 					onChange={(value: any) => {
 						// Auto-set width values based on content width type
@@ -233,7 +232,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				<SectionHeading label={__('Items', 'voxel-fse')} />
 
 				{/* FLEXBOX CONTROLS - Only show when containerLayout is 'flexbox' */}
-				{(attributes.containerLayout || 'flexbox') === 'flexbox' && (
+				{(attributes['containerLayout'] || 'flexbox') === 'flexbox' && (
 					<>
 						{/* Direction - Responsive icon buttons */}
 						<ResponsiveIconButtonGroup
@@ -287,7 +286,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						/>
 
 						{/* Align Content - only show when wrap is enabled */}
-						{attributes.flexWrap === 'wrap' && (
+						{attributes['flexWrap'] === 'wrap' && (
 							<ResponsiveIconButtonGroup
 								label={__('Align Content', 'voxel-fse')}
 								attributeBaseName="alignContent"
@@ -316,7 +315,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				)}
 
 				{/* GRID CONTROLS - Only show when containerLayout is 'grid' */}
-				{attributes.containerLayout === 'grid' && (
+				{attributes['containerLayout'] === 'grid' && (
 					<>
 						{/* Grid Outline Toggle (Editor only) */}
 						<BaseControl>
@@ -338,17 +337,17 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 									{__('Grid Outline', 'voxel-fse')}
 								</span>
 								<Button
-									onClick={() => setAttributes({ gridOutline: !attributes.gridOutline })}
+									onClick={() => setAttributes({ gridOutline: !attributes['gridOutline'] })}
 									style={{
 										padding: '4px 12px',
 										height: '28px',
-										backgroundColor: attributes.gridOutline ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
-										color: attributes.gridOutline ? '#ffffff' : '#1e1e1e',
-										borderColor: attributes.gridOutline ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
+										backgroundColor: attributes['gridOutline'] ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
+										color: attributes['gridOutline'] ? '#ffffff' : '#1e1e1e',
+										borderColor: attributes['gridOutline'] ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
 										fontSize: '12px',
 									}}
 								>
-									{attributes.gridOutline ? __('Show', 'voxel-fse') : __('Hide', 'voxel-fse')}
+									{attributes['gridOutline'] ? __('Show', 'voxel-fse') : __('Hide', 'voxel-fse')}
 								</Button>
 							</div>
 						</BaseControl>
@@ -397,7 +396,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{/* Auto Flow */}
 						<SelectControl
 							label={__('Auto Flow', 'voxel-fse')}
-							value={attributes.gridAutoFlow || 'row'}
+							value={attributes['gridAutoFlow'] || 'row'}
 							options={[
 								{ label: __('Row', 'voxel-fse'), value: 'row' },
 								{ label: __('Column', 'voxel-fse'), value: 'column' },
@@ -492,7 +491,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 			<AccordionPanel id="additional-options" title={__('Additional Options', 'voxel-fse')}>
 				<SelectControl
 					label={__('HTML Tag', 'voxel-fse')}
-					value={attributes.htmlTag}
+					value={attributes['htmlTag']}
 					options={[
 						{ label: 'div', value: 'div' },
 						{ label: 'section', value: 'section' },
@@ -509,14 +508,14 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				/>
 
 				{/* Link URL - Only show when HTML Tag is 'a' */}
-				{attributes.htmlTag === 'a' && (
+				{attributes['htmlTag'] === 'a' && (
 					<TextControl
 						label={__('Link', 'voxel-fse')}
-						value={attributes.containerLink?.url || ''}
+						value={attributes['containerLink']?.url || ''}
 						onChange={(url: any) =>
 							setAttributes({
 								containerLink: {
-									...(attributes.containerLink || {}),
+									...(attributes['containerLink'] || {}),
 									url,
 								},
 							})
@@ -528,7 +527,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 
 				<SelectControl
 					label={__('Overflow', 'voxel-fse')}
-					value={attributes.overflow}
+					value={attributes['overflow']}
 					options={[
 						{ label: __('Default', 'voxel-fse'), value: '' },
 						{ label: __('Visible', 'voxel-fse'), value: 'visible' },
