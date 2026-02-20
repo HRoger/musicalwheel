@@ -94,8 +94,12 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 	icons
 }) => {
 	const displayMode = field.props?.['display_as'] || 'popup';
-	const multiple = field.props?.['multiple'] !== false; // Default to true
-	const terms: Term[] = field.props?.['terms'] || [];
+	// Evidence: taxonomy-field.php:326 — (bool) $this->props['multiple'], defaults to false
+	const multiple = field.props?.['multiple'] === true;
+	const terms: Term[] = (field.props?.['terms'] as Term[] | undefined) || [];
+	// Evidence: taxonomy-field.php:329-330 — min/max selection counts from admin config
+	const minSelections = field.props?.['min'] as number | null | undefined;
+	const maxSelections = field.props?.['max'] as number | null | undefined;
 	const inputRef = useRef<HTMLDivElement>(null);
 
 	// Popup state (only used for popup display mode)
@@ -132,7 +136,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 		setActiveList('toplevel'); // Reset navigation
 	}, []);
 
-	// EXACT Voxel: Toggle term selection
+	// EXACT Voxel: Toggle term selection with min/max enforcement
 	// Evidence: themes/voxel/templates/widgets/create-post/taxonomy-field.php
 	const selectTerm = useCallback((term: Term) => {
 		const newValue = { ...currentValue };
@@ -142,7 +146,26 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 			if (newValue[term.slug]) {
 				delete newValue[term.slug];
 			} else {
+				// Enforce max selections — Evidence: taxonomy-field.php:330
+				if (maxSelections && maxSelections > 0) {
+					const currentCount = Object.values(newValue).filter(Boolean).length;
+					if (currentCount >= maxSelections) {
+						// At max — don't allow more selections
+						if (field.validation) {
+							field.validation.errors = [`You can select up to ${maxSelections} items`];
+						}
+						return;
+					}
+				}
 				newValue[term.slug] = true;
+			}
+
+			// Clear max validation error when under limit
+			if (field.validation?.errors?.length) {
+				const count = Object.values(newValue).filter(Boolean).length;
+				if (!maxSelections || count <= maxSelections) {
+					field.validation.errors = [];
+				}
 			}
 		} else {
 			// Single selection: replace all with this term
@@ -151,13 +174,23 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 		}
 
 		onChange(newValue);
-	}, [currentValue, multiple, onChange]);
+	}, [currentValue, multiple, maxSelections, onChange, field.validation]);
 
-	// Handle save (for popup mode)
+	// Handle save (for popup mode) — validate min selections on save
 	const handleSave = useCallback(() => {
+		// Enforce min selections — Evidence: taxonomy-field.php:329
+		if (minSelections && minSelections > 0) {
+			const count = getSelectedCount(currentValue);
+			if (count < minSelections) {
+				if (field.validation) {
+					field.validation.errors = [`Please select at least ${minSelections} items`];
+				}
+				return;
+			}
+		}
 		onBlur?.();
 		closePopup();
-	}, [onBlur, closePopup]);
+	}, [onBlur, closePopup, minSelections, currentValue, field.validation]);
 
 	// Handle clear
 	const handleClear = useCallback(() => {
@@ -305,14 +338,14 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 						openPopup();
 					}
 				}}
-				aria-label={`Select ${field.props?.['taxonomy']?.label || 'terms'}: ${displayValue || field.props?.['placeholder']}`}
+				aria-label={`Select ${(field.props?.['taxonomy'] as any)?.label || 'terms'}: ${displayValue || field.props?.['placeholder']}`}
 			>
 				<span dangerouslySetInnerHTML={{ __html: triggerIconHtml }} />
 				<div className="ts-filter-text">
 					{displayValue ? (
 						<span>{displayValue}</span>
 					) : (
-						<span>{field.props?.['placeholder']}</span>
+						<span>{String(field.props?.['placeholder'] || '')}</span>
 					)}
 				</div>
 				<div className="ts-down-icon"></div>
@@ -343,7 +376,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 								ref={searchInputRef}
 								type="text"
 								className="autofocus"
-								placeholder={`Search ${field.props?.['taxonomy']?.label || ''}`}
+								placeholder={`Search ${(field.props?.['taxonomy'] as any)?.label || ''}`}
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 							/>

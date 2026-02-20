@@ -218,7 +218,7 @@ export const RangeSliderControl: React.FC<RangeSliderControlProps> = ({
 						<TextControl
 							type="number"
 							value={String(safeValue.start)}
-							onChange={(val) => handleStartChange(Number(val) || min)}
+							onChange={(val: string) => handleStartChange(Number(val) || min)}
 							min={min}
 							max={safeValue.end - step}
 							step={step}
@@ -235,7 +235,7 @@ export const RangeSliderControl: React.FC<RangeSliderControlProps> = ({
 						<TextControl
 							type="number"
 							value={String(safeValue.end)}
-							onChange={(val) => handleEndChange(Number(val) || max)}
+							onChange={(val: string) => handleEndChange(Number(val) || max)}
 							min={safeValue.start + step}
 							max={max}
 							step={step}

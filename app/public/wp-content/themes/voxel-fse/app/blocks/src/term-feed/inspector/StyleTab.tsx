@@ -20,7 +20,6 @@ import {
 	AccordionPanel,
 	StateTabPanel,
 } from '@shared/controls';
-import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 import type { TermFeedAttributes } from '../types';
 
 interface StyleTabProps {

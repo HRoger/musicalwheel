@@ -32,8 +32,9 @@ interface ScheduleGroup {
 	hours: TimeSlot[];
 }
 
-// Weekdays from Voxel (work-hours-field.php:147)
-const WEEKDAYS: Record<string, string> = {
+// Fallback weekdays (used when field.props.weekdays not available)
+// Voxel source: work-hours-field.php:147 returns \Voxel\get_weekdays() (localized)
+const DEFAULT_WEEKDAYS: Record<string, string> = {
 	mon: 'Monday',
 	tue: 'Tuesday',
 	wed: 'Wednesday',
@@ -43,8 +44,9 @@ const WEEKDAYS: Record<string, string> = {
 	sun: 'Sunday',
 };
 
-// Status labels from Voxel (work-hours-field.php:148-153)
-const STATUS_OPTIONS: Record<string, string> = {
+// Fallback status labels (used when field.props.statuses not available)
+// Voxel source: work-hours-field.php:148-153 returns localized _x() strings
+const DEFAULT_STATUS_OPTIONS: Record<string, string> = {
 	hours: 'Enter hours',
 	open: 'Open all day',
 	closed: 'Closed all day',
@@ -151,17 +153,19 @@ interface DaySelectorPopupProps {
 	selectedDays: string[];
 	availableDays: string[];
 	onToggleDay: (day: string) => void;
+	weekdays: Record<string, string>;
 }
 
 const DaySelectorPopup: React.FC<DaySelectorPopupProps> = ({
 	selectedDays,
 	availableDays,
 	onToggleDay,
+	weekdays,
 }) => {
 	return (
 		<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
 			<ul className="simplify-ul ts-term-dropdown-list min-scroll">
-				{Object.entries(WEEKDAYS).map(([key, label]) => {
+				{Object.entries(weekdays).map(([key, label]) => {
 					const isAvailable = availableDays.includes(key);
 					const isChecked = selectedDays.includes(key);
 
@@ -205,6 +209,8 @@ interface ScheduleGroupComponentProps {
 	allUsedDays: string[];
 	onUpdate: (updates: Partial<ScheduleGroup>) => void;
 	onRemove: () => void;
+	weekdays: Record<string, string>;
+	statusOptions: Record<string, string>;
 }
 
 const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
@@ -213,6 +219,8 @@ const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
 	allUsedDays,
 	onUpdate,
 	onRemove,
+	weekdays,
+	statusOptions,
 }) => {
 	const [isRowExpanded, setIsRowExpanded] = useState(true);
 	const [isDaySelectorOpen, setIsDaySelectorOpen] = useState(false);
@@ -220,14 +228,16 @@ const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
 	const uniqueId = useMemo(() => generateUid(), []);
 	const popupId = `work-hours-days-${uniqueId}-${index}`;
 
-	const availableDays = Object.keys(WEEKDAYS).filter(
+	const availableDays = Object.keys(weekdays).filter(
 		(day) => !allUsedDays.includes(day) || group.days.includes(day)
 	);
 
+	// Voxel JS: days.map(d => this.field.props.weekdays[d]).filter(Boolean).join(", ")
+	// Evidence: voxel-create-post.beautified.js:1180
 	const displayDays = (days: string[]): string => {
 		if (days.length === 0) return 'Select day(s)';
-		if (days.length === 7) return 'Every day';
-		return days.map((d) => WEEKDAYS[d]).join(', ');
+		if (days.length === Object.keys(weekdays).length) return 'Every day';
+		return days.map((d) => weekdays[d]).filter(Boolean).join(', ');
 	};
 
 	const handleToggleDay = useCallback((day: string) => {
@@ -332,6 +342,7 @@ const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
 								selectedDays={group.days}
 								availableDays={availableDays}
 								onToggleDay={handleToggleDay}
+								weekdays={weekdays}
 							/>
 						</FormPopup>
 
@@ -352,7 +363,7 @@ const ScheduleGroupComponent: React.FC<ScheduleGroupComponentProps> = ({
 												})
 											}
 										>
-											{Object.entries(STATUS_OPTIONS).map(([value, label]) => (
+											{Object.entries(statusOptions).map(([value, label]) => (
 												<option key={value} value={value}>
 													{label}
 												</option>
@@ -413,6 +424,15 @@ export const WorkHoursField: React.FC<WorkHoursFieldProps> = ({
 	value,
 	onChange,
 }) => {
+	// Resolve localized weekdays and statuses from field.props (Voxel work-hours-field.php:145-155)
+	// Falls back to English defaults when props not provided
+	const weekdays: Record<string, string> = field.props?.weekdays && typeof field.props.weekdays === 'object'
+		? field.props.weekdays
+		: DEFAULT_WEEKDAYS;
+	const statusOptions: Record<string, string> = field.props?.statuses && typeof field.props.statuses === 'object'
+		? field.props.statuses
+		: DEFAULT_STATUS_OPTIONS;
+
 	const schedules: ScheduleGroup[] = Array.isArray(value) ? value : [];
 
 	const getAllUsedDays = useCallback((): string[] => {
@@ -421,8 +441,8 @@ export const WorkHoursField: React.FC<WorkHoursFieldProps> = ({
 
 	const hasUnusedDays = useCallback((): boolean => {
 		const usedDays = getAllUsedDays();
-		return Object.keys(WEEKDAYS).some((day) => !usedDays.includes(day));
-	}, [getAllUsedDays]);
+		return Object.keys(weekdays).some((day) => !usedDays.includes(day));
+	}, [getAllUsedDays, weekdays]);
 
 	const handleAddSchedule = useCallback(() => {
 		const newSchedule: ScheduleGroup = {
@@ -462,6 +482,8 @@ export const WorkHoursField: React.FC<WorkHoursFieldProps> = ({
 					)}
 					onUpdate={(updates) => handleUpdateSchedule(index, updates)}
 					onRemove={() => handleRemoveSchedule(index)}
+					weekdays={weekdays}
+					statusOptions={statusOptions}
 				/>
 			))}
 

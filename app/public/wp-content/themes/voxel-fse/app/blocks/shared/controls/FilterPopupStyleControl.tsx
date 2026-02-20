@@ -59,7 +59,7 @@ export default function FilterPopupStyleControl({
 
 	// Get unique identifier for this filter (used for popup state persistence)
 	// The attributes object is the filter config which has an 'id' property
-	const filterId = (attributes.id || attributes._id || '') as string;
+	const filterId = (attributes['id'] || attributes['_id'] || '') as string;
 
 	return (
 		<>

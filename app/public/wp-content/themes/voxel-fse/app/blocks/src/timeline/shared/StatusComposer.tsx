@@ -33,10 +33,12 @@
 import { useState, useCallback, useRef, useEffect, useMemo, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
 import { useTimelineContext, usePermissions, useStrings, useFileUpload } from '../hooks';
 import { publishStatus, editStatus, getLinkPreview, type LinkPreviewResponse } from '../api';
-import { countCharacters } from '../utils';
+import { countCharacters, getMentionTrigger, insertMention } from '../utils';
 import type { Status, StatusCreatePayload, StatusEditPayload, MediaFile, ReviewConfig } from '../types';
 import EmojiPicker from './EmojiPicker';
 import { ReviewScore } from './ReviewScore';
+import { MentionsAutocomplete } from './MentionsAutocomplete';
+import type { MentionResult } from '../api';
 import MediaPopup from '../../../shared/MediaPopup';
 
 /**
@@ -151,8 +153,13 @@ export function StatusComposer({
 	// Emoji picker state
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+	// Mentions autocomplete state (matches Voxel's mentions object)
+	const [mentionQuery, setMentionQuery] = useState('');
+	const [mentionActive, setMentionActive] = useState(false);
+	const [mentionStyle, setMentionStyle] = useState<React.CSSProperties>({});
+
 	// Media popup state
-	const [showMediaPopup, setShowMediaPopup] = useState(false);
+	const [_showMediaPopup, _setShowMediaPopup] = useState(false);
 
 	// Link preview state (for client-side detection while typing)
 	// Matches Voxel's timeline-main.beautified.js lines 696-720
@@ -247,6 +254,7 @@ export function StatusComposer({
 	// Refs
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const emojiButtonRef = useRef<HTMLAnchorElement>(null);
 	const wrapperRef = useRef<HTMLDivElement>(null);
 
 	// Character count
@@ -274,17 +282,61 @@ export function StatusComposer({
 	}, []);
 
 	/**
-	 * Handle content change
+	 * Handle content change + detect @mention trigger
 	 */
 	const handleContentChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
-		setContent(e.target.value);
+		const newContent = e.target.value;
+		setContent(newContent);
 		setError(null);
 
 		// Auto-resize textarea
 		const textarea = e.target;
 		textarea.style.height = 'auto';
 		textarea.style.height = `${textarea.scrollHeight}px`;
+
+		// Detect @mention trigger (matches Voxel's mention detection)
+		const trigger = getMentionTrigger(newContent, textarea.selectionStart);
+		if (trigger?.active) {
+			setMentionQuery(trigger.query);
+			setMentionActive(true);
+
+			// Position the dropdown below the textarea
+			const rect = textarea.getBoundingClientRect();
+			setMentionStyle({
+				position: 'fixed',
+				top: rect.bottom + 4,
+				left: rect.left,
+				width: rect.width,
+			});
+		} else {
+			setMentionActive(false);
+			setMentionQuery('');
+		}
 	}, []);
+
+	/**
+	 * Handle mention selection from autocomplete
+	 */
+	const handleMentionSelect = useCallback((mention: MentionResult) => {
+		const textarea = textareaRef.current;
+		if (!textarea) return;
+
+		const result = insertMention(content, textarea.selectionStart, {
+			name: mention.username ?? mention.name,
+			id: mention.id,
+			type: mention.type,
+		});
+
+		setContent(result.content);
+		setMentionActive(false);
+		setMentionQuery('');
+
+		// Restore cursor position
+		requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(result.cursorPosition, result.cursorPosition);
+		});
+	}, [content]);
 
 	/**
 	 * Handle file selection
@@ -506,6 +558,18 @@ export function StatusComposer({
 		return reviewsConfig[postType];
 	}, [feed, isEditMode, status, config?.review_config, config?.current_post]);
 
+	// Build placeholder text - matches Voxel format
+	// MUST be before early returns to comply with React Rules of Hooks
+	const currentUser = config?.current_user;
+	const placeholderText = useMemo(() => {
+		const defaultText = strings.compose_placeholder ?? "What's on your mind?";
+		let text = placeholder ?? defaultText;
+		if (text === "What's on your mind?" && currentUser?.display_name) {
+			text = `What's on your mind, ${currentUser.display_name}?`;
+		}
+		return text;
+	}, [placeholder, strings.compose_placeholder, currentUser?.display_name]);
+
 	// Don't render if user can't post (in create mode) or can't edit (in edit mode)
 	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
 	if (isEditMode && !hasEditPermission) {
@@ -515,13 +579,13 @@ export function StatusComposer({
 		return null;
 	}
 
-	// Get current user for avatar
-	const currentUser = config?.current_user;
-	const avatarUrl = currentUser?.avatar_url ?? '';
-	const displayName = currentUser?.display_name ?? '';
+	// Don't render if current user is not loaded yet (prevents undefined avatar_url errors in editor)
+	if (!currentUser) {
+		return null;
+	}
 
-	// Build placeholder text - matches Voxel format
-	const placeholderText = placeholder ?? strings.compose_placeholder ?? "What's on your mind?";
+	const avatarUrl = currentUser.avatar_url ?? '';
+	const displayName = currentUser.display_name ?? '';
 
 	return (
 		<div style={{ minHeight: '61px' }}>
@@ -555,7 +619,7 @@ export function StatusComposer({
 
 				{/* Footer wrapper - only shown when expanded (matches Voxel's transition-height) */}
 				{isExpanded && (
-					<div className="vxf-footer-wrapper">
+					<div className="vxf-footer-wrapper" style={{ height: 'auto' }}>
 						{/* Review score input - shown for post_reviews feed (matches Voxel's review-score component) */}
 						{reviewConfig && (
 							<div className="vxf-review-score-section">
@@ -646,11 +710,23 @@ export function StatusComposer({
 											saveLabel="Insert"
 											target={wrapperRef.current}
 											onSave={(files) => {
-												// Convert media library files to uploads
-												// For existing files, we'd need to fetch them as blobs
-												// For now, just log (MediaPopup returns file info)
-												console.log('[StatusComposer] Media selected:', files);
-												// TODO: Handle selected media files
+												// Convert media library files (from MediaPopup) to StatusMedia format (for StatusComposer)
+												// MediaPopup returns its own MediaFile format which differs slightly from types.MediaFile
+												const mappedFiles: MediaFile[] = files.map(f => ({
+													id: f.id,
+													url: f.preview || '', // Use preview as URL for existing files
+													preview: f.preview || '',
+													alt: f.name
+												}));
+
+												setExistingFiles(prev => {
+													// Avoid duplicates by ID
+													const existingIds = new Set(prev.map(p => p.id));
+													const uniqueNew = mappedFiles.filter(f => !existingIds.has(f.id));
+													return [...prev, ...uniqueNew];
+												});
+
+												console.log('[StatusComposer] Media added:', mappedFiles);
 											}}
 										>
 											<a
@@ -667,14 +743,15 @@ export function StatusComposer({
 										</a>
 									</>
 								)}
-								<a href="#" className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
+								<a href="#" ref={emojiButtonRef} className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
 									<EmojiIcon />
 								</a>
 								<EmojiPicker
 									isOpen={showEmojiPicker}
 									onClose={() => setShowEmojiPicker(false)}
 									onSelect={insertEmoji}
-									target={wrapperRef.current}
+									target={emojiButtonRef.current}
+									widthElement={wrapperRef.current}
 								/>
 							</div>
 
@@ -716,6 +793,15 @@ export function StatusComposer({
 					/>
 				)}
 			</div>
+
+			{/* Mentions autocomplete - portaled to body (matches Voxel's teleport) */}
+			<MentionsAutocomplete
+				query={mentionQuery}
+				isActive={mentionActive}
+				onSelect={handleMentionSelect}
+				onClose={() => { setMentionActive(false); setMentionQuery(''); }}
+				style={mentionStyle}
+			/>
 
 			{/* Error message */}
 			{error && (

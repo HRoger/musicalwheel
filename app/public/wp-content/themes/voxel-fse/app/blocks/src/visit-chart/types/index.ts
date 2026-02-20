@@ -276,24 +276,3 @@ export interface EditProps {
 export interface SaveProps {
 	attributes: VisitChartAttributes;
 }
-
-/**
- * Window extensions for Voxel globals
- */
-declare global {
-	interface Window {
-		Voxel?: {
-			alert?: (message: string, type: 'error' | 'success' | 'warning' | 'info') => void;
-		};
-		Voxel_Config?: {
-			ajax_url: string;
-			l10n?: {
-				ajaxError?: string;
-			};
-		};
-		wpApiSettings?: {
-			root: string;
-			nonce: string;
-		};
-	}
-}

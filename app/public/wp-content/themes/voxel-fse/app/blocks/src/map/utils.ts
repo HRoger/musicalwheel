@@ -203,6 +203,7 @@ export function buildVxConfig(attributes: MapAttributes): MapVxConfig {
                     mobile: attributes['searchBtnRadius_mobile'] as number,
                 },
                 checkmarkIcon: attributes['checkmarkIcon'] as any,
+                searchIcon: attributes['searchIcon'] as any,
             },
             navBtn: {
                 iconColor: attributes['navBtnIconColor'] as string,
@@ -228,6 +229,7 @@ export function buildVxConfig(attributes: MapAttributes): MapVxConfig {
                     mobile: attributes['navBtnSize_mobile'] as number,
                 },
             },
+            geolocationIcon: attributes['geolocationIcon'] as any,
         },
     };
 }
@@ -482,7 +484,7 @@ export function applyMapStyles(wrapper: HTMLElement, config: MapVxConfig): void 
         // Checkmark icon is applied via data attribute for DOM replacement
         if (styles.searchBtn.checkmarkIcon) {
             const icon = styles.searchBtn.checkmarkIcon as any;
-            wrapper.dataset.checkmarkIcon = JSON.stringify(icon);
+            wrapper.dataset['checkmarkIcon'] = JSON.stringify(icon);
         }
     }
 
@@ -664,6 +666,7 @@ export function normalizeConfig(raw: Record<string, any>): MapVxConfig {
                 radius: normalizeResponsive((rawStyles['searchBtn'] || rawStyles['search_btn'])['radius'] || (rawStyles['searchBtn'] || rawStyles['search_btn'])['radius'], 4),
                 typography: ((rawStyles['searchBtn'] || rawStyles['search_btn'])['typography'] || {}) as TypographyValue,
                 checkmarkIcon: ((rawStyles['searchBtn'] || rawStyles['search_btn'])['checkmarkIcon'] || {}) as any,
+                searchIcon: ((rawStyles['searchBtn'] || rawStyles['search_btn'])['searchIcon'] || {}) as any,
             } : {
                 textColor: { desktop: '' },
                 bgColor: { desktop: '' },
@@ -672,6 +675,7 @@ export function normalizeConfig(raw: Record<string, any>): MapVxConfig {
                 radius: { desktop: 4 },
                 typography: {},
                 checkmarkIcon: {},
+                searchIcon: {},
             },
             navBtn: (rawStyles['navBtn'] || rawStyles['nav_btn']) ? {
                 iconColor: String((rawStyles['navBtn'] || rawStyles['nav_btn'])['iconColor'] || (rawStyles['navBtn'] || rawStyles['nav_btn'])['icon_color'] || ''),
@@ -694,6 +698,7 @@ export function normalizeConfig(raw: Record<string, any>): MapVxConfig {
                 borderType: 'none',
                 borderWidth: { desktop: 0 },
             } as any,
+            geolocationIcon: (rawStyles['geolocationIcon'] || rawStyles['geolocation_icon'] || {}) as any,
         },
     };
 }

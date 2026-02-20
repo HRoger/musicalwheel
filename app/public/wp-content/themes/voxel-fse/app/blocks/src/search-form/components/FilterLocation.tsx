@@ -16,10 +16,14 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import noUiSlider from 'nouislider';
 import type { FilterComponentProps } from '../types';
 
-// Type definition for noUiSlider API (external via Voxel parent theme, not npm types)
+// noUiSlider is loaded from Voxel parent theme's vendor folder via wp_enqueue_script
+// Accessed via window.noUiSlider at runtime (NOT as IIFE parameter)
+// Evidence: themes/voxel/app/controllers/assets-controller.php:141
+const getNoUiSlider = () => (window as any).noUiSlider;
+
+// Type definition for noUiSlider API (window global, not npm types)
 interface NoUiSliderAPI {
 	destroy: () => void;
 	set: ( values: ( number | string )[], fireSetEvent?: boolean ) => void;
@@ -27,6 +31,10 @@ interface NoUiSliderAPI {
 	on: ( event: string, callback: ( values: ( string | number )[], handle: number ) => void ) => void;
 	off: ( event: string ) => void;
 	updateOptions: ( options: Record<string, unknown>, fireSetEvent?: boolean ) => void;
+}
+// Extend HTMLDivElement to include noUiSlider property (added by noUiSlider library at runtime)
+interface NoUiSliderElement extends HTMLDivElement {
+	noUiSlider?: NoUiSliderAPI;
 }
 // Import shared components (Voxel's commons.js pattern)
 // VoxelIcons.crosshairs is still used for geolocation button (internal UI)
@@ -53,15 +61,22 @@ interface LocationValue {
 function serializeLocationValue( loc: LocationValue | null ): string | null {
 	if ( ! loc || ! loc.address ) return null;
 
-	// If we have viewport bounds (area method), use that format
+	// Evidence: voxel-search-form.beautified.js lines 738-756 (saveValue)
+	// Voxel serializes based on the explicit `method` field, not by checking which coords exist.
+	// When method is 'radius', use lat,lng,radius format even if bounds exist.
+	if ( loc.method === 'radius' && loc.lat !== undefined && loc.lng !== undefined ) {
+		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 10 }`;
+	}
+
+	// Area method: use viewport bounds format
 	if ( loc.swlat !== undefined && loc.swlng !== undefined &&
 		 loc.nelat !== undefined && loc.nelng !== undefined ) {
 		return `${ loc.address };${ loc.swlat },${ loc.swlng }..${ loc.nelat },${ loc.nelng }`;
 	}
 
-	// Otherwise use radius format (requires lat/lng)
+	// Fallback to radius format if we have lat/lng
 	if ( loc.lat !== undefined && loc.lng !== undefined ) {
-		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 25 }`;
+		return `${ loc.address };${ loc.lat },${ loc.lng },${ loc.radius || 10 }`;
 	}
 
 	// Just address without coordinates (shouldn't happen in normal flow)
@@ -96,6 +111,7 @@ function parseLocationValue( value: unknown, defaultRadius: number ): LocationVa
 			const ne = parts[ 1 ].split( ',' );
 			return {
 				address,
+				method: 'area',
 				swlat: Number( sw[ 0 ] ),
 				swlng: Number( sw[ 1 ] ),
 				nelat: Number( ne[ 0 ] ),
@@ -107,6 +123,7 @@ function parseLocationValue( value: unknown, defaultRadius: number ): LocationVa
 		const parts = coords.split( ',' );
 		return {
 			address,
+			method: 'radius',
 			lat: Number( parts[ 0 ] ),
 			lng: Number( parts[ 1 ] ),
 			radius: parts[ 2 ] ? Number( parts[ 2 ] ) : defaultRadius,
@@ -133,7 +150,7 @@ export default function FilterLocation( {
 	const triggerRef = useRef< HTMLDivElement >( null );
 	const inputRef = useRef< HTMLInputElement >( null );
 	const autocompleteRef = useRef< any >( null ); // Voxel.Maps.Autocomplete instance
-	const sliderRef = useRef< HTMLDivElement >( null );
+	const sliderRef = useRef< NoUiSliderElement >( null );
 	const sliderInstanceRef = useRef< NoUiSliderAPI | null >( null );
 	const [ isOpen, setIsOpen ] = useState( false );
 	const [ proximityOpen, setProximityOpen ] = useState( false );
@@ -141,16 +158,24 @@ export default function FilterLocation( {
 
 	const props = filterData.props || {};
 	// Radius configuration from Voxel
-	// Evidence: voxel-search-form.beautified.js lines 669-679
-	const radiusConfig = props.radius || {};
-	const defaultRadius = radiusConfig.default ?? 25;
-	const radiusMin = radiusConfig.min ?? 1;
+	// Evidence: location-filter.php:422-428 (frontend_props returns radius object)
+	// Evidence: location-filter.php:16-20 (class $props defaults)
+	const radiusConfig = (props['radius'] || {}) as any;
+	const defaultRadius = radiusConfig.default ?? 10;
+	const radiusMin = radiusConfig.min ?? 0;
 	const radiusMax = radiusConfig.max ?? 100;
 	const radiusStep = radiusConfig.step ?? 1;
-	const units = props.units || 'km';
-	const displayProximityAs = props.display_proximity_as || 'popup';
-	const placeholder = props.placeholder || filterData.label || 'Location';
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
+	// Evidence: location-filter.php:426 — units is nested inside radius object, not top-level
+	const units = radiusConfig.units || 'km';
+	const displayProximityAs = props['display_proximity_as'] || 'popup';
+	const placeholder = String(props['placeholder'] || filterData.label || 'Location');
+	// Evidence: location-filter.php:432 — default search method (radius or area)
+	const defaultSearchMethod = props['default_search_method'] || 'area';
+	// Evidence: location-filter.php:433-435 — localization strings
+	const l10n = (props['l10n'] || {}) as any;
+	// @ts-ignore -- unused but kept for future use
+	const _visibleAreaLabel = l10n.visibleArea || 'Visible map area';
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
@@ -178,6 +203,11 @@ export default function FilterLocation( {
 	const initSlider = useCallback( () => {
 		if ( ! sliderRef.current || sliderInstanceRef.current ) return;
 
+		const noUiSlider = getNoUiSlider();
+		if ( ! noUiSlider ) {
+			console.error( 'noUiSlider not loaded - window.noUiSlider is undefined' );
+			return;
+		}
 		noUiSlider.create( sliderRef.current, {
 			start: localRadius,
 			connect: [ true, false ], // Fill from left to handle
@@ -268,7 +298,7 @@ export default function FilterLocation( {
 
 			// Get autocomplete config from search form config
 			// Evidence: voxel-search-form.beautified.js line 40-43 and 641
-			const autocompleteConfig = config.autocomplete || {};
+			const autocompleteConfig = config['autocomplete'] || {};
 
 			autocompleteRef.current = new VoxelMaps.Autocomplete(
 				inputRef.current,
@@ -279,8 +309,11 @@ export default function FilterLocation( {
 						const sw = result.viewport.getSouthWest();
 						const ne = result.viewport.getNorthEast();
 
+						// Evidence: voxel-search-form.beautified.js lines 676-686 (usePlaceData)
+						// Voxel stores ALL coordinates (bounds + center) and uses `method` to decide format
 						const newValue: LocationValue = {
 							address: result.address,
+							method: defaultSearchMethod as 'radius' | 'area',
 							swlat: shortenPoint( sw.getLatitude() ),
 							swlng: shortenPoint( sw.getLongitude() ),
 							nelat: shortenPoint( ne.getLatitude() ),
@@ -307,7 +340,7 @@ export default function FilterLocation( {
 				autocompleteConfig
 			);
 		} );
-	}, [ config.autocomplete, onChange, displayAs, defaultRadius, locationValue.radius, shortenPoint ] );
+	}, [ config['autocomplete'], onChange, displayAs, defaultRadius, defaultSearchMethod, locationValue.radius, shortenPoint ] );
 
 	// Sync local state when popup opens OR when in inline mode
 	useEffect( () => {
@@ -355,8 +388,10 @@ export default function FilterLocation( {
 		if ( 'geolocation' in navigator ) {
 			navigator.geolocation.getCurrentPosition(
 				( position ) => {
+					// Geolocation provides center point only, so always use radius method
 					const newValue: LocationValue = {
 						address: 'Current Location',
+						method: 'radius',
 						lat: position.coords.latitude,
 						lng: position.coords.longitude,
 						radius: defaultRadius,
@@ -430,7 +465,7 @@ export default function FilterLocation( {
 	}, [ defaultRadius, locationValue, onChange ] );
 
 	const hasValue = !! locationValue.address || !! locationValue.lat;
-	const displayValue = hasValue ? locationValue.address || 'Location set' : placeholder;
+	const displayValue: string = hasValue ? String(locationValue.address || 'Location set') : placeholder;
 
 	// Render location input (used in both inline and popup modes)
 	const renderLocationInput = () => (
@@ -479,7 +514,7 @@ export default function FilterLocation( {
 
 		return (
 			<div className="ts-form-group ts-proximity-filter">
-				<label>{ props.proximity_label || 'Radius' }</label>
+				<label>{ String(props['proximity_label'] || 'Radius') }</label>
 				<div
 					ref={ proximityTriggerRef }
 					className={ `ts-filter ts-popup-target ${ locationValue.radius ? 'ts-filled' : '' }` }
@@ -495,7 +530,7 @@ export default function FilterLocation( {
 				{ /* Proximity popup */ }
 				<FieldPopup
 					isOpen={ proximityOpen }
-					target={ proximityTriggerRef }
+					target={ proximityTriggerRef as React.RefObject<HTMLElement> }
 					title=""
 					saveLabel="Save"
 					clearLabel="Reset"
@@ -507,7 +542,7 @@ export default function FilterLocation( {
 					popupStyle={ popupStyles.style }
 				>
 					<div className="ts-form-group">
-						<label>{ props.proximity_label || 'Search radius' }</label>
+						<label>{ String(props['proximity_label'] || 'Search radius') }</label>
 						{ renderProximitySlider() }
 					</div>
 				</FieldPopup>
@@ -523,7 +558,7 @@ export default function FilterLocation( {
 
 		return (
 			<div className="ts-form-group ts-inline-proximity">
-				<label>{ props.proximity_label || 'Radius' }: { formatDistance( localRadius ) }</label>
+				<label>{ String(props['proximity_label'] || 'Radius') }: { formatDistance( localRadius ) }</label>
 				<div ref={ sliderRef } className="range-slider"></div>
 			</div>
 		);
@@ -578,7 +613,7 @@ export default function FilterLocation( {
 				{ /* Portal-based popup using FieldPopup from create-post */ }
 				<FieldPopup
 					isOpen={ isOpen }
-					target={ triggerRef }
+					target={ triggerRef as React.RefObject<HTMLElement> }
 					title=""
 					icon={ filterIcon }
 					saveLabel="Save"

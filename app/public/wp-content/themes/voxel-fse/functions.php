@@ -32,6 +32,7 @@ require_once VOXEL_FSE_PATH . '/app/utils/theme-detector.php';
 require_once VOXEL_FSE_PATH . '/app/utils/admin-metabox.php';
 require_once VOXEL_FSE_PATH . '/app/utils/fse-template-editor.php';
 require_once VOXEL_FSE_PATH . '/app/utils/icon-processor.php';
+// Note: fse-popup-menu-walker.php is loaded on demand (extends Voxel's Popup_Menu_Walker)
 
 
 /**
@@ -355,6 +356,22 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-stripe-account-api-controlle
 new \VoxelFSE\Controllers\FSE_Stripe_Account_API_Controller();
 
 /**
+ * Load FSE Print Template API Controller
+ * Provides REST endpoint for server-side template rendering in editor preview.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-print-template-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Print_Template_API_Controller();
+
+/**
+ * FSE Loop API Controller
+ * Provides REST endpoint for expanding per-item loop configurations in the editor.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-loop-api-controller.php';
+
+new \VoxelFSE\Controllers\FSE_Loop_API_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all
@@ -481,8 +498,9 @@ function voxel_fse_setup()
     // Add support for custom units
     add_theme_support('custom-units');
 
-    // Load editor overrides as editor-style for FSE iframe
-    add_editor_style('assets/gutenberg-editor-overrides.css');
+    // NOTE: gutenberg-editor-overrides.css is now part of voxel-editor-combined.css
+    // loaded via enqueue_block_assets. No longer using add_editor_style() to avoid
+    // duplicate loading (add_editor_style inlines into iframe blob HTML).
 }
 
 add_action('after_setup_theme', 'voxel_fse_setup');
@@ -492,15 +510,14 @@ add_action('after_setup_theme', 'voxel_fse_setup');
  */
 function voxel_fse_enqueue_block_editor_assets()
 {
-    // Block editor styles
-    wp_enqueue_style(
-            'voxel-fse-editor-styles',
-            VOXEL_FSE_URL . '/assets/gutenberg-editor-overrides.css',
-            array(),
-            VOXEL_FSE_VERSION
-    );
-    
-    // Enqueue Line Awesome for block editor (needed for icon fonts in components)
+    // NOTE: gutenberg-editor-overrides.css and responsive-visibility.css are now
+    // bundled into voxel-editor-combined.css (loaded via enqueue_block_assets).
+    // Loading them here via enqueue_block_editor_assets caused getCompatibilityStyles()
+    // to clone them into the iframe as duplicate <style> tags.
+
+    // Line Awesome: needed on main admin page for icon rendering in sidebar/toolbar.
+    // This is intentionally on the main page only (not iframe) — icons are in the
+    // WordPress admin UI, not the block content preview.
     wp_enqueue_style(
             'voxel-line-awesome',
             get_template_directory_uri() . '/assets/icons/line-awesome/line-awesome.css',
@@ -548,7 +565,21 @@ function voxel_fse_inject_dynamic_data_store()
     // Determine which namespace to use (project-specific or generic)
     $api_namespace = defined('PROJECT_NAMESPACE') ? PROJECT_NAMESPACE . '/v1' : 'voxel-fse/v1';
 
-    // Fetch top-level groups via REST API internally
+    // Fetch top-level groups for all contexts (post, term, user)
+    $contexts = array('post', 'term', 'user');
+    $groups_by_context = array();
+    foreach ($contexts as $ctx) {
+        $ctx_request = new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/groups");
+        $ctx_request->set_param('context', $ctx);
+        $ctx_response = rest_do_request($ctx_request);
+        if (!is_wp_error($ctx_response) && $ctx_response->get_status() === 200) {
+            $groups_by_context[$ctx] = $ctx_response->get_data();
+        } else {
+            $groups_by_context[$ctx] = array();
+        }
+    }
+
+    // Default groups for backward compatibility (post context)
     $groups_response = rest_do_request(new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/groups"));
     $modifiers_response = rest_do_request(new WP_REST_Request('GET', "/{$api_namespace}/dynamic-data/modifiers"));
 
@@ -619,14 +650,19 @@ function voxel_fse_inject_dynamic_data_store()
         return $children;
     };
 
-    // Pre-load children for all groups (up to 5 levels deep)
-    if (!empty($groups) && is_array($groups)) {
-        foreach ($groups as $group) {
-            if (isset($group['type'])) {
-                $group_type = $group['type'];
-                $fetch_children_recursive($group_type, null, 0, 5);
+    // Pre-load children for all groups across all contexts (up to 5 levels deep)
+    $all_group_types = array();
+    foreach ($groups_by_context as $ctx_groups) {
+        if (is_array($ctx_groups)) {
+            foreach ($ctx_groups as $group) {
+                if (isset($group['type']) && !in_array($group['type'], $all_group_types, true)) {
+                    $all_group_types[] = $group['type'];
+                }
             }
         }
+    }
+    foreach ($all_group_types as $group_type) {
+        $fetch_children_recursive($group_type, null, 0, 5);
     }
 
     // Inject into JavaScript global object (Voxel pattern)
@@ -634,6 +670,7 @@ function voxel_fse_inject_dynamic_data_store()
     <script type="text/javascript">
         window.VoxelFSE_Dynamic_Data_Store = <?php echo wp_json_encode(array(
                 'groups' => $groups,
+                'groupsByContext' => $groups_by_context,
                 'modifiers' => $modifiers,
                 'flatTags' => $flat_tags,
                 'groupChildren' => $group_children,
@@ -740,3 +777,6 @@ add_action('after_switch_theme', function() {
     // Templates should be auto-discovered from templates/ directory
     // If not found immediately, WordPress will create them on first request to Site Editor
 });
+
+
+

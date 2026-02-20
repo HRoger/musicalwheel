@@ -210,6 +210,10 @@ export interface SliderComponentProps {
 	galleryId?: string;
 	onSelectImages?: (images: SliderImage[]) => void;
 	onOpenMediaLibrary?: () => void;
+	/** Template context for dynamic tag resolution in editor */
+	templateContext?: string;
+	/** Post type extracted from template slug (e.g., 'place') */
+	templatePostType?: string;
 }
 
 /**

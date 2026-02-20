@@ -122,7 +122,7 @@ function normalizeConfig(raw: any): CountdownConfig {
 	};
 }
 
-export function CountdownComponent({ config: rawConfig, isEditor = false }: CountdownComponentProps): JSX.Element {
+export function CountdownComponent({ config: rawConfig, isEditor: _isEditor = false }: CountdownComponentProps): JSX.Element {
 	// Normalize config to handle both vxconfig and REST API formats
 	const config = normalizeConfig(rawConfig);
 
@@ -193,7 +193,7 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 	};
 
 	// Animate number change (matches Voxel pattern)
-	const animateNumber = (ref: React.RefObject<HTMLSpanElement>, newValue: number) => {
+	const animateNumber = (ref: React.RefObject<HTMLSpanElement | null>, newValue: number) => {
 		if (!ref.current || config.disableAnimation) {
 			if (ref.current) {
 				ref.current.innerText = newValue.toString();
@@ -260,7 +260,7 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 
 	// Build inline styles for responsive spacing
 	const getResponsiveStyles = (): React.CSSProperties => {
-		const styles: React.CSSProperties = {};
+		const styles: Record<string, string> = {};
 
 		// Item spacing (gap between countdown items)
 		if (config.itemSpacing >= 0) {
@@ -289,7 +289,7 @@ export function CountdownComponent({ config: rawConfig, isEditor = false }: Coun
 
 	// Build inline styles for colors
 	const getColorStyles = (): React.CSSProperties => {
-		const styles: React.CSSProperties = {};
+		const styles: Record<string, string> = {};
 
 		if (config.textColor) {
 			styles['--text-color'] = config.textColor;

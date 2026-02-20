@@ -2,15 +2,34 @@
  * ReviewScore Component
  *
  * Rating input component for review statuses.
- * Matches Voxel's Review_Score component from timeline-composer.beautified.js lines 259-287
+ * Matches Voxel's _review-score.php template EXACTLY for CSS compatibility.
  *
- * Voxel behavior:
- * - Displays rating categories with clickable levels
- * - Each category has multiple levels (e.g., -2, -1, 0, 1, 2 for 5-star)
- * - Clicking a level toggles it (same level = deselect, different = select)
- * - Levels up to and including selected are highlighted (covered)
+ * Voxel HTML Structure (from templates/widgets/timeline/status-composer/_review-score.php):
+ * Stars mode:
+ * <div class="vxf-create-section review-cats">
+ *   <div class="ts-form-group review-category">
+ *     <label>Category <span>Active Label</span></label>
+ *     <ul class="rs-stars simplify-ul flexify">
+ *       <li class="flexify [active] [selected]" style="--active-accent: color">
+ *         <div class="ts-star-icon">svg</div>
+ *         <div class="ray-holder"><div class="ray" x8></div>
+ *       </li>
+ *     </ul>
+ *   </div>
+ * </div>
  *
- * Template: #vxfeed__review-score
+ * Numeric mode:
+ * <div class="vxf-create-section review-cats">
+ *   <div class="ts-form-group review-category">
+ *     <label>Category</label>
+ *     <ul class="rs-num simplify-ul flexify">
+ *       <li [class="active"] style="--active-accent: color">
+ *         {{ level.score + 3 }}
+ *         <span>Label</span>
+ *       </li>
+ *     </ul>
+ *   </div>
+ * </div>
  *
  * @package VoxelFSE
  */
@@ -30,7 +49,7 @@ interface ReviewScoreProps {
 
 /**
  * ReviewScore Component
- * Matches Voxel's review-score component structure
+ * Matches Voxel's _review-score.php template structure exactly
  */
 export function ReviewScore({
 	config,
@@ -47,7 +66,7 @@ export function ReviewScore({
 
 	/**
 	 * Set score for a category
-	 * Matches Voxel's setScore method (line 267-268)
+	 * Matches Voxel's setScore method (timeline-composer.beautified.js line 267-268)
 	 * - If same score clicked, delete (deselect)
 	 * - Otherwise, set the new score
 	 */
@@ -104,27 +123,23 @@ export function ReviewScore({
 	const categories = config.categories || [];
 
 	return (
-		<div className={`rev-score-input ${className}`}>
+		<div className={`vxf-create-section review-cats ${className}`}>
 			{categories.map((category) => {
 				const activeLevel = getActiveLevel(category.key);
 
 				return (
-					<div
-						key={category.key}
-						className="rev-category"
-						style={activeLevel ? { '--ts-accent-1': activeLevel.color } as React.CSSProperties : undefined}
-					>
-						{/* Category label */}
-						<div className="rev-category-label">
-							<span>{category.label}</span>
+					<div key={category.key} className="ts-form-group review-category">
+						{/* Category label - Voxel uses <label> not <div> */}
+						<label>
+							{category.label}
 							{activeLevel && (
-								<span className="rev-active-label">{activeLevel.label}</span>
+								<span>{activeLevel.label}</span>
 							)}
-						</div>
+						</label>
 
 						{/* Rating input based on mode */}
 						{config.input_mode === 'stars' ? (
-							<ul className="rev-star-input flexify simplify-ul">
+							<ul className="rs-stars simplify-ul flexify">
 								{config.rating_levels.map((level, index) => {
 									// Score is typically index - 2 (so 0=-2, 1=-1, 2=0, 3=1, 4=2)
 									const score = index - 2;
@@ -134,22 +149,38 @@ export function ReviewScore({
 									return (
 										<li
 											key={level.score}
-											className={`${isCovered ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
+											className={`flexify ${isCovered ? 'active' : ''} ${isSelected ? 'selected' : ''}`}
 											onClick={() => setScore(category.key, score)}
+											style={{
+												'--active-accent': isCovered && activeLevel ? activeLevel.color : undefined,
+											} as React.CSSProperties}
 										>
-											<span
-												dangerouslySetInnerHTML={{
-													__html: isCovered
-														? (config.active_icon ?? config.default_icon ?? '')
-														: (config.default_icon ?? '')
-												}}
-											/>
+											{isCovered ? (
+												<div
+													className="ts-star-icon"
+													dangerouslySetInnerHTML={{
+														__html: config.active_icon ?? config.default_icon ?? '',
+													}}
+												/>
+											) : (
+												<div
+													className="ts-star-icon"
+													dangerouslySetInnerHTML={{
+														__html: config.inactive_icon ?? config.default_icon ?? '',
+													}}
+												/>
+											)}
+											<div className="ray-holder">
+												{[...Array(8)].map((_, i) => (
+													<div key={i} className="ray" />
+												))}
+											</div>
 										</li>
 									);
 								})}
 							</ul>
 						) : (
-							<ul className="rev-num-input flexify simplify-ul">
+							<ul className="rs-num simplify-ul flexify">
 								{config.rating_levels.map((level, index) => {
 									const score = index - 2;
 									const isSelected = isScoreSelected(category.key, score);
@@ -159,8 +190,10 @@ export function ReviewScore({
 											key={level.score}
 											className={isSelected ? 'active' : ''}
 											onClick={() => setScore(category.key, score)}
-											style={isSelected ? { '--ts-accent-1': level.color } as React.CSSProperties : undefined}
+											style={isSelected ? { '--active-accent': level.color } as React.CSSProperties : undefined}
 										>
+											{/* Voxel displays level.score + 3 */}
+											{level.score + 3}
 											<span>{level.label}</span>
 										</li>
 									);

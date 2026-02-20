@@ -288,7 +288,7 @@ export default function GalleryUploadControl({
 										multiple
 										gallery
 										value={value.map((img) => img.id).filter(Boolean) as number[]}
-										render={({ open }) => (
+										render={({ open }: { open: () => void }) => (
 											<div
 												style={{
 													position: 'relative',
@@ -391,7 +391,7 @@ export default function GalleryUploadControl({
 									multiple
 									gallery
 									value={[]}
-									render={({ open }) => (
+									render={({ open }: { open: () => void }) => (
 										<div
 											style={{
 												backgroundColor: '#f0f0f0',

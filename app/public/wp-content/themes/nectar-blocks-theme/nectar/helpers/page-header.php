@@ -1226,6 +1226,7 @@ if ( ! function_exists('nectar_is_perma_trans_header') ) {
         $perm_transparency = (! empty($nectar_options['header-permanent-transparent']) && $trans_header != 'false') ? $nectar_options['header-permanent-transparent'] : false;
 
         if ( $perm_transparency === '1' &&
+            ! nectar_is_transparent_auto_activation_pt() &&
             ! nectar_using_page_header_unfiltered() &&
             ! nectar_blocks_transparent_header_option(false) &&
             ! nectar_is_contained_header() ) {
@@ -1259,11 +1260,75 @@ if( ! function_exists('nectar_transparent_header_filter') ) {
             return true;
         }
 
+        // Theme option auto apply.
+        $auto_activation_pt = nectar_is_transparent_auto_activation_pt();
+        if( $auto_activation_pt ) {
+            return true;
+        }
+
         return $enabled;
 
     }
 }
 add_filter('nectar_activate_transparent_header', 'nectar_transparent_header_filter', 10, 1);
+
+if( ! function_exists('nectar_is_transparent_auto_activation_pt') ) {
+    function nectar_is_transparent_auto_activation_pt() {
+         // Theme option auto apply.
+         $nectar_options = get_nectar_theme_options();
+         $auto_activation = $nectar_options['transparent-header-auto-activation-locations']; // type = archive-{post-type}, single-{post-type}
+         // Check if the current page matches any type in the auto_activation array
+         if ( ! empty( $auto_activation ) && is_array( $auto_activation ) ) {
+             foreach ( $auto_activation as $activation_type ) {
+                 // Check for archive-{post-type}
+                 if ( strpos( $activation_type, 'archive-' ) === 0 && is_archive() ) {
+                     $post_type = str_replace( 'archive-', '', $activation_type );
+                     if ( is_post_type_archive( $post_type ) ) {
+                         return true;
+                     }
+
+                     // Handle taxonomy archives for the post type
+                     $queried_object = get_queried_object();
+                     if ( isset( $queried_object->taxonomy ) ) {
+                         $taxonomy = $queried_object->taxonomy;
+
+                         // Handle core category taxonomy
+                         if ( $taxonomy === 'category' && $post_type === 'post' ) {
+                             return true;
+                         }
+
+                         // Handle custom taxonomies linked to post types
+                         $post_types = get_taxonomy( $taxonomy )->object_type;
+                         if ( in_array( $post_type, $post_types, true ) ) {
+                             return true;
+                         }
+                     }
+
+                     // Handle author archives for the post type
+                     if ( is_author() ) {
+                         $author_posts = get_posts( [
+                             'author' => get_queried_object_id(),
+                             'post_type' => $post_type,
+                             'numberposts' => 1,
+                         ] );
+                         if ( ! empty( $author_posts ) ) {
+                             return true;
+                         }
+                     }
+                 }
+                 // Check for single-{post-type}
+                 elseif ( strpos( $activation_type, 'single-' ) === 0 && is_single() ) {
+                     $post_type = str_replace( 'single-', '', $activation_type );
+                     if ( get_post_type() === $post_type ) {
+                         return true;
+                     }
+                 }
+             }
+         }
+
+         return false;
+    }
+}
 
 /**
  * Forces transparent header state at a higher priority

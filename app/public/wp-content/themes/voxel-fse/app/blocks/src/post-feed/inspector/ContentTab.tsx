@@ -78,7 +78,7 @@ export function ContentTab({
 						{ label: __('Manual selection', 'voxel-fse'), value: 'manual' },
 						{ label: __('WP default archive', 'voxel-fse'), value: 'archive' },
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({ source: value as PostFeedAttributes['source'] })
 					}
 				/>
@@ -105,14 +105,14 @@ export function ContentTab({
 								{ label: __('Prev/Next buttons', 'voxel-fse'), value: 'prev_next' },
 								{ label: __('None', 'voxel-fse'), value: 'none' },
 							]}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({ pagination: value as PostFeedAttributes['pagination'] })
 							}
 						/>
 						<RangeControl
 							label={__('Posts per page', 'voxel-fse')}
 							value={attributes.postsPerPage}
-							onChange={(value) => setAttributes({ postsPerPage: value ?? 10 })}
+							onChange={(value: number | undefined) => setAttributes({ postsPerPage: value ?? 10 })}
 							min={1}
 							max={100}
 						/>
@@ -120,7 +120,7 @@ export function ContentTab({
 							label={__('Display details', 'voxel-fse')}
 							help={__('Display results count and order by (if enabled) on top', 'voxel-fse')}
 							checked={attributes.displayDetails}
-							onChange={(value) => setAttributes({ displayDetails: value })}
+							onChange={(value: boolean) => setAttributes({ displayDetails: value })}
 						/>
 					</>
 				)}
@@ -132,12 +132,12 @@ export function ContentTab({
 							label={__('Choose post type', 'voxel-fse')}
 							value={attributes.postType}
 							options={postTypeOptions}
-							onChange={(value) => setAttributes({ postType: value })}
+							onChange={(value: any) => setAttributes({ postType: value })}
 						/>
 						<RangeControl
 							label={__('Number of posts to load', 'voxel-fse')}
 							value={attributes.postsPerPage}
-							onChange={(value) => setAttributes({ postsPerPage: value ?? 10 })}
+							onChange={(value: number | undefined) => setAttributes({ postsPerPage: value ?? 10 })}
 							min={0}
 							max={500}
 						/>
@@ -149,34 +149,34 @@ export function ContentTab({
 								{ label: __('Prev/Next buttons', 'voxel-fse'), value: 'prev_next' },
 								{ label: __('None', 'voxel-fse'), value: 'none' },
 							]}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({ pagination: value as PostFeedAttributes['pagination'] })
 							}
 						/>
 						<TextControl
 							label={__('Exclude posts', 'voxel-fse')}
 							value={attributes.excludePosts}
-							onChange={(value) => setAttributes({ excludePosts: value })}
+							onChange={(value: string) => setAttributes({ excludePosts: value })}
 							help={__('Comma-separated post IDs to exclude', 'voxel-fse')}
 						/>
 						<ToggleControl
 							label={__('Filter posts by priority', 'voxel-fse')}
 							checked={attributes.priorityFilter}
-							onChange={(value) => setAttributes({ priorityFilter: value })}
+							onChange={(value: boolean) => setAttributes({ priorityFilter: value })}
 						/>
 						{attributes.priorityFilter && (
 							<div className="voxel-fse-half-width-controls">
 								<RangeControl
 									label={__('Priority min', 'voxel-fse')}
 									value={attributes.priorityMin}
-									onChange={(value) => setAttributes({ priorityMin: value ?? 0 })}
+									onChange={(value: number | undefined) => setAttributes({ priorityMin: value ?? 0 })}
 									min={0}
 									max={100}
 								/>
 								<RangeControl
 									label={__('Priority max', 'voxel-fse')}
 									value={attributes.priorityMax}
-									onChange={(value) => setAttributes({ priorityMax: value ?? 0 })}
+									onChange={(value: number | undefined) => setAttributes({ priorityMax: value ?? 0 })}
 									min={0}
 									max={100}
 								/>
@@ -185,7 +185,7 @@ export function ContentTab({
 						<RangeControl
 							label={__('Offset', 'voxel-fse')}
 							value={attributes.offset}
-							onChange={(value) => setAttributes({ offset: value ?? 0 })}
+							onChange={(value: number | undefined) => setAttributes({ offset: value ?? 0 })}
 							min={0}
 							max={100}
 						/>
@@ -196,7 +196,7 @@ export function ContentTab({
 								label: t.label,
 								value: t.id,
 							}))}
-							onChange={(value) => setAttributes({ cardTemplate: value })}
+							onChange={(value: string) => setAttributes({ cardTemplate: value })}
 							disabled={isLoadingTemplates || !attributes.postType}
 							help={
 								isLoadingTemplates
@@ -212,7 +212,7 @@ export function ContentTab({
 					<TextControl
 						label={__('No results label', 'voxel-fse')}
 						value={attributes.noResultsLabel}
-						onChange={(value) => setAttributes({ noResultsLabel: value })}
+						onChange={(value: any) => setAttributes({ noResultsLabel: value })}
 					/>
 				)}
 
@@ -222,7 +222,7 @@ export function ContentTab({
 						label={__('Choose post type', 'voxel-fse')}
 						value={attributes.postType}
 						options={postTypeOptions}
-						onChange={(value) => setAttributes({ postType: value })}
+						onChange={(value: any) => setAttributes({ postType: value })}
 					/>
 				)}
 
@@ -231,7 +231,7 @@ export function ContentTab({
 					<TextControl
 						label={__('Choose posts', 'voxel-fse')}
 						value={attributes.manualPostIds.join(', ')}
-						onChange={(value) => {
+						onChange={(value: string) => {
 							const ids = value
 								.split(',')
 								.map((id) => parseInt(id.trim(), 10))
@@ -255,7 +255,7 @@ export function ContentTab({
 								label: t.label,
 								value: t.id,
 							}))}
-							onChange={(value) => setAttributes({ cardTemplate: value })}
+							onChange={(value: string) => setAttributes({ cardTemplate: value })}
 							disabled={isLoadingTemplates}
 						/>
 					)}
@@ -265,7 +265,7 @@ export function ContentTab({
 					<TextControl
 						label={__('No results label', 'voxel-fse')}
 						value={attributes.noResultsLabel}
-						onChange={(value) => setAttributes({ noResultsLabel: value })}
+						onChange={(value: any) => setAttributes({ noResultsLabel: value })}
 					/>
 				)}
 			</AccordionPanel>
@@ -279,7 +279,7 @@ export function ContentTab({
 						{ label: __('Grid', 'voxel-fse'), value: 'grid' },
 						{ label: __('Carousel', 'voxel-fse'), value: 'carousel' },
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({ layoutMode: value as PostFeedAttributes['layoutMode'] })
 					}
 				/>
@@ -304,15 +304,29 @@ export function ContentTab({
 							attributes={attributes}
 							setAttributes={setAttributes}
 							attributeBaseName="carouselItemWidth"
-							min={100}
-							max={800}
+							min={0}
+							max={attributes.carouselItemWidthUnit === '%' ? 100 : 800}
+							availableUnits={['px', '%']}
+							unitAttributeName="carouselItemWidthUnit"
 						/>
 
 						<ToggleControl
 							label={__('Auto slide?', 'voxel-fse')}
 							checked={attributes.carouselAutoSlide}
-							onChange={(value) => setAttributes({ carouselAutoSlide: value })}
+							onChange={(value: boolean) => setAttributes({ carouselAutoSlide: value })}
 						/>
+
+						{attributes.carouselAutoSlide && (
+							<ResponsiveRangeControl
+								label={__('Auto slide interval (ms)', 'voxel-fse')}
+								attributes={attributes}
+								setAttributes={setAttributes}
+								attributeBaseName="carouselAutoSlideInterval"
+								min={1000}
+								max={10000}
+								help={__('Time between slides in milliseconds', 'voxel-fse')}
+							/>
+						)}
 					</>
 				)}
 
@@ -359,37 +373,43 @@ export function ContentTab({
 				<IconPickerControl
 					label={__('Load more icon', 'voxel-fse')}
 					value={attributes.loadMoreIcon}
-					onChange={(value) => setAttributes({ loadMoreIcon: value })}
+					onChange={(value: any) => setAttributes({ loadMoreIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('No results icon', 'voxel-fse')}
 					value={attributes.noResultsIcon}
-					onChange={(value) => setAttributes({ noResultsIcon: value })}
+					onChange={(value: any) => setAttributes({ noResultsIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Right arrow', 'voxel-fse')}
 					value={attributes.rightArrowIcon}
-					onChange={(value) => setAttributes({ rightArrowIcon: value })}
+					onChange={(value: any) => setAttributes({ rightArrowIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Left arrow', 'voxel-fse')}
 					value={attributes.leftArrowIcon}
-					onChange={(value) => setAttributes({ leftArrowIcon: value })}
+					onChange={(value: any) => setAttributes({ leftArrowIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Right chevron', 'voxel-fse')}
 					value={attributes.rightChevronIcon}
-					onChange={(value) => setAttributes({ rightChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ rightChevronIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Left chevron', 'voxel-fse')}
 					value={attributes.leftChevronIcon}
-					onChange={(value) => setAttributes({ leftChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ leftChevronIcon: value })}
+				/>
+
+				<IconPickerControl
+					label={__('Reset icon', 'voxel-fse')}
+					value={attributes.resetIcon}
+					onChange={(value: any) => setAttributes({ resetIcon: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

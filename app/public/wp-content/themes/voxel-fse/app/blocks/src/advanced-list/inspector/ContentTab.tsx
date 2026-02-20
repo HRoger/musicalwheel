@@ -6,7 +6,7 @@ import type { AdvancedListAttributes, ActionItem } from '../types';
 import type { IconValue } from '@shared/types';
 import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
 import type { LoopConfig } from '@shared/controls/LoopElementModal';
-import { DEFAULT_ACTION_ITEM, ACTION_TYPE_LABELS } from '../types';
+import { DEFAULT_ACTION_ITEM } from '../types';
 
 interface ContentTabProps {
     attributes: AdvancedListAttributes;

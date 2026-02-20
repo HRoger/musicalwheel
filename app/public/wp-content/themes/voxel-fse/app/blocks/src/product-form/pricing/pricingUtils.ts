@@ -18,18 +18,6 @@ import type {
 	AddonPricingSummary,
 } from '../types';
 
-// Declare global Voxel helpers
-declare global {
-	interface Window {
-		Voxel?: {
-			helpers: {
-				currencyFormat: ( amount: number ) => string;
-				dateFormatYmd: ( date: Date ) => string;
-			};
-		};
-	}
-}
-
 /**
  * Format currency using Voxel's currency formatter
  *
@@ -39,8 +27,8 @@ declare global {
  * @returns Formatted currency string
  */
 export function formatPrice( amount: number ): string {
-	if ( typeof window !== 'undefined' && window.Voxel?.helpers?.currencyFormat ) {
-		return window.Voxel.helpers.currencyFormat( amount );
+	if ( typeof window !== 'undefined' && (window as any).Voxel?.helpers?.currencyFormat ) {
+		return (window as any).Voxel.helpers.currencyFormat( amount );
 	}
 
 	// Fallback for SSR or missing Voxel
@@ -59,8 +47,8 @@ export function formatPrice( amount: number ): string {
  * @returns Date string in YYYY-MM-DD format
  */
 export function dateFormatYmd( date: Date ): string {
-	if ( typeof window !== 'undefined' && window.Voxel?.helpers?.dateFormatYmd ) {
-		return window.Voxel.helpers.dateFormatYmd( date );
+	if ( typeof window !== 'undefined' && (window as any).Voxel?.helpers?.dateFormatYmd ) {
+		return (window as any).Voxel.helpers.dateFormatYmd( date );
 	}
 
 	// Fallback

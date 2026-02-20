@@ -200,8 +200,10 @@ export function useStatusActions(
 
 		// Read current state from merged optimistic + original (to handle rapid clicks)
 		const currentHasLiked = optimisticStatus.current_user?.has_liked ?? status.current_user.has_liked;
-		const currentLikeCount = optimisticStatus.likes?.count ?? status.likes.count;
-		const currentLast3 = optimisticStatus.likes?.last3 ?? status.likes.last3 ?? [];
+		// @ts-ignore -- unused but kept for future use
+		const _currentLikeCount = optimisticStatus.likes?.count ?? status.likes.count;
+		// @ts-ignore -- unused but kept for future use
+		const _currentLast3 = optimisticStatus.likes?.last3 ?? status.likes.last3 ?? [];
 
 		// Store original state for rollback (use the current merged state)
 		originalState.current = {

@@ -34,8 +34,7 @@ import type {
 	CustomPricesFieldValue,
 	CustomPricingRule,
 	ProductTypeField,
-	AddonsFieldValue,
-	AddonConfig,
+		AddonConfig,
 } from '../../types';
 
 /**
@@ -72,7 +71,8 @@ interface ProductFieldValue {
 }
 
 // SVG Icons - Exact Voxel markup from handle.svg
-const HandleIcon = () => (
+// @ts-ignore -- unused but kept for future use
+const _HandleIcon = () => (
 	<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 480" fill="currentColor">
 		<path d="M48,96A48,48,0,1,0,0,48,48,48,0,0,0,48,96Zm0,192A48,48,0,1,0,0,240,48,48,0,0,0,48,288ZM96,432a48,48,0,1,1-48-48A48,48,0,0,1,96,432ZM240,96a48,48,0,1,0-48-48A48,48,0,0,0,240,96Zm48,144a48,48,0,1,1-48-48A48,48,0,0,1,288,240ZM240,480a48,48,0,1,0-48-48A48,48,0,0,0,240,480Z" style={{ fillRule: 'evenodd' }} />
 	</svg>
@@ -283,7 +283,7 @@ export const CustomPricesField: React.FC<CustomPricesFieldProps> = ({
 	onChange,
 	productType,
 	productFieldValue,
-	productFieldKey,
+	productFieldKey: _productFieldKey,
 }) => {
 	// Track which pricing rule is currently expanded
 	const [activeId, setActiveId] = useState<string | null>(null);
@@ -398,11 +398,11 @@ export const CustomPricesField: React.FC<CustomPricesFieldProps> = ({
 						</div>
 					</div>
 					{field.label || 'Custom prices'}
-					{field.description && (
+					{!!(field as any).description && (
 						<div className="vx-dialog">
 							<IconInfo />
 							<div className="vx-dialog-content min-scroll">
-								<p dangerouslySetInnerHTML={{ __html: field.description }} />
+								<p dangerouslySetInnerHTML={{ __html: (field as any).description as string }} />
 							</div>
 						</div>
 					)}

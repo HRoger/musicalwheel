@@ -10,6 +10,7 @@ import {
     SectionHeading,
     RepeaterItemRenderProps,
     DynamicTagTextControl,
+    LinkSearchControl,
     LoopVisibilityControl,
 } from '@shared/controls';
 import type { ActionItem, ActionType } from '../types';
@@ -63,15 +64,25 @@ export default function ActionItemEditor({
 
             {/* Link-specific controls */}
             {item.actionType === 'action_link' && (
-                <DynamicTagTextControl
-                    label={__('Link URL', 'voxel-fse')}
-                    value={item.link?.url || ''}
-                    onChange={(url: string) =>
+                <LinkSearchControl
+                    label={__('Link', 'voxel-fse')}
+                    value={{
+                        url: item.link?.url || '',
+                        isExternal: item.link?.isExternal ?? true,
+                        nofollow: item.link?.nofollow ?? true,
+                        customAttributes: item.link?.customAttributes,
+                    }}
+                    onChange={(link) =>
                         onUpdate({
-                            link: { ...(item.link || { url: '', isExternal: true, nofollow: true }), url },
+                            link: {
+                                url: link.url,
+                                isExternal: link.isExternal,
+                                nofollow: link.nofollow,
+                                customAttributes: link.customAttributes,
+                            },
                         })
                     }
-                    placeholder={__('https://example.com', 'voxel-fse')}
+                    enableDynamicTags
                 />
             )}
 
@@ -96,23 +107,23 @@ export default function ActionItemEditor({
             {/* Calendar event fields */}
             {(item.actionType === 'action_gcal' || item.actionType === 'action_ical') && (
                 <>
-                    <TextControl
+                    <DynamicTagTextControl
                         label={__('Event title', 'voxel-fse')}
                         value={item.calTitle}
                         onChange={(calTitle: string) => onUpdate({ calTitle })}
                     />
-                    <TextControl
+                    <DynamicTagTextControl
                         label={__('Event description', 'voxel-fse')}
                         value={item.calDescription}
                         onChange={(calDescription: string) => onUpdate({ calDescription })}
                     />
-                    <TextControl
+                    <DynamicTagTextControl
                         label={__('Event location', 'voxel-fse')}
                         value={item.calLocation}
                         onChange={(calLocation: string) => onUpdate({ calLocation })}
                     />
                     {item.actionType === 'action_ical' && (
-                        <TextControl
+                        <DynamicTagTextControl
                             label={__('Event URL', 'voxel-fse')}
                             value={item.calUrl}
                             onChange={(calUrl: string) => onUpdate({ calUrl })}

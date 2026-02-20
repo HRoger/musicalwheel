@@ -24,7 +24,7 @@ interface SaveProps {
 
 export default function Save({ attributes }: SaveProps) {
     // Use stable block ID from attributes (generated once in edit)
-    const blockId = attributes.blockId || attributes.anchor || 'flex-container';
+    const blockId = attributes['blockId'] || attributes['anchor'] || 'flex-container';
     const uniqueSelector = `.voxel-fse-flex-container-${blockId}`;
 
     // Generate OUTER container styles (position, min-height, backdrop, etc.)
@@ -48,32 +48,36 @@ export default function Save({ attributes }: SaveProps) {
         .join('\n');
 
     // Parse custom attributes (key|value format from AdvancedTab)
-    const customAttrs = parseCustomAttributes(attributes.customAttributes);
+    const customAttrs = parseCustomAttributes(attributes['customAttributes']);
 
     // OUTER container block props (backgrounds, position, min-height)
-    const blockProps = useBlockProps.save({
+    const blockProps = (useBlockProps as any).save({
         // Use elementId if provided (CSS ID from AdvancedTab), otherwise use blockId
-        id: attributes.elementId || undefined,
+        id: attributes['elementId'] || undefined,
         className: combineBlockClasses(
             `voxel-fse-flex-container voxel-fse-flex-container-${blockId}`,
             attributes
         ),
         style: mergedStyles,
         // Headless-ready: Visibility rules configuration
-        'data-visibility-behavior': attributes.visibilityBehavior || undefined,
-        'data-visibility-rules': attributes.visibilityRules?.length
-            ? JSON.stringify(attributes.visibilityRules)
+        'data-visibility-behavior': attributes['visibilityBehavior'] || undefined,
+        'data-visibility-rules': attributes['visibilityRules']?.length
+            ? JSON.stringify(attributes['visibilityRules'])
             : undefined,
         // Headless-ready: Loop element configuration
-        'data-loop-source': attributes.loopSource || undefined,
-        'data-loop-property': attributes.loopProperty || undefined,
-        'data-loop-limit': attributes.loopLimit || undefined,
-        'data-loop-offset': attributes.loopOffset || undefined,
+        'data-loop-source': attributes['loopSource'] || undefined,
+        'data-loop-property': attributes['loopProperty'] || undefined,
+        'data-loop-limit': attributes['loopLimit'] || undefined,
+        'data-loop-offset': attributes['loopOffset'] || undefined,
+        // Entrance animation (attribute names match MotionEffectsControls)
+        'data-animation': attributes['entranceAnimation'] || undefined,
+        'data-animation-duration': attributes['animationDuration'] || undefined,
+        'data-animation-delay': attributes['animationDelay'] ? `${attributes['animationDelay']}` : undefined,
         ...customAttrs,
     });
 
     // INNER wrapper props for inner blocks (flex/grid layout, max-width)
-    const innerBlocksProps = useInnerBlocksProps.save({
+    const innerBlocksProps = (useInnerBlocksProps as any).save({
         className: 'e-con-inner',
         style: innerStyles,
     });

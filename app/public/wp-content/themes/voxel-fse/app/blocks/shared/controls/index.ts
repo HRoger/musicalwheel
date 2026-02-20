@@ -16,8 +16,7 @@ export { default as ColorControl } from './ColorControl';
 export { default as ColorPickerControl } from './ColorPickerControl';
 export { default as ResponsiveColorControl } from './ResponsiveColorControl';
 
-// Typography (TypographyControl is alias for TypographyPopup)
-export { default as TypographyControl } from './TypographyPopup';
+export { default as TypographyControl, type TypographyValue } from './TypographyPopup';
 export { default as TypographyPopup } from './TypographyPopup';
 
 // Style Popup Controls
@@ -63,7 +62,7 @@ export { default as BackgroundOverlayControl } from './BackgroundOverlayControl'
 export { default as ShapeDividerControl } from './ShapeDividerControl';
 
 // Border Controls
-export { default as BorderGroupControl } from './BorderGroupControl';
+export { default as BorderGroupControl, type BorderGroupValue, type DimensionsConfig } from './BorderGroupControl';
 export { default as AdvancedBorderControl } from './AdvancedBorderControl';
 
 // Responsive Controls
@@ -111,6 +110,9 @@ export { default as DynamicTagTextControl } from './DynamicTagTextControl';
 export { default as DynamicTagTextareaControl } from './DynamicTagTextareaControl';
 export { default as DynamicTagDateTimeControl } from './DynamicTagDateTimeControl';
 
+// Link Controls
+export { default as LinkSearchControl, type LinkValue } from './LinkSearchControl';
+
 // Slider Controls
 export { default as RangeSliderControl } from './RangeSliderControl';
 export { default as SliderControl } from './SliderControl';
@@ -124,3 +126,6 @@ export * from './theme-constants';
 export { default as PopupCustomStyleControl } from './PopupCustomStyleControl';
 export { default as FilterPopupStyleControl } from './FilterPopupStyleControl';
 export { default as CustomPopupMenuControl } from './CustomPopupMenuControl';
+
+// Common Types
+export type { IconValue } from '@shared/types';

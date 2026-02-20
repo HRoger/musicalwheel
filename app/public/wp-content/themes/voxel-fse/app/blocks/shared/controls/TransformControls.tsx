@@ -14,7 +14,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, ToggleControl, RangeControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveRangeControl from './ResponsiveRangeControl';
 import ChooseControl from './ChooseControl';
@@ -27,7 +26,7 @@ const ElementorIcon = ({ icon }: { icon: string }) => (
 	<span className={`eicon ${icon}`} style={{ fontSize: '16px', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
 );
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 // Global state for device changes - survives component remounts
 // This is needed because WordPress may remount the inspector panel during desktop transitions
@@ -40,7 +39,7 @@ declare global {
 
 // Hook to sync with WordPress device type
 function useWordPressDevice(): DeviceType {
-	return useSelect((select) => getCurrentDeviceType(select), []);
+	return useDeviceType();
 }
 
 // Shared Popover wrapper component
@@ -141,7 +140,7 @@ function TransformPopover({ label, isOpen, onToggle, onReset, children, hasValue
 							icon={<UndoIcon />}
 							size="small"
 							variant="tertiary"
-							onClick={(e) => {
+							onClick={(e: React.MouseEvent) => {
 								e.stopPropagation();
 								onReset();
 							}}
@@ -534,7 +533,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 							<ToggleControl
 								label={__('3D Rotate', 'voxel-fse')}
 								checked={is3DRotate || false}
-								onChange={(value) => setAttributes({ [`transformRotate3D${suffix}`]: value })}
+								onChange={(value: boolean) => setAttributes({ [`transformRotate3D${suffix}`]: value })}
 								__nextHasNoMarginBottom
 							/>
 
@@ -654,7 +653,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 							<ToggleControl
 								label={__('Keep Proportions', 'voxel-fse')}
 								checked={keepProportions}
-								onChange={(value) => setAttributes({ [`transformScaleProportions${suffix}`]: value })}
+								onChange={(value: boolean) => setAttributes({ [`transformScaleProportions${suffix}`]: value })}
 								__nextHasNoMarginBottom
 							/>
 
@@ -838,7 +837,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 								<RangeControl
 									label={__('Transition Duration (ms)', 'voxel-fse')}
 									value={attributes.transformTransitionDuration ?? 300}
-									onChange={(value) => setAttributes({ transformTransitionDuration: value })}
+									onChange={(value: number | undefined) => setAttributes({ transformTransitionDuration: value })}
 									min={0}
 									max={3000}
 									step={50}

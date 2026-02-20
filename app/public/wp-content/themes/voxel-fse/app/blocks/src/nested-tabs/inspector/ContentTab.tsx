@@ -197,7 +197,7 @@ export function ContentTab({
 					<TextControl
 						label={__('Title', 'voxel-fse')}
 						value={item.title}
-						onChange={(title) => onUpdate({ title })}
+						onChange={(title: any) => onUpdate({ title })}
 						__nextHasNoMarginBottom
 					/>
 				</div>
@@ -220,7 +220,7 @@ export function ContentTab({
 					<TextControl
 						label={__('CSS ID', 'voxel-fse')}
 						value={item.cssId}
-						onChange={(cssId) => onUpdate({ cssId })}
+						onChange={(cssId: any) => onUpdate({ cssId })}
 						__nextHasNoMarginBottom
 					/>
 				</div>
@@ -228,10 +228,10 @@ export function ContentTab({
 				{/* Loop Repeater Row and Row Visibility using LoopVisibilityControl */}
 				<LoopVisibilityControl
 					showLoopSection={true}
-					loopSource={item.loopConfig?.source}
-					loopProperty={item.loopConfig?.property}
-					loopLimit={item.loopConfig?.limit}
-					loopOffset={item.loopConfig?.offset}
+					loopSource={(item.loopConfig as any)?.source}
+					loopProperty={(item.loopConfig as any)?.property}
+					loopLimit={(item.loopConfig as any)?.limit}
+					loopOffset={(item.loopConfig as any)?.offset}
 					onEditLoop={() => handleEditLoop(index)}
 					onClearLoop={() => onUpdate({ loopConfig: undefined })}
 					onLoopLimitChange={(value) => onUpdate({
@@ -347,7 +347,7 @@ export function ContentTab({
 					<SelectControl
 						label={__('Breakpoint', 'voxel-fse')}
 						value={attributes.breakpointSelector || 'mobile'}
-						onChange={(value) => setAttributes({ breakpointSelector: value as NestedTabsAttributes['breakpointSelector'] })}
+						onChange={(value: any) => setAttributes({ breakpointSelector: value as NestedTabsAttributes['breakpointSelector'] })}
 						options={BREAKPOINT_OPTIONS}
 						help={__('Choose at which breakpoint tabs will automatically switch to a vertical ("accordion") layout.', 'voxel-fse')}
 						__nextHasNoMarginBottom
@@ -363,7 +363,7 @@ export function ContentTab({
 						setLoopModalOpen(false);
 						setEditingTabIndex(null);
 					}}
-					initialConfig={tabs[editingTabIndex]?.loopConfig || null}
+					config={tabs[editingTabIndex]?.loopConfig || { loopSource: '', loopProperty: '', loopLimit: '', loopOffset: '' }}
 					onSave={handleLoopSave}
 				/>
 			)}

@@ -45,7 +45,7 @@ export function ContentTab({
 						{ label: __('Select a post type...', 'voxel-fse'), value: '' },
 						...postTypes,
 					]}
-					onChange={(postTypeKey) => setAttributes({ postTypeKey })}
+					onChange={(postTypeKey: any) => setAttributes({ postTypeKey })}
 				/>
 				{/* Note: cpt_filter_width slider has condition cpt_filter_cols = 'elementor-col-auto'
 				    which doesn't exist in FSE, so we omit it */}

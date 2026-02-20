@@ -7,6 +7,8 @@
 import { __ } from '@wordpress/i18n';
 import {
     SelectControl,
+    TextControl,
+    ToggleControl,
 } from '@wordpress/components';
 import { useState } from 'react';
 import {
@@ -189,6 +191,21 @@ export function ContentTab({
                             />
                         </div>
 
+                        {/* Featured plan controls — Evidence: listing-plans-widget.php:1494-1510 */}
+                        <SectionHeading label={__('Featured', 'voxel-fse')} />
+                        <ToggleControl
+                            label={__('Mark as featured', 'voxel-fse')}
+                            checked={config.featured ?? false}
+                            onChange={(val: any) => updatePlanConfig(planKey, { featured: val })}
+                        />
+                        {config.featured && (
+                            <DynamicTagTextControl
+                                label={__('Featured text', 'voxel-fse')}
+                                value={config.featuredText ?? 'Featured'}
+                                onChange={(val) => updatePlanConfig(planKey, { featuredText: val })}
+                            />
+                        )}
+
                         <SectionHeading label={__('Features', 'voxel-fse')} />
 
                         <RepeaterControl
@@ -238,18 +255,36 @@ export function ContentTab({
             })}
 
             <AccordionPanel id="redirect_options" title={__('Redirect options', 'voxel-fse')}>
+                {/* Evidence: listing-plans-widget.php:1549-1582 */}
                 <SelectControl
                     label={__('Direct purchase redirect', 'voxel-fse')}
-                    help={__('Specify where users should be redirected after purchasing a plan when the page is accessed directly.', 'voxel-fse')}
+                    help={__('Specify where users should be redirected after purchasing a plan when the page is accessed directly (not as part of a specific flow such as creating a post, claiming a listing, or switching plans).', 'voxel-fse')}
                     value={attributes.directPurchaseRedirect}
                     options={[
-                        { label: __('Go to Order page', 'voxel-fse'), value: 'order_page' },
-                        { label: __('Go to Platform', 'voxel-fse'), value: 'platform' },
+                        { label: __('Go to Order page', 'voxel-fse'), value: 'order' },
+                        { label: __('Go to post submission form', 'voxel-fse'), value: 'new_post' },
+                        { label: __('Custom redirect', 'voxel-fse'), value: 'custom' },
                     ]}
                     onChange={(value: string) => setAttributes({
-                        directPurchaseRedirect: value as 'order_page' | 'back'
+                        directPurchaseRedirect: value as 'order' | 'new_post' | 'custom'
                     })}
                 />
+                {attributes.directPurchaseRedirect === 'new_post' && (
+                    <TextControl
+                        label={__('Post type', 'voxel-fse')}
+                        value={attributes.directPurchasePostType ?? ''}
+                        onChange={(value: any) => setAttributes({ directPurchasePostType: value })}
+                        help={__('Enter the post type key (e.g. "post", "listing")', 'voxel-fse')}
+                    />
+                )}
+                {attributes.directPurchaseRedirect === 'custom' && (
+                    <TextControl
+                        label={__('Custom redirect URL', 'voxel-fse')}
+                        value={attributes.directPurchaseCustomUrl ?? ''}
+                        onChange={(value: any) => setAttributes({ directPurchaseCustomUrl: value })}
+                        placeholder="https://"
+                    />
+                )}
             </AccordionPanel>
 
             {/* Visibility Rules Modal */}

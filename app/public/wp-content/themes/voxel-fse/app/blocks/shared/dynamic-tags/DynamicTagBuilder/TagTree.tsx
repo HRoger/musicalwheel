@@ -6,7 +6,7 @@
  * @package MusicalWheel
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataGroup, TagExport } from './types';
 
 interface TagTreeProps {
@@ -164,6 +164,23 @@ const GroupItem: React.FC<GroupItemProps> = ({
 	// Check if this group is expanded
 	const isExpanded = expandedPath === group.type;
 
+	// Auto-load children when expanded with no children (handles default-expanded state)
+	useEffect(() => {
+		if (isExpanded && group.hasChildren && localExports.length === 0 && onLoadChildren && !isLoading) {
+			(async () => {
+				setIsLoading(true);
+				try {
+					const children = await onLoadChildren(group.type);
+					setLocalExports(children);
+				} catch (err) {
+					console.error(`Failed to auto-load children for ${group.type}:`, err);
+				} finally {
+					setIsLoading(false);
+				}
+			})();
+		}
+	}, [isExpanded]);
+
 	const handleToggle = async () => {
 		// Toggle: if already expanded, collapse; otherwise expand
 		const willExpand = !isExpanded;
@@ -231,6 +248,13 @@ export const TagTree: React.FC<TagTreeProps> = ({ groups, searchQuery, onSelectT
 	const [expandedGroup, setExpandedGroup] = useState<string>(
 		groups && groups.length > 0 ? groups[0].type : ''
 	);
+
+	// Reset expanded group when groups array changes (e.g., context switched from post to term)
+	useEffect(() => {
+		if (groups && groups.length > 0) {
+			setExpandedGroup(groups[0].type);
+		}
+	}, [groups]);
 
 	if (!groups || groups.length === 0) {
 		return (

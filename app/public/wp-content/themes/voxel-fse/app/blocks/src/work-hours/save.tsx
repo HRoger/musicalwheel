@@ -11,7 +11,7 @@ export default function save({ attributes }: Props) {
   const blockId = attributes.blockId || 'work-hours';
 
   // Use shared utility for AdvancedTab + VoxelTab wiring
-  const advancedProps = getAdvancedVoxelTabProps(attributes, {
+  const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
     blockId,
     baseClass: `ts-work-hours ${attributes.collapse}`,
   });
@@ -25,19 +25,19 @@ export default function save({ attributes }: Props) {
     .filter(Boolean)
     .join('\n');
 
-  const blockProps = useBlockProps.save({
+  const blockProps = (useBlockProps as any).save({
     id: advancedProps.elementId,
     className: `${advancedProps.className} voxel-fse-work-hours-${blockId}`,
     style: advancedProps.styles,
     // Headless-ready: Visibility rules configuration
-    'data-visibility-behavior': attributes.visibilityBehavior || undefined,
-    'data-visibility-rules': attributes.visibilityRules?.length
-      ? JSON.stringify(attributes.visibilityRules)
+    'data-visibility-behavior': (attributes as any).visibilityBehavior || undefined,
+    'data-visibility-rules': (attributes as any).visibilityRules?.length
+      ? JSON.stringify((attributes as any).visibilityRules)
       : undefined,
     // Headless-ready: Loop element configuration
-    'data-loop-source': attributes.loopSource || undefined,
-    'data-loop-limit': attributes.loopLimit || undefined,
-    'data-loop-offset': attributes.loopOffset || undefined,
+    'data-loop-source': (attributes as any).loopSource || undefined,
+    'data-loop-limit': (attributes as any).loopLimit || undefined,
+    'data-loop-offset': (attributes as any).loopOffset || undefined,
     ...advancedProps.customAttrs,
   });
 

@@ -41,7 +41,7 @@ export function StyleTab({
 	attributes,
 	setAttributes,
 }: StyleTabProps): JSX.Element {
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = (useSelect as any)((select: any) => getCurrentDeviceType(select), []);
 	return (
 		<AccordionPanelGroup
 			attributes={attributes as Record<string, any>}
@@ -111,7 +111,7 @@ export function StyleTab({
 				<StateTabPanel
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					stateAttribute="imageStyleState"
+					attributeName="imageStyleState"
 					tabs={[
 						{ name: 'normal', title: __('Normal', 'voxel-fse') },
 						{ name: 'hover', title: __('Hover', 'voxel-fse') },
@@ -134,9 +134,8 @@ export function StyleTab({
 									{/* CSS Filters */}
 									<CssFiltersPopup
 										label={__('CSS Filters', 'voxel-fse')}
-										attributes={attributes as Record<string, any>}
-										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeName="imageCssFilters"
+										value={(attributes as any).imageCssFilters || {}}
+										onChange={(value: any) => setAttributes({ imageCssFilters: value } as any)}
 									/>
 								</>
 							) : (
@@ -154,9 +153,8 @@ export function StyleTab({
 									{/* CSS Filters Hover */}
 									<CssFiltersPopup
 										label={__('CSS Filters', 'voxel-fse')}
-										attributes={attributes as Record<string, any>}
-										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeName="imageCssFiltersHover"
+										value={(attributes as any).imageCssFiltersHover || {}}
+										onChange={(value: any) => setAttributes({ imageCssFiltersHover: value } as any)}
 									/>
 
 									{/* Transition Duration */}
@@ -278,8 +276,8 @@ export function StyleTab({
 				{/* Typography */}
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
-					value={attributes.captionTypography || {}}
-					onChange={(value) => setAttributes({ captionTypography: value })}
+					value={(attributes.captionTypography || {}) as any}
+					onChange={(value: any) => setAttributes({ captionTypography: value })}
 				/>
 
 				{/* Text Shadow */}
@@ -287,7 +285,7 @@ export function StyleTab({
 					label={__('Text Shadow', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeName="captionTextShadow"
+					shadowAttributeName="captionTextShadow"
 				/>
 
 				{/* Spacing */}

@@ -83,11 +83,7 @@ export function useOrdersList(
 			if (productType) params.set('product_type', productType);
 			if (searchQuery) params.set('search', searchQuery);
 
-			const response = await apiFetch<{
-				orders: unknown[];
-				total: number;
-				total_pages: number;
-			}>({
+			const response = await apiFetch<any>({
 				path: `/voxel-fse/v1/orders?${params.toString()}`,
 				method: 'GET',
 			});
@@ -135,7 +131,7 @@ export function useSingleOrder(orderId: number | null) {
 		setError(null);
 
 		try {
-			const response = await apiFetch<{ order: unknown }>({
+			const response = await apiFetch<any>({
 				path: `/voxel-fse/v1/orders/${orderId}`,
 				method: 'GET',
 			});

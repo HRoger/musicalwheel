@@ -161,34 +161,46 @@ export function generateTimelineCSS(
 	let css = '';
 
 	// 1. General accordion - CSS Custom Properties on .vxfeed
-	css += '.vxfeed {\n';
-	if (attributes.vxfText1) css += `  --main-text: ${attributes.vxfText1};\n`;
-	if (attributes.vxfText2) css += `  --faded-text: ${attributes.vxfText2};\n`;
-	if (attributes.vxfText3) css += `  --main-link: ${attributes.vxfText3};\n`;
-	if (attributes.vxfBg) css += `  --main-bg: ${attributes.vxfBg};\n`;
-	if (attributes.vxfBorder) css += `  --main-border: ${attributes.vxfBorder};\n`;
-	if (attributes.vxfDetail) css += `  --detail-color: ${attributes.vxfDetail};\n`;
+	// Build the vxfeed properties first, only output if there are any
+	let vxfeedProps = '';
+	if (attributes.vxfText1) vxfeedProps += `  --main-text: ${attributes.vxfText1};\n`;
+	if (attributes.vxfText2) vxfeedProps += `  --faded-text: ${attributes.vxfText2};\n`;
+	if (attributes.vxfText3) vxfeedProps += `  --main-link: ${attributes.vxfText3};\n`;
+	if (attributes.vxfBg) vxfeedProps += `  --main-bg: ${attributes.vxfBg};\n`;
+	if (attributes.vxfBorder) vxfeedProps += `  --main-border: ${attributes.vxfBorder};\n`;
+	if (attributes.vxfDetail) vxfeedProps += `  --detail-color: ${attributes.vxfDetail};\n`;
 
 	// Radius values (responsive)
 	const xlRadius = getResponsiveValue('xlRadius', attributes, 'px', device);
-	if (xlRadius) css += `  --xl-radius: ${xlRadius};\n`;
+	if (xlRadius) vxfeedProps += `  --xl-radius: ${xlRadius};\n`;
 
 	const lgRadius = getResponsiveValue('lgRadius', attributes, 'px', device);
-	if (lgRadius) css += `  --lg-radius: ${lgRadius};\n`;
+	if (lgRadius) vxfeedProps += `  --lg-radius: ${lgRadius};\n`;
 
 	const mdRadius = getResponsiveValue('mdRadius', attributes, 'px', device);
-	if (mdRadius) css += `  --md-radius: ${mdRadius};\n`;
+	if (mdRadius) vxfeedProps += `  --md-radius: ${mdRadius};\n`;
 
 	// Icons accordion - Icon sizes (responsive)
 	const mainIconSize = getResponsiveValue('mainIconSize', attributes, 'px', device);
-	if (mainIconSize) css += `  --main-icon-size: ${mainIconSize};\n`;
+	if (mainIconSize) vxfeedProps += `  --main-icon-size: ${mainIconSize};\n`;
 
 	const replyIconSize = getResponsiveValue('replyIconSize', attributes, 'px', device);
-	if (replyIconSize) css += `  --reply-icon-size: ${replyIconSize};\n`;
+	if (replyIconSize) vxfeedProps += `  --reply-icon-size: ${replyIconSize};\n`;
 
 	// Main icon color
-	if (attributes.vxfAction1) css += `  --main-icon-color: ${attributes.vxfAction1};\n`;
+	if (attributes.vxfAction1) vxfeedProps += `  --main-icon-color: ${attributes.vxfAction1};\n`;
 
+	// Only output .vxfeed block if there are properties
+	if (vxfeedProps) {
+		css += `.vxfeed {\n${vxfeedProps}}\n\n`;
+	}
+
+	// 1.5. Demofeed wrapper styling
+	css += `.demofeed {\n`;
+	css += `  width: 100%;\n`;
+	css += `  max-width: 600px;\n`;
+	css += `  margin: auto;\n`;
+	css += `  padding: 20px;\n`;
 	css += '}\n\n';
 
 	// 2. General accordion - Box Shadow
@@ -218,6 +230,7 @@ export function generateTimelineCSS(
 	}
 
 	// 5. Buttons accordion - General section (Typography + Border Radius)
+	// Match Voxel's original selectors: .vxfeed .ts-btn (specificity 0-2-0)
 	const typoCSS = generateTypographyCSS(attributes.tsPopupBtnTypo, device);
 	const btnRadius = getResponsiveValue('tsPopupBtnRadius', attributes, 'px', device);
 
@@ -229,62 +242,74 @@ export function generateTimelineCSS(
 	}
 
 	// 6. Buttons accordion - Primary Button (Normal) - .ts-btn-1
-	css += `.vxfeed .ts-btn-1 {\n`;
-	if (attributes.tsPopupButton1) css += `  background: ${attributes.tsPopupButton1};\n`;
-	if (attributes.tsPopupButton1C) css += `  color: ${attributes.tsPopupButton1C};\n`;
-	if (attributes.tsPopupButton1Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton1Icon};\n`;
-
+	// Match Voxel's original selector: .vxfeed .ts-btn-1
+	// Only output if there are actual properties to set
 	const primaryBorder = generateBorderCSS(
 		attributes.tsPopupButton1BorderType,
 		attributes.tsPopupButton1BorderWidth,
 		attributes.tsPopupButton1BorderColor
 	);
-	if (primaryBorder) css += `  ${primaryBorder}\n`;
-	css += '}\n\n';
+	if (attributes.tsPopupButton1 || attributes.tsPopupButton1C || attributes.tsPopupButton1Icon || primaryBorder) {
+		css += `.vxfeed .ts-btn-1 {\n`;
+		if (attributes.tsPopupButton1) css += `  background: ${attributes.tsPopupButton1};\n`;
+		if (attributes.tsPopupButton1C) css += `  color: ${attributes.tsPopupButton1C};\n`;
+		if (attributes.tsPopupButton1Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton1Icon};\n`;
+		if (primaryBorder) css += `  ${primaryBorder}\n`;
+		css += '}\n\n';
+	}
 
 	// 7. Buttons accordion - Primary Button (Hover)
-	css += `.vxfeed .ts-btn-1:hover {\n`;
-	if (attributes.tsPopupButton1H) css += `  background: ${attributes.tsPopupButton1H};\n`;
-	if (attributes.tsPopupButton1CH) css += `  color: ${attributes.tsPopupButton1CH};\n`;
-	if (attributes.tsPopupButton1IconH) css += `  --ts-icon-color: ${attributes.tsPopupButton1IconH};\n`;
-	if (attributes.tsPopupButton1BH) css += `  border-color: ${attributes.tsPopupButton1BH};\n`;
-	css += '}\n\n';
+	if (attributes.tsPopupButton1H || attributes.tsPopupButton1CH || attributes.tsPopupButton1IconH || attributes.tsPopupButton1BH) {
+		css += `.vxfeed .ts-btn-1:hover {\n`;
+		if (attributes.tsPopupButton1H) css += `  background: ${attributes.tsPopupButton1H};\n`;
+		if (attributes.tsPopupButton1CH) css += `  color: ${attributes.tsPopupButton1CH};\n`;
+		if (attributes.tsPopupButton1IconH) css += `  --ts-icon-color: ${attributes.tsPopupButton1IconH};\n`;
+		if (attributes.tsPopupButton1BH) css += `  border-color: ${attributes.tsPopupButton1BH};\n`;
+		css += '}\n\n';
+	}
 
 	// 8. Buttons accordion - Accent Button (Normal) - .ts-btn-2
-	css += `.vxfeed .ts-btn-2 {\n`;
-	if (attributes.tsPopupButton2) css += `  background: ${attributes.tsPopupButton2};\n`;
-	if (attributes.tsPopupButton2C) css += `  color: ${attributes.tsPopupButton2C};\n`;
-	if (attributes.tsPopupButton2Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton2Icon};\n`;
-
 	const accentBorder = generateBorderCSS(
 		attributes.tsPopupButton2BorderType,
 		attributes.tsPopupButton2BorderWidth,
 		attributes.tsPopupButton2BorderColor
 	);
-	if (accentBorder) css += `  ${accentBorder}\n`;
-	css += '}\n\n';
+	if (attributes.tsPopupButton2 || attributes.tsPopupButton2C || attributes.tsPopupButton2Icon || accentBorder) {
+		css += `.vxfeed .ts-btn-2 {\n`;
+		if (attributes.tsPopupButton2) css += `  background: ${attributes.tsPopupButton2};\n`;
+		if (attributes.tsPopupButton2C) css += `  color: ${attributes.tsPopupButton2C};\n`;
+		if (attributes.tsPopupButton2Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton2Icon};\n`;
+		if (accentBorder) css += `  ${accentBorder}\n`;
+		css += '}\n\n';
+	}
 
 	// 9. Buttons accordion - Accent Button (Hover)
-	css += `.vxfeed .ts-btn-2:hover {\n`;
-	if (attributes.tsPopupButton2H) css += `  background: ${attributes.tsPopupButton2H};\n`;
-	if (attributes.tsPopupButton2CH) css += `  color: ${attributes.tsPopupButton2CH};\n`;
-	if (attributes.tsPopupButton2IconH) css += `  --ts-icon-color: ${attributes.tsPopupButton2IconH};\n`;
-	if (attributes.tsPopupButton2BH) css += `  border-color: ${attributes.tsPopupButton2BH};\n`;
-	css += '}\n\n';
+	if (attributes.tsPopupButton2H || attributes.tsPopupButton2CH || attributes.tsPopupButton2IconH || attributes.tsPopupButton2BH) {
+		css += `.vxfeed .ts-btn-2:hover {\n`;
+		if (attributes.tsPopupButton2H) css += `  background: ${attributes.tsPopupButton2H};\n`;
+		if (attributes.tsPopupButton2CH) css += `  color: ${attributes.tsPopupButton2CH};\n`;
+		if (attributes.tsPopupButton2IconH) css += `  --ts-icon-color: ${attributes.tsPopupButton2IconH};\n`;
+		if (attributes.tsPopupButton2BH) css += `  border-color: ${attributes.tsPopupButton2BH};\n`;
+		css += '}\n\n';
+	}
 
 	// 10. Buttons accordion - Tertiary Button (Normal) - .ts-btn-4
-	css += `.vxfeed .ts-btn-4 {\n`;
-	if (attributes.tsPopuptertiary2) css += `  background: ${attributes.tsPopuptertiary2};\n`;
-	if (attributes.tsPopupTertiary2C) css += `  color: ${attributes.tsPopupTertiary2C};\n`;
-	if (attributes.tsPopupButton3Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton3Icon};\n`;
-	css += '}\n\n';
+	if (attributes.tsPopuptertiary2 || attributes.tsPopupTertiary2C || attributes.tsPopupButton3Icon) {
+		css += `.vxfeed .ts-btn-4 {\n`;
+		if (attributes.tsPopuptertiary2) css += `  background: ${attributes.tsPopuptertiary2};\n`;
+		if (attributes.tsPopupTertiary2C) css += `  color: ${attributes.tsPopupTertiary2C};\n`;
+		if (attributes.tsPopupButton3Icon) css += `  --ts-icon-color: ${attributes.tsPopupButton3Icon};\n`;
+		css += '}\n\n';
+	}
 
 	// 11. Buttons accordion - Tertiary Button (Hover)
-	css += `.vxfeed .ts-btn-4:hover {\n`;
-	if (attributes.tsPopupTertiary2H) css += `  background: ${attributes.tsPopupTertiary2H};\n`;
-	if (attributes.tsPopupTertiary2CH) css += `  color: ${attributes.tsPopupTertiary2CH};\n`;
-	if (attributes.tsPopupTertiaryIconH) css += `  --ts-icon-color: ${attributes.tsPopupTertiaryIconH};\n`;
-	css += '}\n\n';
+	if (attributes.tsPopupTertiary2H || attributes.tsPopupTertiary2CH || attributes.tsPopupTertiaryIconH) {
+		css += `.vxfeed .ts-btn-4:hover {\n`;
+		if (attributes.tsPopupTertiary2H) css += `  background: ${attributes.tsPopupTertiary2H};\n`;
+		if (attributes.tsPopupTertiary2CH) css += `  color: ${attributes.tsPopupTertiary2CH};\n`;
+		if (attributes.tsPopupTertiaryIconH) css += `  --ts-icon-color: ${attributes.tsPopupTertiaryIconH};\n`;
+		css += '}\n\n';
+	}
 
 	// 12. Loading spinner accordion - Spinner Colors
 	if (attributes.tmColor1 || attributes.tmColor2) {

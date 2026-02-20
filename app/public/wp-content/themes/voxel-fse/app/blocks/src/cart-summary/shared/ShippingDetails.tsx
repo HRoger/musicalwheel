@@ -10,7 +10,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import type { ShippingState, ShippingCountries, CountryConfig } from '../types';
+import type { ShippingState, ShippingCountries } from '../types';
 
 interface ShippingDetailsProps {
 	shipping: ShippingState;
@@ -34,7 +34,7 @@ export default function ShippingDetails({
 	shipping,
 	onShippingChange,
 	countries,
-	context,
+	context: _context,
 }: ShippingDetailsProps) {
 	const countryStates = getCountryStates(countries, shipping.country);
 	const hasStates = countryStates && Object.keys(countryStates).length > 0;

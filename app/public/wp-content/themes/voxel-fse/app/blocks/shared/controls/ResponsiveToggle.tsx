@@ -11,11 +11,10 @@
  */
 
 import { ToggleControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveToggleProps {
 	/** Control label */
@@ -49,7 +48,7 @@ export default function ResponsiveToggle({
 	showResponsiveButton = true,
 }: ResponsiveToggleProps) {
 	// Get WordPress's current device type from the store - this is the source of truth
-	const activeDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const activeDevice = useDeviceType();
 
 	// Get attribute name for current device
 	const attributeName = showResponsiveButton
@@ -82,7 +81,7 @@ export default function ResponsiveToggle({
 				label={label}
 				help={help}
 				checked={currentValue}
-				onChange={(value) => setAttributes({ [attributeName]: value })}
+				onChange={(value: boolean) => setAttributes({ [attributeName]: value })}
 			/>
 		);
 	}
@@ -100,7 +99,7 @@ export default function ResponsiveToggle({
 					<ToggleControl
 						__nextHasNoMarginBottom
 						checked={currentValue}
-						onChange={(value) => setAttributes({ [attributeName]: value })}
+						onChange={(value: boolean) => setAttributes({ [attributeName]: value })}
 					/>
 				</div>
 			</div>
