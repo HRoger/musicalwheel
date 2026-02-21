@@ -205,14 +205,22 @@ export default function ImageComponent({ attributes, context, templateContext = 
 				}
 
 				// Step 2: Get the image URL from the WordPress media REST API
-				const media = await apiFetch<{ source_url: string; alt_text?: string }>({
-					path: `/wp/v2/media/${attachmentId}`,
+				// Request media_details to access registered size URLs
+				const media = await apiFetch<{
+					source_url: string;
+					alt_text?: string;
+					media_details?: { sizes?: Record<string, { source_url: string }> };
+				}>({
+					path: `/wp/v2/media/${attachmentId}?context=edit`,
 				});
 
 				if (cancelled) return;
 
-				if (media?.source_url) {
-					setDynamicImageUrl(media.source_url);
+				if (media) {
+					// Use the requested imageSize if available, fall back to full-size source_url
+					const requestedSize = attributes.imageSize || 'large';
+					const sizedUrl = media.media_details?.sizes?.[requestedSize]?.source_url;
+					setDynamicImageUrl(sizedUrl || media.source_url);
 				}
 			} catch (err) {
 				if (!cancelled) {
@@ -222,7 +230,7 @@ export default function ImageComponent({ attributes, context, templateContext = 
 		})();
 
 		return () => { cancelled = true; };
-	}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext, templatePostType]);
+	}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext, templatePostType, attributes.imageSize]);
 
 	// Use resolved dynamic image URL when no static image is set
 	const effectiveImageUrl = attributes.image.url || dynamicImageUrl;

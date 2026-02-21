@@ -20,8 +20,11 @@ div.wp-block-voxel-fse-image a {
 }
 
 /* Base widget container - matches .elementor-widget-image */
+/* width: 100% ensures the block fills its flex column parent (like Elementor widget stretching to full column width),
+   so text-align can meaningfully position the inline-block img within the full-width container. */
 .wp-block-voxel-fse-image {
 	text-align: center;
+	width: 100%;
 }
 
 /* SVG width handling - matches .elementor-widget-image a img[src$=".svg"] */
@@ -30,9 +33,13 @@ div.wp-block-voxel-fse-image a {
 }
 
 /* Image element - matches .elementor-widget-image img */
+/* max-width: 100% ensures image never overflows its container column.
+   Native WP image blocks get this from the block library stylesheet;
+   our custom block must set it explicitly. */
 .wp-block-voxel-fse-image img {
 	display: inline-block;
 	vertical-align: middle;
+	max-width: 100%;
 }
 
 /* Wrapper for alignment control */

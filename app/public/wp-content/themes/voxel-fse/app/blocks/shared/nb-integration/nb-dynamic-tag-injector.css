@@ -1,0 +1,293 @@
+/**
+ * NB Dynamic Tag Injector Styles
+ *
+ * Positions the EnableTagsButton inline with NB's control labels
+ * and styles the tag preview panel.
+ *
+ * @package VoxelFSE
+ */
+
+/* Portal container — sits inline with the label text */
+.voxel-nb-tag-portal {
+	display: inline-flex;
+	align-items: center;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+
+/* Corner placement — absolutely positioned in the top-right of the component area */
+.voxel-nb-tag-portal--corner {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	margin-left: 0;
+	z-index: 1;
+}
+
+.block-editor-block-inspector__advanced .voxel-nb-tag-portal--corner {
+	position: absolute;
+	top: -3px;
+	right: 6px;
+	margin-left: 0;
+	z-index: 10;
+}
+
+/* Ensure the wrapper doesn't clip the absolutely-positioned button */
+.block-editor-block-inspector__advanced .components-base-control__field {
+	overflow: visible;
+}
+
+/* ─── Z-Index Value row layout fixes ─── */
+body .nectar__position-control__z-index .nectar-control-row .nectar-control-row__label {
+	align-self: center;
+	min-width: 30px;
+	padding-top: 0;
+	width: 61%;
+}
+
+body .nectar__position-control__z-index .nectar-control-row .nectar-control-row__label .nectar-control-row__reset-wrap {
+	align-items: center;
+	display: flex;
+	gap: 0;
+}
+
+/* Override EnableTagsButton size to fit NB's compact label area */
+.voxel-nb-tag-portal .voxel-fse-enable-tags {
+	width: 20px;
+	height: 20px;
+}
+
+.voxel-nb-tag-portal .voxel-fse-enable-tags__icon {
+	width: 12px;
+	height: 12px;
+}
+
+.voxel-nb-tag-portal .voxel-fse-enable-tags::after {
+	width: 22px;
+	height: 22px;
+}
+
+/* ─── Tag Preview Panel ─── */
+
+/*
+ * Force hidden NB sub-rows to become visible when they contain our tag preview.
+ * The Z-Index "Value" sub-row is display:none until "Custom" mode is selected by NB.
+ * When we inject a tag preview, we override NB's hiding so the preview is visible.
+ *
+ * IMPORTANT: Use `:has(> .voxel-nb-tag-preview)` (direct child) NOT `:has(.voxel-nb-tag-preview)`
+ * (descendant). The descendant form would also match PARENT component areas that happen to
+ * contain the preview deep inside, which would hide the sub-row itself via the sibling-hide rule.
+ */
+.nectar-control-row:has(.voxel-nb-tag-preview) {
+	display: flex !important;
+}
+
+.nectar-control-row__component:has(> .voxel-nb-tag-preview) {
+	height: auto !important;
+}
+
+/* The preview replaces the entire component area — same pattern as VX image block */
+.voxel-nb-tag-preview {
+	position: relative;
+	z-index: 2;
+}
+
+.voxel-nb-tag-preview__inner {
+	background-color: rgb(47, 47, 49);
+	border-radius: 10px;
+	overflow: hidden;
+	padding: 12px;
+}
+
+/* Hide the original NB control content when a tag preview is active.
+ * Uses :has(>) direct child selector to avoid hiding parent-level siblings. */
+.nectar-control-row__component:has(> .voxel-nb-tag-preview) > *:not(.voxel-nb-tag-preview) {
+	display: none !important;
+}
+
+.voxel-nb-tag-preview__content {
+	color: #fff;
+	font-size: 12px;
+	font-family: inherit;
+	word-break: break-word;
+	display: block;
+	margin-bottom: 8px;
+}
+
+.voxel-nb-tag-preview__divider {
+	height: 1px;
+	background-color: rgba(255, 255, 255, 0.15);
+	margin-bottom: 6px;
+}
+
+.voxel-nb-tag-preview__actions {
+	display: flex;
+}
+
+.voxel-nb-tag-preview__btn {
+	flex: 1;
+	background: transparent;
+	border: none;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	cursor: pointer;
+	padding: 4px 0;
+	text-align: center;
+}
+
+.voxel-nb-tag-preview__btn--disable {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.voxel-nb-tag-preview__btn:hover {
+	color: #fff;
+}
+
+/* ─── Voxel Tab in NB Inspector ─── */
+
+/* Remove border-top from tab list */
+body .nectar-blocks-tab-list {
+	border-top: none;
+}
+
+/* Remove borders from 2nd tab */
+body .nectar-blocks-tab-list li:nth-child(2) {
+	border-left: none;
+	border-right: none;
+}
+
+/* Hide NB tab labels — icon-only design matching image 2.
+ * NB tabs use: <li><svg>icon</svg> TextLabel </li>
+ * We hide the text node by setting font-size: 0 on the li
+ * and restoring it on the svg child. */
+.nectar-blocks-tab-list li {
+	font-size: 0 !important;
+	gap: 0 !important;
+	padding: 10px 0 !important;
+}
+
+/* Set tab border-bottom to 1px */
+.nectar-blocks-tab-list {
+	border-bottom-width: 1px;
+}
+
+/* Voxel tab <li> — matches NB's .nectar-blocks-tab-list li styling */
+.nectar-blocks-tab-list li[data-voxel-tab="true"] {
+	align-items: center;
+	border: 0;
+	border-radius: 0;
+	display: flex;
+	flex-direction: column;
+	font-size: 0 !important;
+	font-weight: 500;
+	gap: 0 !important;
+	justify-content: center;
+	line-height: 1.2;
+	margin-bottom: 0;
+	padding: 10px 0 !important;
+	position: relative;
+	text-align: center;
+	transition: all 0.2s ease;
+	cursor: pointer;
+	color: inherit;
+	list-style: none;
+	border-left: none;
+}
+
+/* Update tab widths: 4 tabs = 25% each */
+.nectar-blocks-tab-list:has([data-voxel-tab="true"]) li {
+	width: 25% !important;
+}
+
+/* Voxel tab icon — match NB's SVG icon size (15px).
+ * NB uses inline SVGs that inherit `fill` from text color.
+ * We use an <img>, so we apply a grayscale filter to match NB's
+ * default dark gray icon appearance. */
+.nectar-blocks-tab-list li[data-voxel-tab="true"] img {
+	width: 15px;
+	height: 15px;
+	object-fit: contain;
+	transition: all 0.2s ease;
+	/* Convert the Voxel blue logo to match NB's dark gray icon color */
+	filter: brightness(0) saturate(100%) invert(32%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(90%);
+}
+
+/* Hover state — match NB's #3452ff accent */
+.nectar-blocks-tab-list li[data-voxel-tab="true"]:hover {
+	color: #3452ff;
+}
+
+.nectar-blocks-tab-list li[data-voxel-tab="true"]:hover img {
+	filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(4688%) hue-rotate(232deg) brightness(101%) contrast(106%);
+}
+
+/* Active indicator — match NB's ::after pattern */
+.nectar-blocks-tab-list li[data-voxel-tab="true"]::after {
+	background-color: #3452ff !important;
+	border-radius: 10px;
+	bottom: 0 !important;
+	content: "";
+	filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.2));
+	height: 2px !important;
+	left: 0 !important;
+	position: absolute;
+	transform: scaleX(0);
+	transition: all 0.4s ease;
+	width: 100%;
+}
+
+.nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected::after {
+	transform: scaleX(1);
+}
+
+.nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected {
+	color: #3452ff;
+}
+
+.nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected img {
+	filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(4688%) hue-rotate(232deg) brightness(101%) contrast(106%);
+}
+
+/*
+ * When Voxel tab is active, hide NB's ::after marker on NB tabs.
+ * We use [data-voxel-tab-active] on the tab list container instead of
+ * manually toggling react-tabs__tab--selected, which would fight react-tabs.
+ */
+.nectar-blocks-tab-list[data-voxel-tab-active="true"] li:not([data-voxel-tab="true"])::after {
+	transform: scaleX(0) !important;
+}
+
+/* Voxel tab panel container */
+.voxel-nb-tab-panel {
+	display: none;
+	padding: 0;
+}
+
+.voxel-nb-tab-panel.is-active {
+	display: block;
+}
+
+/* ─── VoxelTab panel content styling ─── */
+/*
+ * Minimal overrides only. VoxelTab uses inline <style> tags for its own
+ * layout. We only fix issues caused by NB/WP inherited styles that break
+ * our portal-rendered controls (e.g. uppercase labels, wrong font-size).
+ */
+
+/* Panel body borders */
+.voxel-nb-tab-panel .components-panel__body {
+	border-top: 1px solid #e0e0e0;
+	border-bottom: none;
+}
+
+.voxel-nb-tab-panel .components-panel__body:first-child {
+	border-top: none;
+}
+
+/* Labels — fix WP uppercase default */
+.voxel-nb-tab-panel .components-base-control__label {
+	text-transform: none !important;
+}

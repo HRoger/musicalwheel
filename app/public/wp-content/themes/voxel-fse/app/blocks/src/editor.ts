@@ -27,8 +27,8 @@ import './map/index';
 import './membership-plans/index';
 import './messages/index';
 import './navbar/index';
-// import './nested-accordion/index';
-// import './nested-tabs/index';
+import './nested-accordion/index';
+import './nested-tabs/index';
 import './orders/index';
 import './popup-kit/index';
 import './post-feed/index';
@@ -48,3 +48,6 @@ import './timeline-kit/index';
 import './userbar/index';
 import './visit-chart/index';
 import './work-hours/index';
+
+// NectarBlocks integration — injects Voxel dynamic tag buttons into NB controls
+import '../shared/nb-integration';

@@ -372,6 +372,14 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-loop-api-controller.php';
 new \VoxelFSE\Controllers\FSE_Loop_API_Controller();
 
 /**
+ * FSE NectarBlocks Dynamic Tags Controller
+ * Injects Voxel dynamic tag attributes into NB blocks and resolves them on render.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-nb-dynamic-tags-controller.php';
+
+new \VoxelFSE\Controllers\FSE_NB_Dynamic_Tags_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all

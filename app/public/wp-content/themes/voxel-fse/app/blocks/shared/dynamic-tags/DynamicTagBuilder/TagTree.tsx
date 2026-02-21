@@ -249,12 +249,16 @@ export const TagTree: React.FC<TagTreeProps> = ({ groups, searchQuery, onSelectT
 		groups && groups.length > 0 ? groups[0].type : ''
 	);
 
-	// Reset expanded group when groups array changes (e.g., context switched from post to term)
+	// Reset expanded group only when the set of group types actually changes
+	// (e.g., context switched from post to term).  We derive a stable key from
+	// the group types so that new array references with the same content don't
+	// trigger a reset — which was causing the flicker/double-click bug.
+	const groupTypesKey = groups?.map((g) => g.type).join(',') ?? '';
 	useEffect(() => {
 		if (groups && groups.length > 0) {
 			setExpandedGroup(groups[0].type);
 		}
-	}, [groups]);
+	}, [groupTypesKey]);
 
 	if (!groups || groups.length === 0) {
 		return (

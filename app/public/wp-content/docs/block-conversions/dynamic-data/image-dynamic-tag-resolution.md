@@ -1,8 +1,8 @@
-# Dynamic Image Tag Resolution — Image (VX) Block
+# Dynamic Image Tag Resolution — Image / Gallery / Slider Blocks
 
-**Date:** 2026-02-19
-**Branch:** 13-fix-header-tpl
-**Affects:** `app/blocks/src/image/`
+**Date:** 2026-02-20
+**Branch:** 14-fix-lint-errors
+**Affects:** `app/blocks/src/image/`, `app/blocks/src/gallery/`, `app/blocks/src/slider/`
 
 ---
 
@@ -13,6 +13,18 @@ When `imageDynamicTag` (e.g., `@tags()@term(image)@endtags()`) was set on an Ima
 Root cause: dynamic tags are **server-side resolved at frontend render time**. There was no mechanism to:
 1. Preview the resolved image in the Gutenberg editor
 2. Output a placeholder element in `save.tsx` that `render.php` could replace at runtime
+3. Pass the correct post type to the REST API so sample post data was fetched from the right post type
+
+---
+
+## How Dynamic Tags Are Stored
+
+VoxelScript expressions are stored **without the `@tags()...@endtags()` wrapper** in the block attribute — that wrapper is added automatically by the control (e.g., `GalleryUploadControl.wrapWithTags()`):
+
+- **User enters:** `@post(gallery.ids)`
+- **Stored in attribute:** `@tags()@post(gallery.ids)@endtags()`
+
+This is important: never manually add or strip `@tags()...@endtags()` when configuring block attributes.
 
 ---
 
@@ -120,40 +132,86 @@ if ( ! empty( $attributes['imageDynamicTag'] ) && strpos( $content, 'data-dynami
 
 ---
 
-### 3. `edit.tsx` — Pass template context to ImageComponent
+### 3. `useTemplateContext.ts` — Extract post type from template slug
+
+**File:** `app/public/wp-content/themes/voxel-fse/app/blocks/shared/utils/useTemplateContext.ts`
+
+Added a new `useTemplatePostType()` hook and shared `getTemplateSlug()` helper. This was required because the REST API needs to know the correct post type to fetch sample posts that actually have the relevant Voxel fields (e.g., `gallery`, `_thumbnail_id`).
+
+```ts
+/**
+ * Internal helper: reads the current template slug from the editor store.
+ * Works in both site editor (core/edit-site) and post editor (core/editor).
+ */
+function getTemplateSlug(select: any): string {
+    const editSite = select('core/edit-site');
+    if (editSite) {
+        const editedPostId = editSite.getEditedPostId?.();
+        if (typeof editedPostId === 'string') return editedPostId;
+    }
+    const editor = select('core/editor');
+    if (editor) {
+        const post = editor.getCurrentPost?.();
+        if (post?.slug) return post.slug;
+    }
+    return '';
+}
+
+/**
+ * Returns the Voxel post type key from the current template slug.
+ * e.g. "voxel-place-single" → "place", "voxel-real-estate-single" → "real-estate"
+ * Returns undefined when not on a post single template.
+ *
+ * NOTE: Regex supports hyphens in post type keys (e.g. "real-estate").
+ * Original pattern /voxel-([a-z0-9_]+)-single/ would silently fail for hyphenated post types.
+ */
+export function useTemplatePostType(): string | undefined {
+    return useSelect((select: any) => {
+        const slug = getTemplateSlug(select);
+        const match = slug.match(/voxel-([a-z0-9_-]+)-single/);
+        if (match) return match[1];
+        return undefined;
+    }, []) as string | undefined;
+}
+```
+
+**Why the regex supports hyphens:** Voxel post type keys can contain hyphens (e.g., `real-estate`). The original pattern `/voxel-([a-z0-9_]+)-single/` would match `voxel-real` (stopping at the first hyphen) and return an incorrect post type, causing sample post lookups to find `post_type: 'real'` posts which don't exist or lack the relevant fields.
+
+**Fix:** `/voxel-([a-z0-9_-]+)-single/` — the `-` inside the character class now allows hyphens in the captured post type name.
+
+---
+
+### 4. `edit.tsx` — Pass template context + post type to component
 
 **File:** `app/public/wp-content/themes/voxel-fse/app/blocks/src/image/edit.tsx`
 
-`useTemplateContext()` is a React hook (uses `useSelect`) and **cannot be called conditionally or inside shared components that also render on the frontend**. It must be called at the top level of an editor-only component.
+`useTemplateContext()` and `useTemplatePostType()` are React hooks (use `useSelect`) and **cannot be called conditionally or inside shared components that also render on the frontend**. They must be called at the top level of the editor-only `edit.tsx`.
 
 ```tsx
-import { useTemplateContext } from '@shared/utils/useTemplateContext';
+import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
-    const templateContext = useTemplateContext(); // 'post' | 'term' | 'user'
+    const templateContext = useTemplateContext();   // 'post' | 'term' | 'user'
+    const templatePostType = useTemplatePostType(); // 'place' | 'real-estate' | undefined
     // ...
     <ImageComponent
         attributes={attributes}
         context="editor"
         templateContext={templateContext}
+        templatePostType={templatePostType}
     />
 }
 ```
 
-`useTemplateContext()` reads the current template slug from the `core/edit-site` store to determine the context:
-- `voxel-term_card-*` → `'term'`
-- `voxel-user_card-*` → `'user'`
-- Everything else → `'post'`
-
-See: `app/blocks/shared/utils/useTemplateContext.ts`
+The same pattern is used in `gallery/edit.tsx` and `slider/edit.tsx`.
 
 ---
 
-### 4. `ImageComponent.tsx` — Editor preview via REST API
+### 5. `ImageComponent.tsx` — Editor preview via REST API with post type
 
 **File:** `app/public/wp-content/themes/voxel-fse/app/blocks/src/image/shared/ImageComponent.tsx`
 
-The shared component (used by both editor and frontend) resolves dynamic image tags in the **editor context only** via a 2-step REST API call:
+The shared component (used by both editor and frontend) resolves dynamic image tags in the **editor context only** via a 2-step REST API call. The critical fix here is passing `post_type` in `preview_context` so the REST endpoint fetches a sample post from the correct post type.
 
 ```tsx
 const hasDynamicImage = attributes.imageDynamicTag && attributes.imageDynamicTag.includes('@');
@@ -171,6 +229,11 @@ useEffect(() => {
         try {
             // Step 1: Resolve dynamic tag → attachment ID
             const previewContext: Record<string, string> = { type: templateContext };
+            // Pass post type so the API fetches sample posts from the right post type
+            // (e.g., 'place' posts have a 'gallery' field, standard 'post' posts don't)
+            if (templatePostType) {
+                previewContext['post_type'] = templatePostType;
+            }
             const renderResult = await apiFetch<{ rendered: string }>({
                 path: '/voxel-fse/v1/dynamic-data/render',
                 method: 'POST',
@@ -206,39 +269,27 @@ useEffect(() => {
     })();
 
     return () => { cancelled = true; };
-}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext]);
+}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext, templatePostType]);
 
 // Static image takes priority; dynamic image is the fallback for editor preview
 const effectiveImageUrl = attributes.image.url || dynamicImageUrl;
 ```
 
+**TypeScript note:** `previewContext` is typed as `Record<string, string>`, which requires bracket notation for property access: `previewContext['post_type']` not `previewContext.post_type`. The TypeScript rule `noPropertyAccessFromIndexSignature` enforces this.
+
 The `cancelled` flag prevents React state updates after the component unmounts (standard async cleanup pattern).
 
 ---
 
-### 5. `rest-api.php` — `build_preview_context()` for editor preview
+### 6. `rest-api.php` — `build_preview_context()` with post type support
 
 **File:** `app/public/wp-content/themes/voxel-fse/app/dynamic-data/rest-api.php`
 
-In the Gutenberg site editor, there is no "queried object" — WordPress's `get_queried_object()` returns null because we're editing a template, not viewing a real term page. `Block_Renderer::get_default_context()` only adds the `term` data group when a `WP_Term` is the queried object.
+In the Gutenberg site editor, there is no "queried object" — WordPress's `get_queried_object()` returns null because we're editing a template, not viewing a real term/post page. `Block_Renderer::get_default_context()` only adds the `term` or `post` data groups when a real `WP_Term` or `WP_Post` is the queried object.
 
-**Fix:** The `render_expression` endpoint accepts an optional `preview_context` parameter. When provided, `build_preview_context()` finds a sample term from the database:
+**Fix:** The `render_expression` endpoint accepts an optional `preview_context` parameter. When provided, `build_preview_context()` fetches a sample record from the database:
 
 ```php
-public static function render_expression( $request ) {
-    $expression      = $request->get_param( 'expression' );
-    $context         = $request->get_param( 'context' );
-    $preview_context = $request->get_param( 'preview_context' );
-
-    // Build preview context for editor (overrides default context)
-    if ( ! empty( $preview_context ) && is_array( $preview_context ) ) {
-        $context = self::build_preview_context( $preview_context );
-    }
-
-    $rendered = \VoxelFSE\Dynamic_Data\Block_Renderer::render_expression( $expression, $context );
-    return new \WP_REST_Response(['expression' => $expression, 'rendered' => $rendered], 200);
-}
-
 private static function build_preview_context( array $preview_context ): array {
     $context = [
         'site' => new \VoxelFSE\Dynamic_Data\Data_Groups\Site_Data_Group(),
@@ -271,6 +322,7 @@ private static function build_preview_context( array $preview_context ): array {
             );
         }
     } elseif ( 'post' === $type ) {
+        // Use provided post_type, default to 'post' only as a last resort
         $post_type = $preview_context['post_type'] ?? 'post';
         $posts = get_posts(['post_type' => $post_type, 'posts_per_page' => 1, 'post_status' => 'publish']);
         if ( !empty($posts) ) {
@@ -282,49 +334,91 @@ private static function build_preview_context( array $preview_context ): array {
 }
 ```
 
-**How the sample term is selected (no taxonomy specified):**
-1. Iterates all public taxonomies
-2. Looks for the first term that has a `voxel_image` meta key set
-3. Uses that term as the preview context
+**Why `post_type` matters:** Without it, the API defaulted to `post_type: 'post'` (standard WordPress blog posts). These have no Voxel `gallery` or other custom fields. The expression `@post(gallery.ids)` would resolve to empty string because the sample post didn't have that field. With `post_type: 'place'`, the API fetches a Place post which does have the `gallery` field.
 
-This ensures the editor preview shows a real image rather than an empty placeholder.
+---
+
+### 7. Image alignment fix — `style.css`
+
+**File:** `app/public/wp-content/themes/voxel-fse/app/blocks/src/image/style.css`
+
+**Problem:** In Elementor, image widgets fill the full column width because Elementor columns use `align-items: stretch` (CSS flexbox default). This allows `text-align: center` on the widget container to meaningfully position the `display: inline-block` image within the full-width container.
+
+In Gutenberg, parent columns can use `align-items: flex-start`. Without `width: 100%` on the block, the block shrinks to the image's natural size (e.g., 150px), making `text-align` useless — the container is no wider than the image itself.
+
+**Fix:** Added `width: 100%` to force the block to fill its parent column regardless of the parent's `align-items` setting:
+
+```css
+/* Base widget container - matches .elementor-widget-image */
+/* width: 100% ensures the block fills its flex column parent (like Elementor widget stretching to
+   full column width), so text-align can meaningfully position the inline-block img within the
+   full-width container. */
+.wp-block-voxel-fse-image {
+    text-align: center;
+    width: 100%;
+}
+```
+
+**Verified:** Block width changed from 150px (image natural size) → 352px (full column width) after the fix.
 
 ---
 
 ## Data Flow Summary
 
+### Post single template (e.g., `voxel-place-single`)
+
 ```
 EDITOR (preview)
 ─────────────────────────────────────────────────────────
+useTemplatePostType() reads slug "voxel-place-single"
+  → extracts "place" via /voxel-([a-z0-9_-]+)-single/
+
 ImageComponent.tsx
   ↓ POST /voxel-fse/v1/dynamic-data/render
-  │   { expression: "@tags()@term(image)@endtags()",
-  │     preview_context: { type: "term" } }
+  │   { expression: "@tags()@post(gallery.ids)@endtags()",
+  │     preview_context: { type: "post", post_type: "place" } }
   ↓
 REST_API::render_expression()
-  ↓ build_preview_context() → finds sample term with voxel_image
-  ↓ Block_Renderer::render_expression("@tags()@term(image)@endtags()", $context)
-  ↓ returns "@tags()96@endtags()"
+  ↓ build_preview_context() → get_posts(['post_type' => 'place'])
+  ↓ Block_Renderer::render_expression("@tags()@post(gallery.ids)@endtags()", $context)
+  ↓ returns "@tags()42,28,112,91,12@endtags()"
   ↓
-ImageComponent.tsx strips wrapper → parseInt("96") = 96
-  ↓ GET /wp/v2/media/96
-  ↓ returns { source_url: "https://.../.../amsterdam.jpg" }
-  ↓ setDynamicImageUrl("https://.../.../amsterdam.jpg")
-  ↓ <img src="https://.../.../amsterdam.jpg"> shown in editor
+GalleryComponent / ImageComponent strips wrapper → "42,28,112,91,12"
+  ↓ GET /wp/v2/media/42 → { source_url: "https://.../photo1.jpg" }
+  ↓ Shows real preview image in editor
 
 
 FRONTEND (runtime)
 ─────────────────────────────────────────────────────────
 save.tsx outputs:
-  <img src="" alt="" loading="lazy" data-dynamic-image="@tags()@term(image)@endtags()">
+  <img src="" alt="" loading="lazy" data-dynamic-image="@tags()@post(gallery.ids)@endtags()">
 
 render.php intercepts:
-  ↓ Block_Renderer::render_expression("@tags()@term(image)@endtags()")
-  │   (this time get_queried_object() IS a real WP_Term)
+  ↓ Block_Renderer::render_expression("@tags()@post(gallery.ids)@endtags()")
+  │   (this time get_queried_object() IS a real WP_Post of type 'place')
   ↓ returns "@tags()96@endtags()"
   ↓ strip wrapper → 96
   ↓ wp_get_attachment_image_url(96, 'large')
-  ↓ preg_replace() replaces <img src=""> with <img src="https://.../amsterdam.jpg">
+  ↓ preg_replace() replaces <img src=""> with real image URL
+```
+
+### Term card template (e.g., `voxel-term_card-wzgbmdvy`)
+
+```
+EDITOR (preview)
+─────────────────────────────────────────────────────────
+useTemplateContext() reads slug → "voxel-term_card-wzgbmdvy" → type: "term"
+useTemplatePostType() → no match (not a post single template) → undefined
+
+ImageComponent.tsx
+  ↓ POST /voxel-fse/v1/dynamic-data/render
+  │   { expression: "@tags()@term(image)@endtags()",
+  │     preview_context: { type: "term" } }
+  ↓
+REST_API → build_preview_context() → fallback: search all public taxonomies
+  → finds first term with voxel_image meta set
+  ↓ Block_Renderer::render_expression() → "@tags()96@endtags()"
+  ↓ strip wrapper → 96 → GET /wp/v2/media/96 → shows preview image
 ```
 
 ---
@@ -336,7 +430,7 @@ This is a Voxel internals detail. The `Block_Renderer` wraps all resolved output
 - Input: `@tags()@term(image)@endtags()`
 - Output: `@tags()96@endtags()`
 
-The inner value `96` is the attachment ID, but the wrapper must be stripped before using it. Both `ImageComponent.tsx` and `render.php` use the same strip pattern:
+The inner value `96` is the attachment ID, but the wrapper must be stripped before using it. Both component files and `render.php` use the same strip pattern:
 
 **PHP:**
 ```php
@@ -353,6 +447,39 @@ if (wrapperMatch) rendered = wrapperMatch[1];
 
 ---
 
+## Universality — Works for Any VoxelScript Expression
+
+The fix is not specific to `@post(gallery.ids)` or `@term(image)`. It works for **any VoxelScript expression** on any post-type single template:
+
+- `@post(product.product_type.variable-product.variation_images)` — variation images on a product type
+- `@post(_thumbnail_id.id)` — featured image attachment ID
+- `@post(gallery.ids)` — gallery field attachment IDs
+- Comma-separated expressions (e.g., `@post(a), @post(b)`) — resolved as a combined string
+
+The mechanism:
+1. Extracts post type from template slug via `useTemplatePostType()`
+2. Passes it to the REST API via `preview_context.post_type`
+3. API fetches a sample post of that type, which has the correct Voxel fields
+4. `Block_Renderer` resolves the expression against that sample post
+
+---
+
+## Term Card — Known Limitation (Deferred)
+
+**Current behavior:** When editing a term card template (e.g., `voxel-term_card-wzgbmdvy`), the editor uses a fallback: searches all public taxonomies for a term with `voxel_image` meta. This works but finds a random term, not necessarily from the correct taxonomy.
+
+**Root cause:** Voxel's term card `unique_key` (e.g., `wzgbmdvy`) is a random 8-character string with no relation to the taxonomy name. There is no config file or database table that maps `unique_key` → `taxonomy`. The connection exists only at the widget level — users select both the taxonomy AND the card template in the Term Feed widget settings.
+
+**Precise fix:** When working on the Term Feed block, the taxonomy can be passed explicitly:
+```ts
+preview_context: { type: "term", taxonomy: "place_category" }
+```
+This requires knowing the taxonomy at edit time (e.g., from block attributes configured in the Term Feed parent block).
+
+**Status:** Deferred. Current fallback is functional for most cases.
+
+---
+
 ## Applying This Pattern to Other Blocks
 
 Any block that needs to display a dynamic image tag (not just text) requires the same 3-layer approach:
@@ -361,7 +488,8 @@ Any block that needs to display a dynamic image tag (not just text) requires the
 |---|---|
 | `save.tsx` | Output `data-dynamic-{field}="..."` placeholder instead of returning null |
 | `render.php` | Use `Block_Renderer::render_expression()` + strip wrapper + resolve to URL/value + preg_replace |
-| `edit.tsx` / component | Use `apiFetch` to call `/voxel-fse/v1/dynamic-data/render` with `preview_context` for editor preview |
+| `edit.tsx` | Call `useTemplateContext()` + `useTemplatePostType()` at top level, pass to component |
+| Component | Use `apiFetch` to call `/voxel-fse/v1/dynamic-data/render` with `preview_context` including `post_type` |
 
 For **text** dynamic tags (not images), the frontend can usually render from the saved HTML directly via the `Block_Renderer` in `render.php` — no two-step attachment ID lookup needed.
 
@@ -373,6 +501,12 @@ For **text** dynamic tags (not images), the frontend can usually render from the
 |---|---|
 | `app/blocks/src/image/save.tsx` | Output `data-dynamic-image` placeholder when `imageDynamicTag` is set |
 | `app/blocks/src/image/render.php` | Server-side: resolve tag → attachment ID → image URL → replace placeholder |
-| `app/blocks/src/image/shared/ImageComponent.tsx` | Editor-side: 2-step REST API resolution for preview |
-| `app/blocks/src/image/edit.tsx` | Pass `templateContext` from `useTemplateContext()` to `ImageComponent` |
-| `app/dynamic-data/rest-api.php` | Add `preview_context` param + `build_preview_context()` for editor sample data |
+| `app/blocks/src/image/shared/ImageComponent.tsx` | Editor-side: 2-step REST API resolution with `post_type` in `preview_context`; bracket notation for TS `noPropertyAccessFromIndexSignature` |
+| `app/blocks/src/image/edit.tsx` | Pass `templateContext` + `templatePostType` to `ImageComponent` |
+| `app/blocks/src/image/style.css` | Added `width: 100%` to fix alignment in Gutenberg flex columns |
+| `app/blocks/src/gallery/edit.tsx` | Same `useTemplatePostType()` pattern as image |
+| `app/blocks/src/gallery/shared/GalleryComponent.tsx` | Pass `post_type` in `preview_context` to REST API |
+| `app/blocks/src/slider/edit.tsx` | Same `useTemplatePostType()` pattern as image |
+| `app/blocks/src/slider/shared/SliderComponent.tsx` | Pass `post_type` in `preview_context` to REST API |
+| `app/blocks/shared/utils/useTemplateContext.ts` | Added `useTemplatePostType()` hook; extracted shared `getTemplateSlug()` helper; updated regex to support hyphens in post type names |
+| `app/dynamic-data/rest-api.php` | `build_preview_context()` now uses `post_type` param from `preview_context` instead of defaulting to `'post'` |
