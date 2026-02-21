@@ -20,8 +20,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type {
 	AttributeChoice,
 	AttributeDisplayMode,
-	AttributeChoiceImage,
-	AttributeChoiceImageNewUpload,
+		AttributeChoiceImageNewUpload,
 	AttributeChoiceImageExisting,
 } from '../../../types';
 import { MediaPopup } from '@shared';
@@ -64,15 +63,11 @@ interface MediaPopupExisting {
  */
 type MediaPopupSelectedFile = MediaPopupNewUpload | MediaPopupExisting;
 
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: SessionFile[];
-	}
-}
+// _vx_file_upload_cache is declared globally in voxelShim.ts
 
 // Initialize global cache
-if (typeof window !== 'undefined' && typeof window._vx_file_upload_cache === 'undefined') {
-	window._vx_file_upload_cache = [];
+if (typeof window !== 'undefined' && typeof (window as any)._vx_file_upload_cache === 'undefined') {
+	(window as any)._vx_file_upload_cache = [];
 }
 
 // Generate unique session ID
@@ -82,12 +77,12 @@ const generateSessionId = (): string => {
 
 // Add file to global cache
 const addToSessionCache = (file: File): string => {
-	if (!Array.isArray(window._vx_file_upload_cache)) {
-		window._vx_file_upload_cache = [];
+	if (!Array.isArray((window as any)._vx_file_upload_cache)) {
+		(window as any)._vx_file_upload_cache = [];
 	}
 
-	const exists = window._vx_file_upload_cache.find(
-		(cached) =>
+	const exists = (window as any)._vx_file_upload_cache.find(
+		(cached: any) =>
 			cached.name === file.name &&
 			cached.type === file.type &&
 			cached.size === file.size &&
@@ -109,7 +104,7 @@ const addToSessionCache = (file: File): string => {
 		_id: sessionId,
 	};
 
-	window._vx_file_upload_cache.unshift(sessionFile);
+	(window as any)._vx_file_upload_cache.unshift(sessionFile);
 	return sessionId;
 };
 
@@ -135,7 +130,7 @@ interface ChoiceRowProps {
  */
 export const ChoiceRow: React.FC<ChoiceRowProps> = ({
 	choice,
-	displayMode,
+	displayMode: _displayMode,
 	isActive,
 	needsColor,
 	needsSubheading,
@@ -214,8 +209,8 @@ export const ChoiceRow: React.FC<ChoiceRowProps> = ({
 				source: 'existing',
 				id: file.id,
 				url: file.url,
-				name: file.name,
-				type: file.type,
+				name: (file as any).name,
+				type: (file as any).type,
 				preview: file.url,
 			};
 			onUpdate({ image: existingImage });
@@ -473,7 +468,7 @@ export const ChoiceRow: React.FC<ChoiceRowProps> = ({
 							{/* Media library popup */}
 							<div style={{ textAlign: 'center', marginTop: '15px' }}>
 								<MediaPopup
-									onSave={handleMediaPopupSave}
+									onSave={handleMediaPopupSave as any}
 									multiple={false}
 									saveLabel="Save"
 								/>

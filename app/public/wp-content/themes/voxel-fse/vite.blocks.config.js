@@ -30,50 +30,14 @@ export default defineConfig({
     manifest: true,
     rollupOptions: {
       input: {
+        // NOTE: editor.js is built separately via vite.editor.config.js (IIFE format)
+        // to prevent viewport flicker. ES modules cause flicker; IIFE does not.
         // Shared control styles - dedicated entry for proper CSS naming
         'shared-controls': './app/blocks/shared/controls/shared-styles.ts',
         // React-compatible Voxel commons (replaces Vue-based commons.js in editor)
         'voxel-commons': './app/blocks/shared/voxel-commons.ts',
-        'create-post/index': './app/blocks/src/create-post/index.tsx',
-        'product-price/index': './app/blocks/src/product-price/index.tsx',
-        'popup-kit/index': './app/blocks/src/popup-kit/index.tsx',
         'admin-icon-picker': './templates/backend/admin-icon-picker/index.tsx',
-        'search-form/index': './app/blocks/src/search-form/index.tsx',
-        'print-template/index': './app/blocks/src/print-template/index.tsx',
-        'nested-accordion/index': './app/blocks/src/nested-accordion/index.tsx',
-        'nested-tabs/index': './app/blocks/src/nested-tabs/index.tsx',
-        'image/index': './app/blocks/src/image/index.tsx',
-        'review-stats/index': './app/blocks/src/review-stats/index.tsx',
-        'countdown/index': './app/blocks/src/countdown/index.tsx',
-        'ring-chart/index': './app/blocks/src/ring-chart/index.tsx',
-        'timeline/index': './app/blocks/src/timeline/index.tsx',
-        'timeline-kit/index': './app/blocks/src/timeline-kit/index.tsx',
-        // 'columns/index': './app/blocks/src/columns/index.tsx',
-        // 'column/index': './app/blocks/src/column/index.tsx',
-        'term-feed/index': './app/blocks/src/term-feed/index.tsx',
-        'work-hours/index': './app/blocks/src/work-hours/index.tsx',
-        'sales-chart/index': './app/blocks/src/sales-chart/index.tsx',
-        'visit-chart/index': './app/blocks/src/visit-chart/index.tsx',
-        'navbar/index': './app/blocks/src/navbar/index.tsx',
-        'advanced-list/index': './app/blocks/src/advanced-list/index.tsx',
-        'userbar/index': './app/blocks/src/userbar/index.tsx',
-        'quick-search/index': './app/blocks/src/quick-search/index.tsx',
-        'map/index': './app/blocks/src/map/index.tsx',
-        'current-role/index': './app/blocks/src/current-role/index.tsx',
-        'current-plan/index': './app/blocks/src/current-plan/index.tsx',
-        'membership-plans/index': './app/blocks/src/membership-plans/index.tsx',
-        'listing-plans/index': './app/blocks/src/listing-plans/index.tsx',
-        'slider/index': './app/blocks/src/slider/index.tsx',
-        'gallery/index': './app/blocks/src/gallery/index.tsx',
-        'post-feed/index': './app/blocks/src/post-feed/index.tsx',
-        'stripe-account/index': './app/blocks/src/stripe-account/index.tsx',
-        'login/index': './app/blocks/src/login/index.tsx',
-        'product-form/index': './app/blocks/src/product-form/index.tsx',
-        'messages/index': './app/blocks/src/messages/index.tsx',
-        'orders/index': './app/blocks/src/orders/index.tsx',
-        'cart-summary/index': './app/blocks/src/cart-summary/index.tsx',
-        'flex-container/index': './app/blocks/src/flex-container/index.tsx',
-        // Note: Frontend scripts (search-form, print-template, nested-accordion, nested-tabs, image, review-stats, countdown, ring-chart, timeline, term-feed, work-hours, sales-chart, visit-chart, navbar, advanced-list, userbar, quick-search, map, current-role, current-plan, slider, gallery, post-feed, stripe-account, login, product-form, messages, orders) are built via separate configs (IIFE format)
+        // Note: Frontend scripts are built via vite.frontend.config.js (IIFE format)
       },
       external: [
         'react',

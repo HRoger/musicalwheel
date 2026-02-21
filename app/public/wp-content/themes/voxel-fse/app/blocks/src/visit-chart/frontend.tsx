@@ -135,7 +135,8 @@ import type {
 	ChartMeta,
 	ChartState,
 } from './types';
-import { getRestBaseUrl } from '@shared/utils/siteUrl';
+
+declare const jQuery: any;
 
 /**
  * Normalize config from various API sources
@@ -216,11 +217,11 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 			unknown
 		>;
 		return {
-			label: normalizeString(item.label, ''),
-			percent: normalizeNumber(item.percent, 0) ?? 0,
-			count: normalizeString(item.count, '0'),
+			label: normalizeString(item['label'], ''),
+			percent: normalizeNumber(item['percent'], 0) ?? 0,
+			count: normalizeString(item['count'], '0'),
 			unique_count: normalizeString(
-				item.unique_count ?? item.uniqueCount,
+				item['unique_count'] ?? item['uniqueCount'],
 				'0'
 			),
 		};
@@ -233,9 +234,9 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 			unknown
 		>;
 		return {
-			label: normalizeString(meta.label, ''),
+			label: normalizeString(meta['label'], ''),
 			has_activity: normalizeBoolean(
-				meta.has_activity ?? meta.hasActivity,
+				meta['has_activity'] ?? meta['hasActivity'],
 				false
 			),
 		};
@@ -250,22 +251,22 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 
 		// Normalize items array
 		let items: ChartItem[] | undefined;
-		if (Array.isArray(state.items)) {
-			items = state.items.map(normalizeChartItem);
+		if (Array.isArray(state['items'])) {
+			items = state['items'].map(normalizeChartItem);
 		}
 
 		// Normalize steps array
 		let steps: string[] | undefined;
-		if (Array.isArray(state.steps)) {
-			steps = state.steps.map((s) => normalizeString(s, ''));
+		if (Array.isArray(state['steps'])) {
+			steps = state['steps'].map((s) => normalizeString(s, ''));
 		}
 
 		return {
-			loaded: normalizeBoolean(state.loaded, false),
-			error: state.error !== undefined ? normalizeBoolean(state.error, false) : undefined,
+			loaded: normalizeBoolean(state['loaded'], false),
+			error: state['error'] !== undefined ? normalizeBoolean(state['error'], false) : undefined,
 			steps,
 			items,
-			meta: state.meta ? normalizeChartMeta(state.meta) : undefined,
+			meta: state['meta'] ? normalizeChartMeta(state['meta']) : undefined,
 		};
 	};
 
@@ -294,17 +295,17 @@ function normalizeConfig(raw: Record<string, unknown>): VisitChartVxConfig {
 	// Support both camelCase and snake_case/ts_* prefixed names
 	return {
 		source: normalizeSource(
-			raw.source ?? raw.ts_source ?? raw.statsSource
+			raw['source'] ?? raw['ts_source'] ?? raw['statsSource']
 		),
 		activeChart: normalizeTimeframe(
-			raw.activeChart ?? raw.active_chart ?? raw.ts_active_chart
+			raw['activeChart'] ?? raw['active_chart'] ?? raw['ts_active_chart']
 		),
 		viewType: normalizeViewType(
-			raw.viewType ?? raw.view_type ?? raw.ts_view_type
+			raw['viewType'] ?? raw['view_type'] ?? raw['ts_view_type']
 		),
-		nonce: normalizeString(raw.nonce, ''),
-		postId: normalizeNumber(raw.postId ?? raw.post_id, undefined),
-		charts: normalizeCharts(raw.charts),
+		nonce: normalizeString(raw['nonce'], ''),
+		postId: normalizeNumber(raw['postId'] ?? raw['post_id'], undefined),
+		charts: normalizeCharts(raw['charts']),
 	};
 }
 
@@ -345,162 +346,17 @@ function buildAttributes(config: VisitChartVxConfig): VisitChartAttributes {
 		chartIcon: { library: '', value: '' },
 		chevronRight: { library: '', value: '' },
 		chevronLeft: { library: '', value: '' },
+		contentTabOpenPanel: '',
+		styleTabOpenPanel: '',
 	};
 }
 
 /**
- * Generate nonce for the current context
- * Must match PHP nonce generation in visits-chart.php
- */
-function generateNonceContext(
-	source: StatsSource,
-	postId?: number
-): string | null {
-	// In production, nonces should be fetched from the server
-	// This is a placeholder - the actual nonce will be provided
-	// by a REST API call or inline script
-	return null;
-}
-
-/**
- * Get current post ID from page context
- */
-function getCurrentPostId(): number | null {
-	// Try to get post ID from various sources
-	// 1. Check for Voxel post data
-	const voxelPost = document.querySelector<HTMLElement>('[data-post-id]');
-	if (voxelPost?.dataset.postId) {
-		return parseInt(voxelPost.dataset.postId, 10);
-	}
-
-	// 2. Check for WordPress body class
-	const bodyClasses = document.body.className;
-	const postIdMatch = bodyClasses.match(/postid-(\d+)/);
-	if (postIdMatch) {
-		return parseInt(postIdMatch[1], 10);
-	}
-
-	// 3. Check for single post container
-	const singlePost = document.querySelector<HTMLElement>('.single-post');
-	if (singlePost) {
-		const articleId = document.querySelector<HTMLElement>('article[id]');
-		if (articleId?.id) {
-			const idMatch = articleId.id.match(/post-(\d+)/);
-			if (idMatch) {
-				return parseInt(idMatch[1], 10);
-			}
-		}
-	}
-
-	return null;
-}
-
-/**
- * Error response from REST API
- */
-interface ChartContextError {
-	code: string;
-	message: string;
-	status: number;
-}
-
-/**
- * Result of context fetch - either success or error
- */
-interface ChartContextResult {
-	success: boolean;
-	data?: { nonce: string; postId?: number };
-	error?: ChartContextError;
-}
-
-/**
- * Fetch nonce and post context from server
+ * Wrapper component that passes vxconfig directly to VisitChartComponent
  *
- * PARITY: Handles permission errors matching Voxel's visits-chart-controller.php
- * - 401: User not logged in (user/post sources require auth)
- * - 403: User doesn't have permission (post ownership, site admin)
- * - 400: Invalid request (missing post_id, tracking disabled)
- *
- * Evidence: themes/voxel/app/controllers/frontend/statistics/visits-chart-controller.php:22-31
- */
-async function fetchChartContext(
-	source: StatsSource
-): Promise<ChartContextResult> {
-	try {
-		// MULTISITE FIX: Use getRestBaseUrl() for multisite subdirectory support
-		const restUrl = getRestBaseUrl();
-		const postId = source === 'post' ? getCurrentPostId() : null;
-
-		const params = new URLSearchParams({ source });
-		if (postId) {
-			params.append('post_id', String(postId));
-		}
-
-		const response = await fetch(
-			`${restUrl}voxel-fse/v1/visit-chart/context?${params.toString()}`,
-			{
-				credentials: 'same-origin', // Send cookies for WordPress auth
-			}
-		);
-
-		// Handle error responses with proper error extraction
-		if (!response.ok) {
-			let errorData: { code?: string; message?: string } = {};
-			try {
-				errorData = await response.json();
-			} catch {
-				// JSON parse failed, use status text
-			}
-
-			const error: ChartContextError = {
-				code: errorData.code || `http_${response.status}`,
-				message: errorData.message || response.statusText || 'Request failed',
-				status: response.status,
-			};
-
-			// PARITY: Don't show Voxel.alert for permission errors
-			// Voxel's widget silently fails if user doesn't have permission
-			// Only show alert for unexpected errors
-			if (response.status >= 500) {
-				const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'Failed to load chart context';
-				if (window.Voxel?.alert) {
-					window.Voxel.alert(errorMessage, 'error');
-				}
-			}
-
-			return { success: false, error };
-		}
-
-		const data = await response.json();
-		return {
-			success: true,
-			data: data as { nonce: string; postId?: number },
-		};
-	} catch {
-		// Network error or other unexpected failure
-		const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'Failed to load chart context';
-		if (window.Voxel?.alert) {
-			window.Voxel.alert(errorMessage, 'error');
-		}
-		return {
-			success: false,
-			error: {
-				code: 'network_error',
-				message: 'Network error',
-				status: 0,
-			},
-		};
-	}
-}
-
-/**
- * Wrapper component that handles context fetching
- *
- * PARITY: Matches Voxel's behavior for permission errors
- * - 401/403: Widget is hidden (Voxel doesn't render widget if user lacks permission)
- * - Other errors: Shows error state with generic message
- *
- * Evidence: visits-chart.php:1043-1047 - Widget returns early if conditions not met
+ * PARITY: Nonce and postId are now injected server-side by render.php,
+ * matching Voxel's approach (visits-chart.php:1069-1081).
+ * No client-side REST API call needed.
  */
 interface VisitChartWrapperProps {
 	config: VisitChartVxConfig;
@@ -508,107 +364,21 @@ interface VisitChartWrapperProps {
 }
 
 function VisitChartWrapper({ config, attributes }: VisitChartWrapperProps) {
-	const [vxconfig, setVxconfig] = React.useState<VisitChartVxConfig>(config);
-	const [isLoading, setIsLoading] = React.useState(true);
-	const [error, setError] = React.useState<ChartContextError | null>(null);
-
-	React.useEffect(() => {
-		let cancelled = false;
-
-		async function loadContext() {
-			setIsLoading(true);
-			setError(null);
-
-			const result = await fetchChartContext(config.source);
-
-			if (cancelled) return;
-
-			if (result.success && result.data) {
-				setVxconfig({
-					...config,
-					nonce: result.data.nonce,
-					postId: result.data.postId,
-				});
-			} else if (result.error) {
-				setError(result.error);
-			}
-
-			setIsLoading(false);
-		}
-
-		loadContext();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [config]);
-
-	// Loading state
-	if (isLoading) {
-		return (
-			<div className="ts-visits-chart vx-pending">
-				<div className="ts-no-posts">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
-						width="48"
-						height="48"
-						fill="currentColor"
-						style={{ opacity: 0.4 }}
-					>
-						<rect x="4" y="12" width="4" height="8" rx="0.5" />
-						<rect x="10" y="8" width="4" height="12" rx="0.5" />
-						<rect x="16" y="4" width="4" height="16" rx="0.5" />
-					</svg>
-					<p>Loading data</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Permission error state (401/403)
-	// PARITY: Voxel's widget simply doesn't render if user lacks permission
-	// We render nothing to match this behavior - the block becomes invisible
-	if (error && (error.status === 401 || error.status === 403)) {
-		// Return empty fragment - widget is hidden for unauthorized users
-		// This matches Voxel's behavior where the widget returns early
+	// Config comes from vxconfig with nonce/postId already injected by render.php
+	// If nonce is empty, the chart will show "No activity" (matching Voxel behavior
+	// where widget returns early if conditions not met)
+	if (!config.nonce) {
 		return null;
-	}
-
-	// Other error state (500, network errors, etc.)
-	if (error) {
-		return (
-			<div className="ts-visits-chart voxel-fse-error">
-				<div className="ts-no-posts">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
-						width="48"
-						height="48"
-						fill="currentColor"
-						style={{ opacity: 0.4 }}
-					>
-						<rect x="4" y="12" width="4" height="8" rx="0.5" />
-						<rect x="10" y="8" width="4" height="12" rx="0.5" />
-						<rect x="16" y="4" width="4" height="16" rx="0.5" />
-					</svg>
-					<p>Error loading chart</p>
-				</div>
-			</div>
-		);
 	}
 
 	return (
 		<VisitChartComponent
 			attributes={attributes}
 			context="frontend"
-			vxconfig={vxconfig}
+			vxconfig={config}
 		/>
 	);
 }
-
-// Need to import React for JSX
-import React from 'react';
 
 /**
  * Initialize visit chart blocks on the page
@@ -621,7 +391,7 @@ function initVisitCharts() {
 
 	visitCharts.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.reactMounted === 'true') {
+		if (container.dataset['reactMounted'] === 'true') {
 			return;
 		}
 
@@ -636,13 +406,7 @@ function initVisitCharts() {
 		const attributes = buildAttributes(config);
 
 		// Mark as mounted to prevent double-initialization
-		container.dataset.reactMounted = 'true';
-
-		// Clear placeholder content
-		const placeholder = container.querySelector('.voxel-fse-block-placeholder');
-		if (placeholder) {
-			placeholder.remove();
-		}
+		container.dataset['reactMounted'] = 'true';
 
 		// Create React root and render
 		const root = createRoot(container);

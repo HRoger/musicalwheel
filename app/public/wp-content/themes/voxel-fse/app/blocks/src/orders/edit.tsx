@@ -26,7 +26,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	// Use shared utility for AdvancedTab + VoxelTab wiring (Layer 1)
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
 		blockId,
-		baseClass: 'vx-orders-widget voxel-fse-orders-editor',
+		baseClass: 'vx-orders-widget vx-order-ease voxel-fse-orders-editor',
 		selectorPrefix: 'voxel-fse-orders',
 	});
 
@@ -59,19 +59,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
-	// Inject Voxel Editor Styles
-	useEffect(() => {
-		const cssId = 'voxel-orders-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
-			link.id = cssId;
-			link.rel = 'stylesheet';
-			const voxelConfig = (window as any).Voxel_Config;
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/orders.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
-		}
-	}, []);
+	// Voxel Orders CSS is injected by OrdersComponent.tsx (shared between editor and frontend)
 
 	return (
 		<>
@@ -135,6 +123,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 						context="editor"
 						isLoading={false}
 						error={null}
+						currentPage={1}
+						totalPages={1}
 					/>
 				)}
 			</div>

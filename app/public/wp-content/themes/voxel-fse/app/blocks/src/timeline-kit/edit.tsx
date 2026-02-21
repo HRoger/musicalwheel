@@ -18,7 +18,7 @@ import { EditProps } from './types';
 import Demofeed from './Demofeed';
 import { StyleTab } from './inspector';
 
-export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+export default function Edit({ attributes, setAttributes, clientId: _clientId }: EditProps) {
 	// Inject Voxel Editor Styles
 	useEffect(() => {
 		const cssId = 'voxel-social-feed-css';
@@ -30,6 +30,17 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
 			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/social-feed.css?ver=1.7.5.2`;
 			document.head.appendChild(link);
+		}
+	}, []);
+
+	// FIX: Clean up global styles injected by PHP/Block Loader to prevent conflicts with editor preview
+	// The server injects a style tag with ID 'vx:timeline-kit-custom-inline-css' that persists even after
+	// block attributes are reset, causing stale styles to remain.
+	// Pattern: css-priority-and-admin-integrity.md (Section 6)
+	useEffect(() => {
+		const globalStyle = document.getElementById('vx:timeline-kit-custom-inline-css');
+		if (globalStyle) {
+			globalStyle.remove();
 		}
 	}, []);
 

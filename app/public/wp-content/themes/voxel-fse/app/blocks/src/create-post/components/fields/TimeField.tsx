@@ -58,7 +58,7 @@ export const TimeField: React.FC<TimeFieldProps> = ({ field, value, onChange, on
 
 			<div className="input-container">
 				<input
-					placeholder="Time"
+					placeholder={String(field.props?.['placeholder'] ?? 'Time')}
 					type="time"
 					value={value || ''}
 					onChange={(e) => onChange(e.target.value)}

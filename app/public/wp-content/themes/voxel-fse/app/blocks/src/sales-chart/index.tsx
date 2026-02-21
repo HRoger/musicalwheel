@@ -14,7 +14,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
-import type { SalesChartAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 

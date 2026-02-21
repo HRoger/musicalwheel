@@ -8,13 +8,12 @@
  */
 
 
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import DimensionsControl from './DimensionsControl';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import type { UnitType } from './UnitDropdownButton';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 interface BoxValues {
     top?: string | number;
@@ -39,7 +38,7 @@ export default function ResponsiveDimensionsControl({
     availableUnits,
 }: ResponsiveDimensionsControlProps) {
     // Get WordPress's current device type from the store
-    const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+    const currentDevice = useDeviceType();
 
     // Get attribute name for current device
     const getAttributeName = () => {

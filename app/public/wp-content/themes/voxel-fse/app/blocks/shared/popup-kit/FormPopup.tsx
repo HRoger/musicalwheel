@@ -52,6 +52,8 @@ export interface FormPopupProps {
 	popupClass?: string;
 	/** Minimum width for popup (overrides CSS min-width) */
 	minWidth?: number;
+	/** Custom header action buttons (rendered as <li> items before close button) */
+	headerActions?: React.ReactNode;
 }
 
 export const FormPopup: React.FC<FormPopupProps> = ({
@@ -71,10 +73,14 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 	children,
 	popupClass = '',
 	minWidth: propMinWidth,
+	headerActions,
 }) => {
 	const popupRef = useRef<HTMLDivElement>(null); // .ts-form element (receives positioning styles)
 	const popupBoxRef = useRef<HTMLDivElement>(null); // .ts-field-popup element
-	const [styles, setStyles] = useState<React.CSSProperties>({});
+	const [styles, setStyles] = useState<React.CSSProperties>({
+		position: 'absolute',
+		left: '-9999px',
+	});
 	// Track previous styles to prevent infinite loop from ResizeObserver feedback
 	const lastStylesRef = useRef<string>('');
 
@@ -99,20 +105,39 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		const popupElement = popupRef.current;
 		const popupBox = popupBoxRef.current;
 
-		// a = jQuery("body").innerWidth()
-		const bodyWidth = document.body.clientWidth;
+		// Detect FSE editor: In the block editor, React runs in the parent frame
+		// but trigger elements live inside the editor iframe. The portal renders
+		// to the parent frame's body, so we need to offset iframe-relative coords.
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+		const isEditor = !!editorIframe;
 
-		// l = o.getBoundingClientRect() (viewport-relative)
+		// Get iframe offset in parent viewport (editor toolbar height)
+		let iframeOffsetTop = 0;
+		let iframeOffsetLeft = 0;
+		if (isEditor && editorIframe) {
+			const iframeRect = editorIframe.getBoundingClientRect();
+			iframeOffsetTop = iframeRect.top;
+			iframeOffsetLeft = iframeRect.left;
+		}
+
+		// a = jQuery("body").innerWidth()
+		const bodyWidth = isEditor
+			? (editorIframe?.contentDocument?.documentElement.clientWidth ?? document.body.clientWidth)
+			: document.body.clientWidth;
+
+		// l = o.getBoundingClientRect() (viewport-relative, within iframe context)
 		const triggerRect = targetElement.getBoundingClientRect();
 
 		// n = jQuery(o).outerWidth()
 		const triggerOuterWidth = targetElement.offsetWidth;
 
 		// s = jQuery(o).offset() - document-relative position
-		// jQuery.offset() = getBoundingClientRect() + scroll position
+		// In editor: trigger coords are iframe-relative; add iframe offset for parent-frame positioning
+		const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+		const scrollY = window.pageYOffset || document.documentElement.scrollTop;
 		const triggerOffset = {
-			left: triggerRect.left + window.pageXOffset,
-			top: triggerRect.top + window.pageYOffset,
+			left: triggerRect.left + scrollX + iframeOffsetLeft,
+			top: triggerRect.top + scrollY + iframeOffsetTop,
 		};
 
 		// d = this.$refs.popup.getBoundingClientRect()
@@ -130,7 +155,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		// a = s.left + n/2 > a/2 + 1 ? s.left - i + n : s.left
 		// If trigger center is RIGHT of body center → align RIGHT edges
 		// Otherwise → align LEFT edges
-		const isRightSide = triggerOffset.left + triggerOuterWidth / 2 > bodyWidth / 2 + 1;
+		const isRightSide = triggerOffset.left + triggerOuterWidth / 2 > (bodyWidth + iframeOffsetLeft) / 2 + 1;
 		let leftPosition: number;
 
 		if (isRightSide) {
@@ -145,20 +170,21 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		if (leftPosition < 0) {
 			leftPosition = 10;
 		}
-		if (leftPosition + popupWidth > bodyWidth) {
-			leftPosition = bodyWidth - popupWidth - 10;
+		if (leftPosition + popupWidth > bodyWidth + iframeOffsetLeft) {
+			leftPosition = bodyWidth + iframeOffsetLeft - popupWidth - 10;
 		}
 
 		// Default top: below trigger
-		// let e = `top: ${s.top + l.height}px;`
 		let topPosition = triggerOffset.top + triggerRect.height;
 
 		// n = window.innerHeight
 		const viewportHeight = window.innerHeight;
 
-		// e = l.bottom + d.height > n && 0 <= l.top - d.height ? `top: ${s.top - d.height}px;` : e
 		// If doesn't fit below AND fits above → position above
-		if (triggerRect.bottom + popupRect.height > viewportHeight && triggerRect.top - popupRect.height >= 0) {
+		// Use parent-frame-adjusted coords for viewport check
+		const triggerBottomInParent = triggerRect.bottom + iframeOffsetTop;
+		const triggerTopInParent = triggerRect.top + iframeOffsetTop;
+		if (triggerBottomInParent + popupRect.height > viewportHeight && triggerTopInParent - popupRect.height >= 0) {
 			topPosition = triggerOffset.top - popupRect.height;
 		}
 
@@ -195,31 +221,81 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 	}, [isOpen, onClose]);
 
 	// Handle clicks outside popup to close (blurable mixin)
+	// Evidence: themes/voxel/assets/dist/commons.js (Voxel.mixins.blurable)
+	//
+	// Editor vs Frontend strategy:
+	// The popup portal lives in the parent frame's document.body. Voxel's CSS creates
+	// a full-screen ::after backdrop on .ts-popup-root > div with pointer-events:all,
+	// which intercepts all clicks in the parent frame. In the editor we inject a <style>
+	// that disables pointer-events on the ::after, so clicks pass through to the actual
+	// sidebar elements. The Gutenberg selector checks then correctly identify sidebar
+	// clicks and keep the popup open.
+	const isEditor = !!document.querySelector('iframe[name="editor-canvas"]');
+
 	useEffect(() => {
 		if (!isOpen) return;
+
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+		const iframeDoc = editorIframe?.contentDocument;
 
 		const handleClickOutside = (e: MouseEvent) => {
 			const clickTarget = e.target as HTMLElement;
 
-			// Check if click is inside the popup box (.triggers-blur)
+			// Click inside the popup box — don't close
 			if (popupBoxRef.current?.contains(clickTarget)) {
-				return; // Click inside popup, don't close
+				return;
 			}
 
-			// Click outside popup, close it
+			// Click on the trigger element — don't close
+			if (target && target.contains(clickTarget)) {
+				return;
+			}
+
+			// In editor: don't close when clicking sidebar/toolbar
+			if (editorIframe) {
+				const gutenbergSelectors = [
+					'.interface-interface-skeleton__sidebar',
+					'.block-editor-block-inspector',
+					'.components-popover',
+					'.components-modal__screen-overlay',
+					'.edit-post-sidebar',
+					'.interface-interface-skeleton__header',
+					'.interface-interface-skeleton__secondary-sidebar',
+				];
+				for (const selector of gutenbergSelectors) {
+					if (clickTarget.closest(selector)) {
+						return;
+					}
+				}
+			}
+
 			onClose();
 		};
 
-		// Use requestAnimationFrame to ensure popup is fully rendered before adding listener
+		// Editor: also close when clicking the editor canvas (iframe body)
+		const handleIframeClick = (e: MouseEvent) => {
+			const clickTarget = e.target as HTMLElement;
+
+			if (target && target.contains(clickTarget)) {
+				return;
+			}
+
+			onClose();
+		};
+
 		const rafId = requestAnimationFrame(() => {
 			document.addEventListener('mousedown', handleClickOutside);
+			if (editorIframe) {
+				iframeDoc?.addEventListener('mousedown', handleIframeClick);
+			}
 		});
 
 		return () => {
 			cancelAnimationFrame(rafId);
 			document.removeEventListener('mousedown', handleClickOutside);
+			iframeDoc?.removeEventListener('mousedown', handleIframeClick);
 		};
-	}, [isOpen, onClose]);
+	}, [isOpen, onClose, target]);
 
 	// Setup positioning and event listeners
 	useEffect(() => {
@@ -266,11 +342,18 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		</svg>
 	);
 
-	// Render popup via React Portal to document.body
-	// CRITICAL: This ensures popup is positioned relative to viewport, not parent container
-	// Matches Voxel's Vue component behavior where popup is teleported to body
+	// Portal target: always use document.body
+	// In editor: React runs in parent frame, portal goes to parent body
+	// On frontend: portal goes to frontend body (standard Voxel behavior)
+	const portalTarget = document.body;
+
+	// Render popup via React Portal
 	return createPortal(
 		<div className={`elementor vx-popup ${popupClass}`.trim()}>
+			{/* Editor: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
+			{isEditor && (
+				<style>{`.vx-popup .ts-popup-root > div::after { pointer-events: none !important; }`}</style>
+			)}
 			<div className="ts-popup-root elementor-element">
 				{/* ts-form receives positioning styles (like Vue's :style="styles") */}
 				<div
@@ -279,7 +362,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 					style={styles}
 				>
 					<div className="ts-field-popup-container">
-						{/* Actual popup box - backdrop clicks handled by document-level listener */}
+						{/* Actual popup box - backdrop clicks handled by event listeners */}
 						<div
 							id={popupId}
 							ref={popupBoxRef}
@@ -293,6 +376,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 										<span>{title}</span>
 									</div>
 									<ul className="flexify simplify-ul">
+										{headerActions}
 										<li className="flexify ts-popup-close">
 											<a
 												href="#"
@@ -370,7 +454,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 				</div>
 			</div>
 		</div>,
-		document.body
+		portalTarget
 	);
 };
 

@@ -171,7 +171,7 @@ export function StyleTab({
 						{ label: __('Center', 'voxel-fse'), value: 'center' },
 						{ label: __('Right', 'voxel-fse'), value: 'flex-end' },
 					]}
-					onChange={(value) => setAttributes({ priceAlign: value })}
+					onChange={(value: any) => setAttributes({ priceAlign: value })}
 				/>
 
 				{/* Price typography - L324-L331 */}
@@ -240,7 +240,7 @@ export function StyleTab({
 						{ label: __('Center', 'voxel-fse'), value: 'center' },
 						{ label: __('Right', 'voxel-fse'), value: 'right' },
 					]}
-					onChange={(value) => setAttributes({ textAlign: value })}
+					onChange={(value: any) => setAttributes({ textAlign: value })}
 				/>
 
 				{/* Typography - L444-L451 */}

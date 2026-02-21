@@ -13,7 +13,7 @@
 
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import apiFetch from '@wordpress/api-fetch';
 import type {
 	TermFeedAttributes,
@@ -28,7 +28,6 @@ import {
 import { getAdvancedVoxelTabProps } from '@shared/utils';
 import TermFeedComponent from './shared/TermFeedComponent';
 import { ContentTab, StyleTab } from './inspector';
-import { generateTermFeedResponsiveCSS } from './styles';
 
 interface EditProps {
 	attributes: TermFeedAttributes;
@@ -78,7 +77,7 @@ export default function Edit({
 
 	// Inject Voxel Editor Styles
 	useEffect(() => {
-		const cssId = 'voxel-post-feed-css';
+		const cssId = 'voxel-term-feed-css';
 		if (!document.getElementById(cssId)) {
 			const link = document.createElement('link');
 			link.id = cssId;
@@ -229,28 +228,29 @@ export default function Edit({
 		baseClass: 'voxel-fse-term-feed',
 	});
 
-	// Generate responsive CSS
-	const responsiveCSS = useMemo(
-		() => generateTermFeedResponsiveCSS(attributes, advancedProps.uniqueSelector),
-		[attributes, advancedProps.uniqueSelector]
-	);
+	// Note: Term-feed responsive CSS (carousel widths, gap, nav styles) is now generated
+	// inside the shared TermFeedComponent via cssSelector prop (DRY: works for both editor + frontend)
 
 	const blockProps = useBlockProps({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
-		style: advancedProps.styles,
+		style: {
+			...advancedProps.styles,
+			// Prevent carousel content from expanding the Gutenberg block wrapper
+			// Same fix as post-feed: overflow:hidden + min-width:0 contain scroll content
+			overflow: 'hidden',
+			minWidth: 0,
+		},
 		...advancedProps.customAttrs,
 	});
 
 	return (
 		<div {...blockProps}>
-			{/* Output responsive CSS */}
-			{(advancedProps.responsiveCSS || responsiveCSS) && (
+			{/* Output AdvancedTab responsive CSS (custom CSS, margins, etc.) */}
+			{advancedProps.responsiveCSS && (
 				<style
 					dangerouslySetInnerHTML={{
-						__html: [advancedProps.responsiveCSS, responsiveCSS]
-							.filter(Boolean)
-							.join('\n'),
+						__html: advancedProps.responsiveCSS,
 					}}
 				/>
 			)}
@@ -298,6 +298,7 @@ export default function Edit({
 				isLoading={isLoading}
 				error={error}
 				context="editor"
+				cssSelector={advancedProps.uniqueSelector}
 			/>
 		</div>
 	);

@@ -11,7 +11,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { SelectControl } from '@wordpress/components';
+import { SelectControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import {
 	AccordionPanelGroup,
@@ -19,7 +19,9 @@ import {
 	ImageUploadControl,
 	DynamicTagTextControl,
 	ImageSizeWithCustomControl,
+	LinkSearchControl,
 } from '@shared/controls';
+import type { LinkValue } from '@shared/controls/LinkSearchControl';
 import type { ImageBlockAttributes } from '../types';
 
 interface ContentTabProps {
@@ -61,13 +63,6 @@ export function ContentTab({
 	// Fetch media details to get available sizes
 	const media = useSelect((select: any) => {
 		return attributes.image.id ? select('core').getMedia(attributes.image.id) : null;
-	});
-
-	console.log('Image Debug:', {
-		id: attributes.image.id,
-		size: attributes.imageSize,
-		media: media,
-		sizes: media?.media_details?.sizes
 	});
 
 	return (
@@ -121,33 +116,21 @@ export function ContentTab({
 					label={__('Image Resolution', 'voxel-fse')}
 					value={attributes.imageSize}
 					onChange={(value) => {
-						console.log('Resolution Change:', value);
 						const newAttrs: Partial<ImageBlockAttributes> = { imageSize: value };
 
 						// Try to find the URL for the selected size
 						if (value !== 'custom' && media && media.media_details && media.media_details.sizes) {
 							if (media.media_details.sizes[value]) {
-								console.log('Found size URL:', media.media_details.sizes[value].source_url);
 								newAttrs.image = {
 									...attributes.image,
 									url: media.media_details.sizes[value].source_url
 								};
 							} else if (value === 'full' && media.source_url) {
-								console.log('Using full size URL:', media.source_url);
 								newAttrs.image = {
 									...attributes.image,
 									url: media.source_url
 								};
-							} else {
-								console.log('Size not found, keeping current URL');
 							}
-						} else {
-							console.log('Condition failed:', {
-								custom: value === 'custom',
-								hasMedia: !!media,
-								hasDetails: !!media?.media_details,
-								hasSizes: !!media?.media_details?.sizes
-							});
 						}
 
 						setAttributes(newAttrs);
@@ -158,12 +141,14 @@ export function ContentTab({
 				/>
 
 				{/* Caption controls within Image accordion */}
-				<SelectControl
-					label={__('Caption', 'voxel-fse')}
-					value={attributes.captionSource}
-					options={CAPTION_OPTIONS}
-					onChange={(value: any) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
-				/>
+				<div style={{ marginTop: 10 }}>
+					<SelectControl
+						label={__('Caption', 'voxel-fse')}
+						value={attributes.captionSource}
+						options={CAPTION_OPTIONS}
+						onChange={(value: any) => setAttributes({ captionSource: value as 'none' | 'attachment' | 'custom' })}
+					/>
+				</div>
 
 				{attributes.captionSource === 'custom' && (
 					<DynamicTagTextControl
@@ -184,23 +169,44 @@ export function ContentTab({
 				/>
 
 				{attributes.linkTo === 'custom' && (
-					<DynamicTagTextControl
-						label={__('Link URL', 'voxel-fse')}
-						value={attributes.link.url}
-						onChange={(value) => setAttributes({ link: { ...attributes.link, url: value } })}
+					<LinkSearchControl
+						label={__('Link', 'voxel-fse')}
+						value={{
+							url: attributes.link.url || '',
+							isExternal: attributes.link.target === '_blank',
+							nofollow: (attributes.link.rel || '').includes('nofollow'),
+							customAttributes: '',
+						}}
+						onChange={(linkVal: LinkValue) => setAttributes({
+							link: {
+								url: linkVal.url,
+								target: linkVal.isExternal ? '_blank' : '',
+								rel: linkVal.nofollow ? 'nofollow' : '',
+							},
+						})}
 						placeholder={__('Type or paste your URL', 'voxel-fse')}
-						context="post"
+						enableDynamicTags={true}
 					/>
 				)}
 
 				{attributes.linkTo === 'file' && (
-					<SelectControl
-						label={__('Lightbox', 'voxel-fse')}
-						value={attributes.openLightbox}
-						options={LIGHTBOX_OPTIONS}
-						onChange={(value: any) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
-						help={__("Manage your site's lightbox settings in the Lightbox panel.", 'voxel-fse')}
-					/>
+					<>
+						<SelectControl
+							label={__('Lightbox', 'voxel-fse')}
+							value={attributes.openLightbox}
+							options={LIGHTBOX_OPTIONS}
+							onChange={(value: any) => setAttributes({ openLightbox: value as 'default' | 'yes' | 'no' })}
+							help={__("Manage your site's lightbox settings in the Lightbox panel.", 'voxel-fse')}
+						/>
+						<TextControl
+							label={__('Lightbox Group', 'voxel-fse')}
+							value={attributes.lightboxGroup || ''}
+							onChange={(value: string) => setAttributes({ lightboxGroup: value })}
+							placeholder={__('e.g. gallery-1', 'voxel-fse')}
+							help={__('Group images into a slideshow by entering the same name.', 'voxel-fse')}
+							__nextHasNoMarginBottom
+						/>
+					</>
 				)}
 			</AccordionPanel>
 		</AccordionPanelGroup>

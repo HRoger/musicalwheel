@@ -17,7 +17,7 @@ import type { CombinedStyleAttributes } from '@shared/utils';
  * Icon value structure (matches Elementor ICONS control)
  */
 export interface IconValue {
-	library: 'icon' | 'svg' | '';
+	library: 'icon' | 'svg' | 'dynamic' | 'fa-solid' | 'fa-regular' | 'fa-brands' | 'line-awesome' | '';
 	value: string;
 }
 
@@ -35,6 +35,7 @@ export interface BoxValues {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontWeight?: string;

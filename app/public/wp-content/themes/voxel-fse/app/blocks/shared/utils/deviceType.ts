@@ -100,3 +100,13 @@ export function setDeviceType(device: DeviceType): void {
 	}
 }
 
+import { useSelect as wpUseSelect } from '@wordpress/data';
+
+/**
+ * React hook for getting the current device type from WordPress editor.
+ * Wraps useSelect with proper any-casting to avoid TypeScript overload issues.
+ */
+export function useDeviceType(): DeviceType {
+	return (wpUseSelect as any)((select: any) => getCurrentDeviceType(select), []) as DeviceType;
+}
+

@@ -186,7 +186,17 @@ function FrontendLogin({
 
 			// MULTISITE FIX: Use getRestBaseUrl() for multisite subdirectory support
 			const restUrl = getRestBaseUrl();
-			const response = await fetch(`${restUrl}voxel-fse/v1/auth-config?${params.toString()}`);
+
+			const headers: HeadersInit = {};
+			const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+			if (nonce) {
+				headers['X-WP-Nonce'] = nonce;
+			}
+
+			const response = await fetch(`${restUrl}voxel-fse/v1/auth-config?${params.toString()}`, {
+				credentials: 'same-origin',
+				headers,
+			});
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);

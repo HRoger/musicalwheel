@@ -27,7 +27,8 @@ import {
 	AccordionPanelGroup,
 	AccordionPanel,
 } from '@shared/controls';
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import BorderGroupControl from '@shared/controls/BorderGroupControl';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 
 interface StyleTabProps {
 	attributes: AdvancedListAttributes;
@@ -43,7 +44,7 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 	} = attributes;
 
 	// Get current device for conditional logic
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = (useSelect as any)((select: any) => getCurrentDeviceType(select), []);
 
 	// Helper to get responsive attribute value
 	const getResponsiveAttr = (baseName: string) => {
@@ -231,44 +232,23 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 										unitAttributeName="itemHeightUnit"
 									/>
 
-									{/* Border heading */}
-									<SectionHeading label={__('Border', 'voxel-fse')} />
-
-									{/* Border type */}
-									<SelectControl
-										__nextHasNoMarginBottom
-										label={__('Border type', 'voxel-fse')}
-										value={attributes.itemBorderType}
-										options={[
-											{ label: __('Default', 'voxel-fse'), value: '' },
-											{ label: __('None', 'voxel-fse'), value: 'none' },
-											{ label: __('Solid', 'voxel-fse'), value: 'solid' },
-											{ label: __('Dashed', 'voxel-fse'), value: 'dashed' },
-											{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
-											{ label: __('Double', 'voxel-fse'), value: 'double' },
-										]}
-										onChange={(value: string) => setAttributes({ itemBorderType: value })}
+									{/* Border (using shared BorderGroupControl) */}
+									<BorderGroupControl
+										label={__('Border', 'voxel-fse')}
+										value={{
+											borderType: attributes.itemBorderType,
+											borderWidth: attributes.itemBorderWidth,
+											borderColor: attributes.itemBorderColor,
+										}}
+										onChange={(val) => setAttributes({
+											itemBorderType: val.borderType,
+											itemBorderWidth: val.borderWidth,
+											itemBorderColor: val.borderColor,
+										} as any)}
+										hideRadius={true}
 									/>
 
-									{/* Border width & color - only shown when border type is selected (not Default or none) */}
-									{attributes.itemBorderType && attributes.itemBorderType !== 'none' && (
-										<>
-											<DimensionsControl
-												label={__('Border width', 'voxel-fse')}
-												values={attributes.itemBorderWidth || {}}
-												onChange={(value: any) => setAttributes({ itemBorderWidth: value })}
-												availableUnits={['px']}
-											/>
-
-											<ColorControl
-												label={__('Border color', 'voxel-fse')}
-												value={attributes.itemBorderColor}
-												onChange={(value) => setAttributes({ itemBorderColor: value })}
-											/>
-										</>
-									)}
-
-									{/* Border radius */}
+									{/* Border radius (responsive) */}
 									<ResponsiveRangeControl
 										label={__('Border radius', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
@@ -309,6 +289,13 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 										onChange={(value) => setAttributes({ itemTextColor: value })}
 									/>
 
+									{/* Background color */}
+									<ColorControl
+										label={__('Background color', 'voxel-fse')}
+										value={attributes.itemBackgroundColor}
+										onChange={(value) => setAttributes({ itemBackgroundColor: value })}
+									/>
+
 									{/* Icon Container section heading */}
 									<SectionHeading label={__('Icon Container', 'voxel-fse')} />
 
@@ -340,23 +327,23 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 										unitAttributeName="iconContainerSizeUnit"
 									/>
 
-									{/* Icon container border type */}
-									<SelectControl
-										__nextHasNoMarginBottom
-										label={__('Border Type', 'voxel-fse')}
-										value={attributes.iconContainerBorderType}
-										options={[
-											{ label: __('Default', 'voxel-fse'), value: '' },
-											{ label: __('None', 'voxel-fse'), value: 'none' },
-											{ label: __('Solid', 'voxel-fse'), value: 'solid' },
-											{ label: __('Dashed', 'voxel-fse'), value: 'dashed' },
-											{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
-											{ label: __('Double', 'voxel-fse'), value: 'double' },
-										]}
-										onChange={(value: string) => setAttributes({ iconContainerBorderType: value })}
+									{/* Icon container border (using shared BorderGroupControl) */}
+									<BorderGroupControl
+										label={__('Border', 'voxel-fse')}
+										value={{
+											borderType: attributes.iconContainerBorderType,
+											borderWidth: attributes.iconContainerBorderWidth,
+											borderColor: attributes.iconContainerBorderColor,
+										}}
+										onChange={(val) => setAttributes({
+											iconContainerBorderType: val.borderType,
+											iconContainerBorderWidth: val.borderWidth,
+											iconContainerBorderColor: val.borderColor,
+										} as any)}
+										hideRadius={true}
 									/>
 
-									{/* Icon container border radius */}
+									{/* Icon container border radius (responsive) */}
 									<ResponsiveRangeControl
 										label={__('Border radius', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
@@ -472,6 +459,23 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 										value={attributes.iconColorHover}
 										onChange={(value) => setAttributes({ iconColorHover: value })}
 									/>
+
+									{/* Icon Container section */}
+									<SectionHeading label={__('Icon Container', 'voxel-fse')} />
+
+									{/* Icon container background hover */}
+									<ColorControl
+										label={__('Background', 'voxel-fse')}
+										value={attributes.iconContainerBackgroundHover}
+										onChange={(value) => setAttributes({ iconContainerBackgroundHover: value })}
+									/>
+
+									{/* Icon container border color hover */}
+									<ColorControl
+										label={__('Border color', 'voxel-fse')}
+										value={attributes.iconContainerBorderColorHover}
+										onChange={(value) => setAttributes({ iconContainerBorderColorHover: value })}
+									/>
 								</>
 							)}
 							{tab.name === 'active' && (
@@ -519,6 +523,23 @@ export default function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.iconColorActive}
 										onChange={(value) => setAttributes({ iconColorActive: value })}
+									/>
+
+									{/* Icon Container section */}
+									<SectionHeading label={__('Icon Container', 'voxel-fse')} />
+
+									{/* Icon container background active */}
+									<ColorControl
+										label={__('Background', 'voxel-fse')}
+										value={attributes.iconContainerBackgroundActive}
+										onChange={(value) => setAttributes({ iconContainerBackgroundActive: value })}
+									/>
+
+									{/* Icon container border color active */}
+									<ColorControl
+										label={__('Border color', 'voxel-fse')}
+										value={attributes.iconContainerBorderColorActive}
+										onChange={(value) => setAttributes({ iconContainerBorderColorActive: value })}
 									/>
 								</>
 							)}

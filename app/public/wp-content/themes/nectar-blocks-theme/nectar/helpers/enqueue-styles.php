@@ -255,19 +255,24 @@ function nectar_page_sepcific_styles() {
     $nectar_related_posts_style = ( isset( $nectar_options['blog_related_posts_style'] ) && ! empty( $nectar_options['blog_related_posts_style'] ) ) ? $nectar_options['blog_related_posts_style'] : 'material';
 
     $posttype = get_post_type( $post );
-    $nectar_on_blog_archive_check = ( is_archive() || is_author() || is_category() || is_home() || is_tag() );
+    $nectar_on_post_archive_check = ( is_archive() || is_author() || is_category() || is_home() || is_tag() );
     $nectar_blog_type = ( ! empty( $nectar_options['blog_type'] ) ) ? $nectar_options['blog_type'] : 'masonry-blog-fullwidth';
     $nectar_blog_std_style = ( ! empty( $nectar_options['blog_standard_type'] ) ) ? $nectar_options['blog_standard_type'] : 'featured_img_left';
     $nectar_blog_masonry_style = ( ! empty( $nectar_options['blog_masonry_type'] ) ) ? $nectar_options['blog_masonry_type'] : 'auto_meta_overlaid_spaced';
 
     // Archives.
-    $using_post_grid_archive = false;
-    // TODO: Future feature.
-    // if ( NectarThemeManager::is_special_location_active('nectar_special_location__blog_loop') ) {
-    //  $using_post_grid_archive = true;
-    // }
+    $using_post_grid_archive = has_action('nectar_template_archive');
 
-    if( $nectar_on_blog_archive_check && ! $using_post_grid_archive ) {
+    // Portfolio
+    $nectar_on_portfolio_archive_check = ( is_post_type_archive( 'nectar_portfolio' ) || is_tax( 'portfolio_category' ) || is_tax( 'portfolio_tag' ) );
+    if( $nectar_on_portfolio_archive_check && ! $using_post_grid_archive ) {
+        wp_enqueue_style( 'nectar-blog-masonry-core' );
+        wp_enqueue_style( 'nectar-blog-auto-masonry-meta-overlaid-spaced' );
+
+    } // End archive check.
+
+    // Blog
+    if( $nectar_on_post_archive_check && ! $using_post_grid_archive ) {
 
         //// Masonry Styles.
         if( $nectar_blog_type === 'masonry-blog-sidebar' ||
@@ -323,7 +328,7 @@ function nectar_page_sepcific_styles() {
     }
 
     // Blog std style containing image gallery grid - archive.
-    if ( $nectar_on_blog_archive_check ) {
+    if ( $nectar_on_post_archive_check ) {
 
         if ( $nectar_blog_type === 'std-blog-sidebar' || $nectar_blog_type === 'std-blog-fullwidth' ) {
             //// Standard styles that could contain gallery sliders.

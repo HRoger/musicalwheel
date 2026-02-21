@@ -248,7 +248,7 @@ const SimpleDatePicker: React.FC<{
 export const DateCondition: React.FC<DateConditionProps> = ({
 	date,
 	onChange,
-	popupKey,
+	popupKey: _popupKey,
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [tempDate, setTempDate] = useState<string | null>(date);

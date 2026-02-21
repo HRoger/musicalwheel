@@ -1,9 +1,10 @@
 <?php
 /**
- * FSE Taxonomy Icon Picker Controller
+ * FSE Admin Icon Picker Controller
  *
- * Enqueues the React-based icon picker on WordPress taxonomy admin pages.
- * Provides a bridge between Voxel's Vue.js backend and the FSE React icon picker.
+ * Loads Voxel's icon picker on WordPress admin pages that need it:
+ * - Taxonomy screens (edit-tags.php, term.php)
+ * - Nav Menus screen (nav-menus.php)
  *
  * @package VoxelFSE
  * @since 1.0.0
@@ -16,10 +17,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * FSE Taxonomy Icon Picker Controller
+ * FSE Admin Icon Picker Controller
  *
- * Handles enqueuing the React icon picker component on taxonomy admin screens,
- * replacing Voxel's Elementor-based icon picker with the React implementation.
+ * Handles loading Voxel's icon picker on admin screens that need it.
+ * Covers taxonomy pages (edit-tags, term) and nav menus (nav-menus).
  */
 class FSE_Taxonomy_Icon_Picker_Controller extends FSE_Base_Controller {
 
@@ -27,24 +28,25 @@ class FSE_Taxonomy_Icon_Picker_Controller extends FSE_Base_Controller {
 	 * Register hooks for icon picker functionality
 	 */
 	protected function hooks(): void {
-		// Load icon picker on taxonomy admin screens
-		// Following the same pattern as vue-integration.php (lines 585-667)
-		$this->on( 'admin_footer', '@load_icon_picker_on_taxonomy_pages', 50 );
+		$this->on( 'admin_footer', '@load_icon_picker_on_admin_pages', 50 );
 	}
 
 	/**
-	 * Load icon picker on taxonomy pages
-	 * 
-	 * This follows the exact pattern from FSE_Templates\vue-integration.php:585-667
-	 * which loads the parent theme's icon picker template (Vue.js version) on post type editor pages.
-	 * 
-	 * Evidence: The working implementation on edit-post-type pages loads the parent theme's
-	 * templates/backend/icon-picker.php which includes the Vue.js icon picker component.
+	 * Load icon picker on admin pages that need it
+	 *
+	 * Screens: edit-tags, term (taxonomy pages), nav-menus (menu editor)
 	 */
-	public function load_icon_picker_on_taxonomy_pages() {
-		// Only run on term edit screens (edit-tags and term)
+	public function load_icon_picker_on_admin_pages() {
 		$screen = get_current_screen();
-		if ( ! $screen || ! in_array( $screen->base, [ 'term', 'edit-tags' ], true ) || ! taxonomy_exists( $screen->taxonomy ) ) {
+		if ( ! $screen ) {
+			return;
+		}
+
+		// Allow taxonomy screens and nav-menus screen
+		$is_taxonomy_screen = in_array( $screen->base, [ 'term', 'edit-tags' ], true ) && taxonomy_exists( $screen->taxonomy );
+		$is_nav_menus_screen = $screen->base === 'nav-menus';
+
+		if ( ! $is_taxonomy_screen && ! $is_nav_menus_screen ) {
 			return;
 		}
 

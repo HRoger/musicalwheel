@@ -53,14 +53,14 @@ export function ContentTab({
 						{ label: __('Show', 'voxel-fse'), value: 'show' },
 						{ label: __('Hide', 'voxel-fse'), value: 'hide' },
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({ showPriceCalculator: value as 'show' | 'hide' })
 					}
 				/>
 				<ToggleControl
 					label={__('Show only subtotal?', 'voxel-fse')}
 					checked={attributes.showSubtotalOnly}
-					onChange={(value) => setAttributes({ showSubtotalOnly: value })}
+					onChange={(value: boolean) => setAttributes({ showSubtotalOnly: value })}
 				/>
 			</AccordionPanel>
 
@@ -69,7 +69,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Hide Cards subheading', 'voxel-fse')}
 					checked={attributes.hideCardSubheading}
-					onChange={(value) => setAttributes({ hideCardSubheading: value })}
+					onChange={(value: boolean) => setAttributes({ hideCardSubheading: value })}
 				/>
 				<ToggleControl
 					label={__('Select/Deselect on click', 'voxel-fse')}
@@ -78,7 +78,7 @@ export function ContentTab({
 						'voxel-fse'
 					)}
 					checked={!attributes.cardSelectOnClick}
-					onChange={(value) => setAttributes({ cardSelectOnClick: !value })}
+					onChange={(value: boolean) => setAttributes({ cardSelectOnClick: !value })}
 				/>
 			</AccordionPanel>
 

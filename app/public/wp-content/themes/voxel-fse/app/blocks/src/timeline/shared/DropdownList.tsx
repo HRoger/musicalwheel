@@ -59,7 +59,7 @@ export function DropdownList({
 	const popupRef = useRef<HTMLDivElement>(null);
 	const popupBoxRef = useRef<HTMLDivElement>(null);
 	const [styles, setStyles] = useState<React.CSSProperties>({});
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	// @ts-ignore -- unused but kept for future use
 
 	/**
 	 * Calculate position relative to target

@@ -88,14 +88,55 @@ import {
 	getUserLocation,
 	fitBoundsToMarkers,
 	type VxMapOptions,
-	type VxMarkerOptions,
 } from './voxel-maps-adapter';
+import { addMarkersToMap, clearPreviewCardCache } from './map-markers';
 
 
 
 
 
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
+
+/**
+ * Inject CSS to ensure geolocate button is visible
+ * PARITY FIX: Voxel's CSS uses `.elementor-widget-ts-map:has(.gm-control-active) .vx-geolocate-me { display: flex }`
+ * which only shows the button when hovering Google Maps controls. We need to override this for FSE blocks.
+ */
+function injectGeolocateButtonCSS(): void {
+	const styleId = 'voxel-fse-map-geolocate-css';
+	if (document.getElementById(styleId)) return;
+
+	const style = document.createElement('style');
+	style.id = styleId;
+	style.textContent = `
+		/* Hide Google Maps native Map/Satellite toggle button (matches Voxel behavior) */
+		.gm-style-mtc-bbw { display: none; }
+		/* FSE Map Block: Force geolocate button to be visible when map is loaded */
+		.voxel-fse-map.elementor-widget-ts-map .vx-geolocate-me:not(.hidden),
+		.voxel-fse-map .vx-geolocate-me:not(.hidden) {
+			display: flex !important;
+		}
+		/* Loading state */
+		.voxel-fse-map .vx-geolocate-me.loading {
+			opacity: 0.5;
+			pointer-events: none;
+		}
+		.voxel-fse-map .vx-geolocate-me.loading svg {
+			animation: vx-spin 1s linear infinite;
+		}
+		@keyframes vx-spin {
+			from { transform: rotate(0deg); }
+			to { transform: rotate(360deg); }
+		}
+		/* FSE popup: re-enable pointer-events on block content
+		   Voxel parent targets: .ts-preview-popup > .elementor { pointer-events: all }
+		   FSE uses wp-block-* wrappers instead of .elementor */
+		.ts-preview-popup > * {
+			pointer-events: all;
+		}
+	`;
+	document.head.appendChild(style);
+}
 
 /**
  * Get the REST API base URL
@@ -145,10 +186,13 @@ export function getResponsiveValueClient<T>(
 }
 
 
-
-
-
-
+// Icon constants and renderIconToHtml imported from shared map-icons module (DRY)
+import {
+	DEFAULT_CHECKMARK_SVG,
+	DEFAULT_SEARCH_SVG,
+	DEFAULT_GEOLOCATION_SVG,
+	renderIconToHtml,
+} from './map-icons';
 
 /**
  * Render drag search UI
@@ -166,20 +210,26 @@ function renderDragSearchUI(
 
 	if (config.dragSearchMode === 'automatic') {
 		const isChecked = config.dragSearchDefault === 'checked';
+		// Get custom checkmark icon from config, fallback to default SVG
+		// Implements 1:1 parity with Voxel's map.php:33
+		const checkmarkIcon = config.styles?.searchBtn?.checkmarkIcon;
+		const checkmarkHtml = renderIconToHtml(checkmarkIcon, DEFAULT_CHECKMARK_SVG);
+
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-map-btn ts-drag-toggle ${isChecked ? 'active' : ''}">
-				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-checkmark-icon">
-					<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-				</svg>
+				${checkmarkHtml}
 				Search as I move the map
 			</a>
 		`;
 	} else {
+		// Get custom search icon from config, fallback to default SVG
+		// Implements 1:1 parity with Voxel's map.php:38
+		const searchIcon = config.styles?.searchBtn?.searchIcon;
+		const searchHtml = renderIconToHtml(searchIcon, DEFAULT_SEARCH_SVG);
+
 		dragDiv.innerHTML = `
 			<a href="#" class="ts-search-area hidden ts-map-btn">
-				<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="ts-search-icon">
-					<path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-				</svg>
+				${searchHtml}
 				Search this area
 			</a>
 		`;
@@ -192,7 +242,7 @@ function renderDragSearchUI(
 /**
  * Render geolocation button
  */
-function renderGeolocateButton(container: HTMLElement): HTMLElement {
+function renderGeolocateButton(container: HTMLElement, config: MapVxConfig): HTMLElement {
 	const geoBtn = document.createElement('a');
 	geoBtn.href = '#';
 	geoBtn.rel = 'nofollow';
@@ -200,13 +250,17 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 	// PARITY FIX: Voxel starts with 'hidden' class (templates/widgets/map.php:55)
 	geoBtn.className = 'vx-geolocate-me hidden';
 	geoBtn.setAttribute('aria-label', 'Share your location');
-	geoBtn.innerHTML = `
-		<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-			<path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-		</svg>
-	`;
+	// Get custom geolocation icon from config, fallback to default SVG
+	// Implements 1:1 parity with Voxel's map.php:56
+	const geolocationIcon = config.styles?.geolocationIcon;
+	const geolocationHtml = renderIconToHtml(geolocationIcon, DEFAULT_GEOLOCATION_SVG);
+	geoBtn.innerHTML = geolocationHtml;
 
 	// Add click handler using VxGeocoder
+	// PARITY: Voxel's geolocation flow (voxel-map.beautified.js:492-524)
+	// 1. Request browser geolocation permission
+	// 2. If granted: get position, pan map, show circle, fetch address
+	// 3. If denied: show Voxel.alert() error (Voxel_Config.l10n.positionFail)
 	geoBtn.addEventListener('click', (e) => {
 		e.preventDefault();
 		geoBtn.classList.add('loading');
@@ -233,7 +287,7 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 			receivedAddress: (result) => {
 				console.log('[Map Block] Got user address:', result.address);
 
-				// Dispatch event for other components to use
+				// Dispatch event for other components to use (e.g., search form location filter)
 				container.dispatchEvent(new CustomEvent('geolocation:address', {
 					detail: {
 						address: result.address,
@@ -248,10 +302,16 @@ function renderGeolocateButton(container: HTMLElement): HTMLElement {
 			positionFail: () => {
 				console.warn('[Map Block] Failed to get user position');
 				geoBtn.classList.remove('loading');
-				// Could show Voxel.alert() here
+				// PARITY: Show Voxel.alert() error - same as Voxel's geocoder (voxel-map.beautified.js:516)
+				const errorMessage = (window as any).Voxel_Config?.l10n?.positionFail || 'Could not determine your location.';
+				if (typeof (window as any).Voxel?.alert === 'function') {
+					(window as any).Voxel.alert(errorMessage, 'error');
+				}
 			},
 			addressFail: () => {
 				console.warn('[Map Block] Failed to get user address');
+				// Note: Voxel also calls Voxel.alert() in addressFail (voxel-map.beautified.js:516)
+				// but that's handled inside the Voxel.Maps.Geocoder.prototype.getUserLocation
 			},
 		});
 	});
@@ -294,7 +354,16 @@ async function initCurrentPostMap(
 	const endpoint = `${restUrl}voxel-fse/v1/map/post-location?post_id=${postId}`;
 
 	try {
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -332,6 +401,10 @@ async function initCurrentPostMap(
 
 /**
  * Initialize map for search-form mode
+ *
+ * CRITICAL: Map initialization is async (waits for Voxel.Maps).
+ * Event listeners are set up immediately but queue markers until map is ready.
+ * This prevents race conditions where post-feed markers arrive before map init completes.
  */
 function initSearchFormMap(
 	container: HTMLElement,
@@ -339,6 +412,22 @@ function initSearchFormMap(
 ): void {
 	// Clear placeholder
 	container.innerHTML = '';
+
+	// Read enableClusters from the linked search-form's data attribute
+	// Voxel parity: search-form.php:131 (ts_map_enable_clusters), beautified.js:2406
+	// The search-form saves data-enable-clusters="yes"|"no" on its wrapper element
+	// We find it by looking for [data-post-to-map-id] that targets this map's blockId
+	let enableClusters = true; // default: enabled (matches Voxel default 'yes')
+	const linkedSearchForm = document.querySelector(
+		`[data-post-to-map-id="${config.blockId}"]`
+	);
+	if (linkedSearchForm) {
+		const clusterAttr = linkedSearchForm.getAttribute('data-enable-clusters');
+		enableClusters = clusterAttr !== 'no';
+		console.log('[Map Block] Read enableClusters from linked search-form:', enableClusters, '(attr:', clusterAttr, ')');
+	} else {
+		console.log('[Map Block] No linked search-form found for blockId:', config.blockId, '- defaulting enableClusters=true');
+	}
 
 	// Build data-config for initial state (empty map)
 	const dataConfig: MapDataConfig = {
@@ -355,10 +444,29 @@ function initSearchFormMap(
 	const mapContainer = renderMapContainer(container, config, dataConfig);
 
 	// Render geolocation button
-	renderGeolocateButton(container);
+	renderGeolocateButton(container, config);
+
+	// Queue for markers that arrive before map is ready
+	let pendingMarkers: Array<{
+		postId: string;
+		lat: number;
+		lng: number;
+		template: string;
+	}>[] = [];
+	let mapReady = false;
 
 	// Initialize the actual map using VoxelMapsAdapter
-	initializeVoxelMap(mapContainer, dataConfig, container, config);
+	// CRITICAL: Await initialization, then process any queued markers
+	initializeVoxelMap(mapContainer, dataConfig, container, config, enableClusters).then(() => {
+		mapReady = true;
+		// Process any markers that arrived while map was initializing
+		if (pendingMarkers.length > 0) {
+			const allMarkers = pendingMarkers.flat();
+			console.log('[Map Block] Processing', allMarkers.length, 'queued markers after map init');
+			displayMarkersFromFeed(mapContainer, allMarkers);
+			pendingMarkers = [];
+		}
+	});
 
 	// Set up event listener for search form submissions
 	// PARITY FIX: Listen for events targeting this map's own blockId, NOT the searchFormId
@@ -377,6 +485,7 @@ function initSearchFormMap(
 	// This is how the Map block gets marker data after Post Feed loads search results
 	// Reference: voxel-search-form.beautified.js:2501-2518 (_updateMarkers reads from feed DOM)
 	// The Post Feed extracts markers from .ts-marker-wrapper elements and sends them here
+	console.log('[Map Block] Setting up voxel-fse:post-feed-markers listener');
 	window.addEventListener('voxel-fse:post-feed-markers', ((event: CustomEvent<{
 		sourceBlockId: string;
 		markers: Array<{
@@ -386,10 +495,18 @@ function initSearchFormMap(
 			template: string;
 		}>;
 	}>) => {
+		console.log('[Map Block] Received voxel-fse:post-feed-markers event:', event.detail);
 		const { markers } = event.detail;
 		if (markers.length > 0) {
-			console.log('[Map Block] Received', markers.length, 'markers from Post Feed');
-			displayMarkersFromFeed(mapContainer, markers);
+			if (mapReady) {
+				console.log('[Map Block] Received', markers.length, 'markers from Post Feed - processing now');
+				displayMarkersFromFeed(mapContainer, markers);
+			} else {
+				console.log('[Map Block] Map not ready, queuing', markers.length, 'markers');
+				pendingMarkers.push(markers);
+			}
+		} else {
+			console.log('[Map Block] Received empty markers array from Post Feed');
 		}
 	}) as EventListener);
 
@@ -420,7 +537,8 @@ async function initializeVoxelMap(
 	mapContainer: HTMLElement,
 	dataConfig: MapDataConfig,
 	wrapper: HTMLElement,
-	config: MapVxConfig
+	config: MapVxConfig,
+	enableClusters: boolean = true
 ): Promise<void> {
 	console.log('[Map Block] initializeVoxelMap called', { mapContainer, dataConfig });
 
@@ -477,9 +595,17 @@ async function initializeVoxelMap(
 		await map.init();
 		console.log('[Map Block] VxMap.init() completed, native map:', map.getNative());
 
-		// Initialize clusterer for search-form mode
+		// CRITICAL FIX: Re-apply height after map initialization
+		// Google Maps API sets inline styles (height: 100%, width: 100%) during init
+		// which override our configured height. We must re-apply it here.
+		mapContainer.style.height = height;
+		mapContainer.style.minHeight = height;
+		console.log('[Map Block] Height re-applied after map init:', height);
+
+		// Initialize clusterer for search-form mode (only when enabled)
+		// Voxel parity: voxel-search-form.beautified.js:2406 - if (this.config.enable_clusters)
 		let clusterer: VxClusterer | null = null;
-		if (config.source === 'search-form') {
+		if (config.source === 'search-form' && enableClusters) {
 			clusterer = new VxClusterer();
 			await clusterer.init(map);
 
@@ -562,10 +688,12 @@ async function initializeVoxelMap(
 			const markers = await addMarkersToMap(map, dataConfig.markers, popup, clusterer);
 			instanceData.markers = markers;
 
-			// Fit bounds to markers if multiple
-			if (markers.length > 1 && clusterer) {
+			// Render clusters if enabled, then always fit bounds
+			// Voxel parity: beautified.js:2661-2664 (clusterer.render) + 2674 (_mapBoundsHandler always runs)
+			if (clusterer && markers.length > 0) {
 				clusterer.render();
-			} else if (markers.length > 0) {
+			}
+			if (markers.length > 0) {
 				fitBoundsToMarkers(map, markers);
 			}
 		}
@@ -575,9 +703,14 @@ async function initializeVoxelMap(
 		// Show geolocation button now that map is ready
 		// In Voxel, this is done by FilterLocation component (search-form.beautified.js:630-632)
 		// We do it here since the Map block is independent
-		const geolocateBtn = wrapper.querySelector('.vx-geolocate-me');
+		// CRITICAL: The Voxel CSS sets `display: none` on .vx-geolocate-me by default
+		// and uses `:has(.gm-control-active)` to show it, but that selector only works
+		// when a Google Maps control button is hovered. We need to force display via inline style.
+		const geolocateBtn = wrapper.querySelector<HTMLElement>('.vx-geolocate-me');
 		if (geolocateBtn) {
 			geolocateBtn.classList.remove('hidden');
+			// Force display: flex to override Voxel's CSS `display: none`
+			geolocateBtn.style.display = 'flex';
 			console.log('[Map Block] Geolocate button shown');
 		} else {
 			console.warn('[Map Block] Geolocate button not found in wrapper');
@@ -587,51 +720,7 @@ async function initializeVoxelMap(
 	}
 }
 
-/**
- * Add markers to map with optional clustering
- */
-async function addMarkersToMap(
-	map: VxMap,
-	markerConfigs: MapDataConfig['markers'],
-	popup: VxPopup,
-	clusterer: VxClusterer | null
-): Promise<VxMarker[]> {
-	if (!markerConfigs) return [];
-
-	const markers: VxMarker[] = [];
-
-	for (const config of markerConfigs) {
-		const template = config.uriencoded
-			? decodeURIComponent(config.template)
-			: config.template;
-
-		const markerOptions: VxMarkerOptions = {
-			position: new VxLatLng(config.lat, config.lng),
-			template,
-			onClick: (_e, marker) => {
-				// Show popup on marker click
-				const pos = marker.getPosition();
-				if (pos) {
-					popup.setPosition(pos);
-					popup.setContent(template);
-					popup.show();
-				}
-			},
-			data: { lat: config.lat, lng: config.lng },
-		};
-
-		const marker = new VxMarker(markerOptions);
-		marker.init(map);
-		markers.push(marker);
-	}
-
-	// Add to clusterer if available
-	if (clusterer && markers.length > 0) {
-		clusterer.addMarkers(markers);
-	}
-
-	return markers;
-}
+// addMarkersToMap, clearPreviewCardCache imported from ./map-markers
 
 /**
  * Trigger drag search (for automatic mode)
@@ -745,10 +834,12 @@ export async function updateMapMarkers(
 
 	instanceData.markers = newMarkers;
 
-	// Render clusters or fit bounds
+	// Render clusters if enabled, then ALWAYS fit bounds
+	// Voxel parity: beautified.js:2661-2664 + 2674 (_mapBoundsHandler always runs)
 	if (instanceData.clusterer && newMarkers.length > 0) {
 		instanceData.clusterer.render();
-	} else if (newMarkers.length > 0) {
+	}
+	if (newMarkers.length > 0) {
 		fitBoundsToMarkers(instanceData.map, newMarkers);
 	}
 }
@@ -791,6 +882,10 @@ async function displayMarkersFromFeed(
 		return;
 	}
 
+	// Clear preview card cache when markers are refreshed
+	// Evidence: voxel-search-form.beautified.js:2498
+	clearPreviewCardCache();
+
 	// Convert to marker configs
 	const markerConfigs = markers.map((m) => ({
 		lat: m.lat,
@@ -799,122 +894,33 @@ async function displayMarkersFromFeed(
 		uriencoded: false,
 	}));
 
+	// Extract postIds for preview card popup support
+	const postIds = markers.map((m) => m.postId);
+
 	// Add markers to map
 	const newMarkers = await addMarkersToMap(
 		instanceData.map,
 		markerConfigs,
 		instanceData.popup!,
-		instanceData.clusterer
+		instanceData.clusterer,
+		postIds
 	);
 
 	instanceData.markers = newMarkers;
 
-	// Render clusters or fit bounds
+	// Render clusters if enabled, then ALWAYS fit bounds
+	// Voxel parity: beautified.js:2661-2664 + 2674 (_mapBoundsHandler always runs)
 	if (instanceData.clusterer && newMarkers.length > 0) {
 		instanceData.clusterer.render();
-	} else if (newMarkers.length > 0) {
+	}
+	if (newMarkers.length > 0) {
 		fitBoundsToMarkers(instanceData.map, newMarkers);
 	}
 
 	console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers from feed');
 }
 
-/**
- * Fetch markers from API and display them on the map
- * Called when Post Feed emits search results with post IDs
- *
- * Reference: voxel-search-form.beautified.js:2488-2600 (_updateMarkers)
- * Voxel reads markers from feed DOM, we fetch via REST API
- */
-async function fetchAndDisplayMarkers(
-	mapContainer: HTMLElement,
-	postIds: number[]
-): Promise<void> {
-	const instanceData = mapInstances.get(mapContainer);
-	if (!instanceData) {
-		console.warn('[Map Block] fetchAndDisplayMarkers: No map instance found');
-		return;
-	}
 
-	console.log('[Map Block] Fetching markers for', postIds.length, 'posts');
-
-	// Clear existing markers
-	if (instanceData.clusterer) {
-		instanceData.clusterer.clearMarkers();
-	} else {
-		instanceData.markers.forEach((m) => m.remove());
-	}
-	instanceData.markers = [];
-	instanceData.popup?.hide();
-
-	if (postIds.length === 0) {
-		console.log('[Map Block] No posts to display markers for');
-		return;
-	}
-
-	try {
-		// Fetch markers from REST API
-		const restUrl = getRestUrl();
-		const response = await fetch(`${restUrl}voxel-fse/v1/map/markers`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ post_ids: postIds }),
-		});
-
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}`);
-		}
-
-		const data = await response.json() as {
-			success: boolean;
-			markers: Array<{
-				postId: number;
-				lat: number;
-				lng: number;
-				template: string;
-				uriencoded?: boolean;
-			}>;
-		};
-
-		if (!data.success || !data.markers || data.markers.length === 0) {
-			console.log('[Map Block] No markers returned from API');
-			return;
-		}
-
-		console.log('[Map Block] Received', data.markers.length, 'markers from API');
-
-		// Convert to marker configs
-		const markerConfigs = data.markers.map((m) => ({
-			lat: m.lat,
-			lng: m.lng,
-			template: m.template,
-			uriencoded: m.uriencoded ?? false,
-		}));
-
-		// Add markers to map
-		const newMarkers = await addMarkersToMap(
-			instanceData.map,
-			markerConfigs,
-			instanceData.popup!,
-			instanceData.clusterer
-		);
-
-		instanceData.markers = newMarkers;
-
-		// Render clusters or fit bounds
-		if (instanceData.clusterer && newMarkers.length > 0) {
-			instanceData.clusterer.render();
-		} else if (newMarkers.length > 0) {
-			fitBoundsToMarkers(instanceData.map, newMarkers);
-		}
-
-		console.log('[Map Block] Successfully displayed', newMarkers.length, 'markers');
-	} catch (error) {
-		console.error('[Map Block] Failed to fetch markers:', error);
-	}
-}
 
 /**
  * Show radius circle on map
@@ -1039,6 +1045,9 @@ function renderMapLoading(container: HTMLElement): void {
  * Initialize all map blocks on the page
  */
 function initMapBlocks(): void {
+	// Inject CSS (once)
+	injectGeolocateButtonCSS();
+
 	const blocks = document.querySelectorAll<HTMLElement>('.voxel-fse-map');
 
 	blocks.forEach((container) => {

@@ -19,15 +19,9 @@ export interface IconValue {
 	value: string;
 }
 
-/**
- * Visibility rule type (matches ElementVisibilityModal)
- */
-export interface VisibilityRule {
-	id: string;
-	type: string;
-	condition: string;
-	value?: string;
-}
+// Import and re-export VisibilityRule from shared controls to avoid type conflict
+import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
+export type { VisibilityRule };
 
 /**
  * Feature item in a plan
@@ -126,6 +120,26 @@ export interface MembershipPlansAttributes {
 	listIconRightPad: number;
 	listIconRightPad_tablet?: number;
 	listIconRightPad_mobile?: number;
+
+	// Typography & color controls
+	priceTypography: Record<string, any>;
+	priceColor: string;
+	periodTypography: Record<string, any>;
+	periodColor: string;
+	nameTypography: Record<string, any>;
+	nameColor: string;
+	descTypography: Record<string, any>;
+	descColor: string;
+	listTypography: Record<string, any>;
+	listColor: string;
+	listIconColor: string;
+
+	// Card container
+	plansBorderType: string;
+	plansBorderWidth: Record<string, string>;
+	plansBorderColor: string;
+	plansBg: string;
+	plansShadow: Record<string, any>;
 
 	// Tabs
 	tabsDisabled: boolean;
@@ -329,6 +343,7 @@ export interface UserMembership {
 	planKey: string;
 	priceKey: string | null;
 	isSubscriptionCanceled: boolean;
+	isInitialState: boolean;
 }
 
 /**
@@ -410,6 +425,24 @@ export const defaultAttributes: Partial<MembershipPlansAttributes> = {
 	listGap: 10,
 	listIconSize: 18,
 	listIconRightPad: 8,
+	// Typography & color
+	priceTypography: {},
+	priceColor: '',
+	periodTypography: {},
+	periodColor: '',
+	nameTypography: {},
+	nameColor: '',
+	descTypography: {},
+	descColor: '',
+	listTypography: {},
+	listColor: '',
+	listIconColor: '',
+	// Card container
+	plansBorderType: '',
+	plansBorderWidth: {},
+	plansBorderColor: '',
+	plansBg: '',
+	plansShadow: {},
 	// Tabs
 	tabsDisabled: false,
 	tabsJustify: 'flex-start',

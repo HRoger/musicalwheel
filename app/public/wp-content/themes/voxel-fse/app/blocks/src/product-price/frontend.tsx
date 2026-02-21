@@ -100,63 +100,63 @@ function normalizeConfig(raw: Record<string, unknown>): ProductPriceVxConfig {
 		if (!val || typeof val !== 'object') return undefined;
 		const t = val as Record<string, unknown>;
 		return {
-			fontFamily: typeof t.fontFamily === 'string' ? t.fontFamily : undefined,
-			fontSize: typeof t.fontSize === 'string' ? t.fontSize : undefined,
-			fontSize_tablet: typeof t.fontSize_tablet === 'string' ? t.fontSize_tablet : undefined,
-			fontSize_mobile: typeof t.fontSize_mobile === 'string' ? t.fontSize_mobile : undefined,
-			fontWeight: typeof t.fontWeight === 'string' ? t.fontWeight : undefined,
-			lineHeight: typeof t.lineHeight === 'string' ? t.lineHeight : undefined,
-			letterSpacing: typeof t.letterSpacing === 'string' ? t.letterSpacing : undefined,
+			fontFamily: typeof t['fontFamily'] === 'string' ? t['fontFamily'] : undefined,
+			fontSize: typeof t['fontSize'] === 'string' ? t['fontSize'] : undefined,
+			fontSize_tablet: typeof t['fontSize_tablet'] === 'string' ? t['fontSize_tablet'] : undefined,
+			fontSize_mobile: typeof t['fontSize_mobile'] === 'string' ? t['fontSize_mobile'] : undefined,
+			fontWeight: typeof t['fontWeight'] === 'string' ? t['fontWeight'] : undefined,
+			lineHeight: typeof t['lineHeight'] === 'string' ? t['lineHeight'] : undefined,
+			letterSpacing: typeof t['letterSpacing'] === 'string' ? t['letterSpacing'] : undefined,
 			textTransform: ['none', 'uppercase', 'lowercase', 'capitalize'].includes(
-				t.textTransform as string
+				t['textTransform'] as string
 			)
-				? (t.textTransform as TypographyConfig['textTransform'])
+				? (t['textTransform'] as TypographyConfig['textTransform'])
 				: undefined,
 		};
 	};
 
 	// Extract values with fallbacks (supports camelCase, snake_case, ts_* prefixed)
 	const priceColor = normalizeString(
-		raw.priceColor ?? raw.price_color ?? raw.ts_price_col,
+		raw['priceColor'] ?? raw['price_color'] ?? raw['ts_price_col'],
 		''
 	);
 
 	const strikethroughTextColor = normalizeString(
-		raw.strikethroughTextColor ?? raw.strikethrough_text_color ?? raw.ts_strike_col_text,
+		raw['strikethroughTextColor'] ?? raw['strikethrough_text_color'] ?? raw['ts_strike_col_text'],
 		''
 	);
 
 	const strikethroughLineColor = normalizeString(
-		raw.strikethroughLineColor ?? raw.strikethrough_line_color ?? raw.ts_strike_col,
+		raw['strikethroughLineColor'] ?? raw['strikethrough_line_color'] ?? raw['ts_strike_col'],
 		''
 	);
 
 	const strikethroughWidth = normalizeNumber(
-		raw.strikethroughWidth ?? raw.strikethrough_width ?? raw.ts_strike_width,
+		raw['strikethroughWidth'] ?? raw['strikethrough_width'] ?? raw['ts_strike_width'],
 		0
 	);
 
 	const strikethroughWidthUnit = normalizeString(
-		raw.strikethroughWidthUnit ?? raw.strikethrough_width_unit,
+		raw['strikethroughWidthUnit'] ?? raw['strikethrough_width_unit'],
 		'px'
 	);
 
 	const outOfStockColor = normalizeString(
-		raw.outOfStockColor ?? raw.out_of_stock_color ?? raw.ts_price_nostock,
+		raw['outOfStockColor'] ?? raw['out_of_stock_color'] ?? raw['ts_price_nostock'],
 		''
 	);
 
 	const typography = normalizeTypography(
-		raw.typography ?? raw.price_typo
+		raw['typography'] ?? raw['price_typo']
 	);
 
 	const postId = normalizeNumber(
-		raw.postId ?? raw.post_id,
+		raw['postId'] ?? raw['post_id'],
 		0
 	) || undefined;
 
 	const postType = normalizeString(
-		raw.postType ?? raw.post_type,
+		raw['postType'] ?? raw['post_type'],
 		''
 	) || undefined;
 
@@ -269,7 +269,16 @@ async function fetchProductPrice(postId: number): Promise<ProductPriceData> {
 	const restUrl = getRestUrl();
 	const endpoint = `${restUrl}voxel-fse/v1/product-price?post_id=${postId}`;
 
-	const response = await fetch(endpoint);
+	const headers: HeadersInit = {};
+	const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+	if (nonce) {
+		headers['X-WP-Nonce'] = nonce;
+	}
+
+	const response = await fetch(endpoint, {
+		credentials: 'same-origin',
+		headers,
+	});
 
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));
@@ -343,7 +352,7 @@ function initProductPriceBlocks() {
 
 	containers.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -362,11 +371,11 @@ function initProductPriceBlocks() {
 		}
 
 		// Build attributes from vxconfig
-		const blockId = container.dataset.blockId || '';
+		const blockId = container.dataset['blockId'] || '';
 		const attributes = buildAttributesFromVxConfig(vxconfig, blockId);
 
 		// Mark as hydrated to prevent double-initialization
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Clear placeholder content
 		container.innerHTML = '';

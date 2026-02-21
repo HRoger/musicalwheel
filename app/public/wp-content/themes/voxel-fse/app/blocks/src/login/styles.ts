@@ -174,10 +174,15 @@ export function generateBlockResponsiveCSS(
     if (iconInputPadding.tablet) tabletRules.push(`${inputGroupSelector}.flexify ${inputSelector} { ${iconInputPadding.tablet} }`);
     if (iconInputPadding.mobile) mobileRules.push(`${inputGroupSelector}.flexify ${inputSelector} { ${iconInputPadding.mobile} }`);
 
-    // Icon Color
-    if (attributes.fieldInputIconColor) {
-        desktopRules.push(`${inputGroupSelector} > i { color: ${attributes.fieldInputIconColor}; }`);
-        desktopRules.push(`${inputGroupSelector} > svg { fill: ${attributes.fieldInputIconColor}; }`);
+    // Icon Color (with default)
+    const iconColor = attributes.fieldInputIconColor || 'currentColor';
+    if (iconColor && iconColor !== 'currentColor') {
+        desktopRules.push(`${inputGroupSelector} > i { color: ${iconColor}; }`);
+        desktopRules.push(`${inputGroupSelector} > svg { fill: ${iconColor}; }`);
+    } else {
+        // Apply default icon styling to ensure icons are visible
+        desktopRules.push(`${inputGroupSelector} > i { color: inherit; opacity: 0.7; }`);
+        desktopRules.push(`${inputGroupSelector} > svg { fill: inherit; opacity: 0.7; }`);
     }
     if (attributes.fieldInputIconColorHover) {
         desktopRules.push(`${inputGroupSelector}:hover > i { color: ${attributes.fieldInputIconColorHover}; }`);

@@ -63,7 +63,7 @@ export function TimelinePreview({ attributes, isEditor }: TimelinePreviewProps):
 
 				{orderingOptions.length > 0 && (
 					<div className="voxel-fse-timeline-preview__ordering">
-						{orderingOptions.map((opt, index) => (
+						{orderingOptions.map((opt, _index) => (
 							<span key={opt._id} className="voxel-fse-timeline-preview__tag">
 								{opt.label}
 							</span>

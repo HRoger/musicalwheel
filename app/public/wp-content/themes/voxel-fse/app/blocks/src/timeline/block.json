@@ -16,7 +16,6 @@
 		"activity"
 	],
 	"textdomain": "voxel-fse",
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./frontend.css",

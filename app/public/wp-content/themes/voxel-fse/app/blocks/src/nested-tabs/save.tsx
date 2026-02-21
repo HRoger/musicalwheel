@@ -20,10 +20,10 @@ interface SaveProps {
 }
 
 export default function save({ attributes }: SaveProps) {
-	const blockId = attributes.blockId || 'nested-tabs';
+	const blockId = (attributes as any).blockId || 'nested-tabs';
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'vxfse-nested-tabs',
 	});
@@ -36,7 +36,7 @@ export default function save({ attributes }: SaveProps) {
 		.filter(Boolean)
 		.join('\n');
 
-	const blockProps = useBlockProps.save({
+	const blockProps = (useBlockProps as any).save({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
 		// Note: style will be merged with styleVars below
@@ -69,7 +69,7 @@ export default function save({ attributes }: SaveProps) {
 	};
 
 	// Get widget number for IDs
-	const widgetNumber = attributes.blockId.substring(0, 3);
+	const widgetNumber = (attributes as any).blockId.substring(0, 3);
 
 	// Build inline styles for CSS variables
 	const styleVars: Record<string, string> = {};
@@ -242,17 +242,17 @@ export default function save({ attributes }: SaveProps) {
 		<div
 			{...blockProps}
 			data-vxconfig={JSON.stringify(vxconfig)}
-			data-block-id={attributes.blockId}
+			data-block-id={(attributes as any).blockId}
 			style={mergedStyles as React.CSSProperties}
 			// Headless-ready: Visibility rules configuration
-			data-visibility-behavior={attributes.visibilityBehavior || undefined}
-			data-visibility-rules={attributes.visibilityRules?.length
-				? JSON.stringify(attributes.visibilityRules)
+			data-visibility-behavior={(attributes as any).visibilityBehavior || undefined}
+			data-visibility-rules={(attributes as any).visibilityRules?.length
+				? JSON.stringify((attributes as any).visibilityRules)
 				: undefined}
 			// Headless-ready: Loop element configuration
-			data-loop-source={attributes.loopSource || undefined}
-			data-loop-limit={attributes.loopLimit || undefined}
-			data-loop-offset={attributes.loopOffset || undefined}
+			data-loop-source={(attributes as any).loopSource || undefined}
+			data-loop-limit={(attributes as any).loopLimit || undefined}
+			data-loop-offset={(attributes as any).loopOffset || undefined}
 			{...advancedProps.customAttrs}
 		>
 			{/* Responsive CSS from AdvancedTab + VoxelTab + Style Tab */}
@@ -281,7 +281,7 @@ export default function save({ attributes }: SaveProps) {
 								key={tab.id}
 								id={tabId}
 								data-tab-title-id={tabTitleId}
-								className={`e-n-tab-title${isFirst ? ' e-active' : ''}`}
+								className={`e-n-tab-title${isFirst ? ' e-active' : ''}${attributes.tabsHoverAnimation ? ` elementor-animation-${attributes.tabsHoverAnimation}` : ''}`}
 								data-tab-index={tabCount}
 								role="tab"
 								aria-selected={isFirst ? 'true' : 'false'}

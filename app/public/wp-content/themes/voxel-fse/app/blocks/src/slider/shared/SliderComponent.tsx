@@ -19,9 +19,18 @@
 
 import { useState, useRef, useEffect, useCallback, CSSProperties, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import type { SliderComponentProps, ProcessedImage, SliderVxConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons } from '@shared/utils';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 /**
  * Check if page is RTL
@@ -30,7 +39,7 @@ import { VoxelIcons } from '@shared/utils';
 const isRTL = (): boolean => {
 	if (typeof window !== 'undefined') {
 		// Check Voxel config first
-		const voxelConfig = (window as Record<string, unknown>).Voxel_Config as { is_rtl?: boolean } | undefined;
+		const voxelConfig = (window as unknown as Record<string, unknown>)['Voxel_Config'] as { is_rtl?: boolean } | undefined;
 		if (voxelConfig?.is_rtl !== undefined) {
 			return voxelConfig.is_rtl;
 		}
@@ -57,7 +66,9 @@ export default function SliderComponent({
 	context,
 	processedImages = [],
 	galleryId = 'slider-default',
-	onOpenMediaLibrary,
+	onOpenMediaLibrary: _onOpenMediaLibrary,
+	templateContext = 'post',
+	templatePostType,
 }: SliderComponentProps) {
 	const [currentSlide, setCurrentSlide] = useState(0);
 	const [isHovered, setIsHovered] = useState(false);
@@ -67,17 +78,128 @@ export default function SliderComponent({
 	const containerRef = useRef<HTMLDivElement>(null);
 	const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+	// Dynamic tag resolution for editor preview
+	const hasDynamicImages = attributes.imagesDynamicTag && attributes.imagesDynamicTag.includes('@');
+	const [dynamicImages, setDynamicImages] = useState<ProcessedImage[]>([]);
+
+	useEffect(() => {
+		if (context !== 'editor' || !hasDynamicImages || processedImages.length > 0) {
+			setDynamicImages([]);
+			return;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get comma-separated attachment IDs
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: attributes.imagesDynamicTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				// Strip @tags()...@endtags() wrapper
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				// Parse comma-separated IDs
+				const ids = rendered.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => n > 0);
+				if (ids.length === 0) {
+					setDynamicImages([]);
+					return;
+				}
+
+				// Step 2: Fetch media data for each ID
+				const images: ProcessedImage[] = [];
+				for (const id of ids) {
+					if (cancelled) return;
+					try {
+						const media = await apiFetch<{ source_url: string; alt_text?: string; caption?: { rendered?: string }; title?: { rendered?: string }; description?: { rendered?: string }; media_details?: { sizes?: Record<string, { source_url: string }> } }>({
+							path: `/wp/v2/media/${id}`,
+						});
+						if (media?.source_url) {
+							const sizes = media.media_details?.sizes || {};
+							const displayUrl = sizes[attributes.displaySize]?.source_url || media.source_url;
+							const lightboxUrl = sizes[attributes.lightboxSize]?.source_url || media.source_url;
+							const thumbnailUrl = sizes['thumbnail']?.source_url || media.source_url;
+							images.push({
+								id,
+								src: displayUrl,
+								srcLightbox: lightboxUrl,
+								srcThumbnail: thumbnailUrl,
+								alt: media.alt_text || '',
+								caption: media.caption?.rendered?.replace(/<[^>]*>/g, '') || '',
+								description: media.description?.rendered?.replace(/<[^>]*>/g, '') || '',
+								title: media.title?.rendered || '',
+							});
+						}
+					} catch {
+						// Skip failed media fetches
+					}
+				}
+
+				if (!cancelled) {
+					setDynamicImages(images);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('Failed to resolve dynamic slider images:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [context, attributes.imagesDynamicTag, hasDynamicImages, templateContext, templatePostType, processedImages.length, attributes.displaySize, attributes.lightboxSize]);
+
 	// Generate unique slider ID matching Voxel pattern
 	// Evidence: themes/voxel/app/widgets/slider.php:694 - $slider_id = 'slider-'.wp_unique_id()
 	const sliderId = useMemo(() => `slider-${galleryId}`, [galleryId]);
 
+	// Use dynamic images when no static images but dynamic tag is set
+	const effectiveImages = processedImages.length > 0 ? processedImages : dynamicImages;
+
 	// Determine if this is a slideshow (multiple images) for lightbox grouping
 	// Evidence: themes/voxel/templates/widgets/slider.php:18,43
-	const isSlideshow = processedImages.length > 1;
+	const isSlideshow = effectiveImages.length > 1;
 
-	const images = processedImages;
+	const images = effectiveImages;
 	const isSingleImage = images.length === 1;
 	const hasMultipleImages = images.length > 1;
+
+	// Build lightbox slides from all images
+	const lightboxSlides = useMemo(
+		() => images.map((img) => ({
+			src: img.srcLightbox || img.src,
+			alt: img.alt || '',
+		})),
+		[images]
+	);
+
+	// Lightbox click handler - opens at the correct image index
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
+			e.preventDefault();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(lightboxSlides, index);
+			}
+		},
+		[lightboxSlides]
+	);
 
 	// Build inline styles based on attributes
 	const sliderStyle: CSSProperties = {};
@@ -228,6 +350,7 @@ export default function SliderComponent({
 				}
 			};
 		}
+		return undefined;
 	}, [attributes.autoSlide, attributes.autoSlideInterval, hasMultipleImages, images.length, context, scrollToSlide, isHovered]);
 
 	/**
@@ -262,12 +385,10 @@ export default function SliderComponent({
 	 * Get link props for image
 	 * Evidence: themes/voxel/templates/widgets/slider.php:14-22, 39-47
 	 *
-	 * For lightbox mode, uses Elementor's native lightbox via data attributes:
-	 * - data-elementor-open-lightbox="yes" - Triggers Elementor lightbox
-	 * - data-elementor-lightbox-slideshow="{gallery_id}" - Groups images (only for multiple images)
-	 * - data-elementor-lightbox-description="{caption}" - Shows caption in lightbox
+	 * For lightbox mode, uses VoxelLightbox global API via onClick handler.
+	 * data-elementor-* attributes are kept for HTML parity only.
 	 */
-	const getLinkProps = (image: ProcessedImage) => {
+	const getLinkProps = (image: ProcessedImage, index: number) => {
 		if (attributes.linkType === 'custom_link' && attributes.customLinkUrl) {
 			return {
 				href: attributes.customLinkUrl,
@@ -275,17 +396,14 @@ export default function SliderComponent({
 			};
 		}
 		if (attributes.linkType === 'lightbox') {
-			// Use Elementor's native lightbox (100% Voxel parity)
-			// Evidence: themes/voxel/templates/widgets/slider.php:17-19, 42-44
-			const props: Record<string, string> = {
+			const props: Record<string, unknown> = {
 				href: image.srcLightbox,
 				'data-elementor-open-lightbox': 'yes',
 				'data-elementor-lightbox-description': getLightboxDescription(image),
+				onClick: (e: React.MouseEvent<HTMLAnchorElement>) => handleLightboxClick(e, index),
 			};
 
 			// Only add slideshow attribute for multiple images
-			// Evidence: themes/voxel/templates/widgets/slider.php:18,43
-			// $is_slideshow ? sprintf( 'data-elementor-lightbox-slideshow="%s"', $gallery_id ) : ''
 			if (isSlideshow) {
 				props['data-elementor-lightbox-slideshow'] = galleryId;
 			}
@@ -344,7 +462,7 @@ export default function SliderComponent({
 				<div className="ts-preview ts-single-slide" style={sliderStyle}>
 					{(() => {
 						const image = images[0];
-						const linkProps = getLinkProps(image);
+						const linkProps = getLinkProps(image, 0);
 
 						const imageElement = (
 							<img
@@ -391,7 +509,7 @@ export default function SliderComponent({
 						}}
 					>
 						{images.map((image, index) => {
-							const linkProps = getLinkProps(image);
+							const linkProps = getLinkProps(image, index);
 
 							const imageElement = (
 								<img

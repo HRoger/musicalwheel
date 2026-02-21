@@ -10,13 +10,12 @@
  */
 
 import { RangeControl, Button, TextControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
 import UndoIcon from '../icons/UndoIcon';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlWithDropdownProps {
 	label: string;
@@ -49,7 +48,7 @@ export default function ResponsiveRangeControlWithDropdown({
 	customValueAttributeName,
 }: ResponsiveRangeControlWithDropdownProps) {
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = useDeviceType();
 
 	// Get attribute name for current device
 	const getAttributeName = () => {
@@ -142,7 +141,8 @@ export default function ResponsiveRangeControlWithDropdown({
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
 	// When unit is % and no value is set, use max as the initial position
-	const initialPosition = isPercentUnit ? effectiveMax : undefined;
+	// Otherwise, use min so the handle starts at the beginning of the bar (not the middle)
+	const initialPosition = isPercentUnit ? effectiveMax : min;
 
 	// Handle reset - always clear to undefined so inheritance can work
 	const handleReset = () => {
@@ -214,7 +214,7 @@ export default function ResponsiveRangeControlWithDropdown({
 							size="small"
 							style={{
 								marginTop: '0',
-								color: '#0073aa',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 								padding: '4px',
 								minWidth: 'auto',
 								width: '32px',
