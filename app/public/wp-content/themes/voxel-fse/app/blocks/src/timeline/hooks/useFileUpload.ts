@@ -226,6 +226,7 @@ export function useFileUpload(config: Partial<UploadConfig> = {}): UseFileUpload
 				const mediaFile: MediaFile = {
 					id: result.id,
 					url: result.url,
+					preview: result.url,
 					alt: result.name,
 					type: result.mime_type.startsWith('image/') ? 'image' : 'file',
 					mime_type: result.mime_type,

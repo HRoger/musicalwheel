@@ -6,8 +6,8 @@
  * @package VoxelFSE
  */
 
-import type { IconValue } from '../shared/controls/IconPickerControl';
-import type { TypographyValue } from '../shared/controls/TypographyControl';
+import type { IconValue } from '@shared/controls/IconPickerControl';
+import type { TypographyValue } from '@shared/controls/TypographyPopup';
 
 /**
  * Responsive value wrapper

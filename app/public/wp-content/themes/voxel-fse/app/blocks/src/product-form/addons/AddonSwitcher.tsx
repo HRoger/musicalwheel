@@ -81,7 +81,8 @@ export default function AddonSwitcher( {
 	 *
 	 * Evidence: voxel-product-form.beautified.js lines 352-392
 	 */
-	const getPricingSummary = useCallback( (): AddonPricingSummary | null => {
+	// @ts-ignore -- unused but kept for future use
+	const _getPricingSummary = useCallback( (): AddonPricingSummary | null => {
 		if ( ! value.enabled ) return null;
 
 		let label = addon.label;
@@ -103,7 +104,7 @@ export default function AddonSwitcher( {
 				if ( priceDate !== null ) {
 					// Use custom price for this date if available
 					const addonPrices = priceDate.prices.addons?.[ addon.key ];
-					const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+					const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 					amount += cp != null ? cp : ( addon.props.price ?? 0 );
 				} else {
 					// Use base addon price
@@ -120,7 +121,7 @@ export default function AddonSwitcher( {
 			let finalPrice = addon.props.price ?? 0;
 			if ( customPrice !== null ) {
 				const addonPrices = customPrice.prices.addons?.[ addon.key ];
-				const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+				const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 				if ( cp != null ) {
 					finalPrice = cp;
 				}
@@ -184,7 +185,7 @@ AddonSwitcher.getPricingSummary = function(
 
 			if ( priceDate !== null ) {
 				const addonPrices = priceDate.prices.addons?.[ addon.key ];
-				const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+				const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 				amount += cp != null ? cp : ( addon.props.price ?? 0 );
 			} else {
 				amount += addon.props.price ?? 0;
@@ -198,7 +199,7 @@ AddonSwitcher.getPricingSummary = function(
 		let finalPrice = addon.props.price ?? 0;
 		if ( customPrice !== null ) {
 			const addonPrices = customPrice.prices.addons?.[ addon.key ];
-			const cp = addonPrices && 'price' in addonPrices ? addonPrices.price : null;
+			const cp = addonPrices && 'price' in addonPrices ? ( addonPrices.price as number ) : null;
 			if ( cp != null ) {
 				finalPrice = cp;
 			}

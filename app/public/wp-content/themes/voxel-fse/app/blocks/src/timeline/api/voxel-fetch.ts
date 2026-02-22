@@ -12,7 +12,7 @@ import { getSiteBaseUrl } from '@shared/utils/siteUrl';
 declare global {
 	interface Window {
 		wpApiSettings?: {
-			nonce: string;
+			nonce?: string;
 			root: string;
 		};
 		voxelFseConfig?: {

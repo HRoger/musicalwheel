@@ -107,16 +107,16 @@ export function useExternalAddons( options: UseExternalAddonsOptions ): UseExter
 		if ( isActive ) {
 			element.classList.add( 'active' );
 			if ( activeTooltip ) {
-				container.dataset.tooltip = activeTooltip;
+				container.dataset['tooltip'] = activeTooltip;
 			} else {
-				delete container.dataset.tooltip;
+				delete container.dataset['tooltip'];
 			}
 		} else {
 			element.classList.remove( 'active' );
 			if ( defaultTooltip ) {
-				container.dataset.tooltip = defaultTooltip;
+				container.dataset['tooltip'] = defaultTooltip;
 			} else {
-				delete container.dataset.tooltip;
+				delete container.dataset['tooltip'];
 			}
 		}
 	}, [] );
@@ -187,7 +187,7 @@ export function useExternalAddons( options: UseExternalAddonsOptions ): UseExter
 		const elements = document.querySelectorAll<HTMLElement>( '.ts-use-addition' );
 
 		elements.forEach( ( element ) => {
-			const dataId = element.dataset.id;
+			const dataId = element.dataset['id'];
 			if ( ! dataId ) return;
 
 			const reference = parseReference( dataId );
@@ -200,8 +200,8 @@ export function useExternalAddons( options: UseExternalAddonsOptions ): UseExter
 
 			// Get tooltip configuration
 			const container = element.parentElement;
-			const defaultTooltip = container?.dataset.tooltipDefault || null;
-			const activeTooltip = container?.dataset.tooltipActive || null;
+			const defaultTooltip = container?.dataset['tooltipDefault'] || null;
+			const activeTooltip = container?.dataset['tooltipActive'] || null;
 
 			// Mark addon as having external handler
 			( addon as AddonConfig & { _has_external_handler?: boolean } )._has_external_handler = true;
@@ -328,7 +328,7 @@ export function useExternalAddons( options: UseExternalAddonsOptions ): UseExter
 		const elements = document.querySelectorAll<HTMLElement>( '.ts-use-addition' );
 
 		elements.forEach( ( element ) => {
-			const dataId = element.dataset.id;
+			const dataId = element.dataset['id'];
 			if ( ! dataId ) return;
 
 			const reference = parseReference( dataId );
@@ -338,8 +338,8 @@ export function useExternalAddons( options: UseExternalAddonsOptions ): UseExter
 			if ( ! addon ) return;
 
 			const container = element.parentElement;
-			const defaultTooltip = container?.dataset.tooltipDefault || null;
-			const activeTooltip = container?.dataset.tooltipActive || null;
+			const defaultTooltip = container?.dataset['tooltipDefault'] || null;
+			const activeTooltip = container?.dataset['tooltipActive'] || null;
 
 			if ( addon.type === 'custom-multiselect' ) {
 				const currentValue = addonValues[ reference.addon ] as { selected: Array<{ item: string; quantity: number }> } | undefined;

@@ -20,38 +20,6 @@ import type {
 	DataInputValue,
 } from '../types';
 
-// Declare global Voxel types
-declare global {
-	interface Window {
-		Voxel_Config?: {
-			is_logged_in: boolean;
-			ajax_url: string;
-			l10n: {
-				ajaxError: string;
-			};
-		};
-		Voxel?: {
-			alert: ( message: string, type: 'success' | 'error' | 'info', actions?: AlertAction[], timeout?: number ) => void;
-			openCart: () => void;
-		};
-		jQuery?: JQueryStatic;
-	}
-}
-
-interface JQueryStatic {
-	post: ( url: string, data: Record<string, string> ) => JQueryPromise;
-	( selector: string ): JQueryElement;
-}
-
-interface JQueryPromise {
-	always: ( callback: ( response: CartResponse ) => void ) => void;
-}
-
-interface JQueryElement {
-	trigger: ( event: string, data?: unknown ) => void;
-	querySelector: ( selector: string ) => Element | null;
-}
-
 /**
  * Alert action button configuration
  */
@@ -105,7 +73,7 @@ export const DIRECT_CART_KEY = 'voxel:direct_cart';
  * @returns Full AJAX URL
  */
 export function getAjaxUrl( action: string, nonce: string ): string {
-	const baseUrl = window.Voxel_Config?.ajax_url ?? '/?vx=1';
+	const baseUrl = (window as any).Voxel_Config?.ajax_url ?? '/?vx=1';
 	return `${ baseUrl }&action=${ action }&_wpnonce=${ nonce }`;
 }
 
@@ -113,7 +81,7 @@ export function getAjaxUrl( action: string, nonce: string ): string {
  * Check if user is logged in
  */
 export function isLoggedIn(): boolean {
-	return window.Voxel_Config?.is_logged_in ?? false;
+	return !!((window as any).Voxel_Config?.is_logged_in);
 }
 
 /**
@@ -158,8 +126,8 @@ export function showAlert(
 	actions?: AlertAction[],
 	timeout?: number
 ): void {
-	if ( window.Voxel?.alert ) {
-		window.Voxel.alert( message, type, actions, timeout );
+	if ( (window as any).Voxel?.alert ) {
+		(window as any).Voxel.alert( message, type, actions, timeout );
 	} else {
 		// Fallback to console
 		console.log( `[${ type.toUpperCase() }]`, message );
@@ -183,8 +151,8 @@ export function showAddedToCartAlert( l10n: { added_to_cart?: string; view_cart?
 			link: '#',
 			onClick: ( event ) => {
 				event.preventDefault();
-				if ( window.Voxel?.openCart ) {
-					window.Voxel.openCart();
+				if ( (window as any).Voxel?.openCart ) {
+					(window as any).Voxel.openCart();
 				}
 				// Close the alert
 				const target = event.target as HTMLElement;
@@ -204,8 +172,8 @@ export function showAddedToCartAlert( l10n: { added_to_cart?: string; view_cart?
  * Evidence: voxel-product-form.beautified.js line 1774
  */
 export function triggerCartItemAdded( item: unknown ): void {
-	if ( window.jQuery ) {
-		window.jQuery( document as unknown as string ).trigger( 'voxel:added_cart_item', item );
+	if ( (window as any).jQuery ) {
+		(window as any).jQuery( document as unknown as string ).trigger( 'voxel:added_cart_item', item );
 	}
 }
 
@@ -265,9 +233,9 @@ export function buildCartItemValue(
  */
 export async function postRequest( url: string, data: Record<string, string> ): Promise<CartResponse> {
 	// Try jQuery first (Voxel pattern)
-	if ( window.jQuery?.post ) {
+	if ( (window as any).jQuery?.post ) {
 		return new Promise( ( resolve ) => {
-			window.jQuery!.post( url, data ).always( ( response: CartResponse ) => {
+			(window as any).jQuery.post( url, data ).always( ( response: CartResponse ) => {
 				resolve( response );
 			} );
 		} );
@@ -288,7 +256,7 @@ export async function postRequest( url: string, data: Record<string, string> ): 
 	} catch ( error ) {
 		return {
 			success: false,
-			message: window.Voxel_Config?.l10n?.ajaxError ?? 'Request failed',
+			message: (window as any).Voxel_Config?.l10n?.ajaxError ?? 'Request failed',
 		};
 	}
 }

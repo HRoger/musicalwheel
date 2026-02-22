@@ -23,20 +23,20 @@ export default function save({ attributes }: SaveProps): JSX.Element {
 	});
 
 	// Block props with AdvancedTab styles wired
-	const blockProps = useBlockProps.save({
+	const blockProps = (useBlockProps as any).save({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
 		style: advancedProps.styles,
 		...advancedProps.customAttrs,
 		// Headless-ready: Visibility rules configuration
-		'data-visibility-behavior': attributes.visibilityBehavior || undefined,
-		'data-visibility-rules': attributes.visibilityRules?.length
-			? JSON.stringify(attributes.visibilityRules)
+		'data-visibility-behavior': attributes['visibilityBehavior'] || undefined,
+		'data-visibility-rules': (attributes as any).visibilityRules?.length
+			? JSON.stringify(attributes['visibilityRules'])
 			: undefined,
 		// Headless-ready: Loop element configuration
-		'data-loop-source': attributes.loopSource || undefined,
-		'data-loop-limit': attributes.loopLimit || undefined,
-		'data-loop-offset': attributes.loopOffset || undefined,
+		'data-loop-source': attributes['loopSource'] || undefined,
+		'data-loop-limit': attributes['loopLimit'] || undefined,
+		'data-loop-offset': attributes['loopOffset'] || undefined,
 	});
 
 	// Build vxconfig

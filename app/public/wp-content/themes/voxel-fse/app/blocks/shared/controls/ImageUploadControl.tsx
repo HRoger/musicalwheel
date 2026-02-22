@@ -74,6 +74,8 @@ export interface ImageUploadControlProps {
 	dynamicTagContext?: string;
 	/** Custom preview renderer (overrides default image tag) */
 	renderPreview?: (value: ImageUploadValue) => React.ReactNode;
+	/** Allowed media types (e.g. ['image']) */
+	allowedTypes?: string[];
 }
 
 import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
@@ -134,7 +136,7 @@ export default function ImageUploadControl({
 	renderPreview,
 }: ImageUploadControlProps) {
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useSelect((select: any) => getCurrentDeviceType(select));
 
 	const wpDevice = wpDeviceType ? (wpDeviceType.toLowerCase() as DeviceType) : 'desktop';
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);
@@ -283,7 +285,7 @@ export default function ImageUploadControl({
 					onSelect={handleSelect}
 					allowedTypes={btn.allowedTypes || ['image']}
 					value={currentValue?.id}
-					render={({ open }) => (
+					render={({ open }: { open: () => void }) => (
 						<div
 							className="voxel-fse-image-upload-button-wrapper"
 							onClick={(e) => {
@@ -432,7 +434,7 @@ export default function ImageUploadControl({
 								onSelect={handleSelect}
 								allowedTypes={uploadButtons[0].allowedTypes || ['image']}
 								value={currentValue?.id}
-								render={({ open }) => (
+								render={({ open }: { open: () => void }) => (
 									<div
 										className="voxel-fse-image-upload-preview"
 										onClick={() => {
@@ -458,7 +460,7 @@ export default function ImageUploadControl({
 										}}
 										style={{
 											position: 'relative',
-											backgroundColor: '#f0f0f0',
+											backgroundColor: '#d5d8dc',
 											borderRadius: '4px',
 											overflow: 'hidden',
 											cursor: 'pointer',
@@ -506,6 +508,10 @@ export default function ImageUploadControl({
 										>
 											<i className="eicon-trash-o" style={{ fontSize: '14px' }} />
 										</button>
+										{/* Hover overlay with upload buttons - shown on hover via CSS */}
+										<div className="voxel-fse-image-upload-empty__overlay">
+											{renderUploadButtons()}
+										</div>
 									</div>
 								)}
 							/>
@@ -536,7 +542,7 @@ export default function ImageUploadControl({
 									fill="none"
 									stroke="currentColor"
 									strokeWidth="1.5"
-									style={{ color: '#69727d' }}
+									style={{ color: 'rgb(0, 0, 0)' }}
 								>
 									<circle cx="12" cy="12" r="10" />
 									<line x1="12" y1="8" x2="12" y2="16" />

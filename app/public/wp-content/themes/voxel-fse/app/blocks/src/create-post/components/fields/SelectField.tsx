@@ -29,6 +29,7 @@ import type { VoxelField, FieldIcons, FieldValue } from '../../types';
 interface SelectChoice {
 	value: string;
 	label: string;
+	icon?: string;
 }
 
 interface SelectFieldProps {
@@ -40,7 +41,8 @@ interface SelectFieldProps {
 }
 
 export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange, onBlur }) => {
-	const displayAs = field.props?.['display_as'] || 'default';
+	// Evidence: select-field.php:21 — Voxel defaults display_as to 'popup'
+	const displayAs = field.props?.['display_as'] || 'popup';
 	const choices = (field.props?.['choices'] || []) as SelectChoice[];
 
 	// Get validation error from field (matches TextField pattern)
@@ -162,7 +164,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
 			{/* Dropdown select - matches Voxel CSS */}
 			<div className="ts-filter">
 				<select
-					value={value || ''}
+					value={value as string | number | undefined || ''}
 					onChange={(e) => onChange(e.target.value || null)}
 					onBlur={onBlur}
 					required={field.required}
@@ -172,7 +174,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({ field, value, onChange
 					{/* Empty option if not required */}
 					{!field.required && (
 						<option value="">
-							{field.props?.['placeholder'] || field.label}
+							{String(field.props?.['placeholder'] ?? field.label)}
 						</option>
 					)}
 					{/* Choices */}

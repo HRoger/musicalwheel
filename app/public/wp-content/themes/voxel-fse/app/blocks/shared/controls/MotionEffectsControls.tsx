@@ -133,7 +133,7 @@ function EffectPopover({
 								icon={<UndoIcon />}
 								size="small"
 								variant="tertiary"
-								onClick={(e) => {
+								onClick={(e: React.MouseEvent) => {
 									e.stopPropagation();
 									onReset();
 								}}
@@ -349,15 +349,18 @@ export default function MotionEffectsControls({
 
 	// Helper to check if an effect has non-default values
 	const hasScrollingValue = (effect: string): boolean => {
-		const prefix = effect;
+		// @ts-ignore -- unused but kept for future use
+		const _prefix = effect;
+		// @ts-ignore -- unused but kept for future use
 		const attrs = attributes as Record<string, unknown>;
-		const defaults = motionEffectsAttributes as Record<string, { default?: unknown }>;
+		// @ts-ignore -- unused but kept for future use
+		const _defaults = motionEffectsAttributes as Record<string, { default?: unknown }>;
 
 		if (effect === 'verticalScroll') {
 			return (
-				attrs.verticalScrollDirection !== '' ||
-				attrs.verticalScrollSpeed !== 4 ||
-				JSON.stringify(attrs.verticalScrollViewport) !== JSON.stringify({ start: 0, end: 100 })
+				attrs['verticalScrollDirection'] !== '' ||
+				attrs['verticalScrollSpeed'] !== 4 ||
+				JSON.stringify(attrs['verticalScrollViewport']) !== JSON.stringify({ start: 0, end: 100 })
 			);
 		}
 		// Add similar checks for other effects if needed
@@ -369,12 +372,12 @@ export default function MotionEffectsControls({
 			{/* ============================================ */}
 			{/* Scrolling Effects Section */}
 			{/* ============================================ */}
-			<SectionHeading text={__('Scrolling Effects', 'voxel-fse')} />
+			<SectionHeading label={__('Scrolling Effects', 'voxel-fse')} />
 
 			<ToggleControl
 				label={__('Scrolling Effects', 'voxel-fse')}
 				checked={attributes.scrollingEffectsEnabled ?? false}
-				onChange={(value) => setAttributes({ scrollingEffectsEnabled: value })}
+				onChange={(value: boolean) => setAttributes({ scrollingEffectsEnabled: value })}
 				__nextHasNoMarginBottom
 			/>
 
@@ -403,7 +406,7 @@ export default function MotionEffectsControls({
 								{ label: __('Up', 'voxel-fse'), value: '' },
 								{ label: __('Down', 'voxel-fse'), value: 'negative' },
 							]}
-							onChange={(value) => setAttributes({ verticalScrollDirection: value })}
+							onChange={(value: string) => setAttributes({ verticalScrollDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -447,7 +450,7 @@ export default function MotionEffectsControls({
 								{ label: __('To Left', 'voxel-fse'), value: '' },
 								{ label: __('To Right', 'voxel-fse'), value: 'negative' },
 							]}
-							onChange={(value) => setAttributes({ horizontalScrollDirection: value })}
+							onChange={(value: string) => setAttributes({ horizontalScrollDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -493,7 +496,7 @@ export default function MotionEffectsControls({
 								{ label: __('Fade Out In', 'voxel-fse'), value: 'out-in' },
 								{ label: __('Fade In Out', 'voxel-fse'), value: 'in-out' },
 							]}
-							onChange={(value) => setAttributes({ transparencyDirection: value })}
+							onChange={(value: string) => setAttributes({ transparencyDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -539,7 +542,7 @@ export default function MotionEffectsControls({
 								{ label: __('Fade Out In', 'voxel-fse'), value: 'out-in' },
 								{ label: __('Fade In Out', 'voxel-fse'), value: 'in-out' },
 							]}
-							onChange={(value) => setAttributes({ blurDirection: value })}
+							onChange={(value: string) => setAttributes({ blurDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -583,7 +586,7 @@ export default function MotionEffectsControls({
 								{ label: __('To Left', 'voxel-fse'), value: '' },
 								{ label: __('To Right', 'voxel-fse'), value: 'negative' },
 							]}
-							onChange={(value) => setAttributes({ rotateDirection: value })}
+							onChange={(value: string) => setAttributes({ rotateDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -629,7 +632,7 @@ export default function MotionEffectsControls({
 								{ label: __('Scale Down Up', 'voxel-fse'), value: 'scale-down-up' },
 								{ label: __('Scale Up Down', 'voxel-fse'), value: 'scale-up-down' },
 							]}
-							onChange={(value) => setAttributes({ scaleDirection: value })}
+							onChange={(value: string) => setAttributes({ scaleDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -691,7 +694,7 @@ export default function MotionEffectsControls({
 							{ label: __('Viewport', 'voxel-fse'), value: 'viewport' },
 							{ label: __('Page', 'voxel-fse'), value: 'page' },
 						]}
-						onChange={(value) => setAttributes({ motionFxRange: value })}
+						onChange={(value: string) => setAttributes({ motionFxRange: value })}
 						__nextHasNoMarginBottom
 					/>
 				</>
@@ -700,12 +703,12 @@ export default function MotionEffectsControls({
 			{/* ============================================ */}
 			{/* Mouse Effects Section */}
 			{/* ============================================ */}
-			<SectionHeading text={__('Mouse Effects', 'voxel-fse')} />
+			<SectionHeading label={__('Mouse Effects', 'voxel-fse')} />
 
 			<ToggleControl
 				label={__('Mouse Effects', 'voxel-fse')}
 				checked={attributes.mouseEffectsEnabled ?? false}
-				onChange={(value) => setAttributes({ mouseEffectsEnabled: value })}
+				onChange={(value: boolean) => setAttributes({ mouseEffectsEnabled: value })}
 				__nextHasNoMarginBottom
 			/>
 
@@ -732,7 +735,7 @@ export default function MotionEffectsControls({
 								{ label: __('Opposite', 'voxel-fse'), value: '' },
 								{ label: __('Direct', 'voxel-fse'), value: 'negative' },
 							]}
-							onChange={(value) => setAttributes({ mouseTrackDirection: value })}
+							onChange={(value: string) => setAttributes({ mouseTrackDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -766,7 +769,7 @@ export default function MotionEffectsControls({
 								{ label: __('Direct', 'voxel-fse'), value: '' },
 								{ label: __('Opposite', 'voxel-fse'), value: 'negative' },
 							]}
-							onChange={(value) => setAttributes({ tiltDirection: value })}
+							onChange={(value: string) => setAttributes({ tiltDirection: value })}
 							__nextHasNoMarginBottom
 						/>
 						<SliderControl
@@ -784,7 +787,7 @@ export default function MotionEffectsControls({
 			{/* ============================================ */}
 			{/* Sticky Section */}
 			{/* ============================================ */}
-			<SectionHeading text={__('Sticky', 'voxel-fse')} />
+			<SectionHeading label={__('Sticky', 'voxel-fse')} />
 
 			<SelectControl
 				label={__('Sticky', 'voxel-fse')}
@@ -794,7 +797,7 @@ export default function MotionEffectsControls({
 					{ label: __('Top', 'voxel-fse'), value: 'top' },
 					{ label: __('Bottom', 'voxel-fse'), value: 'bottom' },
 				]}
-				onChange={(value) => setAttributes({ sticky: value })}
+				onChange={(value: string) => setAttributes({ sticky: value })}
 				__nextHasNoMarginBottom
 			/>
 
@@ -804,7 +807,7 @@ export default function MotionEffectsControls({
 						label={__('Sticky On', 'voxel-fse')}
 						value={attributes.stickyOn ?? ['desktop', 'laptop', 'tablet', 'mobile']}
 						options={deviceOptions}
-						onChange={(value) => setAttributes({ stickyOn: value })}
+						onChange={(value: string[]) => setAttributes({ stickyOn: value })}
 					/>
 
 					<ResponsiveRangeControl
@@ -840,7 +843,7 @@ export default function MotionEffectsControls({
 					<ToggleControl
 						label={__('Stay In Column', 'voxel-fse')}
 						checked={attributes.stickyParent ?? false}
-						onChange={(value) => setAttributes({ stickyParent: value })}
+						onChange={(value: boolean) => setAttributes({ stickyParent: value })}
 						__nextHasNoMarginBottom
 					/>
 				</>
@@ -849,12 +852,12 @@ export default function MotionEffectsControls({
 			{/* ============================================ */}
 			{/* Entrance Animation Section */}
 			{/* ============================================ */}
-			<SectionHeading text={__('Entrance Animation', 'voxel-fse')} />
+			<SectionHeading label={__('Entrance Animation', 'voxel-fse')} />
 
 			<AnimationSelectControl
 				label={__('Entrance Animation', 'voxel-fse')}
 				value={attributes.entranceAnimation ?? ''}
-				onChange={(value) => setAttributes({ entranceAnimation: value })}
+				onChange={(value: string) => setAttributes({ entranceAnimation: value })}
 			/>
 
 			{attributes.entranceAnimation && (
@@ -867,7 +870,7 @@ export default function MotionEffectsControls({
 							{ label: __('Normal', 'voxel-fse'), value: '' },
 							{ label: __('Fast', 'voxel-fse'), value: 'fast' },
 						]}
-						onChange={(value) => setAttributes({ animationDuration: value })}
+						onChange={(value: string) => setAttributes({ animationDuration: value })}
 						__nextHasNoMarginBottom
 					/>
 
@@ -875,7 +878,7 @@ export default function MotionEffectsControls({
 						label={__('Animation Delay (ms)', 'voxel-fse')}
 						type="number"
 						value={String(attributes.animationDelay ?? 0)}
-						onChange={(value) => setAttributes({ animationDelay: Number(value) || 0 })}
+						onChange={(value: string) => setAttributes({ animationDelay: Number(value) || 0 })}
 						min={0}
 						step={100}
 						__nextHasNoMarginBottom

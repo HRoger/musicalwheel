@@ -29,7 +29,6 @@
 			"background": false
 		}
 	},
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",

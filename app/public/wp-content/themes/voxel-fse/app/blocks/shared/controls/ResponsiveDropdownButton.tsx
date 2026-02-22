@@ -21,7 +21,7 @@
  */
 
 import { useRef, useEffect } from 'react';
-import { dispatch, useSelect } from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { usePersistentPopupState, notifyDeviceChange } from './usePersistentPopupState';
 import { getCurrentDeviceType, setDeviceType as setDeviceTypeUtil, type DeviceType } from '@shared/utils/deviceType';
@@ -170,7 +170,7 @@ export default function ResponsiveDropdownButton({
 					border: 'none',
 					background: 'transparent',
 					cursor: 'pointer',
-					color: '#007cba',
+					color: 'var(--vxfse-accent-color, #3858e9)',
 				}}
 			>
 				<i className={getDeviceIconClass(currentDevice)} style={{ fontSize: '12px' }} />
@@ -213,8 +213,8 @@ export default function ResponsiveDropdownButton({
 								padding: 0,
 								border: 'none',
 								borderRadius: '2px',
-								background: currentDevice === device ? '#007cba' : 'transparent',
-								color: currentDevice === device ? '#fff' : '#007cba',
+								background: currentDevice === device ? 'var(--vxfse-accent-color, #3858e9)' : 'transparent',
+								color: currentDevice === device ? '#fff' : 'var(--vxfse-accent-color, #3858e9)',
 								cursor: 'pointer',
 								transition: 'all 0.15s ease',
 							}}

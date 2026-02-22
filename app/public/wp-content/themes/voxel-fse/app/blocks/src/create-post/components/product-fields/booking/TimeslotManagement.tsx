@@ -7,8 +7,8 @@
  * EXACT Voxel HTML: themes/voxel/templates/widgets/create-post/product-field/booking/timeslots.php:1-157
  */
 import React, { useState } from 'react';
-import type { TimeslotGroup, BookingFieldValue } from './types';
-import { WEEKDAY_KEYS, DEFAULT_WEEKDAYS, DEFAULT_WEEKDAYS_SHORT } from './types';
+import type { BookingFieldValue } from './types';
+import { WEEKDAY_KEYS } from './types';
 import { getGroupLabelShort, getSlotCountLabel, getUnusedDays, createEmptyGroup } from './utils';
 import { DaySelector } from './DaySelector';
 import { TimeslotEditor } from './TimeslotEditor';

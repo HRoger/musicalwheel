@@ -16,11 +16,12 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { useEffect, useCallback, useRef, useMemo } from 'react';
-import type { EditProps, SliderBlockAttributes, SliderImage, ProcessedImage } from './types';
+import type { EditProps, SliderImage, ProcessedImage } from './types';
 import { InspectorTabs } from '@shared/controls';
 import { ContentTab, StyleTab } from './inspector';
 import SliderComponent from './shared/SliderComponent';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
+import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
 import { generateSliderResponsiveCSS } from './styles';
 
 /**
@@ -75,6 +76,10 @@ function processImages(
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
 	const blockId = attributes.blockId || clientId;
 
+	// Detect template context for dynamic tag preview resolution
+	const templateContext = useTemplateContext();
+	const templatePostType = useTemplatePostType();
+
 	// Set blockId if not set
 	useEffect(() => {
 		if (!attributes.blockId) {
@@ -97,7 +102,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	}, []);
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'voxel-fse-slider',
 	});
@@ -155,7 +160,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 	/**
 	 * Media frame ref for wp.media
 	 */
-	const mediaFrameRef = useRef<ReturnType<typeof wp.media> | null>(null);
+	const mediaFrameRef = useRef<any>(null);
 
 	/**
 	 * Open media library gallery
@@ -246,6 +251,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				processedImages={processedImages}
 				galleryId={galleryId}
 				onOpenMediaLibrary={openMediaLibrary}
+				templateContext={templateContext}
+				templatePostType={templatePostType}
 			/>
 		</div>
 	);

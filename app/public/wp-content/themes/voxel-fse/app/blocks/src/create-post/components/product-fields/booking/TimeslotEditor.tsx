@@ -7,7 +7,7 @@
  *
  * EXACT Voxel HTML: themes/voxel/templates/widgets/create-post/product-field/booking/timeslots.php:70-147
  */
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import type { Timeslot, GeneratorConfig } from './types';
 import { MAX_SLOTS_PER_GROUP } from './types';
 import {

@@ -15,7 +15,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { RangeControl, SelectControl, Button, BaseControl } from '@wordpress/components';
+import { RangeControl, SelectControl, Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 export interface DimensionsConfig {
@@ -126,9 +126,7 @@ export default function FourRangeControl({
 		<div className="voxel-fse-four-range-control">
 			{label && (
 				<div className="voxel-fse-four-range-control__header">
-					<BaseControl.VisualLabel>
-						{label}
-					</BaseControl.VisualLabel>
+					<span className="components-base-control__label">{label}</span>
 					<div className="voxel-fse-four-range-control__header-actions">
 						<SelectControl
 							value={currentValue.unit}
@@ -154,7 +152,7 @@ export default function FourRangeControl({
 						<RangeControl
 							label={__('Top', 'voxel-fse')}
 							value={currentValue.top}
-							onChange={(newValue) => handleSideChange('top', newValue)}
+							onChange={(newValue: number | undefined) => handleSideChange('top', newValue)}
 							min={min}
 							max={max}
 							step={step}
@@ -168,7 +166,7 @@ export default function FourRangeControl({
 						<RangeControl
 							label={__('Right', 'voxel-fse')}
 							value={currentValue.right}
-							onChange={(newValue) => handleSideChange('right', newValue)}
+							onChange={(newValue: number | undefined) => handleSideChange('right', newValue)}
 							min={min}
 							max={max}
 							step={step}
@@ -183,7 +181,7 @@ export default function FourRangeControl({
 						<RangeControl
 							label={__('Bottom', 'voxel-fse')}
 							value={currentValue.bottom}
-							onChange={(newValue) => handleSideChange('bottom', newValue)}
+							onChange={(newValue: number | undefined) => handleSideChange('bottom', newValue)}
 							min={min}
 							max={max}
 							step={step}
@@ -198,7 +196,7 @@ export default function FourRangeControl({
 						<RangeControl
 							label={__('Left', 'voxel-fse')}
 							value={currentValue.left}
-							onChange={(newValue) => handleSideChange('left', newValue)}
+							onChange={(newValue: number | undefined) => handleSideChange('left', newValue)}
 							min={min}
 							max={max}
 							step={step}

@@ -8,7 +8,7 @@
  * - Template: themes/voxel/templates/widgets/create-post/product-field/booking/timeslots.php
  */
 
-import type { Timeslot, TimeslotGroup, GeneratorConfig, WEEKDAY_KEYS } from './types';
+import type { Timeslot, TimeslotGroup, GeneratorConfig } from './types';
 import { MAX_SLOTS_PER_GROUP } from './types';
 
 /**

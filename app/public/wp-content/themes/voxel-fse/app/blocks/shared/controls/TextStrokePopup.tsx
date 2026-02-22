@@ -16,7 +16,7 @@
  * - Based on: TextShadowPopup.tsx
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import UndoIcon from '../icons/UndoIcon';
@@ -239,7 +239,7 @@ export default function TextStrokePopup({
 					<RangeControl
 						label={__('Width', 'voxel-fse')}
 						value={stroke.width ?? defaultStroke.width}
-						onChange={(value) => {
+						onChange={(value: number | undefined) => {
 							setAttributes({
 								[strokeAttributeName]: {
 									...stroke,

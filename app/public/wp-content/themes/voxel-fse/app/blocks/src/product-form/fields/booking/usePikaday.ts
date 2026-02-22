@@ -11,12 +11,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
-// Pikaday global type declaration
-declare global {
-	interface Window {
-		Pikaday: new ( options: PikadayOptions ) => PikadayInstance;
-	}
-}
+// Pikaday is loaded globally by Voxel; access via (window as any).Pikaday
 
 /**
  * Day render data passed to dayRenderHook
@@ -144,7 +139,7 @@ export function usePikaday( options: UsePikadayOptions ): UsePikadayReturn {
 	optionsRef.current = options;
 
 	useEffect( () => {
-		if ( ! inputRef.current || typeof window.Pikaday === 'undefined' ) {
+		if ( ! inputRef.current || typeof (window as any).Pikaday === 'undefined' ) {
 			return;
 		}
 
@@ -176,7 +171,7 @@ export function usePikaday( options: UsePikadayOptions ): UsePikadayReturn {
 			pikadayOptions.bound = false;
 		}
 
-		pickerRef.current = new window.Pikaday( pikadayOptions );
+		pickerRef.current = new (window as any).Pikaday( pikadayOptions );
 
 		return () => {
 			pickerRef.current?.destroy();

@@ -18,22 +18,7 @@
  */
 import React, { useEffect, useRef } from 'react';
 
-// TypeScript declarations for Voxel.Maps.Autocomplete
-declare global {
-	interface Window {
-		Voxel?: {
-			Maps?: {
-				await: (callback: () => void) => void;
-				Autocomplete: new (
-					element: HTMLInputElement,
-					callback: (result: VoxelAutocompleteResult | null) => void,
-					config?: VoxelAutocompleteConfig
-				) => VoxelAutocompleteInstance;
-				LatLng: new (lat: number, lng: number) => VoxelLatLng;
-			};
-		};
-	}
-}
+
 
 interface VoxelLatLng {
 	getLatitude(): number;
@@ -57,10 +42,6 @@ interface VoxelAutocompleteResult {
 	viewport?: MapViewport; // Bounds object for map fitting
 }
 
-interface VoxelAutocompleteConfig {
-	// Autocomplete configuration options (if any)
-	// Based on map provider (Google Places or Mapbox Geocoding)
-}
 
 interface VoxelAutocompleteInstance {
 	// Instance methods (if any)

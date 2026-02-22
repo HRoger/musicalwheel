@@ -3,7 +3,7 @@
  * Renders icons from icon attributes (library icons or SVG uploads)
  */
 import React from 'react';
-import type { IconValue } from '../types';
+import type { IconValue } from '@shared/types';
 
 /**
  * Render an icon based on IconValue

@@ -34,8 +34,8 @@ export const TimezoneField: React.FC<TimezoneFieldProps> = ({ field, value, onCh
 
 	// Get timezone list from field props (provided by Voxel's frontend_props())
 	// Evidence: themes/voxel/app/post-types/fields/singular/timezone-field.php:58
-	const timezones: string[] = field.props?.['list'] || [];
-	const defaultTimezone: string = field.props?.['default'] || '+00:00 (site default)';
+	const timezones: string[] = Array.isArray(field.props?.['list']) ? field.props['list'] as string[] : [];
+	const defaultTimezone: string = String(field.props?.['default'] ?? '+00:00 (site default)');
 
 	// Get validation error from field (matches TextField pattern)
 	const displayError = field.validation?.errors?.[0] || '';

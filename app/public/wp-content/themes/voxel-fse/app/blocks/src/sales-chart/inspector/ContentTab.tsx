@@ -10,7 +10,6 @@
  * @package VoxelFSE
  */
 
-import React from 'react';
 import { __ } from '@wordpress/i18n';
 import { SelectControl } from '@wordpress/components';
 import {
@@ -55,7 +54,7 @@ export function ContentTab({
 						{ label: __('Year', 'voxel-fse'), value: 'this-year' },
 						{ label: __('All time', 'voxel-fse'), value: 'all-time' },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							ts_active_chart: value as SalesChartAttributes['ts_active_chart'],
 						})

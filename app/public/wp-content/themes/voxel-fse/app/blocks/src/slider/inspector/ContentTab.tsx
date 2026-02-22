@@ -59,7 +59,7 @@ export function ContentTab({
 			id: img.id,
 			url: img.url,
 			alt: img.alt || '',
-			sizes: img.sizes,
+			sizes: img.sizes as any,
 		}));
 	};
 
@@ -90,7 +90,7 @@ export function ContentTab({
 				{/* Add Images - Gallery Upload with Dynamic Tag support */}
 				<GalleryUploadControl
 					label={__('Add Images', 'voxel-fse')}
-					value={convertToImageUploadValue(attributes.images || [])}
+					value={convertToImageUploadValue(attributes.images || []) as any}
 					onChange={(images) => setAttributes({ images: convertToSliderImage(images) })}
 					enableDynamicTags={true}
 					dynamicTagValue={attributes.imagesDynamicTag}
@@ -103,7 +103,7 @@ export function ContentTab({
 					type="number"
 					label={__('Number of images to load', 'voxel-fse')}
 					value={String(attributes.visibleCount || 3)}
-					onChange={(value) => setAttributes({ visibleCount: parseInt(value, 10) || 3 })}
+					onChange={(value: any) => setAttributes({ visibleCount: parseInt(value, 10) || 3 })}
 					min={1}
 					max={50}
 				/>
@@ -139,7 +139,7 @@ export function ContentTab({
 					label={__('Link', 'voxel-fse')}
 					value={attributes.linkType}
 					options={LINK_OPTIONS}
-					onChange={(value) => setAttributes({ linkType: value as SliderBlockAttributes['linkType'] })}
+					onChange={(value: any) => setAttributes({ linkType: value as SliderBlockAttributes['linkType'] })}
 					__nextHasNoMarginBottom
 				/>
 
@@ -148,7 +148,7 @@ export function ContentTab({
 					<TextControl
 						label={__('Custom URL', 'voxel-fse')}
 						value={attributes.customLinkUrl || ''}
-						onChange={(value) => setAttributes({ customLinkUrl: value })}
+						onChange={(value: any) => setAttributes({ customLinkUrl: value })}
 						placeholder="https://your-link.com"
 					/>
 				)}
@@ -157,7 +157,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Show thumbnails?', 'voxel-fse')}
 					checked={attributes.showThumbnails}
-					onChange={(value) => setAttributes({ showThumbnails: value })}
+					onChange={(value: any) => setAttributes({ showThumbnails: value })}
 					__nextHasNoMarginBottom
 				/>
 
@@ -165,7 +165,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Auto slide?', 'voxel-fse')}
 					checked={attributes.autoSlide}
-					onChange={(value) => setAttributes({ autoSlide: value })}
+					onChange={(value: any) => setAttributes({ autoSlide: value })}
 					__nextHasNoMarginBottom
 				/>
 

@@ -30,7 +30,7 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                         { label: __('Center', 'voxel-fse'), value: 'center' },
                         { label: __('Right', 'voxel-fse'), value: 'flex-end' },
                     ]}
-                    onChange={(value) =>
+                    onChange={(value: any) =>
                         setAttributes({
                             ts_chart_position: value as RingChartAttributes['ts_chart_position'],
                         })
@@ -46,7 +46,7 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                 <RangeControl
                     label={__('Value', 'voxel-fse')}
                     value={attributes.ts_chart_value}
-                    onChange={(value) => setAttributes({ ts_chart_value: value ?? 0 })}
+                    onChange={(value: any) => setAttributes({ ts_chart_value: value ?? 0 })}
                     min={0}
                     max={100}
                     step={0.01}
@@ -57,14 +57,14 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                 <DynamicTagTextControl
                     label={__('Suffix', 'voxel-fse')}
                     value={attributes.ts_chart_value_suffix}
-                    onChange={(value) => setAttributes({ ts_chart_value_suffix: value })}
+                    onChange={(value: any) => setAttributes({ ts_chart_value_suffix: value })}
                     help={__('Text to display after the value (e.g., "%", " items")', 'voxel-fse')}
                 />
 
                 <RangeControl
                     label={__('Circle size', 'voxel-fse')}
                     value={attributes.ts_chart_size}
-                    onChange={(value) => setAttributes({ ts_chart_size: value ?? 100 })}
+                    onChange={(value: any) => setAttributes({ ts_chart_size: value ?? 100 })}
                     min={0}
                     max={300}
                     step={1}
@@ -74,7 +74,7 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                 <RangeControl
                     label={__('Stroke width', 'voxel-fse')}
                     value={attributes.ts_chart_stroke_width}
-                    onChange={(value) => setAttributes({ ts_chart_stroke_width: value ?? 2 })}
+                    onChange={(value: any) => setAttributes({ ts_chart_stroke_width: value ?? 2 })}
                     min={0}
                     max={5}
                     step={1}

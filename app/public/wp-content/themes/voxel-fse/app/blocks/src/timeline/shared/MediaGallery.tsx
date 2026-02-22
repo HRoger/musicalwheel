@@ -13,10 +13,24 @@
  *   </li>
  * </ul>
  *
+ * Lightbox: Uses the shared window.VoxelLightbox global API (YARL-based).
+ * Loaded once via WordPress dependency system (mw-yarl-lightbox handle),
+ * same pattern as Voxel's Swiper.
+ * The data-elementor-open-lightbox attributes are kept for HTML parity only.
+ *
  * @package VoxelFSE
  */
 
+import React, { useCallback, useMemo } from 'react';
 import type { MediaFile, IconValue } from '../types';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 /**
  * Props
@@ -34,31 +48,47 @@ interface MediaGalleryProps {
  */
 export function MediaGallery({
 	files,
-	galleryIcon,
+	galleryIcon: _galleryIcon,
 	statusId,
 	className = '',
 }: MediaGalleryProps): JSX.Element | null {
-	// Filter to only images
-	const images = files.filter((f) => f.type === 'image' || f.mime_type?.startsWith('image/'));
+	const slides = useMemo(
+		() => files.map((file) => ({
+			src: file.url,
+			alt: file.alt || '',
+		})),
+		[files]
+	);
 
-	if (images.length === 0) {
+	const handleImageClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
+			e.preventDefault();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(slides, index);
+			}
+		},
+		[slides]
+	);
+
+	if (files.length === 0) {
 		return null;
 	}
 
-	// Generate slideshow ID for lightbox grouping (matches Voxel's vxtl_123 format)
-	const slideshowId = statusId && images.length > 1 ? `vxtl_${statusId}` : null;
+	const slideshowId = statusId && files.length > 1 ? `vxtl_${statusId}` : null;
 
 	return (
 		<ul className={`vxf-gallery simplify-ul ${className}`}>
-			{images.map((file, index) => (
+			{files.map((file, index) => (
 				<li key={file.id || index}>
 					<a
 						href={file.url}
 						data-elementor-open-lightbox="yes"
 						data-elementor-lightbox-slideshow={slideshowId}
+						onClick={(e) => handleImageClick(e, index)}
 					>
 						<img
-							src={file.preview ?? file.thumbnail_url ?? file.url}
+							src={file.preview || file.url}
 							alt={file.alt || ''}
 							loading="lazy"
 						/>

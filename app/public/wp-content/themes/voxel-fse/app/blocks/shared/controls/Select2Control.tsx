@@ -356,7 +356,7 @@ export default function Select2Control({
 								fontFamily: 'Consolas, Monaco, monospace',
 								fontSize: '12px',
 								wordBreak: 'break-all',
-								color: '#2271b1',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 							}}
 						>
 							{getTagContent()}

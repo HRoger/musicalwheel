@@ -87,7 +87,7 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 										{ label: __('Double', 'voxel-fse'), value: 'double' },
 										{ label: __('Groove', 'voxel-fse'), value: 'groove' },
 									]}
-									onChange={(val) => setAttributes({ [borderTypeAttr]: val })}
+									onChange={(val: any) => setAttributes({ [borderTypeAttr]: val })}
 									__nextHasNoMarginBottom
 								/>
 

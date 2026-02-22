@@ -9,7 +9,7 @@
  * Voxel uses: \Voxel\get_icon_markup(...) ?: \Voxel\svg('icon.svg')
  * We use: iconToHtml(iconValue, fallback) - returns widget icon OR fallback
  */
-import type { IconValue } from '../types';
+import type { IconValue } from '@shared/types';
 
 /**
  * Convert an IconValue object to an HTML string

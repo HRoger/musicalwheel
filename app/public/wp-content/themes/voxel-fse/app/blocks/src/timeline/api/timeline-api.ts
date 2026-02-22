@@ -7,7 +7,7 @@
  * @package VoxelFSE
  */
 
-import { voxelGet, voxelPost, voxelDelete, voxelAjax, voxelAjaxPost } from './voxel-fetch';
+import { voxelGet, voxelPost, voxelAjax, voxelAjaxPost } from './voxel-fetch';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 import type {
 	Status,
@@ -100,7 +100,7 @@ export async function getPostContext(
 ): Promise<PostContextResponse> {
 	const params: Record<string, string | number> = { mode };
 	if (postId) {
-		params.post_id = postId;
+		params['post_id'] = postId;
 	}
 	return voxelGet<PostContextResponse>(`${API_NAMESPACE}/post-context`, params);
 }
@@ -136,7 +136,7 @@ export async function publishStatus(
 
 	// Add link preview URL if detected (matches Voxel's timeline-main.beautified.js submit method)
 	if (payload.link_preview) {
-		dataPayload.link_preview = payload.link_preview;
+		dataPayload['link_preview'] = payload.link_preview;
 	}
 
 	const response = await voxelAjaxPost<{ status: Status; message?: string }>('timeline/v2/status.publish', {
@@ -532,6 +532,7 @@ export interface MentionResult {
 	id: number;
 	type: 'user' | 'post';
 	name: string;
+	username?: string;
 	avatar_url: string;
 	link: string;
 }

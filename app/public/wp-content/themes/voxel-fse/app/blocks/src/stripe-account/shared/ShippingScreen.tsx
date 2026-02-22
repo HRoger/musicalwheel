@@ -10,7 +10,7 @@
  * @package VoxelFSE
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { __ } from '@wordpress/i18n';
 
 import type {
@@ -69,7 +69,7 @@ export default function ShippingScreen({
 	onGoBack,
 	onSave,
 	saving,
-	context,
+	context: _context,
 }: ShippingScreenProps) {
 	const [activeZone, setActiveZone] = useState<ShippingZone | null>(null);
 	const [activeRate, setActiveRate] = useState<ShippingRate | null>(null);
@@ -537,7 +537,8 @@ export default function ShippingScreen({
 	// ========================================
 
 	// Get country name
-	const getCountryName = useCallback((code: string): string => {
+	// @ts-ignore -- unused but kept for future use
+	const _getCountryName = useCallback((code: string): string => {
 		return countries[code]?.name || code;
 	}, [countries]);
 
@@ -676,6 +677,7 @@ export default function ShippingScreen({
 											onDragStart={(e) => handleZoneDragStart(e, zoneIndex)}
 											onDragOver={(e) => handleZoneDragOver(e, zoneIndex)}
 											onDragEnd={handleZoneDragEnd}
+											style={draggedZoneIndex === zoneIndex ? { opacity: 0.5 } : undefined}
 										>
 											<div
 												className="ts-repeater-head ts-repeater-head--zone"
@@ -796,7 +798,7 @@ export default function ShippingScreen({
 
 																{/* Regions list */}
 																<div className="ts-repeater-container">
-																	{Object.entries(getFilteredRegionsByContinent(zone)).map(([continent, items]) => (
+																	{Object.entries(getFilteredRegionsByContinent(zone)).map(([_continent, items]) => (
 																		items.map(({ region, name }) => {
 																			const regionIndex = zone.regions.findIndex(r => r.country === region.country);
 																			const isActiveRegion = activeRegions[zone.key]?.country === region.country;
@@ -976,12 +978,14 @@ export default function ShippingScreen({
 											onDragStart={(e) => handleRateDragStart(e, rateIndex)}
 											onDragOver={(e) => handleRateDragOver(e, rateIndex)}
 											onDragEnd={handleRateDragEnd}
+											style={draggedRateIndex === rateIndex ? { opacity: 0.5 } : undefined}
 										>
 											<div
 												className="ts-repeater-head ts-repeater-head--rate"
 												onClick={() => setActiveRate(activeRate === rate ? null : rate)}
 											>
-												{renderIcon(config.icons?.zone, 'las la-box')}
+												{/* Use rate icon for rate headers (Voxel uses box.svg fallback) */}
+												{renderIcon(config.icons?.rate, 'las la-box')}
 												<label>{rate.label || __('Untitled rate', 'voxel-fse')}</label>
 												{getRateZones(rate).length > 0 && (
 													<em>

@@ -49,25 +49,25 @@ export function ContentTab({ attributes, setAttributes }: ContentTabProps): JSX.
 			<ToggleControl
 				label={__('Hide seconds', 'voxel-fse')}
 				checked={attributes.hideSeconds}
-				onChange={(value) => setAttributes({ hideSeconds: value })}
+				onChange={(value: boolean) => setAttributes({ hideSeconds: value })}
 			/>
 
 			<ToggleControl
 				label={__('Hide minutes', 'voxel-fse')}
 				checked={attributes.hideMinutes}
-				onChange={(value) => setAttributes({ hideMinutes: value })}
+				onChange={(value: boolean) => setAttributes({ hideMinutes: value })}
 			/>
 
 			<ToggleControl
 				label={__('Hide hours', 'voxel-fse')}
 				checked={attributes.hideHours}
-				onChange={(value) => setAttributes({ hideHours: value })}
+				onChange={(value: boolean) => setAttributes({ hideHours: value })}
 			/>
 
 			<ToggleControl
 				label={__('Hide days', 'voxel-fse')}
 				checked={attributes.hideDays}
-				onChange={(value) => setAttributes({ hideDays: value })}
+				onChange={(value: boolean) => setAttributes({ hideDays: value })}
 			/>
 		</PanelBody>
 	);
