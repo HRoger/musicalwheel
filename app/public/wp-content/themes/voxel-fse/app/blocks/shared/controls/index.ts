@@ -99,6 +99,7 @@ export {
 } from './ElementVisibilityModal';
 export { default as LoopElementModal, type LoopConfig } from './LoopElementModal';
 export { default as LoopVisibilityControl, type LoopVisibilityControlProps } from './LoopVisibilityControl';
+export { default as RowSettings, type RowSettingsProps, type RowSettingsAttributes } from './RowSettings';
 export { default as CodeEditorControl } from './CodeEditorControl';
 export { default as RelationControl } from './RelationControl';
 export { default as TemplateSelectControl } from './TemplateSelectControl';

@@ -115,9 +115,13 @@ export default function UnitDropdownButton({
 					display: flex;
 					align-items: center;
 					justify-content: center;
-					background-color: rgb(240, 240, 241);
+					background: transparent;
 					border: none;
 					border-radius: 2px;
+				}
+				.e-units-wrapper button:hover:not(:disabled, [aria-disabled="true"], .is-pressed) {
+					background: color-mix(in srgb, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)) 4%, transparent);
+					color: var(--wp-components-color-accent-darker-20, var(--wp-admin-theme-color-darker-20, #183ad6));
 				}
 				.e-units-wrapper button svg {
 					display: none;

@@ -13,6 +13,7 @@
 
 import { TextControl } from '@wordpress/components';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { __ } from '@wordpress/i18n';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
@@ -177,17 +178,19 @@ export default function DynamicTagTextControl({
 				)}
 			</div>
 
-			{/* Dynamic Tag Builder Modal */}
-			{isModalOpen && (
-				<DynamicTagBuilder
-					value={getTagContent()}
-					onChange={handleModalSave}
-					label={label}
-					context={context}
-					onClose={() => setIsModalOpen(false)}
-				autoOpen={true}
-			/>
-			)}
+			{/* Dynamic Tag Builder Modal — portaled to body to escape sidebar stacking context */}
+			{isModalOpen &&
+				createPortal(
+					<DynamicTagBuilder
+						value={getTagContent()}
+						onChange={handleModalSave}
+						label={label}
+						context={context}
+						onClose={() => setIsModalOpen(false)}
+						autoOpen={true}
+					/>,
+					document.body,
+				)}
 		</div>
 	);
 }

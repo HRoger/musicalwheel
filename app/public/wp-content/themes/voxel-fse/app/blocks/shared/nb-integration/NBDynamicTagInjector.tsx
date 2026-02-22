@@ -23,7 +23,7 @@ import EnableTagsButton from '@shared/controls/EnableTagsButton';
 import { DynamicTagBuilder } from '@shared/dynamic-tags';
 import VoxelTab from '@shared/controls/VoxelTab';
 import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
-import type { NBBlockConfig } from './nectarBlocksConfig';
+import { NB_TOOLBAR_TAG_BLOCK_NAMES, type NBBlockConfig } from './nectarBlocksConfig';
 import './nb-dynamic-tag-injector.css';
 
 // WordPress data stores — accessed via globals to avoid ESM import map issues
@@ -42,6 +42,12 @@ const wpData = (window as any).wp?.data;
 function isBodyField(fieldKey: string): { label: string; type: string } | null {
 	if (fieldKey === 'cssClasses') {
 		return { label: 'Additional CSS class(es)', type: 'css-class' };
+	}
+	if (fieldKey === 'customId') {
+		return { label: 'Custom ID', type: 'text' };
+	}
+	if (fieldKey === 'textContent') {
+		return { label: 'Text Content', type: 'textarea' };
 	}
 	if (fieldKey.startsWith('customAttr_') && fieldKey.endsWith('_name')) {
 		return { label: 'Custom Attribute Name', type: 'text' };
@@ -94,6 +100,9 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	// Resolved dynamic image URL for editor preview
 	const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
 
+	// Whether this block uses the toolbar EnableTag for text content
+	const isToolbarBlock = NB_TOOLBAR_TAG_BLOCK_NAMES.has(blockConfig.blockName);
+
 	// Read voxelDynamicTags from block attributes
 	const getBlockAttributes = useCallback(() => {
 		if (!wpData) return {};
@@ -103,12 +112,33 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 	const getVoxelTags = useCallback((): Record<string, string> => {
 		const attrs = getBlockAttributes();
-		return (attrs as Record<string, unknown>)['voxelDynamicTags'] as Record<string, string> ?? {};
-	}, [getBlockAttributes]);
+		const tags = (attrs as Record<string, unknown>)['voxelDynamicTags'] as Record<string, string> ?? {};
+
+		// For toolbar blocks, sync textContent from voxelDynamicContent attribute
+		if (isToolbarBlock) {
+			const dynamicContent = (attrs as Record<string, unknown>)['voxelDynamicContent'] as string ?? '';
+			if (dynamicContent) {
+				tags['textContent'] = dynamicContent;
+			} else {
+				delete tags['textContent'];
+			}
+		}
+
+		return tags;
+	}, [getBlockAttributes, isToolbarBlock]);
 
 	// Write a single field's tag value
 	const setFieldTag = useCallback((fieldKey: string, value: string) => {
 		if (!wpData) return;
+
+		// For toolbar blocks, textContent maps to voxelDynamicContent
+		if (isToolbarBlock && fieldKey === 'textContent') {
+			wpData.dispatch('core/block-editor').updateBlockAttributes(clientId, {
+				voxelDynamicContent: value,
+			});
+			return;
+		}
+
 		const currentTags = getVoxelTags();
 		const updatedTags = { ...currentTags };
 
@@ -118,10 +148,31 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			delete updatedTags[fieldKey];
 		}
 
+		// Remove textContent from voxelDynamicTags — it's stored in voxelDynamicContent
+		if (isToolbarBlock) {
+			delete updatedTags['textContent'];
+		}
+
 		wpData.dispatch('core/block-editor').updateBlockAttributes(clientId, {
 			voxelDynamicTags: updatedTags,
 		});
-	}, [clientId, getVoxelTags]);
+	}, [clientId, getVoxelTags, isToolbarBlock]);
+
+	/**
+	 * Read the current DOM value of a body-observer field (CSS Classes, Custom ID,
+	 * Text Content) to pre-fill the DynamicTagBuilder when no tag exists yet.
+	 */
+	const getFieldInitialContent = useCallback((fieldKey: string): string => {
+		const portal = portals.find((p) => p.fieldKey === fieldKey);
+		if (!portal) return '';
+		// Find the nearest input/textarea sibling
+		const wrapper = portal.container.closest('.components-base-control__field')
+			?? portal.container.closest('.components-base-control')
+			?? portal.container.parentElement;
+		if (!wrapper) return '';
+		const input = wrapper.querySelector('input') ?? wrapper.querySelector('textarea');
+		return input?.value ?? '';
+	}, [portals]);
 
 	/**
 	 * Resolve a dynamic tag expression and write the resolved value into
@@ -529,6 +580,31 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [clientId]);
 
 	/**
+	 * Clean up the injected Voxel tab when this block is deselected.
+	 * The HOC wrapper component persists even when other blocks are selected,
+	 * so we must remove the injected DOM nodes reactively.
+	 */
+	useEffect(() => {
+		if (!wpData) return;
+		const unsubscribe = wpData.subscribe(() => {
+			const selectedId = wpData.select('core/block-editor').getSelectedBlockClientId();
+			if (selectedId !== clientId) {
+				// Remove injected tab and panel when this block is no longer selected
+				if (voxelTabRef.current) {
+					voxelTabRef.current.remove();
+					voxelTabRef.current = null;
+				}
+				if (voxelTabPanelRef.current) {
+					voxelTabPanelRef.current.remove();
+					voxelTabPanelRef.current = null;
+				}
+				setIsVoxelTabActive(false);
+			}
+		});
+		return () => unsubscribe();
+	}, [clientId]);
+
+	/**
 	 * Watch document.body for:
 	 * 1. Custom Attributes popover (.nectar__link-control__custom-attr__popover)
 	 * 2. WordPress Advanced panel (.block-editor-block-inspector__advanced)
@@ -627,32 +703,41 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				}));
 			}
 
-			// 2. Additional CSS class(es) in WP Advanced panel
-			const cssFieldKey = 'cssClasses';
-			const existingCssPortal = document.querySelector(
-				`.voxel-nb-tag-portal[data-field-key="${cssFieldKey}"][data-client-id="${clientId}"]`
-			);
-			if (!existingCssPortal) {
-				const advPanel = document.querySelector('.block-editor-block-inspector__advanced');
-				if (advPanel) {
-					// Find the label element with text "Additional CSS class(es)"
-					const labels = advPanel.querySelectorAll('label');
-					let cssLabel: HTMLLabelElement | null = null;
+			// 2. WP Advanced panel fields (CSS Classes + Custom ID)
+			const advPanel = document.querySelector('.block-editor-block-inspector__advanced');
+			if (advPanel) {
+				// 2a. Additional CSS class(es)
+				injectAdvPanelField(advPanel, 'cssClasses', 'Additional CSS class(es)', clientId, setPortals);
+
+				// 2b. Custom ID (NB text/button blocks)
+				injectAdvPanelField(advPanel, 'customId', 'Custom ID', clientId, setPortals);
+			}
+
+			// 3. Text Content in NB "Edit as HTML" popover (rendered on body)
+			const htmlPopover = document.querySelector('.nectar-component__popover__content--has-toolbar');
+			if (htmlPopover) {
+				const textFieldKey = 'textContent';
+				const existingTextPortal = htmlPopover.querySelector(
+					`.voxel-nb-tag-portal[data-field-key="${textFieldKey}"][data-client-id="${clientId}"]`
+				);
+				if (!existingTextPortal) {
+					const labels = htmlPopover.querySelectorAll('label');
+					let textLabel: HTMLLabelElement | null = null;
 					labels.forEach((lbl) => {
-						if ((lbl.textContent || '').trim() === 'Additional CSS class(es)') {
-							cssLabel = lbl;
+						if ((lbl.textContent || '').trim() === 'Text Content') {
+							textLabel = lbl;
 						}
 					});
-					if (cssLabel !== null) {
-						const wrapper = ((cssLabel as HTMLLabelElement).closest('.components-base-control__field') ?? (cssLabel as HTMLLabelElement).parentElement) as HTMLElement | null;
+					if (textLabel !== null) {
+						const wrapper = ((textLabel as HTMLLabelElement).closest('.components-base-control__field') ?? (textLabel as HTMLLabelElement).parentElement) as HTMLElement | null;
 						if (wrapper) {
 							const container = document.createElement('span');
 							container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--corner';
-							container.setAttribute('data-field-key', cssFieldKey);
+							container.setAttribute('data-field-key', textFieldKey);
 							container.setAttribute('data-client-id', clientId);
 							wrapper.style.position = 'relative';
 							wrapper.appendChild(container);
-							setPortals((prev) => [...prev, { fieldKey: cssFieldKey, container }]);
+							setPortals((prev) => [...prev, { fieldKey: textFieldKey, container }]);
 						}
 					}
 				}
@@ -855,6 +940,15 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				if (!targetComponentDiv) {
 					targetComponentDiv = controlRow?.querySelector('.nectar-control-row__component') ?? null;
 				}
+
+				// Body fields (CSS Classes, Custom ID, Text Content) use
+				// .components-base-control__field instead of .nectar-control-row
+				if (!targetComponentDiv && isBodyField(portal.fieldKey)) {
+					targetComponentDiv = portal.container.closest('.components-base-control__field')
+						?? portal.container.closest('.components-base-control')
+						?? null;
+				}
+
 				if (!targetComponentDiv) return null;
 
 				// If no tag, remove any leftover preview container and skip
@@ -922,7 +1016,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			 * by sidebar querySelector working from this context). */}
 			{activeModalField && createPortal(
 				<DynamicTagBuilder
-					value={extractTagContent(voxelTags[activeModalField] || '')}
+					value={extractTagContent(voxelTags[activeModalField] || '') || getFieldInitialContent(activeModalField)}
 					onChange={(newValue: string) => {
 						if (newValue) {
 							const wrappedValue = wrapWithTags(newValue);
@@ -1007,6 +1101,43 @@ function TagPreview({
 // ────────────────────────────────────────────
 // Utility functions
 // ────────────────────────────────────────────
+
+/**
+ * Inject an EnableTag portal into a WordPress Advanced panel field.
+ * Matches by label text (e.g. "Additional CSS class(es)", "Custom ID").
+ */
+function injectAdvPanelField(
+	advPanel: Element,
+	fieldKey: string,
+	labelText: string,
+	clientId: string,
+	setPortals: (updater: (prev: FieldPortal[]) => FieldPortal[]) => void,
+): void {
+	const existingPortal = document.querySelector(
+		`.voxel-nb-tag-portal[data-field-key="${fieldKey}"][data-client-id="${clientId}"]`
+	);
+	if (existingPortal) return;
+
+	const labels = advPanel.querySelectorAll('label');
+	let matchedLabel: HTMLLabelElement | null = null;
+	labels.forEach((lbl) => {
+		if ((lbl.textContent || '').trim() === labelText) {
+			matchedLabel = lbl;
+		}
+	});
+	if (matchedLabel === null) return;
+
+	const wrapper = ((matchedLabel as HTMLLabelElement).closest('.components-base-control__field') ?? (matchedLabel as HTMLLabelElement).parentElement) as HTMLElement | null;
+	if (!wrapper) return;
+
+	const container = document.createElement('span');
+	container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--corner';
+	container.setAttribute('data-field-key', fieldKey);
+	container.setAttribute('data-client-id', clientId);
+	wrapper.style.position = 'relative';
+	wrapper.appendChild(container);
+	setPortals((prev) => [...prev, { fieldKey, container }]);
+}
 
 /** Extract label text from a .nectar-control-row__label element, ignoring NB's dynamic data button text */
 function getLabelText(labelEl: Element): string {

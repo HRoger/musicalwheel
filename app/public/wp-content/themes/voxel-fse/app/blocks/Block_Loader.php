@@ -340,7 +340,11 @@ class Block_Loader
         // viewport flicker when switching Desktop/Tablet/Mobile with 7+ blocks.
         $css_path = $build_dir . '/editor.css';
         if (file_exists($css_path)) {
-            wp_register_style('voxel-fse-editor', $build_url . '/editor.css', [], $version);
+            // Depend on 'wp-components' style so WordPress loads wp-components CSS
+            // on the admin page. This ensures @wordpress/components CSS Module hashes
+            // (e.g. .ccb-ee-dc-ca-c-jedafn) apply when VoxelTab is portal-rendered
+            // into NectarBlocks' inspector panel.
+            wp_register_style('voxel-fse-editor', $build_url . '/editor.css', ['wp-components'], $version);
             wp_enqueue_style('voxel-fse-editor');
         }
     }

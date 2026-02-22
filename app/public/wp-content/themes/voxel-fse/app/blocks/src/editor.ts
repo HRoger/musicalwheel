@@ -51,3 +51,6 @@ import './work-hours/index';
 
 // NectarBlocks integration — injects Voxel dynamic tag buttons into NB controls
 import '../shared/nb-integration';
+
+// NectarBlocks toolbar EnableTag — adds dynamic content button to text/button block toolbars
+import '../shared/filters/nectarToolbarFilter';

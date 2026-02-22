@@ -25,24 +25,78 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 
 	/**
-	 * NB blocks that receive Voxel dynamic tag attributes.
+	 * NB parent blocks — receive VoxelTab (4th tab) + voxelDynamicTags attribute.
 	 * Must match the TypeScript nectarBlocksConfig.ts registry.
 	 */
-	private const TARGET_BLOCKS = [
+	private const PARENT_BLOCKS = [
 		'nectar-blocks/image',
-		// Add more NB blocks here as needed
+		'nectar-blocks/accordion',
+		'nectar-blocks/button',
+		'nectar-blocks/carousel',
+		'nectar-blocks/divider',
+		'nectar-blocks/flex-box',
+		'nectar-blocks/icon',
+		'nectar-blocks/icon-list',
+		'nectar-blocks/image-gallery',
+		'nectar-blocks/image-grid',
+		'nectar-blocks/milestone',
+		'nectar-blocks/post-content',
+		'nectar-blocks/post-grid',
+		'nectar-blocks/row',
+		'nectar-blocks/scrolling-marquee',
+		'nectar-blocks/star-rating',
+		'nectar-blocks/tabs',
+		'nectar-blocks/taxonomy-grid',
+		'nectar-blocks/taxonomy-terms',
+		'nectar-blocks/testimonial',
+		'nectar-blocks/text',
+		'nectar-blocks/video-lightbox',
+		'nectar-blocks/video-player',
+	];
+
+	/**
+	 * NB child/inner blocks — receive RowSettings (loop + visibility) + dynamic tag fields.
+	 * These do NOT get VoxelTab (flat inspector layout, not tabbed).
+	 */
+	private const CHILD_BLOCKS = [
+		'nectar-blocks/tab-section',
+		'nectar-blocks/accordion-section',
+		'nectar-blocks/column',
+		'nectar-blocks/icon-list-item',
+		'nectar-blocks/carousel-item',
+	];
+
+	/**
+	 * NB blocks that get toolbar EnableTag for dynamic text content.
+	 * Must match NB_TOOLBAR_TAG_BLOCKS in nectarBlocksConfig.ts.
+	 */
+	private const TOOLBAR_BLOCKS = [
+		'nectar-blocks/text',
+		'nectar-blocks/button',
 	];
 
 	protected function hooks(): void {
-		// Inject voxelDynamicTags attribute into target NB blocks
+		// Inject voxelDynamicTags + VoxelTab attributes into target NB blocks
 		$this->filter( 'register_block_type_args', '@inject_voxel_attributes', 20, 2 );
 
 		// Resolve Voxel tags in NB block HTML output
 		$this->filter( 'render_block', '@resolve_voxel_tags', 15, 2 );
+
+		// Apply VoxelTab features (visibility, loop, sticky) to NB blocks
+		$this->filter( 'render_block', '@apply_nb_voxel_tab_features', 16, 2 );
+
+		// Resolve child block dynamic fields (title, CSS ID)
+		$this->filter( 'render_block', '@resolve_child_dynamic_fields', 15, 2 );
+
+		// Resolve toolbar dynamic content (text/button block full content replacement)
+		$this->filter( 'render_block', '@resolve_toolbar_dynamic_content', 14, 2 );
 	}
 
 	/**
-	 * Inject voxelDynamicTags attribute into target NB blocks.
+	 * Inject Voxel attributes into NB blocks.
+	 *
+	 * Parent blocks get: voxelDynamicTags + VoxelTab attributes (sticky, visibility, loop)
+	 * Child blocks get: RowSettings attributes (loop, visibility, dynamic title/CSS ID)
 	 *
 	 * Priority 20 ensures this runs after NB's own register_block_type_args
 	 * filter (priority 11) that wraps render callbacks.
@@ -52,20 +106,57 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 	 * @return array<string,mixed> Modified arguments.
 	 */
 	protected function inject_voxel_attributes( array $args, string $name ): array {
-		if ( ! in_array( $name, self::TARGET_BLOCKS, true ) ) {
+		$is_parent = in_array( $name, self::PARENT_BLOCKS, true );
+		$is_child  = in_array( $name, self::CHILD_BLOCKS, true );
+
+		if ( ! $is_parent && ! $is_child ) {
 			return $args;
 		}
 
-		// Add voxelDynamicTags attribute — stores per-field tag expressions
-		// Structure: { fieldKey: '@tags()@post(title)@endtags()' }
 		if ( ! isset( $args['attributes'] ) || ! is_array( $args['attributes'] ) ) {
 			$args['attributes'] = [];
 		}
 
-		$args['attributes']['voxelDynamicTags'] = [
-			'type'    => 'object',
-			'default' => new \stdClass(),
-		];
+		if ( $is_parent ) {
+			// voxelDynamicTags — stores per-field tag expressions
+			$args['attributes']['voxelDynamicTags'] = [
+				'type'    => 'object',
+				'default' => new \stdClass(),
+			];
+
+			// VoxelTab attributes (sticky, visibility, loop)
+			require_once dirname( __DIR__ ) . '/blocks/shared/voxel-tab-attributes.php';
+			$voxel_tab_attrs = \VoxelFSE\Blocks\Shared\get_voxel_tab_attributes();
+			foreach ( $voxel_tab_attrs as $attr_key => $attr_def ) {
+				$args['attributes'][ $attr_key ] = $attr_def;
+			}
+		}
+
+		// Toolbar blocks get voxelDynamicContent (for dynamic text replacement)
+		if ( in_array( $name, self::TOOLBAR_BLOCKS, true ) ) {
+			$args['attributes']['voxelDynamicContent'] = [
+				'type'    => 'string',
+				'default' => '',
+			];
+		}
+
+		if ( $is_child ) {
+			// RowSettings attributes (loop + visibility + dynamic tag fields)
+			$child_attrs = [
+				'loopEnabled'        => [ 'type' => 'boolean', 'default' => false ],
+				'loopSource'         => [ 'type' => 'string', 'default' => '' ],
+				'loopProperty'       => [ 'type' => 'string', 'default' => '' ],
+				'loopLimit'          => [ 'type' => 'string', 'default' => '' ],
+				'loopOffset'         => [ 'type' => 'string', 'default' => '' ],
+				'visibilityBehavior' => [ 'type' => 'string', 'default' => 'show' ],
+				'visibilityRules'    => [ 'type' => 'array', 'default' => [] ],
+				'voxelDynamicTitle'  => [ 'type' => 'string', 'default' => '' ],
+				'voxelDynamicCssId'  => [ 'type' => 'string', 'default' => '' ],
+			];
+			foreach ( $child_attrs as $attr_key => $attr_def ) {
+				$args['attributes'][ $attr_key ] = $attr_def;
+			}
+		}
 
 		return $args;
 	}
@@ -144,6 +235,198 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 	}
 
 	/**
+	 * Apply VoxelTab features (visibility, loop, sticky) to NB parent blocks.
+	 *
+	 * Mirrors Block_Loader::apply_voxel_tab_features() but for nectar-blocks/* namespace.
+	 * Runs at priority 16 (after resolve_voxel_tags at 15).
+	 *
+	 * @param string $block_content The block's rendered HTML.
+	 * @param array<string,mixed> $block The block data.
+	 * @return string Modified HTML.
+	 */
+	protected function apply_nb_voxel_tab_features( string $block_content, array $block ): string {
+		if ( empty( $block['blockName'] ) || strpos( $block['blockName'], 'nectar-blocks/' ) !== 0 ) {
+			return $block_content;
+		}
+
+		// Only process blocks we've registered (parent + child)
+		$name = $block['blockName'];
+		if ( ! in_array( $name, self::PARENT_BLOCKS, true ) && ! in_array( $name, self::CHILD_BLOCKS, true ) ) {
+			return $block_content;
+		}
+
+		if ( empty( $block_content ) && empty( $block['attrs'] ) ) {
+			return $block_content;
+		}
+
+		$attributes = $block['attrs'] ?? [];
+
+		// 1. Evaluate Visibility Rules
+		$rules = $attributes['visibilityRules'] ?? [];
+		if ( ! empty( $rules ) ) {
+			require_once dirname( __DIR__ ) . '/blocks/shared/visibility-evaluator.php';
+			$behavior = $attributes['visibilityBehavior'] ?? 'show';
+
+			if ( ! \VoxelFSE\Blocks\Shared\Visibility_Evaluator::evaluate( $rules, $behavior ) ) {
+				return '';
+			}
+		}
+
+		// 2. Handle Loop Element
+		if ( ! empty( $attributes['loopSource'] ) ) {
+			require_once dirname( __DIR__ ) . '/blocks/shared/loop-processor.php';
+			return \VoxelFSE\Blocks\Shared\Loop_Processor::render_looped( $attributes, $block_content );
+		}
+
+		// 3. Apply Sticky CSS (parent blocks only)
+		if ( in_array( $name, self::PARENT_BLOCKS, true ) && ! empty( $attributes['stickyEnabled'] ) ) {
+			$block_content = $this->apply_nb_sticky_styles( $block_content, $attributes );
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Apply sticky position styles to an NB block's root element.
+	 *
+	 * Uses inline styles since NB blocks don't have blockId for CSS classes.
+	 *
+	 * @param string $content Block HTML.
+	 * @param array<string,mixed> $attributes Block attributes.
+	 * @return string Modified HTML.
+	 */
+	private function apply_nb_sticky_styles( string $content, array $attributes ): string {
+		$desktop = $attributes['stickyDesktop'] ?? 'sticky';
+
+		// Apply position
+		if ( $desktop === 'sticky' || $desktop === 'fixed' ) {
+			$content = $this->add_inline_style( $content, 'position', $desktop );
+		}
+
+		// Apply offsets (top, left, right, bottom)
+		$directions = [ 'Top', 'Left', 'Right', 'Bottom' ];
+		foreach ( $directions as $dir ) {
+			$key      = 'sticky' . $dir;
+			$unit_key = $key . 'Unit';
+
+			if ( isset( $attributes[ $key ] ) && $attributes[ $key ] !== '' ) {
+				$unit  = $attributes[ $unit_key ] ?? 'px';
+				$value = $attributes[ $key ] . $unit;
+				$content = $this->add_inline_style( $content, strtolower( $dir ), $value );
+			}
+		}
+
+		// Add z-index for sticky elements
+		$content = $this->add_inline_style( $content, 'z-index', '100' );
+
+		return $content;
+	}
+
+	/**
+	 * Resolve child block dynamic fields (voxelDynamicTitle, voxelDynamicCssId).
+	 *
+	 * For child blocks like tab-section and accordion-section, resolves
+	 * dynamic tag expressions stored in individual attributes.
+	 *
+	 * @param string $block_content The block's rendered HTML.
+	 * @param array<string,mixed> $block The block data.
+	 * @return string Modified HTML.
+	 */
+	protected function resolve_child_dynamic_fields( string $block_content, array $block ): string {
+		if ( empty( $block['blockName'] ) || ! in_array( $block['blockName'], self::CHILD_BLOCKS, true ) ) {
+			return $block_content;
+		}
+
+		$attrs = $block['attrs'] ?? [];
+
+		// Resolve dynamic title
+		$dynamic_title = $attrs['voxelDynamicTitle'] ?? '';
+		if ( ! empty( $dynamic_title ) && strpos( $dynamic_title, '@tags()' ) !== false ) {
+			$resolved_title = $this->resolve_expression( $dynamic_title );
+			if ( $resolved_title !== '' ) {
+				// Replace the first text content in title/heading elements
+				// NB tab-section uses <h4> or <span> for titles, accordion-section uses <h3> or <button>
+				$block_content = $this->replace_child_title( $block_content, $resolved_title, $block['blockName'] );
+			}
+		}
+
+		// Resolve dynamic CSS ID
+		$dynamic_css_id = $attrs['voxelDynamicCssId'] ?? '';
+		if ( ! empty( $dynamic_css_id ) && strpos( $dynamic_css_id, '@tags()' ) !== false ) {
+			$resolved_id = $this->resolve_expression( $dynamic_css_id );
+			if ( $resolved_id !== '' ) {
+				$sanitized_id = sanitize_html_class( $resolved_id );
+				// Add or replace id attribute on root element
+				if ( preg_match( '/^(<[a-z][a-z0-9]*\b[^>]*)\bid="[^"]*"/', $block_content ) ) {
+					$block_content = preg_replace(
+						'/^(<[a-z][a-z0-9]*\b[^>]*)\bid="[^"]*"/',
+						'$1id="' . esc_attr( $sanitized_id ) . '"',
+						$block_content,
+						1
+					) ?? $block_content;
+				} else {
+					$block_content = preg_replace(
+						'/^(<[a-z][a-z0-9]*\b)/',
+						'$1 id="' . esc_attr( $sanitized_id ) . '"',
+						$block_content,
+						1
+					) ?? $block_content;
+				}
+			}
+		}
+
+		return $block_content;
+	}
+
+	/**
+	 * Replace child block title text with resolved dynamic value.
+	 *
+	 * @param string $content Block HTML.
+	 * @param string $resolved_title Resolved title text.
+	 * @param string $block_name The block name for type-specific logic.
+	 * @return string Modified HTML.
+	 */
+	private function replace_child_title( string $content, string $resolved_title, string $block_name ): string {
+		$escaped = esc_html( $resolved_title );
+
+		switch ( $block_name ) {
+			case 'nectar-blocks/tab-section':
+				// Tab section title is in data-title attribute
+				if ( preg_match( '/\bdata-title="[^"]*"/', $content ) ) {
+					$content = preg_replace(
+						'/\bdata-title="[^"]*"/',
+						'data-title="' . esc_attr( $resolved_title ) . '"',
+						$content,
+						1
+					) ?? $content;
+				}
+				return $content;
+
+			case 'nectar-blocks/accordion-section':
+				// Accordion title is typically in a heading tag inside the trigger
+				$content = preg_replace(
+					'/(<(?:h[1-6]|button|span)\b[^>]*class="[^"]*nectar-accordion[^"]*"[^>]*>)[^<]*/',
+					'$1' . $escaped,
+					$content,
+					1
+				) ?? $content;
+				return $content;
+
+			case 'nectar-blocks/icon-list-item':
+				// Icon list item text content
+				$content = preg_replace(
+					'/(<span\b[^>]*class="[^"]*list-item-text[^"]*"[^>]*>)[^<]*/',
+					'$1' . $escaped,
+					$content,
+					1
+				) ?? $content;
+				return $content;
+			default:
+				return $content;
+		}
+	}
+
+	/**
 	 * Resolve a Voxel tag expression to its final value.
 	 *
 	 * Uses Voxel parent's \Voxel\render() as primary resolver,
@@ -218,6 +501,47 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			case 'zIndex':
 				// Add z-index to root element's style
 				return $this->add_inline_style( $content, 'z-index', $resolved );
+
+
+			case 'rating':
+				// Replace data-rating attribute on NB star-rating root element.
+				// NB renders: <div class="nectar-star-rating" data-rating="4.5">
+				if ( preg_match( '/\\bdata-rating="[^"]*"/', $content ) ) {
+					return preg_replace(
+						'/\\bdata-rating="[^"]*"/',
+						'data-rating="' . esc_attr( $resolved ) . '"',
+						$content,
+						1
+					) ?? $content;
+				}
+				return $content;
+
+			case 'customId':
+				// Add or replace id attribute on root element
+				$sanitized_id = sanitize_html_class( $resolved );
+				if ( preg_match( '/^(<[a-z][a-z0-9]*\b[^>]*)\bid="[^"]*"/', $content ) ) {
+					return preg_replace(
+						'/^(<[a-z][a-z0-9]*\b[^>]*)\bid="[^"]*"/',
+						'$1id="' . esc_attr( $sanitized_id ) . '"',
+						$content,
+						1
+					) ?? $content;
+				}
+				return preg_replace(
+					'/^(<[a-z][a-z0-9]*\b)/',
+					'$1 id="' . esc_attr( $sanitized_id ) . '"',
+					$content,
+					1
+				) ?? $content;
+
+			case 'textContent':
+				// Replace inner text content of NB text/button blocks.
+				// Same logic as resolve_toolbar_dynamic_content but for tag system.
+				return preg_replace(
+					'/(<(?:p|h[1-6]|span|li)\\b[^>]*>)[^<]*(<\\/(?:p|h[1-6]|span|li)>)/',
+					'$1' . esc_html( $resolved ) . '$2',
+					$content
+				) ?? $content;
 
 			default:
 				return $content;
@@ -357,5 +681,73 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 		}
 
 		return $content;
+	}
+
+	/**
+	 * Resolve toolbar dynamic content for text/button blocks.
+	 *
+	 * For blocks in TOOLBAR_BLOCKS with non-empty voxelDynamicContent,
+	 * resolves VoxelScript expressions and replaces inner text content.
+	 *
+	 * Runs at priority 14 (before resolve_voxel_tags at 15).
+	 *
+	 * @param string $block_content The block's rendered HTML.
+	 * @param array<string,mixed> $block The block data.
+	 * @return string Modified HTML.
+	 */
+	protected function resolve_toolbar_dynamic_content( string $block_content, array $block ): string {
+		if ( empty( $block['blockName'] ) || ! in_array( $block['blockName'], self::TOOLBAR_BLOCKS, true ) ) {
+			return $block_content;
+		}
+
+		$dynamic_content = $block['attrs']['voxelDynamicContent'] ?? '';
+		if ( empty( $dynamic_content ) ) {
+			return $block_content;
+		}
+
+		// Wrap with @tags() if not already wrapped
+		if ( strpos( $dynamic_content, '@tags()' ) === false ) {
+			$dynamic_content = '@tags()' . $dynamic_content . '@endtags()';
+		}
+
+		$resolved = $this->resolve_expression( $dynamic_content );
+		if ( $resolved === '' ) {
+			return $block_content;
+		}
+
+		// Replace inner text content of the block
+		// NB text blocks render as: <div class="nectar-text-...">...<p>text</p>...</div>
+		// NB button blocks render as: <a class="nectar-button ..."><span>text</span></a>
+		switch ( $block['blockName'] ) {
+			case 'nectar-blocks/text':
+				// Replace content inside text elements (p, h1-h6, span, li)
+				return preg_replace(
+					'/(<(?:p|h[1-6]|span|li)\\b[^>]*>)[^<]*(<\\/(?:p|h[1-6]|span|li)>)/',
+					'$1' . esc_html( $resolved ) . '$2',
+					$block_content
+				) ?? $block_content;
+
+			case 'nectar-blocks/button':
+				// Replace text inside the <a> or <button> element
+				// NB button: <a class="nectar-button ..."><span>text</span></a>
+				if ( preg_match( '/<span\\b[^>]*>[^<]*<\\/span>/', $block_content ) ) {
+					return preg_replace(
+						'/(<span\\b[^>]*>)[^<]*(<\\/span>)/',
+						'$1' . esc_html( $resolved ) . '$2',
+						$block_content,
+						1
+					) ?? $block_content;
+				}
+				// Fallback: replace text inside <a> directly
+				return preg_replace(
+					'/(<a\\b[^>]*>)[^<]*(<\\/a>)/',
+					'$1' . esc_html( $resolved ) . '$2',
+					$block_content,
+					1
+				) ?? $block_content;
+
+			default:
+				return $block_content;
+		}
 	}
 }
