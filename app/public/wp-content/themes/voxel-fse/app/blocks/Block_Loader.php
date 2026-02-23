@@ -384,34 +384,15 @@ class Block_Loader
         // WordPress sets filter to false inside _wp_get_iframed_editor_assets().
         $is_iframe_context = !apply_filters('should_load_block_editor_scripts_and_styles', true);
 
-        // INLINE CSS STRATEGY: Eliminates HTTP requests in the iframe.
-        //
-        // Previously: wp_enqueue_style('voxel-fse-combined') created a <link> tag
-        // that required an HTTP fetch inside the iframe blob, causing white flash.
-        //
-        // Now: wp_add_inline_style('wp-edit-blocks') injects the CSS as a <style> tag
-        // directly into the iframe HTML — instant rendering, zero network latency.
-        // 'wp-edit-blocks' is always loaded in the iframe (line 330 of block-editor.php).
-        //
-        // On the MAIN admin page, we still load via <link> tag (cacheable, standard).
+        // LINK TAG STRATEGY: enqueue_block_assets fires in BOTH main page and iframe as separate
+        // fresh contexts — WordPress automatically handles loading the <link> in each context.
+        // getCompatibilityStyles() does NOT clone enqueue_block_assets styles (only editor_style_handles
+        // from the block registry are cloned). So a simple wp_enqueue_style here = zero duplication.
         $combined_css_path = get_stylesheet_directory() . '/assets/dist/voxel-editor-combined.css';
         if (file_exists($combined_css_path)) {
-            if ($is_iframe_context) {
-                // IFRAME: Inline the CSS for instant rendering (no HTTP request)
-                $css_content = file_get_contents($combined_css_path);
-                if ($css_content) {
-                    wp_add_inline_style('wp-edit-blocks', $css_content);
-                }
-            } else {
-                // MAIN PAGE: Load via <link> tag (cacheable)
-                wp_register_style(
-                    'voxel-fse-combined',
-                    get_stylesheet_directory_uri() . '/assets/dist/voxel-editor-combined.css',
-                    [],
-                    defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($combined_css_path)
-                );
-                wp_enqueue_style('voxel-fse-combined');
-            }
+            $version = defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($combined_css_path);
+            wp_register_style('voxel-fse-combined', get_stylesheet_directory_uri() . '/assets/dist/voxel-editor-combined.css', [], $version);
+            wp_enqueue_style('voxel-fse-combined');
         }
 
         // Elementor Icons (separate file, not in Voxel parent dist)

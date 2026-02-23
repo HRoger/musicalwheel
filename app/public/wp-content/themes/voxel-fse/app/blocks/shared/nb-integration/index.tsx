@@ -4,7 +4,7 @@
  * Registers editor.BlockEdit filters that inject Voxel features into NectarBlocks:
  *
  * 1. Parent blocks (23): VoxelTab (4th tab) + EnableTag buttons via NBDynamicTagInjector
- * 2. Child blocks (5): RowSettings PanelBody (loop + visibility) + Dynamic Tags panel
+ * 2. Child blocks (5): RowSettings PanelBody (loop + visibility) + Advanced panel controls
  *
  * Auto-registers on import (same pattern as editorWrapperFilters.tsx).
  *
@@ -12,7 +12,6 @@
  */
 
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import NBDynamicTagInjector from './NBDynamicTagInjector';
 import {
@@ -21,10 +20,20 @@ import {
 	NB_ROW_SETTINGS_BLOCK_NAMES,
 	NB_TOOLBAR_TAG_BLOCK_NAMES,
 	NB_DYNAMIC_TAG_FIELDS,
+	NB_ADVANCED_PANEL_BLOCKS,
 } from './nectarBlocksConfig';
 import { voxelTabAttributes } from '@shared/controls/VoxelTab';
 import RowSettings from '@shared/controls/RowSettings';
 import DynamicTagTextControl from '@shared/controls/DynamicTagTextControl';
+
+/**
+ * Typed wrapper for InspectorControls with group="advanced".
+ * WP 6.x supports the `group` prop at runtime but @types/wordpress__block-editor
+ * doesn't include it in its type definitions.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const InspectorAdvancedControls = (props: { children: React.ReactNode }) =>
+	<InspectorControls {...({ group: 'advanced' } as any)} {...props} />;
 
 let isRegistered = false;
 
@@ -86,13 +95,17 @@ export function registerNBDynamicTagIntegration(): void {
 				return { ...settings, attributes: parentAttrs };
 			}
 
-			// Child blocks: RowSettings attributes + dynamic tag fields
+			// Child blocks: RowSettings attributes + dynamic tag fields + voxelDynamicTags (for CSS Classes/Custom ID)
 			if (NB_ROW_SETTINGS_BLOCK_NAMES.has(name)) {
 				return {
 					...settings,
 					attributes: {
 						...attrs,
 						...rowSettingsAttributes,
+						voxelDynamicTags: {
+							type: 'object' as const,
+							default: {},
+						},
 					},
 				};
 			}
@@ -138,13 +151,51 @@ export function registerNBDynamicTagIntegration(): void {
 	addFilter('editor.BlockEdit', 'voxel-fse/nb-dynamic-tags', withNBDynamicTags);
 
 	// ========================================================================
-	// CHILD BLOCK HOC: RowSettings PanelBody + Dynamic Tags panel
+	// PARENT BLOCK ADVANCED PANEL CONTROLS (e.g., button "Edit label as HTML")
+	// ========================================================================
+
+	const withNBAdvancedPanelControls = createHigherOrderComponent(
+		(BlockEdit: any) => {
+			return (props: any) => {
+				const { name, attributes, setAttributes } = props;
+
+				const advFields = NB_ADVANCED_PANEL_BLOCKS[name];
+				if (!advFields || advFields.length === 0) {
+					return <BlockEdit {...props} />;
+				}
+
+				return (
+					<>
+						<BlockEdit {...props} />
+						<InspectorAdvancedControls>
+							{advFields.map(({ attr, label }) => (
+								<DynamicTagTextControl
+									key={attr}
+									label={label}
+									value={(attributes[attr] as string) || ''}
+									onChange={(val: string) =>
+										setAttributes({ [attr]: val })
+									}
+								/>
+							))}
+						</InspectorAdvancedControls>
+					</>
+				);
+			};
+		},
+		'withNBAdvancedPanelControls'
+	);
+
+	addFilter('editor.BlockEdit', 'voxel-fse/nb-advanced-panel', withNBAdvancedPanelControls);
+
+	// ========================================================================
+	// CHILD BLOCK HOC: RowSettings PanelBody + Advanced panel controls
 	// ========================================================================
 
 	const withNBRowSettings = createHigherOrderComponent(
 		(BlockEdit: any) => {
 			return (props: any) => {
-				const { name, attributes, setAttributes } = props;
+				const { name, clientId, attributes, setAttributes } = props;
 
 				if (!NB_ROW_SETTINGS_BLOCK_NAMES.has(name)) {
 					return <BlockEdit {...props} />;
@@ -155,29 +206,33 @@ export function registerNBDynamicTagIntegration(): void {
 				return (
 					<>
 						<BlockEdit {...props} />
+						<NBDynamicTagInjector
+							blockConfig={{ blockName: name, fields: [] }}
+							clientId={clientId}
+							attributes={attributes}
+							setAttributes={setAttributes}
+							bodyObserverOnly
+						/>
 						<InspectorControls>
 							<RowSettings
 								attributes={attributes}
 								setAttributes={setAttributes}
 							/>
-							{dynamicFields.length > 0 && (
-								<PanelBody
-									title={__('Voxel Dynamic Tags', 'voxel-fse')}
-									initialOpen={false}
-								>
-									{dynamicFields.map(({ attr, label }) => (
-										<DynamicTagTextControl
-											key={attr}
-											label={label}
-											value={attributes[attr] || ''}
-											onChange={(val: string) =>
-												setAttributes({ [attr]: val })
-											}
-										/>
-									))}
-								</PanelBody>
-							)}
 						</InspectorControls>
+						{dynamicFields.length > 0 && (
+							<InspectorAdvancedControls>
+								{dynamicFields.map(({ attr, label }) => (
+									<DynamicTagTextControl
+										key={attr}
+										label={attr === 'voxelDynamicTitle' ? __('Edit Title as HTML', 'voxel-fse') : label}
+										value={(attributes[attr] as string) || ''}
+										onChange={(val: string) =>
+											setAttributes({ [attr]: val })
+										}
+									/>
+								))}
+							</InspectorAdvancedControls>
+						)}
 					</>
 				);
 			};

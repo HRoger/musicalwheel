@@ -748,11 +748,20 @@ body .components-dropdown-menu__popover svg rect[fill="none"],
 }
 
 
-body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg,
-body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:hover {
-    fill: rgb(255 255 255);
+/*fix for tabs and accordion item*/
+body .nectar-block.nectar-blocks-accordion-section .block-editor-inserter .components-button svg,
+body .nectar-block.nectar-blocks-tabs-section .block-editor-inserter .components-button svg:hover{
+    fill: currentColor;
     outline: none;
 }
+
+body .nectar-block .nectar-swiper .components-button svg,
+body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg,
+body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:hover {
+    fill: white;
+    outline: none;
+}
+
 
 /* ============================================
  * THIRD-PARTY BLOCKS: Specific fixes for known conflicts

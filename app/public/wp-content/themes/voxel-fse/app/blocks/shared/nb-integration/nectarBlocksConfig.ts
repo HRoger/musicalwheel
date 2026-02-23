@@ -230,3 +230,19 @@ export const NB_TOOLBAR_TAG_BLOCKS = [
 
 /** Set of toolbar block names for quick lookup */
 export const NB_TOOLBAR_TAG_BLOCK_NAMES = new Set<string>(NB_TOOLBAR_TAG_BLOCKS);
+
+// ============================================================================
+// ADVANCED PANEL CONTROLS (parent blocks that need extra controls in WP Advanced)
+// ============================================================================
+
+/**
+ * Parent blocks that get additional controls injected into the WP Advanced
+ * accordion panel. Each entry maps a block name to its advanced panel fields.
+ *
+ * - 'label': "Edit label as HTML" for button block
+ */
+export const NB_ADVANCED_PANEL_BLOCKS: Record<string, { attr: string; label: string }[]> = {
+	'nectar-blocks/button': [
+		{ attr: 'voxelDynamicContent', label: 'Edit Label as HTML' },
+	],
+};

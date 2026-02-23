@@ -141,6 +141,12 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 		}
 
 		if ( $is_child ) {
+			// voxelDynamicTags — stores per-field tag expressions (CSS Classes, Custom ID)
+			$args['attributes']['voxelDynamicTags'] = [
+				'type'    => 'object',
+				'default' => new \stdClass(),
+			];
+
 			// RowSettings attributes (loop + visibility + dynamic tag fields)
 			$child_attrs = [
 				'loopEnabled'        => [ 'type' => 'boolean', 'default' => false ],
@@ -196,12 +202,13 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 				continue;
 			}
 
-			if ( strpos( $expression, '@tags()' ) === false ) {
-				continue;
+			// Resolve the expression: if wrapped with @tags(), use Voxel renderer;
+			// otherwise treat as plain text (user typed directly in input without modal).
+			if ( strpos( $expression, '@tags()' ) !== false ) {
+				$resolved = $this->resolve_expression( $expression );
+			} else {
+				$resolved = $expression;
 			}
-
-			// Resolve the expression
-			$resolved = $this->resolve_expression( $expression );
 
 			if ( $resolved === '' || $resolved === null ) {
 				continue;
@@ -339,10 +346,14 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 
 		$attrs = $block['attrs'] ?? [];
 
-		// Resolve dynamic title
+		// Resolve dynamic title — supports both @tags() wrapped and plain text
 		$dynamic_title = $attrs['voxelDynamicTitle'] ?? '';
-		if ( ! empty( $dynamic_title ) && strpos( $dynamic_title, '@tags()' ) !== false ) {
-			$resolved_title = $this->resolve_expression( $dynamic_title );
+		if ( ! empty( $dynamic_title ) ) {
+			if ( strpos( $dynamic_title, '@tags()' ) !== false ) {
+				$resolved_title = $this->resolve_expression( $dynamic_title );
+			} else {
+				$resolved_title = $dynamic_title; // Plain text, use directly
+			}
 			if ( $resolved_title !== '' ) {
 				// Replace the first text content in title/heading elements
 				// NB tab-section uses <h4> or <span> for titles, accordion-section uses <h3> or <button>
@@ -350,10 +361,14 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			}
 		}
 
-		// Resolve dynamic CSS ID
+		// Resolve dynamic CSS ID — supports both @tags() wrapped and plain text
 		$dynamic_css_id = $attrs['voxelDynamicCssId'] ?? '';
-		if ( ! empty( $dynamic_css_id ) && strpos( $dynamic_css_id, '@tags()' ) !== false ) {
-			$resolved_id = $this->resolve_expression( $dynamic_css_id );
+		if ( ! empty( $dynamic_css_id ) ) {
+			if ( strpos( $dynamic_css_id, '@tags()' ) !== false ) {
+				$resolved_id = $this->resolve_expression( $dynamic_css_id );
+			} else {
+				$resolved_id = $dynamic_css_id; // Plain text, use directly
+			}
 			if ( $resolved_id !== '' ) {
 				$sanitized_id = sanitize_html_class( $resolved_id );
 				// Add or replace id attribute on root element
@@ -467,6 +482,9 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			case 'imageSource':
 				return $this->resolve_image_source( $content, $resolved );
 
+			case 'iconImage':
+				return $this->resolve_icon_image( $content, $resolved );
+
 			case 'title':
 				// Title attribute on the <img> tag
 				return preg_replace(
@@ -546,6 +564,72 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			default:
 				return $content;
 		}
+	}
+
+	/**
+	 * Resolve icon image — handles Voxel icon format (svg:ID, etc.) and plain attachment IDs.
+	 * Replaces the icon SVG/element inside .nectar-blocks-icon__inner with an <img> tag.
+	 */
+	private function resolve_icon_image( string $content, string $resolved ): string {
+		$image_url = '';
+
+		// Parse Voxel icon format: "svg:72", "image:123", or plain numeric ID
+		if ( function_exists( '\Voxel\parse_icon_string' ) ) {
+			$icon = \Voxel\parse_icon_string( $resolved );
+			if ( $icon && ! empty( $icon['value']['url'] ) ) {
+				$image_url = $icon['value']['url'];
+			} elseif ( $icon && ! empty( $icon['value']['id'] ) ) {
+				$url = wp_get_attachment_url( (int) $icon['value']['id'] );
+				if ( $url ) {
+					$image_url = $url;
+				}
+			}
+		}
+
+		// Fallback: try "svg:ID" format manually
+		if ( empty( $image_url ) && preg_match( '/^svg:(\d+)$/', $resolved, $m ) ) {
+			$url = wp_get_attachment_url( (int) $m[1] );
+			if ( $url ) {
+				$image_url = $url;
+			}
+		}
+
+		// Fallback: plain numeric attachment ID
+		if ( empty( $image_url ) && is_numeric( $resolved ) ) {
+			$url = wp_get_attachment_url( (int) $resolved );
+			if ( $url ) {
+				$image_url = $url;
+			}
+		}
+
+		if ( empty( $image_url ) ) {
+			return $content;
+		}
+
+		$img_tag = '<img src="' . esc_url( $image_url ) . '" alt="" class="voxel-dynamic-icon-image" style="width:100%;height:100%;object-fit:contain;" />';
+
+		// Replace the SVG/icon element inside .nectar-blocks-icon__inner
+		// NB icon block renders: <i class="nectar-component__icon ...">...</i> or an inline SVG
+		$replaced = preg_replace(
+			'/<i\b[^>]*class="[^"]*nectar-component__icon[^"]*"[^>]*>.*?<\/i>/s',
+			$img_tag,
+			$content,
+			1
+		);
+
+		if ( $replaced !== $content ) {
+			return $replaced;
+		}
+
+		// Also try replacing an inline SVG element
+		$replaced = preg_replace(
+			'/<svg\b[^>]*>.*?<\/svg>/s',
+			$img_tag,
+			$content,
+			1
+		);
+
+		return $replaced ?? $content;
 	}
 
 	/**

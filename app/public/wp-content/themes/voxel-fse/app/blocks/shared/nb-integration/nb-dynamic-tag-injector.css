@@ -8,23 +8,49 @@
  */
 
 /* Portal container — sits inline with the label text */
-.voxel-nb-tag-portal {
+body .voxel-nb-tag-portal {
 	display: inline-flex;
 	align-items: center;
 	margin-left: 6px;
 	vertical-align: middle;
 }
+/*image upload popups*/
+body .nectar-control-row--align-horizontal .nectar-control-row__label {
+	box-sizing: border-box;
+	min-width: 65px;
+	overflow-wrap: anywhere;
+	padding-right: 5px;
+	width: 65px;
+}
 
 /* Corner placement — absolutely positioned in the top-right of the component area */
 .voxel-nb-tag-portal--corner {
 	position: absolute;
-	top: -2px;
+	top: -25px;
 	right: 6px;
 	margin-left: 0;
 	z-index: 1;
 }
 
-.block-editor-block-inspector__advanced .voxel-nb-tag-portal--corner {
+/* Image upload fields — position EnableTag inside the upload box */
+body .nectar-component__image-select-simple .voxel-nb-tag-portal--corner {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	margin-left: 0;
+	z-index: 1;
+}
+
+/*rangecontrols*/
+body .nectar-control-row--align-horizontal .voxel-nb-tag-portal--corner {
+	position: absolute;
+	top: 4px;
+	right: 6px;
+	margin-left: 0;
+	z-index: 1;
+}
+
+body .block-editor-block-inspector__advanced .voxel-nb-tag-portal--corner {
 	position: absolute;
 	top: -3px;
 	right: 6px;
@@ -90,6 +116,7 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
 .voxel-nb-tag-preview {
 	position: relative;
 	z-index: 2;
+	min-height: 65px;
 }
 
 .voxel-nb-tag-preview__inner {
@@ -106,35 +133,28 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
 }
 
 /* Body-observer fields (Text Content, CSS Classes, Custom ID) live inside
- * .components-base-control__field. The preview covers the ENTIRE label + input area
- * with absolute positioning so the dark overlay replaces the whole control. */
+ * .components-base-control__field. The preview replaces the input area
+ * but the label remains visible above it. */
 .components-base-control__field:has(> .voxel-nb-tag-preview) {
 	position: relative;
 }
 
+/* Preview flows naturally below the label */
 .components-base-control__field > .voxel-nb-tag-preview {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
+	position: relative;
 	z-index: 5;
-	display: flex;
-	align-items: stretch;
 }
 
-.components-base-control__field > .voxel-nb-tag-preview .voxel-nb-tag-preview__inner {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-}
-
-/* Hide label + textarea behind the overlay */
-.components-base-control__field:has(> .voxel-nb-tag-preview) > label,
+/* Hide input/textarea when preview is active — but keep label visible */
 .components-base-control__field:has(> .voxel-nb-tag-preview) > textarea,
-.components-base-control__field:has(> .voxel-nb-tag-preview) > input {
-	visibility: hidden;
+.components-base-control__field:has(> .voxel-nb-tag-preview) > input,
+.components-base-control__field:has(> .voxel-nb-tag-preview) > .components-text-control__input {
+	display: none;
+}
+
+/* Hide the EnableTag button portal when the preview overlay is active */
+.components-base-control__field:has(> .voxel-nb-tag-preview) > .voxel-nb-tag-portal {
+	display: none;
 }
 
 .voxel-nb-tag-preview__content {

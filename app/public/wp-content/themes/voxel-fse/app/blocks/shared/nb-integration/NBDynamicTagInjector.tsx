@@ -17,6 +17,7 @@
 
 import { createPortal } from 'react-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import EnableTagsButton from '@shared/controls/EnableTagsButton';
@@ -55,6 +56,9 @@ function isBodyField(fieldKey: string): { label: string; type: string } | null {
 	if (fieldKey.startsWith('customAttr_') && fieldKey.endsWith('_value')) {
 		return { label: 'Custom Attribute Value', type: 'text' };
 	}
+	if (fieldKey === 'iconImage') {
+		return { label: 'Icon Image', type: 'image' };
+	}
 	return null;
 }
 
@@ -63,6 +67,9 @@ interface NBDynamicTagInjectorProps {
 	clientId: string;
 	attributes: Record<string, unknown>;
 	setAttributes: (attrs: Record<string, unknown>) => void;
+	/** When true, skip sidebar scanning, VoxelTab injection, and image resolution.
+	 *  Only inject EnableTag buttons into the WP Advanced panel (CSS Classes + Custom ID). */
+	bodyObserverOnly?: boolean;
 }
 
 /**
@@ -74,7 +81,7 @@ interface FieldPortal {
 	container: HTMLElement;
 }
 
-export default function NBDynamicTagInjector({ blockConfig, clientId, attributes, setAttributes }: NBDynamicTagInjectorProps) {
+export default function NBDynamicTagInjector({ blockConfig, clientId, attributes, setAttributes, bodyObserverOnly = false }: NBDynamicTagInjectorProps) {
 	const [portals, setPortals] = useState<FieldPortal[]>([]);
 	const [activeModalField, setActiveModalField] = useState<string | null>(null);
 	const observerRef = useRef<MutationObserver | null>(null);
@@ -99,6 +106,12 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 	// Resolved dynamic image URL for editor preview
 	const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+
+	// Reactively track whether THIS block is selected (for sidebar injection)
+	const isSelected = useSelect(
+		(select) => (select('core/block-editor') as { getSelectedBlockClientId: () => string | null }).getSelectedBlockClientId() === clientId,
+		[clientId],
+	);
 
 	// Whether this block uses the toolbar EnableTag for text content
 	const isToolbarBlock = NB_TOOLBAR_TAG_BLOCK_NAMES.has(blockConfig.blockName);
@@ -163,6 +176,34 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	 * Text Content) to pre-fill the DynamicTagBuilder when no tag exists yet.
 	 */
 	const getFieldInitialContent = useCallback((fieldKey: string): string => {
+		// For toolbar blocks (text/button), read from the block's voxelDynamicContent
+		// attribute or the editor DOM text — the portal isn't near any input.
+		if (isToolbarBlock && fieldKey === 'textContent') {
+			const attrs = getBlockAttributes();
+			const dynamicContent = (attrs as Record<string, unknown>)['voxelDynamicContent'] as string ?? '';
+			if (dynamicContent) return dynamicContent;
+
+			// Fallback: read rendered text from the editor iframe DOM
+			const iframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+			const editorDoc = iframe?.contentDocument ?? document;
+			const blockEl = editorDoc.querySelector(`[data-block="${clientId}"]`);
+			if (blockEl) {
+				// Button: NB uses .nectar-blocks-button__text [role="textbox"]
+				const btnRichText = blockEl.querySelector('.nectar-blocks-button__text [role="textbox"]');
+				if (btnRichText?.textContent) return btnRichText.textContent;
+				// Also try .nectar__link (frontend selector)
+				const nectarLink = blockEl.querySelector('.nectar__link');
+				if (nectarLink?.textContent) return nectarLink.textContent;
+				// Text: RichText content
+				const richText = blockEl.querySelector('.nectar-blocks__rich-text [role="textbox"]');
+				if (richText?.textContent) return richText.textContent;
+				// Fallback: any heading/paragraph
+				const textEl = blockEl.querySelector('p, h1, h2, h3, h4, h5, h6');
+				if (textEl?.textContent) return textEl.textContent;
+			}
+			return '';
+		}
+
 		const portal = portals.find((p) => p.fieldKey === fieldKey);
 		if (!portal) return '';
 		// Find the nearest input/textarea sibling
@@ -172,7 +213,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		if (!wrapper) return '';
 		const input = wrapper.querySelector('input') ?? wrapper.querySelector('textarea');
 		return input?.value ?? '';
-	}, [portals]);
+	}, [portals, isToolbarBlock, getBlockAttributes, clientId]);
 
 	/**
 	 * Resolve a dynamic tag expression and write the resolved value into
@@ -238,6 +279,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	 */
 	const resyncPendingRef = useRef(false);
 	useEffect(() => {
+		if (bodyObserverOnly) return;
 		if (!wpData) return;
 
 		const unsubscribe = wpData.subscribe(() => {
@@ -355,8 +397,11 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				container.classList.add('voxel-nb-tag-portal--corner');
 				const componentDiv = (matchedRow as Element).querySelector('.nectar-control-row__component');
 				if (componentDiv) {
-					(componentDiv as HTMLElement).style.position = 'relative';
-					componentDiv.appendChild(container);
+					// Prefer placing inside .nectar-component__image-select-simple for scoped CSS
+					const imageSelectSimple = componentDiv.querySelector('.nectar-component__image-select-simple');
+					const target = imageSelectSimple ?? componentDiv;
+					(target as HTMLElement).style.position = 'relative';
+					target.appendChild(container);
 				}
 			} else {
 				// Inline placement (default): insert inside the label element
@@ -408,8 +453,9 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		}, 150);
 	}, [scanAndInject]);
 
-	// Set up MutationObserver on the sidebar
+	// Set up MutationObserver on the sidebar (skip for body-observer-only mode)
 	useEffect(() => {
+		if (bodyObserverOnly) return;
 		// Initial scan after a short delay (NB controls render async)
 		const initialTimeout = setTimeout(() => {
 			scanAndInject();
@@ -454,6 +500,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	 * - When an NB tab is clicked, we simply remove our active state and let react-tabs handle the rest.
 	 */
 	useEffect(() => {
+		if (bodyObserverOnly) return;
 		if (!wpData) return;
 
 		const injectVoxelTab = () => {
@@ -585,6 +632,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	 * so we must remove the injected DOM nodes reactively.
 	 */
 	useEffect(() => {
+		if (bodyObserverOnly) return;
 		if (!wpData) return;
 		const unsubscribe = wpData.subscribe(() => {
 			const selectedId = wpData.select('core/block-editor').getSelectedBlockClientId();
@@ -615,6 +663,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	 * being edited. Uses event delegation on the sidebar container.
 	 */
 	useEffect(() => {
+		if (bodyObserverOnly) return;
 		const sidebar = document.querySelector('.interface-interface-skeleton__sidebar');
 		if (!sidebar) return;
 
@@ -742,6 +791,41 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 					}
 				}
 			}
+
+			// 4. Select Icon popover — Image field (icon-list-item, icon, button custom image)
+			const iconPopover = document.querySelector('.nectar-component__icon-select__popover');
+			if (iconPopover) {
+				const iconFieldKey = 'iconImage';
+				const existingIconPortal = iconPopover.querySelector(
+					`.voxel-nb-tag-portal[data-field-key="${iconFieldKey}"][data-client-id="${clientId}"]`
+				);
+				if (!existingIconPortal) {
+					const rows = iconPopover.querySelectorAll('.nectar-control-row');
+					let imageRow: Element | undefined;
+					rows.forEach((row) => {
+						const lbl = row.querySelector('.nectar-control-row__label');
+						if (!lbl) return;
+						const resetWrap = lbl.querySelector('.nectar-control-row__reset-wrap');
+						const txt = (resetWrap ?? lbl).textContent?.trim();
+						if (txt === 'Image') imageRow = row;
+					});
+
+					if (imageRow) {
+						const container = document.createElement('span');
+						container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--corner';
+						container.setAttribute('data-field-key', iconFieldKey);
+						container.setAttribute('data-client-id', clientId);
+
+						// Place inside .nectar-component__image-select-simple for scoped CSS
+						const imageSelectSimple = (imageRow as Element).querySelector('.nectar-component__image-select-simple');
+						if (imageSelectSimple) {
+							(imageSelectSimple as HTMLElement).style.position = 'relative';
+							imageSelectSimple.appendChild(container);
+							setPortals((prev) => [...prev, { fieldKey: iconFieldKey, container }]);
+						}
+					}
+				}
+			}
 		};
 
 		// Observe document.body for the popover and Advanced panel appearing
@@ -763,11 +847,14 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	const voxelTags = getVoxelTags();
 
 	/**
-	 * Resolve imageSource dynamic tag to an actual image URL.
+	 * Resolve imageSource or iconImage dynamic tag to an actual image URL.
 	 * Same two-step process as VX image block's ImageComponent.tsx.
+	 * Runs for both parent blocks (imageSource) and child blocks (iconImage).
 	 */
 	useEffect(() => {
-		const imageTag = voxelTags['imageSource'];
+		const imageTag = voxelTags['imageSource'] || voxelTags['iconImage'];
+		// For bodyObserverOnly blocks, only proceed if there's an iconImage tag
+		if (bodyObserverOnly && !voxelTags['iconImage']) return;
 		if (!imageTag) {
 			setDynamicImageUrl(null);
 			return;
@@ -800,7 +887,14 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 					rendered = wrapperMatch[1];
 				}
 
-				const attachmentId = parseInt(rendered, 10);
+				// Handle Voxel icon format: "svg:72" → attachment ID 72
+				let attachmentId: number;
+				const svgMatch = rendered.match(/^svg:(\d+)$/);
+				if (svgMatch) {
+					attachmentId = parseInt(svgMatch[1], 10);
+				} else {
+					attachmentId = parseInt(rendered, 10);
+				}
 				if (!attachmentId || isNaN(attachmentId)) {
 					if (!cancelled) setDynamicImageUrl(null);
 					return;
@@ -833,10 +927,11 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 	/**
 	 * Inject the resolved image (or remove it) in the NB block's iframe DOM.
-	 * Uses a MutationObserver on the block element to keep the placeholder hidden
-	 * even if NB's React re-renders restore it.
+	 * Handles both image blocks (imageSource) and icon blocks (iconImage).
 	 */
 	useEffect(() => {
+		// For bodyObserverOnly blocks, only proceed if there's an iconImage tag
+		if (bodyObserverOnly && !voxelTags['iconImage']) return;
 		// Clean up previous injected preview
 		if (overlayCleanupRef.current) {
 			overlayCleanupRef.current();
@@ -850,9 +945,12 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		const iframeDoc = iframe?.contentDocument;
 		if (!iframeDoc) return;
 
-		// Find the NB image block by clientId
+		// Find the NB block by clientId
 		const blockEl = iframeDoc.querySelector(`[data-block="${clientId}"]`) as HTMLElement | null;
 		if (!blockEl) return;
+
+		// Determine if this is an icon image or a regular image
+		const isIconImage = Boolean(voxelTags['iconImage']);
 
 		// Inject CSS into iframe once
 		const styleId = 'voxel-nb-image-preview-css';
@@ -868,20 +966,43 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				[data-voxel-has-dynamic-image="true"] .components-placeholder {
 					display: none !important;
 				}
+				.voxel-nb-icon-image-preview {
+					display: block;
+					width: 100%;
+					height: 100%;
+					object-fit: contain;
+				}
+				[data-voxel-has-dynamic-image="true"] .nectar-blocks-icon__inner > .nectar-component__icon {
+					display: none !important;
+				}
 			`;
 			iframeDoc.head.appendChild(style);
 		}
 
-		// Mark the block so our CSS hides the placeholder automatically on re-renders
+		// Mark the block so our CSS hides the placeholder/icon automatically on re-renders
 		blockEl.setAttribute('data-voxel-has-dynamic-image', 'true');
 
 		// Create an <img> element
 		const img = iframeDoc.createElement('img');
-		img.className = 'voxel-nb-image-preview';
-		img.setAttribute('data-voxel-dynamic', 'imageSource');
 		img.src = dynamicImageUrl;
 		img.alt = '';
-		blockEl.insertBefore(img, blockEl.firstChild);
+
+		if (isIconImage) {
+			// Icon block: inject into .nectar-blocks-icon__inner
+			img.className = 'voxel-nb-icon-image-preview';
+			img.setAttribute('data-voxel-dynamic', 'iconImage');
+			const iconInner = blockEl.querySelector('.nectar-blocks-icon__inner');
+			if (iconInner) {
+				iconInner.insertBefore(img, iconInner.firstChild);
+			} else {
+				blockEl.insertBefore(img, blockEl.firstChild);
+			}
+		} else {
+			// Image block: inject at block root
+			img.className = 'voxel-nb-image-preview';
+			img.setAttribute('data-voxel-dynamic', 'imageSource');
+			blockEl.insertBefore(img, blockEl.firstChild);
+		}
 
 		// Cleanup
 		overlayCleanupRef.current = () => {
@@ -895,10 +1016,62 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				overlayCleanupRef.current = null;
 			}
 		};
-	}, [dynamicImageUrl, clientId]);
+	}, [dynamicImageUrl, clientId, voxelTags]);
+
+	/**
+	 * Inject icon image preview into the inspector's .nectar-component__indicator-box.
+	 * The indicator box is in the sidebar (inside .nectar-component__icon-select),
+	 * AND optionally inside the popover when the icon selector is open.
+	 */
+	useEffect(() => {
+		if (!dynamicImageUrl || !voxelTags['iconImage']) return;
+		if (!isSelected) return;
+
+		const injectIndicatorPreview = () => {
+			// Only target indicator boxes inside .nectar-component__icon-select
+			// (NOT .nectar-component__typography-select which also has indicator-box)
+			const indicatorBoxes = document.querySelectorAll('.nectar-component__icon-select .nectar-component__indicator-box');
+			indicatorBoxes.forEach((indicatorBox) => {
+				// Skip if already injected
+				if (indicatorBox.querySelector('.voxel-nb-icon-indicator-preview')) return;
+
+				// Remove the "empty" class — its diagonal line background is for the no-icon state
+			indicatorBox.classList.remove('empty');
+
+			const img = document.createElement('img');
+			img.className = 'voxel-nb-icon-indicator-preview';
+				img.src = dynamicImageUrl;
+				img.alt = '';
+				img.style.cssText = 'width:20px;height:20px;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;';
+
+				indicatorBox.appendChild(img);
+			});
+		};
+
+		// Try immediately and also observe for sidebar/popover changes
+		injectIndicatorPreview();
+
+		const observer = new MutationObserver(() => { injectIndicatorPreview(); });
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		return () => {
+			observer.disconnect();
+			document.querySelectorAll('.voxel-nb-icon-indicator-preview').forEach((el) => el.remove());
+		};
+	}, [dynamicImageUrl, voxelTags, isSelected]);
 
 	return (
 		<>
+			{/* Resolve dynamic tags and apply to the editor iframe DOM */}
+			<BodyFieldResolver
+				clientId={clientId}
+				voxelTags={voxelTags}
+				templateContext={templateContext}
+				templatePostType={templatePostType}
+				dynamicTitle={(attributes['voxelDynamicTitle'] as string) || ''}
+				dynamicCssId={(attributes['voxelDynamicCssId'] as string) || ''}
+			/>
+
 			{/* Render EnableTagsButton into each portal container */}
 			{portals.map((portal) => {
 				const fieldConfig = blockConfig.fields.find((f) => f.fieldKey === portal.fieldKey);
@@ -1047,7 +1220,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			)}
 
 			{/* Voxel Tab panel — rendered via createPortal into the injected panel container */}
-			{isVoxelTabActive && voxelTabPanelRef.current && createPortal(
+			{!bodyObserverOnly && isVoxelTabActive && voxelTabPanelRef.current && createPortal(
 				<VoxelTab
 					attributes={attributes as any}
 					setAttributes={setAttributes as any}
@@ -1096,6 +1269,476 @@ function TagPreview({
 			</div>
 		</div>
 	);
+}
+
+/**
+ * Helper: resolve a dynamic tag expression via the REST API.
+ * Returns the unwrapped resolved string, or null on failure.
+ */
+async function resolveTag(
+	expression: string,
+	templateContext: string,
+	templatePostType: string | undefined,
+): Promise<string | null> {
+	if (!expression) return null;
+	const previewContext: Record<string, string> = { type: templateContext };
+	if (templatePostType) previewContext['post_type'] = templatePostType;
+
+	try {
+		const result = await apiFetch<{ rendered: string }>({
+			path: '/voxel-fse/v1/dynamic-data/render',
+			method: 'POST',
+			data: { expression, preview_context: previewContext },
+		});
+		let rendered = result.rendered;
+		const m = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+		if (m) rendered = m[1];
+		return rendered || null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Helper: find the block element in the editor iframe.
+ */
+function getBlockElement(clientId: string): { el: HTMLElement; doc: Document } | null {
+	const iframe = document.querySelector('iframe[name="editor-canvas"]') as HTMLIFrameElement | null;
+	const iframeDoc = iframe?.contentDocument;
+	if (!iframeDoc) return null;
+	const el = iframeDoc.querySelector(`[data-block="${clientId}"]`) as HTMLElement | null;
+	if (!el) return null;
+	return { el, doc: iframeDoc };
+}
+
+/**
+ * Resolves dynamic tags and applies resolved values to the block's DOM in the
+ * editor iframe. Handles all field types:
+ *
+ * From voxelTags:
+ * - cssClasses → appends resolved classes to block wrapper className
+ * - customId → sets data-custom-id attribute on block wrapper
+ * - textContent → injects resolved text into button/text span in iframe
+ * - rating → sets data-rating attribute on star-rating block in iframe
+ *
+ * From direct attributes (child blocks):
+ * - dynamicTitle → injects resolved text into accordion/tab title
+ * - dynamicCssId → sets id attribute on block wrapper
+ *
+ * Uses MutationObserver for persistence against NB React re-renders.
+ */
+function BodyFieldResolver({
+	clientId,
+	voxelTags,
+	templateContext,
+	templatePostType,
+	dynamicTitle,
+	dynamicCssId,
+}: {
+	clientId: string;
+	voxelTags: Record<string, string>;
+	templateContext: string;
+	templatePostType: string | undefined;
+	dynamicTitle: string;
+	dynamicCssId: string;
+}) {
+	const [resolvedClasses, setResolvedClasses] = useState<string | null>(null);
+	const [resolvedId, setResolvedId] = useState<string | null>(null);
+	const [resolvedText, setResolvedText] = useState<string | null>(null);
+	const [resolvedRating, setResolvedRating] = useState<string | null>(null);
+	const [resolvedTitle, setResolvedTitle] = useState<string | null>(null);
+	const [resolvedCssId, setResolvedCssId] = useState<string | null>(null);
+	const classesObserverRef = useRef<MutationObserver | null>(null);
+	const idObserverRef = useRef<MutationObserver | null>(null);
+
+	const cssClassesTag = voxelTags['cssClasses'] || '';
+	const customIdTag = voxelTags['customId'] || '';
+	const textContentTag = voxelTags['textContent'] || '';
+	const ratingTag = voxelTags['rating'] || '';
+
+	// ── Resolve cssClasses tag ──
+	useEffect(() => {
+		if (!cssClassesTag) { setResolvedClasses(null); return; }
+		let cancelled = false;
+		resolveTag(cssClassesTag, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedClasses(v);
+		});
+		return () => { cancelled = true; };
+	}, [cssClassesTag, templateContext, templatePostType]);
+
+	// ── Resolve customId tag ──
+	useEffect(() => {
+		if (!customIdTag) { setResolvedId(null); return; }
+		let cancelled = false;
+		resolveTag(customIdTag, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedId(v);
+		});
+		return () => { cancelled = true; };
+	}, [customIdTag, templateContext, templatePostType]);
+
+	// ── Resolve textContent tag (button/text blocks) ──
+	useEffect(() => {
+		if (!textContentTag) { setResolvedText(null); return; }
+		let cancelled = false;
+		resolveTag(textContentTag, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedText(v);
+		});
+		return () => { cancelled = true; };
+	}, [textContentTag, templateContext, templatePostType]);
+
+	// ── Resolve rating tag ──
+	useEffect(() => {
+		if (!ratingTag) { setResolvedRating(null); return; }
+		let cancelled = false;
+		resolveTag(ratingTag, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedRating(v);
+		});
+		return () => { cancelled = true; };
+	}, [ratingTag, templateContext, templatePostType]);
+
+	// ── Resolve dynamicTitle (child blocks like accordion-section) ──
+	useEffect(() => {
+		if (!dynamicTitle) { setResolvedTitle(null); return; }
+		let cancelled = false;
+		resolveTag(dynamicTitle, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedTitle(v);
+		});
+		return () => { cancelled = true; };
+	}, [dynamicTitle, templateContext, templatePostType]);
+
+	// ── Resolve dynamicCssId (child blocks) ──
+	useEffect(() => {
+		if (!dynamicCssId) { setResolvedCssId(null); return; }
+		let cancelled = false;
+		resolveTag(dynamicCssId, templateContext, templatePostType).then((v) => {
+			if (!cancelled) setResolvedCssId(v);
+		});
+		return () => { cancelled = true; };
+	}, [dynamicCssId, templateContext, templatePostType]);
+
+	// ── Apply resolved CSS classes to block wrapper ──
+	useEffect(() => {
+		if (classesObserverRef.current) {
+			classesObserverRef.current.disconnect();
+			classesObserverRef.current = null;
+		}
+
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const blockEl = found.el;
+
+		const applyClasses = () => {
+			const prev = blockEl.getAttribute('data-voxel-dynamic-classes');
+			if (prev) {
+				prev.split(/\s+/).forEach((cls) => { if (cls) blockEl.classList.remove(cls); });
+			}
+			if (resolvedClasses) {
+				const classes = resolvedClasses.trim().split(/\s+/).filter(Boolean);
+				classes.forEach((cls) => blockEl.classList.add(cls));
+				blockEl.setAttribute('data-voxel-dynamic-classes', classes.join(' '));
+			} else {
+				blockEl.removeAttribute('data-voxel-dynamic-classes');
+			}
+		};
+
+		applyClasses();
+		classesObserverRef.current = new MutationObserver(() => { applyClasses(); });
+		classesObserverRef.current.observe(blockEl, { attributes: true, attributeFilter: ['class'] });
+
+		return () => {
+			classesObserverRef.current?.disconnect();
+			classesObserverRef.current = null;
+			const prev = blockEl.getAttribute('data-voxel-dynamic-classes');
+			if (prev) {
+				prev.split(/\s+/).forEach((cls) => { if (cls) blockEl.classList.remove(cls); });
+				blockEl.removeAttribute('data-voxel-dynamic-classes');
+			}
+		};
+	}, [resolvedClasses, clientId]);
+
+	// ── Apply resolved Custom ID (from voxelTags) ──
+	useEffect(() => {
+		if (idObserverRef.current) {
+			idObserverRef.current.disconnect();
+			idObserverRef.current = null;
+		}
+
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const blockEl = found.el;
+
+		const applyId = () => {
+			if (resolvedId) {
+				blockEl.setAttribute('data-custom-id', resolvedId);
+			} else {
+				blockEl.removeAttribute('data-custom-id');
+			}
+		};
+
+		applyId();
+		idObserverRef.current = new MutationObserver(() => { applyId(); });
+		idObserverRef.current.observe(blockEl, { attributes: true, attributeFilter: ['data-custom-id'] });
+
+		return () => {
+			idObserverRef.current?.disconnect();
+			idObserverRef.current = null;
+			blockEl.removeAttribute('data-custom-id');
+		};
+	}, [resolvedId, clientId]);
+
+	// ── Apply resolved text content (button/text blocks) ──
+	// NB uses React RichText which re-renders and overwrites direct DOM changes.
+	//
+	// NB text block structure:
+	//   <p role="textbox" class="nectar-blocks-text__rich-text">Hello</p>
+	//   <div class="nectar-blocks-text__raw-text">...</div>
+	//
+	// NB button block structure:
+	//   <span class="nectar-blocks-button__text">
+	//     <div role="textbox" class="nectar-blocks__rich-text">...</div>
+	//     <div class="nectar-blocks-button__raw-text">...</div>
+	//   </span>
+	//
+	// Strategy: hide the RichText + raw-text, inject overlay span with same styles.
+	useEffect(() => {
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const { el: blockEl, doc: iframeDoc } = found;
+
+		// Clean up previous overlay
+		const prevOverlay = blockEl.querySelector('.voxel-nb-text-overlay');
+		if (prevOverlay) prevOverlay.remove();
+		blockEl.removeAttribute('data-voxel-has-dynamic-text');
+
+		if (!resolvedText) return;
+
+		// Inject CSS for the text overlay into the iframe
+		const styleId = 'voxel-nb-dynamic-text-css';
+		if (!iframeDoc.getElementById(styleId)) {
+			const style = iframeDoc.createElement('style');
+			style.id = styleId;
+			style.textContent = `
+				/* Text block: hide the <p> RichText and raw-text div */
+				[data-voxel-has-dynamic-text="true"] .nectar-blocks-text__rich-text,
+				[data-voxel-has-dynamic-text="true"] .nectar-blocks-text__raw-text {
+					display: none !important;
+				}
+				/* Button block: hide the RichText div and raw-text div */
+				[data-voxel-has-dynamic-text="true"] .nectar-blocks-button__text > .nectar-blocks__rich-text,
+				[data-voxel-has-dynamic-text="true"] .nectar-blocks-button__text > .nectar-blocks-button__raw-text {
+					display: none !important;
+				}
+				/* Text overlay — pointer-events none so clicks pass through */
+				.voxel-nb-text-overlay {
+					pointer-events: none;
+				}
+			`;
+			iframeDoc.head.appendChild(style);
+		}
+
+		const isButton = Boolean(blockEl.querySelector('.nectar-blocks-button__text'));
+
+		if (isButton) {
+			// Button: place overlay inside .nectar-blocks-button__text
+			const btnTextEl = blockEl.querySelector('.nectar-blocks-button__text');
+			if (btnTextEl) {
+				const overlay = iframeDoc.createElement('span');
+				overlay.className = 'voxel-nb-text-overlay';
+				overlay.textContent = resolvedText;
+
+				// Copy computed styles from the RichText
+				const richText = btnTextEl.querySelector('[role="textbox"]');
+				if (richText) {
+					const computed = iframeDoc.defaultView?.getComputedStyle(richText);
+					if (computed) {
+						overlay.style.fontSize = computed.fontSize;
+						overlay.style.fontWeight = computed.fontWeight;
+						overlay.style.fontFamily = computed.fontFamily;
+						overlay.style.lineHeight = computed.lineHeight;
+						overlay.style.color = computed.color;
+						overlay.style.letterSpacing = computed.letterSpacing;
+						overlay.style.textTransform = computed.textTransform;
+					}
+				}
+
+				btnTextEl.appendChild(overlay);
+			}
+		} else {
+			// Text block: the RichText is <p class="nectar-blocks-text__rich-text">
+			// Place overlay as sibling inside the same parent container
+			const richTextEl = blockEl.querySelector('.nectar-blocks-text__rich-text');
+			const container = richTextEl?.parentElement;
+			if (container) {
+				const overlay = iframeDoc.createElement('p');
+				overlay.className = 'voxel-nb-text-overlay';
+				overlay.textContent = resolvedText;
+
+				// Copy computed styles from the RichText <p> for identical appearance
+				const computed = iframeDoc.defaultView?.getComputedStyle(richTextEl);
+				if (computed) {
+					overlay.style.display = computed.display;
+					overlay.style.fontSize = computed.fontSize;
+					overlay.style.fontWeight = computed.fontWeight;
+					overlay.style.fontFamily = computed.fontFamily;
+					overlay.style.lineHeight = computed.lineHeight;
+					overlay.style.color = computed.color;
+					overlay.style.letterSpacing = computed.letterSpacing;
+					overlay.style.textTransform = computed.textTransform;
+					overlay.style.textAlign = computed.textAlign;
+					overlay.style.padding = computed.padding;
+					overlay.style.margin = computed.margin;
+					overlay.style.whiteSpace = computed.whiteSpace;
+				}
+
+				container.appendChild(overlay);
+			}
+		}
+
+		blockEl.setAttribute('data-voxel-has-dynamic-text', 'true');
+
+		return () => {
+			const el = blockEl.querySelector('.voxel-nb-text-overlay');
+			if (el) el.remove();
+			blockEl.removeAttribute('data-voxel-has-dynamic-text');
+		};
+	}, [resolvedText, clientId]);
+
+	// ── Apply resolved rating by updating NB's block attribute ──
+	useEffect(() => {
+		// Clean up previous overlay if any
+		const found = getBlockElement(clientId);
+		if (found) {
+			const prevOverlay = found.el.querySelector('.voxel-nb-rating-overlay');
+			if (prevOverlay) prevOverlay.remove();
+			found.el.removeAttribute('data-voxel-has-dynamic-rating');
+		}
+
+		if (!resolvedRating) return;
+
+		const ratingNum = parseFloat(resolvedRating);
+		if (isNaN(ratingNum)) return;
+
+		// Update NB's native `rating` attribute via the block editor store
+		// This makes NB re-render with the correct number of stars
+		if (wpData) {
+			wpData.dispatch('core/block-editor').updateBlockAttributes(clientId, {
+				rating: Math.min(Math.max(ratingNum, 0), 5),
+			});
+		}
+
+		if (found) {
+			found.el.setAttribute('data-voxel-has-dynamic-rating', 'true');
+		}
+	}, [resolvedRating, clientId]);
+
+	// ── Apply resolved dynamic title (accordion-section + tab-section) ──
+	// For accordion-section: overlay text on the title RichText area.
+	// For tab-section: overlay text on the tab nav link in the PARENT tabs block.
+	useEffect(() => {
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const { el: blockEl, doc: iframeDoc } = found;
+
+		// Clean up previous overlay
+		const prevOverlay = blockEl.querySelector('.voxel-nb-title-overlay');
+		if (prevOverlay) prevOverlay.remove();
+		blockEl.removeAttribute('data-voxel-has-dynamic-title');
+
+		// Also clean up tab nav overlays
+		const prevNavOverlay = iframeDoc.querySelector(`.voxel-nb-tab-title-overlay[data-tab-client-id="${clientId}"]`);
+		if (prevNavOverlay) prevNavOverlay.remove();
+
+		if (!resolvedTitle) return;
+
+		// Inject CSS
+		const styleId = 'voxel-nb-dynamic-title-css';
+		if (!iframeDoc.getElementById(styleId)) {
+			const style = iframeDoc.createElement('style');
+			style.id = styleId;
+			style.textContent = `
+				[data-voxel-has-dynamic-title="true"] .nectar-blocks-accordion-section__title__text [role="textbox"],
+				[data-voxel-has-dynamic-title="true"] .nectar-blocks-accordion-section__title__text [data-rich-text-placeholder] {
+					visibility: hidden !important;
+					position: absolute !important;
+				}
+				.voxel-nb-title-overlay {
+					pointer-events: none;
+					z-index: 1;
+					font: inherit;
+					color: inherit;
+				}
+				.voxel-nb-tab-title-overlay ~ .nectar-blocks-tabs__nav__link__text {
+					visibility: hidden !important;
+					position: absolute !important;
+				}
+				.voxel-nb-tab-title-overlay {
+					pointer-events: none;
+					font: inherit;
+					color: inherit;
+				}
+			`;
+			iframeDoc.head.appendChild(style);
+		}
+
+		// Accordion-section: inject overlay into the title text area
+		const titleTextEl = blockEl.querySelector('.nectar-blocks-accordion-section__title__text');
+		if (titleTextEl) {
+			const overlay = iframeDoc.createElement('span');
+			overlay.className = 'voxel-nb-title-overlay';
+			overlay.textContent = resolvedTitle;
+			titleTextEl.appendChild(overlay);
+			blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
+			return;
+		}
+
+		// Tab-section: find the corresponding tab nav link in the parent tabs block.
+		// Tab-sections are inner blocks of the tabs parent — find this block's index.
+		if (wpData) {
+			const block = wpData.select('core/block-editor').getBlock(clientId);
+			if (block) {
+				const parents = wpData.select('core/block-editor').getBlockParents(clientId);
+				for (const parentId of parents) {
+					const parentBlock = wpData.select('core/block-editor').getBlock(parentId);
+					if (parentBlock?.name === 'nectar-blocks/tabs') {
+						const idx = (parentBlock.innerBlocks || []).findIndex(
+							(ib: { clientId: string }) => ib.clientId === clientId
+						);
+						if (idx >= 0) {
+							const parentEl = iframeDoc.querySelector(`[data-block="${parentId}"]`);
+							if (parentEl) {
+								const navLinks = parentEl.querySelectorAll('.nectar-blocks-tabs__nav__link');
+								const navLink = navLinks[idx] as HTMLElement | undefined;
+								if (navLink) {
+									const overlay = iframeDoc.createElement('span');
+									overlay.className = 'voxel-nb-tab-title-overlay';
+									overlay.setAttribute('data-tab-client-id', clientId);
+									overlay.textContent = resolvedTitle;
+									navLink.insertBefore(overlay, navLink.firstChild);
+									blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
+								}
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
+	}, [resolvedTitle, clientId]);
+
+	// ── Apply resolved dynamic CSS ID (child blocks) ──
+	useEffect(() => {
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const blockEl = found.el;
+
+		if (resolvedCssId) {
+			blockEl.setAttribute('data-voxel-dynamic-css-id', resolvedCssId);
+		} else {
+			blockEl.removeAttribute('data-voxel-dynamic-css-id');
+		}
+	}, [resolvedCssId, clientId]);
+
+	return null;
 }
 
 // ────────────────────────────────────────────
