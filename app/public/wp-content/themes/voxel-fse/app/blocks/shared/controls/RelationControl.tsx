@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { __ } from '@wordpress/i18n';
 import { Button } from '@wordpress/components';
-import { useSelect, useDispatch } from '@wordpress/data';
+import { useDispatch } from '@wordpress/data';
 
 import './RelationControl.css';
 
@@ -61,7 +61,7 @@ export default function RelationControl( {
 	description,
 }: RelationControlProps ): JSX.Element {
 	const [ appliedState, setAppliedState ] = useState< 'idle' | 'applied' >( 'idle' );
-	const [ highlightedId, setHighlightedId ] = useState< string | null >( null );
+	const [ _highlightedId, setHighlightedId ] = useState< string | null >( null );
 
 	// Get the select block action
 	const { selectBlock } = useDispatch( 'core/block-editor' );
@@ -222,5 +222,3 @@ export default function RelationControl( {
 	);
 }
 
-// Export types
-export type { RelationItem, RelationControlProps };

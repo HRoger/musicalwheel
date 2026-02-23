@@ -89,7 +89,8 @@ export default function LoopVisibilityControl({
     className = '',
 }: LoopVisibilityControlProps): JSX.Element {
     const hasVisibilityRules = visibilityRules && visibilityRules.length > 0;
-    const hasLoopConfigured = Boolean(loopSource);
+    const hasLoopConfigured = Boolean(loopSource) && Boolean(loopProperty);
+    const hasIncompleteLoop = Boolean(loopSource) && !loopProperty;
 
     return (
         <div className={`voxel-fse-loop-visibility-wrapper ${className}`.trim()}>
@@ -100,7 +101,11 @@ export default function LoopVisibilityControl({
 
                     {hasLoopConfigured ? (
                         <p className="voxel-fse-loop-source">
-                            @{loopSource}({loopProperty || ''})
+                            @{loopSource}({loopProperty})
+                        </p>
+                    ) : hasIncompleteLoop ? (
+                        <p className="voxel-fse-loop-source" style={{ color: '#cc1818' }}>
+                            @{loopSource}() — {__('incomplete, select a property', 'voxel-fse')}
                         </p>
                     ) : (
                         <p className="voxel-fse-control-note">
@@ -115,7 +120,7 @@ export default function LoopVisibilityControl({
                         >
                             {__('Edit loop', 'voxel-fse')}
                         </Button>
-                        {hasLoopConfigured && onClearLoop && (
+                        {(hasLoopConfigured || hasIncompleteLoop) && onClearLoop && (
                             <Button
                                 variant="secondary"
                                 onClick={onClearLoop}

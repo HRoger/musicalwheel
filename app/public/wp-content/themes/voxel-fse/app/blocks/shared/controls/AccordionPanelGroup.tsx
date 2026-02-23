@@ -75,11 +75,7 @@ export function AccordionPanelGroup({
 	stateAttribute = 'accordionOpenPanel',
 }: AccordionPanelGroupProps) {
 	// Get current client ID for storage key
-	const clientId = useSelect(
-		(select: (store: string) => { getSelectedBlockClientId: () => string | null }) =>
-			select('core/block-editor').getSelectedBlockClientId(),
-		[]
-	);
+	const clientId = (useSelect as any)((select: any) => select('core/block-editor').getSelectedBlockClientId(), []);
 
 	// Determine storage key
 	const persistenceKey = clientId ? `voxel_accordion_${clientId}_${stateAttribute}` : null;

@@ -101,17 +101,29 @@ export default function FilterAvailability({
 		blockId ? `voxel-popup-${blockId}` : '',
 		config.id ? `elementor-repeater-item-${config.id}` : ''
 	].filter(Boolean).join(' ');
-	const triggerRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLElement | null>(null);
 	const pickerInstanceRef = useRef<any>(null); // Store Pikaday instance for setStartRange/setEndRange
 	const [isOpen, setIsOpen] = useState(false);
 
-	const props = filterData.props || {};
+	// Refs to keep range state fresh for the mouseover handler (avoids stale closures)
+	// Evidence: Voxel's onCalendarMouseOver accesses this.value.start / this.value.end directly
+	const pickerDateRef = useRef<Date | null>(null);
+	const pickerEndDateRef = useRef<Date | null>(null);
+
+	const props = (filterData.props || {}) as any;
 	// Voxel uses 'inputMode' with values 'single-date' or 'date-range'
 	// Evidence: themes/voxel/app/post-types/filters/availability-filter.php:269
 	const inputMode = props.inputMode || 'date-range'; // Default to date-range for bookings
 	const isRangeMode = inputMode === 'date-range';
 	const l10n = props.l10n || {};
-	const placeholder = l10n.pickDate || filterData.label || 'Select dates';
+	// Evidence: availability-filter.php:19 — PHP default is 'Choose date'
+	const placeholder = l10n.pickDate || filterData.label || 'Choose date';
+
+	// Evidence: availability-filter.php:278 — presets array from get_chosen_presets()
+	// Each preset: { key: string, label: string }
+	// Presets render as separate quick-select buttons (range mode only)
+	// Evidence: availability-filter.php template lines 2-12
+	const presets: Array<{ key: string; label: string }> = props.presets || [];
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
@@ -137,7 +149,57 @@ export default function FilterAvailability({
 	const [pickerDate, setPickerDate] = useState<Date | null>(() => stringToDate(startDate));
 	const [pickerEndDate, setPickerEndDate] = useState<Date | null>(() => stringToDate(endDate));
 	const [activePicker, setActivePicker] = useState<'start' | 'end'>('start'); // For range mode
-	const [localSlots, setLocalSlots] = useState(currentSlots);
+	const [_localSlots, setLocalSlots] = useState(currentSlots);
+
+	// Keep refs in sync with state for the mouseover handler
+	pickerDateRef.current = pickerDate;
+	pickerEndDateRef.current = pickerEndDate;
+
+	// Hover range preview handler — EXACT Voxel behavior
+	// Evidence: search-form.js onCalendarMouseOver in availability-date-range-picker component
+	// When start date is selected but end is not, hovering over days shows a preview range:
+	// - Hovered day gets is-endrange class (accent color)
+	// - Days between start and hovered get is-inrange class (gray)
+	// - On mouseleave: all classes are cleaned up
+	const onCalendarMouseOver = useCallback((event: MouseEvent) => {
+		const start = pickerDateRef.current;
+		const end = pickerEndDateRef.current;
+		const picker = pickerInstanceRef.current;
+		if (!start || end || !picker) return;
+
+		const target = event.target as HTMLElement;
+		const td = target.tagName === 'TD' ? target : target.closest('td');
+		if (!td || td.classList.contains('is-empty') || td.classList.contains('is-disabled')) return;
+
+		const btn = td.querySelector('.pika-button') as HTMLElement | null;
+		if (!btn || (btn as HTMLButtonElement).disabled) return;
+
+		// Add is-endrange to hovered cell
+		td.classList.add('is-endrange');
+
+		// Calculate hovered date
+		const hoveredDate = new Date(
+			parseInt(btn.getAttribute('data-pika-year') || '0'),
+			parseInt(btn.getAttribute('data-pika-month') || '0'),
+			parseInt(btn.getAttribute('data-pika-day') || '0')
+		);
+
+		// Fill is-inrange for all days between start and hovered
+		const dayMs = 86400000; // 864e5
+		const fillDate = new Date(hoveredDate.getTime() - dayMs);
+		while (fillDate > start) {
+			const selector = `.pika-button[data-pika-year="${fillDate.getFullYear()}"][data-pika-month="${fillDate.getMonth()}"][data-pika-day="${fillDate.getDate()}"]`;
+			picker.el.querySelector(selector)?.parentElement?.classList.add('is-inrange');
+			fillDate.setTime(fillDate.getTime() - dayMs);
+		}
+
+		// On mouseleave: clean up all hover classes
+		td.addEventListener('mouseleave', () => {
+			const inRangeCells = picker.el.querySelectorAll('td.is-inrange:not(.is-disabled)');
+			inRangeCells.forEach((cell: Element) => cell.classList.remove('is-inrange'));
+			td.classList.remove('is-endrange');
+		}, { once: true });
+	}, []);
 
 	// Sync when popup opens
 	useEffect(() => {
@@ -164,9 +226,10 @@ export default function FilterAvailability({
 	const handleDateChange = useCallback((date: Date | null) => {
 		if (isRangeMode && date && pickerInstanceRef.current) {
 			if (activePicker === 'start') {
-				// Set start date, switch to end picker
-				// Evidence: lines 956-959
+				// Set start date, clear end date, switch to end picker
+				// Evidence: Voxel resets end date to "Check-out" when new start is selected
 				setPickerDate(date);
+				setPickerEndDate(null); // Clear end date so header shows "Check-out"
 				setActivePicker('end');
 				pickerInstanceRef.current.setStartRange(date);
 				pickerInstanceRef.current.setEndRange(null);
@@ -207,7 +270,8 @@ export default function FilterAvailability({
 		}
 	}, [isRangeMode, activePicker, pickerDate, onChange]);
 
-	const handleSlotsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleSlotsChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		setLocalSlots(Number(e.target.value) || 1);
 	}, []);
 
@@ -243,16 +307,54 @@ export default function FilterAvailability({
 		}
 	}, [onChange]);
 
-	// Range mode: both start and end must be set
+	// Evidence: voxel-search-form.beautified.js:1486-1487 — selectPreset sets filter value to preset key
+	// Preset keys (e.g., "all", "upcoming", "this_weekend") are resolved server-side
+	const selectPreset = useCallback((presetKey: string) => {
+		onChange(presetKey);
+	}, [onChange]);
+
+	// Evidence: voxel-search-form.beautified.js:1489-1490 — custom range check
+	// A custom range value contains ".." (e.g., "2026-01-01..2026-01-07")
+	// A preset value is a simple string key (e.g., "this_weekend")
+	const isUsingCustomRange = useCallback((): boolean => {
+		return typeof value === 'string' && value.includes('..');
+	}, [value]);
+
 	// Evidence: voxel-search-form.beautified.js lines 999-1003
-	const hasValue = isRangeMode
+	// Range mode: both start and end must be set for custom range
+	// Single mode: any date set
+	const hasCustomDateValue = isRangeMode
 		? !!(startDate && endDate)
 		: !!currentDate;
 
+	// The trigger's filled state depends on context:
+	// Evidence: template line 29 (single-date): filter.value !== null
+	// Evidence: template line 40 (range+presets): isUsingCustomRange()
+	// Evidence: template line 50 (range, no presets): isUsingCustomRange()
+	const triggerIsFilled = isRangeMode ? isUsingCustomRange() : !!value;
+
+	// Check if current value is a preset key (not null, not a date/range)
+	const isPresetActive = useCallback((presetKey: string): boolean => {
+		return value === presetKey;
+	}, [value]);
+
 	// Display value for the trigger
 	// Evidence: voxel-search-form.beautified.js lines 1015-1020
-	const displayValue = useMemo(() => {
-		if (!hasValue) return placeholder;
+	// Evidence: availability-filter.php template lines 37-44 — when presets exist,
+	// show custom range display only when isUsingCustomRange(), else show placeholder
+	const triggerDisplayValue = useMemo(() => {
+		if (isRangeMode && presets.length > 0) {
+			// When presets exist: show custom range if selected, else placeholder
+			// Evidence: template line 43 — isUsingCustomRange() ? displayValue.start+' - '+displayValue.end : filter.props.l10n.pickDate
+			if (isUsingCustomRange()) {
+				const startDisplay = formatDateForDisplay(startDate);
+				const endDisplay = formatDateForDisplay(endDate);
+				return `${startDisplay} - ${endDisplay}`;
+			}
+			return placeholder;
+		}
+
+		if (!hasCustomDateValue) return placeholder;
 
 		if (isRangeMode) {
 			// Range mode: "start — end" format (em dash —)
@@ -263,43 +365,63 @@ export default function FilterAvailability({
 			return currentSlots > 1 ? `${dateRange} (${currentSlots})` : dateRange;
 		} else {
 			// Single mode
+			// Evidence: template line 32 — filter.value ? displayValue.start : filter.props.l10n.pickDate
 			const dateDisplay = formatDateForDisplay(currentDate);
 			return currentSlots > 1 ? `${dateDisplay} (${currentSlots})` : dateDisplay;
 		}
-	}, [isRangeMode, hasValue, startDate, endDate, currentDate, currentSlots, placeholder]);
+	}, [isRangeMode, presets.length, isUsingCustomRange, hasCustomDateValue, startDate, endDate, currentDate, currentSlots, placeholder]);
 
 	// Voxel structure: ts-form-group > label + div.ts-filter.ts-popup-target
 	const { style, className } = getFilterWrapperStyles(config, 'ts-form-group');
 	const popupStyles = getPopupStyles(config);
 
 	return (
-		<div className={className} style={style}>
-			{!config.hideLabel && <label>{filterData.label}</label>}
+		<>
+			{/* Evidence: availability-filter.php template lines 2-12 — presets render as separate
+			    ts-form-group siblings BEFORE the main date picker trigger (range mode only) */}
+			{isRangeMode && presets.map((preset) => (
+				<div key={preset.key} className={className} style={style}>
+					{!config.hideLabel && <label>{filterData.label}</label>}
+					<div
+						className={`ts-filter ${isPresetActive(preset.key) ? 'ts-filled' : ''}`}
+						onClick={() => selectPreset(preset.key)}
+						role="button"
+						tabIndex={0}
+					>
+						<div className="ts-filter-text">
+							<span>{preset.label}</span>
+						</div>
+					</div>
+				</div>
+			))}
 
-			{ /* Trigger button */}
-			<div
-				ref={triggerRef}
-				className={`ts-filter ts-popup-target ${hasValue ? 'ts-filled' : ''}`}
-				onClick={openPopup}
-				onMouseDown={(e) => e.preventDefault()}
-				role="button"
-				tabIndex={0}
-			>
-				{ /* Icon from API (HTML markup) - matches Voxel v-html="filter.icon" pattern */}
-				{ /* If no icon configured, show NO icon (not a default fallback) */}
-				{filterIcon && (
-					<span dangerouslySetInnerHTML={{ __html: filterIcon }} />
-				)}
-				<div className="ts-filter-text">{displayValue}</div>
-				<div className="ts-down-icon"></div>
-			</div>
+			<div className={className} style={style}>
+				{!config.hideLabel && <label>{filterData.label}</label>}
+
+				{ /* Trigger button */}
+				<div
+					ref={triggerRef as React.Ref<HTMLDivElement>}
+					className={`ts-filter ts-popup-target ${triggerIsFilled ? 'ts-filled' : ''}`}
+					onClick={openPopup}
+					onMouseDown={(e) => e.preventDefault()}
+					role="button"
+					tabIndex={0}
+				>
+					{ /* Icon from API (HTML markup) - matches Voxel v-html="filter.icon" pattern */}
+					{ /* If no icon configured, show NO icon (not a default fallback) */}
+					{filterIcon && (
+						<span dangerouslySetInnerHTML={{ __html: filterIcon }} />
+					)}
+					<div className="ts-filter-text">{triggerDisplayValue}</div>
+					<div className="ts-down-icon"></div>
+				</div>
 
 			{ /* Portal-based popup using FieldPopup from create-post */}
 			{ /* Range mode shows Check-in/Check-out toggle in header */}
 			{ /* Evidence: themes/voxel/templates/widgets/search-form/availability-filter.php:77-100 */}
 			<FieldPopup
 				isOpen={isOpen}
-				target={triggerRef}
+				target={triggerRef as React.RefObject<HTMLElement>}
 				title=""
 				icon={filterIcon}
 				saveLabel={l10n.save || 'Save'}
@@ -350,7 +472,12 @@ export default function FilterAvailability({
 					{...(!isRangeMode && { onSelect: handleSave })}
 					pickerConfig={{
 						minDate: new Date(), // CRITICAL: Disable past dates
-						...(isRangeMode ? { theme: 'pika-range' } : {}), // Apply theme only if range mode
+						...(isRangeMode ? {
+							numberOfMonths: 2,
+							theme: 'pika-range',
+							// Evidence: Voxel search-form.js — onDraw re-attaches mouseover for hover range preview
+							onDraw: (picker: any) => picker.el.addEventListener('mouseover', onCalendarMouseOver),
+						} : {}),
 					}}
 					onPickerReady={(picker) => {
 						pickerInstanceRef.current = picker;
@@ -369,5 +496,6 @@ export default function FilterAvailability({
 				{ /* The slots field exists in booking forms (booking-field.php), not search filters */}
 			</FieldPopup>
 		</div>
+		</>
 	);
 }

@@ -22,7 +22,7 @@ interface ResponsiveControlProps {
 
 export default function ResponsiveControl({
 	label,
-	currentDevice,
+	currentDevice: _currentDevice,
 	onDeviceChange,
 	children,
 	help,

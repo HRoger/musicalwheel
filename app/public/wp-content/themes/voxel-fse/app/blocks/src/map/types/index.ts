@@ -27,6 +27,7 @@ export interface BoxShadowValue {
  * Typography value structure
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSizeUnit?: string;
@@ -199,6 +200,8 @@ export interface MapAttributes extends AdvancedStyleAttributes {
 	searchBtnRadius_tablet?: number;
 	searchBtnRadius_mobile?: number;
 	checkmarkIcon: IconValue;
+	searchIcon: IconValue;
+	geolocationIcon: IconValue;
 
 	// Style - Next/Prev Buttons
 	navBtnIconColor?: string;
@@ -277,6 +280,7 @@ export interface MapStyleConfig {
 	popup: PopupStyleConfig;
 	searchBtn: SearchBtnStyleConfig;
 	navBtn: NavBtnStyleConfig;
+	geolocationIcon: IconValue;
 }
 
 /**
@@ -357,6 +361,7 @@ export interface SearchBtnStyleConfig {
 	iconColorActive: ResponsiveValue<string>;
 	radius: ResponsiveValue<number>;
 	checkmarkIcon: IconValue;
+	searchIcon: IconValue;
 }
 
 /**
@@ -369,6 +374,9 @@ export interface NavBtnStyleConfig {
 	bgColor?: string;
 	bgColorHover?: string;
 	border?: BorderGroupValue;
+	borderType?: string;
+	borderWidth?: ResponsiveValue<number>;
+	borderColor?: string;
 	borderColorHover?: string;
 	radius: ResponsiveValue<number>;
 	shadow: BoxShadowValue;
@@ -415,6 +423,8 @@ export interface SearchSubmitEventDetail {
 	targetId: string;
 	postType: string;
 	filters: Record<string, unknown>;
+	mapEnableClusters?: boolean;
+	mapAdditionalMarkers?: number;
 }
 
 /**

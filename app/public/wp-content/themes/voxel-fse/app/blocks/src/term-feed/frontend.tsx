@@ -167,13 +167,29 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 		return fallback;
 	};
 
+	// Optional number: returns undefined when not set (for nav styling that should inherit Voxel defaults)
+	const optionalNumber = (val: unknown): number | undefined => {
+		if (typeof val === 'number') return val;
+		if (typeof val === 'string') {
+			const parsed = parseFloat(val);
+			return isNaN(parsed) ? undefined : parsed;
+		}
+		return undefined;
+	};
+
+	// Optional string: returns undefined when not set or empty
+	const optionalString = (val: unknown): string | undefined => {
+		if (typeof val === 'string' && val !== '') return val;
+		return undefined;
+	};
+
 	// Helper for icon normalization
 	const normalizeIcon = (val: unknown): IconValue => {
 		if (val && typeof val === 'object') {
 			const iconObj = val as Record<string, unknown>;
 			return {
-				library: normalizeString(iconObj.library, ''),
-				value: normalizeString(iconObj.value, ''),
+				library: normalizeString(iconObj['library'], '') as IconValue['library'],
+				value: normalizeString(iconObj['value'], ''),
 			};
 		}
 		return { ...DEFAULT_ICON };
@@ -184,10 +200,10 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 		if (val && typeof val === 'object') {
 			const bw = val as Record<string, unknown>;
 			return {
-				top: normalizeNumber(bw.top, 0),
-				right: normalizeNumber(bw.right, 0),
-				bottom: normalizeNumber(bw.bottom, 0),
-				left: normalizeNumber(bw.left, 0),
+				top: normalizeNumber(bw['top'], 0),
+				right: normalizeNumber(bw['right'], 0),
+				bottom: normalizeNumber(bw['bottom'], 0),
+				left: normalizeNumber(bw['left'], 0),
 			};
 		}
 		return { ...DEFAULT_BORDER_WIDTH };
@@ -200,7 +216,7 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 			return val.map((item) => {
 				if (typeof item === 'number') return item;
 				if (typeof item === 'object' && item !== null) {
-					const termId = (item as Record<string, unknown>).term_id;
+					const termId = (item as Record<string, unknown>)['term_id'];
 					return normalizeNumber(termId, 0);
 				}
 				return normalizeNumber(item, 0);
@@ -210,99 +226,99 @@ function normalizeConfig(raw: Record<string, unknown>): TermFeedVxConfig {
 	};
 
 	// Get responsive values object
-	const rawResponsive = (raw.responsive ?? {}) as Record<string, unknown>;
+	const rawResponsive = (raw['responsive'] ?? {}) as Record<string, unknown>;
 
 	return {
 		// Data source - support both camelCase and snake_case
 		source: normalizeString(
-			raw.source ?? raw.ts_source,
+			raw['source'] ?? raw['ts_source'],
 			'filters'
 		) as TermFeedVxConfig['source'],
 
-		manualTermIds: normalizeManualTermIds(raw.manualTermIds ?? raw.manual_term_ids ?? raw.ts_manual_terms),
+		manualTermIds: normalizeManualTermIds(raw['manualTermIds'] ?? raw['manual_term_ids'] ?? raw['ts_manual_terms']),
 
-		taxonomy: normalizeString(raw.taxonomy ?? raw.ts_choose_taxonomy, ''),
-		parentTermId: normalizeNumber(raw.parentTermId ?? raw.parent_term_id ?? raw.ts_parent_term_id, 0),
+		taxonomy: normalizeString(raw['taxonomy'] ?? raw['ts_choose_taxonomy'], ''),
+		parentTermId: normalizeNumber(raw['parentTermId'] ?? raw['parent_term_id'] ?? raw['ts_parent_term_id'], 0),
 		order: normalizeString(
-			raw.order ?? raw.ts_order,
+			raw['order'] ?? raw['ts_order'],
 			'default'
 		) as TermFeedVxConfig['order'],
-		perPage: normalizeNumber(raw.perPage ?? raw.per_page ?? raw.ts_per_page, 10),
-		hideEmpty: normalizeBool(raw.hideEmpty ?? raw.hide_empty ?? raw.ts_hide_empty, false),
-		hideEmptyPostType: normalizeString(raw.hideEmptyPostType ?? raw.hide_empty_post_type ?? raw.ts_hide_empty_pt, ':all'),
-		cardTemplate: normalizeString(raw.cardTemplate ?? raw.card_template ?? raw.ts_card_template, 'main'),
+		perPage: normalizeNumber(raw['perPage'] ?? raw['per_page'] ?? raw['ts_per_page'], 10),
+		hideEmpty: normalizeBool(raw['hideEmpty'] ?? raw['hide_empty'] ?? raw['ts_hide_empty'], false),
+		hideEmptyPostType: normalizeString(raw['hideEmptyPostType'] ?? raw['hide_empty_post_type'] ?? raw['ts_hide_empty_pt'], ':all'),
+		cardTemplate: normalizeString(raw['cardTemplate'] ?? raw['card_template'] ?? raw['ts_card_template'], 'main'),
 
 		// Layout
 		layoutMode: normalizeString(
-			raw.layoutMode ?? raw.layout_mode ?? raw.ts_wrap_feed,
+			raw['layoutMode'] ?? raw['layout_mode'] ?? raw['ts_wrap_feed'],
 			'ts-feed-grid-default'
 		) as TermFeedVxConfig['layoutMode'],
 
 		// Carousel settings
-		carouselItemWidth: normalizeNumber(raw.carouselItemWidth ?? raw.carousel_item_width ?? raw.ts_nowrap_item_width, 200),
-		carouselItemWidthUnit: normalizeString(raw.carouselItemWidthUnit ?? raw.carousel_item_width_unit, 'px'),
-		carouselAutoplay: normalizeBool(raw.carouselAutoplay ?? raw.carousel_autoplay, false),
-		carouselAutoplayInterval: normalizeNumber(raw.carouselAutoplayInterval ?? raw.carousel_autoplay_interval, 3000),
+		carouselItemWidth: normalizeNumber(raw['carouselItemWidth'] ?? raw['carousel_item_width'] ?? raw['ts_nowrap_item_width'], 200),
+		carouselItemWidthUnit: normalizeString(raw['carouselItemWidthUnit'] ?? raw['carousel_item_width_unit'], 'px'),
+		carouselAutoplay: normalizeBool(raw['carouselAutoplay'] ?? raw['carousel_autoplay'], false),
+		carouselAutoplayInterval: normalizeNumber(raw['carouselAutoplayInterval'] ?? raw['carousel_autoplay_interval'], 3000),
 
 		// Grid settings
-		gridColumns: normalizeNumber(raw.gridColumns ?? raw.grid_columns ?? raw.ts_feed_column_no, 3),
-		itemGap: normalizeNumber(raw.itemGap ?? raw.item_gap ?? raw.ts_feed_col_gap, 20),
-		scrollPadding: normalizeNumber(raw.scrollPadding ?? raw.scroll_padding ?? raw.ts_scroll_padding, 0),
-		itemPadding: normalizeNumber(raw.itemPadding ?? raw.item_padding ?? raw.ts_item_padding, 0),
-		replaceAccentColor: normalizeBool(raw.replaceAccentColor ?? raw.replace_accent_color ?? raw.mod_accent, false),
+		gridColumns: normalizeNumber(raw['gridColumns'] ?? raw['grid_columns'] ?? raw['ts_feed_column_no'], 3),
+		itemGap: normalizeNumber(raw['itemGap'] ?? raw['item_gap'] ?? raw['ts_feed_col_gap'], 20),
+		scrollPadding: normalizeNumber(raw['scrollPadding'] ?? raw['scroll_padding'] ?? raw['ts_scroll_padding'], 0),
+		itemPadding: normalizeNumber(raw['itemPadding'] ?? raw['item_padding'] ?? raw['ts_item_padding'], 0),
+		replaceAccentColor: normalizeBool(raw['replaceAccentColor'] ?? raw['replace_accent_color'] ?? raw['mod_accent'], false),
 
-		// Navigation styling - Normal state
-		navHorizontalPosition: normalizeNumber(raw.navHorizontalPosition ?? raw.nav_horizontal_position ?? raw.ts_fnav_btn_horizontal, 0),
-		navVerticalPosition: normalizeNumber(raw.navVerticalPosition ?? raw.nav_vertical_position ?? raw.ts_fnav_btn_vertical, 0),
-		navButtonIconColor: normalizeString(raw.navButtonIconColor ?? raw.nav_button_icon_color ?? raw.ts_fnav_btn_color, ''),
-		navButtonSize: normalizeNumber(raw.navButtonSize ?? raw.nav_button_size ?? raw.ts_fnav_btn_size, 40),
-		navButtonIconSize: normalizeNumber(raw.navButtonIconSize ?? raw.nav_button_icon_size ?? raw.ts_fnav_btn_icon_size, 24),
-		navButtonBackground: normalizeString(raw.navButtonBackground ?? raw.nav_button_background ?? raw.ts_fnav_btn_nbg, ''),
-		navBackdropBlur: normalizeNumber(raw.navBackdropBlur ?? raw.nav_backdrop_blur ?? raw.ts_fnav_blur, 0),
-		navBorderType: normalizeString(raw.navBorderType ?? raw.nav_border_type, 'none'),
-		navBorderWidth: normalizeBorderWidth(raw.navBorderWidth ?? raw.nav_border_width),
-		navBorderColor: normalizeString(raw.navBorderColor ?? raw.nav_border_color, ''),
-		navBorderRadius: normalizeNumber(raw.navBorderRadius ?? raw.nav_border_radius ?? raw.ts_fnav_btn_radius, 0),
+		// Navigation styling - Normal state (use undefined when not set, so CSS generator skips and Voxel defaults apply)
+		navHorizontalPosition: optionalNumber(raw['navHorizontalPosition'] ?? raw['nav_horizontal_position'] ?? raw['ts_fnav_btn_horizontal']),
+		navVerticalPosition: optionalNumber(raw['navVerticalPosition'] ?? raw['nav_vertical_position'] ?? raw['ts_fnav_btn_vertical']),
+		navButtonIconColor: optionalString(raw['navButtonIconColor'] ?? raw['nav_button_icon_color'] ?? raw['ts_fnav_btn_color']),
+		navButtonSize: optionalNumber(raw['navButtonSize'] ?? raw['nav_button_size'] ?? raw['ts_fnav_btn_size']),
+		navButtonIconSize: optionalNumber(raw['navButtonIconSize'] ?? raw['nav_button_icon_size'] ?? raw['ts_fnav_btn_icon_size']),
+		navButtonBackground: optionalString(raw['navButtonBackground'] ?? raw['nav_button_background'] ?? raw['ts_fnav_btn_nbg']),
+		navBackdropBlur: optionalNumber(raw['navBackdropBlur'] ?? raw['nav_backdrop_blur'] ?? raw['ts_fnav_blur']),
+		navBorderType: optionalString(raw['navBorderType'] ?? raw['nav_border_type']),
+		navBorderWidth: (raw['navBorderWidth'] ?? raw['nav_border_width']) ? normalizeBorderWidth(raw['navBorderWidth'] ?? raw['nav_border_width']) : undefined,
+		navBorderColor: optionalString(raw['navBorderColor'] ?? raw['nav_border_color']),
+		navBorderRadius: optionalNumber(raw['navBorderRadius'] ?? raw['nav_border_radius'] ?? raw['ts_fnav_btn_radius']),
 
 		// Navigation styling - Hover state
-		navButtonSizeHover: normalizeNumber(raw.navButtonSizeHover ?? raw.nav_button_size_hover ?? raw.ts_fnav_btn_size_h, 40),
-		navButtonIconSizeHover: normalizeNumber(raw.navButtonIconSizeHover ?? raw.nav_button_icon_size_hover ?? raw.ts_fnav_btn_icon_size_h, 24),
-		navButtonIconColorHover: normalizeString(raw.navButtonIconColorHover ?? raw.nav_button_icon_color_hover ?? raw.ts_fnav_btn_h, ''),
-		navButtonBackgroundHover: normalizeString(raw.navButtonBackgroundHover ?? raw.nav_button_background_hover ?? raw.ts_fnav_btn_nbg_h, ''),
-		navButtonBorderColorHover: normalizeString(raw.navButtonBorderColorHover ?? raw.nav_button_border_color_hover ?? raw.ts_fnav_border_c_h, ''),
+		navButtonSizeHover: optionalNumber(raw['navButtonSizeHover'] ?? raw['nav_button_size_hover'] ?? raw['ts_fnav_btn_size_h']),
+		navButtonIconSizeHover: optionalNumber(raw['navButtonIconSizeHover'] ?? raw['nav_button_icon_size_hover'] ?? raw['ts_fnav_btn_icon_size_h']),
+		navButtonIconColorHover: optionalString(raw['navButtonIconColorHover'] ?? raw['nav_button_icon_color_hover'] ?? raw['ts_fnav_btn_h']),
+		navButtonBackgroundHover: optionalString(raw['navButtonBackgroundHover'] ?? raw['nav_button_background_hover'] ?? raw['ts_fnav_btn_nbg_h']),
+		navButtonBorderColorHover: optionalString(raw['navButtonBorderColorHover'] ?? raw['nav_button_border_color_hover'] ?? raw['ts_fnav_border_c_h']),
 
 		// Icons
-		rightChevronIcon: normalizeIcon(raw.rightChevronIcon ?? raw.right_chevron_icon ?? raw.ts_chevron_right),
-		leftChevronIcon: normalizeIcon(raw.leftChevronIcon ?? raw.left_chevron_icon ?? raw.ts_chevron_left),
+		rightChevronIcon: normalizeIcon(raw['rightChevronIcon'] ?? raw['right_chevron_icon'] ?? raw['ts_chevron_right']),
+		leftChevronIcon: normalizeIcon(raw['leftChevronIcon'] ?? raw['left_chevron_icon'] ?? raw['ts_chevron_left']),
 
 		// Responsive values (pass through or normalize)
 		responsive: {
-			carouselItemWidth_tablet: rawResponsive.carouselItemWidth_tablet as number | undefined,
-			carouselItemWidth_mobile: rawResponsive.carouselItemWidth_mobile as number | undefined,
-			gridColumns_tablet: rawResponsive.gridColumns_tablet as number | undefined,
-			gridColumns_mobile: rawResponsive.gridColumns_mobile as number | undefined,
-			itemGap_tablet: rawResponsive.itemGap_tablet as number | undefined,
-			itemGap_mobile: rawResponsive.itemGap_mobile as number | undefined,
-			scrollPadding_tablet: rawResponsive.scrollPadding_tablet as number | undefined,
-			scrollPadding_mobile: rawResponsive.scrollPadding_mobile as number | undefined,
-			itemPadding_tablet: rawResponsive.itemPadding_tablet as number | undefined,
-			itemPadding_mobile: rawResponsive.itemPadding_mobile as number | undefined,
-			navHorizontalPosition_tablet: rawResponsive.navHorizontalPosition_tablet as number | undefined,
-			navHorizontalPosition_mobile: rawResponsive.navHorizontalPosition_mobile as number | undefined,
-			navVerticalPosition_tablet: rawResponsive.navVerticalPosition_tablet as number | undefined,
-			navVerticalPosition_mobile: rawResponsive.navVerticalPosition_mobile as number | undefined,
-			navButtonSize_tablet: rawResponsive.navButtonSize_tablet as number | undefined,
-			navButtonSize_mobile: rawResponsive.navButtonSize_mobile as number | undefined,
-			navButtonIconSize_tablet: rawResponsive.navButtonIconSize_tablet as number | undefined,
-			navButtonIconSize_mobile: rawResponsive.navButtonIconSize_mobile as number | undefined,
-			navBackdropBlur_tablet: rawResponsive.navBackdropBlur_tablet as number | undefined,
-			navBackdropBlur_mobile: rawResponsive.navBackdropBlur_mobile as number | undefined,
-			navBorderRadius_tablet: rawResponsive.navBorderRadius_tablet as number | undefined,
-			navBorderRadius_mobile: rawResponsive.navBorderRadius_mobile as number | undefined,
-			navButtonSizeHover_tablet: rawResponsive.navButtonSizeHover_tablet as number | undefined,
-			navButtonSizeHover_mobile: rawResponsive.navButtonSizeHover_mobile as number | undefined,
-			navButtonIconSizeHover_tablet: rawResponsive.navButtonIconSizeHover_tablet as number | undefined,
-			navButtonIconSizeHover_mobile: rawResponsive.navButtonIconSizeHover_mobile as number | undefined,
+			carouselItemWidth_tablet: rawResponsive['carouselItemWidth_tablet'] as number | undefined,
+			carouselItemWidth_mobile: rawResponsive['carouselItemWidth_mobile'] as number | undefined,
+			gridColumns_tablet: rawResponsive['gridColumns_tablet'] as number | undefined,
+			gridColumns_mobile: rawResponsive['gridColumns_mobile'] as number | undefined,
+			itemGap_tablet: rawResponsive['itemGap_tablet'] as number | undefined,
+			itemGap_mobile: rawResponsive['itemGap_mobile'] as number | undefined,
+			scrollPadding_tablet: rawResponsive['scrollPadding_tablet'] as number | undefined,
+			scrollPadding_mobile: rawResponsive['scrollPadding_mobile'] as number | undefined,
+			itemPadding_tablet: rawResponsive['itemPadding_tablet'] as number | undefined,
+			itemPadding_mobile: rawResponsive['itemPadding_mobile'] as number | undefined,
+			navHorizontalPosition_tablet: rawResponsive['navHorizontalPosition_tablet'] as number | undefined,
+			navHorizontalPosition_mobile: rawResponsive['navHorizontalPosition_mobile'] as number | undefined,
+			navVerticalPosition_tablet: rawResponsive['navVerticalPosition_tablet'] as number | undefined,
+			navVerticalPosition_mobile: rawResponsive['navVerticalPosition_mobile'] as number | undefined,
+			navButtonSize_tablet: rawResponsive['navButtonSize_tablet'] as number | undefined,
+			navButtonSize_mobile: rawResponsive['navButtonSize_mobile'] as number | undefined,
+			navButtonIconSize_tablet: rawResponsive['navButtonIconSize_tablet'] as number | undefined,
+			navButtonIconSize_mobile: rawResponsive['navButtonIconSize_mobile'] as number | undefined,
+			navBackdropBlur_tablet: rawResponsive['navBackdropBlur_tablet'] as number | undefined,
+			navBackdropBlur_mobile: rawResponsive['navBackdropBlur_mobile'] as number | undefined,
+			navBorderRadius_tablet: rawResponsive['navBorderRadius_tablet'] as number | undefined,
+			navBorderRadius_mobile: rawResponsive['navBorderRadius_mobile'] as number | undefined,
+			navButtonSizeHover_tablet: rawResponsive['navButtonSizeHover_tablet'] as number | undefined,
+			navButtonSizeHover_mobile: rawResponsive['navButtonSizeHover_mobile'] as number | undefined,
+			navButtonIconSizeHover_tablet: rawResponsive['navButtonIconSizeHover_tablet'] as number | undefined,
+			navButtonIconSizeHover_mobile: rawResponsive['navButtonIconSizeHover_mobile'] as number | undefined,
 		},
 	};
 }
@@ -401,9 +417,9 @@ function buildAttributes(config: TermFeedVxConfig): TermFeedAttributes {
 			config.responsive?.navButtonIconSizeHover_tablet,
 		navButtonIconSizeHover_mobile:
 			config.responsive?.navButtonIconSizeHover_mobile,
-		navButtonIconColorHover: config.navButtonIconColorHover,
-		navButtonBackgroundHover: config.navButtonBackgroundHover,
-		navButtonBorderColorHover: config.navButtonBorderColorHover,
+		navButtonIconColorHover: config.navButtonIconColorHover ?? '',
+		navButtonBackgroundHover: config.navButtonBackgroundHover ?? '',
+		navButtonBorderColorHover: config.navButtonBorderColorHover ?? '',
 		rightChevronIcon: config.rightChevronIcon,
 		leftChevronIcon: config.leftChevronIcon,
 	};
@@ -446,8 +462,18 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
 	}
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/term-feed/terms?${params.toString()}`
+			`${restUrl}voxel-fse/v1/term-feed/terms?${params.toString()}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {
@@ -467,9 +493,10 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
  */
 interface TermFeedWrapperProps {
 	config: TermFeedVxConfig;
+	cssSelector: string;
 }
 
-function TermFeedWrapper({ config }: TermFeedWrapperProps) {
+function TermFeedWrapper({ config, cssSelector }: TermFeedWrapperProps) {
 	const [terms, setTerms] = useState<TermData[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -517,6 +544,7 @@ function TermFeedWrapper({ config }: TermFeedWrapperProps) {
 			isLoading={isLoading}
 			error={error}
 			context="frontend"
+			cssSelector={cssSelector}
 		/>
 	);
 }
@@ -532,7 +560,7 @@ function initTermFeeds() {
 
 	termFeeds.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -543,13 +571,19 @@ function initTermFeeds() {
 			return;
 		}
 
+		// Extract unique CSS selector from container classes (e.g., '.voxel-fse-term-feed-{uuid}')
+		const uniqueClass = Array.from(container.classList).find(
+			(cls) => cls.startsWith('voxel-fse-term-feed-') && cls !== 'voxel-fse-term-feed'
+		);
+		const cssSelector = uniqueClass ? `.${uniqueClass}` : `.${container.classList[0] || 'voxel-fse-term-feed'}`;
+
 		// Mark as hydrated and clear placeholder
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 		container.innerHTML = '';
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<TermFeedWrapper config={config} />);
+		root.render(<TermFeedWrapper config={config} cssSelector={cssSelector} />);
 	});
 }
 

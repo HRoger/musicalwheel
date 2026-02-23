@@ -86,6 +86,7 @@ export interface AddonPriceSchema {
 	enabled?: boolean;
 	price?: number | null;
 	choices?: Record<string, { enabled: boolean; price: number | null }>;
+	[key: string]: unknown;
 }
 
 /**
@@ -1848,6 +1849,36 @@ export interface CustomPricingRule {
  * The 3 condition types supported by Custom Prices
  */
 export type PricingConditionType = 'day_of_week' | 'date' | 'date_range';
+
+/**
+ * FileObject - Uploaded or existing file
+ * Exported here for broad availability across create-post components
+ */
+export interface FileObject {
+	id: number | string;
+	name: string;
+	type: string;
+	size: number;
+	url: string;
+	thumbnail?: string;
+	isUploading?: boolean;
+	progress?: number;
+}
+
+/**
+ * ProductTypeField - A field within a product type definition
+ */
+export interface ProductTypeField {
+	key: string;
+	type: string;
+	label?: string;
+	[key: string]: unknown;
+}
+
+/**
+ * CreatePostField - Alias for VoxelField for use in conditions/hooks
+ */
+export type CreatePostField = VoxelField;
 
 /**
  * Pricing Condition

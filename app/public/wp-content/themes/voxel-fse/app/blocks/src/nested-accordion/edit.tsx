@@ -76,7 +76,7 @@ export default function Edit({
 	const [editingVisibilityItemIndex, setEditingVisibilityItemIndex] = useState<number | null>(null);
 
 	// Get inner blocks info
-	const { innerBlocks, hasInnerBlocks } = useSelect(
+	const { innerBlocks, hasInnerBlocks } = (useSelect as any)(
 		(select: any) => {
 			const { getBlocks } = select(BLOCK_EDITOR_STORE);
 			const blocks = getBlocks(clientId);
@@ -192,8 +192,8 @@ export default function Edit({
 		const visibilityRules: VisibilityModalRule[] = (item.visibility?.rules?.flat() || []).map((rule, idx) => ({
 			id: `rule_${idx}`,
 			filterKey: rule.type || '',
-			operator: (rule.operator as VisibilityModalRule['operator']) || 'equals',
-			value: typeof rule.value === 'string' ? rule.value : '',
+			operator: (rule['operator'] as VisibilityModalRule['operator']) || 'equals',
+			value: typeof rule['value'] === 'string' ? rule['value'] : '',
 		}));
 
 		return (
@@ -208,7 +208,7 @@ export default function Edit({
 				</div>
 				<TextControl
 					value={item.title}
-					onChange={(title) => onUpdate({ title })}
+					onChange={(title: any) => onUpdate({ title })}
 					placeholder={__('Item Title', 'voxel-fse')}
 					__nextHasNoMarginBottom
 				/>
@@ -223,7 +223,7 @@ export default function Edit({
 				</div>
 				<TextControl
 					value={item.cssId}
-					onChange={(cssId) => onUpdate({ cssId })}
+					onChange={(cssId: any) => onUpdate({ cssId })}
 					placeholder={__('custom-id', 'voxel-fse')}
 					help={__('Add your custom id WITHOUT the # prefix', 'voxel-fse')}
 					__nextHasNoMarginBottom
@@ -315,8 +315,8 @@ export default function Edit({
 				...newItems[editingLoopItemIndex],
 				loop: {
 					source: loopSource,
-					limit: config.loopLimit ? parseInt(config.loopLimit, 10) : undefined,
-					offset: config.loopOffset ? parseInt(config.loopOffset, 10) : undefined,
+					limit: config.loopLimit ? parseInt(String(config.loopLimit), 10) : undefined,
+					offset: config.loopOffset ? parseInt(String(config.loopOffset), 10) : undefined,
 				},
 			};
 			setAttributes({ items: newItems });
@@ -369,8 +369,8 @@ export default function Edit({
 		? attributes.items[editingVisibilityItemIndex].visibility!.rules.flat().map((rule, idx) => ({
 			id: `rule_${idx}`,
 			filterKey: rule.type || '',
-			operator: (rule.operator as VisibilityModalRule['operator']) || 'equals',
-			value: typeof rule.value === 'string' ? rule.value : '',
+			operator: (rule['operator'] as VisibilityModalRule['operator']) || 'equals',
+			value: typeof rule['value'] === 'string' ? rule['value'] : '',
 		}))
 		: [];
 
@@ -474,7 +474,7 @@ export default function Edit({
 											<RichText
 												tagName="span"
 												value={item.title}
-												onChange={(title) => updateItem(index, { title })}
+												onChange={(title: any) => updateItem(index, { title })}
 												placeholder={__('Item Title', 'voxel-fse')}
 												allowedFormats={[]}
 											/>

@@ -13,6 +13,7 @@
 
 import { TextControl } from '@wordpress/components';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { __ } from '@wordpress/i18n';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
@@ -86,14 +87,12 @@ export default function DynamicTagTextControl({
 
 	return (
 		<div className="voxel-dynamic-tag-text-control elementor-control elementor-control-type-text" style={{ marginBottom: '16px' }}>
-			{/* Label with Voxel icon button */}
+			{/* Label with Voxel icon button on right — hidden when tags are active */}
 			<div className="elementor-control-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-					<EnableTagsButton onClick={handleEnableTags} />
-					<label className="elementor-control-title" style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize', color: 'rgb(30, 30, 30)', margin: 0 }}>
-						{label}
-					</label>
-				</div>
+				<label className="elementor-control-title" style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize', color: 'rgb(30, 30, 30)', margin: 0 }}>
+					{label}
+				</label>
+				{!isTagsActive && <EnableTagsButton onClick={handleEnableTags} />}
 			</div>
 
 			{/* Text input or tag preview panel */}
@@ -177,17 +176,19 @@ export default function DynamicTagTextControl({
 				)}
 			</div>
 
-			{/* Dynamic Tag Builder Modal */}
-			{isModalOpen && (
-				<DynamicTagBuilder
-					value={getTagContent()}
-					onChange={handleModalSave}
-					label={label}
-					context={context}
-					onClose={() => setIsModalOpen(false)}
-				autoOpen={true}
-			/>
-			)}
+			{/* Dynamic Tag Builder Modal — portaled to body to escape sidebar stacking context */}
+			{isModalOpen &&
+				createPortal(
+					<DynamicTagBuilder
+						value={getTagContent()}
+						onChange={handleModalSave}
+						label={label}
+						context={context}
+						onClose={() => setIsModalOpen(false)}
+						autoOpen={true}
+					/>,
+					document.body,
+				)}
 		</div>
 	);
 }

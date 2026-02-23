@@ -47,40 +47,32 @@ const defaultIcons: Record<string, string> = {
  * @returns React element for the icon
  */
 export function renderIcon(icon?: IconConfig, fallbackKey?: string): ReactNode {
-	// If no icon provided, use fallback
-	if (!icon || !icon.value) {
-		if (fallbackKey && defaultIcons[fallbackKey]) {
-			return <i className={defaultIcons[fallbackKey]}></i>;
+	// If icon has a value, render it
+	if (icon && icon.value) {
+		// Handle custom SVG first (specific check)
+		if (icon.library === 'svg') {
+			if (icon.value.startsWith('<svg') || icon.value.startsWith('<?xml')) {
+				return (
+					<span
+						className="ts-icon-svg"
+						dangerouslySetInnerHTML={{ __html: icon.value }}
+					/>
+				);
+			}
+			// URL to SVG file - use img tag
+			return <img src={icon.value} alt="" className="ts-icon-svg" />;
 		}
-		return null;
-	}
 
-	// Handle Line Awesome icons (most common)
-	if (icon.library === 'icon' || !icon.library || icon.library === '') {
+		// Everything else is a font icon class (icon, line-awesome, font-awesome, empty, etc.)
 		return <i className={icon.value}></i>;
 	}
 
-	// Handle custom SVG
-	if (icon.library === 'svg' && icon.value) {
-		// SVG value could be a URL or inline SVG
-		// For inline SVG, we use dangerouslySetInnerHTML (same as Voxel does)
-		if (icon.value.startsWith('<svg') || icon.value.startsWith('<?xml')) {
-			return (
-				<span
-					className="ts-icon-svg"
-					dangerouslySetInnerHTML={{ __html: icon.value }}
-				/>
-			);
-		}
-		// URL to SVG file - use img tag
-		return <img src={icon.value} alt="" className="ts-icon-svg" />;
-	}
-
-	// Fallback for any other case
+	// If no icon or no value, use fallback
 	if (fallbackKey && defaultIcons[fallbackKey]) {
 		return <i className={defaultIcons[fallbackKey]}></i>;
 	}
 
+	// Final fallback: return null
 	return null;
 }
 

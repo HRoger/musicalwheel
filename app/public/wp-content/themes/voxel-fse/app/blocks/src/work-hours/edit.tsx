@@ -40,7 +40,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
   }, []);
 
   // Use shared utility for AdvancedTab + VoxelTab wiring
-  const advancedProps = getAdvancedVoxelTabProps(attributes, {
+  const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
     blockId,
     baseClass: `ts-work-hours ${attributes.collapse}`,
     selectorPrefix: 'voxel-fse-work-hours',

@@ -46,12 +46,11 @@ export interface PostSelectControlProps {
 	context?: string;
 }
 
-// REST API endpoints for each post type
+// REST API endpoints for each post type (fallback for single-post lookups)
 const POST_TYPE_ENDPOINTS: Record<string, string> = {
 	page: '/wp/v2/pages',
 	post: '/wp/v2/posts',
 	wp_block: '/wp/v2/blocks',
-	elementor_library: '/wp/v2/elementor_library',
 	wp_template: '/wp/v2/templates',
 	wp_template_part: '/wp/v2/template-parts',
 };
@@ -121,122 +120,72 @@ export default function PostSelectControl({
 		setIsModalOpen(false);
 	};
 
-	// Fetch single post by ID
+	// Fetch single post by ID using the custom WP_Query search endpoint
 	const fetchSinglePost = useCallback(async (postId: string): Promise<PostSelectOption | null> => {
 		const numericId = parseInt(postId, 10);
 		if (isNaN(numericId)) return null;
 
-		// Try each post type endpoint until we find the post
-		for (const [type, endpoint] of Object.entries(POST_TYPE_ENDPOINTS)) {
-			if (!postTypes.includes(type) && !['page', 'post', 'wp_block'].includes(type)) {
-				continue;
+		try {
+			// Use our custom endpoint which searches by ID via WP_Query
+			const results = (await apiFetch({
+				path: `/voxel-fse/v1/post-search?search=${encodeURIComponent('#' + numericId)}&post_types=${encodeURIComponent(postTypes.join(','))}&per_page=1`,
+			})) as PostSelectOption[];
+
+			if (results.length > 0) {
+				return results[0];
 			}
-			try {
-				const post = (await apiFetch({
-					path: `${endpoint}/${numericId}`,
-				})) as {
-					id: number;
-					title: { rendered: string };
-					type: string;
-					template?: string;
-				};
-
-				if (post && post.id) {
-					// Build display title matching Voxel format
-					let displayTitle = `#${post.id}`;
-					const postType = post.type || type;
-					const template = post.template || '';
-
-					if (post.title?.rendered) {
-						displayTitle = `#${post.id}: ${post.title.rendered}`;
-					} else if (postType) {
-						displayTitle = `#${post.id}: post type: ${postType}`;
-						if (template) {
-							displayTitle += ` | template: ${template}`;
-						}
-					}
-
-					return {
-						id: String(post.id),
-						title: displayTitle,
-						type: postType,
-					};
+		} catch {
+			// Fallback: try standard REST endpoints
+			for (const [type, endpoint] of Object.entries(POST_TYPE_ENDPOINTS)) {
+				if (!postTypes.includes(type) && !['page', 'post', 'wp_block'].includes(type)) {
+					continue;
 				}
-			} catch {
-				// Continue to next endpoint
+				try {
+					const post = (await apiFetch({
+						path: `${endpoint}/${numericId}`,
+					})) as {
+						id: number;
+						title: { rendered: string };
+						type: string;
+					};
+
+					if (post && post.id) {
+						return {
+							id: String(post.id),
+							title: post.title?.rendered ? `#${post.id}: ${post.title.rendered}` : `#${post.id}`,
+							type: post.type || type,
+						};
+					}
+				} catch {
+					// Continue to next endpoint
+				}
 			}
 		}
 		return null;
 	}, [postTypes]);
 
-	// Search posts across all post types
+	// Search posts across all post types using custom WP_Query endpoint
+	// Matches Voxel's voxel-post-select behavior: searches by title AND by ID
 	const searchPosts = useCallback(async (search: string): Promise<PostSelectOption[]> => {
-		if (search.length < 2) return [];
+		if (search.length < 1) return [];
 
-		const allResults: PostSelectOption[] = [];
+		try {
+			const results = (await apiFetch({
+				path: `/voxel-fse/v1/post-search?search=${encodeURIComponent(search)}&post_types=${encodeURIComponent(postTypes.join(','))}&per_page=20`,
+			})) as PostSelectOption[];
 
-		// Search in parallel across all post types
-		const searchPromises = postTypes.map(async (type) => {
-			const endpoint = POST_TYPE_ENDPOINTS[type];
-			if (!endpoint) return [];
-
-			try {
-				const posts = (await apiFetch({
-					path: `${endpoint}?search=${encodeURIComponent(search)}&per_page=10&status=publish,draft,private`,
-				})) as Array<{
-					id: number;
-					title: { rendered: string };
-					type: string;
-					template?: string;
-					meta?: Record<string, any>;
-				}>;
-
-				return posts.map((post: {
-					id: number;
-					title: { rendered: string };
-					type: string;
-					template?: string;
-					meta?: Record<string, any>;
-				}) => {
-					// Build display title matching Voxel format
-					let displayTitle = `#${post.id}`;
-					const postType = post.type || type;
-					const template = post.template || post.meta?.['template'] || '';
-
-					if (post.title?.rendered) {
-						displayTitle = `#${post.id}: ${post.title.rendered}`;
-					}
-
-					// Add post type and template info if available
-					if (postType && !displayTitle.includes('post type')) {
-						const typeLabel = postType.replace('_', ' ');
-						if (template) {
-							displayTitle = `#${post.id}: post type: ${typeLabel} | template: ${template}`;
-						}
-					}
-
-					return {
-						id: String(post.id),
-						title: displayTitle,
-						type: postType,
-					};
-				});
-			} catch {
-				return [];
-			}
-		});
-
-		const resultsArrays = await Promise.all(searchPromises);
-		resultsArrays.forEach((arr) => allResults.push(...arr));
-
-		// Sort by ID descending (newest first)
-		return allResults.sort((a, b) => parseInt(b.id, 10) - parseInt(a.id, 10));
+			return results;
+		} catch {
+			return [];
+		}
 	}, [postTypes]);
 
 	// Debounced search
 	const debouncedSearch = useCallback(
 		debounce(async (term: string) => {
-			if (term.length < 2) {
+			// Allow single character for ID searches (#1, 1), require 2+ for text search
+			const isIdSearch = /^#?\d+$/.test(term.trim());
+			if (term.length < (isIdSearch ? 1 : 2)) {
 				setResults([]);
 				setShowDropdown(false);
 				return;
@@ -520,21 +469,6 @@ export default function PostSelectControl({
 								backgroundColor: '#fff',
 							}}
 						/>
-
-						{/* Dropdown Arrow */}
-						<span
-							style={{
-								position: 'absolute',
-								right: '12px',
-								top: '50%',
-								transform: 'translateY(-50%)',
-								pointerEvents: 'none',
-							}}
-						>
-							<svg width="12" height="12" viewBox="0 0 12 12" fill="#757575">
-								<path d="M2 4l4 4 4-4" stroke="#757575" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-							</svg>
-						</span>
 					</div>
 
 					{/* Search Results Dropdown */}
@@ -590,7 +524,7 @@ export default function PostSelectControl({
 										</li>
 									))}
 								</ul>
-							) : searchTerm.length >= 2 ? (
+							) : searchTerm.length >= 1 ? (
 								<div
 									style={{
 										padding: '16px',

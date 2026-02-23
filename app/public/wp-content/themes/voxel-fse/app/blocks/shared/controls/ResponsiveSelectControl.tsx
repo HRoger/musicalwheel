@@ -16,11 +16,10 @@
  */
 
 import { SelectControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { useState, useEffect } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveSelectControlProps {
     /** Control label */
@@ -49,7 +48,7 @@ interface ResponsiveSelectControlProps {
  * Hook to sync with WordPress's responsive preview state
  */
 function useWordPressDevice(): DeviceType {
-    return useSelect((select) => getCurrentDeviceType(select), []);
+    return useDeviceType();
 }
 
 export default function ResponsiveSelectControl({

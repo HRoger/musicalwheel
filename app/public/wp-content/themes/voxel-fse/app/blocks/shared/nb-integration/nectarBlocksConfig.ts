@@ -1,0 +1,248 @@
+/**
+ * NectarBlocks Integration Configuration
+ *
+ * Config-driven registry mapping NB block names to their targetable fields.
+ * Each field defines how to locate the control in the DOM and what type of
+ * dynamic tag value it accepts.
+ *
+ * Field detection strategy: match `.nectar-control-row__label` elements
+ * by their text content (labelText). This is the most reliable approach
+ * since NB uses no data-attributes on controls.
+ *
+ * @package VoxelFSE
+ */
+
+export interface NBFieldTarget {
+	/** Unique field key stored in voxelDynamicTags attribute object */
+	fieldKey: string;
+	/** Human-readable label for DynamicTagBuilder modal */
+	label: string;
+	/** Exact label text content in NB's inspector DOM (for matching) */
+	labelText: string;
+	/** Which NB inspector tab this field lives in: 'layout' | 'style' | 'motion' */
+	tab: 'layout' | 'style' | 'motion';
+	/** Type of field — determines how resolved value replaces content in HTML */
+	type: 'text' | 'url' | 'image' | 'number' | 'css-class' | 'textarea';
+	/**
+	 * Optional: scope match to a child row nested under a parent control with this label.
+	 */
+	parentLabelText?: string;
+	/**
+	 * Placement of the EnableTag button:
+	 * - 'inline' (default): appended inside the label element
+	 * - 'corner': absolutely positioned in the top-right corner of the .nectar-control-row__component
+	 */
+	placement?: 'inline' | 'corner';
+}
+
+export interface NBBlockConfig {
+	/** NB block name e.g. 'nectar-blocks/image' */
+	blockName: string;
+	/** Targetable fields within this block's inspector */
+	fields: NBFieldTarget[];
+}
+
+/**
+ * Registry of NB blocks and their injectable fields.
+ * Populated from Phase 0 browser discovery (2026-02-20).
+ *
+ * DOM structure (from discovery):
+ *   .nectar-control-row
+ *     .nectar-control-row__label
+ *       .nectar-control-row__reset-wrap
+ *         "Label Text" (or .nectar__dynamic-data-selector__inline wrapper)
+ *     .nectar-control-row__component
+ *       input/textarea/combobox
+ */
+export const nectarBlocksRegistry: NBBlockConfig[] = [
+	{
+		blockName: 'nectar-blocks/image',
+		fields: [
+			{
+				fieldKey: 'imageSource',
+				label: 'Image Source',
+				labelText: 'Image',
+				tab: 'layout',
+				type: 'image',
+				placement: 'corner',
+			},
+			{
+				fieldKey: 'title',
+				label: 'Title',
+				labelText: 'Title',
+				tab: 'layout',
+				type: 'text',
+			},
+			{
+				fieldKey: 'altText',
+				label: 'Alt Text',
+				labelText: 'Alt Text',
+				tab: 'layout',
+				type: 'text',
+			},
+			{
+				fieldKey: 'linkUrl',
+				label: 'Link URL',
+				labelText: 'URL',
+				tab: 'layout',
+				type: 'url',
+			},
+			{
+				fieldKey: 'zIndex',
+				label: 'Z-Index',
+				labelText: 'Value',
+				tab: 'style',
+				type: 'number',
+				parentLabelText: 'Z-Index',
+			},
+			],
+	},
+	// --- Parent blocks (22 additional — VoxelTab as 4th tab) ---
+	// All parent blocks get z-index field (Style tab, under Z-Index control).
+	// labelText: 'Value' — NB renders the z-index input with label "Value" nested
+	// inside a parent row labelled "Z-Index". parentLabelText scopes the match.
+	{ blockName: 'nectar-blocks/accordion', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/button', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/carousel', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/divider', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/flex-box', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/icon', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/icon-list', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/image-gallery', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/image-grid', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/milestone', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/post-content', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/post-grid', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/row', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/scrolling-marquee', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	// star-rating: z-index + rating value (labelText TBD — verify via browser)
+	{ blockName: 'nectar-blocks/star-rating', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+		{ fieldKey: 'rating', label: 'Rating', labelText: 'Rating', tab: 'layout', type: 'number', placement: 'corner' },
+	] },
+	{ blockName: 'nectar-blocks/tabs', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/taxonomy-grid', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/taxonomy-terms', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/testimonial', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/text', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/video-lightbox', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/video-player', fields: [
+		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+];
+
+/** Set of all target block names for quick lookup (parent blocks only — get VoxelTab) */
+export const NB_TARGET_BLOCK_NAMES = new Set(
+	nectarBlocksRegistry.map((config) => config.blockName)
+);
+
+/** Get config for a specific block name, or undefined if not targeted */
+export function getNBBlockConfig(blockName: string): NBBlockConfig | undefined {
+	return nectarBlocksRegistry.find((config) => config.blockName === blockName);
+}
+
+// ============================================================================
+// CHILD BLOCK CONFIG (RowSettings PanelBody, NOT VoxelTab)
+// ============================================================================
+
+/** NB child/inner blocks that get RowSettings PanelBody (loop + visibility) */
+export const NB_ROW_SETTINGS_BLOCKS = [
+	'nectar-blocks/tab-section',
+	'nectar-blocks/accordion-section',
+	'nectar-blocks/column',
+	'nectar-blocks/icon-list-item',
+	'nectar-blocks/carousel-item',
+] as const;
+
+/** Set of child block names for quick lookup */
+export const NB_ROW_SETTINGS_BLOCK_NAMES = new Set<string>(NB_ROW_SETTINGS_BLOCKS);
+
+/** Dynamic tag fields per child block type (Title, CSS ID) */
+export const NB_DYNAMIC_TAG_FIELDS: Record<string, { attr: string; label: string }[]> = {
+	'nectar-blocks/tab-section': [
+		{ attr: 'voxelDynamicTitle', label: 'Title' },
+		{ attr: 'voxelDynamicCssId', label: 'CSS ID' },
+	],
+	'nectar-blocks/accordion-section': [
+		{ attr: 'voxelDynamicTitle', label: 'Title' },
+		{ attr: 'voxelDynamicCssId', label: 'CSS ID' },
+	],
+	'nectar-blocks/column': [
+		{ attr: 'voxelDynamicCssId', label: 'CSS ID' },
+	],
+	'nectar-blocks/icon-list-item': [
+		{ attr: 'voxelDynamicTitle', label: 'Title' },
+	],
+	'nectar-blocks/carousel-item': [
+		{ attr: 'voxelDynamicCssId', label: 'CSS ID' },
+	],
+};
+
+// ============================================================================
+// TOOLBAR TAG BLOCKS (EnableTag in block toolbar for text content)
+// ============================================================================
+
+/** NB blocks that get the EnableTag toolbar button for dynamic text content */
+export const NB_TOOLBAR_TAG_BLOCKS = [
+	'nectar-blocks/text',
+	'nectar-blocks/button',
+] as const;
+
+/** Set of toolbar block names for quick lookup */
+export const NB_TOOLBAR_TAG_BLOCK_NAMES = new Set<string>(NB_TOOLBAR_TAG_BLOCKS);
+
+// ============================================================================
+// ADVANCED PANEL CONTROLS (parent blocks that need extra controls in WP Advanced)
+// ============================================================================
+
+/**
+ * Parent blocks that get additional controls injected into the WP Advanced
+ * accordion panel. Each entry maps a block name to its advanced panel fields.
+ *
+ * - 'label': "Edit label as HTML" for button block
+ */
+export const NB_ADVANCED_PANEL_BLOCKS: Record<string, { attr: string; label: string }[]> = {
+	'nectar-blocks/button': [
+		{ attr: 'voxelDynamicContent', label: 'Edit Label as HTML' },
+	],
+};

@@ -34,7 +34,10 @@ export { default as FilterTerms } from './FilterTerms';
 export { default as FilterLocation } from './FilterLocation';
 export { default as FilterAvailability } from './FilterAvailability';
 export { default as FilterDate } from './FilterDate';
-export { default as FilterRecurringDate } from './FilterRecurringDate';
+// Voxel uses the same component for both filter-date and filter-recurring-date
+// Evidence: voxel-search-form.beautified.js:3091-3092
+// Both use Date_Filter_Helpers trait with identical frontend_props()
+export { default as FilterRecurringDate } from './FilterDate';
 export { default as FilterOpenNow } from './FilterOpenNow';
 export { default as FilterOrderBy } from './FilterOrderBy';
 export { default as FilterPostStatus } from './FilterPostStatus';

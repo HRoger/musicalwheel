@@ -38,6 +38,11 @@ class FSE_Term_Feed_Controller extends FSE_Base_Controller {
 	 * Enqueue Voxel's CSS when the block is present
 	 */
 	protected function enqueue_block_styles(): void {
+		// Only enqueue on frontend — in editor, voxel-editor-combined.css handles all Voxel CSS
+		if (is_admin()) {
+			return;
+		}
+
 		$version = wp_get_theme()->parent()->get( 'Version' );
 
 		// Enqueue Voxel's commons CSS (contains .flexify, .simplify-ul, .ts-icon-btn, .min-scroll)

@@ -41,20 +41,20 @@ export function generateImageStyles(
 
     // ============================================
     // DIMENSIONS (Image)
+    // ResponsiveRangeControl stores plain numbers: width, width_tablet, width_mobile
+    // Unit is stored separately: widthUnit, heightUnit, maxWidthUnit
     // ============================================
     // Width
-    // Note: ResponsiveRangeControl stores number in 'width', 'width_tablet', etc.
-    // Unit is stored in 'widthUnit' (shared)
-    if (attributes.width !== undefined) {
-        const unit = (attributes as any).widthUnit || 'px';
+    if (typeof attributes.width === 'number') {
+        const unit = attributes.widthUnit || 'px';
         cssRules.push(`${selector} img { width: ${attributes.width}${unit}; }`);
     }
-    if ((attributes as any).width_tablet !== undefined) {
-        const unit = (attributes as any).widthUnit || 'px';
+    if (typeof attributes.width_tablet === 'number') {
+        const unit = attributes.widthUnit || 'px';
         tabletRules.push(`${selector} img { width: ${attributes.width_tablet}${unit}; }`);
     }
-    if ((attributes as any).width_mobile !== undefined) {
-        const unit = (attributes as any).widthUnit || 'px';
+    if (typeof attributes.width_mobile === 'number') {
+        const unit = attributes.widthUnit || 'px';
         mobileRules.push(`${selector} img { width: ${attributes.width_mobile}${unit}; }`);
     }
 
@@ -63,43 +63,41 @@ export function generateImageStyles(
         if (attributes.customWidth) {
             cssRules.push(`${selector} img { width: ${attributes.customWidth}px; }`);
         } else {
-            // If only height is set, width should be auto
             cssRules.push(`${selector} img { width: auto; }`);
         }
 
         if (attributes.customHeight) {
             cssRules.push(`${selector} img { height: ${attributes.customHeight}px; }`);
         } else {
-            // If only width is set, height should be auto
             cssRules.push(`${selector} img { height: auto; }`);
         }
     }
 
     // Max Width
-    if (attributes.maxWidth !== undefined) {
-        const unit = (attributes as any).maxWidthUnit || 'px';
+    if (typeof attributes.maxWidth === 'number') {
+        const unit = attributes.maxWidthUnit || 'px';
         cssRules.push(`${selector} img { max-width: ${attributes.maxWidth}${unit}; }`);
     }
-    if ((attributes as any).maxWidth_tablet !== undefined) {
-        const unit = (attributes as any).maxWidthUnit || 'px';
+    if (typeof attributes.maxWidth_tablet === 'number') {
+        const unit = attributes.maxWidthUnit || 'px';
         tabletRules.push(`${selector} img { max-width: ${attributes.maxWidth_tablet}${unit}; }`);
     }
-    if ((attributes as any).maxWidth_mobile !== undefined) {
-        const unit = (attributes as any).maxWidthUnit || 'px';
+    if (typeof attributes.maxWidth_mobile === 'number') {
+        const unit = attributes.maxWidthUnit || 'px';
         mobileRules.push(`${selector} img { max-width: ${attributes.maxWidth_mobile}${unit}; }`);
     }
 
     // Height
-    if (attributes.height !== undefined) {
-        const unit = (attributes as any).heightUnit || 'px';
+    if (typeof attributes.height === 'number') {
+        const unit = attributes.heightUnit || 'px';
         cssRules.push(`${selector} img { height: ${attributes.height}${unit}; }`);
     }
-    if ((attributes as any).height_tablet !== undefined) {
-        const unit = (attributes as any).heightUnit || 'px';
+    if (typeof attributes.height_tablet === 'number') {
+        const unit = attributes.heightUnit || 'px';
         tabletRules.push(`${selector} img { height: ${attributes.height_tablet}${unit}; }`);
     }
-    if ((attributes as any).height_mobile !== undefined) {
-        const unit = (attributes as any).heightUnit || 'px';
+    if (typeof attributes.height_mobile === 'number') {
+        const unit = attributes.heightUnit || 'px';
         mobileRules.push(`${selector} img { height: ${attributes.height_mobile}${unit}; }`);
     }
 
@@ -143,7 +141,7 @@ export function generateImageStyles(
     // BORDER & RADIUS
     // Note: StyleTab saves to 'imageBorder' object
     // ============================================
-    const border = (attributes as any).imageBorder;
+    const border = attributes.imageBorder;
     if (border) {
         // Helper to format dimension values
         const formatDimension = (val: any) => {
@@ -208,7 +206,7 @@ export function generateImageStyles(
     // ============================================
     // BOX SHADOW
     // ============================================
-    const boxShadow = (attributes as any).imageBoxShadow;
+    const boxShadow = attributes.imageBoxShadow;
     if (boxShadow && (boxShadow.horizontal || boxShadow.vertical || boxShadow.blur || boxShadow.spread)) {
         const position = boxShadow.position === 'inset' ? 'inset ' : '';
         const shadow = `${position}${boxShadow.horizontal || 0}px ${boxShadow.vertical || 0}px ${boxShadow.blur || 0}px ${boxShadow.spread || 0}px ${boxShadow.color || 'rgba(0,0,0,0.5)'}`;
@@ -220,12 +218,12 @@ export function generateImageStyles(
     // ============================================
 
     // Opacity
-    if ((attributes as any).imageOpacity !== undefined) {
-        cssRules.push(`${selector} img { opacity: ${(attributes as any).imageOpacity}; }`);
+    if (attributes.imageOpacity !== undefined && attributes.imageOpacity !== 1) {
+        cssRules.push(`${selector} img { opacity: ${attributes.imageOpacity}; }`);
     }
 
     // CSS Filters
-    const cssFilters = (attributes as any).imageCssFilters;
+    const cssFilters = attributes.imageCssFilters;
     if (cssFilters && Object.keys(cssFilters).length > 0) {
         const filterParts: string[] = [];
         if (cssFilters.blur !== undefined) filterParts.push(`blur(${cssFilters.blur}px)`);
@@ -239,8 +237,8 @@ export function generateImageStyles(
     }
 
     // Transition
-    if ((attributes as any).imageTransitionDuration !== undefined) {
-        cssRules.push(`${selector} img { transition-duration: ${(attributes as any).imageTransitionDuration}s; }`);
+    if (attributes.imageTransitionDuration !== undefined) {
+        cssRules.push(`${selector} img { transition-duration: ${attributes.imageTransitionDuration}s; }`);
     }
 
     // ============================================

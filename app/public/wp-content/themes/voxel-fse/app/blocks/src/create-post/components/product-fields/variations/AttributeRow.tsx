@@ -35,7 +35,7 @@ interface AttributeRowProps {
  */
 export const AttributeRow: React.FC<AttributeRowProps> = ({
 	attribute,
-	index,
+	index: _index,
 	isActive,
 	onToggle,
 	onUpdate,

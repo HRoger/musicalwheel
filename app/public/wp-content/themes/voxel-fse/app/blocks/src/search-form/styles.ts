@@ -122,7 +122,7 @@ interface BorderGroupValue {
  * 2. BorderGroupControl format: { borderType: 'solid', borderWidth: {...}, borderColor: '...' }
  */
 function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined): string {
-	if (!border) return '';
+	if (!border || Object.keys(border).length === 0) return '';
 
 	// Check if it's BorderGroupControl format
 	if ('borderType' in border) {
@@ -148,12 +148,27 @@ function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined):
 			const bottomW = parseVal(borderWidth.bottom);
 			const leftW = parseVal(borderWidth.left);
 
+			// Check if all widths are effectively zero or empty
+			// If so, return empty string to avoid overriding default styles with "0px" or "1px" defaults
+			const isZero = (v: string | number | undefined) => !v || v === '0' || v === 0 || v === '';
+			if (
+				isZero(borderWidth.top) &&
+				isZero(borderWidth.right) &&
+				isZero(borderWidth.bottom) &&
+				isZero(borderWidth.left)
+			) {
+				return '';
+			}
+
 			// If all same, use single value; otherwise use 4-value shorthand
 			if (topW === rightW && rightW === bottomW && bottomW === leftW) {
 				widthValue = `${topW}${unit}`;
 			} else {
 				widthValue = `${topW}${unit} ${rightW}${unit} ${bottomW}${unit} ${leftW}${unit}`;
 			}
+		} else {
+			// No borderWidth object provided - avoid default 1px override
+			return '';
 		}
 
 		const colorValue = borderColor || '#000';
@@ -168,7 +183,7 @@ function generateBorderCSS(border: BorderConfig | BorderGroupValue | undefined):
 /**
  * Generate block styles for inline styles (minimal - most styling via CSS)
  */
-export function generateBlockStyles(attributes: SearchFormAttributes): React.CSSProperties {
+export function generateBlockStyles(_attributes: SearchFormAttributes): React.CSSProperties {
 	// Search Form uses scoped CSS targeting Voxel classes, not inline styles
 	return {};
 }
@@ -243,6 +258,7 @@ export function generateInlineTabResponsiveCSS(
 	const cssRules: string[] = [];
 	const tabletRules: string[] = [];
 	const mobileRules: string[] = [];
+
 	// Use :is() to target either the class (frontend) or data attribute (editor) for robustness
 	const selector = `:is(.voxel-fse-search-form-${blockId}, [data-voxel-id="${blockId}"])`;
 
@@ -335,7 +351,7 @@ export function generateInlineTabResponsiveCSS(
 	// Show labels - ts_sf_input_label
 	// When showLabels is false, hide all filter labels
 	if (attributes.showLabels === false) {
-		cssRules.push(`${selector} .ts-form-group > label { display: none; }`);
+		cssRules.push(`${selector} .ts-form-group > label:not(.ts-keep-visible) { display: none; }`);
 	}
 
 	// Label color - ts_sf_input_label_col
@@ -358,13 +374,16 @@ export function generateInlineTabResponsiveCSS(
 
 	// Height - ts_sf_input_height
 	if (attributes.commonHeight !== undefined) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight)}px; }`);
+		const val = safeValue(attributes.commonHeight);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 	if (attributes.commonHeight_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight_tablet)}px; }`);
+		const val = safeValue(attributes.commonHeight_tablet);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 	if (attributes.commonHeight_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-form-group .ts-filter { min-height: ${safeValue(attributes.commonHeight_mobile)}px; }`);
+		const val = safeValue(attributes.commonHeight_mobile);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { min-height: ${val}px; }`);
 	}
 
 	// Icon size - ts_sf_input_icon_size
@@ -385,36 +404,38 @@ export function generateInlineTabResponsiveCSS(
 	// Border radius - ts_sf_input_radius
 	if (attributes.commonBorderRadius !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		cssRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius)}${unit}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius)}${unit}; }`);
 	}
 	if (attributes.commonBorderRadius_tablet !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		tabletRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius_tablet)}${unit}; }`);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius_tablet)}${unit}; }`);
 	}
 	if (attributes.commonBorderRadius_mobile !== undefined) {
 		const unit = attributes.commonBorderRadiusUnit || 'px';
-		mobileRules.push(`${selector} .ts-form-group .ts-filter { border-radius: ${safeValue(attributes.commonBorderRadius_mobile)}${unit}; }`);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border-radius: ${safeValue(attributes.commonBorderRadius_mobile)}${unit}; }`);
 	}
 
 	// Box shadow - ts_sf_input_shadow
 	if (attributes.commonBoxShadow) {
 		const shadow = generateBoxShadowCSS(attributes.commonBoxShadow);
 		if (shadow) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter { box-shadow: ${shadow}; }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { box-shadow: ${shadow}; }`);
 		}
 	}
 
 	// Border - ts_sf_input_border
 	if (attributes.commonBorder) {
-		const border = generateBorderCSS(attributes.commonBorder);
+		const border = generateBorderCSS(attributes.commonBorder as any);
 		if (border) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter { border: ${border}; }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { border: ${border}; }`);
+			// Ensure it overrides focus styles if needed
+			cssRules.push(`${selector} input.inline-input:focus { border: ${border}; }`);
 		}
 	}
 
 	// Background color - ts_sf_input_bg
 	if (attributes.commonBackgroundColor) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter { background-color: ${attributes.commonBackgroundColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter, ${selector} input.inline-input { background-color: ${attributes.commonBackgroundColor}; }`);
 	}
 
 	// Icon color - ts_sf_input_icon_col
@@ -425,7 +446,7 @@ export function generateInlineTabResponsiveCSS(
 
 	// Text color - ts_sf_input_value_col
 	if (attributes.commonTextColor) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text { color: ${attributes.commonTextColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text, ${selector} input.inline-input { color: ${attributes.commonTextColor}; }`);
 	}
 
 	// Hover states
@@ -436,7 +457,7 @@ export function generateInlineTabResponsiveCSS(
 		}
 	}
 	if (attributes.commonBorderColorHover) {
-		cssRules.push(`${selector} .ts-form-group .ts-filter:hover { border-color: ${attributes.commonBorderColorHover}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-filter:hover, ${selector} input.inline-input:hover, ${selector} input.inline-input:focus { border-color: ${attributes.commonBorderColorHover}; }`);
 	}
 	if (attributes.commonBackgroundColorHover) {
 		cssRules.push(`${selector} .ts-form-group .ts-filter:hover { background-color: ${attributes.commonBackgroundColorHover}; }`);
@@ -452,7 +473,7 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.commonTypography) {
 		const typo = generateTypographyCSS(attributes.commonTypography);
 		if (typo) {
-			cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text { ${typo} }`);
+			cssRules.push(`${selector} .ts-form-group .ts-filter .ts-filter-text, ${selector} input.inline-input { ${typo} }`);
 		}
 	}
 
@@ -557,13 +578,13 @@ export function generateInlineTabResponsiveCSS(
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
 		cssRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth)}${unit}; }`);
 	}
-	if (attributes.buttonFilledBorderWidth_tablet !== undefined) {
+	if (attributes['buttonFilledBorderWidth_tablet'] !== undefined) {
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
-		tabletRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth_tablet)}${unit}; }`);
+		tabletRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes['buttonFilledBorderWidth_tablet'])}${unit}; }`);
 	}
-	if (attributes.buttonFilledBorderWidth_mobile !== undefined) {
+	if (attributes['buttonFilledBorderWidth_mobile'] !== undefined) {
 		const unit = attributes.buttonFilledBorderWidthUnit || 'px';
-		mobileRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes.buttonFilledBorderWidth_mobile)}${unit}; }`);
+		mobileRules.push(`${selector} .ts-form-group .ts-filter.ts-filled { border-width: ${safeValue(attributes['buttonFilledBorderWidth_mobile'])}${unit}; }`);
 	}
 
 	// Box Shadow (Filled) - ts_sf_input_shadow_active
@@ -604,7 +625,7 @@ export function generateInlineTabResponsiveCSS(
 	// CRITICAL: Must use high-specificity selector to override Voxel's
 	// `.ts-form-submit.ts-form-group button { border: none; }` rule
 	if (attributes.searchBtnBorder) {
-		const border = generateBorderCSS(attributes.searchBtnBorder);
+		const border = generateBorderCSS(attributes.searchBtnBorder as any);
 		if (border) {
 			cssRules.push(`${selector} .ts-form-submit.ts-form-group button.ts-search-btn { border: ${border}; }`);
 		}
@@ -708,8 +729,8 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.termsInlineIconColorHover) {
 		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-term-icon { --ts-icon-color: ${attributes.termsInlineIconColorHover}; }`);
 	}
-	if (attributes.termsInlineChevronColorHover) {
-		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-right-icon, ${selector} .inline-multilevel li > a:hover .ts-left-icon { border-color: ${attributes.termsInlineChevronColorHover}; }`);
+	if (attributes['termsInlineChevronColorHover']) {
+		cssRules.push(`${selector} .inline-multilevel li > a:hover .ts-right-icon, ${selector} .inline-multilevel li > a:hover .ts-left-icon { border-color: ${attributes['termsInlineChevronColorHover']}; }`);
 	}
 
 	// Selected state
@@ -914,13 +935,13 @@ export function generateInlineTabResponsiveCSS(
 	}
 
 	// Tablet overrides
-	if (attributes.stepperInputValueSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes.stepperInputValueSize_tablet)}px; }`);
+	if (attributes['stepperInputValueSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes['stepperInputValueSize_tablet'])}px; }`);
 	}
 
 	// Mobile overrides
-	if (attributes.stepperInputValueSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes.stepperInputValueSize_mobile)}px; }`);
+	if (attributes['stepperInputValueSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-inline-filter .ts-stepper-input input { font-size: ${safeValue(attributes['stepperInputValueSize_mobile'])}px; }`);
 	}
 
 	// ============================================
@@ -1034,13 +1055,13 @@ export function generateInlineTabResponsiveCSS(
 	}
 
 	// Tablet overrides
-	if (attributes.rangeValueSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes.rangeValueSize_tablet)}px; }`);
+	if (attributes['rangeValueSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes['rangeValueSize_tablet'])}px; }`);
 	}
 
 	// Mobile overrides
-	if (attributes.rangeValueSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes.rangeValueSize_mobile)}px; }`);
+	if (attributes['rangeValueSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-inline-filter .range-slider-wrapper .range-value { font-size: ${safeValue(attributes['rangeValueSize_mobile'])}px; }`);
 	}
 
 	// ============================================
@@ -1246,14 +1267,14 @@ export function generateInlineTabResponsiveCSS(
 		}
 	}
 	// Size (Height)
-	if (attributes.toggleBtnSize !== undefined) {
-		cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize)}px; display: flex; align-items: center; justify-content: center; }`);
+	if (attributes['toggleBtnSize'] !== undefined) {
+		cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize'])}px; display: flex; align-items: center; justify-content: center; }`);
 	}
-	if (attributes.toggleBtnSize_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize_tablet)}px; }`);
+	if (attributes['toggleBtnSize_tablet'] !== undefined) {
+		tabletRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize_tablet'])}px; }`);
 	}
-	if (attributes.toggleBtnSize_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes.toggleBtnSize_mobile)}px; }`);
+	if (attributes['toggleBtnSize_mobile'] !== undefined) {
+		mobileRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { height: ${safeValue(attributes['toggleBtnSize_mobile'])}px; }`);
 	}
 	// Padding
 	if (attributes.toggleBtnPadding) {
@@ -1322,20 +1343,20 @@ export function generateInlineTabResponsiveCSS(
 	}
 	// Border (Fixed: uses generateBorderCSS for BorderGroupControl)
 	if (attributes.toggleBtnBorder) {
-		const border = generateBorderCSS(attributes.toggleBtnBorder);
+		const border = generateBorderCSS(attributes.toggleBtnBorder as any);
 		if (border) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { border: ${border}; }`);
 		}
 	}
 
 	// Separator Color
-	if (attributes.toggleBtnSeparatorColor) {
+	if (attributes['toggleBtnSeparatorColor']) {
 		// Only applies to Switcher list items
-		cssRules.push(`${selector} .ts-form-group .ts-switcher li:not(:last-child) { border-right-color: ${attributes.toggleBtnSeparatorColor}; }`);
+		cssRules.push(`${selector} .ts-form-group .ts-switcher li:not(:last-child) { border-right-color: ${attributes['toggleBtnSeparatorColor']}; }`);
 	}
 	// Box Shadow
-	if (attributes.toggleBtnBoxShadow) {
-		const shadow = generateBoxShadowCSS(attributes.toggleBtnBoxShadow);
+	if (attributes['toggleBtnBoxShadow']) {
+		const shadow = generateBoxShadowCSS(attributes['toggleBtnBoxShadow']);
 		if (shadow) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li, ${selector} .ts-filter-toggle { box-shadow: ${shadow}; }`);
 		}
@@ -1355,8 +1376,8 @@ export function generateInlineTabResponsiveCSS(
 	if (attributes.toggleBtnBorderColorHover) {
 		cssRules.push(`${selector} .ts-form-group .ts-switcher li:hover, ${selector} .ts-filter-toggle:hover { border-color: ${attributes.toggleBtnBorderColorHover}; }`);
 	}
-	if (attributes.toggleBtnBoxShadowHover) {
-		const shadow = generateBoxShadowCSS(attributes.toggleBtnBoxShadowHover);
+	if (attributes['toggleBtnBoxShadowHover']) {
+		const shadow = generateBoxShadowCSS(attributes['toggleBtnBoxShadowHover']);
 		if (shadow) {
 			cssRules.push(`${selector} .ts-form-group .ts-switcher li:hover, ${selector} .ts-filter-toggle:hover { box-shadow: ${shadow}; }`);
 		}
@@ -1372,8 +1393,8 @@ export function generateInlineTabResponsiveCSS(
 		cssRules.push(`${activeSelector} i, ${activeSelector} svg { color: ${attributes.toggleBtnIconColorFilled}; fill: ${attributes.toggleBtnIconColorFilled}; }`);
 	}
 	// Background Filled (Assumed toggleBtnBackgroundColorFilled based on pattern)
-	if (attributes.toggleBtnBackgroundColorFilled || attributes.toggleBtnBackgroundFilled) {
-		const bg = attributes.toggleBtnBackgroundColorFilled || attributes.toggleBtnBackgroundFilled;
+	if (attributes.toggleBtnBackgroundColorFilled || attributes['toggleBtnBackgroundFilled']) {
+		const bg = attributes.toggleBtnBackgroundColorFilled || attributes['toggleBtnBackgroundFilled'];
 		cssRules.push(`${activeSelector} { background-color: ${bg}; }`);
 	}
 	if (attributes.toggleBtnBorderColorFilled) {
@@ -1432,155 +1453,164 @@ export function generateInlineTabResponsiveCSS(
 	// Source: search-form.php:3426-3770
 	// CSS Target: .ts-switcher-btn (container), .ts-switcher-btn .ts-btn (button)
 	// ============================================
+	// SPECIFICITY FIX: The switcher is portaled to document.body wrapped in a scoping div.
+	// commons.css uses `.ts-switcher-btn .ts-btn` (specificity 0,2,0)
+	// Voxel/Elementor uses `.elementor-{id} .elementor-element.elementor-element-{id} .ts-switcher-btn .ts-btn` (0,5,0)
+	// We need higher specificity to override commons.css defaults.
+	// Using doubled class selector: `.voxel-fse-search-form-{id}.voxel-fse-search-form-{id}` (0,2,0)
+	// Combined with `.ts-switcher-btn .ts-btn` = (0,4,0) which beats commons.css (0,2,0)
+	// NOTE: Switcher CSS is now ALSO generated server-side in PHP (style-generator.php)
+	// for frontend rendering. This JS version is used in Gutenberg editor preview.
+	const switcherSelector = `.voxel-fse-search-form-${blockId}.voxel-fse-search-form-${blockId}`;
 
 	// Alignment (justify-content on container)
 	if (attributes.mapSwitcherAlign) {
-		cssRules.push(`${selector} .ts-switcher-btn { justify-content: ${attributes.mapSwitcherAlign}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { justify-content: ${attributes.mapSwitcherAlign}; }`);
 	}
 
 	// Bottom margin (distance from bottom)
 	if (attributes.mapSwitcherBottomMargin !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin)}px; }`);
 	}
 	if (attributes.mapSwitcherBottomMargin_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherBottomMargin_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn { bottom: ${safeValue(attributes.mapSwitcherBottomMargin_mobile)}px; }`);
 	}
 
 	// Side margin (padding-left/right on container)
 	if (attributes.mapSwitcherSideMargin !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin)}px; }`);
 	}
 	if (attributes.mapSwitcherSideMargin_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherSideMargin_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn { padding-left: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; padding-right: ${safeValue(attributes.mapSwitcherSideMargin_mobile)}px; }`);
 	}
 
 	// Typography
 	if (attributes.mapSwitcherTypography) {
 		const typo = generateTypographyCSS(attributes.mapSwitcherTypography);
 		if (typo) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { ${typo} }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${typo} }`);
 		}
 	}
 
 	// Text color
 	if (attributes.mapSwitcherColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { color: ${attributes.mapSwitcherColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { color: ${attributes.mapSwitcherColor}; }`);
 	}
 
 	// Background color
 	if (attributes.mapSwitcherBackgroundColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { background: ${attributes.mapSwitcherBackgroundColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { background: ${attributes.mapSwitcherBackgroundColor}; }`);
 	}
 
 	// Height
 	if (attributes.mapSwitcherHeight !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight)}px; }`);
 	}
 	if (attributes.mapSwitcherHeight_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherHeight_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { height: ${safeValue(attributes.mapSwitcherHeight_mobile)}px; }`);
 	}
 
 	// Padding
 	if (attributes.mapSwitcherPadding) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding, 'padding');
 		if (padding) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 	if (attributes.mapSwitcherPadding_tablet) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding_tablet, 'padding');
 		if (padding) {
-			tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 	if (attributes.mapSwitcherPadding_mobile) {
 		const padding = generateDimensionsCSS(attributes.mapSwitcherPadding_mobile, 'padding');
 		if (padding) {
-			mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { ${padding} }`);
+			mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { ${padding} }`);
 		}
 	}
 
 	// Border
 	if (attributes.mapSwitcherBorder) {
-		const border = generateBorderCSS(attributes.mapSwitcherBorder);
+		const border = generateBorderCSS(attributes.mapSwitcherBorder as any);
 		if (border) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { border: ${border}; }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border: ${border}; }`);
 		}
 	}
 
 	// Border radius
 	if (attributes.mapSwitcherBorderRadius !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius)}${unit}; }`);
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_tablet !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_tablet)}${unit}; }`);
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherBorderRadius_mobile !== undefined) {
-		const unit = attributes.mapSwitcherBorderRadiusUnit || 'px';
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_mobile)}${unit}; }`);
+		const unit = attributes['mapSwitcherBorderRadiusUnit'] || 'px';
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { border-radius: ${safeValue(attributes.mapSwitcherBorderRadius_mobile)}${unit}; }`);
 	}
 
 	// Box shadow
 	if (attributes.mapSwitcherBoxShadow) {
 		const shadow = generateBoxShadowCSS(attributes.mapSwitcherBoxShadow);
 		if (shadow) {
-			cssRules.push(`${selector} .ts-switcher-btn .ts-btn { box-shadow: ${shadow}; }`);
+			cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { box-shadow: ${shadow}; }`);
 		}
 	}
 
 	// Icon spacing (grid-gap)
 	if (attributes.mapSwitcherIconSpacing !== undefined) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing)}px; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing)}px; }`);
 	}
 	if (attributes.mapSwitcherIconSpacing_tablet !== undefined) {
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_tablet)}px; }`);
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_tablet)}px; }`);
 	}
 	if (attributes.mapSwitcherIconSpacing_mobile !== undefined) {
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_mobile)}px; }`);
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { grid-gap: ${safeValue(attributes.mapSwitcherIconSpacing_mobile)}px; }`);
 	}
 
 	// Icon size (--ts-icon-size CSS variable)
 	if (attributes.mapSwitcherIconSize !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize)}${unit}; }`);
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_tablet !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		tabletRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_tablet)}${unit}; }`);
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
+		tabletRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_tablet)}${unit}; }`);
 	}
 	if (attributes.mapSwitcherIconSize_mobile !== undefined) {
-		const unit = attributes.mapSwitcherIconSizeUnit || 'px';
-		mobileRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_mobile)}${unit}; }`);
+		const unit = attributes['mapSwitcherIconSizeUnit'] || 'px';
+		mobileRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-size: ${safeValue(attributes.mapSwitcherIconSize_mobile)}${unit}; }`);
 	}
 
 	// Icon color (--ts-icon-color CSS variable)
 	if (attributes.mapSwitcherIconColor) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn { --ts-icon-color: ${attributes.mapSwitcherIconColor}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn { --ts-icon-color: ${attributes.mapSwitcherIconColor}; }`);
 	}
 
 	// Hover state
 	if (attributes.mapSwitcherColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { color: ${attributes.mapSwitcherColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { color: ${attributes.mapSwitcherColorHover}; }`);
 	}
 	if (attributes.mapSwitcherBackgroundColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { background: ${attributes.mapSwitcherBackgroundColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { background: ${attributes.mapSwitcherBackgroundColorHover}; }`);
 	}
 	if (attributes.mapSwitcherBorderColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { border-color: ${attributes.mapSwitcherBorderColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { border-color: ${attributes.mapSwitcherBorderColorHover}; }`);
 	}
 	if (attributes.mapSwitcherIconColorHover) {
-		cssRules.push(`${selector} .ts-switcher-btn .ts-btn:hover { --ts-icon-color: ${attributes.mapSwitcherIconColorHover}; }`);
+		cssRules.push(`${switcherSelector} .ts-switcher-btn .ts-btn:hover { --ts-icon-color: ${attributes.mapSwitcherIconColorHover}; }`);
 	}
 
 	// ============================================
@@ -1591,15 +1621,15 @@ export function generateInlineTabResponsiveCSS(
 	// Max filter width - ks_nowrap_max_width
 	// Selector: .ts-filter (line 3849)
 	if (attributes.maxFilterWidth !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		cssRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth)}${unit}; }`);
 	}
 	if (attributes.maxFilterWidth_tablet !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		tabletRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth_tablet)}${unit}; }`);
 	}
 	if (attributes.maxFilterWidth_mobile !== undefined) {
-		const unit = attributes.maxFilterWidthUnit || 'px';
+		const unit = attributes['maxFilterWidthUnit'] || 'px';
 		mobileRules.push(`${selector} .ts-filter { max-width: ${safeValue(attributes.maxFilterWidth_mobile)}${unit}; }`);
 	}
 
@@ -1607,15 +1637,15 @@ export function generateInlineTabResponsiveCSS(
 	// Selector: .ts-inline-filter (line 3870)
 	// Description: Increase the minimum width of inputs, useful when filters have auto width
 	if (attributes.minInputWidth !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		cssRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth)}${unit}; }`);
 	}
 	if (attributes.minInputWidth_tablet !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		tabletRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth_tablet)}${unit}; }`);
 	}
 	if (attributes.minInputWidth_mobile !== undefined) {
-		const unit = attributes.minInputWidthUnit || 'px';
+		const unit = attributes['minInputWidthUnit'] || 'px';
 		mobileRules.push(`${selector} .ts-inline-filter { min-width: ${safeValue(attributes.minInputWidth_mobile)}${unit}; }`);
 	}
 
@@ -1678,14 +1708,14 @@ export function generateInlineTabResponsiveCSS(
 
 		// Max height - custom_max_height
 		// Selector: {{WRAPPER}} .ts-popup-content-wrapper
-		if (attributes.popupMaxHeight !== undefined) {
-			cssRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight}px; }`);
+		if (attributes['popupMaxHeight'] !== undefined) {
+			cssRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight']}px; }`);
 		}
-		if (attributes.popupMaxHeight_tablet !== undefined) {
-			tabletRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight_tablet}px; }`);
+		if (attributes['popupMaxHeight_tablet'] !== undefined) {
+			tabletRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight_tablet']}px; }`);
 		}
-		if (attributes.popupMaxHeight_mobile !== undefined) {
-			mobileRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight_mobile}px; }`);
+		if (attributes['popupMaxHeight_mobile'] !== undefined) {
+			mobileRules.push(`${combinedPopupSelector} .ts-popup-content-wrapper { max-height: ${attributes['popupMaxHeight_mobile']}px; }`);
 		}
 
 		// Autosuggest top margin - google_top_margin
@@ -1725,9 +1755,9 @@ export function generateInlineTabResponsiveCSS(
 	// ============================================
 	// Iterate over all filters in all post types to generate scoped CSS
 	if (attributes.filterLists) {
-		Object.entries(attributes.filterLists).forEach(([postTypeKey, filters]) => {
+		Object.entries(attributes.filterLists).forEach(([_postTypeKey, filters]) => {
 			if (!Array.isArray(filters)) return;
-			filters.forEach((filter, index) => {
+			filters.forEach((filter, _index) => {
 				// Safety check for ID
 				if (!filter.id) return;
 
