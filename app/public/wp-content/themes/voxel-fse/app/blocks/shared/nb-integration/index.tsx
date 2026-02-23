@@ -11,7 +11,9 @@
  * @package VoxelFSE
  */
 
-import { InspectorControls } from '@wordpress/block-editor';
+import { InspectorControls, BlockControls } from '@wordpress/block-editor';
+import { ToolbarGroup } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import NBDynamicTagInjector from './NBDynamicTagInjector';
 import {
@@ -19,12 +21,16 @@ import {
 	NB_TARGET_BLOCK_NAMES,
 	NB_ROW_SETTINGS_BLOCK_NAMES,
 	NB_TOOLBAR_TAG_BLOCK_NAMES,
+	NB_CHILD_TITLE_BLOCK_NAMES,
 	NB_DYNAMIC_TAG_FIELDS,
 	NB_ADVANCED_PANEL_BLOCKS,
 } from './nectarBlocksConfig';
 import { voxelTabAttributes } from '@shared/controls/VoxelTab';
 import RowSettings from '@shared/controls/RowSettings';
 import DynamicTagTextControl from '@shared/controls/DynamicTagTextControl';
+import EnableTagsToolbarButton from '@shared/controls/EnableTagsToolbarButton';
+import ColorPickerControl from '@shared/controls/ColorPickerControl';
+import ResponsiveRangeControlWithDropdown from '@shared/controls/ResponsiveRangeControlWithDropdown';
 
 /**
  * Typed wrapper for InspectorControls with group="advanced".
@@ -48,6 +54,11 @@ const rowSettingsAttributes = {
 	visibilityRules: { type: 'array' as const, default: [] },
 	voxelDynamicTitle: { type: 'string' as const, default: '' },
 	voxelDynamicCssId: { type: 'string' as const, default: '' },
+	voxelIconSize: { type: 'number' as const },
+	voxelIconSize_tablet: { type: 'number' as const },
+	voxelIconSize_mobile: { type: 'number' as const },
+	voxelIconSizeUnit: { type: 'string' as const, default: 'px' },
+	voxelIconColor: { type: 'string' as const, default: '' },
 };
 
 export function registerNBDynamicTagIntegration(): void {
@@ -90,6 +101,36 @@ export function registerNBDynamicTagIntegration(): void {
 						type: 'string' as const,
 						default: '',
 					};
+				}
+
+				// Advanced panel blocks get their extra attributes
+				const advFields = NB_ADVANCED_PANEL_BLOCKS[name];
+				if (advFields) {
+					let needsIconAttrs = false;
+					for (const field of advFields) {
+						if (field.controlType === 'range' && field.attr === 'voxelIconSize') {
+							needsIconAttrs = true;
+							continue; // Icon size attrs registered below as a group
+						}
+						if (field.controlType === 'color' && field.attr === 'voxelIconColor') {
+							needsIconAttrs = true;
+							continue; // Registered below
+						}
+						if (!(field.attr in parentAttrs)) {
+							parentAttrs[field.attr] = {
+								type: 'string' as const,
+								default: '',
+							};
+						}
+					}
+					// Register icon size + color attributes as a group
+					if (needsIconAttrs) {
+						parentAttrs['voxelIconSize'] = { type: 'number' as const };
+						parentAttrs['voxelIconSize_tablet'] = { type: 'number' as const };
+						parentAttrs['voxelIconSize_mobile'] = { type: 'number' as const };
+						parentAttrs['voxelIconSizeUnit'] = { type: 'string' as const, default: 'px' };
+						parentAttrs['voxelIconColor'] = { type: 'string' as const, default: '' };
+					}
 				}
 
 				return { ...settings, attributes: parentAttrs };
@@ -168,16 +209,46 @@ export function registerNBDynamicTagIntegration(): void {
 					<>
 						<BlockEdit {...props} />
 						<InspectorAdvancedControls>
-							{advFields.map(({ attr, label }) => (
-								<DynamicTagTextControl
-									key={attr}
-									label={label}
-									value={(attributes[attr] as string) || ''}
-									onChange={(val: string) =>
-										setAttributes({ [attr]: val })
-									}
-								/>
-							))}
+							{advFields.map(({ attr, label, controlType }) => {
+								if (controlType === 'range') {
+									return (
+										<ResponsiveRangeControlWithDropdown
+											key={attr}
+											label={__(label, 'voxel-fse')}
+											attributes={attributes}
+											setAttributes={setAttributes}
+											attributeBaseName={attr}
+											min={0}
+											max={200}
+											step={1}
+											availableUnits={['px', 'em', 'rem', '%', 'vw']}
+											unitAttributeName={`${attr}Unit`}
+										/>
+									);
+								}
+								if (controlType === 'color') {
+									return (
+										<ColorPickerControl
+											key={attr}
+											label={__(label, 'voxel-fse')}
+											value={(attributes[attr] as string) || ''}
+											onChange={(color: string) =>
+												setAttributes({ [attr]: color })
+											}
+										/>
+									);
+								}
+								return (
+									<DynamicTagTextControl
+										key={attr}
+										label={label}
+										value={(attributes[attr] as string) || ''}
+										onChange={(val: string) =>
+											setAttributes({ [attr]: val })
+										}
+									/>
+								);
+							})}
 						</InspectorAdvancedControls>
 					</>
 				);
@@ -202,6 +273,36 @@ export function registerNBDynamicTagIntegration(): void {
 				}
 
 				const dynamicFields = NB_DYNAMIC_TAG_FIELDS[name] ?? [];
+				const hasToolbarTag = NB_CHILD_TITLE_BLOCK_NAMES.has(name);
+				const rawTitle = (attributes['voxelDynamicTitle'] as string) ?? '';
+				// Only pass @tags() expressions to the toolbar button — plain text
+				// is just the bi-directional sync value and shouldn't activate it.
+				const tagValue = rawTitle.includes('@tags(') ? rawTitle : '';
+
+				// Read the title for initialContent:
+				// - accordion-section / icon-list-item: native `title` attribute
+				// - tab-section: parent tabs block's `tabItems[idx].label`
+				const isTabSection = name === 'nectar-blocks/tab-section';
+				const titleInitialContent = useSelect((select: any) => {
+					if (!isTabSection) {
+						return (attributes['title'] as string) ?? '';
+					}
+					const store = select('core/block-editor');
+					const parents = store.getBlockParents(clientId) as string[];
+					for (const parentId of parents) {
+						const parentBlock = store.getBlock(parentId);
+						if (parentBlock?.name === 'nectar-blocks/tabs') {
+							const idx = (parentBlock.innerBlocks || []).findIndex(
+								(ib: { clientId: string }) => ib.clientId === clientId
+							);
+							if (idx >= 0) {
+								const tabItems = (parentBlock.attributes as Record<string, unknown>)['tabItems'] as Array<{ label?: string }> | undefined;
+								return tabItems?.[idx]?.label ?? '';
+							}
+						}
+					}
+					return '';
+				}, [clientId, isTabSection, attributes['title']]);
 
 				return (
 					<>
@@ -213,10 +314,24 @@ export function registerNBDynamicTagIntegration(): void {
 							setAttributes={setAttributes}
 							bodyObserverOnly
 						/>
+						{hasToolbarTag && (
+							<BlockControls group="other">
+								<ToolbarGroup>
+									<EnableTagsToolbarButton
+										value={tagValue}
+										onChange={(newValue: string) =>
+											setAttributes({ voxelDynamicTitle: newValue })
+										}
+										initialContent={titleInitialContent}
+									/>
+								</ToolbarGroup>
+							</BlockControls>
+						)}
 						<InspectorControls>
 							<RowSettings
 								attributes={attributes}
 								setAttributes={setAttributes}
+								blockName={name}
 							/>
 						</InspectorControls>
 						{dynamicFields.length > 0 && (

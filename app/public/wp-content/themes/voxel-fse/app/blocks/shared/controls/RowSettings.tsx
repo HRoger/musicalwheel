@@ -18,6 +18,8 @@ import { __ } from '@wordpress/i18n';
 import LoopVisibilityControl from './LoopVisibilityControl';
 import ElementVisibilityModal, { type VisibilityRule } from './ElementVisibilityModal';
 import LoopElementModal, { type LoopConfig } from './LoopElementModal';
+import ResponsiveRangeControlWithDropdown from './ResponsiveRangeControlWithDropdown';
+import ColorPickerControl from './ColorPickerControl';
 
 // ============================================================================
 // TYPES
@@ -37,6 +39,7 @@ export interface RowSettingsAttributes {
 export interface RowSettingsProps {
 	attributes: RowSettingsAttributes;
 	setAttributes: (attrs: Partial<RowSettingsAttributes>) => void;
+	blockName?: string;
 }
 
 // ============================================================================
@@ -64,11 +67,15 @@ function normalizeVisibilityRules(rules: unknown): VisibilityRule[] {
 // COMPONENT
 // ============================================================================
 
-export default function RowSettings({ attributes, setAttributes }: RowSettingsProps) {
+/** Blocks that show the Icon Size control */
+const ICON_SIZE_BLOCKS = new Set(['nectar-blocks/accordion-section']);
+
+export default function RowSettings({ attributes, setAttributes, blockName }: RowSettingsProps) {
 	const [isVisibilityModalOpen, setIsVisibilityModalOpen] = useState(false);
 	const [isLoopModalOpen, setIsLoopModalOpen] = useState(false);
 
 	const normalizedRules = normalizeVisibilityRules(attributes.visibilityRules);
+	const showIconSize = blockName ? ICON_SIZE_BLOCKS.has(blockName) : false;
 
 	return (
 		<PanelBody title={__('Row Settings', 'voxel-fse')} initialOpen={false}>
@@ -123,6 +130,27 @@ export default function RowSettings({ attributes, setAttributes }: RowSettingsPr
 				rules={normalizedRules}
 				onSave={(rules) => setAttributes({ visibilityRules: rules })}
 			/>
+
+			{showIconSize && (
+				<div style={{ marginTop: '20px' }}>
+					<ResponsiveRangeControlWithDropdown
+						label={__('Icon Size', 'voxel-fse')}
+						attributes={attributes}
+						setAttributes={setAttributes}
+						attributeBaseName="voxelIconSize"
+						min={0}
+						max={200}
+						step={1}
+						availableUnits={['px', 'em', 'rem', '%', 'vw']}
+						unitAttributeName="voxelIconSizeUnit"
+					/>
+					<ColorPickerControl
+						label={__('Icon Color', 'voxel-fse')}
+						value={(attributes['voxelIconColor'] as string) || ''}
+						onChange={(color) => setAttributes({ voxelIconColor: color })}
+					/>
+				</div>
+			)}
 		</PanelBody>
 	);
 }

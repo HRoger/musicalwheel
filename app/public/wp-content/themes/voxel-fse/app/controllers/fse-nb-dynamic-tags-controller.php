@@ -561,6 +561,34 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 					$content
 				) ?? $content;
 
+			case 'videoUrl':
+				// Video Lightbox: replace href on the lightbox <a> link (external video URL)
+				return $this->resolve_video_url( $content, $resolved );
+
+			case 'videoLocal':
+				// Video Lightbox (Local mode): replace both <a href> and <source src>
+				return $this->resolve_video_local( $content, $resolved );
+
+			case 'previewImage':
+				// Video Lightbox: replace <img> src; Video Player: replace <video poster>
+				return $this->resolve_preview_image( $content, $resolved );
+
+			case 'previewVideo':
+				// Video Lightbox: replace <source src> inside the preview <video>
+				return $this->resolve_video_source( $content, $resolved );
+
+			case 'video':
+				// Video Player: replace <source src> or <source data-nectar-lazy-src>
+				return $this->resolve_video_source( $content, $resolved );
+
+			case 'backgroundImage':
+				// NB blocks: set background-image CSS on root element
+				return $this->resolve_background_image( $content, $resolved );
+
+			case 'galleryImages':
+				// Image Gallery: replace gallery image sources
+				return $this->resolve_gallery_images( $content, $resolved );
+
 			default:
 				return $content;
 		}
@@ -657,6 +685,248 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 		);
 
 		return $replaced ?? $content;
+	}
+
+	/**
+	 * Resolve video URL — replace href on the Video Lightbox <a> link.
+	 *
+	 * NB renders: <a href="https://youtube.com/..." class="nectar-blocks-video-lightbox__link">
+	 */
+	private function resolve_video_url( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		// Replace href on the lightbox link <a>
+		$replaced = preg_replace(
+			'/(<a\b[^>]*class="[^"]*nectar-blocks-video-lightbox__link[^"]*"[^>]*)\bhref="[^"]*"/',
+			'$1href="' . esc_url( $url ) . '"',
+			$content,
+			1
+		);
+
+		return $replaced ?? $content;
+	}
+
+	/**
+	 * Resolve local video — replace both <a href> and <source src> in Video Lightbox.
+	 *
+	 * In Local mode, the <a href> points to the video file and the <source src>
+	 * provides the inline preview.
+	 */
+	private function resolve_video_local( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		// Replace <a href> on the lightbox link
+		$content = preg_replace(
+			'/(<a\b[^>]*class="[^"]*nectar-blocks-video-lightbox__link[^"]*"[^>]*)\bhref="[^"]*"/',
+			'$1href="' . esc_url( $url ) . '"',
+			$content,
+			1
+		) ?? $content;
+
+		// Replace <source src> inside <video>
+		$content = $this->replace_source_src( $content, $url );
+
+		return $content;
+	}
+
+	/**
+	 * Resolve preview image — replace <img src> in Video Lightbox or <video poster> in Video Player.
+	 *
+	 * Video Lightbox renders: <img class="nectar-blocks-video-lightbox__image" src="...">
+	 * Video Player uses: <video poster="...">
+	 */
+	private function resolve_preview_image( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		// Try Video Lightbox: replace <img src> with the lightbox image class
+		if ( strpos( $content, 'nectar-blocks-video-lightbox__image' ) !== false ) {
+			$replaced = preg_replace(
+				'/(<img\b[^>]*class="[^"]*nectar-blocks-video-lightbox__image[^"]*"[^>]*)\bsrc="[^"]*"/',
+				'$1src="' . esc_url( $url ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Try Video Player: replace or add poster attribute on <video>
+		if ( preg_match( '/<video\b[^>]*\bposter="[^"]*"/', $content ) ) {
+			$replaced = preg_replace(
+				'/(<video\b[^>]*)\bposter="[^"]*"/',
+				'$1poster="' . esc_url( $url ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Video Player without existing poster: add poster attribute
+		if ( strpos( $content, 'nectar-blocks-video-player' ) !== false ) {
+			$replaced = preg_replace(
+				'/(<video\b)/',
+				'$1 poster="' . esc_url( $url ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Resolve video source — replace <source src> or <source data-nectar-lazy-src>.
+	 *
+	 * Used by both Video Lightbox (previewVideo) and Video Player (video).
+	 * NB uses data-nectar-lazy-src for lazy-loaded videos.
+	 */
+	private function resolve_video_source( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		return $this->replace_source_src( $content, $url );
+	}
+
+	/**
+	 * Replace src or data-nectar-lazy-src on a <source> element.
+	 */
+	private function replace_source_src( string $content, string $url ): string {
+		// Try data-nectar-lazy-src first (NB lazy loading)
+		if ( strpos( $content, 'data-nectar-lazy-src' ) !== false ) {
+			$replaced = preg_replace(
+				'/(<source\b[^>]*)\bdata-nectar-lazy-src="[^"]*"/',
+				'$1data-nectar-lazy-src="' . esc_url( $url ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Regular src on <source>
+		if ( preg_match( '/<source\b/', $content ) ) {
+			$replaced = preg_replace(
+				'/(<source\b[^>]*)\bsrc="[^"]*"/',
+				'$1src="' . esc_url( $url ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Resolve a value to a URL — handles attachment IDs and plain URLs.
+	 */
+	private function resolve_to_url( string $resolved ): string {
+		if ( is_numeric( $resolved ) ) {
+			$url = wp_get_attachment_url( (int) $resolved );
+			return $url ? $url : '';
+		}
+
+		return $resolved;
+	}
+
+	/**
+	 * Resolve background image — add background-image CSS to root element.
+	 *
+	 * NB stores background images as inline styles. We add/replace
+	 * the background-image property on the root element.
+	 */
+	private function resolve_background_image( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		return $this->add_inline_style( $content, 'background-image', 'url(' . esc_url( $url ) . ')' );
+	}
+
+	/**
+	 * Resolve gallery images for NB Image Gallery block.
+	 *
+	 * The resolved value is a comma-separated list of attachment IDs or URLs.
+	 *
+	 * NB Image Gallery is a static block — when `imageGalleryImages` is empty,
+	 * the saved HTML contains an empty `<div class="swiper-wrapper"></div>` with
+	 * no `<img>` tags. In that case we inject `<div class="swiper-slide"><img>`
+	 * elements directly into the swiper-wrapper.
+	 *
+	 * When images already exist (manual + dynamic), we replace src attributes.
+	 */
+	private function resolve_gallery_images( string $content, string $resolved ): string {
+		$items = array_filter( array_map( 'trim', explode( ',', $resolved ) ) );
+		if ( empty( $items ) ) {
+			return $content;
+		}
+
+		// Resolve each item to a URL
+		$urls = [];
+		foreach ( $items as $item ) {
+			if ( is_numeric( $item ) ) {
+				$url = wp_get_attachment_image_url( (int) $item, 'large' );
+				if ( $url ) {
+					$urls[] = $url;
+				}
+			} else {
+				$urls[] = $item;
+			}
+		}
+
+		if ( empty( $urls ) ) {
+			return $content;
+		}
+
+		// Check if there are existing <img> tags to replace
+		$has_images = (bool) preg_match( '/<img\b[^>]*\bsrc="[^"]*"/', $content );
+
+		if ( $has_images ) {
+			// Replace existing <img> src values in order
+			$idx = 0;
+			$content = preg_replace_callback(
+				'/(<img\b[^>]*)\bsrc="[^"]*"/',
+				function ( $matches ) use ( $urls, &$idx ) {
+					if ( $idx < count( $urls ) ) {
+						$result = $matches[1] . 'src="' . esc_url( $urls[ $idx ] ) . '"';
+						$idx++;
+						return $result;
+					}
+					return $matches[0];
+				},
+				$content
+			) ?? $content;
+
+			return $content;
+		}
+
+		// No existing images — inject swiper-slide elements into swiper-wrapper.
+		// NB save format: <div class="swiper-wrapper">..slides..</div>
+		$slides_html = '';
+		foreach ( $urls as $url ) {
+			$slides_html .= '<div class="swiper-slide"><img src="' . esc_url( $url ) . '" alt="" /></div>';
+		}
+
+		// Insert slides right after the opening <div class="swiper-wrapper">
+		$content = preg_replace(
+			'/(<div\b[^>]*class="[^"]*\bswiper-wrapper\b[^"]*"[^>]*>)/',
+			'$1' . $slides_html,
+			$content,
+			1
+		) ?? $content;
+
+		return $content;
 	}
 
 	/**

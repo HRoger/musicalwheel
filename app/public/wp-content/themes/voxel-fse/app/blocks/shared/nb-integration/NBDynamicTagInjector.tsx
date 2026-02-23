@@ -21,10 +21,12 @@ import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
 import EnableTagsButton from '@shared/controls/EnableTagsButton';
+import DynamicTagPopoverPanel, { extractTagContent, wrapWithTags } from '@shared/controls/DynamicTagPopoverPanel';
 import { DynamicTagBuilder } from '@shared/dynamic-tags';
 import VoxelTab from '@shared/controls/VoxelTab';
 import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
-import { NB_TOOLBAR_TAG_BLOCK_NAMES, type NBBlockConfig } from './nectarBlocksConfig';
+import { useDeviceType } from '@shared/utils/deviceType';
+import { NB_TOOLBAR_TAG_BLOCK_NAMES, NB_CHILD_TITLE_BLOCK_NAMES, type NBBlockConfig } from './nectarBlocksConfig';
 import './nb-dynamic-tag-injector.css';
 
 // WordPress data stores — accessed via globals to avoid ESM import map issues
@@ -58,6 +60,9 @@ function isBodyField(fieldKey: string): { label: string; type: string } | null {
 	}
 	if (fieldKey === 'iconImage') {
 		return { label: 'Icon Image', type: 'image' };
+	}
+	if (fieldKey === 'galleryImages') {
+		return { label: 'Gallery Images', type: 'image' };
 	}
 	return null;
 }
@@ -94,6 +99,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	// determine the item's unique ID instead of unreliable value-matching.
 	const activeCustomAttrIndexRef = useRef<number>(-1);
 
+
 	// ── Voxel Tab injection ──
 	// Refs for the injected Voxel tab elements (DOM nodes for createPortal)
 	const voxelTabRef = useRef<HTMLLIElement | null>(null);
@@ -106,6 +112,16 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 	// Resolved dynamic image URL for editor preview
 	const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+
+	// Track whether we injected gallery images via dynamic tag (to restore originals on disable)
+	const galleryInjectedRef = useRef(false);
+	const originalGalleryImagesRef = useRef<unknown[] | null>(null);
+	// Track whether we injected a video URL via dynamic tag (to restore original on disable)
+	const videoInjectedRef = useRef(false);
+	const originalVideoRef = useRef<unknown>(null);
+	// Stable ref for current attributes (avoids infinite loop when setAttributes triggers re-render)
+	const attributesRef = useRef(attributes);
+	attributesRef.current = attributes;
 
 	// Reactively track whether THIS block is selected (for sidebar injection)
 	const isSelected = useSelect(
@@ -170,6 +186,108 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			voxelDynamicTags: updatedTags,
 		});
 	}, [clientId, getVoxelTags, isToolbarBlock]);
+
+	// ── Bi-directional title sync (child blocks: native title → voxelDynamicTitle) ──
+	// accordion-section / icon-list-item: watch native `title` attribute
+	// tab-section: watch parent tabs block's `tabItems[idx].label`
+	// Guard: skip sync when voxelDynamicTitle contains @tags() (user set a dynamic expression).
+	const isChildTitleBlock = NB_CHILD_TITLE_BLOCK_NAMES.has(blockConfig.blockName);
+	const isTabSection = blockConfig.blockName === 'nectar-blocks/tab-section';
+	const prevNativeTitleRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (!isChildTitleBlock || !wpData) return;
+
+		const unsubscribe = wpData.subscribe(() => {
+			const block = wpData.select('core/block-editor').getBlock(clientId);
+			if (!block) return;
+
+			let nativeTitle: string | undefined;
+
+			if (isTabSection) {
+				// Tab-section: read title from parent tabs block's tabItems[idx].label
+				const parents = wpData.select('core/block-editor').getBlockParents(clientId) as string[];
+				for (const parentId of parents) {
+					const parentBlock = wpData.select('core/block-editor').getBlock(parentId);
+					if (parentBlock?.name === 'nectar-blocks/tabs') {
+						const idx = (parentBlock.innerBlocks || []).findIndex(
+							(ib: { clientId: string }) => ib.clientId === clientId
+						);
+						if (idx >= 0) {
+							const tabItems = (parentBlock.attributes as Record<string, unknown>)['tabItems'] as Array<{ label?: string }> | undefined;
+							nativeTitle = tabItems?.[idx]?.label ?? '';
+						}
+						break;
+					}
+				}
+			} else {
+				// accordion-section / icon-list-item: use native title attribute
+				nativeTitle = (block.attributes as Record<string, unknown>)['title'] as string | undefined;
+			}
+
+			if (nativeTitle === undefined) return;
+
+			// Skip if unchanged from last seen value
+			if (nativeTitle === prevNativeTitleRef.current) return;
+			prevNativeTitleRef.current = nativeTitle;
+
+			const currentDynamic = (block.attributes as Record<string, unknown>)['voxelDynamicTitle'] as string ?? '';
+			// Don't overwrite a dynamic tag expression
+			if (currentDynamic.includes('@tags(')) return;
+
+			// Sync native title → voxelDynamicTitle (plain text, no @tags wrapper)
+			if (nativeTitle !== currentDynamic) {
+				setAttributes({ voxelDynamicTitle: nativeTitle });
+			}
+		});
+
+		return () => { unsubscribe(); };
+	}, [isChildTitleBlock, isTabSection, clientId, setAttributes]);
+
+	// ── Reverse sync: voxelDynamicTitle (plain text) → NB native title ──
+	// When user types plain text in "Edit Title as HTML", update NB's native title
+	// so the iframe title matches. Skip when value contains @tags() (overlay handles it).
+	const dynamicTitleAttr = (attributes['voxelDynamicTitle'] as string) ?? '';
+	useEffect(() => {
+		if (!isChildTitleBlock || !wpData) return;
+		if (!dynamicTitleAttr) return;
+		if (dynamicTitleAttr.includes('@tags(')) return;
+
+		const block = wpData.select('core/block-editor').getBlock(clientId);
+		if (!block) return;
+
+		if (isTabSection) {
+			// Tab-section: update parent tabs block's tabItems[idx].label
+			const parents = wpData.select('core/block-editor').getBlockParents(clientId) as string[];
+			for (const parentId of parents) {
+				const parentBlock = wpData.select('core/block-editor').getBlock(parentId);
+				if (parentBlock?.name === 'nectar-blocks/tabs') {
+					const idx = (parentBlock.innerBlocks || []).findIndex(
+						(ib: { clientId: string }) => ib.clientId === clientId
+					);
+					if (idx >= 0) {
+						const tabItems = [...((parentBlock.attributes as Record<string, unknown>)['tabItems'] as Array<Record<string, unknown>> || [])];
+						const currentLabel = (tabItems[idx]?.['label'] as string) ?? '';
+						if (currentLabel === dynamicTitleAttr) break;
+						tabItems[idx] = { ...tabItems[idx], label: dynamicTitleAttr };
+						prevNativeTitleRef.current = dynamicTitleAttr;
+						wpData.dispatch('core/block-editor').updateBlockAttributes(parentId, { tabItems });
+					}
+					break;
+				}
+			}
+		} else {
+			// accordion-section / icon-list-item: update native title attribute
+			const nativeTitle = (block.attributes as Record<string, unknown>)['title'] as string | undefined;
+			if (nativeTitle === undefined) return;
+			if (nativeTitle === dynamicTitleAttr) return;
+
+			prevNativeTitleRef.current = dynamicTitleAttr;
+			wpData.dispatch('core/block-editor').updateBlockAttributes(clientId, {
+				title: dynamicTitleAttr,
+			});
+		}
+	}, [isChildTitleBlock, isTabSection, clientId, dynamicTitleAttr]);
 
 	/**
 	 * Read the current DOM value of a body-observer field (CSS Classes, Custom ID,
@@ -363,26 +481,29 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				continue;
 			}
 
-			// Find the matching control row by label text
+			// Find the matching control row by label text.
+			// Uses for-of + break to take the FIRST match (not last).
 			let matchedRow: Element | null = null;
-			controlRows.forEach((row) => {
+			for (const row of controlRows) {
 				const labelEl = row.querySelector('.nectar-control-row__label');
-				if (!labelEl) return;
+				if (!labelEl) continue;
 
 				const labelText = getLabelText(labelEl);
-				if (labelText !== field.labelText) return;
+				if (labelText !== field.labelText) continue;
 
 				// If parentLabelText is set, verify this row is nested inside
-				// a parent control row whose label matches parentLabelText
+				// a section whose heading/button matches parentLabelText.
+				// NB uses three patterns for section containers:
+				// 1. Nested .nectar-control-row (e.g. Z-Index > Value)
+				// 2. .components-panel__body > h2 > button (e.g. Background > Image)
+				// 3. .nectar-component__toggle-panel > .toggle button (e.g. Preview > Image)
 				if (field.parentLabelText) {
-					const parentRow = row.parentElement?.closest('.nectar-control-row');
-					if (!parentRow) return;
-					const parentLabel = parentRow.querySelector(':scope > .nectar-control-row__label');
-					if (!parentLabel || getLabelText(parentLabel) !== field.parentLabelText) return;
+					if (!matchesParentSection(row, field.parentLabelText)) continue;
 				}
 
 				matchedRow = row;
-			});
+				break;
+			}
 
 			if (!matchedRow) continue;
 
@@ -826,6 +947,33 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 					}
 				}
 			}
+
+			// 5. NB Image Gallery "Edit Photos" dialog
+			// The dialog appears in document.body when clicking the gallery block.
+			// We inject EnableTag next to the "+ Add Media" button inside
+			// .nectar-gallery-editor__grid-controls__right
+			const galleryDialog = document.querySelector('.image-gallery-modal');
+			if (galleryDialog) {
+				const galleryFieldKey = 'galleryImages';
+				const existingGalleryPortal = galleryDialog.querySelector(
+					`.voxel-nb-tag-portal[data-field-key="${galleryFieldKey}"][data-client-id="${clientId}"]`
+				);
+				if (!existingGalleryPortal) {
+					const galleryFieldConfig = blockConfig.fields.find((f) => f.fieldKey === galleryFieldKey);
+					if (galleryFieldConfig) {
+						const controlsRight = galleryDialog.querySelector('.nectar-gallery-editor__grid-controls__right');
+						if (controlsRight) {
+							const container = document.createElement('span');
+							container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--gallery-dialog';
+							container.setAttribute('data-field-key', galleryFieldKey);
+							container.setAttribute('data-client-id', clientId);
+							controlsRight.insertBefore(container, controlsRight.firstChild);
+							setPortals((prev) => [...prev, { fieldKey: galleryFieldKey, container }]);
+						}
+					}
+				}
+			}
+
 		};
 
 		// Observe document.body for the popover and Advanced panel appearing
@@ -926,6 +1074,390 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [voxelTags, clientId, templateContext, templatePostType]);
 
 	/**
+	 * Resolve galleryImages dynamic tag and set imageGalleryImages attribute natively.
+	 * This lets NB handle all rendering (Swiper, columns, spacing, etc.) so every
+	 * inspector control works out of the box.
+	 */
+	useEffect(() => {
+		const galleryTag = voxelTags['galleryImages'];
+
+		// When tag is removed, restore original images
+		if (!galleryTag) {
+			if (galleryInjectedRef.current && originalGalleryImagesRef.current !== null) {
+				setAttributes({ imageGalleryImages: originalGalleryImagesRef.current } as Record<string, unknown>);
+				galleryInjectedRef.current = false;
+				originalGalleryImagesRef.current = null;
+			}
+			return;
+		}
+
+		// Already injected — skip re-fetching (prevents infinite loop from setAttributes re-render)
+		if (galleryInjectedRef.current) return;
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get comma-separated attachment IDs
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: galleryTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				// Parse comma-separated IDs (e.g. "123,456,789")
+				const ids = rendered.split(',').map((s) => s.trim()).filter(Boolean);
+				if (ids.length === 0) return;
+
+				// Step 2: Fetch full media objects for each attachment ID (NB needs the full structure)
+				const mediaObjects: Record<string, unknown>[] = [];
+				for (const idStr of ids) {
+					if (cancelled) return;
+					const attachmentId = parseInt(idStr, 10);
+					if (!attachmentId || isNaN(attachmentId)) continue;
+
+					try {
+						const media = await apiFetch<Record<string, unknown>>({
+							path: `/wp/v2/media/${attachmentId}?context=edit`,
+						});
+
+						if (media) {
+							// Build the media object in NB's expected format
+							const details = media['media_details'] as Record<string, unknown> | undefined;
+							const wpSizes = (details?.['sizes'] ?? {}) as Record<string, { source_url?: string; width?: number; height?: number }>;
+
+							// Convert WP REST sizes format to NB format (url instead of source_url)
+							const nbSizes: Record<string, { url: string; width?: number; height?: number }> = {};
+							for (const [sizeName, sizeData] of Object.entries(wpSizes)) {
+								if (sizeData.source_url) {
+									nbSizes[sizeName] = {
+										url: sizeData.source_url,
+										width: sizeData.width,
+										height: sizeData.height,
+									};
+								}
+							}
+
+							mediaObjects.push({
+								id: media['id'],
+								url: (media['source_url'] as string) || '',
+								alt: ((media['alt_text'] as string) || ''),
+								title: ((media['title'] as Record<string, string>)?.['rendered'] || ''),
+								sizes: nbSizes,
+								height: details?.['height'],
+								width: details?.['width'],
+							});
+						}
+					} catch {
+						// Skip individual media fetch errors
+					}
+				}
+
+				if (cancelled || mediaObjects.length === 0) return;
+
+				// Save original images before overwriting (only on first injection)
+				if (!galleryInjectedRef.current) {
+					originalGalleryImagesRef.current = (attributesRef.current['imageGalleryImages'] as unknown[]) || [];
+				}
+
+				// Set the attribute natively — NB handles all rendering
+				setAttributes({ imageGalleryImages: mediaObjects } as Record<string, unknown>);
+				galleryInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic gallery tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- attributes accessed via ref to avoid infinite loop
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
+
+	/**
+	 * Resolve video dynamic tag and set the NB video attribute natively.
+	 * The tag resolves to a video URL (self-hosted or external).
+	 * NB stores video as: { desktop: { source: { url, type } }, tablet: {}, mobile: {} }
+	 */
+	useEffect(() => {
+		const videoTag = voxelTags['video'];
+
+		// When tag is removed, restore original video attribute
+		if (!videoTag) {
+			if (videoInjectedRef.current && originalVideoRef.current !== null) {
+				setAttributes({ video: originalVideoRef.current } as Record<string, unknown>);
+				videoInjectedRef.current = false;
+				originalVideoRef.current = null;
+			}
+			return;
+		}
+
+		// Already injected — skip re-fetching (prevents infinite loop from setAttributes re-render)
+		if (videoInjectedRef.current) return;
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: videoTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				const videoUrl = rendered.trim();
+				if (!videoUrl) return;
+
+				// Check if the resolved value is an attachment ID (numeric) — fetch the URL + mime_type
+				const attachmentId = parseInt(videoUrl, 10);
+				let finalUrl = videoUrl;
+				let mediaMimeType: string | undefined;
+				if (attachmentId && !isNaN(attachmentId) && String(attachmentId) === videoUrl) {
+					try {
+						const media = await apiFetch<{ source_url: string; mime_type?: string }>({
+							path: `/wp/v2/media/${attachmentId}?context=edit`,
+						});
+						if (cancelled) return;
+						if (media?.source_url) {
+							finalUrl = media.source_url;
+							mediaMimeType = media.mime_type;
+						}
+					} catch {
+						// If media fetch fails, try using the raw value as URL
+					}
+				}
+
+				if (cancelled || !finalUrl) return;
+
+				// Save original video attribute before overwriting
+				if (!videoInjectedRef.current) {
+					originalVideoRef.current = attributesRef.current['video'];
+				}
+
+				// Determine MIME type: prefer media API response, fall back to URL extension
+				let mime = mediaMimeType || '';
+				if (!mime) {
+					const ext = finalUrl.split('?')[0].split('.').pop()?.toLowerCase();
+					const mimeMap: Record<string, string> = {
+						mp4: 'video/mp4', webm: 'video/webm', ogg: 'video/ogg', ogv: 'video/ogg',
+					};
+					mime = (ext && mimeMap[ext]) || 'video/mp4';
+				}
+
+				// Set video attribute in NB's expected structure.
+				// Include source on all breakpoints to prevent NB Controls
+				// from crashing on `v.source.type` when responsive mode != desktop.
+				const sourceObj = {
+					id: 0,
+					url: finalUrl,
+					type: 'self-hosted' as const,
+					mime,
+				};
+				setAttributes({
+					video: {
+						desktop: { source: sourceObj },
+						tablet: { source: sourceObj },
+						mobile: { source: sourceObj },
+					},
+				} as Record<string, unknown>);
+				videoInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic video tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- attributes accessed via ref to avoid infinite loop
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
+
+	/**
+	 * Inject EnableTag portal into the Video Player's "Insert self-hosted URL" input area
+	 * inside the editor iframe. The URL field (.nectar-component__video-placeholder__url-field)
+	 * appears when the user clicks "Insert self-hosted URL" in the canvas placeholder.
+	 */
+	useEffect(() => {
+		if (blockConfig.blockName !== 'nectar-blocks/video-player') return;
+		if (!isSelected) return;
+
+		const injectVideoUrlPortal = () => {
+			const found = getBlockElement(clientId);
+			if (!found) return;
+			const { el: blockEl } = found;
+
+			const urlField = blockEl.querySelector('.nectar-component__video-placeholder__url-field');
+			if (!urlField) return;
+
+			// Don't inject twice
+			if (urlField.querySelector('.voxel-nb-tag-portal')) return;
+
+			// Clean up any stale portal entries from previous DOM (block re-renders destroy old containers)
+			setPortals((prev) => prev.filter((p) => !(p.fieldKey === 'video' && p.container.classList.contains('voxel-nb-tag-portal--video-url'))));
+
+			const container = document.createElement('span');
+			container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--video-url';
+			container.setAttribute('data-field-key', 'video');
+			container.setAttribute('data-client-id', clientId);
+
+			urlField.appendChild(container);
+			setPortals((prev) => [...prev, { fieldKey: 'video', container }]);
+		};
+
+		// The URL field appears after clicking "Insert self-hosted URL" — observe iframe for it
+		const iframe = document.querySelector('iframe[name="editor-canvas"]') as HTMLIFrameElement | null;
+		const iframeDoc = iframe?.contentDocument;
+		if (!iframeDoc) return;
+
+		// Inject CSS into iframe for the portal and EnableTag button
+		const styleId = 'voxel-nb-video-url-portal-css';
+		if (!iframeDoc.getElementById(styleId)) {
+			const style = iframeDoc.createElement('style');
+			style.id = styleId;
+			style.textContent = `
+				/* Input row: input + EnableTag button side by side */
+				.nectar-component__video-placeholder__url-field {
+					display: grid !important;
+					grid-template-columns: 1fr auto;
+					grid-template-rows: auto auto;
+					gap: 0;
+				}
+				/* Input wrapper spans first column, vertically centered */
+				.nectar-component__video-placeholder__url-field .nectar-component__text-control {
+					grid-column: 1;
+					grid-row: 1;
+					align-self: center;
+				}
+				/* EnableTag portal in second column, first row, aligned with input */
+				.voxel-nb-tag-portal--video-url {
+					grid-column: 2;
+					grid-row: 1;
+					display: inline-flex;
+					align-items: center;
+					align-self: start;
+					margin-left: 6px;
+					margin-top: 4px;
+					flex-shrink: 0;
+				}
+				/* Save/Cancel buttons span full width below */
+				.nectar-component__video-placeholder__url-field__buttons {
+					grid-column: 1 / -1;
+					grid-row: 2;
+				}
+				/* EnableTagsButton styles (replicated for iframe context) */
+				.voxel-fse-enable-tags {
+					position: relative;
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					width: 24px;
+					height: 24px;
+					border: none;
+					background: transparent;
+					cursor: pointer;
+					padding: 0;
+					transition: 0.2s ease;
+				}
+				.voxel-fse-enable-tags:hover {
+					transform: scale(1.1);
+				}
+				.voxel-fse-enable-tags__icon {
+					position: relative;
+					z-index: 10;
+					width: 16px;
+					height: 16px;
+					display: block;
+					background-size: contain;
+					background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 206.34 206.34'%3E%3Cpolygon fill='%23000' points='114.63 91.71 114.63 137.56 22.93 45.85 45.85 22.93 22.93 22.93 0 45.85 0 114.63 91.71 206.34 114.63 206.34 114.63 160.49 137.56 160.49 206.34 91.71 206.34 22.93 183.41 22.93 114.63 91.71'/%3E%3Cpolygon fill='%23000' points='160.49 0 68.78 0 45.85 22.93 183.41 22.93 160.49 0'/%3E%3C/svg%3E");
+					background-repeat: no-repeat;
+					background-position: center;
+					filter: invert(1);
+				}
+				.voxel-fse-enable-tags::after {
+					content: "";
+					width: 28px;
+					height: 28px;
+					position: absolute;
+					background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+					border-radius: 50px;
+					z-index: 1;
+					pointer-events: none;
+				}
+			`;
+			iframeDoc.head.appendChild(style);
+		}
+
+		// Debounced injection — NB does multiple render passes when the URL field
+		// first appears (click → state update → React re-render). We wait 500ms after
+		// the LAST mutation to ensure NB has settled before injecting the portal.
+		let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+		let disposed = false;
+		const debouncedInject = () => {
+			if (disposed) return;
+			if (debounceTimer) clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				if (disposed) return;
+				injectVideoUrlPortal();
+			}, 500);
+		};
+
+		// Also observe for the URL field appearing/disappearing
+		const blockEl = iframeDoc.querySelector(`[data-block="${clientId}"]`);
+		if (!blockEl) {
+			return () => { disposed = true; if (debounceTimer) clearTimeout(debounceTimer); };
+		}
+
+		const observer = new MutationObserver(() => { debouncedInject(); });
+		observer.observe(blockEl, { childList: true, subtree: true });
+
+		return () => {
+			disposed = true;
+			observer.disconnect();
+			if (debounceTimer) clearTimeout(debounceTimer);
+			// Clean up injected portal
+			const found = getBlockElement(clientId);
+			if (found) {
+				const portal = found.el.querySelector('.voxel-nb-tag-portal--video-url');
+				portal?.remove();
+			}
+			setPortals((prev) => prev.filter((p) => !(p.fieldKey === 'video' && p.container.classList.contains('voxel-nb-tag-portal--video-url'))));
+		};
+	}, [clientId, isSelected, blockConfig.blockName]);
+
+	/**
 	 * Inject the resolved image (or remove it) in the NB block's iframe DOM.
 	 * Handles both image blocks (imageSource) and icon blocks (iconImage).
 	 */
@@ -968,9 +1500,25 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				}
 				.voxel-nb-icon-image-preview {
 					display: block;
+					object-fit: contain;
+				}
+				/* Icon block: fill the .nectar-blocks-icon__inner container (NB controls the size) */
+				.nectar-blocks-icon__inner > .voxel-nb-icon-image-preview {
 					width: 100%;
 					height: 100%;
-					object-fit: contain;
+				}
+				/* Accordion-section: icon image inside title button */
+				.nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview {
+					width: 20px;
+					height: 20px;
+					flex-shrink: 0;
+					margin-right: 0;
+				}
+				/* Button block: icon image inside <a> tag next to text */
+				.nectar-blocks-button a > .voxel-nb-icon-image-preview {
+					width: 20px;
+					height: 20px;
+					flex-shrink: 0;
 				}
 				[data-voxel-has-dynamic-image="true"] .nectar-blocks-icon__inner > .nectar-component__icon {
 					display: none !important;
@@ -988,14 +1536,28 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		img.alt = '';
 
 		if (isIconImage) {
-			// Icon block: inject into .nectar-blocks-icon__inner
 			img.className = 'voxel-nb-icon-image-preview';
 			img.setAttribute('data-voxel-dynamic', 'iconImage');
-			const iconInner = blockEl.querySelector('.nectar-blocks-icon__inner');
-			if (iconInner) {
-				iconInner.insertBefore(img, iconInner.firstChild);
+
+			// Accordion-section: inject into the title button, before the title text
+			const accordionTitle = blockEl.querySelector('.nectar-blocks-accordion-section__title');
+			if (accordionTitle) {
+				accordionTitle.insertBefore(img, accordionTitle.firstChild);
 			} else {
-				blockEl.insertBefore(img, blockEl.firstChild);
+				// Button block: inject inside <a> tag, after .nectar-blocks-button__text span
+				// NB positions icon AFTER text in DOM; CSS flex-direction: row-reverse flips for "left" alignment
+				const buttonText = blockEl.querySelector('.nectar-blocks-button__text');
+				if (buttonText && buttonText.parentElement?.tagName === 'A') {
+					buttonText.parentElement.insertBefore(img, buttonText.nextSibling);
+				} else {
+					// Icon block: inject into .nectar-blocks-icon__inner
+					const iconInner = blockEl.querySelector('.nectar-blocks-icon__inner');
+					if (iconInner) {
+						iconInner.insertBefore(img, iconInner.firstChild);
+					} else {
+						blockEl.insertBefore(img, blockEl.firstChild);
+					}
+				}
 			}
 		} else {
 			// Image block: inject at block root
@@ -1060,6 +1622,142 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		};
 	}, [dynamicImageUrl, voxelTags, isSelected]);
 
+	// ── Apply voxelIconSize + voxelIconColor to block's icon container in editor iframe ──
+	// Supports: accordion-section (child), button (parent), icon (parent, color only)
+	const currentDevice = useDeviceType();
+	const isAccordionSection = blockConfig.blockName === 'nectar-blocks/accordion-section';
+	const isButtonBlock = blockConfig.blockName === 'nectar-blocks/button';
+	const isIconBlock = blockConfig.blockName === 'nectar-blocks/icon';
+	const hasIconStyles = isAccordionSection || isButtonBlock || isIconBlock;
+	const supportsIconSize = isAccordionSection || isButtonBlock;
+
+	const iconSizeValue = (() => {
+		if (!supportsIconSize) return undefined;
+		const deviceSuffix = currentDevice === 'desktop' ? '' : `_${currentDevice}`;
+		const attrName = `voxelIconSize${deviceSuffix}`;
+		let val = attributes[attrName] as number | undefined;
+		if (val === undefined && currentDevice === 'tablet') {
+			val = attributes['voxelIconSize'] as number | undefined;
+		} else if (val === undefined && currentDevice === 'mobile') {
+			val = (attributes['voxelIconSize_tablet'] as number | undefined)
+				?? (attributes['voxelIconSize'] as number | undefined);
+		}
+		return val;
+	})();
+	const iconSizeUnit = (attributes['voxelIconSizeUnit'] as string) || 'px';
+	const iconColor = (attributes['voxelIconColor'] as string) || '';
+
+	useEffect(() => {
+		if (!hasIconStyles) return;
+		const found = getBlockElement(clientId);
+		if (!found) return;
+		const { el: blockEl, doc: iframeDoc } = found;
+
+		// Inject CSS for icon size + color custom properties
+		const styleId = 'voxel-nb-icon-style-css';
+		if (!iframeDoc.getElementById(styleId)) {
+			const style = iframeDoc.createElement('style');
+			style.id = styleId;
+			style.textContent = `
+				/* Accordion-section: dynamic icon image inside title */
+				[data-voxel-icon-size] .nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview {
+					width: var(--voxel-icon-size) !important;
+					height: var(--voxel-icon-size) !important;
+				}
+				/* Accordion-section: native NB icon inside title (non-dynamic) */
+				[data-voxel-icon-size] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner {
+					width: var(--voxel-icon-size) !important;
+					height: var(--voxel-icon-size) !important;
+				}
+				[data-voxel-icon-size] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon {
+					width: var(--voxel-icon-size) !important;
+					height: var(--voxel-icon-size) !important;
+				}
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon {
+					color: var(--voxel-icon-color) !important;
+				}
+				/* NB icon block: icon inside .nectar-blocks-icon__inner */
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon {
+					color: var(--voxel-icon-color) !important;
+				}
+				/* Button block: dynamic icon image inside <a> tag
+				 * No space — in editor, [data-voxel-icon-size] and .nectar-blocks-button are the same element */
+				[data-voxel-icon-size].nectar-blocks-button a > .voxel-nb-icon-image-preview {
+					width: var(--voxel-icon-size) !important;
+					height: var(--voxel-icon-size) !important;
+				}
+			`;
+			iframeDoc.head.appendChild(style);
+		}
+
+		// Icon size (accordion-section + button)
+		if (supportsIconSize && iconSizeValue !== undefined) {
+			const sizeStr = `${iconSizeValue}${iconSizeUnit}`;
+			blockEl.style.setProperty('--voxel-icon-size', sizeStr);
+			blockEl.setAttribute('data-voxel-icon-size', sizeStr);
+		} else {
+			blockEl.style.removeProperty('--voxel-icon-size');
+			blockEl.removeAttribute('data-voxel-icon-size');
+		}
+
+		// Icon color (accordion-section, button, icon block)
+		if (iconColor) {
+			blockEl.style.setProperty('--voxel-icon-color', iconColor);
+			blockEl.setAttribute('data-voxel-icon-color', iconColor);
+		} else {
+			blockEl.style.removeProperty('--voxel-icon-color');
+			blockEl.removeAttribute('data-voxel-icon-color');
+		}
+
+		// Apply color to SVG <img> via CSS mask technique.
+		// CSS `color` doesn't work on <img> elements. Instead, use the img src
+		// as a mask-image and apply background-color for recoloring.
+		const iconImgSelector = isAccordionSection
+			? '.nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview'
+			: isButtonBlock
+				? '.nectar-blocks-button a > .voxel-nb-icon-image-preview'
+				: isIconBlock
+					? '.nectar-blocks-icon__inner > .voxel-nb-icon-image-preview'
+					: null;
+		if (iconImgSelector) {
+			const iconImg = blockEl.querySelector(iconImgSelector) as HTMLImageElement | null;
+			if (iconImg) {
+				if (iconColor) {
+					// Use CSS mask to recolor the SVG image
+					iconImg.style.setProperty('-webkit-mask-image', `url(${iconImg.src})`);
+					iconImg.style.setProperty('mask-image', `url(${iconImg.src})`);
+					iconImg.style.setProperty('-webkit-mask-size', 'contain');
+					iconImg.style.setProperty('mask-size', 'contain');
+					iconImg.style.setProperty('-webkit-mask-repeat', 'no-repeat');
+					iconImg.style.setProperty('mask-repeat', 'no-repeat');
+					iconImg.style.setProperty('-webkit-mask-position', 'center');
+					iconImg.style.setProperty('mask-position', 'center');
+					iconImg.style.setProperty('background-color', iconColor);
+					// Make the original image invisible but keep layout
+					iconImg.style.setProperty('object-position', '-9999px');
+				} else {
+					iconImg.style.removeProperty('-webkit-mask-image');
+					iconImg.style.removeProperty('mask-image');
+					iconImg.style.removeProperty('-webkit-mask-size');
+					iconImg.style.removeProperty('mask-size');
+					iconImg.style.removeProperty('-webkit-mask-repeat');
+					iconImg.style.removeProperty('mask-repeat');
+					iconImg.style.removeProperty('-webkit-mask-position');
+					iconImg.style.removeProperty('mask-position');
+					iconImg.style.removeProperty('background-color');
+					iconImg.style.removeProperty('object-position');
+				}
+			}
+		}
+
+		return () => {
+			blockEl.style.removeProperty('--voxel-icon-size');
+			blockEl.removeAttribute('data-voxel-icon-size');
+			blockEl.style.removeProperty('--voxel-icon-color');
+			blockEl.removeAttribute('data-voxel-icon-color');
+		};
+	}, [hasIconStyles, isAccordionSection, isButtonBlock, isIconBlock, supportsIconSize, clientId, iconSizeValue, iconSizeUnit, iconColor, dynamicImageUrl]);
+
 	return (
 		<>
 			{/* Resolve dynamic tags and apply to the editor iframe DOM */}
@@ -1075,7 +1773,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			{/* Render EnableTagsButton into each portal container */}
 			{portals.map((portal) => {
 				const fieldConfig = blockConfig.fields.find((f) => f.fieldKey === portal.fieldKey);
-				// Body-observer fields (cssClasses, customAttr*) aren't in blockConfig
+				// Body-observer fields (cssClasses, customAttr*, galleryImages) aren't in blockConfig
 				if (!fieldConfig && !isBodyField(portal.fieldKey)) return null;
 
 				const hasTag = Boolean(voxelTags[portal.fieldKey]);
@@ -1122,6 +1820,19 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 						?? null;
 				}
 
+				// Gallery dialog — preview renders in the top-right controls area
+				if (!targetComponentDiv && portal.fieldKey === 'galleryImages') {
+					const galleryDialog = portal.container.closest('.image-gallery-modal');
+					targetComponentDiv = galleryDialog?.querySelector('.nectar-gallery-editor__grid-controls__right')
+						?? null;
+				}
+
+				// Video URL field — preview renders in the URL field area (inside iframe)
+				if (!targetComponentDiv && portal.container.classList.contains('voxel-nb-tag-portal--video-url')) {
+					targetComponentDiv = portal.container.closest('.nectar-component__video-placeholder__url-field')
+						?? null;
+				}
+
 				if (!targetComponentDiv) return null;
 
 				// If no tag, remove any leftover preview container and skip
@@ -1146,8 +1857,8 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				}
 
 				return createPortal(
-					<TagPreview
-						tag={tag}
+					<DynamicTagPopoverPanel
+						tagContent={tag}
 						onEdit={() => setActiveModalField(portal.fieldKey)}
 						onDisable={() => {
 							setFieldTag(portal.fieldKey, '');
@@ -1229,45 +1940,6 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				'voxel-tab-panel'
 			)}
 		</>
-	);
-}
-
-/**
- * Dark preview panel shown below a control when a Voxel tag is active.
- * Matches the existing DynamicTagTextControl pattern.
- */
-function TagPreview({
-	tag,
-	onEdit,
-	onDisable,
-}: {
-	tag: string;
-	onEdit: () => void;
-	onDisable: () => void;
-}) {
-	const content = extractTagContent(tag);
-
-	return (
-		<div className="voxel-nb-tag-preview__inner">
-			<span className="voxel-nb-tag-preview__content">{content}</span>
-			<div className="voxel-nb-tag-preview__divider" />
-			<div className="voxel-nb-tag-preview__actions">
-				<button type="button" className="voxel-nb-tag-preview__btn" onClick={onEdit}>
-					{__('EDIT TAGS', 'voxel-fse')}
-				</button>
-				<button
-					type="button"
-					className="voxel-nb-tag-preview__btn voxel-nb-tag-preview__btn--disable"
-					onClick={() => {
-						if (window.confirm(__('Are you sure?', 'voxel-fse'))) {
-							onDisable();
-						}
-					}}
-				>
-					{__('DISABLE TAGS', 'voxel-fse')}
-				</button>
-			</div>
-		</div>
 	);
 }
 
@@ -1661,6 +2333,11 @@ function BodyFieldResolver({
 					visibility: hidden !important;
 					position: absolute !important;
 				}
+				[data-voxel-has-dynamic-title="true"] .nectar-blocks-icon-list-item__content [role="textbox"],
+				[data-voxel-has-dynamic-title="true"] .nectar-blocks-icon-list-item__content [data-rich-text-placeholder] {
+					visibility: hidden !important;
+					position: absolute !important;
+				}
 				.voxel-nb-title-overlay {
 					pointer-events: none;
 					z-index: 1;
@@ -1687,6 +2364,17 @@ function BodyFieldResolver({
 			overlay.className = 'voxel-nb-title-overlay';
 			overlay.textContent = resolvedTitle;
 			titleTextEl.appendChild(overlay);
+			blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
+			return;
+		}
+
+		// Icon-list-item: inject overlay into the list item content area
+		const listItemContent = blockEl.querySelector('.nectar-blocks-icon-list-item__content');
+		if (listItemContent) {
+			const overlay = iframeDoc.createElement('span');
+			overlay.className = 'voxel-nb-title-overlay';
+			overlay.textContent = resolvedTitle;
+			listItemContent.appendChild(overlay);
 			blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
 			return;
 		}
@@ -1782,6 +2470,43 @@ function injectAdvPanelField(
 	setPortals((prev) => [...prev, { fieldKey, container }]);
 }
 
+/**
+ * Check if a control row is nested inside a section whose heading matches parentLabelText.
+ * Walks up the DOM checking three NB section patterns:
+ * 1. Nested .nectar-control-row — parent row's label matches (not a scope boundary)
+ * 2. .components-panel__body — h2 > button text matches (e.g. "Background") — scope boundary
+ * 3. .nectar-component__toggle-panel — toggle button text matches (e.g. "Preview") — scope boundary
+ *
+ * Toggle-panels and panel-bodies act as **scope boundaries**: if the closest one
+ * doesn't match, we return false immediately instead of walking further up.
+ * This prevents Preview > Video matching parentLabelText "General Settings"
+ * when General Settings is a grandparent containing the Preview toggle-panel.
+ */
+function matchesParentSection(row: Element, parentLabelText: string): boolean {
+	let el: Element | null = row.parentElement;
+	while (el) {
+		// Pattern 1: nested .nectar-control-row (NOT a scope boundary — keep walking)
+		if (el.classList.contains('nectar-control-row')) {
+			const parentLabel = el.querySelector(':scope > .nectar-control-row__label');
+			if (parentLabel && getLabelText(parentLabel) === parentLabelText) return true;
+		}
+		// Pattern 2: .components-panel__body — scope boundary
+		if (el.classList.contains('components-panel__body')) {
+			const heading = el.querySelector(':scope > h2 > button');
+			return heading?.textContent?.trim() === parentLabelText;
+		}
+		// Pattern 3: .nectar-component__toggle-panel — scope boundary
+		if (el.classList.contains('nectar-component__toggle-panel')) {
+			const toggleBtn = el.querySelector(':scope > .nectar-component__toggle-panel__toggle button');
+			return toggleBtn?.textContent?.trim() === parentLabelText;
+		}
+		// Stop at the sidebar boundary
+		if (el.classList.contains('interface-interface-skeleton__sidebar')) break;
+		el = el.parentElement;
+	}
+	return false;
+}
+
 /** Extract label text from a .nectar-control-row__label element, ignoring NB's dynamic data button text */
 function getLabelText(labelEl: Element): string {
 	// NB wraps some labels in .nectar__dynamic-data-selector__inline
@@ -1801,16 +2526,4 @@ function getLabelText(labelEl: Element): string {
 	return labelEl.textContent?.trim() ?? '';
 }
 
-/** Extract tag content from @tags()...@endtags() wrapper */
-function extractTagContent(value: string): string {
-	if (!value) return '';
-	const match = value.match(/@tags\(\)(.*?)@endtags\(\)/s);
-	return match ? match[1] : value;
-}
-
-/** Wrap content with @tags()...@endtags() */
-function wrapWithTags(content: string): string {
-	if (!content) return '';
-	return `@tags()${content}@endtags()`;
-}
 

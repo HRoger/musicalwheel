@@ -380,6 +380,15 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-nb-dynamic-tags-controller.p
 new \VoxelFSE\Controllers\FSE_NB_Dynamic_Tags_Controller();
 
 /**
+ * FSE NectarBlocks Voxel Source Controller
+ * Registers Voxel fields as a native data source in NB's Dynamic Data dropdown.
+ * Simpler fallback alongside the @tags() system for quick field binding.
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-nb-voxel-source-controller.php';
+
+new \VoxelFSE\Controllers\FSE_NB_Voxel_Source_Controller();
+
+/**
  * Note: Author and Expiry metaboxes are already handled by Voxel parent theme
  * See: themes/voxel/app/controllers/post-controller.php (lines 14, 17)
  * The parent theme uses Vue.js and already includes these metaboxes for all

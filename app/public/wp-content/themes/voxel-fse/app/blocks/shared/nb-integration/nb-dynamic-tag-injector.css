@@ -180,22 +180,57 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
 	flex: 1;
 	background: transparent;
 	border: none;
-	color: #fff;
+	color: rgba(255, 255, 255, 0.8);
 	font-size: 10px;
 	font-weight: 600;
-	letter-spacing: 0.3px;
+	letter-spacing: 0.5px;
 	text-transform: uppercase;
 	cursor: pointer;
-	padding: 4px 0;
-	text-align: center;
+	padding: 6px 0;
+	text-align: left;
 }
 
 .voxel-nb-tag-preview__btn--disable {
 	color: rgba(255, 255, 255, 0.5);
+	text-align: right;
 }
 
 .voxel-nb-tag-preview__btn:hover {
 	color: #fff;
+}
+
+/* ─── Gallery Dialog: EnableTag next to Add Media ─── */
+
+/* Portal container inside the dialog's controls-right area */
+.nectar-gallery-editor__grid-controls__right .voxel-nb-tag-portal--gallery-dialog {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 8px;
+	margin-left: 0;
+}
+
+/* When tag is active, hide the empty grid placeholder and Add Media buttons */
+.image-gallery-modal:has(.voxel-nb-tag-preview) .nectar-gallery-editor__grid__empty {
+	display: none !important;
+}
+.image-gallery-modal:has(.voxel-nb-tag-preview) .nectar-gallery-editor__grid-controls__right .nectar-component__button {
+	display: none !important;
+}
+
+/* Tag preview in the top-right controls area of the gallery dialog */
+.nectar-gallery-editor__grid-controls__right > .voxel-nb-tag-preview {
+	display: inline-flex;
+	align-items: center;
+	min-height: auto;
+}
+.nectar-gallery-editor__grid-controls__right > .voxel-nb-tag-preview .voxel-nb-tag-preview__inner {
+	min-width: 250px;
+	padding: 8px 12px;
+}
+
+/* Hide EnableTag portal when DynamicTagPopoverPanel is showing */
+.image-gallery-modal:has(.voxel-nb-tag-preview) .voxel-nb-tag-portal--gallery-dialog {
+	display: none;
 }
 
 /* ─── Voxel Tab in NB Inspector ─── */
@@ -1092,3 +1127,12 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
 	appearance: none;
 	outline: 0;
 }
+
+/* ────────────────────────────────────────────────────
+ * 9. VIDEO URL FIELD — EnableTag inside iframe canvas
+ *
+ * Note: All video URL portal styles are injected directly
+ * into the editor iframe via NBDynamicTagInjector.tsx
+ * because the portal lives inside the iframe DOM, not
+ * the outer editor document.
+ * ──────────────────────────────────────────────────── */

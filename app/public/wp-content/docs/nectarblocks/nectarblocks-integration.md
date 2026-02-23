@@ -1,20 +1,24 @@
 # NectarBlocks Integration
 
-**Last Updated:** 2026-02-21
-**Status:** Phase 1 Complete (NB Image block)
+**Last Updated:** 2026-02-23
+**Status:** Complete — 23 parent blocks + 5 child blocks fully integrated
 **Test Coverage:** 38 passing tests
 
 ---
 
 ## 1. Overview
 
-This integration injects Voxel's dynamic data system (EnableTags + VoxelTab) into NectarBlocks' inspector controls. It allows NB blocks to use Voxel's `@tags()` expressions to populate fields dynamically from post/term/user data.
+This integration injects Voxel's dynamic data system into NectarBlocks' inspector controls and block toolbar. It allows NB blocks to use Voxel's `@tags()` expressions to populate fields dynamically from post/term/user data, and adds full Voxel Tab controls (sticky, visibility, loop) to every NB block.
 
 **What it enables:**
-- Dynamic image sources (e.g., `@term(image)` for term card images)
-- Dynamic text fields (title, alt text, link URL)
-- Dynamic custom HTML attributes (for data binding)
-- Voxel Tab controls (sticky position, visibility rules, loop element)
+- Dynamic image sources (`@term(image)` → resolves to an `<img>` preview in the editor canvas)
+- Dynamic text, URL, number, and CSS class fields across all NB blocks
+- Dynamic icon images in accordion-section titles, button blocks, and icon blocks
+- Voxel Tab on every NB block (sticky position, visibility rules, loop element)
+- RowSettings (loop + visibility) on NB child/inner blocks
+- Toolbar EnableTag button on NB Text and Button blocks for inline dynamic content
+- Icon size + color controls for accordion-section, button, and icon blocks
+- Server-side tag resolution via `Block_Loader.php`
 
 **Architecture:** MutationObserver + React `createPortal` pattern. No NB source code is modified.
 
@@ -27,15 +31,24 @@ This integration injects Voxel's dynamic data system (EnableTags + VoxelTab) int
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  WordPress Filter: blocks.registerBlockType                  │
-│  Injects voxelDynamicTags + voxelTabAttributes onto NB      │
-│  blocks at registration time (client-side only)             │
+│  Injects voxelDynamicTags + voxelTabAttributes onto         │
+│  parent NB blocks at JS registration time.                  │
+│  Injects rowSettingsAttributes onto child NB blocks.        │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  WordPress Filter: editor.BlockEdit                          │
-│  Wraps NB blocks with NBDynamicTagInjector HOC              │
-│  Passes attributes + setAttributes through                  │
+│  WordPress Filter: editor.BlockEdit (3 HOCs)                 │
+│                                                              │
+│  1. withNBDynamicTags    → parent blocks                    │
+│     Wraps with NBDynamicTagInjector (VoxelTab + EnableTags) │
+│                                                              │
+│  2. withNBAdvancedPanelControls → parent blocks             │
+│     Injects WP Advanced panel controls (icon size/color)    │
+│                                                              │
+│  3. withNBRowSettings    → child blocks                     │
+│     Injects RowSettings PanelBody + Dynamic fields          │
+│     + EnableTagsToolbarButton for title-bearing children    │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -60,6 +73,21 @@ This integration injects Voxel's dynamic data system (EnableTags + VoxelTab) int
 │  4. Dynamic Image Preview                                    │
 │     Resolves @tags() expressions via REST API               │
 │     Injects <img> into editor iframe canvas                 │
+│     Handles accordion-section, button, and icon block       │
+│                                                              │
+│  5. Icon Size + Color Effect                                 │
+│     Sets --voxel-icon-size and --voxel-icon-color CSS vars  │
+│     Applies CSS mask technique for SVG image recoloring     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Block_Loader.php — apply_nb_child_block_features()          │
+│                                                              │
+│  Server-side rendering for NB child + icon blocks:          │
+│  • Injects dynamic tag values into block HTML               │
+│  • Applies icon size / color via inline --css-vars          │
+│  • Outputs global CSS rules (once per page)                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -82,117 +110,106 @@ NB registers blocks via JavaScript (`registerBlockType`), not PHP (`register_blo
 
 ```
 app/blocks/shared/nb-integration/
-├── index.tsx                    # Entry point: registers WP filters
-├── NBDynamicTagInjector.tsx     # Main component: observers + portals
-├── nectarBlocksConfig.ts        # Field registry (config-driven)
+├── index.tsx                    # Entry point: registers all 3 WP filters/HOCs
+├── NBDynamicTagInjector.tsx     # Main component: observers + portals + image injection
+├── nectarBlocksConfig.ts        # Field registry + block lists (config-driven)
 ├── nb-dynamic-tag-injector.css  # All CSS (portal, preview, Voxel tab, WP components)
 └── __tests__/
     └── nb-voxeltab-wiring.test.tsx  # 38 unit tests
+
+app/blocks/Block_Loader.php      # apply_nb_child_block_features() — server-side rendering
+
+app/blocks/shared/controls/
+├── EnableTagsToolbarButton.tsx  # Toolbar button for NB Text/Button blocks
+└── (TagPreview shared component used by DynamicTagTextControl)
 ```
 
 ### File Responsibilities
 
 | File | Purpose |
 |------|---------|
-| `index.tsx` | Auto-registers `blocks.registerBlockType` filter (attribute injection) and `editor.BlockEdit` filter (HOC wrapping). Imported by block entry points. |
-| `NBDynamicTagInjector.tsx` | The HOC component. Manages sidebar observer, body observer, Voxel tab injection, dynamic image preview, tag read/write, custom attribute resolution. |
-| `nectarBlocksConfig.ts` | Config-driven registry. Maps NB block names to targetable fields. Each field defines `fieldKey`, `labelText` (for DOM matching), `type`, `placement`, and optional `parentLabelText`. |
+| `index.tsx` | Registers `blocks.registerBlockType` filter (attribute injection) and three `editor.BlockEdit` HOCs (`withNBDynamicTags`, `withNBAdvancedPanelControls`, `withNBRowSettings`). Auto-registers on import. |
+| `NBDynamicTagInjector.tsx` | The core HOC component. Manages sidebar observer, body observer, Voxel tab injection, dynamic image preview (accordion/button/icon), icon size+color CSS effect, tag read/write, custom attribute resolution. |
+| `nectarBlocksConfig.ts` | Config-driven registry. Maps NB block names to targetable fields. Defines all block name sets (`NB_TARGET_BLOCK_NAMES`, `NB_ROW_SETTINGS_BLOCK_NAMES`, `NB_TOOLBAR_TAG_BLOCK_NAMES`, etc.) and `NB_ADVANCED_PANEL_BLOCKS`. |
 | `nb-dynamic-tag-injector.css` | Styles for portal containers, tag preview panels, Voxel tab appearance, and full recreation of `@wordpress/components` Emotion CSS (since portals render outside the editor iframe where Emotion injects styles). |
+| `Block_Loader.php` | `apply_nb_child_block_features()` handles server-side dynamic tag resolution and icon size/color CSS injection for NB child blocks, icon block, and button block. |
 
 ---
 
-## 4. Integrated Controls Map
+## 4. Registered Blocks
 
-### 4.1 EnableTags Controls (Dynamic Data)
+### 4.1 Parent Blocks (23) — VoxelTab + EnableTags
 
-These controls add an EnableTagsButton next to NB's inspector fields. When a tag is set, a dark preview panel replaces the control showing the tag expression with EDIT/DISABLE actions.
+These get the full VoxelTab (as 4th inspector tab) and EnableTag buttons injected into their existing NB inspector fields.
 
-| # | Field Key | Label | NB Tab | Type | Placement | Parent Label | Description |
-|---|-----------|-------|--------|------|-----------|--------------|-------------|
-| 1 | `imageSource` | Image Source | Layout | `image` | `corner` | — | Image upload control. Resolves to attachment ID, then fetches image URL via WP REST API. Injects `<img>` preview into editor iframe canvas. |
-| 2 | `title` | Title | Layout | `text` | `inline` | — | Text input for image title. Tag expression replaces the text value. |
-| 3 | `altText` | Alt Text | Layout | `text` | `inline` | — | Text input for image alt attribute. |
-| 4 | `linkUrl` | Link URL | Layout | `url` | `inline` | — | URL input inside NB's link control. Matches label text "URL". |
-| 5 | `zIndex` | Z-Index | Style | `number` | `corner` | `Z-Index` | **Nested field.** The "Value" sub-row is nested inside the "Z-Index" parent control row. Uses `parentLabelText: 'Z-Index'` to scope the match. Tag preview spans the parent's component area. |
+| Block | Fields with EnableTags |
+|-------|----------------------|
+| `nectar-blocks/image` | Image source (image), Title (text), Alt Text (text), Link URL (url), Z-Index (number) |
+| `nectar-blocks/button` | Z-Index (number) + Toolbar EnableTag for content + Advanced panel (icon size, icon color) |
+| `nectar-blocks/text` | Z-Index (number) + Toolbar EnableTag for content |
+| `nectar-blocks/star-rating` | Z-Index (number), Rating value (number) |
+| `nectar-blocks/accordion` | Z-Index only |
+| `nectar-blocks/carousel` | Z-Index only |
+| `nectar-blocks/divider` | Z-Index only |
+| `nectar-blocks/flex-box` | Z-Index only |
+| `nectar-blocks/icon` | Z-Index only + Advanced panel (icon color) |
+| `nectar-blocks/icon-list` | Z-Index only |
+| `nectar-blocks/image-gallery` | Z-Index only |
+| `nectar-blocks/image-grid` | Z-Index only |
+| `nectar-blocks/milestone` | Z-Index only |
+| `nectar-blocks/post-content` | Z-Index only |
+| `nectar-blocks/post-grid` | Z-Index only |
+| `nectar-blocks/row` | Z-Index only |
+| `nectar-blocks/scrolling-marquee` | Z-Index only |
+| `nectar-blocks/tabs` | Z-Index only |
+| `nectar-blocks/taxonomy-grid` | Z-Index only |
+| `nectar-blocks/taxonomy-terms` | Z-Index only |
+| `nectar-blocks/testimonial` | Z-Index only |
+| `nectar-blocks/video-lightbox` | Z-Index only |
+| `nectar-blocks/video-player` | Z-Index only |
 
-#### Body-Observer Controls (Outside Sidebar)
+### 4.2 Child/Inner Blocks (5) — RowSettings
 
-These controls live outside the inspector sidebar (in popovers or WP's Advanced panel) and are managed by the body MutationObserver.
+These get the RowSettings PanelBody (loop + visibility rules), Dynamic tag fields (title, CSS ID) in the WP Advanced panel, and optional toolbar EnableTag for their title.
 
-| # | Field Key Pattern | Label | Location | Type | Description |
-|---|-------------------|-------|----------|------|-------------|
-| 6 | `customAttr_{id}_name` | Custom Attribute Name | NB Custom Attributes Popover | `text` | Repeater item. Each custom attribute has a unique `id` assigned by NB. The `{id}` in the field key is the item's `id` from `link.customAttributes[]`. Click tracking on sidebar items identifies which item is being edited. |
-| 7 | `customAttr_{id}_value` | Custom Attribute Value | NB Custom Attributes Popover | `text` | Same repeater item, value field. When a tag is saved, the resolved value is written back to NB's native `link.customAttributes[].value` so the sidebar shows the resolved text instead of "Empty". |
-| 8 | `cssClasses` | Additional CSS class(es) | WP Advanced Panel | `css-class` | WordPress core's "Additional CSS class(es)" input in the Advanced panel. Uses `corner` placement on the `label` element's parent wrapper. |
-
-### 4.2 VoxelTab Controls (Inspector Tab)
-
-The Voxel tab is injected as a 4th tab in NB's `.nectar-blocks-tab-list`, alongside Layout, Style, and Motion/FX. It renders the shared `VoxelTab` component via `createPortal`.
-
-**31 attributes injected** (from `voxelTabAttributes`):
-
-| Section | Attributes | Description |
-|---------|------------|-------------|
-| **Sticky Position** | `stickyEnabled`, `stickyDesktop/Tablet/Mobile`, `stickyTop/Left/Right/Bottom` (+ `_tablet`, `_mobile`, `Unit` variants) | 19 attributes. Matches Voxel's widget-controller.php sticky position feature. |
-| **Visibility** | `visibilityBehavior`, `visibilityRules` | 2 attributes. Show/hide element based on configurable rules (user role, post field conditions, etc.). |
-| **Loop Element** | `loopEnabled`, `loopSource`, `loopProperty`, `loopLimit`, `loopOffset` | 5 attributes. Loop this element based on a data source (e.g., `@author(role)`). |
+| Block | Dynamic Fields | Toolbar Title Button |
+|-------|---------------|---------------------|
+| `nectar-blocks/accordion-section` | Title (HTML), CSS ID | ✅ Yes |
+| `nectar-blocks/tab-section` | Title (HTML), CSS ID | ✅ Yes |
+| `nectar-blocks/icon-list-item` | Title (HTML) | ✅ Yes |
+| `nectar-blocks/column` | CSS ID | ❌ No |
+| `nectar-blocks/carousel-item` | CSS ID | ❌ No |
 
 ---
 
-## 5. How EnableTags Integration Works
+## 5. EnableTags Controls Detail
 
-### Field Matching
+### 5.1 Inline Inspector Controls
 
-NB controls use this DOM structure:
+These controls add an EnableTagsButton next to NB's inspector fields. When a tag is set, a dark TagPreview panel replaces the control.
 
-```html
-<div class="nectar-control-row">
-  <div class="nectar-control-row__label">
-    <div class="nectar-control-row__reset-wrap">
-      Label Text              <!-- or wrapped in .nectar__dynamic-data-selector__inline -->
-    </div>
-  </div>
-  <div class="nectar-control-row__component">
-    <input/textarea/select>   <!-- the actual control -->
-  </div>
-</div>
-```
+| # | Field Key | Label | NB Tab | Type | Placement | Block |
+|---|-----------|-------|--------|------|-----------|-------|
+| 1 | `imageSource` | Image Source | Layout | `image` | `corner` | nectar-blocks/image |
+| 2 | `title` | Title | Layout | `text` | `inline` | nectar-blocks/image |
+| 3 | `altText` | Alt Text | Layout | `text` | `inline` | nectar-blocks/image |
+| 4 | `linkUrl` | Link URL | Layout | `url` | `inline` | nectar-blocks/image |
+| 5 | `zIndex` | Z-Index | Style | `number` | `corner` | All parent blocks |
+| 6 | `rating` | Rating | Layout | `number` | `corner` | nectar-blocks/star-rating |
 
-The integration matches fields by extracting text content from `.nectar-control-row__label`:
+**Z-Index nested field:** The "Value" sub-row is nested inside the "Z-Index" parent control row. Uses `parentLabelText: 'Z-Index'` to scope the match. Tag preview spans the parent's component area.
 
-```typescript
-// getLabelText() handles two NB label formats:
-// 1. Plain: .nectar-control-row__reset-wrap > "Label Text"
-// 2. Dynamic: .nectar__dynamic-data-selector__inline > span > "Label Text"
-```
+### 5.2 Body-Observer Controls (Outside Sidebar)
 
-### Placement Types
+| # | Field Key Pattern | Location | Type | Description |
+|---|-------------------|----------|------|-------------|
+| 7 | `customAttr_{id}_name` | NB Custom Attributes Popover | `text` | Repeater item name field |
+| 8 | `customAttr_{id}_value` | NB Custom Attributes Popover | `text` | Repeater item value field |
+| 9 | `cssClasses` | WP Advanced Panel | `css-class` | WordPress "Additional CSS class(es)" input |
 
-**Inline** (`placement: 'inline'` or default): Button appended inside the label element, sitting inline with the label text.
+### 5.3 TagPreview Layout
 
-```
-┌──────────────────────────────────────┐
-│ Label Text  [EnableTag]              │  ← button next to label
-│ ┌──────────────────────────────────┐ │
-│ │ [input field]                    │ │
-│ └──────────────────────────────────┘ │
-└──────────────────────────────────────┘
-```
-
-**Corner** (`placement: 'corner'`): Button absolutely positioned in the top-right of `.nectar-control-row__component`.
-
-```
-┌──────────────────────────────────────┐
-│ Label Text                           │
-│ ┌──────────────────────────────────┐ │
-│ │ [image upload area]  [EnableTag] │ │  ← button in corner
-│ └──────────────────────────────────┘ │
-└──────────────────────────────────────┘
-```
-
-### Tag Preview
-
-When a tag is set on a field, a dark preview panel replaces the NB control:
+When a tag is set, a dark panel replaces the NB control:
 
 ```
 ┌──────────────────────────────────────┐
@@ -201,34 +218,16 @@ When a tag is set on a field, a dark preview panel replaces the NB control:
 │ │ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │ │  Dark background
 │ │ @term(image)                     │ │  Tag expression
 │ │ ─────────────────────────────── │ │  Divider
-│ │   EDIT TAGS    │   DISABLE TAGS  │ │  Action buttons
+│ │  [EDIT TAGS]      [DISABLE TAGS] │ │  Left / Right aligned
 │ └──────────────────────────────────┘ │
 └──────────────────────────────────────┘
 ```
 
-### Nested Fields (parentLabelText)
-
-Some NB controls are nested inside a parent control row. For example, the Z-Index "Value" sub-row is inside the "Z-Index" parent:
-
-```html
-<div class="nectar-control-row">          <!-- parent: label = "Z-Index" -->
-  <div class="nectar-control-row__label">Z-Index</div>
-  <div class="nectar-control-row__component">
-    <div class="nectar-control-row">      <!-- child: label = "Value" -->
-      <div class="nectar-control-row__label">Value</div>
-      <div class="nectar-control-row__component">
-        <input type="number">
-      </div>
-    </div>
-  </div>
-</div>
-```
-
-The config uses `parentLabelText: 'Z-Index'` to ensure the "Value" label match is scoped to the correct parent. The tag preview renders in the **parent's** component area for full-width display.
+EDIT TAGS is left-aligned, DISABLE TAGS is right-aligned.
 
 ---
 
-## 6. How VoxelTab Integration Works
+## 6. VoxelTab Integration
 
 ### Tab Injection
 
@@ -240,22 +239,166 @@ After:   [Layout] [Style] [Motion/FX] [Voxel]
 ```
 
 **Tab switching strategy:**
-
 - NB's tabs use `react-tabs` which manages its own `--selected` class
 - We do NOT fight `react-tabs` by removing its selected state
-- Instead, we use `data-voxel-tab-active` attribute on the tab list container
+- Instead, we use `data-voxel-tab-active` on the tab list container
 - CSS hides NB's `::after` marker and tab panels when Voxel tab is active
 - When an NB tab is clicked, we remove our active state and let `react-tabs` resume
 
+**31 attributes injected** (from `voxelTabAttributes`):
+
+| Section | Attributes |
+|---------|------------|
+| **Sticky Position** | `stickyEnabled`, `stickyDesktop/Tablet/Mobile`, `stickyTop/Left/Right/Bottom` (+ responsive + unit variants) — 19 total |
+| **Visibility** | `visibilityBehavior`, `visibilityRules` |
+| **Loop Element** | `loopEnabled`, `loopSource`, `loopProperty`, `loopLimit`, `loopOffset` |
+
 ### CSS Recreation
 
-VoxelTab renders `@wordpress/components` (ToggleControl, SelectControl, RangeControl, Button) via `createPortal` into the NB inspector sidebar. These components use Emotion CSS-in-JS that only injects `<style>` tags inside the block editor iframe. Since our portal renders on the main admin page, those styles are missing.
-
-The CSS file (`nb-dynamic-tag-injector.css`) contains a full recreation of all needed `@wordpress/components` styles, extracted from browser computed styles and verified against the WordPress source.
+VoxelTab renders `@wordpress/components` via `createPortal` into the NB inspector sidebar. These components use Emotion CSS-in-JS that only injects into the block editor iframe. The CSS file contains a full recreation of all needed `@wordpress/components` styles.
 
 ---
 
-## 7. Custom Attribute Repeater
+## 7. Toolbar EnableTag (Text + Button Blocks)
+
+NB Text and Button blocks get an `EnableTagsToolbarButton` in the block toolbar for dynamic inline content.
+
+### UX Flow
+
+```
+[gradient button] → click → DynamicTagBuilder modal opens
+                             (pre-filled with block's current text)
+                  ← save  ←
+
+[dark button] → click → Popover: stored expression + EDIT TAGS + DISABLE TAGS
+                         EDIT TAGS → modal reopens
+                         DISABLE TAGS → returns to gradient button
+```
+
+### Implementation
+
+- Attribute: `voxelDynamicContent` (type: string) stored on the block
+- Component: `EnableTagsToolbarButton` in `BlockControls group="other"`
+- Child title blocks (`accordion-section`, `tab-section`, `icon-list-item`): toolbar button uses `voxelDynamicTitle` instead, which is bidirectionally synced to the native NB title attribute
+
+### PHP Resolution
+
+`Block_Loader.php` resolves `voxelDynamicContent` server-side and replaces the block's rendered inner text with the resolved output.
+
+---
+
+## 8. Advanced Panel Controls
+
+Some parent blocks get extra controls injected into WordPress's built-in "Advanced" accordion panel.
+
+### Configuration (`NB_ADVANCED_PANEL_BLOCKS`)
+
+| Block | Controls |
+|-------|---------|
+| `nectar-blocks/button` | "Edit Label as HTML" (DynamicTagTextControl), "Icon Size" (ResponsiveRangeControlWithDropdown), "Icon Color" (ColorPickerControl) |
+| `nectar-blocks/icon` | "Icon Color" (ColorPickerControl) |
+
+### Rendering
+
+The `withNBAdvancedPanelControls` HOC reads the block's entry in `NB_ADVANCED_PANEL_BLOCKS` and renders the appropriate control:
+- `controlType: 'text'` (default) → `DynamicTagTextControl`
+- `controlType: 'color'` → `ColorPickerControl`
+- `controlType: 'range'` → `ResponsiveRangeControlWithDropdown` (responsive: desktop/tablet/mobile + unit)
+
+---
+
+## 9. Dynamic Icon Image System
+
+Several NB blocks support a dynamic icon image (uploaded via Voxel's image tag, e.g. `@term(icon)`). The icon tag key is `iconImage` in `voxelDynamicTags`.
+
+### Icon Injection by Block Type
+
+| Block | Injection Target | DOM Position |
+|-------|-----------------|-------------|
+| `nectar-blocks/accordion-section` | `.nectar-blocks-accordion-section__title` | Before first child (before title text) |
+| `nectar-blocks/button` | `<a>` inside `.nectar-blocks-button` | After `.nectar-blocks-button__text` span |
+| `nectar-blocks/icon` | `.nectar-blocks-icon__inner` | Before first child (replaces native icon visually) |
+
+**Button block alignment:** NB's `iconAlignment` attribute (`"left"` or `"right"`) applies `flex-direction: row-reverse` on the `<a>` tag. The dynamic `<img>` is always placed after the text span in the DOM — CSS handles visual order, so left/right alignment works automatically.
+
+### Icon Size
+
+- **Default size**: Accordion and Button get a 20px default. Icon block fills its `.nectar-blocks-icon__inner` container (NB's own size controls apply).
+- **Size control**: `ResponsiveRangeControlWithDropdown` in the WP Advanced panel (accordion-section and button only). Stores `voxelIconSize` / `voxelIconSize_tablet` / `voxelIconSize_mobile` / `voxelIconSizeUnit`.
+- **CSS custom property**: `--voxel-icon-size` is set on the block element and overrides the default via compound CSS selectors.
+
+### Icon Color
+
+A `ColorPickerControl` in the WP Advanced panel stores `voxelIconColor`. Color is applied via two mechanisms:
+
+1. **Native NB icon (SVG font icon):** CSS `color: var(--voxel-icon-color)` on `.nectar-component__icon`
+2. **Dynamic `<img>` (Voxel icon image):** CSS mask technique — the image src becomes a `mask-image`, then `background-color` provides the tint. `object-position: -9999px` hides the original image pixels. A `data-voxel-colored="true"` attribute marks images that have had color applied (used by PHP for frontend CSS scoping).
+
+### CSS Selector Rule (Critical)
+
+In the NB editor, `[data-voxel-icon-size]` and the block's own class (e.g. `.nectar-blocks-button`) are on the **same** DOM element. Use compound selectors (no space) — not descendant selectors (space):
+
+```css
+/* ✅ Correct — compound selector (same element) */
+[data-voxel-icon-size].nectar-blocks-button a > .voxel-nb-icon-image-preview { ... }
+
+/* ❌ Wrong — descendant (would require separate parent element) */
+[data-voxel-icon-size] .nectar-blocks-button a > .voxel-nb-icon-image-preview { ... }
+```
+
+---
+
+## 10. RowSettings for Child Blocks
+
+Child NB blocks (`accordion-section`, `tab-section`, `column`, `icon-list-item`, `carousel-item`) receive a full `RowSettings` PanelBody injected via `<InspectorControls>`.
+
+**Attributes injected into child blocks:**
+
+```typescript
+{
+  loopEnabled, loopSource, loopProperty, loopLimit, loopOffset,  // loop
+  visibilityBehavior, visibilityRules,                            // visibility
+  voxelDynamicTitle, voxelDynamicCssId,                          // dynamic fields
+  voxelIconSize, voxelIconSize_tablet, voxelIconSize_mobile,     // icon size (accordion-section)
+  voxelIconSizeUnit, voxelIconColor,                             // icon size unit + color
+  voxelDynamicTags,                                              // CSS Classes / Custom ID
+}
+```
+
+The `RowSettings` component renders the loop section and visibility rules section in a collapsible PanelBody within the WP inspector.
+
+---
+
+## 11. PHP Server-Side Rendering
+
+`Block_Loader.php` → `apply_nb_child_block_features()` handles all NB blocks that need server-side processing.
+
+**Supported blocks:** `nectar-blocks/accordion-section`, `nectar-blocks/icon`, `nectar-blocks/button`
+
+**What it does per block:**
+
+1. **Dynamic tag resolution** — reads `voxelDynamicTags` and resolves expressions (title, CSS ID, etc.) via the VoxelScript parser
+2. **Icon size** — injects `--voxel-icon-size` as inline CSS custom property; generates responsive CSS (`@media` queries) for tablet/mobile overrides
+3. **Icon color** — injects `--voxel-icon-color` as inline CSS custom property
+4. **Global CSS** — outputs a `<style>` block once per page with all the icon styling rules (size selectors, color selectors, mask technique for SVG images, default sizes)
+
+**CSS output targets (frontend):**
+
+| Selector | Purpose |
+|----------|---------|
+| `.nectar-blocks-accordion-section[style*="--voxel-icon-size"] .nectar-blocks-icon__inner` | Native icon size |
+| `.nectar-blocks-accordion-section[style*="--voxel-icon-color"] ... .nectar-component__icon` | Native icon color |
+| `.nectar-blocks-accordion-section[style*="--voxel-icon-color"] ... img[data-voxel-colored="true"]` | Dynamic icon color (mask) |
+| `.nectar-blocks-button[style*="--voxel-icon-size"] a > img` | Button dynamic icon size |
+| `.nectar-blocks-button[style*="--voxel-icon-color"] a > img[data-voxel-colored="true"]` | Button dynamic icon color (mask) |
+| `.nectar-blocks-icon[style*="--voxel-icon-color"] .nectar-blocks-icon__inner .nectar-component__icon` | Icon block native color |
+| `.nectar-blocks-icon[style*="--voxel-icon-color"] .nectar-blocks-icon__inner > img[data-voxel-colored="true"]` | Icon block dynamic color (mask) |
+| `.nectar-blocks-button a > img.voxel-nb-icon-image-preview` | Button icon default 20px |
+| `.nectar-blocks-accordion-section ... > img` | Accordion icon default 20px |
+
+---
+
+## 12. Custom Attribute Repeater
 
 The most complex integration handles NB's custom attribute repeater. Each repeater item has a unique `id` that NB assigns internally.
 
@@ -284,27 +427,9 @@ The most complex integration handles NB's custom attribute repeater. Each repeat
    → Writes resolved values back (resync mechanism)
 ```
 
-### Why Resync?
-
-NB resets all custom attribute `attribute`/`value` fields to `""` when the user clicks "Add Link Attribute". Our block store subscriber detects when a tag-bound field's NB-native value becomes empty and re-resolves the tag expression to restore the displayed value.
-
 ---
 
-## 8. Dynamic Image Preview
-
-When `imageSource` has a tag set:
-
-1. **Resolve tag** → POST to `/voxel-fse/v1/dynamic-data/render`
-2. **Extract attachment ID** from rendered output
-3. **Fetch image URL** → GET `/wp/v2/media/{id}?context=edit`
-4. **Inject `<img>`** into the editor iframe's block element (`[data-block="{clientId}"]`)
-5. **Hide NB placeholder** via `[data-voxel-has-dynamic-image="true"] .components-placeholder { display: none }`
-
-A MutationObserver keeps the placeholder hidden even if NB's React re-renders restore it.
-
----
-
-## 9. Data Storage
+## 13. Data Storage
 
 All dynamic tag data is stored in a single block attribute:
 
@@ -312,6 +437,7 @@ All dynamic tag data is stored in a single block attribute:
 {
   "voxelDynamicTags": {
     "imageSource": "@tags()@term(image)@endtags()",
+    "iconImage": "@tags()@term(icon)@endtags()",
     "title": "@tags()@term(title)@endtags()",
     "customAttr_abc123_name": "@tags()data-author@endtags()",
     "customAttr_abc123_value": "@tags()@post(:author_name)@endtags()"
@@ -319,7 +445,7 @@ All dynamic tag data is stored in a single block attribute:
 }
 ```
 
-VoxelTab attributes are stored as individual block attributes:
+VoxelTab + icon attributes stored individually:
 
 ```json
 {
@@ -328,72 +454,62 @@ VoxelTab attributes are stored as individual block attributes:
   "visibilityBehavior": "show",
   "visibilityRules": [],
   "loopEnabled": false,
-  "loopLimit": "5"
+  "voxelDynamicContent": "@tags()@term(title)@endtags()",
+  "voxelDynamicTitle": "@tags()@term(title)@endtags()",
+  "voxelDynamicCssId": "",
+  "voxelIconSize": 24,
+  "voxelIconSize_tablet": 20,
+  "voxelIconSizeUnit": "px",
+  "voxelIconColor": "#ff5722"
 }
 ```
 
 ---
 
-## 10. Adding a New NB Block
+## 14. Adding a New NB Block
 
-### Step 1: Add to Registry
+### Step 1: Add to Registry (parent blocks)
 
-Edit `nectarBlocksConfig.ts`:
+Edit `nectarBlocksConfig.ts`, add to `nectarBlocksRegistry`:
 
 ```typescript
-export const nectarBlocksRegistry: NBBlockConfig[] = [
-  {
-    blockName: 'nectar-blocks/image',
-    fields: [ /* ... existing ... */ ],
-  },
-  // Add new block:
-  {
-    blockName: 'nectar-blocks/heading',
-    fields: [
-      {
-        fieldKey: 'headingText',
-        label: 'Heading Text',
-        labelText: 'Text',        // exact label text in NB's DOM
-        tab: 'layout',
-        type: 'text',
-        placement: 'inline',       // optional, defaults to 'inline'
-      },
-      {
-        fieldKey: 'linkUrl',
-        label: 'Link URL',
-        labelText: 'URL',
-        tab: 'layout',
-        type: 'url',
-      },
-    ],
-  },
-];
+{
+  blockName: 'nectar-blocks/heading',
+  fields: [
+    {
+      fieldKey: 'headingText',
+      label: 'Heading Text',
+      labelText: 'Text',       // exact label text in NB's DOM
+      tab: 'layout',
+      type: 'text',
+    },
+    {
+      fieldKey: 'zIndex',
+      label: 'Z-Index',
+      labelText: 'Value',
+      tab: 'style',
+      type: 'number',
+      parentLabelText: 'Z-Index',
+    },
+  ],
+},
 ```
 
-`NB_TARGET_BLOCK_NAMES` is computed automatically from the registry.
+### Step 2: Add to Child Block Config (if inner block)
 
-### Step 2: Verify Label Text
+Add to `NB_ROW_SETTINGS_BLOCKS` array, and optionally add dynamic fields to `NB_DYNAMIC_TAG_FIELDS` and/or `NB_CHILD_TITLE_BLOCK_NAMES`.
 
-Open the Site Editor, select the NB block, and inspect the sidebar. Find the `.nectar-control-row__label` elements and note their exact text content. Use this as the `labelText` value.
+### Step 3: Add Advanced Panel Controls (if needed)
 
-### Step 3: Handle Special Cases
+Add to `NB_ADVANCED_PANEL_BLOCKS` with `controlType: 'text' | 'color' | 'range'`.
 
-- **Nested fields**: Set `parentLabelText` to scope the label match
-- **Image fields**: Set `type: 'image'` and `placement: 'corner'`
-- **Repeater items**: Handled automatically by the body observer if they appear in a `.nectar__link-control__custom-attr__popover`
+### Step 4: Verify Label Text
 
-### Step 4: Test
-
-Run the test suite:
-
-```bash
-cd app/public/wp-content/themes/voxel-fse
-npx vitest run app/blocks/shared/nb-integration/__tests__/
-```
+Open the Site Editor, select the NB block, inspect the sidebar. Find `.nectar-control-row__label` elements and note their exact text content.
 
 ---
 
-## 11. Testing
+## 15. Testing
 
 ### Test File
 
@@ -406,34 +522,29 @@ npx vitest run app/blocks/shared/nb-integration/__tests__/
 | Attribute Registration | 5 | `blocks.registerBlockType` filter adds `voxelDynamicTags` + all 31 `voxelTabAttributes` |
 | Config & Registry | 5 | `nectarBlocksRegistry` structure, `NB_TARGET_BLOCK_NAMES` set, `getNBBlockConfig()` lookup |
 | HOC Wiring | 5 | `editor.BlockEdit` HOC renders `NBDynamicTagInjector` for target blocks, skips non-target blocks |
-| VoxelTab Portal Rendering | 11 | VoxelTab renders all 3 accordion sections (Widget options, Visibility, Loop element) with correct controls |
-| Complete Wiring Chain | 12 | End-to-end: attribute injection → HOC wrapping → VoxelTab rendering → attribute changes via `setAttributes` |
-
-### Running Tests
+| VoxelTab Portal Rendering | 11 | VoxelTab renders all 3 accordion sections with correct controls |
+| Complete Wiring Chain | 12 | End-to-end: attribute injection → HOC wrapping → VoxelTab rendering → `setAttributes` |
 
 ```bash
 # Run NB integration tests only
 npx vitest run app/blocks/shared/nb-integration/
-
-# Run with coverage
-npx vitest run --coverage app/blocks/shared/nb-integration/
 ```
 
 ---
 
-## 12. Known Limitations
+## 16. Known Limitations
 
-1. **Label-based matching is fragile.** If NB changes its label text (e.g., "Image" → "Image Source"), the match breaks. Mitigation: version-pinned NB plugin.
+1. **Label-based matching is fragile.** If NB changes its label text, the match breaks. Mitigation: version-pinned NB plugin.
 
-2. **No PHP attribute registration.** Since NB registers blocks client-side, VoxelTab attributes are only available in the editor. Server-side rendering must read them from the serialized block markup.
+2. **No PHP attribute registration.** NB registers blocks client-side. VoxelTab attributes are editor-only; server-side rendering reads them from the serialized block markup.
 
-3. **Emotion CSS recreation.** The CSS file recreates `@wordpress/components` styles for portal-rendered content. WP core updates may change these styles. The CSS was extracted and verified against WP 6.7.
+3. **Emotion CSS recreation.** The CSS file recreates `@wordpress/components` styles for portal-rendered content. Verified against WP 6.7.
 
-4. **Single block support.** Currently only `nectar-blocks/image` is in the registry. Adding more blocks requires browser discovery of their DOM structure and label texts.
+4. **Icon color on non-SVG images.** The CSS mask technique works best with SVG/transparent PNGs. Opaque raster images won't look right with color applied.
 
 ---
 
-## 13. Reference
+## 17. Reference
 
 | Resource | Path |
 |----------|------|
@@ -442,6 +553,9 @@ npx vitest run --coverage app/blocks/shared/nb-integration/
 | Field registry | `app/blocks/shared/nb-integration/nectarBlocksConfig.ts` |
 | CSS | `app/blocks/shared/nb-integration/nb-dynamic-tag-injector.css` |
 | Tests | `app/blocks/shared/nb-integration/__tests__/nb-voxeltab-wiring.test.tsx` |
+| PHP rendering | `app/blocks/Block_Loader.php` → `apply_nb_child_block_features()` |
 | VoxelTab component | `app/blocks/shared/controls/VoxelTab.tsx` |
+| RowSettings component | `app/blocks/shared/controls/RowSettings.tsx` |
 | EnableTagsButton | `app/blocks/shared/controls/EnableTagsButton.tsx` |
+| EnableTagsToolbarButton | `app/blocks/shared/controls/EnableTagsToolbarButton.tsx` |
 | DynamicTagBuilder | `app/blocks/shared/dynamic-tags/` |

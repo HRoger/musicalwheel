@@ -31,6 +31,7 @@ export interface NBFieldTarget {
 	 * Placement of the EnableTag button:
 	 * - 'inline' (default): appended inside the label element
 	 * - 'corner': absolutely positioned in the top-right corner of the .nectar-control-row__component
+	 * - 'panel-prepend': prepended at the top of the parent panel body (for standalone controls like gallery)
 	 */
 	placement?: 'inline' | 'corner';
 }
@@ -123,6 +124,10 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/image-gallery', fields: [
+		// Gallery images — injected into NB's "Edit Photos" dialog via body observer
+		{ fieldKey: 'galleryImages', label: 'Gallery Images', labelText: '', tab: 'layout', type: 'image' },
+		// Style tab — Background section
+		{ fieldKey: 'backgroundImage', label: 'Background Image', labelText: 'Image', tab: 'style', type: 'image', parentLabelText: 'Background', placement: 'corner' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/image-grid', fields: [
@@ -164,9 +169,21 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/video-lightbox', fields: [
+		// General Settings — External mode (labelText unique, no parent needed)
+		{ fieldKey: 'videoUrl', label: 'Video URL', labelText: 'Video URL', tab: 'layout', type: 'url' },
+		// General Settings — Local mode (scoped to General Settings to avoid Preview > Video collision)
+		{ fieldKey: 'videoLocal', label: 'Video (Local)', labelText: 'Video', tab: 'layout', type: 'image', parentLabelText: 'General Settings', placement: 'corner' },
+		// Preview section (toggle-panel — matchesParentSection handles this)
+		{ fieldKey: 'previewImage', label: 'Preview Image', labelText: 'Image', tab: 'layout', type: 'image', parentLabelText: 'Preview', placement: 'corner' },
+		{ fieldKey: 'previewVideo', label: 'Preview Video', labelText: 'Video', tab: 'layout', type: 'image', parentLabelText: 'Preview', placement: 'corner' },
+		// Style tab
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/video-player', fields: [
+		// General Settings
+		{ fieldKey: 'video', label: 'Video', labelText: 'Video', tab: 'layout', type: 'image', placement: 'corner' },
+		{ fieldKey: 'previewImage', label: 'Preview Image', labelText: 'Preview Image', tab: 'layout', type: 'image', placement: 'corner' },
+		// Style tab
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 ];
@@ -232,6 +249,20 @@ export const NB_TOOLBAR_TAG_BLOCKS = [
 export const NB_TOOLBAR_TAG_BLOCK_NAMES = new Set<string>(NB_TOOLBAR_TAG_BLOCKS);
 
 // ============================================================================
+// CHILD TITLE TOOLBAR BLOCKS (EnableTag in toolbar for title-bearing children)
+// ============================================================================
+
+/** Child blocks that get toolbar EnableTag button for their title/label */
+export const NB_CHILD_TITLE_BLOCKS = [
+	'nectar-blocks/accordion-section',
+	'nectar-blocks/tab-section',
+	'nectar-blocks/icon-list-item',
+] as const;
+
+/** Set of child title block names for quick lookup */
+export const NB_CHILD_TITLE_BLOCK_NAMES = new Set<string>(NB_CHILD_TITLE_BLOCKS);
+
+// ============================================================================
 // ADVANCED PANEL CONTROLS (parent blocks that need extra controls in WP Advanced)
 // ============================================================================
 
@@ -239,10 +270,15 @@ export const NB_TOOLBAR_TAG_BLOCK_NAMES = new Set<string>(NB_TOOLBAR_TAG_BLOCKS)
  * Parent blocks that get additional controls injected into the WP Advanced
  * accordion panel. Each entry maps a block name to its advanced panel fields.
  *
- * - 'label': "Edit label as HTML" for button block
+ * controlType: 'text' (default) = DynamicTagTextControl, 'color' = ColorPickerControl
  */
-export const NB_ADVANCED_PANEL_BLOCKS: Record<string, { attr: string; label: string }[]> = {
+export const NB_ADVANCED_PANEL_BLOCKS: Record<string, { attr: string; label: string; controlType?: 'text' | 'color' | 'range' }[]> = {
 	'nectar-blocks/button': [
 		{ attr: 'voxelDynamicContent', label: 'Edit Label as HTML' },
+		{ attr: 'voxelIconSize', label: 'Icon Size', controlType: 'range' },
+		{ attr: 'voxelIconColor', label: 'Icon Color', controlType: 'color' },
+	],
+	'nectar-blocks/icon': [
+		{ attr: 'voxelIconColor', label: 'Icon Color', controlType: 'color' },
 	],
 };

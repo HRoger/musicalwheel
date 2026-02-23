@@ -250,6 +250,9 @@ class Block_Loader
         // Priority 10 ensures it runs for all blocks, including those without render_callback
         add_filter('render_block', [__CLASS__, 'apply_voxel_tab_features'], 10, 2);
 
+        // NB child block features: icon size custom property for accordion-section
+        add_filter('render_block', [__CLASS__, 'apply_nb_child_block_features'], 10, 2);
+
         // Output collected block CSS as a single <style> tag in wp_footer.
         // CSS is collected during render_block (above) and flushed once at end of page.
         // NOTE: map and slider blocks are excluded — they keep inline <style> tags
@@ -4740,6 +4743,169 @@ JAVASCRIPT;
         // This ensures tags like @post(title) work inside static blocks.
         if (function_exists('\Voxel\render')) {
             return \Voxel\render($block_content);
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Apply features to NectarBlocks blocks (accordion-section, icon, etc.)
+     *
+     * Handles:
+     * - Icon size custom property for accordion-section (voxelIconSize)
+     * - Icon color custom property for accordion-section and icon block (voxelIconColor)
+     *
+     * @param string $block_content The block HTML content.
+     * @param array  $block         The full block, including name and attributes.
+     * @return string Modified block content.
+     */
+    public static function apply_nb_child_block_features( $block_content, $block ) {
+        $block_name = $block['blockName'] ?? '';
+        $supported = [ 'nectar-blocks/accordion-section', 'nectar-blocks/icon', 'nectar-blocks/button' ];
+
+        if ( ! in_array( $block_name, $supported, true ) ) {
+            return $block_content;
+        }
+
+        $attributes = $block['attrs'] ?? [];
+        $inline_styles = [];
+
+        // Icon size (accordion-section + button)
+        $is_accordion = $block_name === 'nectar-blocks/accordion-section';
+        $is_button = $block_name === 'nectar-blocks/button';
+        $supports_icon_size = $is_accordion || $is_button;
+        if ( $supports_icon_size ) {
+            $icon_size = $attributes['voxelIconSize'] ?? null;
+            $icon_size_unit = $attributes['voxelIconSizeUnit'] ?? 'px';
+
+            if ( $icon_size !== null ) {
+                $size_value = floatval( $icon_size ) . esc_attr( $icon_size_unit );
+                $inline_styles[] = "--voxel-icon-size: {$size_value}";
+
+                // Responsive CSS
+                $tablet_size = $attributes['voxelIconSize_tablet'] ?? null;
+                $mobile_size = $attributes['voxelIconSize_mobile'] ?? null;
+                if ( $tablet_size !== null || $mobile_size !== null ) {
+                    $responsive_css = '';
+                    $css_class = $is_accordion ? '.nectar-blocks-accordion-section' : '.nectar-blocks-button';
+                    if ( $tablet_size !== null ) {
+                        $tablet_value = floatval( $tablet_size ) . esc_attr( $icon_size_unit );
+                        $responsive_css .= "@media (max-width: 999px) { {$css_class} { --voxel-icon-size: {$tablet_value}; } }";
+                    }
+                    if ( $mobile_size !== null ) {
+                        $mobile_value = floatval( $mobile_size ) . esc_attr( $icon_size_unit );
+                        $responsive_css .= "@media (max-width: 767px) { {$css_class} { --voxel-icon-size: {$mobile_value}; } }";
+                    }
+                    $block_content = '<style>' . $responsive_css . '</style>' . $block_content;
+                }
+            }
+        }
+
+        // Icon color (accordion-section + icon block)
+        $icon_color = $attributes['voxelIconColor'] ?? '';
+        if ( $icon_color ) {
+            $inline_styles[] = '--voxel-icon-color: ' . esc_attr( $icon_color );
+        }
+
+        // No styles to apply
+        if ( empty( $inline_styles ) ) {
+            return $block_content;
+        }
+
+        // Apply inline styles to the first HTML tag
+        $style_str = implode( '; ', $inline_styles ) . ';';
+        if ( preg_match( '/^(<[^>]+)(>)/s', $block_content, $matches ) ) {
+            $tag = $matches[1];
+            if ( strpos( $tag, 'style="' ) !== false ) {
+                $tag = str_replace( 'style="', 'style="' . esc_attr( $style_str ) . ' ', $tag );
+            } else {
+                $tag .= ' style="' . esc_attr( $style_str ) . '"';
+            }
+            $block_content = $tag . $matches[2] . substr( $block_content, strlen( $matches[0] ) );
+        }
+
+        // Global CSS for icon styling (only once per page)
+        static $icon_style_css_output = false;
+        if ( ! $icon_style_css_output ) {
+            $icon_style_css_output = true;
+            $global_css = '
+                /* Accordion-section icon size */
+                .nectar-blocks-accordion-section[style*="--voxel-icon-size"] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner {
+                    width: var(--voxel-icon-size) !important;
+                    height: var(--voxel-icon-size) !important;
+                }
+                .nectar-blocks-accordion-section[style*="--voxel-icon-size"] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon,
+                .nectar-blocks-accordion-section[style*="--voxel-icon-size"] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner img {
+                    width: var(--voxel-icon-size) !important;
+                    height: var(--voxel-icon-size) !important;
+                }
+                /* Accordion-section: dynamic icon image rendered by PHP */
+                .nectar-blocks-accordion-section[style*="--voxel-icon-size"] .nectar-blocks-accordion-section__title > img {
+                    width: var(--voxel-icon-size) !important;
+                    height: var(--voxel-icon-size) !important;
+                }
+                /* Accordion-section icon color (native NB icon) */
+                .nectar-blocks-accordion-section[style*="--voxel-icon-color"] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon {
+                    color: var(--voxel-icon-color) !important;
+                }
+                /* Accordion-section icon color (SVG img via CSS mask) */
+                .nectar-blocks-accordion-section[style*="--voxel-icon-color"] .nectar-blocks-accordion-section__title > img[data-voxel-colored="true"] {
+                    background-color: var(--voxel-icon-color);
+                    -webkit-mask-size: contain;
+                    mask-size: contain;
+                    -webkit-mask-repeat: no-repeat;
+                    mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    mask-position: center;
+                    object-position: -9999px;
+                }
+                /* NB icon block color (native SVG icon) */
+                .nectar-blocks-icon[style*="--voxel-icon-color"] .nectar-blocks-icon__inner .nectar-component__icon {
+                    color: var(--voxel-icon-color) !important;
+                }
+                /* NB icon block color (dynamic image via CSS mask) */
+                .nectar-blocks-icon[style*="--voxel-icon-color"] .nectar-blocks-icon__inner > img[data-voxel-colored="true"] {
+                    background-color: var(--voxel-icon-color);
+                    -webkit-mask-size: contain;
+                    mask-size: contain;
+                    -webkit-mask-repeat: no-repeat;
+                    mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    mask-position: center;
+                    object-position: -9999px;
+                }
+                /* Button block: dynamic icon image size */
+                .nectar-blocks-button[style*="--voxel-icon-size"] a > img {
+                    width: var(--voxel-icon-size) !important;
+                    height: var(--voxel-icon-size) !important;
+                }
+                /* Button block: dynamic icon default 20px size */
+                .nectar-blocks-button a > img.voxel-nb-icon-image-preview {
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
+                    object-fit: contain;
+                }
+                /* Button block: dynamic icon image color (SVG via CSS mask) */
+                .nectar-blocks-button[style*="--voxel-icon-color"] a > img[data-voxel-colored="true"] {
+                    background-color: var(--voxel-icon-color);
+                    -webkit-mask-size: contain;
+                    mask-size: contain;
+                    -webkit-mask-repeat: no-repeat;
+                    mask-repeat: no-repeat;
+                    -webkit-mask-position: center;
+                    mask-position: center;
+                    object-position: -9999px;
+                }
+                /* Default 20px for accordion-section dynamic icon */
+                .nectar-blocks-accordion-section .nectar-blocks-accordion-section__title > img {
+                    width: 20px;
+                    height: 20px;
+                    flex-shrink: 0;
+                    object-fit: contain;
+                }
+            ';
+            $block_content = '<style>' . $global_css . '</style>' . $block_content;
         }
 
         return $block_content;
