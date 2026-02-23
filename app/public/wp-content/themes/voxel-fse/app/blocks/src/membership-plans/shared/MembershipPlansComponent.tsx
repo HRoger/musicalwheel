@@ -32,15 +32,6 @@ import { VoxelIcons, renderIcon } from '@shared/utils';
 declare global {
 	interface Window {
 		jQuery?: JQueryStatic;
-		Voxel?: {
-			alert: (message: string, type: 'error' | 'success' | 'info') => void;
-			dialog: (options: VoxelDialogOptions) => void;
-		};
-		Voxel_Config?: {
-			l10n: {
-				ajaxError: string;
-			};
-		};
 	}
 }
 
@@ -199,7 +190,7 @@ function handlePlanClick(
 										// Show error using Voxel alert system
 										const errorMessage =
 											confirmResponse.message ||
-											window.Voxel_Config?.l10n?.ajaxError ||
+											(window as any).Voxel_Config?.l10n?.ajaxError ||
 											'An error occurred';
 
 										if (window.Voxel?.alert) {
@@ -219,7 +210,7 @@ function handlePlanClick(
 
 				// Show the dialog with modified actions
 				if (window.Voxel?.dialog) {
-					window.Voxel.dialog(response.dialog);
+					(window as any).Voxel.dialog(response.dialog);
 				} else {
 					console.error('[MembershipPlans] Voxel.dialog not available');
 				}
@@ -265,7 +256,7 @@ function handlePlanClick(
 			// ========================================
 			const errorMessage =
 				response.message ||
-				window.Voxel_Config?.l10n?.ajaxError ||
+				(window as any).Voxel_Config?.l10n?.ajaxError ||
 				'An error occurred';
 
 			if (window.Voxel?.alert) {
@@ -414,8 +405,7 @@ function PlanCard({
 							)}
 							{price.trialDays != null && price.trialDays > 0 && (
 								<p className="ts-price-trial">
-									{price.trialDays}
-									{__('-day free trial', 'voxel-fse')}
+									{__('%d-day free trial', 'voxel-fse').replace('%d', String(price.trialDays))}
 								</p>
 							)}
 						</>
@@ -554,7 +544,7 @@ export default function MembershipPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -568,7 +558,7 @@ export default function MembershipPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -582,7 +572,7 @@ export default function MembershipPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -599,7 +589,7 @@ export default function MembershipPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -626,16 +616,24 @@ export default function MembershipPlansComponent({
 	};
 
 	// Determine if current plan
+	// Evidence: pricing-plans-widget.php template lines 72-92
 	const isCurrentPlan = (priceKey: string): boolean => {
 		if (!apiData?.userMembership) return false;
 
 		const membership = apiData.userMembership;
 
+		// Default/free plan: must be type 'default', planKey 'default', and NOT initial state
+		// (initial state = user just registered, hasn't explicitly chosen a plan yet)
 		if (priceKey === 'default') {
-			return membership.type === 'default' && membership.planKey === 'default';
+			return membership.type === 'default'
+				&& membership.planKey === 'default'
+				&& !membership.isInitialState;
 		}
 
-		return membership.priceKey === priceKey && !membership.isSubscriptionCanceled;
+		// Paid plan: check type is 'order', subscription not canceled, and price matches
+		return membership.type === 'order'
+			&& membership.priceKey === priceKey
+			&& !membership.isSubscriptionCanceled;
 	};
 
 	// Get button text based on membership status
@@ -723,7 +721,7 @@ export default function MembershipPlansComponent({
 							pricingAlign={attributes.pricingAlign}
 							descAlign={attributes.descAlign}
 							listAlign={attributes.listAlign}
-							arrowIconElement={arrowIconElement}
+							arrowIconElement={arrowIconElement as any}
 							context={context}
 						/>
 					));

@@ -4,12 +4,12 @@
  *
  * Voxel Template: themes/voxel/templates/widgets/create-post/location-field.php
  *
- * Enhancement Level: Level 2 (Full Parity + Autocomplete)
- * Enhancement Date: 2025-12-01
+ * Enhancement Level: Level 2 (Full Parity + Voxel.Maps Autocomplete)
+ * Enhancement Date: 2025-12-01 (Updated 2026-02-09)
  *
  * Features:
- * - Address autocomplete with Nominatim search (NEW!)
- * - Interactive Leaflet map with draggable marker (NEW!)
+ * - Address autocomplete via Voxel.Maps.Autocomplete (Google Places / Mapbox)
+ * - Interactive map via Voxel.Maps.Map with draggable marker
  * - Reverse geocoding (coordinates → address) (NEW!)
  * - Browser geolocation support
  * - Manual lat/lng inputs
@@ -148,10 +148,10 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 				// Reverse geocode using Voxel.Maps.getGeocoder() - EXACT Voxel pattern
 				// Evidence: themes/voxel/assets/dist/create-post.js - geocode() method
 				if (window.Voxel?.Maps) {
-					const geocoder = window.Voxel.Maps.getGeocoder();
+					const geocoder = (window.Voxel?.Maps as any)?.getGeocoder?.();
 					geocoder.geocode(
 						{ lat, lng },
-						(result) => {
+						(result: any) => {
 							// Success callback
 							const addressFromGeo = result.address || '';
 							setAddress(addressFromGeo);
@@ -181,7 +181,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 					setIsGeolocating(false);
 				}
 			},
-			(error) => {
+			(_error) => {
 				setIsGeolocating(false);
 				// EXACT Voxel: Use positionFail message for all geolocation errors
 				// Evidence: themes/voxel/app/controllers/assets-controller.php:244
@@ -231,7 +231,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 						onChange={handleAddressChange}
 						onSelect={handleAddressSelect}
 						onBlur={onBlur}
-						placeholder={field.props?.placeholder || 'Enter address'}
+						placeholder={String(field.props?.['placeholder'] ?? 'Enter address')}
 						iconHtml={markerIconHtml}
 					/>
 				</div>
@@ -277,7 +277,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 				</label>
 			</div>
 
-			{/* Map Picker - NEW! Interactive Leaflet map (shown when map_picker is true) */}
+			{/* Map Picker - Voxel.Maps interactive map (shown when map_picker is true) */}
 			{mapPicker && (
 				<>
 					<div className="ts-form-group">
@@ -286,7 +286,7 @@ export const LocationField: React.FC<LocationFieldProps> = ({ field, value, onCh
 							latitude={latitude || 40.7128}
 							longitude={longitude || -74.0060}
 							onLocationChange={handleMapLocationChange}
-							zoom={field.props?.default_zoom || 13}
+							zoom={Number(field.props?.['default_zoom'] ?? 13)}
 						/>
 					</div>
 

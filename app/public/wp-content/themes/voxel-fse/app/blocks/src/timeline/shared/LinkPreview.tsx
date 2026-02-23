@@ -43,7 +43,7 @@ interface LinkPreviewProps {
  */
 export function LinkPreview({
 	preview,
-	externalIcon,
+	externalIcon: _externalIcon,
 	className = '',
 }: LinkPreviewProps): JSX.Element {
 	const { config } = useTimelineConfig();

@@ -209,6 +209,10 @@ if ( ! class_exists( 'WP_REST_Response' ) ) {
 		public function set_status( $status ) {
 			$this->status = $status;
 		}
+
+		public function set_data( $data ) {
+			$this->data = $data;
+		}
 	}
 }
 
@@ -220,9 +224,19 @@ if ( ! class_exists( 'WP_REST_Request' ) ) {
 		private $params = [];
 		private $method = 'GET';
 		private $body_params = [];
+		private $route = '';
 
 		public function __construct( $method = 'GET', $route = '' ) {
 			$this->method = $method;
+			$this->route = $route;
+		}
+
+		public function get_route() {
+			return $this->route;
+		}
+
+		public function set_route( $route ) {
+			$this->route = $route;
 		}
 
 		public function set_param( $key, $value ) {

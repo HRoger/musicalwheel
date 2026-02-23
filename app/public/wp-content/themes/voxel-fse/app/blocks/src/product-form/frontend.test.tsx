@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ProductFormComponent from './shared/ProductFormComponent';
 import type { ProductFormAttributes, ExtendedProductFormConfig, ProductFormVxConfig } from './types';
@@ -95,7 +95,8 @@ function createMockProductConfig(
 /**
  * Create mock vxconfig
  */
-function createMockVxConfig(overrides: Partial<ProductFormVxConfig> = {}): ProductFormVxConfig {
+// @ts-ignore -- unused but kept for future use
+function _createMockVxConfig(overrides: Partial<ProductFormVxConfig> = {}): ProductFormVxConfig {
 	return {
 		blockId: 'test-block-123',
 		settings: {

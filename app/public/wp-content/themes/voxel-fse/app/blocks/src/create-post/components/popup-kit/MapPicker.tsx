@@ -22,29 +22,7 @@ interface MapClickEvent {
 	latlng?: unknown;
 }
 
-// TypeScript declarations for Voxel.Maps global API
-declare global {
-	interface Window {
-		Voxel?: {
-			Maps?: {
-				await: (callback: () => void) => void;
-				Map: new (config: {
-					el: HTMLElement;
-					zoom: number;
-					center?: VoxelLatLng;
-				}) => VoxelMap;
-				Marker: new (config: {
-					template: string;
-					map?: VoxelMap;
-					position?: VoxelLatLng;
-				}) => VoxelMarker;
-				LatLng: new (lat: number, lng: number) => VoxelLatLng;
-				getGeocoder: () => VoxelGeocoder;
-			};
-			alert?: (message: string) => void;
-		};
-	}
-}
+
 
 interface VoxelLatLng {
 	getLatitude(): number;
@@ -70,14 +48,6 @@ interface VoxelMarker {
 	getPosition(): VoxelLatLng | null;
 	setMap(map: VoxelMap | null): void;
 	remove(): void;
-}
-
-interface VoxelGeocoder {
-	geocode(
-		position: { lat: number; lng: number },
-		successCallback: (result: { address: string }) => void,
-		errorCallback?: () => void
-	): void;
 }
 
 interface MapPickerProps {
@@ -107,10 +77,10 @@ export const MapPicker: React.FC<MapPickerProps> = ({
 				return;
 			}
 
-			const geocoder = window.Voxel.Maps.getGeocoder();
+			const geocoder = (window.Voxel.Maps as any).getGeocoder();
 			geocoder.geocode(
 				{ lat, lng },
-				(result) => {
+				(result: any) => {
 					resolve(result.address);
 				},
 				() => {
@@ -125,7 +95,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
 		if (!window.Voxel?.Maps) return null;
 		if (typeof latitude !== 'number' || typeof longitude !== 'number') return null;
 
-		return new window.Voxel.Maps.LatLng(latitude, longitude);
+		return new (window.Voxel.Maps as any).LatLng(latitude, longitude);
 	}, [latitude, longitude]);
 
 	// Initialize map
@@ -152,7 +122,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
 
 			// Create map instance
 			// Evidence: themes/voxel/assets/dist/create-post.js - new Voxel.Maps.Map()
-			const map = new window.Voxel.Maps.Map({
+			const map = new (window.Voxel.Maps as any).Map({
 				el: mapContainerRef.current,
 				zoom: zoom
 			});
@@ -167,7 +137,7 @@ export const MapPicker: React.FC<MapPickerProps> = ({
 				</div>
 			`;
 
-			const marker = new window.Voxel.Maps.Marker({
+			const marker = new (window.Voxel.Maps as any).Marker({
 				template: markerTemplate
 			});
 

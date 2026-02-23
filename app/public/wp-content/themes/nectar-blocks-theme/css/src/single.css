@@ -7,16 +7,20 @@ Description: Styles loaded only on single posts
  margin-bottom: var(--nectar-blog-section-spacing);
 }
 
+.single-post .main-content > .nectar-blocks__post-section:has(.comment-wrap[data-comments-open="false"]) {
+  margin-bottom: 0;
+}
+
+/* .single-post .main-content > .nectar_template_single {
+  margin-bottom: 0;
+} */
+
 .single.single-post .heading-title[data-header-style="default_minimal"],
 .single.single-post .heading-title[data-header-style="default"] h1 {
   margin-bottom: 8px;
 }
 
-body.single-post[data-bg-header="true"] .container-wrap {
-  padding-top: 40px!important;
-}
-
-body.single-post.material[data-bg-header="true"] .container-wrap {
+body.single-post.material[data-bg-header="true"] .container-wrap:not(:has(.nectar_template_single__post)) {
   padding-top: var(--nectar-blog-section-spacing)!important;
 }
 
@@ -26,7 +30,11 @@ body.single-post .nectar_hook_before_content_global_section {
   margin-bottom: 80px;
 }
 
-
+.nectar-blocks__post-section:after {
+  clear: both;
+  content: " ";
+  display: table;
+}
 
 body.single-post .nectar-global-section.nectar_hook_after_content > .container {
   padding: 0;
@@ -681,9 +689,9 @@ body .container-wrap[data-nav-pos="after_project_2"] .bottom_controls .next-proj
   transform: scale(1.1);
 }
 
-.container-wrap[data-nav-pos="after_project_next_only"] .bottom_controls { 
-	padding-top: 5%; 
-	padding-bottom: 5%; 
+.container-wrap[data-nav-pos="after_project_next_only"] .bottom_controls {
+	padding-top: 5%;
+	padding-bottom: 5%;
 	background-color: transparent;
 }
 
@@ -839,7 +847,7 @@ div[data-style="parallax_next_only"].blog_next_prev_buttons h3 {
 }
 
 .single-post .related-post-wrap .nectar-split-heading[data-animation-type="line-reveal-by-space"]:not(.markup-generated) {
-  opacity: 1;  
+  opacity: 1;
 }
 
 .single-post .related-post-wrap .nectar-post-grid-item .nectar-split-heading span .inner {
@@ -1433,5 +1441,5 @@ body.single-post .container-wrap[data-remove-post-comment-number="1"] .related-p
   .single-post #page-header-wrap[data-responsive="true"][data-animate-in-effect="slide-down"] {
     min-height: 100px;
   }
-  
+
 }

@@ -3,7 +3,8 @@
  * Multi-step progress indicator with step navigation
  * Extracted from CreatePostForm for reusability
  */
-import type { VoxelField, SubmissionState, IconValue } from '../types';
+import type { VoxelField, SubmissionState } from '../types';
+import type { IconValue } from '@shared/types';
 import { renderIcon, defaultIcons } from '../utils/iconRenderer';
 
 export interface FormHeaderProps {

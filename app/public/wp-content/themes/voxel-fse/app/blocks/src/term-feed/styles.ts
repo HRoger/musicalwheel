@@ -59,9 +59,14 @@ export function generateTermFeedResponsiveCSS(
 ): string {
     const cssParts: string[] = [];
 
+    // Container positioning + overflow containment (matches post-feed/styles.ts)
+    cssParts.push(`${selector} { position: relative; max-width: 100%; min-width: 0; overflow: hidden; }`);
+
     // Carousel Navigation Button Styles
-    const btnSelector = `${selector} .ts-icon-btn`;
-    const btnHoverSelector = `${selector} .ts-icon-btn:hover`;
+    // PARITY FIX: Voxel scopes to `.post-feed-nav .ts-icon-btn` to avoid bleeding into card template icons
+    // Evidence: themes/voxel/app/widgets/term-feed.php:367,387,406,417,438,450,472,511,530,541,553,566
+    const btnSelector = `${selector} .post-feed-nav .ts-icon-btn`;
+    const btnHoverSelector = `${selector} .post-feed-nav .ts-icon-btn:hover`;
     const navLiFirstSelector = `${selector} .post-feed-nav li:first-child`;
     const navLiLastSelector = `${selector} .post-feed-nav li:last-child`;
     const navLiAllSelector = `${selector} .post-feed-nav li`;

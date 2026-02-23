@@ -35,13 +35,13 @@ export default function FilterPostStatus( {
 	const triggerRef = useRef< HTMLDivElement >( null );
 
 	const props = filterData.props || {};
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
-	const placeholder = props.placeholder || filterData.label || 'Status';
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
+	const placeholder = ( props['placeholder'] as string ) || filterData.label || 'Status';
 
 	// Parse choices from props (comes from Voxel PHP)
 	// Evidence: post-status-filter.php:84-88 returns choices as array with key, label
 	const choices: PostStatusChoice[] = useMemo( () => {
-		const statusChoices = props.choices || {};
+		const statusChoices = props['choices'] || {};
 		// Choices can be object or array
 		if ( Array.isArray( statusChoices ) ) {
 			return statusChoices;
@@ -50,7 +50,7 @@ export default function FilterPostStatus( {
 			key,
 			label: choice.label || choice,
 		} ) );
-	}, [ props.choices ] );
+	}, [ props['choices'] ] );
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
@@ -58,6 +58,12 @@ export default function FilterPostStatus( {
 
 	const handleSelect = useCallback( ( statusValue: string ) => {
 		onChange( statusValue );
+		setIsOpen( false );
+	}, [ onChange ] );
+
+	// Evidence: voxel-search-form.beautified.js:1708 — onClear() { this.value = "" }
+	const handleClear = useCallback( () => {
+		onChange( '' );
 		setIsOpen( false );
 	}, [ onChange ] );
 
@@ -176,7 +182,8 @@ export default function FilterPostStatus( {
 				icon={ filterIcon }
 				saveLabel="Save"
 				showSave={ false }
-				showClear={ false }
+				showClear={ hasValue }
+				onClear={ handleClear }
 				onSave={ () => setIsOpen( false ) }
 				onClose={ () => setIsOpen( false ) }
 				className={ `hide-head ${popupClassName}${config.popupCenterPosition ? ' ts-popup-centered' : ''}`.trim() }

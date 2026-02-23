@@ -26,11 +26,12 @@ import { InfoIcon } from '../icons/InfoIcon';
  * TinyMCE Editor instance interface
  */
 interface TinyMCEEditor {
-	on: (event: string, callback: (e: { content?: string }) => void) => void;
-	off: (event: string, callback: (e: { content?: string }) => void) => void;
+	on: (event: string, callback: (e: any) => void) => void;
+	off: (event: string, callback: (e: any) => void) => void;
 	setContent: (content: string) => void;
 	getContent: () => string;
 	remove: () => void;
+	save: () => void;
 }
 
 /**
@@ -72,27 +73,9 @@ interface TexteditorFieldProps {
 	icons?: FieldIcons;
 }
 
-/**
- * WordPress editor API interface
- */
-interface WPEditorAPI {
-	initialize: (id: string, settings: Record<string, unknown>) => void;
-	remove: (id: string) => void;
-}
-
-/**
- * WordPress global interface
- */
-interface WPGlobal {
-	editor?: WPEditorAPI;
-	oldEditor?: WPEditorAPI;
-}
-
-// Declare WordPress editor global
 declare global {
 	interface Window {
 		tinymce?: TinyMCEGlobal;
-		wp?: WPGlobal;
 	}
 }
 
@@ -100,7 +83,7 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 	const editorContainerRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const hiddenTextareaRef = useRef<HTMLTextAreaElement>(null);
-	const [editorInstance, setEditorInstance] = useState<TinyMCEEditor | null>(null);
+	const [_editorInstance, setEditorInstance] = useState<TinyMCEEditor | null>(null);
 	const editorIdRef = useRef<string>(`texteditor-${field.key}-${Math.random().toString(36).substr(2, 9)}`);
 	const [localError, setLocalError] = useState<string>('');
 
@@ -141,9 +124,9 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 				length = tempDiv.textContent?.length || 0;
 			}
 
-			if (minlength && length < minlength) {
+			if (minlength && length < Number(minlength)) {
 				setLocalError(`Value cannot be shorter than ${minlength} characters`);
-			} else if (maxlength && length > maxlength) {
+			} else if (maxlength && length > Number(maxlength)) {
 				setLocalError(`Value cannot be longer than ${maxlength} characters`);
 			} else {
 				setLocalError('');
@@ -171,11 +154,16 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 	};
 
 	// Initialize WordPress editor (for wp-editor-basic and wp-editor-advanced modes)
+	// Matching Voxel's FieldTextEditor.renderEditor() pattern:
+	//   1. Set innerHTML on container BEFORE init (done in JSX: {value || ''})
+	//   2. Call wp.oldEditor.initialize() — TinyMCE picks up DOM content
+	//   3. Never call editor.setContent() — that triggers St.setDocument → unload violation
+	// Evidence: voxel-create-post.beautified.js lines 593-601
 	useEffect(() => {
 		if (isPlainText || !editorContainerRef.current) return;
 
 		const initWPEditor = () => {
-			const wp = window.wp;
+			const wp = (window as any).wp;
 			// Use wp.oldEditor (classic TinyMCE) like Voxel does, fallback to wp.editor
 			const wpEditor = wp?.oldEditor || wp?.editor;
 			if (!wpEditor) {
@@ -184,6 +172,12 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 			}
 
 			const editorId = editorIdRef.current;
+
+			// Set innerHTML before init (Voxel pattern: this.$refs.editor.innerHTML = this.field.value)
+			// This lets TinyMCE pick up existing content without needing setContent() after init
+			if (editorContainerRef.current) {
+				editorContainerRef.current.innerHTML = value || '';
+			}
 
 			// Determine TinyMCE settings based on editor type
 			// Matching Voxel's configuration from texteditor-field.php lines 74-111
@@ -211,14 +205,17 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 			// Basic mode configuration (texteditor-field.php lines 97-102)
 			if (isBasic) {
 				tinymceSettings.plugins = 'lists,paste,tabfocus,wplink,wordpress,wpautoresize';
-				tinymceSettings.toolbar1 = 'bold,italic,bullist,numlist,link,unlink';
+				tinymceSettings.toolbar = 'bold,italic,bullist,numlist,link,unlink';
 			}
 
 			// Advanced mode configuration (texteditor-field.php lines 105-111)
 			if (isAdvanced) {
 				tinymceSettings.plugins = 'lists,paste,tabfocus,wplink,wordpress,colorpicker,hr,wpautoresize';
-				tinymceSettings.toolbar1 = 'formatselect,bold,italic,bullist,numlist,link,unlink,strikethrough,alignleft,aligncenter,alignright,underline,hr';
+				tinymceSettings.toolbar = 'formatselect,bold,italic,bullist,numlist,link,unlink,strikethrough,alignleft,aligncenter,alignright,underline,hr';
 			}
+
+			// Remove any previous instance before initializing (Voxel pattern: line 595)
+			wpEditor.remove(editorId);
 
 			// Initialize using WordPress oldEditor API (classic TinyMCE) like Voxel
 			wpEditor.initialize(editorId, {
@@ -228,21 +225,30 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 			});
 
 			// Wait for TinyMCE to be ready, then get the editor instance
+			// Voxel accesses tinyMCE.editors[id] directly after jQuery ready callback
 			const checkInterval = setInterval(() => {
 				if (window.tinymce) {
 					const editor = window.tinymce.get(editorId);
 					if (editor) {
 						clearInterval(checkInterval);
 
-						// Set initial content
-						editor.setContent(value || '');
+						// Do NOT call editor.setContent() — Voxel never does this.
+						// TinyMCE picks up the content from the DOM element set above.
+						// Calling setContent() triggers St.setDocument() which registers
+						// an 'unload' listener causing Chrome permission violations.
 						setEditorInstance(editor);
 
-						// Listen for content changes
-						editor.on('change keyup', () => {
-							const content = editor.getContent();
+						// Listen for content changes (Voxel: change, keyup, input + editor.save())
+						editor.on('change', ((e: { target?: { getContent?: () => string } }) => {
+							const content = e.target?.getContent?.() || editor.getContent();
 							onChange(content);
 							validateContent(content);
+						}) as any);
+						editor.on('keyup', () => {
+							editor.save();
+						});
+						editor.on('input', () => {
+							editor.save();
 						});
 
 						// Listen for blur
@@ -260,13 +266,13 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 		};
 
 		// Wait for WordPress editor API to load
-		const wp = window.wp;
+		const wp = (window as any).wp;
 		const wpEditor = wp?.oldEditor || wp?.editor;
 		if (wpEditor) {
 			initWPEditor();
 		} else {
 			const checkInterval = setInterval(() => {
-				const currentWp = window.wp;
+				const currentWp = (window as any).wp;
 				const currentWpEditor = currentWp?.oldEditor || currentWp?.editor;
 				if (currentWpEditor) {
 					clearInterval(checkInterval);
@@ -278,23 +284,16 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 			setTimeout(() => clearInterval(checkInterval), 5000);
 		}
 
-		// Cleanup on unmount
+		// Cleanup on unmount (Voxel pattern: line 584-587)
 		return () => {
 			const editorId = editorIdRef.current;
-			const cleanupWp = window.wp;
+			const cleanupWp = (window as any).wp;
 			const cleanupWpEditor = cleanupWp?.oldEditor || cleanupWp?.editor;
 			if (cleanupWpEditor) {
 				cleanupWpEditor.remove(editorId);
 			}
 		};
 	}, [isPlainText, isBasic, isAdvanced]);
-
-	// Update editor content when value changes externally
-	useEffect(() => {
-		if (editorInstance && editorInstance.getContent() !== value) {
-			editorInstance.setContent(value || '');
-		}
-	}, [value, editorInstance]);
 
 	// Resize on mount and when value changes (plain-text mode only)
 	useEffect(() => {
@@ -331,7 +330,7 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 						{/* Character counter - only show if maxlength is set AND content exists */}
 						{maxLength && contentLength > 0 && (
 							<span className="is-required ts-char-counter">
-								{contentLength}/{maxLength}
+								{contentLength}/{String(maxLength)}
 							</span>
 						)}
 					</>
@@ -356,7 +355,7 @@ export const TexteditorField: React.FC<TexteditorFieldProps> = ({ field, value, 
 						value={value || ''}
 						onChange={handleChange}
 						onBlur={onBlur}
-						placeholder={field.props?.['placeholder'] || field.placeholder}
+						placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? '')}
 						className="ts-filter"
 						required={field.required}
 					/>

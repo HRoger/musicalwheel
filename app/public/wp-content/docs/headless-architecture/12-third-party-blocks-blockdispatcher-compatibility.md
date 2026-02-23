@@ -1,31 +1,31 @@
 # Third-Party Blocks BlockDispatcher Compatibility Guide
 
 **Date:** January 2027
-**Purpose:** Evaluate Essential Blocks and Nectar Blocks compatibility with headless Next.js BlockDispatcher
+**Purpose:** Evaluate Nectar Blocks compatibility with headless Next.js BlockDispatcher
 **Architecture:** Option C+ (API-Driven Headless)
 
 ---
 
 ## Executive Summary
 
-**YES - Both Essential Blocks and Nectar Blocks work with your BlockDispatcher, but with limitations.**
+**YES - Nectar Blocks works with your BlockDispatcher, but with limitations.**
 
 They render as HTML fallbacks (TYPE B) rather than structured React components (TYPE A), which is acceptable for layout and design blocks.
 
 ---
 
-## Can Essential Blocks and Nectar Blocks Work with Your BlockDispatcher?
+## Can Nectar Blocks Work with Your BlockDispatcher?
 
 ### Short Answer: YES ✅
 
-Both plugins are compatible with your headless Next.js BlockDispatcher using the HTML fallback pattern.
+The plugin is compatible with your headless Next.js BlockDispatcher using the HTML fallback pattern.
 
 ### The Two Types of Block Rendering in Headless
 
 | Type | Example | What You Get | How to Render |
 |------|---------|--------------|---------------|
 | **TYPE A: Custom Blocks** | `voxel-fse/*` | Structured JSON attributes | Your own React component |
-| **TYPE B: Third-Party Blocks** | `nectar-blocks/*`, `essential-blocks/*` | Rendered HTML string | `dangerouslySetInnerHTML` |
+| **TYPE B: Third-Party Blocks** | `nectar-blocks/*` | Rendered HTML string | `dangerouslySetInnerHTML` |
 
 ---
 
@@ -41,8 +41,8 @@ if (block.name === 'voxel-fse/search-form') {
    return <VoxelSearchForm key={index} {...block.attributes} />
 }
 
-// TYPE B: Nectar/Essential Blocks - You get HTML, just render it
-if (block.name.startsWith('nectar-blocks/') || block.name.startsWith('essential-blocks/')) {
+// TYPE B: Nectar Blocks - You get HTML, just render it
+if (block.name.startsWith('nectar-blocks/')) {
     return (
       <div
         key={index}
@@ -60,7 +60,7 @@ When you query `editorBlocks`, you get:
 ```graphql
 {
   editorBlocks {
-    name            # "nectar-blocks/tabs" or "essential-blocks/button"
+    name            # "nectar-blocks/tabs"
     renderedHtml    # "<div class='nectar-tabs'>...</div>" ← The HTML output
     attributes {    # Limited structured data (may be empty for some blocks)
       name
@@ -82,14 +82,12 @@ Copy the compiled CSS files from each plugin to your Next.js project:
 
 **File Locations:**
 - **Nectar Blocks:** `wp-content/plugins/nectar-blocks/build/frontend-styles.css`
-- **Essential Blocks:** `wp-content/plugins/essential-blocks/build/style.css`
 
 **Next.js Integration:**
 
 ```tsx
 // app/layout.tsx (Next.js)
 import '@/styles/third-party/nectar-blocks.css';
-import '@/styles/third-party/essential-blocks.css';
 
 export default function RootLayout({ children }) {
   return (
@@ -108,7 +106,6 @@ Many blocks require JavaScript for interactivity (tabs, accordions, animations).
 
 **File Locations:**
 - **Nectar Blocks:** `wp-content/plugins/nectar-blocks/build/blocks/*/frontend-script.js`
-- **Essential Blocks:** `wp-content/plugins/essential-blocks/assets/js/frontend.js`
 
 **Next.js Integration:**
 
@@ -123,8 +120,6 @@ export default function RootLayout({ children }) {
          {children}
          {/* Nectar tabs, accordions, animations */}
          <Script src="/js/nectar-frontend.js" strategy="lazyOnload" />
-         {/* Essential Blocks animations, interactions */}
-         <Script src="/js/essential-blocks-frontend.js" strategy="lazyOnload" />
       </body>
     </html>
   );
@@ -179,22 +174,7 @@ export function BlockDispatcher({ blocks }) {
     }
 
     // ----------------------------------------------------
-    // TYPE C: Essential Blocks (HTML Fallback)
-    // Same approach as Nectar
-    // ----------------------------------------------------
-    if (block.name.startsWith('essential-blocks/')) {
-        return (
-          <div
-            key={index}
-            className="headless-essential-block"
-            data-block-name={block.name}
-            dangerouslySetInnerHTML={{ __html: block.renderedHtml }}
-          />
-        );
-    }
-
-    // ----------------------------------------------------
-    // TYPE D: Core WordPress Blocks (HTML Fallback)
+    // TYPE C: Core WordPress Blocks (HTML Fallback)
     // Paragraphs, Headings, Images, etc.
     // ----------------------------------------------------
     if (block.name.startsWith('core/')) {
@@ -224,7 +204,6 @@ export function BlockDispatcher({ blocks }) {
 | Plugin | Works in WordPress Editor? | Works in Next.js Headless? | How? | Limitations |
 |--------|---------------------------|---------------------------|------|-------------|
 | **Nectar Blocks** | ✅ Yes | ✅ Yes | HTML fallback + their CSS/JS | No attribute access |
-| **Essential Blocks** | ✅ Yes | ✅ Yes | HTML fallback + their CSS/JS | No attribute access |
 | **Voxel FSE** | ✅ Yes | ✅ Yes | Structured attributes + your React | Full control |
 | **Core Blocks** | ✅ Yes | ✅ Yes | HTML fallback | Standard WP blocks |
 
@@ -235,14 +214,13 @@ export function BlockDispatcher({ blocks }) {
 ### What You CAN Do:
 
 - ✅ Use Nectar Tabs, Flex-Box, Buttons in your headless site
-- ✅ Use Essential Blocks components (Accordion, Button, etc.)
 - ✅ Mix them with your Voxel FSE blocks on the same page
 - ✅ Style them (their CSS classes are preserved in the HTML)
 - ✅ Interactive features work (if you load their JS files)
 
 ### What You CANNOT Do:
 
-- ❌ Access individual attributes of Nectar/Essential blocks programmatically in Next.js
+- ❌ Access individual attributes of Nectar blocks programmatically in Next.js
 - ❌ Conditionally render based on their internal settings in React
 - ❌ Override their rendering logic (it's baked into the HTML)
 - ❌ Server-side render their dynamic content (they're pre-rendered by WordPress)
@@ -272,7 +250,6 @@ if (block.name === 'nectar-blocks/tabs') {
 **Layout Blocks:**
 - Nectar Flex-Box
 - Nectar Row/Container
-- Essential Blocks Row/Container
 
 **UI Components:**
 - Buttons
@@ -318,10 +295,6 @@ if (block.name === 'nectar-blocks/tabs') {
 - CSS: ~150KB (minified)
 - JS: ~80KB (minified)
 
-**Essential Blocks:**
-- CSS: ~200KB (minified)
-- JS: ~120KB (minified)
-
 **Recommendation:** Load these scripts with `strategy="lazyOnload"` in Next.js `<Script>` component to avoid blocking page render.
 
 ### HTML Size
@@ -344,11 +317,10 @@ Third-party blocks render as HTML strings, which can be larger than structured J
 
 ### WordPress Editor Test
 
-- [ ] Install Nectar Blocks and Essential Blocks plugins
+- [ ] Install Nectar Blocks plugin
 - [ ] Create test page with mix of blocks:
   - [ ] Voxel FSE Search Form
   - [ ] Nectar Tabs
-  - [ ] Essential Blocks Button
   - [ ] Core Paragraph
 - [ ] Verify all blocks render correctly in editor
 - [ ] Save page and preview in WordPress
@@ -371,7 +343,7 @@ query TestBlocksQuery {
 ```
 
 **Check:**
-- [ ] `renderedHtml` contains full HTML for Nectar/Essential blocks
+- [ ] `renderedHtml` contains full HTML for Nectar blocks
 - [ ] Voxel FSE blocks have structured `attributes`
 - [ ] All blocks are present in response
 
@@ -402,10 +374,6 @@ query TestBlocksQuery {
 │  │   ├── Flex-Box                                              │
 │  │   ├── Tabs                                                  │
 │  │   └── Button                                                │
-│  ├── Essential Blocks (UI components)                          │
-│  │   ├── Accordion                                             │
-│  │   ├── Button                                                │
-│  │   └── Progress Bar                                          │
 │  └── Core Blocks (text, images)                                │
 │      ├── Paragraph                                             │
 │      ├── Heading                                               │
@@ -419,7 +387,6 @@ query TestBlocksQuery {
 │    editorBlocks: [                                              │
 │      { name: "voxel-fse/search-form", attributes: {...} },     │
 │      { name: "nectar-blocks/tabs", renderedHtml: "..." },      │
-│      { name: "essential-blocks/button", renderedHtml: "..." }, │
 │      { name: "core/paragraph", renderedHtml: "..." }           │
 │    ]                                                            │
 │  }                                                              │
@@ -432,9 +399,7 @@ query TestBlocksQuery {
 │  │   └── <VoxelSearchForm {...attributes} />                   │
 │  ├── TYPE B: nectar-blocks/* → HTML Fallback (renderedHtml)    │
 │  │   └── <div dangerouslySetInnerHTML={{__html: html}} />      │
-│  ├── TYPE C: essential-blocks/* → HTML Fallback (renderedHtml) │
-│  │   └── <div dangerouslySetInnerHTML={{__html: html}} />      │
-│  └── TYPE D: core/* → HTML Fallback (renderedHtml)             │
+│  └── TYPE C: core/* → HTML Fallback (renderedHtml)             │
 │      └── <div dangerouslySetInnerHTML={{__html: html}} />      │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -443,7 +408,6 @@ query TestBlocksQuery {
 │  Customer sees fully functional page:                           │
 │  ✅ Voxel search works (React component)                        │
 │  ✅ Nectar tabs are clickable (their JS hydrates HTML)          │
-│  ✅ Essential buttons styled (their CSS applied)                │
 │  ✅ Core blocks display correctly (standard HTML)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -454,14 +418,14 @@ query TestBlocksQuery {
 
 **Your BlockDispatcher approach is architecturally sound.**
 
-You can absolutely use Nectar Blocks and Essential Blocks alongside your Voxel FSE blocks in your headless Next.js frontend. The key is understanding the distinction:
+You can absolutely use Nectar Blocks alongside your Voxel FSE blocks in your headless Next.js frontend. The key is understanding the distinction:
 
 **Voxel FSE Blocks (TYPE A):**
 - You rebuilt these with full React components
 - You have structured attributes via GraphQL
 - Full programmatic control in Next.js
 
-**Nectar/Essential Blocks (TYPE B/C):**
+**Nectar Blocks (TYPE B):**
 - Treat as "HTML Black Boxes"
 - Render using `dangerouslySetInnerHTML`
 - Load their CSS/JS files for styling and interactivity

@@ -9,7 +9,7 @@
 import React, { useState, useRef } from 'react';
 import { FieldPopup } from '@shared';
 import type { TimeslotGroup } from './types';
-import { WEEKDAY_KEYS, DEFAULT_WEEKDAYS, DEFAULT_WEEKDAYS_SHORT } from './types';
+import { WEEKDAY_KEYS, DEFAULT_WEEKDAYS } from './types';
 import { getGroupLabelShort, isDayAvailable } from './utils';
 
 interface DaySelectorProps {

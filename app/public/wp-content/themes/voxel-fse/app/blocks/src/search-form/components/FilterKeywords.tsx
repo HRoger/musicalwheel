@@ -30,16 +30,25 @@ export default function FilterKeywords( {
 	const inputRef = useRef< HTMLInputElement >( null );
 	const [ isOpen, setIsOpen ] = useState( false );
 	const [ inputValue, setInputValue ] = useState( '' );
+	// Inline mode local state — Voxel only commits on blur/Enter, not on every keystroke
+	// Evidence: keywords-filter.php:14 @keyup.enter="saveValue(); onEnter();" and :15 @blur="saveValue"
+	const [ inlineValue, setInlineValue ] = useState( '' );
 
 	const stringValue = typeof value === 'string' ? value : '';
-	const placeholder = filterData.props?.placeholder || filterData.label || 'Type keywords...';
-	const displayAs = config.displayAs || filterData.props?.display_as || 'inline';
+	const placeholder = String(filterData.props?.['placeholder'] || filterData.label || 'Type keywords...');
+	// Evidence: keywords-filter.php:278 default is 'popup'
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
 	const filterIcon = filterData.icon || '';
 
-	// Sync input value when popup opens
+	// Sync inline value from external value changes
+	useEffect( () => {
+		setInlineValue( stringValue );
+	}, [ stringValue ] );
+
+	// Sync popup input value when popup opens
 	useEffect( () => {
 		if ( isOpen ) {
 			setInputValue( stringValue );
@@ -50,9 +59,25 @@ export default function FilterKeywords( {
 		}
 	}, [ isOpen, stringValue ] );
 
+	// Inline mode: local state updates on type, commit on blur/Enter
+	// Evidence: Voxel keywords-filter.php:14 @keyup.enter="saveValue(); onEnter();" :15 @blur="saveValue"
+	// Evidence: search-form.js saveValue() { this.filter.value = this.isFilled() ? this.value.trim() : null }
 	const handleInlineChange = ( e: React.ChangeEvent< HTMLInputElement > ) => {
-		onChange( e.target.value );
+		setInlineValue( e.target.value );
 	};
+
+	const saveInlineValue = useCallback( () => {
+		// Matches Voxel isFilled(): this.value.trim().length
+		const trimmed = inlineValue.trim();
+		onChange( trimmed.length > 0 ? trimmed : '' );
+	}, [ inlineValue, onChange ] );
+
+	const handleInlineKeyDown = useCallback( ( e: React.KeyboardEvent< HTMLInputElement > ) => {
+		if ( e.key === 'Enter' ) {
+			e.preventDefault();
+			saveInlineValue();
+		}
+	}, [ saveInlineValue ] );
 
 	const handlePopupInputChange = ( e: React.ChangeEvent< HTMLInputElement > ) => {
 		setInputValue( e.target.value );
@@ -63,7 +88,9 @@ export default function FilterKeywords( {
 	}, [] );
 
 	const handleSave = useCallback( () => {
-		onChange( inputValue );
+		// Evidence: search-form.js saveValue() { this.filter.value = this.isFilled() ? this.value.trim() : null }
+		const trimmed = inputValue.trim();
+		onChange( trimmed.length > 0 ? trimmed : '' );
 		setIsOpen( false );
 	}, [ inputValue, onChange ] );
 
@@ -94,8 +121,10 @@ export default function FilterKeywords( {
 					) }
 					<input
 						type="text"
-						value={ stringValue }
+						value={ inlineValue }
 						onChange={ handleInlineChange }
+						onBlur={ saveInlineValue }
+						onKeyDown={ handleInlineKeyDown }
 						placeholder={ placeholder }
 						className="inline-input"
 					/>
@@ -105,7 +134,8 @@ export default function FilterKeywords( {
 	}
 
 	// Popup mode - uses portal-based FieldPopup from create-post
-	const hasValue = stringValue.length > 0;
+	// Evidence: search-form.js isFilled() { return this.value.trim().length }
+	const hasValue = stringValue.trim().length > 0;
 	const { style, className } = getFilterWrapperStyles( config, 'ts-form-group' );
 	const popupStyles = getPopupStyles( config );
 
@@ -137,7 +167,7 @@ export default function FilterKeywords( {
 			{ /* Portal-based popup using FieldPopup from create-post */ }
 			<FieldPopup
 				isOpen={ isOpen }
-				target={ triggerRef }
+				target={ triggerRef as any }
 				title=""
 				icon={ filterIcon }
 				saveLabel="Save"

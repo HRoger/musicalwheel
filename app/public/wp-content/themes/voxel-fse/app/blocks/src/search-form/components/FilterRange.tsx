@@ -20,14 +20,16 @@
  * @package VoxelFSE
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-// noUiSlider is loaded as external from Voxel parent theme
-// Evidence: themes/voxel/app/controllers/assets-controller.php:134,141
-// Import map in Block_Loader.php maps 'nouislider' to window.noUiSlider
-import noUiSlider from 'nouislider';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { FilterComponentProps } from '../types';
 
-// Type definition for noUiSlider API (since we're using external, not npm types)
+// noUiSlider is loaded from Voxel parent theme's vendor folder via wp_enqueue_script
+// Accessed via window.noUiSlider at runtime (NOT as IIFE parameter)
+// This avoids ReferenceError if the script loads after our IIFE
+// Evidence: themes/voxel/app/controllers/assets-controller.php:141
+const getNoUiSlider = () => (window as any).noUiSlider;
+
+// Type definition for noUiSlider API (since we're using window global, not npm types)
 interface NoUiSliderAPI {
 	destroy: () => void;
 	set: (values: (number | string)[], fireSetEvent?: boolean) => void;
@@ -36,50 +38,69 @@ interface NoUiSliderAPI {
 	off: (event: string) => void;
 	updateOptions: (options: Record<string, unknown>, fireSetEvent?: boolean) => void;
 }
+
+// Extend HTMLElement to support noUiSlider
+interface NoUiSliderElement extends HTMLElement {
+	noUiSlider?: NoUiSliderAPI;
+}
+
+// Format config from Voxel range-filter.php
+interface RangeFormat {
+	numeric?: boolean;
+	prefix?: string;
+	suffix?: string;
+}
 // Import shared components (Voxel's commons.js pattern)
 import { getFilterWrapperStyles, getPopupStyles, FieldPopup } from '@shared';
 
-interface RangeValue {
-	min?: number;
-	max?: number;
-}
-
 /**
- * Parse Voxel range string format "min..max" to object
- * Evidence: voxel-search-form.beautified.js line 437
+ * Parse Voxel range value to an array of numbers.
+ *
+ * Voxel's frontend_props() returns value as:
+ * - [] (empty array) when no value is set
+ * - [number] for single handle
+ * - [number, number] for double handle
+ * Evidence: voxel/app/post-types/filters/range-filter.php:233
+ *
+ * URL query strings are serialized as:
+ * - "50" (plain number) for single handle
+ * - "10..90" (min..max) for double handle
+ * Evidence: voxel-search-form.beautified.js line 458
  */
-function parseRangeValue(value: unknown, rangeStart: number, rangeEnd: number): { min: number; max: number } {
-	// Handle null/undefined
+function parseRangeValue(value: unknown): number[] {
+	// Handle null/undefined/empty
 	if (value === null || value === undefined || value === '') {
-		return { min: rangeStart, max: rangeEnd };
+		return [];
 	}
 
-	// Handle string format "min..max" (Voxel API format)
+	// Handle array from Voxel's frontend_props() - [number] or [number, number]
+	if (Array.isArray(value)) {
+		const nums = value.map(Number).filter(v => !isNaN(v));
+		return nums;
+	}
+
+	// Handle string format "min..max" (double handle URL query format)
 	if (typeof value === 'string' && value.includes('..')) {
 		const parts = value.split('..');
-		const min = parts[0] !== '' ? Number(parts[0]) : rangeStart;
-		const max = parts[1] !== '' ? Number(parts[1]) : rangeEnd;
-		return {
-			min: isNaN(min) ? rangeStart : min,
-			max: isNaN(max) ? rangeEnd : max,
-		};
+		const nums: number[] = [];
+		if (parts[0] !== '') {
+			const n = Number(parts[0]);
+			if (!isNaN(n)) nums.push(n);
+		}
+		if (parts[1] !== '') {
+			const n = Number(parts[1]);
+			if (!isNaN(n)) nums.push(n);
+		}
+		return nums;
 	}
 
-	// Handle legacy object format (backward compatibility)
-	if (typeof value === 'object') {
-		const obj = value as RangeValue;
-		return {
-			min: obj.min ?? rangeStart,
-			max: obj.max ?? rangeEnd,
-		};
+	// Handle single numeric value (single handle URL query format: plain number)
+	const num = Number(value);
+	if (!isNaN(num)) {
+		return [num];
 	}
 
-	// Handle single number
-	if (typeof value === 'number') {
-		return { min: value, max: rangeEnd };
-	}
-
-	return { min: rangeStart, max: rangeEnd };
+	return [];
 }
 
 export default function FilterRange({
@@ -98,19 +119,23 @@ export default function FilterRange({
 		config.id ? `elementor-repeater-item-${config.id}` : ''
 	].filter(Boolean).join(' ');
 
-	const triggerRef = useRef<HTMLDivElement>(null);
-	const sliderRef = useRef<HTMLDivElement>(null);
+	const triggerRef = useRef<HTMLElement | null>(null);
+	const sliderRef = useRef<NoUiSliderElement | null>(null);
 	const sliderInstanceRef = useRef<NoUiSliderAPI | null>(null);
 	const [isOpen, setIsOpen] = useState(false);
 
 	const props = filterData.props || {};
-	const originalRangeStart = props.min ?? 0;
-	const originalRangeEnd = props.max ?? 100;
-	const step = props.step ?? 1;
-	const placeholder = props.placeholder || filterData.label || 'Range';
-	const displayAs = config.displayAs || filterData.props?.display_as || 'popup';
-	const handles = props.handles || 'double'; // 'single' or 'double'
-	const compare = props.compare || 'in_range'; // 'in_range' | 'greater_than' | 'less_than'
+	// Voxel's frontend_props() returns range_start/range_end/step_size
+	// FSE controller's get_filter_props() returns min/max/step
+	// Support both key formats for compatibility
+	const originalRangeStart = Number(props['range_start'] ?? props['min'] ?? 0);
+	const originalRangeEnd = Number(props['range_end'] ?? props['max'] ?? 100);
+	const step = Number(props['step_size'] ?? props['step'] ?? 1);
+	const placeholder = String(props['placeholder'] || filterData.label || 'Range');
+	const displayAs = config.displayAs || filterData.props?.['display_as'] || 'popup';
+	// Voxel default is 'single' - Evidence: range-filter.php:16
+	const handles = props['handles'] || 'single';
+	const compare = props['compare'] || 'in_range'; // 'in_range' | 'outside_range'
 
 	// Adaptive filtering: Use narrowed range if available
 	// Reference: voxel-search-form.beautified.js lines 480-500
@@ -120,69 +145,83 @@ export default function FilterRange({
 	const rangeEnd = narrowedRange?.max ?? originalRangeEnd;
 
 	// Format configuration from Voxel
-	// Voxel passes format as an object { numeric, prefix, suffix }
-	const format = props.format || 'number';
-	const prefix = props.prefix || (typeof format === 'object' ? format.prefix : '') || '';
-	const suffix = props.suffix || (typeof format === 'object' ? format.suffix : '') || '';
+	// Voxel passes format as object { numeric: bool, prefix: string, suffix: string }
+	// Evidence: range-filter.php:236-240
+	const format: RangeFormat = (typeof props['format'] === 'object' && props['format'] !== null) ? (props['format'] as RangeFormat) : { numeric: false, prefix: '', suffix: '' };
+	const prefix = format.prefix || '';
+	const suffix = format.suffix || '';
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100
 	const filterIcon = filterData.icon || '';
 
-	// Parse value using Voxel string format "min..max"
-	const rangeValue = parseRangeValue(value, rangeStart, rangeEnd);
-	const [localMin, setLocalMin] = useState<number>(rangeValue.min);
-	const [localMax, setLocalMax] = useState<number>(rangeValue.max);
+	// Compute default slider values based on handles and compare mode
+	// Evidence: voxel-search-form.beautified.js lines 420-428
+	const defaultValues: number[] = (handles === 'single'
+		? [compare === 'in_range' ? rangeEnd : rangeStart]
+		: compare === 'in_range'
+			? [rangeStart, rangeEnd]
+			: [rangeStart, rangeStart]) as number[];
 
-	// Format display value
+	// Parse the current filter value into an array of numbers
+	const parsedValue = parseRangeValue(value);
+	// Use parsed value if it has values, otherwise use defaults
+	const initialValue = parsedValue.length > 0 ? parsedValue : defaultValues;
+
+	const [sliderValue, setSliderValue] = useState<number[]>(initialValue);
+
+	// Format a number for display
+	// Evidence: voxel-search-form.beautified.js lines 480-485
+	// Voxel: if (fmt.numeric) v = v.toLocaleString(); return fmt.prefix + v + fmt.suffix;
 	const formatValue = useCallback((val: number): string => {
-		if (format === 'price') {
-			return `${prefix}${val.toLocaleString()}${suffix}`;
-		}
-		return `${prefix}${val}${suffix}`;
-	}, [format, prefix, suffix]);
+		const formatted = format.numeric ? val.toLocaleString() : String(val);
+		return `${ prefix }${ formatted }${ suffix }`;
+	}, [format.numeric, prefix, suffix]);
 
-	// Display value for trigger button
-	// Check if value is set (not null/empty and different from defaults)
-	const hasValue = value !== null && value !== undefined && value !== '' &&
-		(rangeValue.min !== rangeStart || rangeValue.max !== rangeEnd);
-	const displayValue = hasValue
-		? `${formatValue(rangeValue.min)} — ${formatValue(rangeValue.max)}`
+	// Format an array of values for display (matching Voxel's formatForDisplay)
+	// Evidence: voxel-search-form.beautified.js line 482-485
+	// val.map(v => { ... }).join(" — ")
+	const formatForDisplay = useCallback((vals: number[]): string => {
+		return vals.map(v => formatValue(v)).join(' — ');
+	}, [formatValue]);
+
+	// Check if filter has a value (not at defaults)
+	// Evidence: voxel-search-form.beautified.js lines 468-478
+	const isFilled = value !== null && value !== undefined && value !== '';
+	const displayValue = isFilled
+		? formatForDisplay(parsedValue.length > 0 ? parsedValue : sliderValue)
 		: placeholder;
 
 	// Popup display value (always shows current slider state)
-	const popupDisplayValue = `${formatValue(localMin)} — ${formatValue(localMax)}`;
+	const popupDisplayValue = formatForDisplay(sliderValue);
 
 	// Initialize noUiSlider
 	// CRITICAL: Uses refs to capture current values at call time, avoiding stale closure issues
 	const initSlider = useCallback(() => {
 		if (!sliderRef.current || sliderInstanceRef.current) return;
 
-		// Read current values from state at call time
-		// Using rangeStart/rangeEnd from closure is safe since they rarely change
-		const currentMin = localMin;
-		const currentMax = localMax;
-
 		// Determine start values and connect based on handles and compare mode
-		// Evidence: voxel-search-form.beautified.js lines 399-408
+		// Evidence: voxel-search-form.beautified.js lines 420-428
 		let startValues: number[];
-		let connectValue: boolean | boolean[];
+		let connectValue: number[];
 
-		if (handles === 'double') {
-			startValues = [currentMin, currentMax];
-			connectValue = true; // Fill between handles
+		if (handles === 'single') {
+			// Single handle connect: in_range = [1,0], outside_range = [0,1]
+			// Evidence: voxel-search-form.beautified.js line 421
+			connectValue = compare === 'in_range' ? [1, 0] : [0, 1];
+			startValues = [...sliderValue];
 		} else {
-			// Single handle mode - depends on compare mode
-			if (compare === 'in_range') {
-				startValues = [currentMax]; // Start at max
-				connectValue = [false, true]; // Fill from handle to right
-			} else {
-				// 'greater_than' or 'less_than'
-				startValues = [currentMin]; // Start at min
-				connectValue = [true, false]; // Fill from left to handle
-			}
+			// Double handle connect: in_range = [0,1,0], outside_range = [1,0,1]
+			// Evidence: voxel-search-form.beautified.js line 426
+			connectValue = compare === 'in_range' ? [0, 1, 0] : [1, 0, 1];
+			startValues = [...sliderValue];
 		}
 
+		const noUiSlider = getNoUiSlider();
+		if (!noUiSlider) {
+			console.error('noUiSlider not loaded - window.noUiSlider is undefined');
+			return;
+		}
 		noUiSlider.create(sliderRef.current, {
 			start: startValues,
 			connect: connectValue,
@@ -195,35 +234,23 @@ export default function FilterRange({
 			behaviour: 'tap-drag',
 		});
 
-		sliderInstanceRef.current = sliderRef.current.noUiSlider as NoUiSliderAPI;
+		sliderInstanceRef.current = (sliderRef.current as NoUiSliderElement).noUiSlider as NoUiSliderAPI;
 
-		// Handle slider updates
+		// Handle slider updates — Voxel stores all handle values as number array
+		// Evidence: voxel-search-form.beautified.js line 444-446
+		// this.value = values.map((v) => Number(v));
 		sliderInstanceRef.current.on('update', (values: (string | number)[]) => {
-			if (handles === 'double') {
-				setLocalMin(Math.round(Number(values[0])));
-				setLocalMax(Math.round(Number(values[1])));
-			} else if (compare === 'in_range') {
-				// Single handle in_range mode updates max
-				setLocalMax(Math.round(Number(values[0])));
-			} else {
-				// Single handle greater_than/less_than mode updates min
-				setLocalMin(Math.round(Number(values[0])));
-			}
+			setSliderValue(values.map(v => Number(v)));
 		});
 
 		// CRITICAL FIX: Force slider position update after initialization
 		// In Gutenberg editor, the DOM might not be fully laid out when slider is created
-		// This ensures handles are correctly positioned after the slider renders
 		requestAnimationFrame(() => {
 			if (sliderInstanceRef.current) {
-				if (handles === 'double') {
-					sliderInstanceRef.current.set([currentMin, currentMax], false);
-				} else {
-					sliderInstanceRef.current.set([currentMin], false);
-				}
+				sliderInstanceRef.current.set(startValues, false);
 			}
 		});
-	}, [handles, compare, localMin, localMax, rangeStart, rangeEnd, step]);
+	}, [handles, compare, sliderValue, rangeStart, rangeEnd, step]);
 
 	// Destroy slider on unmount
 	const destroySlider = useCallback(() => {
@@ -235,14 +262,12 @@ export default function FilterRange({
 
 	// Sync local state when value changes externally
 	useEffect(() => {
-		// Parse value using Voxel string format "min..max"
-		const rv = parseRangeValue(value, rangeStart, rangeEnd);
-		setLocalMin(rv.min);
-		setLocalMax(rv.max);
+		const parsed = parseRangeValue(value);
+		const newValues = parsed.length > 0 ? parsed : defaultValues;
+		setSliderValue(newValues);
 
 		// Update slider if it exists
 		if (sliderInstanceRef.current) {
-			const newValues = handles === 'double' ? [rv.min, rv.max] : [rv.min];
 			sliderInstanceRef.current.set(newValues, false); // false = don't fire events
 
 			// Force visual update on next frame to ensure slider reflects the change
@@ -253,7 +278,7 @@ export default function FilterRange({
 				}
 			});
 		}
-	}, [value, rangeStart, rangeEnd, handles]);
+	}, [value, rangeStart, rangeEnd, handles, compare]);
 
 	// Initialize slider when popup opens (for popup mode)
 	useEffect(() => {
@@ -278,6 +303,7 @@ export default function FilterRange({
 			initSlider();
 			return () => destroySlider();
 		}
+		return undefined;
 	}, [displayAs, initSlider, destroySlider]);
 
 	// Apply adaptive filtering: Update slider range when narrowedValues change
@@ -287,36 +313,23 @@ export default function FilterRange({
 			return;
 		}
 
-		// Update slider range to narrowed bounds
+		// Clamp current values to new range
+		const clamped = sliderValue.map(v => {
+			if (v < rangeStart) return rangeStart;
+			if (v > rangeEnd) return rangeEnd;
+			return v;
+		});
+
+		// Update slider range and start positions
 		sliderInstanceRef.current.updateOptions({
 			range: {
 				min: rangeStart,
 				max: rangeEnd,
 			},
-		}, true); // true = don't fire slide event
+			start: clamped,
+		});
 
-		// Clamp current values to new range
-		// Reference: voxel-search-form.beautified.js lines 520-530
-		let newMin = localMin;
-		let newMax = localMax;
-
-		if (newMin < rangeStart) newMin = rangeStart;
-		if (newMin > rangeEnd) newMin = rangeEnd;
-		if (handles === 'double') {
-			if (newMax < rangeStart) newMax = rangeStart;
-			if (newMax > rangeEnd) newMax = rangeEnd;
-			if (newMin > newMax) newMin = newMax;
-		}
-
-		// Update slider handles
-		if (handles === 'double') {
-			sliderInstanceRef.current.set([newMin, newMax]);
-		} else {
-			sliderInstanceRef.current.set([newMin]);
-		}
-
-		setLocalMin(newMin);
-		setLocalMax(newMax);
+		setSliderValue(clamped);
 	}, [narrowedRange, rangeStart, rangeEnd, handles]);
 
 	const openPopup = useCallback(() => {
@@ -324,92 +337,96 @@ export default function FilterRange({
 	}, []);
 
 	/**
-	 * Serialize range value to Voxel API format: "min..max"
-	 * Evidence: voxel-search-form.beautified.js line 437
-	 * this.filter.value = this.value.join("..");
+	 * Check if the slider value is different from defaults (i.e. filter is "filled")
+	 * Evidence: voxel-search-form.beautified.js lines 468-478
 	 */
-	const serializeRangeValue = useCallback((min: number, max: number): string | null => {
-		// If both values are at defaults, return null to clear filter
-		if (min === rangeStart && max === rangeEnd) {
+	const checkIsFilled = useCallback((vals: number[]): boolean => {
+		if (!vals.length || vals.some(v => typeof v !== 'number')) return false;
+		return vals.join('..') !== defaultValues.join('..');
+	}, [defaultValues]);
+
+	/**
+	 * Serialize range value to Voxel API format
+	 * Evidence: voxel-search-form.beautified.js line 458
+	 * this.filter.value = this.isFilled() ? this.value.join("..") : null;
+	 *
+	 * For single handle [50] → "50" (plain number — matches PHP parse_value for single)
+	 * For double handle [10, 90] → "10..90"
+	 */
+	const serializeRangeValue = useCallback((vals: number[]): string | null => {
+		if (!checkIsFilled(vals)) {
 			return null;
 		}
-		// Voxel format: "min..max" for double handles
-		// For single handle with compare modes, still use ".." format
-		if (handles === 'double') {
-			return `${min}..${max}`;
-		}
-		// Single handle: min only (greater_than) or max only (less_than)
-		if (compare === 'greater_than' || compare === 'in_range') {
-			return `${min}..`;
-		}
-		return `..${max}`;
-	}, [handles, compare, rangeStart, rangeEnd]);
+		return vals.join('..');
+	}, [checkIsFilled]);
 
 	const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newMin = e.target.value === '' ? rangeStart : Number(e.target.value);
-		setLocalMin(newMin);
+		const newValues = [newMin, sliderValue[1] ?? rangeEnd];
+		setSliderValue(newValues);
 		if (sliderInstanceRef.current) {
-			sliderInstanceRef.current.set(handles === 'double' ? [newMin, localMax] : [newMin]);
+			sliderInstanceRef.current.set(newValues);
 		}
-		// In minmax mode, save immediately with Voxel-format string
+		// In minmax mode, save immediately (Voxel uses debounced saveInputs)
 		if (displayAs === 'minmax') {
-			onChange(serializeRangeValue(newMin, localMax));
+			onChange(serializeRangeValue(newValues));
 		}
 	};
 
 	const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newMax = e.target.value === '' ? rangeEnd : Number(e.target.value);
-		setLocalMax(newMax);
+		const newValues = [sliderValue[0] ?? rangeStart, newMax];
+		setSliderValue(newValues);
 		if (sliderInstanceRef.current) {
-			sliderInstanceRef.current.set([localMin, newMax]);
+			sliderInstanceRef.current.set(newValues);
 		}
-		// In minmax mode, save immediately with Voxel-format string
+		// In minmax mode, save immediately
 		if (displayAs === 'minmax') {
-			onChange(serializeRangeValue(localMin, newMax));
+			onChange(serializeRangeValue(newValues));
 		}
 	};
 
 	const handleSave = useCallback(() => {
-		// Serialize to Voxel API format: "min..max"
-		// Evidence: voxel-search-form.beautified.js line 437
-		onChange(serializeRangeValue(localMin, localMax));
+		// Serialize to Voxel API format
+		// Evidence: voxel-search-form.beautified.js line 458
+		onChange(serializeRangeValue(sliderValue));
 		setIsOpen(false);
-	}, [localMin, localMax, serializeRangeValue, onChange]);
+	}, [sliderValue, serializeRangeValue, onChange]);
 
 	const handleClear = useCallback(() => {
-		setLocalMin(rangeStart);
-		setLocalMax(rangeEnd);
+		// Reset to defaults — Evidence: voxel-search-form.beautified.js line 466
+		// this.slider.set(this.default)
+		setSliderValue(defaultValues);
 		if (sliderInstanceRef.current) {
-			sliderInstanceRef.current.set(handles === 'double' ? [rangeStart, rangeEnd] : [rangeStart]);
+			sliderInstanceRef.current.set(defaultValues);
 		}
 		onChange(null);
-	}, [rangeStart, rangeEnd, handles, onChange]);
+	}, [defaultValues, onChange]);
 
-	// Render min/max input boxes (used in minmax mode only)
+	// Render min/max input boxes (used in minmax mode only, double handle only)
+	// Evidence: range-filter.php:223 - minmax forces popup if not double handle
 	const renderMinMaxInputs = () => (
 		<div className="ts-minmax">
 			<input
 				type="number"
 				className="inline-input input-no-icon"
 				placeholder={String(rangeStart)}
-				value={localMin}
+				value={sliderValue[0] ?? rangeStart}
 				onChange={handleMinChange}
 				min={rangeStart}
-				max={localMax}
+				max={typeof sliderValue[1] === 'number' ? sliderValue[1] : rangeEnd}
 				step={step}
 			/>
-			{handles === 'double' && (
-				<input
-					type="number"
-					className="inline-input input-no-icon"
-					placeholder={String(rangeEnd)}
-					value={localMax}
-					onChange={handleMaxChange}
-					min={localMin}
-					max={rangeEnd}
-					step={step}
-				/>
-			)}
+			<input
+				type="number"
+				className="inline-input input-no-icon"
+				placeholder={String(rangeEnd)}
+				value={sliderValue[1] ?? rangeEnd}
+				onChange={handleMaxChange}
+				min={typeof sliderValue[0] === 'number' ? sliderValue[0] : rangeStart}
+				max={rangeEnd}
+				step={step}
+			/>
 		</div>
 	);
 
@@ -418,7 +435,7 @@ export default function FilterRange({
 	const renderSlider = () => (
 		<div className={`range-slider-wrapper${isNarrowing ? ' ts-loading' : ''}`}>
 			<div className="range-value">{popupDisplayValue}</div>
-			<div ref={sliderRef} className="range-slider"></div>
+			<div ref={sliderRef as React.Ref<HTMLDivElement>} className="range-slider"></div>
 			{ /* Show narrowed range indicator if different from original */}
 			{narrowedRange && (narrowedRange.min !== originalRangeStart || narrowedRange.max !== originalRangeEnd) && (
 				<div className="range-narrowed-indicator">
@@ -463,8 +480,8 @@ export default function FilterRange({
 
 			{ /* Trigger button */}
 			<div
-				ref={triggerRef}
-				className={`ts-filter ts-popup-target ${hasValue ? 'ts-filled' : ''}`}
+				ref={triggerRef as React.Ref<HTMLDivElement>}
+				className={`ts-filter ts-popup-target ${isFilled ? 'ts-filled' : ''}`}
 				onClick={openPopup}
 				onMouseDown={(e) => e.preventDefault()}
 				role="button"
@@ -482,7 +499,7 @@ export default function FilterRange({
 			{ /* Portal-based popup using FieldPopup from create-post */}
 			<FieldPopup
 				isOpen={isOpen}
-				target={triggerRef}
+				target={triggerRef as React.RefObject<HTMLElement>}
 				title=""
 				icon={filterIcon}
 				saveLabel="Save"
@@ -499,7 +516,7 @@ export default function FilterRange({
 				<div className="ts-form-group">
 					<label>
 						{filterData.label}
-						{filterData.description && <small>{filterData.description}</small>}
+						{(filterData as any).description && <small>{(filterData as any).description}</small>}
 					</label>
 					{renderSlider()}
 				</div>

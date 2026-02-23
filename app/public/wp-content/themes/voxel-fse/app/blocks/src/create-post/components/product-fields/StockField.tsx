@@ -54,7 +54,7 @@ export const StockField: React.FC<StockFieldProps> = ({
 	};
 
 	// Check if SKU is enabled
-	const skuEnabled = field.props?.sku?.enabled || false;
+	const skuEnabled = (field.props as any)?.sku?.enabled || false;
 
 	// Handle enable toggle
 	const handleEnabledChange = () => {

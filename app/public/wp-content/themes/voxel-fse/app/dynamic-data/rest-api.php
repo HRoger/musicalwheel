@@ -143,32 +143,74 @@ class REST_API {
 	 * @return array
 	 */
 	private static function get_top_level_groups( $context ) {
-		return [
-			[
-				'type'        => 'post',
-				'label'       => 'Post',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'author',
-				'label'       => 'Author',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'user',
-				'label'       => 'User',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'site',
-				'label'       => 'Site',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-		];
+		switch ( $context ) {
+			case 'term':
+				return [
+					[
+						'type'        => 'term',
+						'label'       => 'Term',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+
+			case 'user':
+				return [
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+
+			case 'post':
+			default:
+				return [
+					[
+						'type'        => 'post',
+						'label'       => 'Post',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'author',
+						'label'       => 'Author',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+		}
 	}
 
 	/**
@@ -442,6 +484,56 @@ class REST_API {
 					[ 'key' => 'file_name', 'label' => 'File name', 'type' => 'string' ],
 				];
 			}
+
+			// Handle Area structure (term.area)
+			if ( $last === 'area' ) {
+				return [
+					[ 'key' => 'address', 'label' => 'Address', 'type' => 'string' ],
+					[
+						'key'         => 'southwest',
+						'label'       => 'Southwest',
+						'type'        => 'object',
+						'hasChildren' => true,
+					],
+					[
+						'key'         => 'northeast',
+						'label'       => 'Northeast',
+						'type'        => 'object',
+						'hasChildren' => true,
+					],
+				];
+			}
+
+			// Handle southwest/northeast coordinates (term.area.southwest, term.area.northeast)
+			if ( $last === 'southwest' || $last === 'northeast' ) {
+				return [
+					[ 'key' => 'lat', 'label' => 'Latitude', 'type' => 'number' ],
+					[ 'key' => 'lng', 'label' => 'Longitude', 'type' => 'number' ],
+				];
+			}
+
+			// Handle Parent term (term.parent) — returns same properties as term
+			if ( $last === 'parent' && $group === 'term' ) {
+				return [
+					[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
+					[ 'key' => 'label', 'label' => 'Label', 'type' => 'string' ],
+					[ 'key' => 'slug', 'label' => 'Slug', 'type' => 'string' ],
+					[ 'key' => 'description', 'label' => 'Description', 'type' => 'string' ],
+					[ 'key' => 'icon', 'label' => 'Icon', 'type' => 'string' ],
+					[ 'key' => 'link', 'label' => 'Permalink', 'type' => 'url' ],
+					[ 'key' => 'image', 'label' => 'Image', 'type' => 'number' ],
+					[ 'key' => 'color', 'label' => 'Color', 'type' => 'string' ],
+				];
+			}
+
+			// Handle Taxonomy structure (term.taxonomy)
+			if ( $last === 'taxonomy' && $group === 'term' ) {
+				return [
+					[ 'key' => 'key', 'label' => 'Key', 'type' => 'string' ],
+					[ 'key' => 'singular_name', 'label' => 'Singular name', 'type' => 'string' ],
+					[ 'key' => 'plural_name', 'label' => 'Plural name', 'type' => 'string' ],
+				];
+			}
 		}
 
 		// Top-level group requests (no parent)
@@ -458,9 +550,53 @@ class REST_API {
 			case 'site':
 				return self::get_site_exports( null );
 
+			case 'term':
+				return self::get_term_exports();
+
 			default:
 				return [];
 		}
+	}
+
+	/**
+	 * Get Term data exports (matching Voxel Term_Data_Group properties)
+	 *
+	 * Evidence: themes/voxel-fse/app/dynamic-data/data-groups/Term_Data_Group.php
+	 *
+	 * @return array
+	 */
+	private static function get_term_exports() {
+		return [
+			[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
+			[ 'key' => 'label', 'label' => 'Label', 'type' => 'string' ],
+			[ 'key' => 'slug', 'label' => 'Slug', 'type' => 'string' ],
+			[ 'key' => 'description', 'label' => 'Description', 'type' => 'string' ],
+			[ 'key' => 'icon', 'label' => 'Icon', 'type' => 'string' ],
+			[ 'key' => 'link', 'label' => 'Permalink', 'type' => 'url' ],
+			[ 'key' => 'image', 'label' => 'Image', 'type' => 'number' ],
+			[ 'key' => 'color', 'label' => 'Color', 'type' => 'string' ],
+			[
+				'key'         => 'area',
+				'label'       => 'Area',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			[
+				'key'         => 'parent',
+				'label'       => 'Parent term',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			[
+				'key'         => 'taxonomy',
+				'label'       => 'Taxonomy',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			// Method-style exports (matching Voxel's </> prefix in the tree)
+			[ 'key' => 'meta', 'label' => 'Term meta', 'type' => 'method' ],
+			[ 'key' => 'post_count', 'label' => 'Post count', 'type' => 'method' ],
+		];
 	}
 
 	/**
@@ -1113,8 +1249,14 @@ class REST_API {
 	 * @return \WP_REST_Response
 	 */
 	public static function render_expression( $request ) {
-		$expression = $request->get_param( 'expression' );
-		$context    = $request->get_param( 'context' );
+		$expression      = $request->get_param( 'expression' );
+		$context         = $request->get_param( 'context' );
+		$preview_context = $request->get_param( 'preview_context' );
+
+		// Build preview context for editor (e.g., term card template needs a sample term)
+		if ( ! empty( $preview_context ) && is_array( $preview_context ) ) {
+			$context = self::build_preview_context( $preview_context );
+		}
 
 		// Use Block_Renderer to render the expression
 		$rendered = \VoxelFSE\Dynamic_Data\Block_Renderer::render_expression( $expression, $context );
@@ -1126,6 +1268,83 @@ class REST_API {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Build data group context for editor preview
+	 *
+	 * When editing a term_card template, there's no queried term.
+	 * This method finds a sample term to use for dynamic tag preview.
+	 *
+	 * @param array $preview_context {type: 'term', taxonomy: 'area'}
+	 * @return array Data group instances for rendering.
+	 */
+	private static function build_preview_context( array $preview_context ): array {
+		$current_user_id = get_current_user_id();
+
+		$context = [
+			'site' => new \VoxelFSE\Dynamic_Data\Data_Groups\Site_Data_Group(),
+			'user' => \VoxelFSE\Dynamic_Data\Data_Groups\User_Data_Group::get( $current_user_id ),
+		];
+
+		$type = $preview_context['type'] ?? '';
+
+		if ( 'term' === $type ) {
+			$taxonomy = $preview_context['taxonomy'] ?? '';
+
+			if ( ! empty( $taxonomy ) ) {
+				// Get a sample term from this taxonomy for preview
+				$terms = get_terms( [
+					'taxonomy'   => $taxonomy,
+					'number'     => 1,
+					'hide_empty' => false,
+				] );
+
+				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+					$sample_term    = $terms[0];
+					$context['term'] = \VoxelFSE\Dynamic_Data\Data_Groups\Term_Data_Group::get(
+						$sample_term->term_id,
+						$sample_term->taxonomy
+					);
+				}
+			} else {
+				// No taxonomy specified — try all Voxel taxonomies
+				$voxel_taxonomies = get_taxonomies( [ 'public' => true ], 'names' );
+				foreach ( $voxel_taxonomies as $tax ) {
+					$terms = get_terms( [
+						'taxonomy'   => $tax,
+						'number'     => 1,
+						'hide_empty' => false,
+						'meta_query' => [
+							[
+								'key'     => 'voxel_image',
+								'compare' => 'EXISTS',
+							],
+						],
+					] );
+					if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+						$sample_term    = $terms[0];
+						$context['term'] = \VoxelFSE\Dynamic_Data\Data_Groups\Term_Data_Group::get(
+							$sample_term->term_id,
+							$sample_term->taxonomy
+						);
+						break;
+					}
+				}
+			}
+		} elseif ( 'post' === $type ) {
+			$post_type = $preview_context['post_type'] ?? 'post';
+			$posts     = get_posts( [
+				'post_type'      => $post_type,
+				'posts_per_page' => 1,
+				'post_status'    => 'publish',
+			] );
+			if ( ! empty( $posts ) ) {
+				$context['post'] = new \VoxelFSE\Dynamic_Data\Data_Groups\Post_Data_Group( $posts[0]->ID );
+			}
+		}
+
+		return $context;
 	}
 }
 

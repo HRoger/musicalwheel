@@ -20,6 +20,7 @@ export interface ResponsiveValue<T> {
  * Typography configuration matching Elementor's Group_Control_Typography
  */
 export interface TypographyConfig {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: string;
 	fontSize_tablet?: string;
@@ -35,6 +36,7 @@ export interface TypographyConfig {
  * Matches Elementor controls from Voxel's Product_Price widget
  */
 export interface ProductPriceAttributes {
+	[key: string]: unknown;
 	// Block ID for unique identification
 	blockId: string;
 
@@ -181,12 +183,3 @@ export interface ProductPriceFrontendProps {
 	postId: number;
 }
 
-// Extend Window interface for global variables
-declare global {
-	interface Window {
-		wpApiSettings?: {
-			root: string;
-			nonce: string;
-		};
-	}
-}

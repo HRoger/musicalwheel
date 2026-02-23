@@ -29,7 +29,7 @@ add_action( 'current_screen', function( $screen ) {
 
 	// Only run on Paid Listings Settings page
 	// Relaxed check to ensure we catch it regardless of strict ID format
-	if ( strpos( $screen->id, 'voxel-paid-listings-settings' ) === false ) {
+	if ( ! is_string( $screen->id ) || strpos( $screen->id, 'voxel-paid-listings-settings' ) === false ) {
 		// error_log( 'FSE Paid Listings: Skipping screen ' . $screen->id );
 		return;
 	}
@@ -100,7 +100,7 @@ add_action( 'current_screen', function( $screen ) {
 		global $mw_fse_paid_listings_template_url;
 
 		$screen = get_current_screen();
-		if ( ! $screen || strpos( $screen->id, 'voxel-paid-listings-settings' ) === false ) {
+		if ( ! $screen || ! is_string( $screen->id ) || strpos( $screen->id, 'voxel-paid-listings-settings' ) === false ) {
 			return;
 		}
 

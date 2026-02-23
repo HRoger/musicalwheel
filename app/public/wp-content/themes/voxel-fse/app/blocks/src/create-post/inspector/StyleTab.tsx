@@ -61,7 +61,7 @@ export function StyleTab({
 				<ToggleControl
 					label={__('Hide', 'voxel-fse')}
 					checked={attributes.headHide === true}
-					onChange={(value) => setAttributes({ headHide: value })}
+					onChange={(value: any) => setAttributes({ headHide: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -79,7 +79,7 @@ export function StyleTab({
 				<ToggleControl
 					label={__('Hide', 'voxel-fse')}
 					checked={attributes.stepsBarHide === true}
-					onChange={(value) => setAttributes({ stepsBarHide: value })}
+					onChange={(value: any) => setAttributes({ stepsBarHide: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -181,7 +181,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Button border', 'voxel-fse')}
-									value={attributes.fnavBtnBorder}
+									value={attributes.fnavBtnBorder as any}
 									onChange={(value) => setAttributes({ fnavBtnBorder: value })}
 									hideRadius={true}
 								/>
@@ -332,7 +332,7 @@ export function StyleTab({
 								/>
 								<BorderGroupControl
 									label={__('Border', 'voxel-fse')}
-									value={attributes.intxtBorder}
+									value={attributes.intxtBorder as any}
 									onChange={(value) => setAttributes({ intxtBorder: value })}
 									hideRadius={true}
 								/>
@@ -569,7 +569,7 @@ export function StyleTab({
 								/>
 								<BorderGroupControl
 									label={__('Border', 'voxel-fse')}
-									value={attributes.popupBtnBorder}
+									value={attributes.popupBtnBorder as any}
 									onChange={(value) => setAttributes({ popupBtnBorder: value })}
 									hideRadius={true}
 								/>
@@ -621,7 +621,7 @@ export function StyleTab({
 								<ToggleControl
 									label={__('Hide chevron', 'voxel-fse')}
 									checked={attributes.popupBtnChevronHide === true}
-									onChange={(value) => setAttributes({ popupBtnChevronHide: value })}
+									onChange={(value: any) => setAttributes({ popupBtnChevronHide: value })}
 								/>
 								<ColorControl
 									label={__('Chevron color', 'voxel-fse')}
@@ -733,7 +733,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Border', 'voxel-fse')}
-									value={attributes.formBtnBorder}
+									value={attributes.formBtnBorder as any}
 									onChange={(value) => setAttributes({ formBtnBorder: value })}
 									hideRadius={true}
 								/>
@@ -882,7 +882,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Button border', 'voxel-fse')}
-									value={attributes.scndryBtnBorder}
+									value={attributes.scndryBtnBorder as any}
 									onChange={(value) => setAttributes({ scndryBtnBorder: value })}
 									hideRadius={true}
 								/>
@@ -981,7 +981,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Button border', 'voxel-fse')}
-									value={attributes.tertiaryBtnBorder}
+									value={attributes.tertiaryBtnBorder as any}
 									onChange={(value) => setAttributes({ tertiaryBtnBorder: value })}
 									hideRadius={true}
 								/>
@@ -1092,7 +1092,7 @@ export function StyleTab({
 
 								<BorderGroupControl
 									label={__('Border', 'voxel-fse')}
-									value={attributes.fileBorder}
+									value={attributes.fileBorder as any}
 									onChange={(value) => setAttributes({ fileBorder: value })}
 									hideRadius={true}
 								/>
@@ -1267,7 +1267,7 @@ export function StyleTab({
 						{ label: __('Center', 'voxel-fse'), value: 'center' },
 						{ label: __('Right', 'voxel-fse'), value: 'flex-end' },
 					]}
-					onChange={(value) => setAttributes({ welcAlign: value })}
+					onChange={(value: any) => setAttributes({ welcAlign: value })}
 				/>
 
 				<SelectControl
@@ -1278,7 +1278,7 @@ export function StyleTab({
 						{ label: __('Center', 'voxel-fse'), value: 'center' },
 						{ label: __('Right', 'voxel-fse'), value: 'right' },
 					]}
-					onChange={(value) => setAttributes({ welcAlignText: value })}
+					onChange={(value: any) => setAttributes({ welcAlignText: value })}
 				/>
 
 				<SectionHeading label={__('Icon', 'voxel-fse')} />
@@ -1418,7 +1418,7 @@ export function StyleTab({
 
 				<BorderGroupControl
 					label={__('Border', 'voxel-fse')}
-					value={attributes.dialogBorder}
+					value={attributes.dialogBorder as any}
 					onChange={(value) => setAttributes({ dialogBorder: value })}
 					hideRadius={true}
 				/>

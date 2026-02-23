@@ -93,6 +93,7 @@ export interface ReviewStatsAttributes {
   * Typography Value Interface (copied from TypographyPopup)
   */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSize_tablet?: number;

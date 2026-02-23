@@ -2,7 +2,6 @@
 import { __ } from '@wordpress/i18n';
 import {
     SelectControl,
-    TextControl,
     ToggleControl,
 } from '@wordpress/components';
 import { useState } from 'react';
@@ -15,7 +14,10 @@ import {
     LoopVisibilityControl,
     ElementVisibilityModal,
     LoopElementModal,
+    LinkSearchControl,
+    DynamicTagTextControl,
 } from '@shared/controls';
+import type { LoopConfig } from '@shared/controls/LoopElementModal';
 import type {
     UserbarAttributes,
     UserbarItem,
@@ -55,21 +57,9 @@ export default function ContentTab({
     const [activeLoopItemIndex, setActiveLoopItemIndex] = useState<number | null>(null);
 
     const getItemLabel = (item: UserbarItem): string => {
-        switch (item.componentType) {
-            case 'notifications':
-                return item.notificationsTitle || 'Notifications';
-            case 'messages':
-                return item.messagesTitle || 'Messages';
-            case 'cart':
-                return item.cartTitle || 'Cart';
-            case 'user_menu':
-            case 'select_wp_menu':
-                return item.wpMenuTitle || 'Menu';
-            case 'link':
-                return item.componentTitle || 'Link';
-            default:
-                return item.componentType;
-        }
+        // Show the component type value (e.g. "user_menu", "notifications")
+        // matching Elementor's pattern of showing the select value
+        return item.componentType || 'Item';
     };
 
     const updateIcons = (field: keyof UserbarAttributes['icons'], value: any) => {
@@ -147,62 +137,57 @@ export default function ContentTab({
 
                                         {/* URL - for links only */}
                                         {item.componentType === 'link' && (
-                                            <>
-                                                <TextControl
-                                                    label={__('Link URL', 'voxel-fse')}
-                                                    value={item.componentUrl.url}
-                                                    onChange={(value: string) =>
-                                                        updateField('componentUrl', {
-                                                            ...item.componentUrl,
-                                                            url: value,
-                                                        })
-                                                    }
-                                                    placeholder="https://your-link.com"
-                                                />
-                                                <ToggleControl
-                                                    label={__('Open in new tab', 'voxel-fse')}
-                                                    checked={item.componentUrl.is_external}
-                                                    onChange={(value: boolean) =>
-                                                        updateField('componentUrl', {
-                                                            ...item.componentUrl,
-                                                            is_external: value,
-                                                        })
-                                                    }
-                                                />
-                                            </>
+                                            <LinkSearchControl
+                                                label={__('Link', 'voxel-fse')}
+                                                value={{
+                                                    url: item.componentUrl.url,
+                                                    isExternal: item.componentUrl.is_external,
+                                                    nofollow: item.componentUrl.nofollow,
+                                                    customAttributes: item.componentUrl.customAttributes,
+                                                }}
+                                                onChange={(link) =>
+                                                    updateField('componentUrl', {
+                                                        url: link.url,
+                                                        is_external: link.isExternal,
+                                                        nofollow: link.nofollow,
+                                                        customAttributes: link.customAttributes,
+                                                    })
+                                                }
+                                                enableDynamicTags
+                                            />
                                         )}
 
                                         {/* Labels based on component type */}
                                         {item.componentType === 'link' && (
-                                            <TextControl
+                                            <DynamicTagTextControl
                                                 label={__('Label', 'voxel-fse')}
                                                 value={item.componentTitle}
                                                 onChange={(value: string) => updateField('componentTitle', value)}
                                             />
                                         )}
                                         {item.componentType === 'messages' && (
-                                            <TextControl
+                                            <DynamicTagTextControl
                                                 label={__('Label', 'voxel-fse')}
                                                 value={item.messagesTitle}
                                                 onChange={(value: string) => updateField('messagesTitle', value)}
                                             />
                                         )}
                                         {item.componentType === 'select_wp_menu' && (
-                                            <TextControl
+                                            <DynamicTagTextControl
                                                 label={__('Label', 'voxel-fse')}
                                                 value={item.wpMenuTitle}
                                                 onChange={(value: string) => updateField('wpMenuTitle', value)}
                                             />
                                         )}
                                         {item.componentType === 'notifications' && (
-                                            <TextControl
+                                            <DynamicTagTextControl
                                                 label={__('Label', 'voxel-fse')}
                                                 value={item.notificationsTitle}
                                                 onChange={(value: string) => updateField('notificationsTitle', value)}
                                             />
                                         )}
                                         {item.componentType === 'cart' && (
-                                            <TextControl
+                                            <DynamicTagTextControl
                                                 label={__('Label', 'voxel-fse')}
                                                 value={item.cartTitle}
                                                 onChange={(value: string) => updateField('cartTitle', value)}
@@ -311,8 +296,12 @@ export default function ContentTab({
                                             loopOffset={item.loopOffset}
                                             onEditLoop={() => setActiveLoopItemIndex(index)}
                                             onClearLoop={() => {
-                                                updateField('loopSource', '');
-                                                updateField('loopProperty', '');
+                                                onUpdate({
+                                                    loopSource: '',
+                                                    loopProperty: '',
+                                                    loopLimit: '',
+                                                    loopOffset: '',
+                                                });
                                             }}
                                             onLoopLimitChange={(val) => updateField('loopLimit', val)}
                                             onLoopOffsetChange={(val) => updateField('loopOffset', val)}
@@ -381,14 +370,16 @@ export default function ContentTab({
                 <LoopElementModal
                     isOpen={true}
                     config={{
-                        source: attributes.items[activeLoopItemIndex].loopSource,
-                        property: attributes.items[activeLoopItemIndex].loopProperty,
-                    } as any}
+                        loopSource: attributes.items[activeLoopItemIndex].loopSource || '',
+                        loopProperty: attributes.items[activeLoopItemIndex].loopProperty || '',
+                        loopLimit: attributes.items[activeLoopItemIndex].loopLimit || '',
+                        loopOffset: attributes.items[activeLoopItemIndex].loopOffset || '',
+                    }}
                     onClose={() => setActiveLoopItemIndex(null)}
-                    onSave={(newConfig: any) => {
+                    onSave={(newConfig: LoopConfig) => {
                         updateItem(activeLoopItemIndex, {
-                            loopSource: newConfig.source,
-                            loopProperty: newConfig.property,
+                            loopSource: newConfig.loopSource,
+                            loopProperty: newConfig.loopProperty,
                         });
                     }}
                 />

@@ -98,7 +98,7 @@ export default function PopupCustomStyleControl({
                             label={__('Border', 'voxel-fse')}
                             value={attributes[keys.border] || {}}
                             onChange={(value) =>
-                                setAttributes({ [keys.border]: value })
+                                setAttributes({ [keys.border as string]: value })
                             }
                             hideRadius={true}
                         />

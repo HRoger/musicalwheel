@@ -233,7 +233,7 @@ export const AnimationSelectControl: React.FC<AnimationSelectControlProps> = ({
 						label={label}
 						value={value || ''}
 						options={selectOptions}
-						onChange={(newValue) => {
+						onChange={(newValue: string) => {
 							// Ignore optgroup "values"
 							if (newValue.startsWith('__group_')) return;
 							onChange(newValue);

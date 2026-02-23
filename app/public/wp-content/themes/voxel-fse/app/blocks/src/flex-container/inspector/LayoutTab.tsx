@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
-import { SelectControl, BaseControl, Button } from '@wordpress/components';
+import { SelectControl, BaseControl, Button, TextControl } from '@wordpress/components';
 
 import {
 	ResponsiveRangeControlWithDropdown,
@@ -66,7 +66,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 	];
 
 	// Get current flex direction to determine which icon set to use
-	const currentFlexDirection = attributes.flexDirection || 'row';
+	const currentFlexDirection = attributes['flexDirection'] || 'row';
 	const isColumn = isColumnDirection(currentFlexDirection);
 
 	// Justify Content Options - icons change based on flex direction
@@ -156,18 +156,18 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				{/* Container Layout - Dropdown */}
 				<SelectControl
 					label={__('Container Layout', 'voxel-fse')}
-					value={attributes.containerLayout || 'flexbox'}
+					value={attributes['containerLayout'] || 'flexbox'}
 					options={containerLayoutOptions}
-					onChange={(value) => setAttributes({ containerLayout: value })}
+					onChange={(value: any) => setAttributes({ containerLayout: value })}
 					__nextHasNoMarginBottom
 				/>
 
 				{/* Content Width - Dropdown */}
 				<SelectControl
 					label={__('Content Width', 'voxel-fse')}
-					value={attributes.contentWidthType || 'boxed'}
+					value={attributes['contentWidthType'] || 'boxed'}
 					options={contentWidthOptions}
-					onChange={(value) => {
+					onChange={(value: any) => {
 						// Auto-set width values based on content width type
 						if (value === 'full') {
 							setAttributes({
@@ -232,7 +232,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				<SectionHeading label={__('Items', 'voxel-fse')} />
 
 				{/* FLEXBOX CONTROLS - Only show when containerLayout is 'flexbox' */}
-				{(attributes.containerLayout || 'flexbox') === 'flexbox' && (
+				{(attributes['containerLayout'] || 'flexbox') === 'flexbox' && (
 					<>
 						{/* Direction - Responsive icon buttons */}
 						<ResponsiveIconButtonGroup
@@ -286,7 +286,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						/>
 
 						{/* Align Content - only show when wrap is enabled */}
-						{attributes.flexWrap === 'wrap' && (
+						{attributes['flexWrap'] === 'wrap' && (
 							<ResponsiveIconButtonGroup
 								label={__('Align Content', 'voxel-fse')}
 								attributeBaseName="alignContent"
@@ -315,7 +315,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 				)}
 
 				{/* GRID CONTROLS - Only show when containerLayout is 'grid' */}
-				{attributes.containerLayout === 'grid' && (
+				{attributes['containerLayout'] === 'grid' && (
 					<>
 						{/* Grid Outline Toggle (Editor only) */}
 						<BaseControl>
@@ -337,17 +337,17 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 									{__('Grid Outline', 'voxel-fse')}
 								</span>
 								<Button
-									onClick={() => setAttributes({ gridOutline: !attributes.gridOutline })}
+									onClick={() => setAttributes({ gridOutline: !attributes['gridOutline'] })}
 									style={{
 										padding: '4px 12px',
 										height: '28px',
-										backgroundColor: attributes.gridOutline ? '#2271b1' : '#f0f0f1',
-										color: attributes.gridOutline ? '#ffffff' : '#1e1e1e',
-										borderColor: attributes.gridOutline ? '#2271b1' : '#dcdcde',
+										backgroundColor: attributes['gridOutline'] ? 'var(--vxfse-accent-color, #3858e9)' : '#f0f0f1',
+										color: attributes['gridOutline'] ? '#ffffff' : '#1e1e1e',
+										borderColor: attributes['gridOutline'] ? 'var(--vxfse-accent-color, #3858e9)' : '#dcdcde',
 										fontSize: '12px',
 									}}
 								>
-									{attributes.gridOutline ? __('Show', 'voxel-fse') : __('Hide', 'voxel-fse')}
+									{attributes['gridOutline'] ? __('Show', 'voxel-fse') : __('Hide', 'voxel-fse')}
 								</Button>
 							</div>
 						</BaseControl>
@@ -396,13 +396,76 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{/* Auto Flow */}
 						<SelectControl
 							label={__('Auto Flow', 'voxel-fse')}
-							value={attributes.gridAutoFlow || 'row'}
+							value={attributes['gridAutoFlow'] || 'row'}
 							options={[
 								{ label: __('Row', 'voxel-fse'), value: 'row' },
 								{ label: __('Column', 'voxel-fse'), value: 'column' },
 							]}
-							onChange={(value) => setAttributes({ gridAutoFlow: value })}
+							onChange={(value: any) => setAttributes({ gridAutoFlow: value })}
 							__nextHasNoMarginBottom
+						/>
+
+						{/* Grid Alignment Section */}
+						<SectionHeading label={__('Alignment', 'voxel-fse')} />
+
+						{/* Justify Items */}
+						<ResponsiveIconButtonGroup
+							label={__('Justify Items', 'voxel-fse')}
+							attributeBaseName="gridJustifyItems"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-justify-start-h" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-justify-center-h" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-justify-end-h" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'stretch', icon: <span className="eicon-flex eicon-align-stretch-h" style={{ fontSize: '16px' }} />, label: __('Stretch', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Align Items */}
+						<ResponsiveIconButtonGroup
+							label={__('Align Items', 'voxel-fse')}
+							attributeBaseName="gridAlignItems"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-align-start-v" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-align-center-v" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-align-end-v" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'stretch', icon: <span className="eicon-flex eicon-align-stretch-v" style={{ fontSize: '16px' }} />, label: __('Stretch', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Justify Content */}
+						<ResponsiveIconButtonGroup
+							label={__('Justify Content', 'voxel-fse')}
+							attributeBaseName="gridJustifyContent"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-justify-start-h" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-justify-center-h" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-justify-end-h" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'space-between', icon: <span className="eicon-flex eicon-justify-space-between-h" style={{ fontSize: '16px' }} />, label: __('Space Between', 'voxel-fse') },
+								{ value: 'space-around', icon: <span className="eicon-flex eicon-justify-space-around-h" style={{ fontSize: '16px' }} />, label: __('Space Around', 'voxel-fse') },
+								{ value: 'space-evenly', icon: <span className="eicon-flex eicon-justify-space-evenly-h" style={{ fontSize: '16px' }} />, label: __('Space Evenly', 'voxel-fse') },
+							]}
+						/>
+
+						{/* Align Content */}
+						<ResponsiveIconButtonGroup
+							label={__('Align Content', 'voxel-fse')}
+							attributeBaseName="gridAlignContent"
+							attributes={attributes}
+							setAttributes={setAttributes}
+							options={[
+								{ value: 'start', icon: <span className="eicon-flex eicon-align-start-v" style={{ fontSize: '16px' }} />, label: __('Start', 'voxel-fse') },
+								{ value: 'center', icon: <span className="eicon-flex eicon-align-center-v" style={{ fontSize: '16px' }} />, label: __('Center', 'voxel-fse') },
+								{ value: 'end', icon: <span className="eicon-flex eicon-align-end-v" style={{ fontSize: '16px' }} />, label: __('End', 'voxel-fse') },
+								{ value: 'space-between', icon: <span className="eicon-flex eicon-justify-space-between-v" style={{ fontSize: '16px' }} />, label: __('Space Between', 'voxel-fse') },
+								{ value: 'space-around', icon: <span className="eicon-flex eicon-justify-space-around-v" style={{ fontSize: '16px' }} />, label: __('Space Around', 'voxel-fse') },
+								{ value: 'space-evenly', icon: <span className="eicon-flex eicon-justify-space-evenly-v" style={{ fontSize: '16px' }} />, label: __('Space Evenly', 'voxel-fse') },
+							]}
 						/>
 
 						{/* Note about Grid */}
@@ -428,7 +491,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 			<AccordionPanel id="additional-options" title={__('Additional Options', 'voxel-fse')}>
 				<SelectControl
 					label={__('HTML Tag', 'voxel-fse')}
-					value={attributes.htmlTag}
+					value={attributes['htmlTag']}
 					options={[
 						{ label: 'div', value: 'div' },
 						{ label: 'section', value: 'section' },
@@ -438,14 +501,33 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{ label: 'article', value: 'article' },
 						{ label: 'aside', value: 'aside' },
 						{ label: 'nav', value: 'nav' },
+						{ label: 'a', value: 'a' },
 					]}
-					onChange={(value) => setAttributes({ htmlTag: value })}
+					onChange={(value: any) => setAttributes({ htmlTag: value })}
 					__nextHasNoMarginBottom
 				/>
 
+				{/* Link URL - Only show when HTML Tag is 'a' */}
+				{attributes['htmlTag'] === 'a' && (
+					<TextControl
+						label={__('Link', 'voxel-fse')}
+						value={attributes['containerLink']?.url || ''}
+						onChange={(url: any) =>
+							setAttributes({
+								containerLink: {
+									...(attributes['containerLink'] || {}),
+									url,
+								},
+							})
+						}
+						placeholder="https://"
+						__nextHasNoMarginBottom
+					/>
+				)}
+
 				<SelectControl
 					label={__('Overflow', 'voxel-fse')}
-					value={attributes.overflow}
+					value={attributes['overflow']}
 					options={[
 						{ label: __('Default', 'voxel-fse'), value: '' },
 						{ label: __('Visible', 'voxel-fse'), value: 'visible' },
@@ -453,7 +535,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 						{ label: __('Scroll', 'voxel-fse'), value: 'scroll' },
 						{ label: __('Auto', 'voxel-fse'), value: 'auto' },
 					]}
-					onChange={(value) => setAttributes({ overflow: value })}
+					onChange={(value: any) => setAttributes({ overflow: value })}
 					__nextHasNoMarginBottom
 				/>
 			</AccordionPanel>

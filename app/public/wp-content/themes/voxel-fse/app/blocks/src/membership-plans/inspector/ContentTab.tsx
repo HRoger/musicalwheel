@@ -32,8 +32,7 @@ import type {
 	MembershipPlansApiResponse,
 	PlanConfig,
 	PlanFeature,
-	PriceGroup,
-} from '../types';
+	} from '../types';
 import { defaultIconValue, defaultPlanConfig } from '../types';
 import type { IconValue as SharedIconValue } from '@shared/types';
 import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
@@ -278,7 +277,7 @@ export function ContentTab({
 											setVisibilityModal({
 												isOpen: true,
 												groupId: null,
-												featureId: item.id,
+												featureId: item.id ?? null,
 												planKey: planKey,
 												rules: item.visibilityRules || [],
 											})

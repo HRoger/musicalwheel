@@ -398,7 +398,7 @@ export default function BackgroundControl({
 	showSlideshowBackground = false,
 }: BackgroundControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useSelect((select: any) => getCurrentDeviceType(select));
 
 	const wpDevice = wpDeviceType
 		? (wpDeviceType.toLowerCase() as DeviceType)
@@ -412,20 +412,18 @@ export default function BackgroundControl({
 
 	// Fetch media details for normal background image (for resolution selection)
 	const normalImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
+		(select: any) => {
 			const imageId = attributes.backgroundImage?.id;
 			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImage?.id]
+		}
 	);
 
 	// Fetch media details for hover background image (for resolution selection)
 	const hoverImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
+		(select: any) => {
 			const imageId = attributes.backgroundImageHover?.id;
 			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImageHover?.id]
+		}
 	);
 
 	// Render content for a single state (normal or hover)

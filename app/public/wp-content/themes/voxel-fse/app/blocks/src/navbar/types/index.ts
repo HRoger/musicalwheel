@@ -41,6 +41,7 @@ export interface NavbarManualItem {
 	url: string;
 	isExternal: boolean;
 	nofollow: boolean;
+	customAttributes?: string;
 	isActive: boolean;
 	// Loop & Visibility
 	visibilityRules: VisibilityRule[];
@@ -53,15 +54,22 @@ export interface NavbarManualItem {
 
 /**
  * Menu item from WordPress nav menu
+ *
+ * Evidence: Matches Voxel's nav-menu-walker.php structure
+ * - Line 116: attr_title for tooltip
+ * - Lines 118-122: rel attribute for security
+ * - Line 124: aria-current for accessibility
  */
 export interface NavbarMenuItem {
 	id: number;
 	title: string;
+	attrTitle: string; // Tooltip text (Voxel walker line 116)
 	url: string;
 	target: string;
+	rel: string; // noopener for _blank, or xfn value (Voxel walker lines 118-122)
 	icon: string; // HTML markup
 	classes: string[];
-	isCurrent: boolean;
+	isCurrent: boolean; // Used for aria-current="page" (Voxel walker line 124)
 	hasChildren: boolean;
 	children: NavbarMenuItem[];
 }
@@ -123,6 +131,8 @@ export interface NavbarAttributes {
 	linkPadding_tablet: any;
 	linkPadding_mobile: any;
 	linkBorderStyle: string;
+	linkBorderWidth: any;
+	linkBorderColor: string;
 	linkBorderRadius: number;
 	linkBorderRadius_tablet: number;
 	linkBorderRadius_mobile: number;
@@ -146,6 +156,23 @@ export interface NavbarAttributes {
 	iconColorActive: string;
 	scrollBg: string;
 	chevronColor: string;
+
+	// Popup custom style attributes
+	popupBackdropBackground: string;
+	popupBackdropPointerEvents: boolean;
+	popupBoxShadow: any;
+	popupTopBottomMargin: number;
+	popupTopBottomMargin_tablet?: number;
+	popupTopBottomMargin_mobile?: number;
+	popupMinWidth: number;
+	popupMinWidth_tablet?: number;
+	popupMinWidth_mobile?: number;
+	popupMaxWidth: number;
+	popupMaxWidth_tablet?: number;
+	popupMaxWidth_mobile?: number;
+	popupMaxHeight: number;
+	popupMaxHeight_tablet?: number;
+	popupMaxHeight_mobile?: number;
 }
 
 /**
@@ -235,4 +262,36 @@ export interface SubmenuState {
 	isOpen: boolean;
 	activeScreen: string;
 	slideFrom: 'left' | 'right';
+}
+
+/**
+ * Linked Template Tabs data
+ * Used when source is 'template_tabs'
+ */
+export interface LinkedTabData {
+	id: string;
+	title: string;
+	urlKey: string;
+	icon: string | null; // HTML markup
+	isActive: boolean;
+}
+
+/**
+ * Linked Search Form post type data
+ * Used when source is 'search_form'
+ */
+export interface LinkedPostTypeData {
+	key: string;
+	label: string;
+	icon: string | null; // HTML markup
+	isActive: boolean;
+}
+
+/**
+ * Props for NavbarComponent (extended with linked block data)
+ */
+export interface NavbarComponentPropsExtended extends NavbarComponentProps {
+	linkedTabs?: LinkedTabData[];
+	linkedPostTypes?: LinkedPostTypeData[];
+	linkedBlockId?: string; // The blockId of the linked template-tabs or search-form
 }

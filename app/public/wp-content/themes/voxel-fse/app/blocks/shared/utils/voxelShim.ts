@@ -47,12 +47,41 @@ interface VoxelWithMixins {
 			_originalMounted?: () => void;
 		};
 	};
-	Maps?: unknown;
+	Maps?: {
+		await?: (callback: () => void) => void;
+		Map?: new (config: { el: HTMLElement; zoom: number; center?: any }) => any;
+		Marker?: new (config: any) => any;
+		LatLng?: new (lat: number, lng: number) => any;
+		Autocomplete?: new (element: HTMLInputElement, callback: (result: any) => void, config?: any) => any;
+		getGeocoder?: () => any;
+		[key: string]: unknown;
+	};
+	alert?: (message: string, type?: 'error' | 'info' | 'success' | 'warning') => void;
+	dialog?: (options: Record<string, unknown>) => void;
+	helpers?: {
+		currencyFormat?: (amount: number) => string;
+		dateFormatYmd?: (date: Date) => string;
+		[key: string]: unknown;
+	};
+	[key: string]: unknown;
 }
 
 declare global {
 	interface Window {
 		Voxel?: VoxelWithMixins;
+		Voxel_Config?: {
+			stripe?: {
+				currency?: string;
+			};
+			[key: string]: unknown;
+		};
+		_vx_file_upload_cache?: Array<{
+			_id: string;
+			name: string;
+			type: string;
+			size: number;
+			item: File;
+		}>;
 	}
 }
 
@@ -98,19 +127,19 @@ function applyPatch(): boolean {
 					// Find Elementor widget element (with null check)
 					const elementorElement = el.closest?.('.elementor-element');
 					if (elementorElement) {
-						this.widget_id = (elementorElement as HTMLElement).dataset?.id || '';
+						this.widget_id = (elementorElement as HTMLElement).dataset?.['id'] || '';
 					} else {
 						// Fallback: use data-block-id if available (Gutenberg blocks)
 						const blockElement = el.closest?.('[data-block-id]');
 						this.widget_id = blockElement
-							? (blockElement as HTMLElement).dataset?.blockId || ''
+							? (blockElement as HTMLElement).dataset?.['blockId'] || ''
 							: '';
 					}
 
 					// Find Elementor container (with null check)
 					const elementorContainer = el.closest?.('.elementor');
 					if (elementorContainer) {
-						this.post_id = (elementorContainer as HTMLElement).dataset?.elementorId || '';
+						this.post_id = (elementorContainer as HTMLElement).dataset?.['elementorId'] || '';
 					} else {
 						// Fallback: try to get post ID from body class or data attribute
 						const postIdMatch = document.body.className.match(/postid-(\d+)/);

@@ -7,7 +7,8 @@
  */
 
 export { CreatePostForm } from './CreatePostForm';
-export type { CreatePostFormProps, SubmissionResult } from './CreatePostForm';
+export type { CreatePostFormProps } from './CreatePostForm';
+export type { SubmissionResult } from '../types';
 
 export { FormHeader } from './FormHeader';
 export type { FormHeaderProps } from './FormHeader';

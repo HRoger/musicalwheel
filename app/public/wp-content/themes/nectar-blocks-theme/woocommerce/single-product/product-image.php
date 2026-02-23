@@ -13,7 +13,7 @@
  * @see     https://docs.woocommerce.com/document/template-structure/
  * @author  WooThemes
  * @package WooCommerce/Templates
- * @version 9.0.0
+ * @version 9.7.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -137,14 +137,14 @@ if( in_array($product_gallery_style, ['ios_slider','left_thumb_sticky','left_thu
 
             </div>
         </div>
-        
+
         <?php if ( $product_attach_ids ) {  ?>
-    
+
                 <?php if('left_thumb_slider' === $product_gallery_style) {
                     $visible_class = (sizeof($product_attach_ids) > 4) ? ' visible' : '';
                     echo '<div class="product-thumbs-wrap' . esc_attr($visible_class) . '"><div class="button-prev"><i class="fa fa-angle-up" aria-hidden="true"></i></div>';
                 } ?>
-    
+
                 <div class="<?php echo esc_attr($slider_thumb_container_class); ?> product-thumbs">
                     <div class="<?php echo esc_attr($slider_wrap_class); ?>">
                             <?php
@@ -208,7 +208,7 @@ else if( 'two_column_images' === $product_gallery_style ) {
         'images',
         'woocommerce-product-gallery-with-' . ( true === $has_gallery_imgs ? 'multiple-images' : 'single-image')
     ] ); ?>
-    
+
     <div class="<?php echo esc_attr( implode( ' ', array_map( 'sanitize_html_class', $wrapper_classes ) ) ); ?>">
         <div class="woocommerce-product-gallery__wrapper">
         <?php
@@ -261,7 +261,7 @@ else if( 'two_column_images' === $product_gallery_style ) {
         ?>
     </div>
     </div>
-    
+
     <?php
 } // End two column gallery markup.
 

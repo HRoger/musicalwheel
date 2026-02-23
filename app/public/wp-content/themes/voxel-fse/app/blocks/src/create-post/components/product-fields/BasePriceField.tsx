@@ -21,21 +21,7 @@ import React from 'react';
 import type { VoxelField } from '../../types';
 import { InfoIcon } from '../icons/InfoIcon';
 
-/**
- * Voxel config interface for window global
- */
-interface VoxelConfig {
-	currency?: string;
-	stripe?: {
-		currency?: string;
-	};
-}
-
-declare global {
-	interface Window {
-		Voxel_Config?: VoxelConfig;
-	}
-}
+// Voxel_Config is declared globally in voxelShim.ts
 
 /**
  * Base price field value structure
@@ -60,10 +46,10 @@ export const BasePriceField: React.FC<BasePriceFieldProps> = ({
 	const priceValue = value || { amount: null, discount_amount: null };
 
 	// Check if discount price is enabled
-	const discountEnabled = field.props?.discount_price?.enabled || false;
+	const discountEnabled = (field.props as any)?.discount_price?.enabled || false;
 
 	// Get currency (default to USD if not set)
-	const currency = window.Voxel_Config?.currency || 'USD';
+	const currency = (window as any).Voxel_Config?.currency || 'USD';
 
 	return (
 		<>
