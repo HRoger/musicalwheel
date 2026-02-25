@@ -142,6 +142,20 @@ export function generatePostFeedStyles(
 	const selector = `[data-block-id="${blockId}"]`;
 
 	// ============================================
+	// CONTAINER POSITIONING
+	// Evidence: themes/voxel/assets/dist/post-feed.css - .post-feed-nav uses position:absolute
+	// The carousel nav is position:absolute and expects its container to be position:relative
+	// In Voxel, this is provided by .elementor-element ancestor
+	// In FSE, we add it to the block container itself
+	// FIX: Add layout constraints to prevent carousel from expanding parent
+	// Evidence: Browser inspection showed container expanding to content width (1134px) instead of parent (400px)
+	// causing scrollWidth == clientWidth and breaking carousel functionality
+	// overflow: hidden prevents carousel content from pushing the flex parent wider
+	// In Elementor, the widget wrapper has a fixed column width that constrains the carousel;
+	// In FSE's flex-based layout, we need overflow: hidden to achieve the same containment
+	cssRules.push(`${selector} { position: relative; max-width: 100%; min-width: 0; overflow: hidden; }`);
+
+	// ============================================
 	// COUNTER STYLES
 	// Evidence: post-feed.php:488-535
 	// ============================================
@@ -304,9 +318,18 @@ export function generatePostFeedStyles(
 	// Pagination border type - Evidence: post-feed.php:919-923
 	if (attributes.paginationBorderType) {
 		cssRules.push(`${selector} .feed-pagination .ts-btn { border-style: ${attributes.paginationBorderType}; }`);
-		if (attributes.paginationBorderType !== 'none') {
-			cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: 1px; }`); // Default width if type set?
-		}
+	}
+
+	// Pagination border width - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.paginationBorderWidth !== undefined) {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: ${attributes.paginationBorderWidth}px; }`);
+	} else if (attributes.paginationBorderType && attributes.paginationBorderType !== 'none') {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: 1px; }`); // Default width if type set
+	}
+
+	// Pagination border color (Normal) - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.paginationBorderColor) {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-color: ${attributes.paginationBorderColor}; }`);
 	}
 
 	// Pagination justify - Evidence: post-feed.php:837-856
@@ -452,9 +475,18 @@ export function generatePostFeedStyles(
 	// Carousel nav border type - Evidence: post-feed.php:1241-1250
 	if (attributes.carouselNavBorderType) {
 		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-style: ${attributes.carouselNavBorderType}; }`);
-		if (attributes.carouselNavBorderType !== 'none') {
-			cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: 1px; }`); // Default width
-		}
+	}
+
+	// Carousel nav border width - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.carouselNavBorderWidth !== undefined) {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: ${attributes.carouselNavBorderWidth}px; }`);
+	} else if (attributes.carouselNavBorderType && attributes.carouselNavBorderType !== 'none') {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: 1px; }`); // Default width
+	}
+
+	// Carousel nav border color (Normal) - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	if (attributes.carouselNavBorderColor) {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-color: ${attributes.carouselNavBorderColor}; }`);
 	}
 
 	// Carousel nav border radius - Evidence: post-feed.php:1252-1277
@@ -512,8 +544,16 @@ export function generatePostFeedStyles(
 	// ============================================
 
 	// Loading opacity - Evidence: post-feed.php:611-621
+	// EXACT Voxel selector: {{WRAPPER}}.vx-loading .vx-opacity { opacity: {{SIZE}} }
+	// .vx-loading is on the outer container, .vx-opacity is on the grid
 	if (attributes.loadingStyle === 'opacity' && attributes.loadingOpacity !== undefined) {
-		cssRules.push(`${selector} .post-feed-grid.vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+		cssRules.push(`${selector}.vx-loading .vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+	}
+
+	// Skeleton background color - Evidence: post-feed.php:633-642
+	// Selector: {{WRAPPER}}.vx-loading .vx-skeleton .ts-preview
+	if (attributes.loadingStyle === 'skeleton' && attributes.skeletonBackgroundColor) {
+		cssRules.push(`${selector}.vx-loading .vx-skeleton .ts-preview { background-color: ${attributes.skeletonBackgroundColor}; }`);
 	}
 
 	// ============================================

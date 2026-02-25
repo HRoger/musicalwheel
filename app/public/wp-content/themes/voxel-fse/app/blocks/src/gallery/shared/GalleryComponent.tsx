@@ -28,7 +28,8 @@
  * @package VoxelFSE
  */
 
-import { useMemo } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import apiFetch from '@wordpress/api-fetch';
 import type {
 	GalleryBlockAttributes,
 	GalleryComponentProps,
@@ -38,6 +39,15 @@ import type {
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+import { generateGalleryStyles } from '../styles';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 /**
  * Process images for rendering
@@ -191,12 +201,103 @@ export default function GalleryComponent({
 	attributes,
 	context,
 	blockId,
+	templateContext = 'post',
+	templatePostType,
 }: GalleryComponentProps) {
-	// Process images
-	const processedImages = useMemo(
+	// Dynamic tag resolution for editor preview
+	const hasDynamicImages = attributes.imagesDynamicTag && attributes.imagesDynamicTag.includes('@');
+	const [dynamicImages, setDynamicImages] = useState<ProcessedImage[]>([]);
+
+	useEffect(() => {
+		if (context !== 'editor' || !hasDynamicImages || attributes.images.length > 0) {
+			setDynamicImages([]);
+			return;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get comma-separated attachment IDs
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: attributes.imagesDynamicTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				// Strip @tags()...@endtags() wrapper
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				// Parse comma-separated IDs
+				const ids = rendered.split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => n > 0);
+				if (ids.length === 0) {
+					setDynamicImages([]);
+					return;
+				}
+
+				// Step 2: Fetch media data for each ID
+				const images: ProcessedImage[] = [];
+				for (const id of ids) {
+					if (cancelled) return;
+					try {
+						const media = await apiFetch<{ source_url: string; alt_text?: string; caption?: { rendered?: string }; title?: { rendered?: string }; description?: { rendered?: string }; media_details?: { sizes?: Record<string, { source_url: string }> } }>({
+							path: `/wp/v2/media/${id}`,
+						});
+						if (media?.source_url) {
+							const sizes = media.media_details?.sizes || {};
+							const displayUrl = sizes[attributes.displaySize]?.source_url || media.source_url;
+							const lightboxUrl = sizes[attributes.lightboxSize]?.source_url || media.source_url;
+							images.push({
+								id,
+								src_display: displayUrl,
+								src_lightbox: lightboxUrl,
+								alt: media.alt_text || '',
+								caption: media.caption?.rendered?.replace(/<[^>]*>/g, '') || '',
+								description: media.description?.rendered?.replace(/<[^>]*>/g, '') || '',
+								title: media.title?.rendered || '',
+								display_size: attributes.displaySize,
+							});
+						}
+					} catch {
+						// Skip failed media fetches
+					}
+				}
+
+				if (!cancelled) {
+					setDynamicImages(images);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('Failed to resolve dynamic gallery images:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [context, attributes.imagesDynamicTag, hasDynamicImages, templateContext, templatePostType, attributes.images.length, attributes.displaySize, attributes.lightboxSize]);
+
+	// Process static images
+	const staticProcessedImages = useMemo(
 		() => processImagesForRender(attributes),
 		[attributes.images, attributes.displaySize, attributes.lightboxSize]
 	);
+
+	// Use dynamic images when no static images but dynamic tag is set
+	const processedImages = staticProcessedImages.length > 0 ? staticProcessedImages : dynamicImages;
 
 	// Calculate visible/hidden images
 	const visibleCount = attributes.visibleCount;
@@ -223,6 +324,33 @@ export default function GalleryComponent({
 
 	// Build grid styles
 	const gridStyles = buildGridStyles(attributes);
+
+	// Generate responsive CSS for gallery-specific properties
+	const galleryCSS = useMemo(
+		() => generateGalleryStyles(attributes, blockId),
+		[attributes, blockId]
+	);
+
+	// Build lightbox slides from ALL images (visible + hidden)
+	const lightboxSlides = useMemo(
+		() => processedImages.map((img) => ({
+			src: img.src_lightbox || img.src_display,
+			alt: img.alt || '',
+		})),
+		[processedImages]
+	);
+
+	// Lightbox click handler - opens at the correct image index
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement>, index: number) => {
+			e.preventDefault();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox) {
+				lightbox.open(lightboxSlides, index);
+			}
+		},
+		[lightboxSlides]
+	);
 
 	// Build vxconfig for re-rendering (CRITICAL for DevTools visibility)
 	const vxConfig: GalleryVxConfig = {
@@ -268,6 +396,7 @@ export default function GalleryComponent({
 		viewAllIconSize_mobile: attributes.viewAllIconSize_mobile,
 		viewAllTextColor: attributes.viewAllTextColor,
 		viewAllTextColorHover: attributes.viewAllTextColorHover,
+		viewAllTypography: attributes.viewAllTypography,
 	};
 
 	// Build grid class names
@@ -285,6 +414,9 @@ export default function GalleryComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
+				{galleryCSS && (
+					<style dangerouslySetInnerHTML={{ __html: galleryCSS }} />
+				)}
 				<li style={{ listStyle: 'none', width: '100%' }}>
 					<EmptyPlaceholder />
 				</li>
@@ -300,6 +432,11 @@ export default function GalleryComponent({
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
+
+			{/* Responsive CSS for gallery-specific properties */}
+			{galleryCSS && (
+				<style dangerouslySetInnerHTML={{ __html: galleryCSS }} />
+			)}
 
 			{/* Gallery Grid - matches Voxel structure 1:1 */}
 			<div
@@ -331,6 +468,7 @@ export default function GalleryComponent({
 							data-elementor-lightbox-description={
 								image.caption || image.alt || image.description
 							}
+							onClick={(e) => handleLightboxClick(e, index)}
 							style={{
 								display: 'block',
 								width: '100%',
@@ -385,6 +523,7 @@ export default function GalleryComponent({
 							data-elementor-lightbox-description={
 								hidden[0].caption || hidden[0].alt || hidden[0].description
 							}
+							onClick={(e) => handleLightboxClick(e, visible.length)}
 							style={{
 								display: 'block',
 								width: '100%',
@@ -419,11 +558,10 @@ export default function GalleryComponent({
 									{renderIcon(attributes.viewAllIcon, VoxelIcons.grid)}
 								</span>
 								<p
+									className="ts-gallery-viewall-text"
 									style={{
 										margin: 0,
 										color: attributes.viewAllTextColor || '#fff',
-										fontSize: '14px',
-										fontWeight: 600,
 									}}
 								>
 									+{hidden.length}

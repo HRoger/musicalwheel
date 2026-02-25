@@ -128,7 +128,7 @@ export const ChoicesManager: React.FC<ChoicesManagerProps> = ({
 					strategy={verticalListSortingStrategy}
 				>
 					<div className="ts-repeater-container">
-						{choices.map((choice, index) => (
+						{choices.map((choice, _index) => (
 							<ChoiceRow
 								key={choice._uid}
 								choice={choice}

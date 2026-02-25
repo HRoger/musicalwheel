@@ -5,13 +5,12 @@
  * Uses inline ColorPickerControl layout with label on left, color swatch on right.
  * Matches Elementor's responsive color control pattern.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { __ } from '@wordpress/i18n';
-import { useSelect } from '@wordpress/data';
 import { ColorPalette } from '@wordpress/components';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveColorControlProps {
 	label: string;
@@ -50,7 +49,7 @@ export default function ResponsiveColorControl({
 	const popupRef = useRef<HTMLDivElement>(null);
 
 	// Get WordPress's current device type from the store
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useDeviceType();
 
 	const wpDevice = wpDeviceType ? wpDeviceType.toLowerCase() as DeviceType : 'desktop';
 	const [currentDevice, setCurrentDevice] = useState<DeviceType>(wpDevice);
@@ -258,7 +257,7 @@ export default function ResponsiveColorControl({
 								border: 'none',
 								background: 'transparent',
 								cursor: 'pointer',
-								color: '#007cba',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 							}}
 						>
 							<span
@@ -327,7 +326,7 @@ export default function ResponsiveColorControl({
 					<ColorPalette
 						colors={DEFAULT_COLORS}
 						value={currentValue}
-						onChange={(newColor) => {
+						onChange={(newColor: string | undefined) => {
 							setValue(newColor);
 						}}
 						clearable

@@ -2,7 +2,17 @@
  * Orders Block - Item Promotion Details Component
  *
  * Displays promotion package details within an order item with cancel functionality.
- * Matches Voxel's itemPromotionDetails Vue component.
+ * Matches Voxel's itemPromotionDetails Vue component exactly.
+ *
+ * Voxel HTML structure (from templates/widgets/orders/item-promotion-details.php):
+ *   .order-event
+ *     .order-event-icon.vx-blue > [info icon]
+ *     <b> status title </b>
+ *     <span> date range </span>
+ *     .further-actions
+ *       a.ts-btn.ts-btn-1 (View listing)
+ *       a.ts-btn.ts-btn-1 (View stats)
+ *       a.ts-btn.ts-btn-1 (Cancel promotion)
  *
  * Reference: voxel-orders.beautified.js lines 120-190
  *
@@ -11,6 +21,7 @@
 
 import { useCallback } from 'react';
 import type { ItemPromotionDetailsProps } from '../types';
+import { renderIcon } from '@shared/utils/renderIcon';
 
 declare const Voxel_Config: {
 	l10n: {
@@ -22,15 +33,20 @@ declare const Voxel_Config: {
 /**
  * Item Promotion Details Component
  *
- * Shows promotion package information (dates, status) and provides
- * a cancel button that calls the promotion cancellation API.
+ * Matches Voxel's item-promotion-details.php template structure:
+ * - Uses .order-event container (not custom classes)
+ * - Renders info icon in .order-event-icon.vx-blue
+ * - Status-conditional title text
+ * - Date range display
+ * - .further-actions with View listing, View stats, Cancel promotion links
  */
 export default function ItemPromotionDetails({
 	item,
-	order,
-	config,
+	order: _order,
+	config: _config,
 	onCancelPromotion,
 	isRunningAction,
+	infoIcon,
 }: ItemPromotionDetailsProps) {
 	const promotionPackage = item.details?.promotion_package;
 
@@ -38,8 +54,9 @@ export default function ItemPromotionDetails({
 	 * Handle cancel promotion click
 	 * Reference: voxel-orders.beautified.js lines 140-165
 	 */
-	const handleCancelPromotion = useCallback(async () => {
-		// Show confirmation dialog - matches Voxel's confirm() call
+	const handleCancelPromotion = useCallback(async (e: React.MouseEvent) => {
+		e.preventDefault();
+
 		const confirmMessage =
 			typeof Voxel_Config !== 'undefined'
 				? Voxel_Config.l10n.confirmAction
@@ -52,64 +69,70 @@ export default function ItemPromotionDetails({
 		await onCancelPromotion();
 	}, [onCancelPromotion]);
 
-	// If no promotion package, don't render
-	// This check is placed AFTER all hooks to comply with React Rules of Hooks.
+	// Placed AFTER hooks to comply with React Rules of Hooks.
 	if (!promotionPackage) {
 		return null;
 	}
 
-	/**
-	 * Check if promotion has date range
-	 * Reference: voxel-orders.beautified.js lines 177-180
-	 */
 	const hasDates = promotionPackage.start_date && promotionPackage.end_date;
-
-	/**
-	 * Format date range string
-	 * Reference: voxel-orders.beautified.js lines 182-188
-	 */
 	const getDates = hasDates
 		? `${promotionPackage.start_date} - ${promotionPackage.end_date}`
 		: null;
 
+	/**
+	 * Get status title text matching Voxel's template conditionals
+	 * Reference: item-promotion-details.php template v-if/v-else-if chains
+	 */
+	const getStatusTitle = (): string => {
+		switch (promotionPackage.status) {
+			case 'cancelled':
+				return 'Promotion canceled';
+			case 'expired':
+				return 'Promotion has ended';
+			case 'active':
+				return promotionPackage.assigned_to_post
+					? 'Promotion is active'
+					: 'Promotion details';
+			default:
+				return 'Promotion details';
+		}
+	};
+
 	return (
-		<div className="order-item-promotion-details">
-			{/* Promotion Package Label */}
-			<div className="promotion-label">
-				<strong>{promotionPackage.label}</strong>
+		<div className="order-event">
+			{/* Info icon — matches .order-event-icon.vx-blue */}
+			<div className="order-event-icon vx-blue">
+				{infoIcon ? renderIcon(infoIcon) : <i className="las la-info-circle"></i>}
 			</div>
 
-			{/* Promoted Post Link */}
-			{promotionPackage.post_title && promotionPackage.post_link && (
-				<div className="promotion-post">
-					<span>Promoted: </span>
-					<a href={promotionPackage.post_link}>{promotionPackage.post_title}</a>
-				</div>
-			)}
+			{/* Status title */}
+			<b>{getStatusTitle()}</b>
 
-			{/* Date Range */}
-			{getDates && (
-				<div className="promotion-dates">
-					<span>{getDates}</span>
-				</div>
-			)}
+			{/* Date range */}
+			{getDates && <span>{getDates}</span>}
 
-			{/* Status Badge */}
-			<div className={`promotion-status promotion-status--${promotionPackage.status}`}>
-				{promotionPackage.status}
+			{/* Action links — matches .further-actions */}
+			<div className="further-actions">
+				{promotionPackage.post_link && (
+					<a href={promotionPackage.post_link} target="_blank" rel="noopener noreferrer" className="ts-btn ts-btn-1">
+						View listing
+					</a>
+				)}
+				{promotionPackage.stats_link && (
+					<a href={promotionPackage.stats_link} target="_blank" rel="noopener noreferrer" className="ts-btn ts-btn-1">
+						View stats
+					</a>
+				)}
+				{promotionPackage.status === 'active' && promotionPackage.assigned_to_post && (
+					<a
+						href="#"
+						className={`ts-btn ts-btn-1${isRunningAction ? ' vx-pending' : ''}`}
+						onClick={handleCancelPromotion}
+					>
+						Cancel promotion
+					</a>
+				)}
 			</div>
-
-			{/* Cancel Button - only show for active/pending promotions */}
-			{(promotionPackage.status === 'active' || promotionPackage.status === 'pending') && (
-				<button
-					type="button"
-					className="ts-btn ts-btn-1 ts-btn-small"
-					onClick={handleCancelPromotion}
-					disabled={isRunningAction}
-				>
-					{isRunningAction ? 'Cancelling...' : 'Cancel Promotion'}
-				</button>
-			)}
 		</div>
 	);
 }

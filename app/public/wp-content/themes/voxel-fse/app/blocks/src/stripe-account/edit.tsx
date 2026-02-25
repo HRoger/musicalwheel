@@ -10,7 +10,6 @@ import { useMemo, useEffect } from 'react';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	Button,
-	Placeholder,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
@@ -42,7 +41,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	// Fetch Stripe account configuration from REST API
 	const previewUserId = attributes.previewAsUserDynamicTag || attributes.previewAsUser;
-	const { config, isLoading, error } = useStripeAccountConfig(previewUserId);
+	const { config, isLoading: _isLoading, error } = useStripeAccountConfig(previewUserId);
 
 	// Set block ID if not set
 	useEffect(() => {
@@ -111,15 +110,12 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 			<div {...blockProps}>
 				{error && (
-					<Placeholder
-						icon="warning"
-						label={__('Stripe Account', 'voxel-fse')}
-						instructions={error}
-					>
+					<div className="ts-no-posts">
+						<p>{error}</p>
 						<Button variant="secondary" onClick={() => window.location.reload()}>
 							{__('Retry', 'voxel-fse')}
 						</Button>
-					</Placeholder>
+					</div>
 				)}
 
 				{!error && config && (
@@ -131,11 +127,9 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				)}
 
 				{!error && !config && (
-					<Placeholder
-						icon="admin-users"
-						label={__('Stripe Account', 'voxel-fse')}
-						instructions={__('Configure Stripe Connect to enable vendor features.', 'voxel-fse')}
-					/>
+					<div className="ts-no-posts">
+						<span className="ts-loader"></span>
+					</div>
 				)}
 			</div>
 		</>

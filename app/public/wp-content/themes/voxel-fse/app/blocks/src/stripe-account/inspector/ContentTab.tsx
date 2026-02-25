@@ -90,11 +90,11 @@ export function ContentTab({
 				<ImageUploadControl
 					label={__('General image (Stripe Connect)', 'voxel-fse')}
 					value={attributes.genImage || { id: 0, url: '' }}
-					onChange={(value) => setAttributes({ genImage: value })}
+					onChange={(value: any) => setAttributes({ genImage: value })}
 					allowedTypes={['image']}
 					enableDynamicTags={true}
 					dynamicTagValue={attributes.genImageDynamicTag}
-					onDynamicTagChange={(value) => setAttributes({ genImageDynamicTag: value })}
+					onDynamicTagChange={(value: string | undefined) => setAttributes({ genImageDynamicTag: value })}
 					dynamicTagContext="post"
 				/>
 			</AccordionPanel>
@@ -118,7 +118,7 @@ export function ContentTab({
 							<TextControl
 								type="number"
 								value={attributes.previewAsUser?.toString() || ''}
-								onChange={(value) =>
+								onChange={(value: string) =>
 									setAttributes({
 										previewAsUser: value ? parseInt(value, 10) : null,
 									})
@@ -204,8 +204,8 @@ export function ContentTab({
 					{isPreviewUserModalOpen && (
 						<DynamicTagBuilder
 							context="user"
-							initialValue={getPreviewUserTagContent()}
-							onSave={handlePreviewUserModalSave}
+							value={getPreviewUserTagContent()}
+							onChange={handlePreviewUserModalSave}
 							onClose={() => setIsPreviewUserModalOpen(false)}
 						/>
 					)}
@@ -216,80 +216,80 @@ export function ContentTab({
 			<AccordionPanel id="icons" title={__('Icons', 'voxel-fse')}>
 				<IconPickerControl
 					label={__('Setup icon', 'voxel-fse')}
-					value={attributes.tsSetupIco || null}
-					onChange={(value) => setAttributes({ tsSetupIco: value })}
+					value={attributes.tsSetupIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsSetupIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Submit information icon', 'voxel-fse')}
-					value={attributes.tsSubmitIco || null}
-					onChange={(value) => setAttributes({ tsSubmitIco: value })}
+					value={attributes.tsSubmitIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsSubmitIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Update information icon', 'voxel-fse')}
-					value={attributes.tsUpdateIco || null}
-					onChange={(value) => setAttributes({ tsUpdateIco: value })}
+					value={attributes.tsUpdateIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsUpdateIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Stripe icon', 'voxel-fse')}
-					value={attributes.tsStripeIco || null}
-					onChange={(value) => setAttributes({ tsStripeIco: value })}
+					value={attributes.tsStripeIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsStripeIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Shipping icon', 'voxel-fse')}
-					value={attributes.tsShippingIco || null}
-					onChange={(value) => setAttributes({ tsShippingIco: value })}
+					value={attributes.tsShippingIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsShippingIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Left chevron', 'voxel-fse')}
-					value={attributes.tsChevronLeft || null}
-					onChange={(value) => setAttributes({ tsChevronLeft: value })}
+					value={attributes.tsChevronLeft as any || undefined}
+					onChange={(value: any) => setAttributes({ tsChevronLeft: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Save', 'voxel-fse')}
-					value={attributes.saveIcon || null}
-					onChange={(value) => setAttributes({ saveIcon: value })}
+					value={attributes.saveIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ saveIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Drag handle', 'voxel-fse')}
-					value={attributes.handleIcon || null}
-					onChange={(value) => setAttributes({ handleIcon: value })}
+					value={attributes.handleIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ handleIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Zone', 'voxel-fse')}
-					value={attributes.tsZoneIco || null}
-					onChange={(value) => setAttributes({ tsZoneIco: value })}
+					value={attributes.tsZoneIco as any || undefined}
+					onChange={(value: any) => setAttributes({ tsZoneIco: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Trash', 'voxel-fse')}
-					value={attributes.trashIcon || null}
-					onChange={(value) => setAttributes({ trashIcon: value })}
+					value={attributes.trashIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ trashIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Down', 'voxel-fse')}
-					value={attributes.downIcon || null}
-					onChange={(value) => setAttributes({ downIcon: value })}
+					value={attributes.downIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ downIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Search', 'voxel-fse')}
-					value={attributes.tsSearchIcon || null}
-					onChange={(value) => setAttributes({ tsSearchIcon: value })}
+					value={attributes.tsSearchIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ tsSearchIcon: value })}
 				/>
 
 				<IconPickerControl
 					label={__('Plus icon', 'voxel-fse')}
-					value={attributes.tsAddIcon || null}
-					onChange={(value) => setAttributes({ tsAddIcon: value })}
+					value={attributes.tsAddIcon as any || undefined}
+					onChange={(value: any) => setAttributes({ tsAddIcon: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

@@ -1,11 +1,6 @@
 export default {
 	template: `<!--minify-->
-		<div class="order-event">
-			<div class="order-event-icon vx-green">
-				<icon-checkmark/>
-			</div>
-			<b>{{ data.l10n.block_label }}</b>
-		</div>
+		
 		<div class="order-event">
 			
 

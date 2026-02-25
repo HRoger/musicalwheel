@@ -15,11 +15,11 @@ import VoxelGridIcon from '@shared/VoxelGridIcon';
  */
 
 // Cast metadata to proper type
-const blockMetadata = metadata as {
+const blockMetadata = metadata as unknown as {
   name: string;
   title: string;
   category: string;
-  icon: string;
+  icon?: string;
   description: string;
   keywords: string[];
   attributes: Record<string, unknown>;

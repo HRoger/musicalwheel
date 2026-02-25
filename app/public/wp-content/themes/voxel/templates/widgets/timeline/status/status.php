@@ -31,6 +31,10 @@ require_once locate_template( 'templates/widgets/timeline/status/_quoted-status.
 					<div class="vxf-icon"><component :is="status.annotation.icon"/></div>
 					<span>{{ status.annotation.text }}</span>
 				</div>
+				<div v-else-if="status.is_pinned" class="vxf-highlight flexify">
+					<div class="vxf-icon"><icon-pin/></div>
+					<span><?= _x( 'Pinned', 'timeline', 'voxel' ) ?></span>
+				</div>
 				<div v-else-if="repostedBy" class="vxf-highlight flexify">
 					<template v-if="repostedBy.annotation">
 						<div class="vxf-icon"><component :is="repostedBy.annotation.icon"/></div>
@@ -105,6 +109,16 @@ require_once locate_template( 'templates/widgets/timeline/status/_quoted-status.
 								</a>
 							</li>
 						</template>
+						<li v-if="canPinToTop && !status.is_pinned">
+							<a href="#" class="flexify" @click.prevent="pinToTop">
+								<span><?= _x( 'Pin to top', 'timeline', 'voxel' ) ?></span>
+							</a>
+						</li>
+						<li v-if="canPinToTop && status.is_pinned">
+							<a href="#" class="flexify" @click.prevent="unpinFromTop">
+								<span><?= _x( 'Unpin', 'timeline', 'voxel' ) ?></span>
+							</a>
+						</li>
 						<li v-if="status.current_user.can_delete">
 							<a href="#" class="flexify" @click.prevent="deleteStatus">
 								<span><?= _x( 'Delete', 'timeline', 'voxel' ) ?></span>

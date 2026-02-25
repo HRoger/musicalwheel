@@ -46,7 +46,7 @@ export default function FilterUser({
 	const props = (filterData.props || {}) as Record<string, unknown>;
 	const filterIcon = filterData.icon || '';
 	// User data from PHP frontend_props() - populated when set_value() was called
-	const propsUserData = props.user as { name?: string; avatar?: string } | undefined;
+	const propsUserData = props['user'] as { name?: string; avatar?: string } | undefined;
 
 	// Determine effective value using 1:1 Voxel parity approach
 	// Priority:

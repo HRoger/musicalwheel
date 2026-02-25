@@ -214,10 +214,10 @@ export function generateStyleTabResponsiveCSS(
 	// Normal state - Border
 	if (attributes.accordionNormalBorderType && attributes.accordionNormalBorderType !== 'none') {
 		const borderWidth = attributes.accordionNormalBorderWidth || {};
-		const top = parseFloat(String(borderWidth.top)) || 0;
-		const right = parseFloat(String(borderWidth.right)) || 0;
-		const bottom = parseFloat(String(borderWidth.bottom)) || 0;
-		const left = parseFloat(String(borderWidth.left)) || 0;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
 		const color = attributes.accordionNormalBorderColor || '#d5d8dc';
 
 		cssRules.push(
@@ -237,10 +237,10 @@ export function generateStyleTabResponsiveCSS(
 	// Hover state - Border
 	if (attributes.accordionHoverBorderType && attributes.accordionHoverBorderType !== 'none') {
 		const borderWidth = attributes.accordionHoverBorderWidth || {};
-		const top = parseFloat(String(borderWidth.top)) || 0;
-		const right = parseFloat(String(borderWidth.right)) || 0;
-		const bottom = parseFloat(String(borderWidth.bottom)) || 0;
-		const left = parseFloat(String(borderWidth.left)) || 0;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
 		const color = attributes.accordionHoverBorderColor || '#d5d8dc';
 
 		cssRules.push(
@@ -260,10 +260,10 @@ export function generateStyleTabResponsiveCSS(
 	// Active state - Border
 	if (attributes.accordionActiveBorderType && attributes.accordionActiveBorderType !== 'none') {
 		const borderWidth = attributes.accordionActiveBorderWidth || {};
-		const top = parseFloat(String(borderWidth.top)) || 0;
-		const right = parseFloat(String(borderWidth.right)) || 0;
-		const bottom = parseFloat(String(borderWidth.bottom)) || 0;
-		const left = parseFloat(String(borderWidth.left)) || 0;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
 		const color = attributes.accordionActiveBorderColor || '#d5d8dc';
 
 		cssRules.push(
@@ -410,10 +410,10 @@ export function generateStyleTabResponsiveCSS(
 	// Content border
 	if (attributes.contentBorderType && attributes.contentBorderType !== 'none') {
 		const borderWidth = attributes.contentBorderWidth || {};
-		const top = parseFloat(String(borderWidth.top)) || 0;
-		const right = parseFloat(String(borderWidth.right)) || 0;
-		const bottom = parseFloat(String(borderWidth.bottom)) || 0;
-		const left = parseFloat(String(borderWidth.left)) || 0;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
 		const color = attributes.contentBorderColor || '#d5d8dc';
 
 		cssRules.push(

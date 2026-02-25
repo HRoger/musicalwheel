@@ -19,8 +19,7 @@ import type {
 	ShippingRate,
 	ShippingZone,
 	CartItem,
-	Vendor,
-	CartConfig,
+		CartConfig,
 } from '../types';
 
 interface ShippingMethodCardsProps {
@@ -82,8 +81,8 @@ function getShippingTotalForRate(
 			Object.values(items).forEach((item) => {
 				if (item.shipping.is_shippable) {
 					const qty = item.product_mode === 'regular'
-						? (item.value as Record<string, Record<string, number>>).stock?.quantity || 1
-						: (item.value as Record<string, Record<string, number>>).variations?.quantity || 1;
+						? (item.value as Record<string, Record<string, number>>)['stock']?.['quantity'] || 1
+						: (item.value as Record<string, Record<string, number>>)['variations']?.['quantity'] || 1;
 					itemCount += qty;
 				}
 			});
@@ -99,8 +98,8 @@ function getShippingTotalForRate(
 					const classRate = shippingClasses[item.shipping.shipping_class];
 					if (classRate !== undefined) {
 						const qty = item.product_mode === 'regular'
-							? (item.value as Record<string, Record<string, number>>).stock?.quantity || 1
-							: (item.value as Record<string, Record<string, number>>).variations?.quantity || 1;
+							? (item.value as Record<string, Record<string, number>>)['stock']?.['quantity'] || 1
+							: (item.value as Record<string, Record<string, number>>)['variations']?.['quantity'] || 1;
 						total += classRate * qty;
 					}
 				}
@@ -117,7 +116,7 @@ function getShippingTotalForRate(
  * Check if a zone/rate applies to the current shipping address
  */
 function shouldListShippingRate(
-	rate: ShippingRate,
+	_rate: ShippingRate,
 	zone: ShippingZone,
 	shipping: ShippingState
 ): boolean {
@@ -191,7 +190,7 @@ function matchesZipCode(zip: string, patterns: string[]): boolean {
 function getAllSortedPlatformRates(
 	zones: ShippingZones,
 	shipping: ShippingState,
-	items: Record<string, CartItem>,
+	_items: Record<string, CartItem>,
 	ratesOrder: string[]
 ): Array<{ zone: ShippingZone; rate: ShippingRate }> {
 	const rates: Array<{ zone: ShippingZone; rate: ShippingRate }> = [];

@@ -132,6 +132,7 @@
 
 import { createRoot } from 'react-dom/client';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
+import { generateAdvancedListStyles } from './styles';
 import type {
 	AdvancedListAttributes,
 	VxConfig,
@@ -147,23 +148,8 @@ import type {
 import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
 import { DEFAULT_ACTION_ITEM } from './types';
 
-/**
- * Window extension for WordPress API settings
- */
 declare global {
 	interface Window {
-		wp: {
-			element: {
-				createRoot: (container: Element) => {
-					render: (element: React.ReactNode) => void;
-					unmount: () => void;
-				};
-			};
-		};
-		wpApiSettings?: {
-			root: string;
-			nonce: string;
-		};
 		voxelFseAdvancedList?: {
 			restUrl?: string;
 		};
@@ -550,15 +536,15 @@ function normalizeConfig(raw: Record<string, unknown>): VxConfig {
 	};
 
 	return {
-		items: normalizeItems(raw.items ?? raw.ts_actions),
-		icons: normalizeIcons(raw.icons),
-		list: normalizeList(raw.list),
-		itemStyle: normalizeItemStyle(raw.itemStyle ?? raw.item_style),
-		iconContainer: normalizeIconContainer(raw.iconContainer ?? raw.icon_container),
-		icon: normalizeIconSettings(raw.icon),
-		hoverStyle: normalizeHoverStyle(raw.hoverStyle ?? raw.hover_style),
-		activeStyle: normalizeActiveStyle(raw.activeStyle ?? raw.active_style),
-		tooltip: normalizeTooltip(raw.tooltip),
+		items: normalizeItems(raw['items'] ?? raw['ts_actions']),
+		icons: normalizeIcons(raw['icons']),
+		list: normalizeList(raw['list']),
+		itemStyle: normalizeItemStyle(raw['itemStyle'] ?? raw['item_style']),
+		iconContainer: normalizeIconContainer(raw['iconContainer'] ?? raw['icon_container']),
+		icon: normalizeIconSettings(raw['icon']),
+		hoverStyle: normalizeHoverStyle(raw['hoverStyle'] ?? raw['hover_style']),
+		activeStyle: normalizeActiveStyle(raw['activeStyle'] ?? raw['active_style']),
+		tooltip: normalizeTooltip(raw['tooltip']),
 	};
 }
 
@@ -627,7 +613,7 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		iconContainerBackground: config.iconContainer?.background || '',
 		iconContainerSize: config.iconContainer?.size || 36,
 		iconContainerSizeUnit: config.iconContainer?.sizeUnit || 'px',
-		iconContainerBorderType: config.iconContainer?.borderType || 'solid',
+		iconContainerBorderType: config.iconContainer?.borderType ?? 'solid',
 		iconContainerBorderWidth: config.iconContainer?.borderWidth || DEFAULT_BOX_VALUES,
 		iconContainerBorderWidthUnit: config.iconContainer?.borderWidthUnit || 'px',
 		iconContainerBorderColor: config.iconContainer?.borderColor || '',
@@ -668,6 +654,10 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		tooltipBackgroundColor: config.tooltip?.backgroundColor || '',
 		tooltipBorderRadius: config.tooltip?.borderRadius || 0,
 		tooltipBorderRadiusUnit: config.tooltip?.borderRadiusUnit || 'px',
+
+		// Item margin (deprecated - kept for attribute type compliance)
+		itemMargin: {} as any,
+		itemMarginUnit: 'px',
 	};
 }
 
@@ -699,8 +689,19 @@ async function fetchPostContext(): Promise<PostContext | null> {
 
 	try {
 		const restUrl = getRestUrl();
+
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`
+			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {
@@ -797,6 +798,16 @@ async function initBlocks() {
 		container.setAttribute('data-react-mounted', 'true');
 
 		const attributes = buildAttributes(config);
+
+		// Generate and inject block-specific CSS (tooltip, hover, active, etc.)
+		const blockId = container.className.match(/voxel-fse-advanced-list-(advanced-list-\w+)/)?.[1] || 'advanced-list';
+		const blockCSS = generateAdvancedListStyles(attributes, blockId);
+		if (blockCSS) {
+			const styleEl = document.createElement('style');
+			styleEl.setAttribute('data-block-styles', `advanced-list-${blockId}`);
+			styleEl.textContent = blockCSS;
+			container.parentNode?.insertBefore(styleEl, container);
+		}
 
 		// Clear placeholder content
 		container.innerHTML = '';

@@ -64,6 +64,9 @@ export interface MediaFile {
 	url: string;
 	preview: string;
 	alt: string;
+	type?: string;
+	mime_type?: string;
+	thumbnail_url?: string;
 }
 
 /**
@@ -118,6 +121,7 @@ export interface ReviewConfig {
 	input_mode: 'stars' | 'numeric';
 	default_icon?: string;
 	active_icon?: string;
+	inactive_icon?: string;
 	rating_levels: ReviewLevel[];
 	categories: Array<{
 		key: string;
@@ -134,6 +138,7 @@ export interface StatusPermissions {
 	can_moderate: boolean;
 	has_liked: boolean;
 	has_reposted: boolean;
+	can_pin_to_top?: boolean;
 }
 
 /**
@@ -174,6 +179,7 @@ export interface Status {
 	created_at: string;
 	edited_at: string | null;
 	is_pending: boolean;
+	is_pinned?: boolean;
 	private: boolean;
 	link?: string;
 

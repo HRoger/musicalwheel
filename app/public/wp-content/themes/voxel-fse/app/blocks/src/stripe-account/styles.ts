@@ -174,7 +174,7 @@ export function generateBlockResponsiveCSS(
     const suffixShadow = generateBoxShadowCSS(attributes.inputSuffixBoxShadow);
     if (suffixShadow) addRule(suffixSelector, `box-shadow: ${suffixShadow};`);
 
-    if (attributes.inputSuffixSideMargin !== undefined) addRule(suffixSelector, `right: ${attributes.inputSuffixSideMargin}px;`); // Assuming absolute positioning
+    if (attributes.inputSuffixSideMargin !== undefined) addRule(suffixSelector, `inset-inline-end: ${attributes.inputSuffixSideMargin}px;`);
 
     if (attributes.inputSuffixIconColor) addRule(`${suffixSelector} i`, `color: ${attributes.inputSuffixIconColor};`);
 
@@ -410,9 +410,9 @@ export function generateBlockResponsiveCSS(
     if (attributes.secondaryButtonIconSize_tablet !== undefined) addRule(`${secondaryBtn} i`, `font-size: ${attributes.secondaryButtonIconSize_tablet}px;`, 'tablet');
     if (attributes.secondaryButtonIconSize_mobile !== undefined) addRule(`${secondaryBtn} i`, `font-size: ${attributes.secondaryButtonIconSize_mobile}px;`, 'mobile');
 
-    if (attributes.secondaryButtonIconRightPadding !== undefined) addRule(`${secondaryBtn} i`, `margin-right: ${attributes.secondaryButtonIconRightPadding}px;`);
-    if (attributes.secondaryButtonIconRightPadding_tablet !== undefined) addRule(`${secondaryBtn} i`, `margin-right: ${attributes.secondaryButtonIconRightPadding_tablet}px;`, 'tablet');
-    if (attributes.secondaryButtonIconRightPadding_mobile !== undefined) addRule(`${secondaryBtn} i`, `margin-right: ${attributes.secondaryButtonIconRightPadding_mobile}px;`, 'mobile');
+    if (attributes.secondaryButtonIconRightPadding !== undefined) addRule(`${secondaryBtn} i`, `margin-inline-end: ${attributes.secondaryButtonIconRightPadding}px;`);
+    if (attributes.secondaryButtonIconRightPadding_tablet !== undefined) addRule(`${secondaryBtn} i`, `margin-inline-end: ${attributes.secondaryButtonIconRightPadding_tablet}px;`, 'tablet');
+    if (attributes.secondaryButtonIconRightPadding_mobile !== undefined) addRule(`${secondaryBtn} i`, `margin-inline-end: ${attributes.secondaryButtonIconRightPadding_mobile}px;`, 'mobile');
 
     if (attributes.secondaryButtonIconColor) addRule(`${secondaryBtn} i`, `color: ${attributes.secondaryButtonIconColor};`);
     if (attributes.secondaryButtonIconColorHover) addRule(`${secondaryBtn}:hover i`, `color: ${attributes.secondaryButtonIconColorHover};`);

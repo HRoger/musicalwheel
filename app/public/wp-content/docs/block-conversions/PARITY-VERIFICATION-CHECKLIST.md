@@ -237,12 +237,63 @@ Create a matrix of what should be disabled/grayed when.
 
 ---
 
+## 12. Runtime Functional Testing (MANDATORY)
+
+**This section exists because previous "100% parity" claims passed all 11 sections above but had completely broken runtime behavior.**
+
+### Interactive Element Round-Trip
+- [ ] **Every button clicked and action verified** (not just "handler exists")
+- [ ] **Every AJAX call completes** (check Network tab — no stuck pending requests)
+- [ ] **No stuck loading states** (no permanent `vx-pending`, `is-loading`, or spinning icons)
+- [ ] **State transitions complete** (pending -> success, not pending -> stuck)
+
+### AJAX Verification
+- [ ] **Endpoint URL matches Voxel** (documented with Network tab evidence)
+- [ ] **Request payload matches Voxel** (same params, same format)
+- [ ] **Response is parsed correctly** (new data appears in UI)
+- [ ] **Error responses handled** (not silently swallowed)
+- [ ] **Nonces/security tokens included** in requests that need them
+
+### Pagination / Load More
+- [ ] **Page size matches Voxel** (e.g., 10 items per page)
+- [ ] **Load more hidden when no more data** (`hasMore` / `has_next_page`)
+- [ ] **Page counter increments** (page 1 -> 2 -> 3, not stuck on 1)
+- [ ] **Items appended, not replaced** (existing items stay)
+- [ ] **No duplicates after load more**
+
+### Conditional Visibility
+- [ ] **Each conditionally-shown element documented** with Voxel's rule
+- [ ] **Rules match Voxel exactly** (e.g., delete button hidden when not owner)
+- [ ] **No "always show" shortcuts** (if Voxel hides it, FSE hides it)
+
+### Icon Rendering
+- [ ] **Each icon renders as actual icon** (not filled circle, not [object Object], not empty)
+- [ ] **Icon type matches** (SVG vs font icon vs inline SVG)
+- [ ] **Icons from block attributes render correctly** (null handling, fallback icons)
+
+---
+
+## Parity Score Calculation
+
+**Do NOT calculate as "X out of Y CSS classes match".**
+
+| Category | Weight | What It Measures |
+|----------|--------|-----------------|
+| Structural Match | 40% | HTML classes, hierarchy, data attributes, inspector controls |
+| Behavioral Match | 40% | Buttons work, AJAX completes, state transitions finish, visibility rules match |
+| Integration Match | 20% | Cross-block events, URL serialization, pagination, icons |
+
+A block with perfect HTML but a broken "Load More" button is **at best 60% parity**.
+
+---
+
 ## Verification Sign-off
 
-**Verified By:** [Name]  
-**Date:** [YYYY-MM-DD]  
-**Voxel Reference Version:** [Version/Commit]  
+**Verified By:** [Name]
+**Date:** [YYYY-MM-DD]
+**Voxel Reference Version:** [Version/Commit]
 **Known Gaps:** [List any intentional architectural differences]
+**Runtime Test Results:** [List each interactive element tested with pass/fail]
 
 ---
 

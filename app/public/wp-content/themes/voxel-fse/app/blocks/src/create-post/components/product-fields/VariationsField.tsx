@@ -53,11 +53,11 @@ export const VariationsField: React.FC<VariationsFieldProps> = ({
 	value,
 	onChange,
 	onBlur,
-	icons,
-	postTypeKey
+	icons: _icons,
+	postTypeKey: _postTypeKey
 }) => {
 	// Parse field config from props
-	const config: VariationsFieldConfig = field.props || {
+	const config: VariationsFieldConfig = (field.props as VariationsFieldConfig | undefined) || {
 		attributeList: [],
 		variations: [],
 		l10n: {}

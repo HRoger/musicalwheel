@@ -262,32 +262,50 @@ class Submission_Controller extends \Voxel\Controllers\Base_Controller {
 			// clean post cache
 			$post = \Voxel\Post::force_get( (int) $post_id );
 
+			$submit_labels = [];
+			if ( ! empty( $_POST['submit_labels'] ) && is_string( $_POST['submit_labels'] ) ) {
+				$decoded = json_decode( wp_unslash( $_POST['submit_labels'] ), true );
+				if ( is_array( $decoded ) ) {
+					$submit_labels = $decoded;
+				}
+			}
+
 			// success message
+			$message_key = null;
 			if ( $is_editing ) {
 				$update_status = $post_type->get_setting( 'submissions.update_status' );
 				if ( $post_status === 'pending' ) {
+					$message_key = 'changes_submitted_for_review';
 					$message = _x( 'Your changes have been submitted for review.', 'create post', 'voxel' );
 				} elseif ( $update_status === 'pending_merge' ) {
+					$message_key = 'changes_will_be_applied';
 					$message = _x( 'Your changes have been submitted and will be applied once approved.', 'create post', 'voxel' );
 				} else {
 					if ( $previous_post_status === 'draft' && in_array( $post_status, [ 'publish', 'pending' ], true ) ) {
-						if ( $post_status === 'pending' ) {
-							$message = _x( 'Your post has been submitted for review.', 'create post', 'voxel' );
-						} else {
-							$message = _x( 'Your post has been published.', 'create post', 'voxel' );
-						}
+						$message_key = $post_status === 'pending' ? 'submitted_for_review' : 'published';
+						$message = $post_status === 'pending'
+							? _x( 'Your post has been submitted for review.', 'create post', 'voxel' )
+							: _x( 'Your post has been published.', 'create post', 'voxel' );
 					} else {
+						$message_key = 'changes_applied';
 						$message = _x( 'Your changes have been applied.', 'create post', 'voxel' );
 					}
 				}
 			} else {
 				if ( $post_status === 'draft' ) {
+					$message_key = 'draft';
 					$message = _x( 'Your post has been saved as draft.', 'create post', 'voxel' );
 				} elseif ( $post_status === 'pending' ) {
+					$message_key = 'submitted_for_review';
 					$message = _x( 'Your post has been submitted for review.', 'create post', 'voxel' );
 				} else {
+					$message_key = 'published';
 					$message = _x( 'Your post has been published.', 'create post', 'voxel' );
 				}
+			}
+
+			if ( $message_key !== null && isset( $submit_labels[ $message_key ] ) && is_string( $submit_labels[ $message_key ] ) && $submit_labels[ $message_key ] !== '' ) {
+				$message = $submit_labels[ $message_key ];
 			}
 
 			// app events

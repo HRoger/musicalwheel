@@ -18,8 +18,7 @@ import { InspectorTabs } from '@shared/controls';
 import ContentTab from './inspector/ContentTab';
 import { generateProductPriceResponsiveCSS } from './styles';
 import type {
-	ProductPriceAttributes,
-	ProductPriceData,
+		ProductPriceData,
 	ProductPriceEditProps,
 } from './types';
 

@@ -57,8 +57,8 @@ export const AttributesManager: React.FC<AttributesManagerProps> = ({
 	onChange,
 	presetAttributes: rawPresetAttributes = [],
 	customAttributesEnabled = true,
-	existingAttributes,
-	l10n,
+	existingAttributes: _existingAttributes,
+	l10n: _l10n,
 }) => {
 	// Ensure arrays are actually arrays (backend might return objects)
 	const attributes = Array.isArray(rawAttributes) ? rawAttributes : [];

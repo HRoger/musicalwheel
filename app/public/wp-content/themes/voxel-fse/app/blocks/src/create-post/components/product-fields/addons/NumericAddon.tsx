@@ -17,18 +17,7 @@ import type { AddonConfig, NumericAddonValue } from '../../../types';
 import { AddonWrapper } from './AddonWrapper';
 import { InfoIcon } from '../../icons/InfoIcon';
 
-/**
- * Voxel config interface for window global
- */
-interface VoxelConfig {
-	currency?: string;
-}
-
-declare global {
-	interface Window {
-		Voxel_Config?: VoxelConfig;
-	}
-}
+// Voxel_Config is declared globally in voxelShim.ts
 
 /**
  * Component props interface
@@ -61,7 +50,7 @@ export const NumericAddon: React.FC<NumericAddonProps> = ({
 	onChange,
 }) => {
 	// Get currency from global config (default to USD if not set)
-	const currency = window.Voxel_Config?.currency || 'USD';
+	const currency = (window as any).Voxel_Config?.currency || 'USD';
 
 	// Ensure we have a value object
 	const currentValue = value || getDefaultValue();

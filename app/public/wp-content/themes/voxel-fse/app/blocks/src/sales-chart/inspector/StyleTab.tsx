@@ -7,7 +7,6 @@
  * @package VoxelFSE
  */
 
-import React from 'react';
 import { __ } from '@wordpress/i18n';
 import { SelectControl } from '@wordpress/components';
 import {
@@ -60,13 +59,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="axis_typo"
+					typographyAttributeName="axis_typo"
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.ts_axis_typo_col}
-					onChange={(value) => setAttributes({ ts_axis_typo_col: value })}
+					onChange={(value: any) => setAttributes({ ts_axis_typo_col: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -147,7 +146,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background color (Hover)', 'voxel-fse')}
 					value={attributes.bar_bg_hover}
-					onChange={(value) => setAttributes({ bar_bg_hover: value })}
+					onChange={(value: any) => setAttributes({ bar_bg_hover: value })}
 				/>
 
 				<BoxShadowPopup
@@ -162,7 +161,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background color', 'voxel-fse')}
 					value={attributes.bar_pop_bg}
-					onChange={(value) => setAttributes({ bar_pop_bg: value })}
+					onChange={(value: any) => setAttributes({ bar_pop_bg: value })}
 				/>
 
 				<BorderGroupControl
@@ -211,13 +210,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="ts_primary_typo"
+					typographyAttributeName="ts_primary_typo"
 				/>
 
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.ts_primary_color}
-					onChange={(value) => setAttributes({ ts_primary_color: value })}
+					onChange={(value: any) => setAttributes({ ts_primary_color: value })}
 				/>
 
 				<SectionHeading label={__('Bar popup: Label', 'voxel-fse')} />
@@ -226,13 +225,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="ts_secondary_typo"
+					typographyAttributeName="ts_secondary_typo"
 				/>
 
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.ts_secondary_color}
-					onChange={(value) => setAttributes({ ts_secondary_color: value })}
+					onChange={(value: any) => setAttributes({ ts_secondary_color: value })}
 				/>
 			</AccordionPanel>
 
@@ -263,7 +262,7 @@ export function StyleTab({
 											{ label: __('Space between', 'voxel-fse'), value: 'space-between' },
 											{ label: __('Space around', 'voxel-fse'), value: 'space-around' },
 										]}
-										onChange={(value) => setAttributes({ ts_tabs_justify: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_justify: value })}
 										__nextHasNoMarginBottom
 									/>
 
@@ -283,38 +282,38 @@ export function StyleTab({
 										label={__('Tab typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="ts_tabs_text"
+										typographyAttributeName="ts_tabs_text"
 									/>
 
 									<TypographyControl
 										label={__('Active tab typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="ts_tabs_text_active"
+										typographyAttributeName="ts_tabs_text_active"
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.ts_tabs_text_color}
-										onChange={(value) => setAttributes({ ts_tabs_text_color: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_text_color: value })}
 									/>
 
 									<ColorControl
 										label={__('Active text color', 'voxel-fse')}
 										value={attributes.ts_active_text_color}
-										onChange={(value) => setAttributes({ ts_active_text_color: value })}
+										onChange={(value: any) => setAttributes({ ts_active_text_color: value })}
 									/>
 
 									<ColorControl
 										label={__('Background', 'voxel-fse')}
 										value={attributes.ts_tabs_bg_color}
-										onChange={(value) => setAttributes({ ts_tabs_bg_color: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_bg_color: value })}
 									/>
 
 									<ColorControl
 										label={__('Active background', 'voxel-fse')}
 										value={attributes.ts_tabs_bg_active_color}
-										onChange={(value) => setAttributes({ ts_tabs_bg_active_color: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_bg_active_color: value })}
 									/>
 
 									<BorderGroupControl
@@ -343,7 +342,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Active border color', 'voxel-fse')}
 										value={attributes.ts_tabs_border_active}
-										onChange={(value) => setAttributes({ ts_tabs_border_active: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_border_active: value })}
 									/>
 
 									<ResponsiveRangeControl
@@ -365,37 +364,37 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.ts_tabs_text_color_h}
-										onChange={(value) => setAttributes({ ts_tabs_text_color_h: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_text_color_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Active text color', 'voxel-fse')}
 										value={attributes.ts_tabs_active_text_color_h}
-										onChange={(value) => setAttributes({ ts_tabs_active_text_color_h: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_active_text_color_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.ts_tabs_border_color_h}
-										onChange={(value) => setAttributes({ ts_tabs_border_color_h: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_border_color_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Active border color', 'voxel-fse')}
 										value={attributes.ts_tabs_border_h_active}
-										onChange={(value) => setAttributes({ ts_tabs_border_h_active: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_border_h_active: value })}
 									/>
 
 									<ColorControl
 										label={__('Background', 'voxel-fse')}
 										value={attributes.ts_tabs_bg_color_h}
-										onChange={(value) => setAttributes({ ts_tabs_bg_color_h: value })}
+										onChange={(value: any) => setAttributes({ ts_tabs_bg_color_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Active background', 'voxel-fse')}
 										value={attributes.ts_bg_active_color_h}
-										onChange={(value) => setAttributes({ ts_bg_active_color_h: value })}
+										onChange={(value: any) => setAttributes({ ts_bg_active_color_h: value })}
 									/>
 								</>
 							)}
@@ -425,13 +424,13 @@ export function StyleTab({
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="week_range_typo"
+										typographyAttributeName="week_range_typo"
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.week_range_col}
-										onChange={(value) => setAttributes({ week_range_col: value })}
+										onChange={(value: any) => setAttributes({ week_range_col: value })}
 									/>
 
 									<SectionHeading label={__('Week buttons', 'voxel-fse')} />
@@ -439,7 +438,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.ts_week_btn_color}
-										onChange={(value) => setAttributes({ ts_week_btn_color: value })}
+										onChange={(value: any) => setAttributes({ ts_week_btn_color: value })}
 									/>
 
 									<ResponsiveRangeControl
@@ -455,7 +454,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button background', 'voxel-fse')}
 										value={attributes.ts_week_btn_bg}
-										onChange={(value) => setAttributes({ ts_week_btn_bg: value })}
+										onChange={(value: any) => setAttributes({ ts_week_btn_bg: value })}
 									/>
 
 									<BorderGroupControl
@@ -510,19 +509,19 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.ts_week_btn_h}
-										onChange={(value) => setAttributes({ ts_week_btn_h: value })}
+										onChange={(value: any) => setAttributes({ ts_week_btn_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Button background color', 'voxel-fse')}
 										value={attributes.ts_week_btn_bg_h}
-										onChange={(value) => setAttributes({ ts_week_btn_bg_h: value })}
+										onChange={(value: any) => setAttributes({ ts_week_btn_bg_h: value })}
 									/>
 
 									<ColorControl
 										label={__('Button border color', 'voxel-fse')}
 										value={attributes.ts_week_border_c_h}
-										onChange={(value) => setAttributes({ ts_week_border_c_h: value })}
+										onChange={(value: any) => setAttributes({ ts_week_border_c_h: value })}
 									/>
 								</>
 							)}
@@ -556,20 +555,20 @@ export function StyleTab({
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.ts_nopost_ico_col}
-					onChange={(value) => setAttributes({ ts_nopost_ico_col: value })}
+					onChange={(value: any) => setAttributes({ ts_nopost_ico_col: value })}
 				/>
 
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="ts_nopost_typo"
+					typographyAttributeName="ts_nopost_typo"
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.ts_nopost_typo_col}
-					onChange={(value) => setAttributes({ ts_nopost_typo_col: value })}
+					onChange={(value: any) => setAttributes({ ts_nopost_typo_col: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

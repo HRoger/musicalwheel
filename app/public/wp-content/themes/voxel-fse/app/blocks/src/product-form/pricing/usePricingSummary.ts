@@ -70,8 +70,8 @@ export function usePricingSummary( options: UsePricingSummaryOptions ): UsePrici
 	const {
 		config,
 		quantity,
-		addonValues,
-		variationsValue,
+		addonValues: _addonValues,
+		variationsValue: _variationsValue,
 		bookingValue,
 		getAddonsPricingSummary,
 		getVariationsPricingSummary,

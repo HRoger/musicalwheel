@@ -14,6 +14,7 @@ import { CodeEditor } from './CodeEditor';
 import { ModifierEditor } from './ModifierEditor';
 import { DynamicTagBuilderProps, DataGroup, Modifier, AppliedModifier } from './types';
 import apiFetch from '@wordpress/api-fetch';
+import { useTemplateContext } from '@shared/utils/useTemplateContext';
 import './styles.scss';
 import './line-awesome-icons.css';
 
@@ -21,10 +22,14 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 	value,
 	onChange,
 	label = 'Dynamic Content',
-	context = 'post',
+	context: contextProp = 'post',
 	onClose,
 	autoOpen = false,
 }) => {
+	// Auto-detect context from template slug (term_card → 'term', user_card → 'user')
+	// Only override when the prop is the default 'post' (i.e., no explicit context was passed)
+	const detectedContext = useTemplateContext();
+	const context = contextProp === 'post' ? detectedContext : contextProp;
 	const [isOpen, setIsOpen] = useState(autoOpen);
 	const [content, setContent] = useState(value);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -39,19 +44,22 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 	const insertTagRef = React.useRef<((tag: string) => void) | null>(null);
 
 	// Load data from pre-loaded global store (Voxel pattern for <100ms performance)
+	// Re-load when context changes (e.g., template type detected after initial mount)
 	useEffect(() => {
-		if (isOpen && dataGroups.length === 0) {
+		if (isOpen) {
 			loadDataFromGlobalStore();
 		}
-	}, [isOpen]);
+	}, [isOpen, context]);
 
 	const loadDataFromGlobalStore = () => {
 		// Read from window.VoxelFSE_Dynamic_Data_Store (pre-loaded on page load)
 		const globalStore = (window as any).VoxelFSE_Dynamic_Data_Store;
 
-		if (globalStore && globalStore.groups) {
-			// Instant load - no API call needed!
-			setDataGroups(globalStore.groups || []);
+		if (globalStore) {
+			// Use context-specific groups if available, fall back to default groups
+			const contextGroups = globalStore.groupsByContext?.[context];
+			const groups = contextGroups || globalStore.groups || [];
+			setDataGroups(groups);
 			setAvailableModifiers(globalStore.modifiers || []);
 		} else {
 			// Fallback to API if global store not available
@@ -218,8 +226,12 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 					modifiers.push({ key, args });
 				}
 
-				// Format breadcrumb
-				const breadcrumb = `${group.charAt(0).toUpperCase() + group.slice(1)} / ${property.charAt(0).toUpperCase() + property.slice(1)}`;
+				// Format breadcrumb — strip colon prefix from aliases (e.g., ":image" → "Image")
+				const formatLabel = (str: string) => {
+					const clean = str.startsWith(':') ? str.slice(1) : str;
+					return clean.charAt(0).toUpperCase() + clean.slice(1).replace(/_/g, ' ');
+				};
+				const breadcrumb = `${formatLabel(group)} / ${formatLabel(property)}`;
 
 				return {
 					group,

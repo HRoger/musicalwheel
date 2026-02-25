@@ -24,6 +24,7 @@ const EditIcon = () => (
 
 // TypographyValue type for type imports
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSize_tablet?: number;

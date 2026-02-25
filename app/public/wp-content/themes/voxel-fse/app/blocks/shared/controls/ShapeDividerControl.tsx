@@ -273,8 +273,8 @@ export default function ShapeDividerControl({
 	attributes,
 	setAttributes,
 }: ShapeDividerControlProps) {
-	const topValue: ShapeDividerValue = attributes.shapeDividerTop || {};
-	const bottomValue: ShapeDividerValue = attributes.shapeDividerBottom || {};
+	const topValue: ShapeDividerValue = attributes['shapeDividerTop'] || {};
+	const bottomValue: ShapeDividerValue = attributes['shapeDividerBottom'] || {};
 
 	const handleChange = (position: 'top' | 'bottom', field: string, value: any) => {
 		const attrName = position === 'top' ? 'shapeDividerTop' : 'shapeDividerBottom';
@@ -409,7 +409,7 @@ export default function ShapeDividerControl({
 							<ToggleControl
 								label={__('Flip', 'voxel-fse')}
 								checked={value.flip || false}
-								onChange={(val) => handleChange(position, 'flip', val)}
+								onChange={(val: boolean) => handleChange(position, 'flip', val)}
 								__nextHasNoMarginBottom
 							/>
 						)}
@@ -419,7 +419,7 @@ export default function ShapeDividerControl({
 							<ToggleControl
 								label={__('Invert', 'voxel-fse')}
 								checked={value.invert || false}
-								onChange={(val) => handleChange(position, 'invert', val)}
+								onChange={(val: boolean) => handleChange(position, 'invert', val)}
 								__nextHasNoMarginBottom
 							/>
 						)}
@@ -428,7 +428,7 @@ export default function ShapeDividerControl({
 						<ToggleControl
 							label={__('Bring to Front', 'voxel-fse')}
 							checked={value.aboveContent || false}
-							onChange={(val) => handleChange(position, 'aboveContent', val)}
+							onChange={(val: boolean) => handleChange(position, 'aboveContent', val)}
 							__nextHasNoMarginBottom
 						/>
 					</>

@@ -50,7 +50,7 @@ export function ContentTab({
 						{ label: __('Current user', 'voxel-fse'), value: 'user' },
 						{ label: __('Sitewide stats', 'voxel-fse'), value: 'site' },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							source: value as 'post' | 'user' | 'site',
 						})
@@ -66,7 +66,7 @@ export function ContentTab({
 						{ label: __('30 days', 'voxel-fse'), value: '30d' },
 						{ label: __('12 months', 'voxel-fse'), value: '12m' },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							activeChart: value as '24h' | '7d' | '30d' | '12m',
 						})
@@ -80,7 +80,7 @@ export function ContentTab({
 						{ label: __('Total views', 'voxel-fse'), value: 'views' },
 						{ label: __('Unique views', 'voxel-fse'), value: 'unique_views' },
 					]}
-					onChange={(value) =>
+					onChange={(value: any) =>
 						setAttributes({
 							viewType: value as 'views' | 'unique_views',
 						})

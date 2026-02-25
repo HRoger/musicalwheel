@@ -46,6 +46,10 @@ $deferred_templates[] = locate_template( 'templates/components/file-upload.php' 
 						<?= \Voxel\get_icon_markup( $this->get_settings_for_display('prev_icon') ) ?: \Voxel\svg( 'chevron-left.svg' ) ?>
 						<?= _x( 'Back to editing', 'create post', 'voxel' ) ?>
 					</a>
+					<a v-if="submission.status !== 'publish'" href="<?= esc_url( home_url( '/' ) ) ?>" class="ts-btn ts-btn-1 ts-btn-large form-btn">
+						<?= \Voxel\get_icon_markup( $this->get_settings_for_display('home_icon') ) ?: \Voxel\svg( 'home-1.svg' ) ?>
+						<?= _x( 'Go to homepage', 'create post', 'voxel' ) ?>
+					</a>
 				</div>
 			</div>
 		</template>

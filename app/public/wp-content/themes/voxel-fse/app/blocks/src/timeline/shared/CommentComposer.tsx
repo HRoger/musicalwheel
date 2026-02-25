@@ -31,8 +31,8 @@
 
 import { useState, useCallback, useRef, type ChangeEvent, type KeyboardEvent } from 'react';
 import { useCurrentUser, useTimelineConfig, useStrings } from '../hooks';
-import { publishComment } from '../api';
-import type { Comment, CommentCreatePayload } from '../types';
+import { publishComment, editComment } from '../api';
+import type { Comment, CommentCreatePayload, CommentEditPayload, MediaFile } from '../types';
 import EmojiPicker from './EmojiPicker';
 import MediaPopup from '../../../shared/MediaPopup';
 
@@ -46,6 +46,8 @@ interface CommentComposerProps {
 	onCancel?: () => void;
 	placeholder?: string;
 	autoFocus?: boolean;
+	comment?: Comment;
+	onCommentUpdated?: (comment: Comment) => void;
 }
 
 /**
@@ -86,23 +88,33 @@ export function CommentComposer({
 	onCancel,
 	placeholder,
 	autoFocus = false,
+	comment, // Existing comment for edit mode
+	onCommentUpdated,
 }: CommentComposerProps): JSX.Element | null {
 	const currentUser = useCurrentUser();
 	const { config } = useTimelineConfig();
 	const strings = useStrings();
 
 	// State
-	const [content, setContent] = useState('');
-	const [isExpanded, setIsExpanded] = useState(autoFocus);
+	const [content, setContent] = useState(comment?.content ?? '');
+	const [isExpanded, setIsExpanded] = useState(autoFocus || !!comment);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-	// Refs
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const wrapperRef = useRef<HTMLDivElement>(null);
+	// File state
+	const [existingFiles, setExistingFiles] = useState<MediaFile[]>(comment?.files ?? []);
+	const [_newFiles, _setNewFiles] = useState<File[]>([]); // To be implemented with Upload
+	const [_showMediaPopup, _setShowMediaPopup] = useState(false);
 
-	const l10n = config?.strings ?? {};
+	const isEditMode = !!comment;
+
+	// Refs
+	const wrapperRef = useRef<HTMLDivElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const emojiButtonRef = useRef<HTMLAnchorElement>(null);
+
+	const l10n = (config?.strings ?? {}) as any;
 
 	/**
 	 * Handle content change
@@ -128,8 +140,15 @@ export function CommentComposer({
 	 * Handle cancel - collapse and clear
 	 */
 	const handleCancel = useCallback(() => {
-		setContent('');
-		setIsExpanded(false);
+		if (!isEditMode) {
+			setContent('');
+			setExistingFiles([]);
+		} else {
+			// If editing, revert to original content
+			setContent(comment?.content ?? '');
+			setExistingFiles(comment?.files ?? []);
+		}
+		setIsExpanded(isEditMode); // Keep expanded if edit mode (user usually expects to see the form)
 		setError(null);
 
 		// Reset textarea height
@@ -182,30 +201,60 @@ export function CommentComposer({
 		setError(null);
 
 		try {
-			const payload: CommentCreatePayload = {
-				status_id: statusId,
-				parent_id: parentId,
-				content: trimmedContent,
-			};
+			// Format files for submission (IDs only)
+			// Note: Currently only supporting existing files (ID based). 
+			// New file uploads would need to be uploaded first to get IDs.
+			const fileIds = existingFiles.map(f => f.id);
 
-			console.log('[CommentComposer] Publishing comment:', payload);
+			if (isEditMode && comment) {
+				// Edit mode
+				const payload: CommentEditPayload = {
+					comment_id: comment.id,
+					content: trimmedContent,
+					files: fileIds,
+				};
 
-			const newComment = await publishComment(payload, nonce);
+				console.log('[CommentComposer] Updating comment:', payload);
 
-			console.log('[CommentComposer] Comment published:', newComment);
+				const updatedComment = await editComment(payload, nonce);
 
-			// Clear and collapse
-			setContent('');
-			setIsExpanded(false);
+				console.log('[CommentComposer] Comment updated:', updatedComment);
 
-			// Reset textarea height
-			if (textareaRef.current) {
-				textareaRef.current.style.height = 'auto';
-			}
+				if (onCommentUpdated) {
+					onCommentUpdated(updatedComment);
+				}
 
-			// Notify parent
-			if (onCommentPublished) {
-				onCommentPublished(newComment);
+				// Close edit mode
+				if (onCancel) onCancel();
+			} else {
+				// Create mode
+				const payload: CommentCreatePayload = {
+					status_id: statusId,
+					parent_id: parentId,
+					content: trimmedContent,
+					files: fileIds,
+				};
+
+				console.log('[CommentComposer] Publishing comment:', payload);
+
+				const newComment = await publishComment(payload, nonce);
+
+				console.log('[CommentComposer] Comment published:', newComment);
+
+				// Clear and collapse
+				setContent('');
+				setExistingFiles([]);
+				setIsExpanded(false);
+
+				// Reset textarea height
+				if (textareaRef.current) {
+					textareaRef.current.style.height = 'auto';
+				}
+
+				// Notify parent
+				if (onCommentPublished) {
+					onCommentPublished(newComment);
+				}
 			}
 		} catch (err) {
 			console.error('[CommentComposer] Failed to publish:', err);
@@ -213,7 +262,14 @@ export function CommentComposer({
 		} finally {
 			setIsSubmitting(false);
 		}
-	}, [content, statusId, parentId, config?.nonces?.comment_publish, strings, onCommentPublished]);
+	}, [content, statusId, parentId, config?.nonces?.comment_publish, strings, onCommentPublished, isEditMode, comment, existingFiles, onCommentUpdated, onCancel]);
+
+	/**
+	 * Remove a file attachment
+	 */
+	const removeFile = useCallback((fileId: number) => {
+		setExistingFiles(prev => prev.filter(f => f.id !== fileId));
+	}, []);
 
 	/**
 	 * Insert emoji at cursor position
@@ -269,7 +325,7 @@ export function CommentComposer({
 			<div className="vxf-create-post__content">
 				{/* Highlighter for mentions/hashtags (mirrors textarea content) */}
 				<div className="vxf-content__highlighter">
-					{content}
+					{/* Highlighter content removed to prevent visual overlap until fully implemented */}
 				</div>
 				<textarea
 					ref={textareaRef}
@@ -282,11 +338,29 @@ export function CommentComposer({
 					disabled={isSubmitting}
 					autoFocus={autoFocus}
 				/>
+
+				{/* File attachments */}
+				{existingFiles.length > 0 && (
+					<div className="vxf-composer-files">
+						{existingFiles.map((file) => (
+							<div key={file.id} className="vxf-composer-file">
+								<div className="vxf-file-preview" style={{ backgroundImage: `url(${file.preview || file.url})` }}></div>
+								<a
+									href="#"
+									className="vxf-remove-file"
+									onClick={(e) => { e.preventDefault(); removeFile(file.id); }}
+								>
+									<svg viewBox="0 0 24 24"><path d="M18.984 6.412l-1.408-1.412-5.576 5.576-5.576-5.576-1.412 1.412 5.576 5.576-5.576 5.576 1.412 1.412 5.576-5.576 5.576 5.576 1.408-1.412-5.576-5.576z" fill="currentColor"></path></svg>
+								</a>
+							</div>
+						))}
+					</div>
+				)}
 			</div>
 
 			{/* Expanded footer - only when focused (matches Voxel's structure) */}
 			{isExpanded && (
-				<div className="vxf-footer-wrapper">
+				<div className="vxf-footer-wrapper" style={{ height: 'auto' }}>
 					{/* Error message */}
 					{error && (
 						<div className="vxf-error" style={{ color: 'var(--ts-shade-5)', padding: '0 10px 10px', fontSize: '13px' }}>
@@ -300,13 +374,24 @@ export function CommentComposer({
 							{config?.features?.file_upload && (
 								<>
 									{/* TODO: Gallery button - MediaPopup component needs to be created */}
-									{/* <MediaPopup
+									<MediaPopup
 										multiple={true}
 										saveLabel="Insert"
 										target={wrapperRef.current}
 										onSave={(files) => {
-											console.log('[CommentComposer] Media selected:', files);
-											// TODO: Handle selected media files
+											// Convert media library files to StatusMedia format
+											const mappedFiles: MediaFile[] = files.map(f => ({
+												id: f.id,
+												url: f.preview || '',
+												preview: f.preview || '',
+												alt: f.name
+											}));
+
+											setExistingFiles(prev => {
+												const existingIds = new Set(prev.map(p => p.id));
+												const uniqueNew = mappedFiles.filter(f => !existingIds.has(f.id));
+												return [...prev, ...uniqueNew];
+											});
 										}}
 									>
 										<a
@@ -316,7 +401,7 @@ export function CommentComposer({
 										>
 											<GalleryIcon />
 										</a>
-									</MediaPopup> */}
+									</MediaPopup>
 									{/* Upload button - opens file picker */}
 									<a
 										href="#"
@@ -332,18 +417,14 @@ export function CommentComposer({
 								</>
 							)}
 							{/* Emoji button */}
-							<a
-								href="#"
-								className="vxf-icon vxf-emoji-picker"
-								onClick={toggleEmojiPicker}
-							>
+							<a href="#" ref={emojiButtonRef} className="vxf-icon vxf-emoji-picker" onClick={toggleEmojiPicker}>
 								<EmojiIcon />
 							</a>
 							<EmojiPicker
 								isOpen={showEmojiPicker}
 								onClose={() => setShowEmojiPicker(false)}
 								onSelect={insertEmoji}
-								target={wrapperRef.current}
+								target={emojiButtonRef.current}
 							/>
 						</div>
 
@@ -364,7 +445,7 @@ export function CommentComposer({
 								{isSubmitting ? (
 									<span className="ts-loader" />
 								) : (
-									l10n.reply ?? 'Reply'
+									l10n.reply ?? (isEditMode ? 'Update' : 'Reply')
 								)}
 							</a>
 						</div>

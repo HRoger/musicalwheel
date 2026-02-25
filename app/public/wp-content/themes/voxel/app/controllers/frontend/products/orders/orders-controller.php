@@ -60,14 +60,30 @@ class Orders_Controller extends \Voxel\Controllers\Base_Controller {
 				array_pop( $orders );
 			}
 
+			$order_ids = array_map( function ( $o ) { return $o->get_id(); }, $orders );
+			$first_item_summaries = static::get_orders_first_item_summary( $order_ids );
+
 			$items = [];
 			foreach ( $orders as $order ) {
 				$customer = $order->get_customer();
+				$order_id = $order->get_id();
+				$summary = $first_item_summaries[ $order_id ] ?? null;
+
+				// resolve claimed listing title for claim_request orders
+				$first_item_claim_title = null;
+				if ( isset( $summary['product_type'], $summary['claim_post_id'] ) && $summary['product_type'] === 'voxel:claim_request' && $summary['claim_post_id'] ) {
+					$post = \Voxel\Post::get( $summary['claim_post_id'] );
+					if ( $post ) {
+						$first_item_claim_title = $post->get_display_name();
+					}
+				}
+
 				$items[] = [
-					'id' => $order->get_id(),
+					'id' => $order_id,
 					'item_count' => $order->get_item_count(),
 					'status' => $order->get_status(),
 					'shipping_status' => $order->get_shipping_status(),
+					'payment_method' => $order->get_payment_method_key(),
 					'currency' => $order->get_currency(),
 					'subtotal' => $order->get_subtotal(),
 					'total' => $order->get_total(),
@@ -77,6 +93,12 @@ class Orders_Controller extends \Voxel\Controllers\Base_Controller {
 						'avatar' => $customer ? $customer->get_avatar_markup() : null,
 						'link' => $customer ? $customer->get_link() : null,
 					],
+					'product_type' => $summary['product_type'] ?? null,
+					'first_item_label' => $summary['product_label'] ?? null,
+					'first_item_type' => $summary['item_type'] ?? null,
+					'first_item_booking_status' => $summary['booking_status'] ?? null,
+					'first_item_booking_type' => $summary['booking_type'] ?? null,
+					'first_item_claim_title' => $first_item_claim_title,
 				];
 			}
 
@@ -100,5 +122,48 @@ class Orders_Controller extends \Voxel\Controllers\Base_Controller {
 				( new \Voxel\Events\Products\Orders\Customer_Placed_Order_Event )->dispatch( $order->get_id() );
 			}
 		}
+	}
+
+	/**
+	 * Get first item's product_type, type, booking type, claim post id, and product label per order (for list display).
+	 *
+	 * @param int[] $order_ids
+	 * @return array<int, array{product_type: string, item_type: string|null, booking_type: string|null, claim_post_id: int|null, product_label: string|null}>
+	 */
+	protected static function get_orders_first_item_summary( array $order_ids ): array {
+		global $wpdb;
+		if ( empty( $order_ids ) ) {
+			return [];
+		}
+		$order_ids = array_map( 'absint', $order_ids );
+		$ids_list = implode( ',', $order_ids );
+		$table = $wpdb->prefix . 'vx_order_items';
+		$results = $wpdb->get_results( <<<SQL
+			SELECT i.order_id, i.product_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.type' ) ) AS item_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking_status' ) ) AS booking_status,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking.type' ) ) AS booking_type,
+				CAST( JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.\"voxel:claim_request\".post_id' ) ) AS UNSIGNED ) AS claim_post_id,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.product.label' ) ) AS product_label
+			FROM {$table} i
+			INNER JOIN (
+				SELECT order_id, MIN(id) AS min_id
+				FROM {$table}
+				WHERE order_id IN ({$ids_list})
+				GROUP BY order_id
+			) first ON i.order_id = first.order_id AND i.id = first.min_id
+		SQL, ARRAY_A );
+		$out = [];
+		foreach ( (array) $results as $row ) {
+			$out[ (int) $row['order_id'] ] = [
+				'product_type' => (string) $row['product_type'],
+				'item_type' => isset( $row['item_type'] ) && $row['item_type'] !== '' ? (string) $row['item_type'] : null,
+				'booking_status' => isset( $row['booking_status'] ) && $row['booking_status'] !== '' ? (string) $row['booking_status'] : null,
+				'booking_type' => isset( $row['booking_type'] ) && $row['booking_type'] !== '' ? (string) $row['booking_type'] : null,
+				'claim_post_id' => isset( $row['claim_post_id'] ) && $row['claim_post_id'] ? (int) $row['claim_post_id'] : null,
+				'product_label' => isset( $row['product_label'] ) && $row['product_label'] !== '' ? (string) $row['product_label'] : null,
+			];
+		}
+		return $out;
 	}
 }

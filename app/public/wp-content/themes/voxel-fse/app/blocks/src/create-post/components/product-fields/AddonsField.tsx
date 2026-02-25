@@ -136,16 +136,16 @@ function normalizeValue(value: AddonsFieldValue | undefined, addonsConfig: Addon
 	const addonKeys = new Set(addonsConfig.map((a) => a.key));
 
 	// Handle different input formats
-	const valueObj = value as Record<string, unknown>;
+	const valueObj = value as unknown as Record<string, unknown>;
 
 	// Check if value has an 'addons' property (indicates wrapped format)
-	if (valueObj.addons && typeof valueObj.addons === 'object') {
-		const addonsObj = valueObj.addons as Record<string, unknown>;
+	if (valueObj['addons'] && typeof valueObj['addons'] === 'object') {
+		const addonsObj = valueObj['addons'] as Record<string, unknown>;
 
 		// Check for triple-nesting: value.addons.addons
-		if (addonsObj.addons && typeof addonsObj.addons === 'object') {
+		if (addonsObj['addons'] && typeof addonsObj['addons'] === 'object') {
 			// Triple nested - extract from value.addons.addons
-			const innerAddons = addonsObj.addons as Record<string, NumericAddonValue | SwitcherAddonValue | SelectAddonValue | CustomSelectAddonValue>;
+			const innerAddons = addonsObj['addons'] as Record<string, NumericAddonValue | SwitcherAddonValue | SelectAddonValue | CustomSelectAddonValue>;
 			Object.entries(innerAddons).forEach(([key, val]) => {
 				if (addonKeys.has(key)) {
 					normalized.addons[key] = val;

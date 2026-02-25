@@ -37,6 +37,7 @@ require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/layout/footer.p
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/post-types.php';
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/blog.php';
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/woocommerce.php';
+require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/panels/post-types/portfolio.php';
 
 if ( ! class_exists( 'NectarBlocks_Customizer' ) ) {
 
@@ -336,6 +337,13 @@ if ( ! class_exists( 'NectarBlocks_Customizer' ) ) {
           'choices' => $control['options']
         ]);
 
+      } else if ( $control['type'] == 'multi_select' ) {
+        $settings = array_merge($settings, [
+          'type' => 'select',
+          'multiple' => 100,
+          'choices' => $control['options']
+        ]);
+
       } else if ( $control['type'] == 'dropdown_pages' ) {
         $settings = array_merge($settings, [
           'type' => 'dropdown_pages',
@@ -481,11 +489,15 @@ if ( ! class_exists( 'NectarBlocks_Customizer' ) ) {
 
       }  elseif ( $control['type'] == 'color' ) {
 
+        $choices = [
+          'swatches' => self::nectarblocks_color_palette()
+        ];
+        if ( array_key_exists( 'choices', $control ) ) {
+          $choices = array_merge($choices, $control['choices']);
+        }
         $settings = array_merge($settings, [
           'type' => 'color',
-          'choices' => [
-            'swatches' => self::nectarblocks_color_palette()
-          ]
+          'choices' => $choices
         ]);
       // Pass through controls
       // Will through an error if we process one that isn't on the approved list

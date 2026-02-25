@@ -19,10 +19,10 @@ import { AdvancedTab, VoxelTab, InspectorTabs } from '@shared/controls';
 import { LayoutTab, StyleTab } from './inspector';
 
 // Import style generation utility
-import { generateContainerStyles, generateInnerStyles, type FlexContainerAttributes } from './styles';
+import { generateContainerStyles, generateInnerStyles, generateInnerResponsiveCSS, generateResponsiveCSS, type FlexContainerAttributes } from './styles';
 
 // Import shared style utilities for AdvancedTab/VoxelTab attributes
-import { generateAdvancedStyles, combineBlockClasses } from '../../shared/utils/generateAdvancedStyles';
+import { generateAdvancedStyles, generateAdvancedResponsiveCSS, combineBlockClasses } from '../../shared/utils/generateAdvancedStyles';
 
 // Import background elements rendering utilities
 import { renderBackgroundElements } from '../../shared/utils/backgroundElements';
@@ -37,17 +37,19 @@ interface EditProps {
 }
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+	const blockId = attributes['blockId'] || clientId;
+
 	// Generate stable block ID once
 	useEffect(() => {
-		if (!attributes.blockId) {
+		if (!attributes['blockId']) {
 			const newBlockId = Math.random().toString(36).substring(2, 10);
 			setAttributes({ blockId: newBlockId });
 		}
 	}, []);
 
 	// Check if block has inner blocks (to determine if preset selector should show)
-	const hasInnerBlocks = useSelect(
-		(select) => {
+	const hasInnerBlocks = (useSelect as any)(
+		(select: any) => {
 			const { getBlockCount } = select('core/block-editor') as {
 				getBlockCount: (clientId: string) => number;
 			};
@@ -58,22 +60,22 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	// Determine if we should show the layout preset selector
 	// Show it when: no preset selected AND no inner blocks AND not a child preset
-	const showPresetSelector = !attributes.layoutPreset && !hasInnerBlocks;
+	const showPresetSelector = !attributes['layoutPreset'] && !hasInnerBlocks;
 
 	// ALWAYS set align="full" so WordPress wrapper doesn't constrain the outer container
 	// The inner wrapper (.e-con-inner) handles the boxed content width constraint
 	// This matches Elementor's behavior where the container is always full-width
 	useEffect(() => {
-		if (attributes.align !== 'full') {
+		if (attributes['align'] !== 'full') {
 			setAttributes({ align: 'full' });
 		}
-	}, [attributes.align]);
+	}, [attributes['align']]);
 
 	// =================================================================
 	// Scroll position preservation when device type changes
 	// =================================================================
 	// Get current device type from WordPress
-	const currentDeviceType = useSelect((select) => {
+	const currentDeviceType = (useSelect as any)((select: any) => {
 		const editPostStore = select('core/edit-post');
 		if (editPostStore && typeof (editPostStore as any).getPreviewDeviceType === 'function') {
 			return (editPostStore as any).getPreviewDeviceType();
@@ -364,20 +366,41 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		[advancedStyles, containerStyles]
 	);
 
+	// Generate responsive CSS for editor preview
+	// This ensures flex properties (justify-content, align-items, etc.) are applied
+	// with CSS class specificity, which reliably overrides WordPress editor defaults
+	const uniqueSelector = `.voxel-fse-flex-container-${blockId}`;
+	const advancedResponsiveCSS = useMemo(
+		() => generateAdvancedResponsiveCSS(attributes, uniqueSelector),
+		[attributes, uniqueSelector]
+	);
+	const containerResponsiveCSS = useMemo(
+		() => generateResponsiveCSS(attributes as FlexContainerAttributes, blockId),
+		[attributes, blockId]
+	);
+	const innerResponsiveCSS = useMemo(
+		() => generateInnerResponsiveCSS(attributes as FlexContainerAttributes, blockId),
+		[attributes, blockId]
+	);
+	const combinedResponsiveCSS = useMemo(
+		() => [advancedResponsiveCSS, containerResponsiveCSS, innerResponsiveCSS].filter(Boolean).join('\n'),
+		[advancedResponsiveCSS, containerResponsiveCSS, innerResponsiveCSS]
+	);
+
 	// Generate unique root class for targeting the WordPress wrapper element
 	// This is the Essential Blocks pattern - adding a class that we can target with inline styles
-	const rootClass = `root-voxel-fse-flex-container-${attributes.blockId || 'default'}`;
+	const rootClass = `root-voxel-fse-flex-container-${attributes['blockId'] || 'default'}`;
 
 	// Apply styles to the OUTER block wrapper (backgrounds, position, min-height)
 	// The rootClass gets applied to the wrapper element by useBlockProps
 	const blockProps = useBlockProps({
 		className: combineBlockClasses(
-			`${rootClass} voxel-fse-flex-container voxel-fse-flex-container-${attributes.blockId || 'default'}`,
+			`${rootClass} voxel-fse-flex-container voxel-fse-flex-container-${attributes['blockId'] || 'default'}`,
 			attributes
 		),
 		style: mergedStyles,
 		// Grid outline data attribute for editor CSS
-		...(attributes.containerLayout === 'grid' && attributes.gridOutline
+		...(attributes['containerLayout'] === 'grid' && attributes['gridOutline']
 			? { 'data-grid-outline': 'true' }
 			: {}),
 	});
@@ -400,6 +423,10 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 
 	return (
 		<div {...blockProps}>
+			{/* Responsive CSS ensures flex properties override WordPress editor defaults */}
+			{combinedResponsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: combinedResponsiveCSS }} />
+			)}
 			<InspectorControls>
 				<InspectorTabs
 					tabs={[
@@ -454,7 +481,7 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				true,
 				currentSlideIndex,
 				slideshowDragProps,
-				`.voxel-fse-flex-container-${attributes.blockId || 'default'}`
+				`.voxel-fse-flex-container-${attributes['blockId'] || 'default'}`
 			)}
 
 			{/* Inner content wrapper with flex/grid layout and max-width constraint */}

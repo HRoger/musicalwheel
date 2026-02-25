@@ -829,13 +829,15 @@ function st_distance_sphere( $latFrom, $lngFrom, $latTo, $lngTo, $earthRadius = 
 
 // @link https://stackoverflow.com/questions/55936249/get-circle-polygon-circumference-points-latitude-and-longitude
 function st_buffer( $center_lat, $center_lng, $radius, $segments = 32 ) {
-	$coordinates = [];
-    $center_lat_rad = deg2rad( $center_lat );
-    $center_lng_rad = deg2rad( $center_lng );
+	$R = 6371000.0;
+
+	$coords = [];
+	$center_lat_rad = deg2rad( $center_lat );
+	$center_lng_rad = deg2rad( $center_lng );
+	$angular_distance = $radius / $R;
 
 	for ( $i = 0; $i < $segments; $i++ ) {
 		$bearing = 2 * M_PI * $i / $segments;
-		$angular_distance = $radius / 6371000;
 
 		$lat = asin(
 			sin( $center_lat_rad ) * cos( $angular_distance ) +
@@ -847,20 +849,148 @@ function st_buffer( $center_lat, $center_lng, $radius, $segments = 32 ) {
 			cos($angular_distance) - sin($center_lat_rad) * sin($lat)
 		);
 
+		// normalize to [-pi, pi)
 		$lng = fmod( $lng + 3 * M_PI, 2 * M_PI ) - M_PI;
-		$coordinates[] = [ rad2deg( $lng ), rad2deg( $lat ) ];
+
+		$coords[] = [ rad2deg($lng), rad2deg($lat) ]; // [lon, lat]
 	}
 
-    $coordinates[] = $coordinates[0];
+	$coords[] = $coords[0];
+
+	// --- helpers ---
+	$wrap180_keep_180 = function( $lon ) {
+		// normalize to (-180, 180], i.e. keep +180 (do NOT map it to -180)
+		$lon = fmod($lon, 360.0);
+		if ($lon <= -180.0) $lon += 360.0;
+		if ($lon > 180.0)   $lon -= 360.0;
+
+		// if extremely close to -180, prefer +180
+		if (abs($lon + 180.0) < 1e-9) $lon = 180.0;
+		return $lon;
+	};
+
+	$dedupe = function( $pts ) {
+		$out = [];
+		$prev = null;
+		foreach ( $pts as $p ) {
+			if ( $prev === null || $p[0] !== $prev[0] || $p[1] !== $prev[1] ) {
+				$out[] = $p;
+				$prev = $p;
+			}
+		}
+		return $out;
+	};
+
+	$to_wkt_lat_lng = function( $points ) {
+		return join(',', array_map(fn($p) => $p[1].' '.$p[0], $points)); // lat lon
+	};
+	$to_wkt_lng_lat = function( $points ) {
+		return join(',', array_map(fn($p) => $p[0].' '.$p[1], $points)); // lon lat
+	};
+
+	// --- unwrap longitudes to a continuous sequence ---
+	$unwrapped = [];
+	$unwrapped[0] = [ $coords[0][0], $coords[0][1] ];
+	for ( $i = 1; $i < count($coords); $i++ ) {
+		$lon = $coords[$i][0];
+		$lat = $coords[$i][1];
+		$prev_lon = $unwrapped[$i-1][0];
+
+		while ( ($lon - $prev_lon) > 180.0 ) $lon -= 360.0;
+		while ( ($lon - $prev_lon) < -180.0 ) $lon += 360.0;
+
+		$unwrapped[$i] = [ $lon, $lat ];
+	}
+
+	$min_lon = $max_lon = $unwrapped[0][0];
+	foreach ($unwrapped as $p) {
+		$min_lon = min($min_lon, $p[0]);
+		$max_lon = max($max_lon, $p[0]);
+	}
+
+	// decide cut: circle should only cross one dateline in unwrapped space
+	if ( $max_lon <= 180.0 && $min_lon >= -180.0 ) {
+		return [
+			'coordinates' => $coords,
+			'polygon' => 'POLYGON((' . $to_wkt_lat_lng($coords) . '))',
+			'polygon_mariadb' => 'POLYGON((' . $to_wkt_lng_lat($coords) . '))',
+		];
+	}
+
+	$cut = ($max_lon > 180.0) ? 180.0 : -180.0;
+
+	// classify side A vs B around the cut
+	$isA = function($lon) use ($cut) {
+		return ($cut === 180.0) ? ($lon <= 180.0) : ($lon >= -180.0);
+	};
+
+	$ringA = []; // will be the "non-shifted" side
+	$ringB = []; // will be the shifted side
+
+	$n = count($unwrapped) - 1;
+	for ($i = 0; $i < $n; $i++) {
+		$p = $unwrapped[$i];
+		$q = $unwrapped[$i+1];
+
+		$p_inA = $isA($p[0]);
+		$q_inA = $isA($q[0]);
+
+		if ($p_inA) {
+			$ringA[] = [ $wrap180_keep_180($p[0]), $p[1] ];
+		} else {
+			// shift into the other hemisphere before wrapping
+			$shift = ($cut === 180.0) ? -360.0 : 360.0;
+			$ringB[] = [ $wrap180_keep_180($p[0] + $shift), $p[1] ];
+		}
+
+		if ($p_inA !== $q_inA) {
+			$lon1 = $p[0]; $lat1 = $p[1];
+			$lon2 = $q[0]; $lat2 = $q[1];
+			$den = ($lon2 - $lon1);
+			if (abs($den) < 1e-12) continue;
+
+			$t = ($cut - $lon1) / $den;
+			$latX = $lat1 + $t * ($lat2 - $lat1);
+
+			// IMPORTANT:
+			// emit +180 on one side and -180 on the other side (do not let +180 become -180)
+			if ($cut === 180.0) {
+				$ringA[] = [ 180.0, $latX ];
+				$ringB[] = [ -180.0, $latX ];
+			} else {
+				$ringA[] = [ -180.0, $latX ];
+				$ringB[] = [ 180.0, $latX ];
+			}
+		}
+	}
+
+	$ringA = $dedupe($ringA);
+	$ringB = $dedupe($ringB);
+
+	if (count($ringA) < 3 || count($ringB) < 3) {
+		// fail safe: return original (but this should now be rare)
+		return [
+			'coordinates' => $coords,
+			'polygon' => 'POLYGON((' . $to_wkt_lat_lng($coords) . '))',
+			'polygon_mariadb' => 'POLYGON((' . $to_wkt_lng_lat($coords) . '))',
+		];
+	}
+
+	$ringA[] = $ringA[0];
+	$ringB[] = $ringB[0];
 
 	return [
-		'coordinates' => $coordinates,
-		'polygon' => sprintf( 'POLYGON((%s))', join( ',', array_map( function( $point ) {
-			return $point[1].' '.$point[0];
-		}, $coordinates ) ) ),
-		'polygon_mariadb' => sprintf( 'POLYGON((%s))', join( ',', array_map( function( $point ) {
-			return $point[0].' '.$point[1];
-		}, $coordinates ) ) ),
+		'coordinates' => $coords,
+		'polygon' => sprintf(
+			'MULTIPOLYGON(((%s)),((%s)))',
+			$to_wkt_lat_lng($ringA),
+			$to_wkt_lat_lng($ringB)
+		),
+		'polygon_mariadb' => sprintf(
+			'MULTIPOLYGON(((%s)),((%s)))',
+			$to_wkt_lng_lat($ringA),
+			$to_wkt_lng_lat($ringB)
+		),
 	];
 }
 

@@ -22,6 +22,7 @@ import { InspectorTabs } from '@shared/controls';
 import { ContentTab, StyleTab } from './inspector';
 import GalleryComponent from './shared/GalleryComponent';
 import { getAdvancedVoxelTabProps } from '@shared/utils';
+import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
 
 interface EditProps {
 	attributes: GalleryBlockAttributes;
@@ -30,6 +31,10 @@ interface EditProps {
 }
 
 export default function Edit({ attributes, setAttributes, clientId }: EditProps) {
+	// Detect template context for dynamic tag preview resolution
+	const templateContext = useTemplateContext();
+	const templatePostType = useTemplatePostType();
+
 	// Set blockId if not set
 	useEffect(() => {
 		if (!attributes.blockId) {
@@ -109,6 +114,8 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				attributes={attributes}
 				context="editor"
 				blockId={clientId}
+				templateContext={templateContext}
+				templatePostType={templatePostType}
 			/>
 		</ul>
 	);

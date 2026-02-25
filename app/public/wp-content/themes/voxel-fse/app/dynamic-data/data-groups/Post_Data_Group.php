@@ -91,7 +91,156 @@ class Post_Data_Group extends Base_Data_Group {
 				}
 				return $url;
 			default:
+				// Voxel custom post fields — stored as post meta.
+				// Supports sub-properties like @post(gallery.ids), @post(gallery.url), @post(gallery.id)
+				//
+				// How Voxel stores file/image/gallery fields:
+				//   update_post_meta($post_id, $field_key, join(',', $file_ids))
+				//   e.g. get_post_meta($id, 'gallery', true) → "96,97,98"
+				//
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:77 (update)
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:89-93 (get_value_from_post)
+				// Evidence: themes/voxel/app/post-types/fields/file-field.php:139-184 (dynamic_data exports)
+				return $this->resolve_voxel_field( $key, array_slice( $property_path, 1 ) );
+		}
+	}
+
+	/**
+	 * Resolve a Voxel custom post field with optional sub-property.
+	 *
+	 * Matches Voxel's dynamic_data() exports for File_Field (file/image/gallery):
+	 *   - ids  → comma-separated attachment IDs (e.g. "96,97,98")
+	 *   - id   → first attachment ID
+	 *   - url  → URL of first attachment
+	 *   - name → filename of first attachment
+	 *   - (no sub-property) → raw meta value
+	 *
+	 * Also handles any other post meta field as a simple string fallback.
+	 *
+	 * @param string $field_key  The field key (e.g. "gallery", "logo", "cover_image").
+	 * @param array  $sub_path   Remaining property path after the field key (e.g. ["ids"]).
+	 * @return string Resolved value.
+	 */
+	protected function resolve_voxel_field( string $field_key, array $sub_path ): string {
+		// Try resolving through Voxel's field API for complex fields (e.g. product field addons).
+		// This handles nested property paths like @post(product.addon_key.price)
+		// Evidence: themes/voxel/app/post-types/fields/product-field/exports.php:109-168
+		if ( count( $sub_path ) >= 2 && class_exists( '\\Voxel\\Post' ) ) {
+			$result = $this->resolve_product_field_addon( $field_key, $sub_path );
+			if ( $result !== null ) {
+				return $result;
+			}
+		}
+
+		$meta_value = get_post_meta( $this->post_id, $field_key, true );
+
+		if ( $meta_value === '' || $meta_value === false ) {
+			return '';
+		}
+
+		$sub_key = ! empty( $sub_path ) ? strtolower( trim( (string) $sub_path[0] ) ) : '';
+
+		switch ( $sub_key ) {
+			case 'ids':
+				// Return all attachment IDs as comma-separated string
+				// Evidence: file-field.php:156-163
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				return ! empty( $ids ) ? implode( ',', $ids ) : '';
+
+			case 'id':
+				// Return first attachment ID
+				// Evidence: file-field.php:146-148 (loopable), 169-171 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				return ! empty( $ids ) ? (string) $ids[0] : '';
+
+			case 'url':
+				// Return URL of first attachment
+				// Evidence: file-field.php:149-151 (loopable), 173-175 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				if ( empty( $ids ) ) {
+					return '';
+				}
+				$url = wp_get_attachment_url( $ids[0] );
+				return $url ? $url : '';
+
+			case 'name':
+				// Return filename of first attachment
+				// Evidence: file-field.php:152-155 (loopable), 177-180 (single)
+				$ids = array_filter( array_map( 'absint', explode( ',', (string) $meta_value ) ) );
+				if ( empty( $ids ) ) {
+					return '';
+				}
+				$attachment = get_post( $ids[0] );
+				if ( ! $attachment ) {
+					return '';
+				}
+				$file = get_attached_file( $attachment->ID );
+				return $file ? wp_basename( $file ) : '';
+
+			default:
+				// No sub-property — return raw meta value as string
+				return (string) $meta_value;
+		}
+	}
+
+	/**
+	 * Resolve product field addon properties via Voxel's API.
+	 *
+	 * Handles paths like: @post(product_field.addon_key.property)
+	 * where property is one of: label, price, min, max
+	 *
+	 * Evidence: themes/voxel/app/post-types/fields/product-field/exports.php:109-168
+	 *
+	 * @param string $field_key The product field key.
+	 * @param array  $sub_path  Remaining path: ['addon_key', 'property'].
+	 * @return string|null Resolved value, or null if not a product field addon.
+	 */
+	protected function resolve_product_field_addon( string $field_key, array $sub_path ): ?string {
+		try {
+			$post = \Voxel\Post::get( $this->post_id );
+			if ( ! $post ) {
+				return null;
+			}
+
+			$field = $post->get_field( $field_key );
+			if ( ! ( $field instanceof \Voxel\Post_Types\Fields\Product_Field ) ) {
+				return null;
+			}
+
+			$addon_key = $sub_path[0];
+			$property  = strtolower( trim( (string) ( $sub_path[1] ?? '' ) ) );
+
+			$addons_field = $field->get_product_field( 'addons' );
+			if ( ! $addons_field ) {
 				return '';
+			}
+
+			$addon = $addons_field->get_addon( $addon_key );
+			if ( ! $addon || $addon->get_type() !== 'numeric' || ! $addon->is_active() ) {
+				return '';
+			}
+
+			if ( $property === 'label' ) {
+				return (string) $addon->get_label();
+			}
+
+			$value = $addon->get_value();
+			if ( ! is_array( $value ) ) {
+				return '';
+			}
+
+			switch ( $property ) {
+				case 'price':
+					return (string) ( $value['price'] ?? '' );
+				case 'min':
+					return (string) ( $value['min'] ?? '' );
+				case 'max':
+					return (string) ( $value['max'] ?? '' );
+				default:
+					return '';
+			}
+		} catch ( \Throwable $e ) {
+			return null;
 		}
 	}
 

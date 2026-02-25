@@ -23,13 +23,52 @@ function generateDimensionsCSS(
 	property: string
 ): string {
 	if (!dimensions) return '';
+	// If all values are empty/unset, return nothing (don't emit 0px defaults)
+	const hasTop = dimensions['top'] !== undefined && dimensions['top'] !== '' && dimensions['top'] !== null;
+	const hasRight = dimensions['right'] !== undefined && dimensions['right'] !== '' && dimensions['right'] !== null;
+	const hasBottom = dimensions['bottom'] !== undefined && dimensions['bottom'] !== '' && dimensions['bottom'] !== null;
+	const hasLeft = dimensions['left'] !== undefined && dimensions['left'] !== '' && dimensions['left'] !== null;
+	if (!hasTop && !hasRight && !hasBottom && !hasLeft) return '';
 	const { unit = 'px' } = dimensions;
-	// Parse to handle empty strings from DimensionsControl
-	const top = parseFloat(String(dimensions.top)) || 0;
-	const right = parseFloat(String(dimensions.right)) || 0;
-	const bottom = parseFloat(String(dimensions.bottom)) || 0;
-	const left = parseFloat(String(dimensions.left)) || 0;
+	const top = hasTop ? parseFloat(String(dimensions['top'])) : 0;
+	const right = hasRight ? parseFloat(String(dimensions['right'])) : 0;
+	const bottom = hasBottom ? parseFloat(String(dimensions['bottom'])) : 0;
+	const left = hasLeft ? parseFloat(String(dimensions['left'])) : 0;
 	return `${property}: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit};`;
+}
+
+/**
+ * Helper: Generate border CSS from BorderGroupControl value
+ */
+function generateBorderCSS(
+	borderType: string | undefined,
+	borderWidth: Record<string, any> | undefined,
+	borderColor: string | undefined
+): string {
+	if (!borderType || borderType === '' || borderType === 'default') return '';
+
+	if (borderType === 'none') {
+		return 'border: none;';
+	}
+
+	let css = `border-style: ${borderType}; `;
+
+	// Border width
+	if (borderWidth) {
+		const { unit = 'px' } = borderWidth;
+		const top = parseFloat(String(borderWidth['top'])) || 0;
+		const right = parseFloat(String(borderWidth['right'])) || 0;
+		const bottom = parseFloat(String(borderWidth['bottom'])) || 0;
+		const left = parseFloat(String(borderWidth['left'])) || 0;
+		css += `border-width: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit}; `;
+	}
+
+	// Border color
+	if (borderColor) {
+		css += `border-color: ${borderColor}; `;
+	}
+
+	return css;
 }
 
 /**
@@ -132,6 +171,27 @@ export function generateNavbarResponsiveCSS(
 	}
 
 	// ============================================
+	// CONTENT TAB - Hamburger Menu Visibility
+	// Source: navbar.php show_burger_desktop / show_burger_tablet
+	// Voxel: (desktop){{WRAPPER}} .ts-mobile-menu { display: flex; }
+	//        (desktop){{WRAPPER}} .ts-wp-menu .menu-item { display: none; }
+	// ============================================
+
+	// Show hamburger on desktop (hide regular menu items)
+	// Voxel hides with `.ts-nav-menu > ul > li.ts-mobile-menu { display: none }` (specificity 0-4-0)
+	// Our selector must exceed that specificity to override.
+	if (attributes.showBurgerDesktop) {
+		cssRules.push(`${selector} .ts-nav-menu > ul > li.ts-mobile-menu { display: flex; }`);
+		cssRules.push(`${selector} .ts-wp-menu .menu-item:not(.ts-mobile-menu) { display: none; }`);
+	}
+
+	// Show hamburger on tablet & mobile (hide regular menu items)
+	if (attributes.showBurgerTablet) {
+		tabletRules.push(`${selector} .ts-nav-menu > ul > li.ts-mobile-menu { display: flex; }`);
+		tabletRules.push(`${selector} .ts-wp-menu .menu-item:not(.ts-mobile-menu) { display: none; }`);
+	}
+
+	// ============================================
 	// STYLE TAB - Menu Item (Normal State)
 	// Source: navbar.php (ts_menu_item section)
 	// ============================================
@@ -200,16 +260,15 @@ export function generateNavbarResponsiveCSS(
 		}
 	}
 
-	// Border Style
+	// Border (Type, Width, Color)
 	// Selector: '{{WRAPPER}} .ts-item-link' (navbar.php)
-	if (attributes.linkBorderStyle && attributes.linkBorderStyle !== 'default') {
-		if (attributes.linkBorderStyle === 'none') {
-			cssRules.push(`${selector} .ts-item-link { border: none; }`);
-		} else {
-			cssRules.push(
-				`${selector} .ts-item-link { border-style: ${attributes.linkBorderStyle}; }`
-			);
-		}
+	const borderCSS = generateBorderCSS(
+		attributes.linkBorderStyle,
+		attributes.linkBorderWidth,
+		attributes.linkBorderColor
+	);
+	if (borderCSS) {
+		cssRules.push(`${selector} .ts-item-link { ${borderCSS} }`);
 	}
 
 	// Border Radius (Responsive)
@@ -240,6 +299,13 @@ export function generateNavbarResponsiveCSS(
 	}
 	if (attributes.linkGap_mobile !== undefined) {
 		mobileRules.push(`${selector} .ts-item-link { gap: ${attributes.linkGap_mobile}px; }`);
+	}
+
+	// Icon on top (flex-direction: column)
+	// Source: navbar.php 'action_icon_orient' => '{{WRAPPER}} .ts-item-link' => 'flex-direction: column;'
+	if (attributes.iconOnTop) {
+		cssRules.push(`${selector} .ts-item-link { flex-direction: column; }`);
+		cssRules.push(`${selector} .ts-down-icon { display: none; }`);
 	}
 
 	// ============================================
@@ -430,6 +496,127 @@ export function generateNavbarResponsiveCSS(
 		cssRules.push(
 			`${selector} .ts-right-icon { border-left-color: ${attributes.chevronColor}; }`
 		);
+	}
+
+	// ============================================
+	// STYLE TAB - Popups: Custom style
+	// Source: navbar.php (custom_popup_enable section)
+	// Popups are portaled to document.body, so we target via popupScopeClass
+	// ============================================
+
+	if (attributes.customPopupEnabled) {
+		const popupSelector = `.voxel-popup-navbar-${blockId}`;
+
+		// Backdrop background color
+		// Selector: '{{WRAPPER}}-wrap > div:after' => 'background-color'
+		if (attributes.popupBackdropBackground) {
+			cssRules.push(
+				`${popupSelector} .ts-popup-root > div::after { background-color: ${attributes.popupBackdropBackground} !important; }`
+			);
+		}
+
+		// Backdrop pointer events
+		// Selector: '{{WRAPPER}}-wrap > div:after' => 'pointer-events: all'
+		if (attributes.popupBackdropPointerEvents) {
+			cssRules.push(
+				`${popupSelector} .ts-popup-root > div::after { pointer-events: all; }`
+			);
+		}
+
+		// Box shadow
+		// Selector: '{{WRAPPER}} .ts-field-popup'
+		if (attributes.popupBoxShadow && Object.keys(attributes.popupBoxShadow).length > 0) {
+			const bs = attributes.popupBoxShadow;
+			const inset = bs.position === 'inset' ? 'inset ' : '';
+			const h = bs.horizontal ?? 0;
+			const v = bs.vertical ?? 0;
+			const blur = bs.blur ?? 0;
+			const spread = bs.spread ?? 0;
+			const color = bs.color ?? 'rgba(0,0,0,0.5)';
+			cssRules.push(
+				`${popupSelector} .ts-field-popup { box-shadow: ${inset}${h}px ${v}px ${blur}px ${spread}px ${color}; }`
+			);
+		}
+
+		// Top / Bottom margin (Responsive)
+		// Selector: '{{WRAPPER}} .ts-field-popup-container' => 'margin: {{SIZE}}{{UNIT}} 0'
+		if (attributes.popupTopBottomMargin !== undefined) {
+			cssRules.push(
+				`${popupSelector} .ts-field-popup-container { margin: ${attributes.popupTopBottomMargin}px 0; }`
+			);
+		}
+		if ((attributes as any).popupTopBottomMargin_tablet !== undefined) {
+			tabletRules.push(
+				`${popupSelector} .ts-field-popup-container { margin: ${(attributes as any).popupTopBottomMargin_tablet}px 0; }`
+			);
+		}
+		if ((attributes as any).popupTopBottomMargin_mobile !== undefined) {
+			mobileRules.push(
+				`${popupSelector} .ts-field-popup-container { margin: ${(attributes as any).popupTopBottomMargin_mobile}px 0; }`
+			);
+		}
+
+		// Min width (Responsive)
+		// Selector: '{{WRAPPER}} .ts-field-popup' => 'min-width'
+		if (attributes.popupMinWidth !== undefined) {
+			cssRules.push(
+				`${popupSelector} .ts-field-popup { min-width: ${attributes.popupMinWidth}px; }`
+			);
+		}
+		if ((attributes as any).popupMinWidth_tablet !== undefined) {
+			tabletRules.push(
+				`${popupSelector} .ts-field-popup { min-width: ${(attributes as any).popupMinWidth_tablet}px; }`
+			);
+		}
+		if ((attributes as any).popupMinWidth_mobile !== undefined) {
+			mobileRules.push(
+				`${popupSelector} .ts-field-popup { min-width: ${(attributes as any).popupMinWidth_mobile}px; }`
+			);
+		}
+
+		// Max width (Responsive)
+		// Selector: '{{WRAPPER}} .ts-field-popup' => 'max-width'
+		if (attributes.popupMaxWidth !== undefined) {
+			cssRules.push(
+				`${popupSelector} .ts-field-popup { max-width: ${attributes.popupMaxWidth}px; }`
+			);
+		}
+		if ((attributes as any).popupMaxWidth_tablet !== undefined) {
+			tabletRules.push(
+				`${popupSelector} .ts-field-popup { max-width: ${(attributes as any).popupMaxWidth_tablet}px; }`
+			);
+		}
+		if ((attributes as any).popupMaxWidth_mobile !== undefined) {
+			mobileRules.push(
+				`${popupSelector} .ts-field-popup { max-width: ${(attributes as any).popupMaxWidth_mobile}px; }`
+			);
+		}
+
+		// Max height (Responsive)
+		// Selector: '{{WRAPPER}} .ts-popup-content-wrapper' => 'max-height'
+		if (attributes.popupMaxHeight !== undefined) {
+			cssRules.push(
+				`${popupSelector} .ts-popup-content-wrapper { max-height: ${attributes.popupMaxHeight}px; }`
+			);
+		}
+		if ((attributes as any).popupMaxHeight_tablet !== undefined) {
+			tabletRules.push(
+				`${popupSelector} .ts-popup-content-wrapper { max-height: ${(attributes as any).popupMaxHeight_tablet}px; }`
+			);
+		}
+		if ((attributes as any).popupMaxHeight_mobile !== undefined) {
+			mobileRules.push(
+				`${popupSelector} .ts-popup-content-wrapper { max-height: ${(attributes as any).popupMaxHeight_mobile}px; }`
+			);
+		}
+
+		// Multi column menu
+		// Selector: '{{WRAPPER}} .ts-term-dropdown-list' => 'grid-template-columns: repeat(N, minmax(0, 1fr)); display: grid;'
+		if (attributes.multiColumnMenu && attributes.menuColumns > 1) {
+			cssRules.push(
+				`${popupSelector} .ts-term-dropdown-list { display: grid; grid-template-columns: repeat(${attributes.menuColumns}, minmax(0, 1fr)); }`
+			);
+		}
 	}
 
 	// ============================================

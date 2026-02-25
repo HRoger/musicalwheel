@@ -42,14 +42,14 @@ export const ShippingField: React.FC<ShippingFieldProps> = ({
 }) => {
 	// Normalize value
 	const shippingValue = value || {
-		enabled: field.props?.required || false,
+		enabled: field.props?.['required'] || false,
 		shipping_class: ''
 	};
 
 	// Get shipping classes from field props
-	const shippingClasses = field.props?.shipping_classes || {};
-	const defaultShippingClass = field.props?.default_shipping_class || '';
-	const isRequired = field.props?.required || false;
+	const shippingClasses = (field.props?.['shipping_classes'] || {}) as Record<string, any>;
+	const defaultShippingClass = (field.props?.['default_shipping_class'] as string | undefined) || '';
+	const isRequired = field.props?.['required'] || false;
 
 	// Handle enable toggle
 	const handleEnabledChange = () => {

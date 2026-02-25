@@ -101,7 +101,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 
 	// Get selected product type
 	const selectedProductType = productValue.product_type || productTypeKeys[0] || '';
-	const currentProductTypeConfig = productTypes[selectedProductType];
+	const currentProductTypeConfig = (productTypes as any)[selectedProductType];
 
 	// DEBUG: Log product type configuration
 	console.log('ProductField: Product Type Config', {
@@ -215,7 +215,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 								onChange={handleProductTypeChange}
 							>
 								{productTypeKeys.map(key => {
-									const config = productTypes[key];
+									const config = (productTypes as any)[key];
 									return (
 										<option key={key} value={key}>
 											{config?.label || key}
@@ -261,7 +261,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<BasePriceField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -271,7 +271,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<StockField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -281,7 +281,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<ShippingField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -292,7 +292,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<SubscriptionIntervalField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -302,7 +302,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<DeliverablesField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -313,10 +313,10 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<CustomPricesField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 											productType={currentProductTypeConfig}
-											productFieldValue={productValue}
+											productFieldValue={productValue as any}
 											productFieldKey={field.key}
 										/>
 									);
@@ -326,7 +326,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<AddonsField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);
@@ -346,7 +346,7 @@ export const ProductField: React.FC<ProductFieldProps> = ({
 										<VariationsField
 											key={key}
 											field={subField}
-											value={subFieldValue}
+											value={subFieldValue as any}
 											onChange={(newValue) => handleSubFieldChange(subFieldKey, newValue)}
 										/>
 									);

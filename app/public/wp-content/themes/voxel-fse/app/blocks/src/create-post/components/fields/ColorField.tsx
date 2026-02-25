@@ -85,7 +85,7 @@ export function ColorField({
 		onBlur?.();
 	};
 
-	const placeholder = field.props?.['placeholder'] || field.label;
+	const placeholder = String(field.props?.['placeholder'] ?? field.label ?? '');
 
 	return (
 		<div className={`ts-form-group field-key-${field.key} ${hasError ? 'ts-has-errors' : ''} ${field.css_class || ''} ${field.hidden ? 'hidden' : ''}`}>

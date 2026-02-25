@@ -27,7 +27,7 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
+	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"style": "file:./style.css",
 	"attributes": {
@@ -102,6 +102,10 @@
 				"no"
 			]
 		},
+		"lightboxGroup": {
+			"type": "string",
+			"default": ""
+		},
 		"imageAlign": {
 			"type": "string",
 			"default": ""
@@ -113,34 +117,43 @@
 			"type": "string"
 		},
 		"width": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"width_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"width_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"widthUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"maxWidth": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"maxWidth_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"maxWidth_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"maxWidthUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"height": {
-			"type": "object",
-			"default": {}
+			"type": "number"
 		},
 		"height_tablet": {
-			"type": "object"
+			"type": "number"
 		},
 		"height_mobile": {
-			"type": "object"
+			"type": "number"
+		},
+		"heightUnit": {
+			"type": "string",
+			"default": "px"
 		},
 		"objectFit": {
 			"type": "string",
@@ -162,52 +175,9 @@
 		"objectPosition_mobile": {
 			"type": "string"
 		},
-		"opacity": {
-			"type": "number"
-		},
-		"cssFilters": {
-			"type": "object",
-			"default": {}
-		},
-		"opacityHover": {
-			"type": "number"
-		},
-		"cssFiltersHover": {
-			"type": "object",
-			"default": {}
-		},
-		"transitionDuration": {
-			"type": "number"
-		},
 		"hoverAnimation": {
 			"type": "string",
 			"default": ""
-		},
-		"borderType": {
-			"type": "string",
-			"default": ""
-		},
-		"borderWidth": {
-			"type": "object",
-			"default": {}
-		},
-		"borderColor": {
-			"type": "string",
-			"default": ""
-		},
-		"borderRadius": {
-			"type": "object",
-			"default": {}
-		},
-		"borderRadius_tablet": {
-			"type": "object"
-		},
-		"borderRadius_mobile": {
-			"type": "object"
-		},
-		"boxShadow": {
-			"type": "object",
-			"default": {}
 		},
 		"aspectRatio": {
 			"type": "string",
