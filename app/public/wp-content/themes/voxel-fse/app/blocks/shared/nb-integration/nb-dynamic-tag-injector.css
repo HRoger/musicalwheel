@@ -14,6 +14,11 @@ body .voxel-nb-tag-portal {
 	margin-left: 6px;
 	vertical-align: middle;
 }
+
+/* Vertically center the reset-wrap when it contains our portal */
+body .nectar-control-row__reset-wrap:has(> .voxel-nb-tag-portal) {
+	align-items: center;
+}
 /*image upload popups*/
 body .nectar-control-row--align-horizontal .nectar-control-row__label {
 	box-sizing: border-box;
@@ -129,6 +134,14 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
 /* Hide the original NB control content when a tag preview is active.
  * Uses :has(>) direct child selector to avoid hiding parent-level siblings. */
 .nectar-control-row__component:has(> .voxel-nb-tag-preview) > *:not(.voxel-nb-tag-preview) {
+	display: none !important;
+}
+
+/* Hide the EnableTag portal in the label when a TagPreview is active in the
+ * sibling component area. The portal lives in .nectar-control-row__label,
+ * the preview in .nectar-control-row__component — they're siblings under
+ * .nectar-control-row. */
+.nectar-control-row:has(.nectar-control-row__component > .voxel-nb-tag-preview) .voxel-nb-tag-portal {
 	display: none !important;
 }
 

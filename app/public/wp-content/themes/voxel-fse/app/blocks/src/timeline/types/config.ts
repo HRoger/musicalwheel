@@ -198,6 +198,11 @@ export interface TimelineStrings {
 	no?: string;
 	reposted?: string;
 
+	// Pin actions
+	pin_to_top?: string;
+	unpin?: string;
+	pinned?: string;
+
 	// Voxel-exact l10n strings - Evidence: timeline.php L491-507
 	// These use Voxel's @count/@date template syntax for 1:1 parity
 	no_activity?: string;

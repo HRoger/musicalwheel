@@ -1138,6 +1138,12 @@ export interface CreatePostAttributes extends CreatePostStyleAttributes, CreateP
 	tsRtimeslotIcon?: IconValue;
 	tsUploadIco?: IconValue;
 	tsLoadMore?: IconValue;
+	// Submission message overrides (matches Voxel's submit_labels)
+	submitLabelDraft?: string;
+	submitLabelSubmittedForReview?: string;
+	submitLabelPublished?: string;
+	submitLabelChangesSubmittedForReview?: string;
+	submitLabelChangesApplied?: string;
 	// Internal admin attributes
 	_admin_mode?: boolean;
 	_admin_post_id?: string | number;

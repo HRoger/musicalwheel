@@ -6,7 +6,7 @@
  * @package VoxelFSE
  */
 
-import type { OrdersListProps, OrdersConfig, ShippingStatus } from '../types';
+import type { OrdersListProps, OrdersConfig, ShippingStatus, OrderListItem } from '../types';
 import { renderIcon, renderNoResultsIcon, currencyFormat, getStatusClass, getStatusLabel, getIconWithFallback } from './OrdersComponent';
 
 /**
@@ -23,6 +23,33 @@ function getShippingStatusClass(status: ShippingStatus | null, config: OrdersCon
 function getShippingStatusLabel(status: ShippingStatus | null, config: OrdersConfig | null): string {
 	if (!status || !config?.shipping_statuses) return status || '';
 	return config.shipping_statuses[status]?.label || status;
+}
+
+/**
+ * Get personalized order title
+ * Matches Voxel: templates/widgets/orders.php:185-211
+ */
+function getOrderTitle(order: OrderListItem): string {
+	const name = order.customer.name;
+	if (order.item_count === 1 && order.product_type === 'voxel:listing_plan_subscription' && order.first_item_label) {
+		return `${name} subscribed to ${order.first_item_label} listing plan`;
+	}
+	if (order.item_count === 1 && order.product_type === 'voxel:listing_plan_payment' && order.first_item_label) {
+		return `${name} purchased ${order.first_item_label} listing plan`;
+	}
+	if (order.item_count === 1 && order.product_type === 'voxel:membership_plan' && order.first_item_label) {
+		return `${name} subscribed to ${order.first_item_label} plan`;
+	}
+	if (order.item_count === 1 && order.product_type === 'voxel:claim_request' && order.first_item_claim_title) {
+		return `${name} requested to claim ${order.first_item_claim_title}`;
+	}
+	if (order.item_count === 1 && order.product_type === 'voxel:claim_request') {
+		return `${name} requested to claim a listing`;
+	}
+	if (order.item_count === 1 && order.first_item_type === 'booking' && order.first_item_label) {
+		return `${name} booked ${order.first_item_label}`;
+	}
+	return `${name} placed an order ${order.created_at}`;
 }
 
 /**
@@ -77,8 +104,8 @@ export default function OrdersList({
 								{/* Order Badge */}
 								<span className="order-badge vx-hide-mobile">#{order.id}</span>
 
-								{/* Order Title - matches Voxel: "@customer_name placed an order @date" */}
-								<b>{order.customer.name} placed an order {order.created_at}</b>
+								{/* Order Title - personalized per product type, matches Voxel: templates/widgets/orders.php:185-211 */}
+								<b>{getOrderTitle(order)}</b>
 							</div>
 
 							{/* Order Meta Row - matches Voxel: templates/widgets/orders.php:190-198 */}

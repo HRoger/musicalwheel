@@ -419,6 +419,18 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 				// Evidence: voxel-create-post.beautified.js lines 4173-4221
 				deduplicateFiles(formDataObj);
 
+				// Append custom submission messages (submit_labels)
+				// Matches Voxel: submission-controller.php lines 265-308
+				const submitLabels: Record<string, string> = {};
+				if (attributes.submitLabelDraft) submitLabels['draft'] = attributes.submitLabelDraft;
+				if (attributes.submitLabelSubmittedForReview) submitLabels['submitted_for_review'] = attributes.submitLabelSubmittedForReview;
+				if (attributes.submitLabelPublished) submitLabels['published'] = attributes.submitLabelPublished;
+				if (attributes.submitLabelChangesSubmittedForReview) submitLabels['changes_submitted_for_review'] = attributes.submitLabelChangesSubmittedForReview;
+				if (attributes.submitLabelChangesApplied) submitLabels['changes_applied'] = attributes.submitLabelChangesApplied;
+				if (Object.keys(submitLabels).length > 0) {
+					formDataObj.append('submit_labels', JSON.stringify(submitLabels));
+				}
+
 				if (postId && postId > 0) {
 					formDataObj.append('post_id', postId.toString());
 				}
@@ -662,6 +674,18 @@ export function useFormSubmission(options: UseFormSubmissionOptions): UseFormSub
 			// Apply file deduplication with aliases
 			// Evidence: voxel-create-post.beautified.js lines 4173-4221
 			deduplicateFiles(formDataObj);
+
+			// Append custom submission messages (submit_labels)
+			// Matches Voxel: submission-controller.php lines 265-308
+			const submitLabels: Record<string, string> = {};
+			if (attributes.submitLabelDraft) submitLabels['draft'] = attributes.submitLabelDraft;
+			if (attributes.submitLabelSubmittedForReview) submitLabels['submitted_for_review'] = attributes.submitLabelSubmittedForReview;
+			if (attributes.submitLabelPublished) submitLabels['published'] = attributes.submitLabelPublished;
+			if (attributes.submitLabelChangesSubmittedForReview) submitLabels['changes_submitted_for_review'] = attributes.submitLabelChangesSubmittedForReview;
+			if (attributes.submitLabelChangesApplied) submitLabels['changes_applied'] = attributes.submitLabelChangesApplied;
+			if (Object.keys(submitLabels).length > 0) {
+				formDataObj.append('submit_labels', JSON.stringify(submitLabels));
+			}
 
 			formDataObj.append('save_as_draft', 'yes');
 

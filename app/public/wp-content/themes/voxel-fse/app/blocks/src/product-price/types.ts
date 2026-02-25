@@ -43,6 +43,9 @@ export interface ProductPriceAttributes {
 	// Typography control (Elementor: price_typo)
 	typography?: TypographyConfig;
 
+	// Strikethrough text typography (Elementor: price_typo_discount)
+	strikethroughTypography?: TypographyConfig;
+
 	// Color controls (responsive)
 	// Elementor: ts_price_col - Color for .vx-price
 	priceColor?: string;
@@ -120,6 +123,7 @@ export interface ProductPriceVxConfig {
 
 	// Typography
 	typography?: TypographyConfig;
+	strikethroughTypography?: TypographyConfig;
 
 	// Post context for API fetch
 	postId?: number;

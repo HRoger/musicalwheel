@@ -157,10 +157,10 @@ export interface BackgroundControlAttributes {
 	// === VIDEO BACKGROUND ===
 	// Video Link (YouTube/Vimeo/mp4 URL)
 	bgVideoLink?: string;
-	// Video Start Time (seconds)
-	bgVideoStartTime?: number;
-	// Video End Time (seconds)
-	bgVideoEndTime?: number;
+	// Video Start Time (seconds) — null means "unset" (undefined is ignored by setAttributes)
+	bgVideoStartTime?: number | null;
+	// Video End Time (seconds) — null means "unset"
+	bgVideoEndTime?: number | null;
 	// Play Once
 	bgVideoPlayOnce?: boolean;
 	// Play On Mobile
@@ -1184,13 +1184,14 @@ export default function BackgroundControl({
 								label={__('Start Time', 'voxel-fse')}
 								type="number"
 								value={
-									attributes.bgVideoStartTime !== undefined
+									attributes.bgVideoStartTime != null
 										? String(attributes.bgVideoStartTime)
 										: ''
 								}
 								onChange={(value: string) =>
 									setAttributes({
-										bgVideoStartTime: value ? Number(value) : undefined,
+										// Use null instead of undefined — WordPress setAttributes ignores undefined
+										bgVideoStartTime: value ? Number(value) : null,
 									})
 								}
 								help={__('Specify a start time (in seconds).', 'voxel-fse')}
@@ -1204,13 +1205,14 @@ export default function BackgroundControl({
 								label={__('End Time', 'voxel-fse')}
 								type="number"
 								value={
-									attributes.bgVideoEndTime !== undefined
+									attributes.bgVideoEndTime != null
 										? String(attributes.bgVideoEndTime)
 										: ''
 								}
 								onChange={(value: string) =>
 									setAttributes({
-										bgVideoEndTime: value ? Number(value) : undefined,
+										// Use null instead of undefined — WordPress setAttributes ignores undefined
+										bgVideoEndTime: value ? Number(value) : null,
 									})
 								}
 								help={__('Specify an end time (in seconds).', 'voxel-fse')}

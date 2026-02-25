@@ -85,7 +85,21 @@ export default function BorderGroupControl({
                 <SelectControl
                     value={borderType || ''}
                     options={BORDER_TYPES}
-                    onChange={(newType: string) => updateValue('borderType', newType)}
+                    onChange={(newType: string) => {
+                        if (!newType || newType === 'none') {
+                            // Clear all border sub-properties when resetting to Default or None
+                            // Use empty defaults ({} and '') instead of undefined because
+                            // WordPress setAttributes() ignores undefined values entirely
+                            onChange({
+                                ...value,
+                                borderType: newType,
+                                borderWidth: {},
+                                borderColor: '',
+                            });
+                        } else {
+                            updateValue('borderType', newType);
+                        }
+                    }}
                     __nextHasNoMarginBottom
                     hideLabelFromVision
                 />

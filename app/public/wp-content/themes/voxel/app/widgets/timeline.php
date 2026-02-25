@@ -161,6 +161,17 @@ class Timeline extends Base_Widget {
 			);
 
 			$this->add_control(
+				'ts_pin_icon',
+				[
+					'label' => __( 'Pin', 'text-domain' ),
+					'type' => \Elementor\Controls_Manager::ICONS,
+					'skin' => 'inline',
+					'label_block' => false,
+
+				]
+			);
+
+			$this->add_control(
 				'ts_more_icon',
 				[
 					'label' => __( 'More', 'text-domain' ),
@@ -537,6 +548,7 @@ class Timeline extends Base_Widget {
 		$icons = [
 			'verified' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_verified_icon') ) ?: \Voxel\get_svg( 'verified.svg' ),
 			'repost' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_repost_icon') ) ?: \Voxel\get_svg( 'repost.svg' ),
+			'pin' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_pin_icon') ) ?: \Voxel\get_svg( 'pin.svg' ),
 			'more' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_more_icon') ) ?: \Voxel\get_svg( 'menu-meatball.svg' ),
 			'liked' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_liked_icon') ) ?: \Voxel\get_svg( 'heart-filled.svg' ),
 			'like' => \Voxel\get_icon_markup( $this->get_settings_for_display('ts_like_icon') ) ?: \Voxel\get_svg( 'heart.svg' ),

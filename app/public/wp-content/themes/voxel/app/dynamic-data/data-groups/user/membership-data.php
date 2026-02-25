@@ -68,6 +68,22 @@ trait Membership_Data {
 								return '';
 							}
 						} ),
+						'current_period_start' => Tag::Date('Current period start')->render( function() {
+							$membership = $this->user->get_membership();
+							if ( $membership->get_type() === 'order' ) {
+								return $membership->get_current_period_start() ?: '';
+							} else {
+								return '';
+							}
+						} ),
+						'current_period_end' => Tag::Date('Current period end')->render( function() {
+							$membership = $this->user->get_membership();
+							if ( $membership->get_type() === 'order' ) {
+								return $membership->get_current_period_end() ?: '';
+							} else {
+								return '';
+							}
+						} ),
 					];
 				} ),
 			];

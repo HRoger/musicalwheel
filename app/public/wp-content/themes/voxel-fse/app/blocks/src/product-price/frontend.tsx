@@ -150,6 +150,10 @@ function normalizeConfig(raw: Record<string, unknown>): ProductPriceVxConfig {
 		raw['typography'] ?? raw['price_typo']
 	);
 
+	const strikethroughTypography = normalizeTypography(
+		raw['strikethroughTypography'] ?? raw['price_typo_discount']
+	);
+
 	const postId = normalizeNumber(
 		raw['postId'] ?? raw['post_id'],
 		0
@@ -168,6 +172,7 @@ function normalizeConfig(raw: Record<string, unknown>): ProductPriceVxConfig {
 		strikethroughWidthUnit: strikethroughWidthUnit || undefined,
 		outOfStockColor: outOfStockColor || undefined,
 		typography,
+		strikethroughTypography,
 		postId,
 		postType,
 	};
@@ -259,6 +264,7 @@ function buildAttributesFromVxConfig(
 		strikethroughWidthUnit: vxconfig.strikethroughWidthUnit,
 		outOfStockColor: vxconfig.outOfStockColor,
 		typography: vxconfig.typography as TypographyConfig,
+		strikethroughTypography: vxconfig.strikethroughTypography as TypographyConfig,
 	};
 }
 

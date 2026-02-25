@@ -404,6 +404,14 @@ export function generateProductFormResponsiveCSS(
 		);
 	}
 
+	// Stepper input value color - ts_ns_value
+	// Verified: product-form.php:741-752 - '{{WRAPPER}} .ts-input-box'
+	if (attributes.stepperInputValueColor) {
+		cssRules.push(
+			`${selector} .ts-stepper-input .ts-stepper-number { color: ${attributes.stepperInputValueColor}; }`
+		);
+	}
+
 	// Stepper button icon color - ts_stepper_btn_color
 	// Verified: product-form.php:748 - '{{WRAPPER}} .ts-stepper-input .ts-icon-btn i'
 	if (attributes.stepperButtonIconColor) {

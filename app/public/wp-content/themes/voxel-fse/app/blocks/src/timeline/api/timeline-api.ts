@@ -324,6 +324,60 @@ export async function markStatusPending(statusId: number, nonce: string): Promis
 }
 
 /**
+ * Pin a status to the top of a feed
+ * Voxel action: timeline/v2/status.pin_to_profile
+ * See: status-controller.php lines 770-831
+ *
+ * @param statusId - The status ID to pin
+ * @param mode - Feed mode (post_wall, post_timeline, author_timeline, user_timeline)
+ * @param postId - Post ID (required for post_wall/post_timeline modes)
+ * @param nonce - The timeline nonce (vx_timeline)
+ */
+export async function pinToProfile(
+	statusId: number,
+	mode: string,
+	postId: number | null,
+	nonce: string
+): Promise<{ success: boolean; message: string }> {
+	const params: Record<string, string | number | boolean | undefined> = {
+		status_id: statusId,
+		mode,
+		_wpnonce: nonce,
+	};
+	if (postId) {
+		params['post_id'] = postId;
+	}
+	return voxelAjaxPost<{ success: boolean; message: string }>('timeline/v2/status.pin_to_profile', params);
+}
+
+/**
+ * Unpin a status from the top of a feed
+ * Voxel action: timeline/v2/status.unpin_from_profile
+ * See: status-controller.php lines 833-887
+ *
+ * @param statusId - The status ID to unpin
+ * @param mode - Feed mode (post_wall, post_timeline, author_timeline, user_timeline)
+ * @param postId - Post ID (required for post_wall/post_timeline modes)
+ * @param nonce - The timeline nonce (vx_timeline)
+ */
+export async function unpinFromProfile(
+	statusId: number,
+	mode: string,
+	postId: number | null,
+	nonce: string
+): Promise<{ success: boolean; message: string }> {
+	const params: Record<string, string | number | boolean | undefined> = {
+		status_id: statusId,
+		mode,
+		_wpnonce: nonce,
+	};
+	if (postId) {
+		params['post_id'] = postId;
+	}
+	return voxelAjaxPost<{ success: boolean; message: string }>('timeline/v2/status.unpin_from_profile', params);
+}
+
+/**
  * ============================================================================
  * FEED OPERATIONS (1 endpoint)
  * ============================================================================

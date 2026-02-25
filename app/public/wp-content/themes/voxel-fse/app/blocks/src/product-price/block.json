@@ -99,6 +99,10 @@
 			"type": "object",
 			"default": {}
 		},
+		"strikethroughTypography": {
+			"type": "object",
+			"default": {}
+		},
 		"hideDesktop": {
 			"type": "boolean",
 			"default": false

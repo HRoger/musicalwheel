@@ -106,6 +106,7 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/button', fields: [
+		{ fieldKey: 'linkUrl', label: 'Link URL', labelText: 'URL', tab: 'layout', type: 'url' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/carousel', fields: [
@@ -118,6 +119,7 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/icon', fields: [
+		{ fieldKey: 'linkUrl', label: 'Link URL', labelText: 'URL', tab: 'layout', type: 'url' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/icon-list', fields: [
@@ -131,9 +133,11 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/image-grid', fields: [
+		{ fieldKey: 'linkUrl', label: 'Link URL', labelText: 'URL', tab: 'layout', type: 'url' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/milestone', fields: [
+		{ fieldKey: 'linkUrl', label: 'Link URL', labelText: 'URL', tab: 'layout', type: 'url' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/post-content', fields: [
@@ -146,6 +150,7 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/scrolling-marquee', fields: [
+		{ fieldKey: 'linkUrl', label: 'Link URL', labelText: 'URL', tab: 'layout', type: 'url' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	// star-rating: z-index + rating value (labelText TBD — verify via browser)

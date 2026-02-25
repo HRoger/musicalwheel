@@ -77,14 +77,49 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 					<div v-if="order.status.key === 'completed' && order.shipping.enabled" class="order-status" :class="order.shipping.status.class || 'vx-neutral'">
 						{{ order.shipping.status.label || order.shipping.status.key }}
 					</div>
+					<div v-else-if="order.items.length === 1 && order.items[0].type === 'booking' && order.items[0].booking_status === 'canceled' && order.items[0].booking_type === 'timeslots'" class="order-status vx-red">
+						<?= _x( 'Appointment canceled', 'orders', 'voxel' ) ?>
+					</div>
+					<div v-else-if="order.items.length === 1 && order.items[0].type === 'booking' && order.items[0].booking_status === 'canceled'" class="order-status vx-red">
+						<?= _x( 'Booking canceled', 'orders', 'voxel' ) ?>
+					</div>
 					<div v-else class="order-status" :class="orders.config.statuses_ui[ order.status.key ]?.class || 'vx-neutral'">
 						{{ orders.config.statuses[ order.status.key ]?.label || order.status.key }}
 					</div>
 					<h3>
-						<?= \Voxel\replace_vars( _x( '@customer_name placed order #@order_id', 'orders', 'voxel' ), [
+						<template v-if="order.items.length === 1 && order.items[0].product_type === 'voxel:listing_plan_subscription' && order.items[0].product.label"><?= \Voxel\replace_vars( _x( '@customer_name subscribed to @plan_name listing plan #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@plan_name' => '{{ order.items[0].product.label }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
+						<template v-else-if="order.items.length === 1 && order.items[0].product_type === 'voxel:listing_plan_payment' && order.items[0].product.label"><?= \Voxel\replace_vars( _x( '@customer_name purchased @plan_name listing plan #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@plan_name' => '{{ order.items[0].product.label }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
+						<template v-else-if="order.items.length === 1 && order.items[0].product_type === 'voxel:membership_plan' && order.items[0].product.label"><?= \Voxel\replace_vars( _x( '@customer_name subscribed to @plan_name plan #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@plan_name' => '{{ order.items[0].product.label }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
+						<template v-else-if="order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request' && order.items[0].claim_listing_title"><?= \Voxel\replace_vars( _x( '@customer_name requested to claim @listing_title #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@listing_title' => '{{ order.items[0].claim_listing_title }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
+						<template v-else-if="order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request'"><?= \Voxel\replace_vars( _x( '@customer_name requested to claim a listing #@order_id', 'orders', 'voxel' ), [
 							'@customer_name' => '{{ order.customer.name }}',
 							'@order_id' => '{{ order.id }}',
-						] ) ?>
+						] ) ?></template>
+						<template v-else-if="order.items.length === 1 && order.items[0].type === 'booking' && order.items[0].product.label"><?= \Voxel\replace_vars( _x( '@customer_name booked @product_name #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@product_name' => '{{ order.items[0].product.label }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
+						<template v-else><?= \Voxel\replace_vars( _x( '@customer_name placed order #@order_id', 'orders', 'voxel' ), [
+							'@customer_name' => '{{ order.customer.name }}',
+							'@order_id' => '{{ order.id }}',
+						] ) ?></template>
 					</h3>
 					<span>{{ order.created_at }}</span>
 				</div>
@@ -156,7 +191,7 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 						<item-promotion-details :item="item" :order="order" :parent="this"></item-promotion-details>
 					</template>
 				</template>
-				<div class="order-event">
+				<div class="order-event" v-if="!(order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request') || order.customer.order_notes?.length || (order.customer.customer_details && order.customer.customer_details.length)">
 					<div class="order-event-box">
 						<ul v-if="order.items.length" class="ts-cart-list simplify-ul">
 							<template v-for="item in order.items">
@@ -168,7 +203,7 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 
 										<div class="order-item-title">
 											<a :href="item.product.link">{{ item.product.label }}</a>
-											<span>{{ orders.currencyFormat( item.subtotal, item.currency ) }}</span>
+											<span v-if="!(order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request')">{{ orders.currencyFormat( item.subtotal, item.currency ) }}</span>
 										</div>
 										<span>{{ item.product.description }}</span>
 
@@ -187,6 +222,7 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 								</li>
 							</template>
 						</ul>
+						<template v-if="!(order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request')">
 						<ul class="ts-cost-calculator simplify-ul flexify">
 							<li v-if="order.pricing.subtotal !== null" class="ts-cost--subtotal">
 								<div class="ts-item-name"><p><?= _x( 'Subtotal', 'single order', 'voxel' ) ?></p></div>
@@ -258,17 +294,6 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 								</template>
 							</details>
 						</template>
-						<details class="order-accordion" v-if="order.customer.customer_details?.length">
-							<summary><?= _x( 'Customer details', 'single order', 'voxel' ) ?><icon-down/></summary>
-							<div class="details-body">
-								 <ul  class="ts-cost-calculator simplify-ul flexify ts-customer-details">
-									<li v-for="detail in order.customer.customer_details" >
-										<div class="ts-item-name"><p>{{ detail.label }}</p></div>
-										<div class="ts-item-price"><p>{{ detail.content }}</p></div>
-									</li>
-								</ul>
-							</div>
-						</details>
 						<details class="order-accordion" v-if="order.customer.shipping_details?.length">
 							<summary>
 								<?= _x( 'Shipping details', 'single order', 'voxel' ) ?>
@@ -277,6 +302,18 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 							<div class="details-body">
 								 <ul class="ts-cost-calculator simplify-ul flexify ts-customer-details">
 									<li v-for="detail in order.customer.shipping_details" >
+										<div class="ts-item-name"><p>{{ detail.label }}</p></div>
+										<div class="ts-item-price"><p>{{ detail.content }}</p></div>
+									</li>
+								</ul>
+							</div>
+						</details>
+						</template>
+						<details class="order-accordion" v-if="order.customer.customer_details?.length">
+							<summary><?= _x( 'Customer details', 'single order', 'voxel' ) ?><icon-down/></summary>
+							<div class="details-body">
+								 <ul  class="ts-cost-calculator simplify-ul flexify ts-customer-details">
+									<li v-for="detail in order.customer.customer_details" >
 										<div class="ts-item-name"><p>{{ detail.label }}</p></div>
 										<div class="ts-item-price"><p>{{ detail.content }}</p></div>
 									</li>
@@ -292,7 +329,7 @@ require_once locate_template( 'templates/widgets/orders/item-promotion-details.p
 								<p v-html="order.customer.order_notes" style="white-space: pre-wrap; word-break: break-word;"></p>
 							</div>
 						</details>
-						<details class="order-accordion" v-if="order.vendor.notes_to_customer?.length">
+						<details class="order-accordion" v-if="!(order.items.length === 1 && order.items[0].product_type === 'voxel:claim_request') && order.vendor.notes_to_customer?.length">
 							<summary>
 								<?= _x( 'Notes to customer', 'single order', 'voxel' ) ?>
 								<icon-down/>

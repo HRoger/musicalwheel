@@ -30,6 +30,13 @@ export default function ContentTab({ attributes, setAttributes }: ContentTabProp
                     typographyAttributeName="typography"
                 />
 
+                <TypographyControl
+                    label={__('Strikethrough text typography', 'voxel-fse')}
+                    attributes={attributes}
+                    setAttributes={setAttributes}
+                    typographyAttributeName="strikethroughTypography"
+                />
+
                 <ResponsiveColorControl
                     label={__('Color', 'voxel-fse')}
                     attributes={attributes}

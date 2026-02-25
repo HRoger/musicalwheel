@@ -148,6 +148,7 @@ export interface ProductFormAttributes {
 
 	// Number Stepper - Normal
 	stepperInputSize: number;
+	stepperInputValueColor: string;
 	stepperButtonIconColor: string;
 	stepperButtonBackground: string;
 	stepperButtonBorder: BorderGroupValue;
@@ -359,6 +360,7 @@ export const DEFAULT_PRODUCT_FORM_ATTRIBUTES: ProductFormAttributes = {
 
 	// Number Stepper
 	stepperInputSize: 16,
+	stepperInputValueColor: '',
 	stepperButtonIconColor: '',
 	stepperButtonBackground: '',
 	stepperButtonBorder: { borderType: 'none', borderWidth: {}, borderColor: '' },

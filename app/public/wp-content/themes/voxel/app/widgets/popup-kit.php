@@ -833,42 +833,44 @@ class Popup_Kit extends Base_Widget {
 		$this->start_controls_section(
 			'ts_sf_popup_number',
 			[
-				'label' => __( 'Popup: Number', 'voxel-elementor' ),
+				'label' => __( 'Popup: Stepper', 'voxel-elementor' ),
 				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
 			]
 		);
 
 
-				$this->add_control(
-					'ts_popup_number',
+				$this->add_group_control(
+					\Elementor\Group_Control_Typography::get_type(),
 					[
-						'label' => __( 'Number popup', 'voxel-elementor' ),
-						'type' => \Elementor\Controls_Manager::HEADING,
-						'separator' => 'before',
+						'name' => 'ts_stepper_input_type',
+						'label' => __( 'Input typography' ),
+						'selector' => '.ts-field-popup .ts-input-box',
 					]
 				);
-
-
-				$this->add_control(
-					'popup_number_input_size',
+				
+				$this->add_responsive_control(
+					'ts_ns_value',
 					[
-						'label' => __( 'Input value size', 'voxel-elementor' ),
-						'type' => \Elementor\Controls_Manager::SLIDER,
-						'size_units' => [ 'px'],
-						'range' => [
-							'px' => [
-								'min' => 13,
-								'max' => 30,
-								'step' => 1,
-							],
-						],
-						'default' => [
-							'unit' => 'px',
-							'size' => 20,
-						],
+						'label' => __( 'Value color', 'voxel-elementor' ),
+						'type' => \Elementor\Controls_Manager::COLOR,
 						'selectors' => [
-							'.ts-field-popup .ts-stepper-input input' => 'font-size: {{SIZE}}{{UNIT}};',
+							'.ts-field-popup .ts-input-box' => 'color: {{VALUE}}',
+	
 						],
+	
+					]
+				);
+	
+				$this->add_responsive_control(
+					'ts_ns_placeholder',
+					[
+						'label' => __( 'Value placeholder', 'voxel-elementor' ),
+						'type' => \Elementor\Controls_Manager::COLOR,
+						'selectors' => [
+							'.ts-field-popup .ts-input-box::placeholder' => 'color: {{VALUE}}',
+	
+						],
+	
 					]
 				);
 

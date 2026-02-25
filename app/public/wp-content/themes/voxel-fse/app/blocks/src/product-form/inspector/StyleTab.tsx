@@ -315,6 +315,13 @@ export function StyleTab({
 										unit="px"
 									/>
 									<ColorControl
+										label={__("Input value color", "voxel-fse")}
+										value={attributes.stepperInputValueColor}
+										onChange={(value: string | undefined) =>
+											setAttributes({ stepperInputValueColor: value ?? "" })
+										}
+									/>
+									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.stepperButtonIconColor}
 										onChange={(value: string | undefined) =>

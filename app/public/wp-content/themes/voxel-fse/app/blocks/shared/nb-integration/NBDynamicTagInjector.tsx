@@ -119,6 +119,24 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	// Track whether we injected a video URL via dynamic tag (to restore original on disable)
 	const videoInjectedRef = useRef(false);
 	const originalVideoRef = useRef<unknown>(null);
+	// Track whether we injected a link.href placeholder via dynamic tag (to restore original on disable)
+	const linkInjectedRef = useRef(false);
+	const originalLinkRef = useRef<unknown>(null);
+	// Track whether we injected videoUrl (external video URL) placeholder
+	const videoUrlInjectedRef = useRef(false);
+	const originalVideoUrlRef = useRef<unknown>(null);
+	// Track whether we injected videoLocal (local video source URL) placeholder
+	const videoLocalInjectedRef = useRef(false);
+	const originalVideoLocalRef = useRef<unknown>(null);
+	// Track whether we injected previewImage (video-lightbox preview.image or video-player image)
+	const previewImageInjectedRef = useRef(false);
+	const originalPreviewImageRef = useRef<unknown>(null);
+	// Track whether we injected previewVideo (video-lightbox preview.video source URL)
+	const previewVideoInjectedRef = useRef(false);
+	const originalPreviewVideoRef = useRef<unknown>(null);
+	// Track whether we injected backgroundImage (image-gallery bgImage URL)
+	const bgImageInjectedRef = useRef(false);
+	const originalBgImageRef = useRef<unknown>(null);
 	// Stable ref for current attributes (avoids infinite loop when setAttributes triggers re-render)
 	const attributesRef = useRef(attributes);
 	attributesRef.current = attributes;
@@ -324,13 +342,34 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 		const portal = portals.find((p) => p.fieldKey === fieldKey);
 		if (!portal) return '';
-		// Find the nearest input/textarea sibling
-		const wrapper = portal.container.closest('.components-base-control__field')
-			?? portal.container.closest('.components-base-control')
-			?? portal.container.parentElement;
-		if (!wrapper) return '';
-		const input = wrapper.querySelector('input') ?? wrapper.querySelector('textarea');
-		return input?.value ?? '';
+
+		// Strategy 1: WP controls (Advanced panel — components-base-control)
+		const wpWrapper = portal.container.closest('.components-base-control__field')
+			?? portal.container.closest('.components-base-control');
+		if (wpWrapper) {
+			const wpInput = wpWrapper.querySelector('input') ?? wpWrapper.querySelector('textarea');
+			if (wpInput?.value) return wpInput.value;
+		}
+
+		// Strategy 2: NB sidebar — inline portals live in __label,
+		// input is in the sibling __component div
+		const controlRow = portal.container.closest('.nectar-control-row');
+		if (controlRow) {
+			const componentDiv = controlRow.querySelector('.nectar-control-row__component');
+			if (componentDiv) {
+				const nbInput = componentDiv.querySelector('input') ?? componentDiv.querySelector('textarea');
+				if (nbInput?.value) return nbInput.value;
+			}
+		}
+
+		// Strategy 3: Corner portals — inside __component alongside the input
+		const parent = portal.container.parentElement;
+		if (parent) {
+			const fallbackInput = parent.querySelector('input') ?? parent.querySelector('textarea');
+			if (fallbackInput?.value) return fallbackInput.value;
+		}
+
+		return '';
 	}, [portals, isToolbarBlock, getBlockAttributes, clientId]);
 
 	/**
@@ -1304,6 +1343,310 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		return () => { cancelled = true; };
 	// eslint-disable-next-line react-hooks/exhaustive-deps -- attributes accessed via ref to avoid infinite loop
 	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
+
+	/**
+	 * Sync linkUrl dynamic tag into NB's native `link.href` attribute.
+	 * When a linkUrl tag is active, we set a placeholder href (`#voxel-dynamic`)
+	 * so NB's save function generates the `<a class="nectar__link">` wrapper.
+	 * PHP render_block then replaces the placeholder with the resolved URL.
+	 * When the tag is removed, we restore the original link attribute.
+	 */
+	useEffect(() => {
+		const linkTag = voxelTags['linkUrl'];
+
+		// When tag is removed, restore original link attribute
+		if (!linkTag) {
+			if (linkInjectedRef.current && originalLinkRef.current !== null) {
+				setAttributes({ link: originalLinkRef.current } as Record<string, unknown>);
+				linkInjectedRef.current = false;
+				originalLinkRef.current = null;
+			}
+			return;
+		}
+
+		// Already injected — skip (prevents infinite loop from setAttributes re-render)
+		if (linkInjectedRef.current) return;
+
+		// Save original link attribute before overwriting
+		originalLinkRef.current = attributesRef.current['link'];
+
+		// Set placeholder href so NB's save creates the <a class="nectar__link"> wrapper
+		const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
+		setAttributes({
+			link: { ...currentLink, href: '#voxel-dynamic' },
+		} as Record<string, unknown>);
+		linkInjectedRef.current = true;
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- attributes accessed via ref to avoid infinite loop
+	}, [voxelTags, clientId, setAttributes]);
+
+	/**
+	 * Sync videoUrl dynamic tag into NB's native `link.externalVideo` attribute.
+	 * Pattern A: placeholder URL. NB's save writes the external video URL into its HTML.
+	 * PHP replaces `#voxel-dynamic` with the resolved URL at render time.
+	 */
+	useEffect(() => {
+		const tag = voxelTags['videoUrl'];
+
+		if (!tag) {
+			if (videoUrlInjectedRef.current && originalVideoUrlRef.current !== null) {
+				setAttributes({ link: originalVideoUrlRef.current } as Record<string, unknown>);
+				videoUrlInjectedRef.current = false;
+				originalVideoUrlRef.current = null;
+			}
+			return;
+		}
+
+		if (videoUrlInjectedRef.current) return;
+
+		originalVideoUrlRef.current = attributesRef.current['link'];
+		const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
+		setAttributes({
+			link: { ...currentLink, type: 'external', externalVideo: '#voxel-dynamic' },
+		} as Record<string, unknown>);
+		videoUrlInjectedRef.current = true;
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, setAttributes]);
+
+	/**
+	 * Sync videoLocal dynamic tag into NB's native `link.localVideo.source.url` attribute.
+	 * Pattern A: placeholder URL so NB's save generates `<source src="...">`.
+	 */
+	useEffect(() => {
+		const tag = voxelTags['videoLocal'];
+
+		if (!tag) {
+			if (videoLocalInjectedRef.current && originalVideoLocalRef.current !== null) {
+				setAttributes({ link: originalVideoLocalRef.current } as Record<string, unknown>);
+				videoLocalInjectedRef.current = false;
+				originalVideoLocalRef.current = null;
+			}
+			return;
+		}
+
+		if (videoLocalInjectedRef.current) return;
+
+		originalVideoLocalRef.current = attributesRef.current['link'];
+		const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
+		const currentLocalVideo = (currentLink['localVideo'] ?? {}) as Record<string, unknown>;
+		const currentSource = (currentLocalVideo['source'] ?? {}) as Record<string, unknown>;
+		setAttributes({
+			link: {
+				...currentLink,
+				type: 'local',
+				localVideo: {
+					...currentLocalVideo,
+					source: { ...currentSource, url: '#voxel-dynamic' },
+				},
+			},
+		} as Record<string, unknown>);
+		videoLocalInjectedRef.current = true;
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, setAttributes]);
+
+	/**
+	 * Sync previewImage dynamic tag into NB's native attribute.
+	 * - video-lightbox: `preview.image` (full media object)
+	 * - video-player: `image` (simple `{ url, type }`)
+	 *
+	 * Pattern B: resolve via REST API → fetch media details → set full object.
+	 */
+	useEffect(() => {
+		const tag = voxelTags['previewImage'];
+
+		if (!tag) {
+			if (previewImageInjectedRef.current && originalPreviewImageRef.current !== null) {
+				const isVideoPlayer = blockConfig.blockName === 'nectar-blocks/video-player';
+				if (isVideoPlayer) {
+					setAttributes({ image: originalPreviewImageRef.current } as Record<string, unknown>);
+				} else {
+					// video-lightbox: restore preview.image
+					const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+					setAttributes({
+						preview: { ...currentPreview, image: originalPreviewImageRef.current },
+					} as Record<string, unknown>);
+				}
+				previewImageInjectedRef.current = false;
+				originalPreviewImageRef.current = null;
+			}
+			return;
+		}
+
+		if (previewImageInjectedRef.current) return;
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: { expression: tag, preview_context: previewContext },
+				});
+
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) rendered = wrapperMatch[1];
+
+				const value = rendered.trim();
+				if (!value) return;
+
+				// Try to parse as attachment ID for full media object
+				const attachmentId = parseInt(value, 10);
+				const isVideoPlayer = blockConfig.blockName === 'nectar-blocks/video-player';
+
+				if (attachmentId && !isNaN(attachmentId) && String(attachmentId) === value) {
+					const media = await apiFetch<Record<string, unknown>>({
+						path: `/wp/v2/media/${attachmentId}?context=edit`,
+					});
+					if (cancelled || !media) return;
+
+					if (isVideoPlayer) {
+						// video-player: simple { url, type } structure
+						if (!previewImageInjectedRef.current) {
+							originalPreviewImageRef.current = attributesRef.current['image'];
+						}
+						setAttributes({
+							image: { url: media['source_url'] as string, type: 'wpm' },
+						} as Record<string, unknown>);
+					} else {
+						// video-lightbox: full media object in preview.image
+						const details = media['media_details'] as Record<string, unknown> | undefined;
+						const wpSizes = (details?.['sizes'] ?? {}) as Record<string, { source_url?: string; width?: number; height?: number }>;
+						const nbSizes: Record<string, { url: string; width?: number; height?: number }> = {};
+						for (const [sizeName, sizeData] of Object.entries(wpSizes)) {
+							if (sizeData.source_url) {
+								nbSizes[sizeName] = { url: sizeData.source_url, width: sizeData.width, height: sizeData.height };
+							}
+						}
+
+						const imageObj = {
+							id: media['id'],
+							url: (media['source_url'] as string) || '',
+							alt: (media['alt_text'] as string) || '',
+							title: ((media['title'] as Record<string, string>)?.['rendered'] || ''),
+							size: 'large',
+							sizes: nbSizes,
+							type: 'wpm',
+						};
+
+						if (!previewImageInjectedRef.current) {
+							const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+							originalPreviewImageRef.current = currentPreview['image'];
+						}
+						const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+						setAttributes({
+							preview: { ...currentPreview, image: imageObj },
+						} as Record<string, unknown>);
+					}
+					previewImageInjectedRef.current = true;
+				} else if (value.startsWith('http')) {
+					// Direct URL — set as URL-only
+					if (isVideoPlayer) {
+						if (!previewImageInjectedRef.current) {
+							originalPreviewImageRef.current = attributesRef.current['image'];
+						}
+						setAttributes({
+							image: { url: value, type: 'external' },
+						} as Record<string, unknown>);
+					} else {
+						if (!previewImageInjectedRef.current) {
+							const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+							originalPreviewImageRef.current = currentPreview['image'];
+						}
+						const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+						setAttributes({
+							preview: { ...currentPreview, image: { url: value, alt: '', title: '', type: 'external' } },
+						} as Record<string, unknown>);
+					}
+					previewImageInjectedRef.current = true;
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic previewImage tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes, blockConfig.blockName]);
+
+	/**
+	 * Sync previewVideo dynamic tag into NB's native `preview.video.source.url`.
+	 * Pattern A: placeholder URL so NB's save generates video source markup.
+	 */
+	useEffect(() => {
+		const tag = voxelTags['previewVideo'];
+
+		if (!tag) {
+			if (previewVideoInjectedRef.current && originalPreviewVideoRef.current !== null) {
+				const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+				setAttributes({
+					preview: { ...currentPreview, video: originalPreviewVideoRef.current },
+				} as Record<string, unknown>);
+				previewVideoInjectedRef.current = false;
+				originalPreviewVideoRef.current = null;
+			}
+			return;
+		}
+
+		if (previewVideoInjectedRef.current) return;
+
+		const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+		const currentVideo = (currentPreview['video'] ?? {}) as Record<string, unknown>;
+		const currentSource = (currentVideo['source'] ?? {}) as Record<string, unknown>;
+
+		originalPreviewVideoRef.current = currentVideo;
+		setAttributes({
+			preview: {
+				...currentPreview,
+				video: {
+					...currentVideo,
+					source: { ...currentSource, url: '#voxel-dynamic' },
+				},
+			},
+		} as Record<string, unknown>);
+		previewVideoInjectedRef.current = true;
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, setAttributes]);
+
+	/**
+	 * Sync backgroundImage dynamic tag into NB's native `bgImage.desktop.url`.
+	 * Pattern A: placeholder URL so NB's save generates background-image CSS.
+	 */
+	useEffect(() => {
+		const tag = voxelTags['backgroundImage'];
+
+		if (!tag) {
+			if (bgImageInjectedRef.current && originalBgImageRef.current !== null) {
+				setAttributes({ bgImage: originalBgImageRef.current } as Record<string, unknown>);
+				bgImageInjectedRef.current = false;
+				originalBgImageRef.current = null;
+			}
+			return;
+		}
+
+		if (bgImageInjectedRef.current) return;
+
+		originalBgImageRef.current = attributesRef.current['bgImage'];
+		const currentBgImage = (attributesRef.current['bgImage'] ?? {}) as Record<string, unknown>;
+		const currentDesktop = (currentBgImage['desktop'] ?? {}) as Record<string, unknown>;
+		setAttributes({
+			bgImage: {
+				...currentBgImage,
+				desktop: { ...currentDesktop, url: '#voxel-dynamic' },
+			},
+		} as Record<string, unknown>);
+		bgImageInjectedRef.current = true;
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, setAttributes]);
 
 	/**
 	 * Inject EnableTag portal into the Video Player's "Insert self-hosted URL" input area

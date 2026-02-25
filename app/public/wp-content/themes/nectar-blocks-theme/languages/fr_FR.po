@@ -182,7 +182,7 @@ msgstr "compte"
 #: includes/partials/header/woo-slide-in-cart.php:49
 #: nectar/helpers/woocommerce.php:736
 msgid "Cart"
-msgstr "Chariot"
+msgstr "Panier"
 
 #: includes/partials/header/woo-slide-in-cart.php:49
 msgid "Close Cart"

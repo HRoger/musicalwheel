@@ -112,6 +112,8 @@ export function StatusItem({
 		handleDelete,
 		handleApprove,
 		handleMarkPending,
+		handlePin,
+		handleUnpin,
 	} = useStatusActions(status, onStatusUpdate, onStatusDelete);
 
 	// Merge optimistic updates with status
@@ -263,14 +265,20 @@ export function StatusItem({
 	return (
 		<div className="vxf-subgrid">
 			<div className={postClasses}>
-				{/* Annotation/Repost header */}
+				{/* Annotation/Pinned/Repost header - matches Voxel: status.php:30-44 */}
 				{status.annotation && (
 					<div className="vxf-highlight flexify">
 						<div className="vxf-icon" dangerouslySetInnerHTML={{ __html: status.annotation.icon ?? '' }} />
 						<span>{status.annotation.text}</span>
 					</div>
 				)}
-				{!status.annotation && repostedBy && (
+				{!status.annotation && displayStatus.is_pinned && (
+					<div className="vxf-highlight flexify">
+						<div className="vxf-icon" dangerouslySetInnerHTML={{ __html: (config?.icons as Record<string, string>)?.['pin'] ?? '' }} />
+						<span>{l10n.pinned ?? 'Pinned'}</span>
+					</div>
+				)}
+				{!status.annotation && !displayStatus.is_pinned && repostedBy && (
 					<div className="vxf-highlight flexify">
 						{repostedBy.annotation ? (
 							<>
@@ -378,6 +386,20 @@ export function StatusItem({
 								<li>
 									<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleMarkPending(); setShowActions(false); }}>
 										<span>{l10n.mark_pending ?? 'Mark as pending'}</span>
+									</a>
+								</li>
+							)}
+							{displayStatus.current_user?.can_pin_to_top && !displayStatus.is_pinned && (
+								<li>
+									<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handlePin(); setShowActions(false); }}>
+										<span>{l10n.pin_to_top ?? 'Pin to top'}</span>
+									</a>
+								</li>
+							)}
+							{displayStatus.current_user?.can_pin_to_top && displayStatus.is_pinned && (
+								<li>
+									<a href="#" className="flexify" onClick={async (e) => { e.preventDefault(); await handleUnpin(); setShowActions(false); }}>
+										<span>{l10n.unpin ?? 'Unpin'}</span>
 									</a>
 								</li>
 							)}

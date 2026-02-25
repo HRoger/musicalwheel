@@ -34,6 +34,8 @@ export {
 	removeStatusLinkPreview,
 	approveStatus,
 	markStatusPending,
+	pinToProfile,
+	unpinFromProfile,
 
 	// Feed
 	getStatusFeed,

@@ -23,8 +23,10 @@ import {
 	approveStatus,
 	markStatusPending,
 	removeStatusLinkPreview,
+	pinToProfile,
+	unpinFromProfile,
 } from '../api';
-import { useTimelineConfig, useCurrentUser } from './useTimelineConfig';
+import { useTimelineConfig, useCurrentUser, usePostContext } from './useTimelineConfig';
 import type { Status, StatusActionResponse, RepostResponse } from '../types';
 
 /**
@@ -37,6 +39,7 @@ interface ActionState {
 	isApproving: boolean;
 	isMarkingPending: boolean;
 	isRemovingPreview: boolean;
+	isPinning: boolean;
 }
 
 /**
@@ -54,6 +57,8 @@ interface UseStatusActionsReturn {
 	handleApprove: () => Promise<Status | null>;
 	handleMarkPending: () => Promise<Status | null>;
 	handleRemoveLinkPreview: () => Promise<boolean>;
+	handlePin: () => Promise<boolean>;
+	handleUnpin: () => Promise<boolean>;
 
 	// Optimistic state helpers
 	resetOptimisticState: () => void;
@@ -71,9 +76,10 @@ export function useStatusActions(
 	onStatusUpdate?: (status: Status) => void,
 	onStatusDelete?: (statusId: number) => void
 ): UseStatusActionsReturn {
-	// Get config for nonces and current user for optimistic updates
+	// Get config for nonces, current user, and post context
 	const { config } = useTimelineConfig();
 	const currentUser = useCurrentUser();
+	const postContext = usePostContext();
 
 	// Track pending operations
 	const [actionState, setActionState] = useState<ActionState>({
@@ -83,6 +89,7 @@ export function useStatusActions(
 		isApproving: false,
 		isMarkingPending: false,
 		isRemovingPreview: false,
+		isPinning: false,
 	});
 
 	// Optimistic state overrides
@@ -455,6 +462,82 @@ export function useStatusActions(
 		}
 	}, [status.id, status.link_preview, actionState.isRemovingPreview]);
 
+	/**
+	 * Handle pin to top action
+	 * See: status-controller.php lines 770-831
+	 */
+	const handlePin = useCallback(async (): Promise<boolean> => {
+		if (actionState.isPinning) return false;
+
+		const nonce = config?.nonces?.status_edit ?? '';
+		if (!nonce) return false;
+
+		setActionState((prev) => ({ ...prev, isPinning: true }));
+
+		// Optimistic update
+		setOptimisticStatus((prev) => ({
+			...prev,
+			is_pinned: true,
+		}));
+
+		try {
+			const postId = postContext?.current_post?.id ?? null;
+			await pinToProfile(status.id, status.feed, postId, nonce);
+
+			if (onStatusUpdate) {
+				onStatusUpdate({ ...status, is_pinned: true });
+			}
+			return true;
+		} catch {
+			// Rollback
+			setOptimisticStatus((prev) => ({
+				...prev,
+				is_pinned: false,
+			}));
+			return false;
+		} finally {
+			setActionState((prev) => ({ ...prev, isPinning: false }));
+		}
+	}, [status, actionState.isPinning, config?.nonces?.status_edit, postContext, onStatusUpdate]);
+
+	/**
+	 * Handle unpin action
+	 * See: status-controller.php lines 833-887
+	 */
+	const handleUnpin = useCallback(async (): Promise<boolean> => {
+		if (actionState.isPinning) return false;
+
+		const nonce = config?.nonces?.status_edit ?? '';
+		if (!nonce) return false;
+
+		setActionState((prev) => ({ ...prev, isPinning: true }));
+
+		// Optimistic update
+		setOptimisticStatus((prev) => ({
+			...prev,
+			is_pinned: false,
+		}));
+
+		try {
+			const postId = postContext?.current_post?.id ?? null;
+			await unpinFromProfile(status.id, status.feed, postId, nonce);
+
+			if (onStatusUpdate) {
+				onStatusUpdate({ ...status, is_pinned: false });
+			}
+			return true;
+		} catch {
+			// Rollback
+			setOptimisticStatus((prev) => ({
+				...prev,
+				is_pinned: true,
+			}));
+			return false;
+		} finally {
+			setActionState((prev) => ({ ...prev, isPinning: false }));
+		}
+	}, [status, actionState.isPinning, config?.nonces?.status_edit, postContext, onStatusUpdate]);
+
 	return {
 		actionState,
 		optimisticStatus,
@@ -464,6 +547,8 @@ export function useStatusActions(
 		handleApprove,
 		handleMarkPending,
 		handleRemoveLinkPreview,
+		handlePin,
+		handleUnpin,
 		resetOptimisticState,
 	};
 }

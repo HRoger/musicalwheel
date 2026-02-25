@@ -279,20 +279,20 @@ class Style_Generator {
             $styles['opacity'] = $attributes['opacity'];
         }
 
-        // Border
+        // Border - width/color only apply when a border type is active
         if ( ! empty( $attributes['borderType'] ) && $attributes['borderType'] !== 'none' ) {
             $styles['border-style'] = $attributes['borderType'];
-        }
-        if ( ! empty( $attributes['borderColor'] ) ) {
-            $styles['border-color'] = $attributes['borderColor'];
-        }
-        if ( ! empty( $attributes['borderWidth'] ) ) {
-            $bw   = $attributes['borderWidth'];
-            $unit = $bw['unit'] ?? 'px';
-            if ( isset( $bw['top'] ) && $bw['top'] !== '' )    $styles['border-top-width']    = $bw['top'] . $unit;
-            if ( isset( $bw['right'] ) && $bw['right'] !== '' )  $styles['border-right-width']  = $bw['right'] . $unit;
-            if ( isset( $bw['bottom'] ) && $bw['bottom'] !== '' ) $styles['border-bottom-width'] = $bw['bottom'] . $unit;
-            if ( isset( $bw['left'] ) && $bw['left'] !== '' )   $styles['border-left-width']   = $bw['left'] . $unit;
+            if ( ! empty( $attributes['borderColor'] ) ) {
+                $styles['border-color'] = $attributes['borderColor'];
+            }
+            if ( ! empty( $attributes['borderWidth'] ) ) {
+                $bw   = $attributes['borderWidth'];
+                $unit = $bw['unit'] ?? 'px';
+                if ( isset( $bw['top'] ) && $bw['top'] !== '' )    $styles['border-top-width']    = $bw['top'] . $unit;
+                if ( isset( $bw['right'] ) && $bw['right'] !== '' )  $styles['border-right-width']  = $bw['right'] . $unit;
+                if ( isset( $bw['bottom'] ) && $bw['bottom'] !== '' ) $styles['border-bottom-width'] = $bw['bottom'] . $unit;
+                if ( isset( $bw['left'] ) && $bw['left'] !== '' )   $styles['border-left-width']   = $bw['left'] . $unit;
+            }
         }
 
         // Border Radius
@@ -772,17 +772,17 @@ class Style_Generator {
 
         if ( ! empty( $attributes['borderTypeHover'] ) && $attributes['borderTypeHover'] !== 'none' ) {
             $hover_styles[] = "border-style: {$attributes['borderTypeHover']}";
-        }
-        if ( ! empty( $attributes['borderColorHover'] ) ) {
-            $hover_styles[] = "border-color: {$attributes['borderColorHover']}";
-        }
-        if ( ! empty( $attributes['borderWidthHover'] ) ) {
-            $bw   = $attributes['borderWidthHover'];
-            $unit = $bw['unit'] ?? 'px';
-            if ( isset( $bw['top'] ) && $bw['top'] !== '' )    $hover_styles[] = "border-top-width: {$bw['top']}{$unit}";
-            if ( isset( $bw['right'] ) && $bw['right'] !== '' )  $hover_styles[] = "border-right-width: {$bw['right']}{$unit}";
-            if ( isset( $bw['bottom'] ) && $bw['bottom'] !== '' ) $hover_styles[] = "border-bottom-width: {$bw['bottom']}{$unit}";
-            if ( isset( $bw['left'] ) && $bw['left'] !== '' )   $hover_styles[] = "border-left-width: {$bw['left']}{$unit}";
+            if ( ! empty( $attributes['borderColorHover'] ) ) {
+                $hover_styles[] = "border-color: {$attributes['borderColorHover']}";
+            }
+            if ( ! empty( $attributes['borderWidthHover'] ) ) {
+                $bw   = $attributes['borderWidthHover'];
+                $unit = $bw['unit'] ?? 'px';
+                if ( isset( $bw['top'] ) && $bw['top'] !== '' )    $hover_styles[] = "border-top-width: {$bw['top']}{$unit}";
+                if ( isset( $bw['right'] ) && $bw['right'] !== '' )  $hover_styles[] = "border-right-width: {$bw['right']}{$unit}";
+                if ( isset( $bw['bottom'] ) && $bw['bottom'] !== '' ) $hover_styles[] = "border-bottom-width: {$bw['bottom']}{$unit}";
+                if ( isset( $bw['left'] ) && $bw['left'] !== '' )   $hover_styles[] = "border-left-width: {$bw['left']}{$unit}";
+            }
         }
         if ( ! empty( $attributes['borderRadiusHover'] ) ) {
             $br   = $attributes['borderRadiusHover'];

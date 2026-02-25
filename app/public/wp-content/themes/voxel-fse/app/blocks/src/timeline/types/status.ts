@@ -138,6 +138,7 @@ export interface StatusPermissions {
 	can_moderate: boolean;
 	has_liked: boolean;
 	has_reposted: boolean;
+	can_pin_to_top?: boolean;
 }
 
 /**
@@ -178,6 +179,7 @@ export interface Status {
 	created_at: string;
 	edited_at: string | null;
 	is_pending: boolean;
+	is_pinned?: boolean;
 	private: boolean;
 	link?: string;
 

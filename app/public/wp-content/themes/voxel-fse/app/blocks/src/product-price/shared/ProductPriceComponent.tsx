@@ -67,6 +67,28 @@ function buildStyles(attributes: ProductPriceAttributes): Record<string, string>
 		styles['--vx-nostock-color'] = attributes.outOfStockColor;
 	}
 
+	// Strikethrough text typography (Elementor: price_typo_discount)
+	if (attributes.strikethroughTypography) {
+		if (attributes.strikethroughTypography.fontSize) {
+			styles['--vx-strike-font-size'] = attributes.strikethroughTypography.fontSize;
+		}
+		if (attributes.strikethroughTypography.fontWeight) {
+			styles['--vx-strike-font-weight'] = attributes.strikethroughTypography.fontWeight;
+		}
+		if (attributes.strikethroughTypography.fontFamily) {
+			styles['--vx-strike-font-family'] = attributes.strikethroughTypography.fontFamily;
+		}
+		if (attributes.strikethroughTypography.lineHeight) {
+			styles['--vx-strike-line-height'] = attributes.strikethroughTypography.lineHeight;
+		}
+		if (attributes.strikethroughTypography.letterSpacing) {
+			styles['--vx-strike-letter-spacing'] = attributes.strikethroughTypography.letterSpacing;
+		}
+		if (attributes.strikethroughTypography.textTransform) {
+			styles['--vx-strike-text-transform'] = attributes.strikethroughTypography.textTransform;
+		}
+	}
+
 	// Typography
 	if (attributes.typography) {
 		if (attributes.typography.fontSize) {
@@ -107,6 +129,7 @@ function buildVxConfig(
 		strikethroughWidthUnit: attributes.strikethroughWidthUnit,
 		outOfStockColor: attributes.outOfStockColor,
 		typography: attributes.typography,
+		strikethroughTypography: attributes.strikethroughTypography,
 		postId,
 	};
 }

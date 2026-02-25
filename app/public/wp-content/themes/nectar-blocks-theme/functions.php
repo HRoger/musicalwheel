@@ -11,7 +11,7 @@
  * Define Constants.
 */
 require_once( 'nectar-vars.php' );
-define( 'NB_THEME_VERSION', '2.5.3' );
+define( 'NB_THEME_VERSION', '2.5.4' );
 define( 'NECTAR_THEME_DIRECTORY', get_template_directory() );
 define( 'NECTAR_FRAMEWORK_DIRECTORY', get_template_directory_uri() . '/nectar/' );
 define( 'NECTAR_THEME_NAME', 'nectar-blocks' );
@@ -57,7 +57,7 @@ require_once NECTAR_THEME_DIRECTORY . '/includes/class-nectar-dynamic-fonts.php'
  * Load Kirki
  */
 require_once NECTAR_THEME_DIRECTORY . '/nectar/customizer/nectar-blocks-kirki-compatibility.php';
-require_once NECTAR_THEME_DIRECTORY . '/vendor/aristath/kirki/kirki.php';
+require_once NECTAR_THEME_DIRECTORY . '/vendor/kirki-framework/kirki/kirki.php';
 
 add_action( 'after_setup_theme', 'nectar_blocks_kirki_init', 10 );
 function nectar_blocks_kirki_init() {

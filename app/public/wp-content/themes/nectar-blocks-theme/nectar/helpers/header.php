@@ -757,7 +757,19 @@ if ( ! function_exists( 'nectar_essential_js' ) ) {
 			 var bodyW = body.clientWidth;
 
 			 if (winW > bodyW + 2) {
-				 body.setAttribute("style", "--scroll-bar-w: " + (winW - bodyW) + "px");
+				 var vwTestEl = document.createElement("div");
+				 vwTestEl.style.position = "absolute";
+				 vwTestEl.style.top = "-9999px";
+				 vwTestEl.style.width = "100vw";
+				 body.appendChild(vwTestEl);
+				 var vwWidth = vwTestEl.offsetWidth;
+				 body.removeChild(vwTestEl);
+
+				 if (vwWidth > bodyW + 2) {
+					 body.setAttribute("style", "--scroll-bar-w: " + (winW - bodyW) + "px");
+				 } else {
+					 body.setAttribute("style", "--scroll-bar-w: 0px");
+				 }
 			 } else {
 				 body.setAttribute("style", "--scroll-bar-w: 0px");
 			 }

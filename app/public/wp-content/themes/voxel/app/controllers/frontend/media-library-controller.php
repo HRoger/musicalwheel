@@ -18,7 +18,8 @@ class Media_Library_Controller extends \Voxel\Controllers\Base_Controller {
 
 			$author_id = absint( get_current_user_id() );
 			$offset = isset( $_GET['offset'] ) ? absint( $_GET['offset'] ) : 0;
-			$per_page = 9;
+			$per_page = absint( apply_filters( 'voxel/media-library/files-per-page', 9 ) );
+			$per_page = max( 1, $per_page );
 			$limit = $per_page + 1;
 
 			$query_order_by = 'ID DESC';

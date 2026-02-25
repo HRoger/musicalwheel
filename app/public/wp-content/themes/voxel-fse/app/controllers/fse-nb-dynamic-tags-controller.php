@@ -504,7 +504,9 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 				) ?? $content;
 
 			case 'linkUrl':
-				// href on <a> tags
+				// Replace the href on the existing <a> tag.
+				// NB's save creates <a class="nectar__link"> when link.href is set
+				// (our editor JS sets a placeholder when a dynamic tag is active).
 				return preg_replace(
 					'/(<a\b[^>]*)\bhref="[^"]*"/',
 					'$1href="' . esc_url( $resolved ) . '"',
@@ -698,10 +700,22 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			return $content;
 		}
 
-		// Replace href on the lightbox link <a>
-		$replaced = preg_replace(
-			'/(<a\b[^>]*class="[^"]*nectar-blocks-video-lightbox__link[^"]*"[^>]*)\bhref="[^"]*"/',
-			'$1href="' . esc_url( $url ) . '"',
+		if ( strpos( $content, 'nectar-blocks-video-lightbox__link' ) === false ) {
+			return $content;
+		}
+
+		// Replace href on the first <a> that has the lightbox class.
+		// Uses callback because NB may output href before or after class.
+		$replaced = preg_replace_callback(
+			'/<a\b([^>]*)>/',
+			function ( $match ) use ( $url ) {
+				$attrs = $match[1];
+				if ( strpos( $attrs, 'nectar-blocks-video-lightbox__link' ) === false ) {
+					return $match[0];
+				}
+				$attrs = preg_replace( '/\bhref="[^"]*"/', 'href="' . esc_url( $url ) . '"', $attrs, 1 );
+				return '<a' . $attrs . '>';
+			},
 			$content,
 			1
 		);
@@ -721,13 +735,22 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			return $content;
 		}
 
-		// Replace <a href> on the lightbox link
-		$content = preg_replace(
-			'/(<a\b[^>]*class="[^"]*nectar-blocks-video-lightbox__link[^"]*"[^>]*)\bhref="[^"]*"/',
-			'$1href="' . esc_url( $url ) . '"',
-			$content,
-			1
-		) ?? $content;
+		// Replace <a href> on the lightbox link (attribute-order-independent)
+		if ( strpos( $content, 'nectar-blocks-video-lightbox__link' ) !== false ) {
+			$content = preg_replace_callback(
+				'/<a\b([^>]*)>/',
+				function ( $match ) use ( $url ) {
+					$attrs = $match[1];
+					if ( strpos( $attrs, 'nectar-blocks-video-lightbox__link' ) === false ) {
+						return $match[0];
+					}
+					$attrs = preg_replace( '/\bhref="[^"]*"/', 'href="' . esc_url( $url ) . '"', $attrs, 1 );
+					return '<a' . $attrs . '>';
+				},
+				$content,
+				1
+			) ?? $content;
+		}
 
 		// Replace <source src> inside <video>
 		$content = $this->replace_source_src( $content, $url );
@@ -748,10 +771,18 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 		}
 
 		// Try Video Lightbox: replace <img src> with the lightbox image class
+		// Uses callback to be attribute-order-independent
 		if ( strpos( $content, 'nectar-blocks-video-lightbox__image' ) !== false ) {
-			$replaced = preg_replace(
-				'/(<img\b[^>]*class="[^"]*nectar-blocks-video-lightbox__image[^"]*"[^>]*)\bsrc="[^"]*"/',
-				'$1src="' . esc_url( $url ) . '"',
+			$replaced = preg_replace_callback(
+				'/<img\b([^>]*)\/?>/',
+				function ( $match ) use ( $url ) {
+					$attrs = $match[1];
+					if ( strpos( $attrs, 'nectar-blocks-video-lightbox__image' ) === false ) {
+						return $match[0];
+					}
+					$attrs = preg_replace( '/\bsrc="[^"]*"/', 'src="' . esc_url( $url ) . '"', $attrs, 1 );
+					return '<img' . $attrs . '>';
+				},
 				$content,
 				1
 			);

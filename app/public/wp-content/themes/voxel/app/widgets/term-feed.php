@@ -613,7 +613,7 @@ class Term_Feed extends Base_Widget {
 		$template_id = $this->get_settings( 'ts_card_template' );
 
 		if ( $this->get_settings('ts_source') === 'manual' ) {
-			$term_ids = array_column( (array) $this->get_settings( 'ts_manual_terms' ), 'term_id' );
+			$term_ids = array_map( 'intval', array_column( (array) $this->get_settings( 'ts_manual_terms' ), 'term_id' ) );
 			if ( empty( $term_ids ) ) {
 				return;
 			}
@@ -696,7 +696,7 @@ class Term_Feed extends Base_Widget {
 				LIMIT {$query_limit}
 			SQL;
 			// dump_sql($sql);
-			$term_ids = $wpdb->get_col( $sql );
+			$term_ids = array_map( 'intval', $wpdb->get_col( $sql ) );
 			if ( empty( $term_ids ) ) {
 				return;
 			}

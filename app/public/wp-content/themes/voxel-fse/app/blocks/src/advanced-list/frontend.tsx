@@ -613,7 +613,7 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		iconContainerBackground: config.iconContainer?.background || '',
 		iconContainerSize: config.iconContainer?.size || 36,
 		iconContainerSizeUnit: config.iconContainer?.sizeUnit || 'px',
-		iconContainerBorderType: config.iconContainer?.borderType || 'solid',
+		iconContainerBorderType: config.iconContainer?.borderType ?? 'solid',
 		iconContainerBorderWidth: config.iconContainer?.borderWidth || DEFAULT_BOX_VALUES,
 		iconContainerBorderWidthUnit: config.iconContainer?.borderWidthUnit || 'px',
 		iconContainerBorderColor: config.iconContainer?.borderColor || '',

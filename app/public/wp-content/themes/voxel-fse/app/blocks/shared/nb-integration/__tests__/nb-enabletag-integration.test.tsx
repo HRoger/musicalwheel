@@ -15,8 +15,8 @@
  * @package VoxelFSE
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render } from '@testing-library/react';
 import {
 	NB_TARGET_BLOCK_NAMES,
 	NB_ROW_SETTINGS_BLOCK_NAMES,
@@ -26,7 +26,6 @@ import {
 	NB_DYNAMIC_TAG_FIELDS,
 	getNBBlockConfig,
 	nectarBlocksRegistry,
-	type NBFieldTarget,
 	type NBBlockConfig,
 } from '../nectarBlocksConfig';
 
@@ -721,6 +720,81 @@ describe('Block-Specific Field Configurations', () => {
 			const previewFields = config.fields.filter((f) => f.parentLabelText === 'Preview');
 			expect(previewFields).toHaveLength(2);
 			expect(previewFields.map((f) => f.fieldKey).sort()).toEqual(['previewImage', 'previewVideo']);
+		});
+	});
+
+	describe('Blocks with linkUrl field (shared Link control)', () => {
+		const blocksWithLinkUrl = [
+			'nectar-blocks/image',
+			'nectar-blocks/icon',
+			'nectar-blocks/button',
+			'nectar-blocks/milestone',
+			'nectar-blocks/image-grid',
+			'nectar-blocks/scrolling-marquee',
+		];
+
+		it.each(blocksWithLinkUrl)(
+			'%s should have a linkUrl field',
+			(blockName) => {
+				const config = getNBBlockConfig(blockName);
+				expect(config).toBeDefined();
+				const linkField = config!.fields.find((f) => f.fieldKey === 'linkUrl');
+				expect(linkField).toBeDefined();
+				expect(linkField!.labelText).toBe('URL');
+				expect(linkField!.tab).toBe('layout');
+				expect(linkField!.type).toBe('url');
+				expect(linkField!.placement).toBeUndefined(); // inline default
+			},
+		);
+
+		it('blocks without shared Link control should NOT have linkUrl', () => {
+			const noLinkBlocks = [
+				'nectar-blocks/accordion',
+				'nectar-blocks/carousel',
+				'nectar-blocks/divider',
+				'nectar-blocks/flex-box',
+				'nectar-blocks/icon-list',
+				'nectar-blocks/post-content',
+				'nectar-blocks/post-grid',
+				'nectar-blocks/row',
+				'nectar-blocks/tabs',
+				'nectar-blocks/taxonomy-grid',
+				'nectar-blocks/taxonomy-terms',
+				'nectar-blocks/testimonial',
+				'nectar-blocks/text',
+			];
+			for (const blockName of noLinkBlocks) {
+				const config = getNBBlockConfig(blockName);
+				expect(config).toBeDefined();
+				const linkField = config!.fields.find((f) => f.fieldKey === 'linkUrl');
+				expect(linkField).toBeUndefined();
+			}
+		});
+	});
+
+	describe('nectar-blocks/icon (2 fields)', () => {
+		const config = getNBBlockConfig('nectar-blocks/icon')!;
+
+		it('should have exactly 2 fields', () => {
+			expect(config.fields).toHaveLength(2);
+		});
+
+		it('linkUrl should be first, zIndex second', () => {
+			expect(config.fields[0].fieldKey).toBe('linkUrl');
+			expect(config.fields[1].fieldKey).toBe('zIndex');
+		});
+	});
+
+	describe('nectar-blocks/button (2 fields)', () => {
+		const config = getNBBlockConfig('nectar-blocks/button')!;
+
+		it('should have exactly 2 fields', () => {
+			expect(config.fields).toHaveLength(2);
+		});
+
+		it('linkUrl should be first, zIndex second', () => {
+			expect(config.fields[0].fieldKey).toBe('linkUrl');
+			expect(config.fields[1].fieldKey).toBe('zIndex');
 		});
 	});
 

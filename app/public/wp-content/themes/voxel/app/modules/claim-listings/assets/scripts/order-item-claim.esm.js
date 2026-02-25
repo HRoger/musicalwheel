@@ -4,12 +4,12 @@ export default {
 			<div v-if="data.status === 'completed'" class="order-event-icon vx-green">
 				<icon-checkmark/>
 			</div>
-			<div v-else class="order-event-icon vx-blue">
+			<div v-else-if="data.status === 'canceled'" class="order-event-icon vx-red">
 				<icon-info/>
 			</div>
 			<b v-if="data.status === 'completed'">{{ data.l10n.claim_successful }}</b>
 			<b v-else-if="data.status === 'canceled'">{{ data.l10n.claim_declined }}</b>
-			<b v-else>{{ data.l10n.claim_submitted }}</b>
+			
 			<div class="further-actions">
 				<a :href="data.listing.link" target="_blank" class="ts-btn ts-btn-1">
 					{{ data.l10n.view_listing }}

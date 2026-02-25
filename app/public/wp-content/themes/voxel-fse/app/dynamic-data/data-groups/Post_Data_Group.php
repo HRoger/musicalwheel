@@ -122,6 +122,16 @@ class Post_Data_Group extends Base_Data_Group {
 	 * @return string Resolved value.
 	 */
 	protected function resolve_voxel_field( string $field_key, array $sub_path ): string {
+		// Try resolving through Voxel's field API for complex fields (e.g. product field addons).
+		// This handles nested property paths like @post(product.addon_key.price)
+		// Evidence: themes/voxel/app/post-types/fields/product-field/exports.php:109-168
+		if ( count( $sub_path ) >= 2 && class_exists( '\\Voxel\\Post' ) ) {
+			$result = $this->resolve_product_field_addon( $field_key, $sub_path );
+			if ( $result !== null ) {
+				return $result;
+			}
+		}
+
 		$meta_value = get_post_meta( $this->post_id, $field_key, true );
 
 		if ( $meta_value === '' || $meta_value === false ) {
@@ -170,6 +180,67 @@ class Post_Data_Group extends Base_Data_Group {
 			default:
 				// No sub-property — return raw meta value as string
 				return (string) $meta_value;
+		}
+	}
+
+	/**
+	 * Resolve product field addon properties via Voxel's API.
+	 *
+	 * Handles paths like: @post(product_field.addon_key.property)
+	 * where property is one of: label, price, min, max
+	 *
+	 * Evidence: themes/voxel/app/post-types/fields/product-field/exports.php:109-168
+	 *
+	 * @param string $field_key The product field key.
+	 * @param array  $sub_path  Remaining path: ['addon_key', 'property'].
+	 * @return string|null Resolved value, or null if not a product field addon.
+	 */
+	protected function resolve_product_field_addon( string $field_key, array $sub_path ): ?string {
+		try {
+			$post = \Voxel\Post::get( $this->post_id );
+			if ( ! $post ) {
+				return null;
+			}
+
+			$field = $post->get_field( $field_key );
+			if ( ! ( $field instanceof \Voxel\Post_Types\Fields\Product_Field ) ) {
+				return null;
+			}
+
+			$addon_key = $sub_path[0];
+			$property  = strtolower( trim( (string) ( $sub_path[1] ?? '' ) ) );
+
+			$addons_field = $field->get_product_field( 'addons' );
+			if ( ! $addons_field ) {
+				return '';
+			}
+
+			$addon = $addons_field->get_addon( $addon_key );
+			if ( ! $addon || $addon->get_type() !== 'numeric' || ! $addon->is_active() ) {
+				return '';
+			}
+
+			if ( $property === 'label' ) {
+				return (string) $addon->get_label();
+			}
+
+			$value = $addon->get_value();
+			if ( ! is_array( $value ) ) {
+				return '';
+			}
+
+			switch ( $property ) {
+				case 'price':
+					return (string) ( $value['price'] ?? '' );
+				case 'min':
+					return (string) ( $value['min'] ?? '' );
+				case 'max':
+					return (string) ( $value['max'] ?? '' );
+				default:
+					return '';
+			}
+		} catch ( \Throwable $e ) {
+			return null;
 		}
 	}
 

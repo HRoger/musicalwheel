@@ -90,6 +90,20 @@ class Membership_Data_Group extends \Voxel\Dynamic_Data\Data_Groups\Base_Data_Gr
 							return '';
 						}
 					} ),
+					'current_period_start' => Tag::Date('Current period start')->render( function() {
+						if ( $this->membership->get_type() === 'order' ) {
+							return $this->membership->get_current_period_start() ?: '';
+						} else {
+							return '';
+						}
+					} ),
+					'current_period_end' => Tag::Date('Current period end')->render( function() {
+						if ( $this->membership->get_type() === 'order' ) {
+							return $this->membership->get_current_period_end() ?: '';
+						} else {
+							return '';
+						}
+					} ),
 				];
 			} ),
 		];

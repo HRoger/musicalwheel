@@ -263,6 +263,10 @@
 			"type": "number",
 			"default": 16
 		},
+		"stepperInputValueColor": {
+			"type": "string",
+			"default": ""
+		},
 		"stepperButtonIconColor": {
 			"type": "string",
 			"default": ""

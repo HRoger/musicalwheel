@@ -55,6 +55,7 @@ function createSaveFn(includePlaceholder: boolean) {
 			strikethroughWidthUnit: attributes.strikethroughWidthUnit,
 			outOfStockColor: attributes.outOfStockColor,
 			typography: attributes.typography,
+			strikethroughTypography: attributes.strikethroughTypography,
 			// Note: postId is not available in save context
 			// It will be determined from page context on frontend
 		};
@@ -83,6 +84,12 @@ function createSaveFn(includePlaceholder: boolean) {
 		}
 		if (attributes.typography?.fontWeight) {
 			styleVars['--vx-price-font-weight'] = attributes.typography.fontWeight;
+		}
+		if (attributes.strikethroughTypography?.fontSize) {
+			styleVars['--vx-strike-font-size'] = attributes.strikethroughTypography.fontSize;
+		}
+		if (attributes.strikethroughTypography?.fontWeight) {
+			styleVars['--vx-strike-font-weight'] = attributes.strikethroughTypography.fontWeight;
 		}
 
 		// Merge advancedProps.styles with component styleVars

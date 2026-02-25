@@ -594,6 +594,10 @@ export interface OrderListItem {
 	subtotal: number | null;
 	total: number | null;
 	currency: string;
+	product_type?: string | null;
+	first_item_label?: string | null;
+	first_item_type?: string | null;
+	first_item_claim_title?: string | null;
 }
 
 /**

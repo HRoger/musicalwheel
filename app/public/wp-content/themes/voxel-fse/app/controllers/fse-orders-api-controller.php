@@ -260,10 +260,15 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 			$orders = \Voxel\Order::query( $args );
 			$total = \Voxel\Order::count( $args );
 
+			// Batch-query first item summaries for personalized titles
+			$order_ids = array_map( function( $o ) { return $o->get_id(); }, $orders );
+			$first_item_summaries = $this->get_orders_first_item_summary( $order_ids );
+
 			// Format orders for response
 			$formatted_orders = [];
 			foreach ( $orders as $order ) {
-				$formatted_orders[] = $this->format_order_list_item( $order );
+				$summary = $first_item_summaries[ $order->get_id() ] ?? null;
+				$formatted_orders[] = $this->format_order_list_item( $order, $summary );
 			}
 
 			return rest_ensure_response( [
@@ -669,30 +674,91 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 	 * @param \Voxel\Order $order Order object.
 	 * @return array
 	 */
-	protected function format_order_list_item( $order ): array {
+	protected function format_order_list_item( $order, ?array $summary = null ): array {
 		$customer = $order->get_customer();
 		$vendor = $order->get_vendor();
 
+		// Resolve claimed listing title for claim_request orders
+		$first_item_claim_title = null;
+		if ( isset( $summary['product_type'], $summary['claim_post_id'] ) && $summary['product_type'] === 'voxel:claim_request' && $summary['claim_post_id'] ) {
+			$post = \Voxel\Post::get( $summary['claim_post_id'] );
+			if ( $post ) {
+				$first_item_claim_title = $post->get_display_name();
+			}
+		}
+
 		return [
-			'id'              => $order->get_id(),
-			'status'          => $order->get_status(),
-			'shipping_status' => $order->get_shipping_status(),
-			'created_at'      => $order->get_created_at()->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
-			'item_count'      => count( $order->get_items() ),
-			'customer'        => [
+			'id'                        => $order->get_id(),
+			'status'                    => $order->get_status(),
+			'shipping_status'           => $order->get_shipping_status(),
+			'created_at'                => $order->get_created_at()->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+			'item_count'                => count( $order->get_items() ),
+			'customer'                  => [
 				'id'     => $customer ? $customer->get_id() : null,
 				'name'   => $customer ? $customer->get_display_name() : __( 'Guest', 'voxel-fse' ),
 				'avatar' => $customer ? $customer->get_avatar_markup() : '',
 			],
-			'vendor'          => [
+			'vendor'                    => [
 				'id'     => $vendor ? $vendor->get_id() : null,
 				'name'   => $vendor ? $vendor->get_display_name() : __( 'Platform', 'voxel-fse' ),
 				'avatar' => $vendor ? $vendor->get_avatar_markup() : '',
 			],
-			'subtotal'        => $order->get_subtotal(),
-			'total'           => $order->get_total(),
-			'currency'        => $order->get_currency(),
+			'subtotal'                  => $order->get_subtotal(),
+			'total'                     => $order->get_total(),
+			'currency'                  => $order->get_currency(),
+			'product_type'              => $summary['product_type'] ?? null,
+			'first_item_label'          => $summary['product_label'] ?? null,
+			'first_item_type'           => $summary['item_type'] ?? null,
+			'first_item_claim_title'    => $first_item_claim_title,
 		];
+	}
+
+	/**
+	 * Get first item summary for each order (batch query).
+	 *
+	 * Mirrors Voxel parent's orders-controller.php:get_orders_first_item_summary().
+	 * Returns product_type, item_type, booking_status, claim_post_id, and product_label
+	 * for the first item of each order in a single SQL query.
+	 *
+	 * @param int[] $order_ids Array of order IDs.
+	 * @return array<int, array{product_type: string, item_type: string|null, booking_status: string|null, booking_type: string|null, claim_post_id: int|null, product_label: string|null}>
+	 */
+	protected function get_orders_first_item_summary( array $order_ids ): array {
+		global $wpdb;
+		if ( empty( $order_ids ) ) {
+			return [];
+		}
+		$order_ids = array_map( 'absint', $order_ids );
+		$ids_list  = implode( ',', $order_ids );
+		$table     = $wpdb->prefix . 'vx_order_items';
+		$results   = $wpdb->get_results( <<<SQL
+			SELECT i.order_id, i.product_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.type' ) ) AS item_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking_status' ) ) AS booking_status,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking.type' ) ) AS booking_type,
+				CAST( JSON_UNQUOTE( JSON_EXTRACT( i.details, '$."voxel:claim_request".post_id' ) ) AS UNSIGNED ) AS claim_post_id,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.product.label' ) ) AS product_label
+			FROM {$table} i
+			INNER JOIN (
+				SELECT order_id, MIN(id) AS min_id
+				FROM {$table}
+				WHERE order_id IN ({$ids_list})
+				GROUP BY order_id
+			) first ON i.order_id = first.order_id AND i.id = first.min_id
+		SQL, ARRAY_A );
+
+		$out = [];
+		foreach ( (array) $results as $row ) {
+			$out[ (int) $row['order_id'] ] = [
+				'product_type'   => (string) $row['product_type'],
+				'item_type'      => isset( $row['item_type'] ) && $row['item_type'] !== '' ? (string) $row['item_type'] : null,
+				'booking_status' => isset( $row['booking_status'] ) && $row['booking_status'] !== '' ? (string) $row['booking_status'] : null,
+				'booking_type'   => isset( $row['booking_type'] ) && $row['booking_type'] !== '' ? (string) $row['booking_type'] : null,
+				'claim_post_id'  => isset( $row['claim_post_id'] ) && $row['claim_post_id'] ? (int) $row['claim_post_id'] : null,
+				'product_label'  => isset( $row['product_label'] ) && $row['product_label'] !== '' ? (string) $row['product_label'] : null,
+			];
+		}
+		return $out;
 	}
 
 	/**

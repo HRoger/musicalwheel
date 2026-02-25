@@ -250,6 +250,26 @@
 				"value": ""
 			}
 		},
+		"submitLabelDraft": {
+			"type": "string",
+			"default": ""
+		},
+		"submitLabelSubmittedForReview": {
+			"type": "string",
+			"default": ""
+		},
+		"submitLabelPublished": {
+			"type": "string",
+			"default": ""
+		},
+		"submitLabelChangesSubmittedForReview": {
+			"type": "string",
+			"default": ""
+		},
+		"submitLabelChangesApplied": {
+			"type": "string",
+			"default": ""
+		},
 		"__STYLE_TAB_ATTRIBUTES__": "============================================",
 		"styleTabOpenPanel": {
 			"type": "string",
