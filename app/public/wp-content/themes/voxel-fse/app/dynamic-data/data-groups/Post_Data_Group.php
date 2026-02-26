@@ -155,11 +155,24 @@ class Post_Data_Group extends Base_Data_Group {
 	 * @return string Resolved value.
 	 */
 	protected function resolve_voxel_field( string $field_key, array $sub_path ): string {
-		// Try resolving through Voxel's field API for complex fields (e.g. product field addons).
-		// This handles nested property paths like @post(product.addon_key.price)
+		// Try resolving through Voxel's field API for complex fields.
+
+		// 1. Product field addons: @post(product.addon_key.price)
 		// Evidence: themes/voxel/app/post-types/fields/product-field/exports.php:109-168
 		if ( count( $sub_path ) >= 2 && class_exists( '\\Voxel\\Post' ) ) {
 			$result = $this->resolve_product_field_addon( $field_key, $sub_path );
+			if ( $result !== null ) {
+				return $result;
+			}
+		}
+
+		// 2. Taxonomy field sub-properties: @post(amenities.icon), @post(amenities.label)
+		// In Voxel parent, taxonomy fields export as Object_List of Term objects.
+		// Each term exposes properties (icon, label, slug, color, etc.) via Term_Data_Group.
+		// Evidence: themes/voxel/app/post-types/fields/taxonomy-field/exports.php:14-24
+		// Evidence: themes/voxel/app/post-types/fields/taxonomy-field.php:239-251 (get_value_from_post)
+		if ( ! empty( $sub_path ) && class_exists( '\\Voxel\\Post' ) ) {
+			$result = $this->resolve_taxonomy_field( $field_key, $sub_path );
 			if ( $result !== null ) {
 				return $result;
 			}
@@ -272,6 +285,56 @@ class Post_Data_Group extends Base_Data_Group {
 				default:
 					return '';
 			}
+		} catch ( \Throwable $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * Resolve taxonomy field sub-properties via Voxel's field API.
+	 *
+	 * Handles paths like: @post(amenities.icon), @post(categories.label)
+	 * Taxonomy fields in Voxel store terms via WordPress taxonomy API (get_the_terms).
+	 * Each term has properties (icon, label, slug, color, etc.) exposed via Term_Data_Group.
+	 *
+	 * Returns the first term's sub-property value (matching Voxel's non-loop behavior).
+	 * In a loop context, the loop system iterates over all terms.
+	 *
+	 * Evidence: themes/voxel/app/post-types/fields/taxonomy-field/exports.php:14-24
+	 * Evidence: themes/voxel/app/post-types/fields/taxonomy-field.php:239-251
+	 *
+	 * @param string $field_key The taxonomy field key (e.g. "amenities").
+	 * @param array  $sub_path  Remaining path after the field key (e.g. ["icon"]).
+	 * @return string|null Resolved value, or null if not a taxonomy field.
+	 */
+	protected function resolve_taxonomy_field( string $field_key, array $sub_path ): ?string {
+		try {
+			$post = \Voxel\Post::get( $this->post_id );
+			if ( ! $post ) {
+				return null;
+			}
+
+			$field = $post->get_field( $field_key );
+			if ( ! ( $field instanceof \Voxel\Post_Types\Fields\Taxonomy_Field ) ) {
+				return null;
+			}
+
+			// Get terms assigned to this post for this taxonomy field
+			$taxonomy_key = $field->get_prop( 'taxonomy' );
+			if ( empty( $taxonomy_key ) ) {
+				return null;
+			}
+
+			$terms = get_the_terms( $this->post_id, $taxonomy_key );
+			if ( empty( $terms ) || is_wp_error( $terms ) ) {
+				return '';
+			}
+
+			// Use first term's sub-property (non-loop context)
+			$first_term = $terms[0];
+			$term_group = Term_Data_Group::get( $first_term->term_id, $first_term->taxonomy );
+			$result = $term_group->resolve_property( $sub_path );
+			return $result;
 		} catch ( \Throwable $e ) {
 			return null;
 		}

@@ -77,6 +77,17 @@ class REST_API {
 				]
 			);
 
+			// Get visibility rule definitions for the editor modal
+			register_rest_route(
+				$namespace,
+				'/dynamic-data/visibility-rules',
+				[
+					'methods'             => 'GET',
+					'callback'            => [ __CLASS__, 'get_visibility_rules' ],
+					'permission_callback' => [ __CLASS__, 'check_permission' ],
+				]
+			);
+
 			// Render dynamic tag expression
 			register_rest_route(
 				$namespace,
@@ -120,13 +131,14 @@ class REST_API {
 	 * @return \WP_REST_Response
 	 */
 	public static function get_data_groups( $request ) {
-		$context = $request->get_param( 'context' ) ?: 'post';
-		$group   = $request->get_param( 'group' );
-		$parent  = $request->get_param( 'parent' );
+		$context   = $request->get_param( 'context' ) ?: 'post';
+		$group     = $request->get_param( 'group' );
+		$parent    = $request->get_param( 'parent' );
+		$post_type = $request->get_param( 'post_type' );
 
 		// If requesting children of a specific group
 		if ( $group ) {
-			$children = self::get_group_children( $group, $parent );
+			$children = self::get_group_children( $group, $parent, $post_type );
 			return new \WP_REST_Response( $children, 200 );
 		}
 
@@ -220,11 +232,21 @@ class REST_API {
 	 * @param string $parent Parent path (e.g., 'post.author', 'author.profile').
 	 * @return array
 	 */
-	private static function get_group_children( $group, $parent = null ) {
+	private static function get_group_children( $group, $parent = null, $post_type = null ) {
 		// If parent is provided, parse the path to determine what children to return
 		if ( $parent ) {
 			$parts = explode( '.', $parent );
 			$last  = end( $parts );
+
+			// Try Voxel Exporter for post-type-specific field children
+			// e.g., parent=post.gallery, parent=post.location, parent=post.amenities
+			if ( $group === 'post' && $post_type && count( $parts ) >= 2 ) {
+				$field_path = array_slice( $parts, 1 ); // Remove 'post' prefix
+				$voxel_children = self::get_voxel_field_children( $post_type, $field_path );
+				if ( $voxel_children !== null ) {
+					return $voxel_children;
+				}
+			}
 
 			// Handle nested paths like "author.profile"
 			if ( $last === 'profile' ) {
@@ -539,7 +561,7 @@ class REST_API {
 		// Top-level group requests (no parent)
 		switch ( $group ) {
 			case 'post':
-				return self::get_post_exports();
+				return self::get_post_exports( $post_type );
 
 			case 'author':
 				return self::get_author_exports( null );
@@ -602,9 +624,22 @@ class REST_API {
 	/**
 	 * Get Post data exports (matching Voxel structure exactly)
 	 *
+	 * When $post_type is provided and Voxel's Exporter is available,
+	 * dynamically generates post-type-specific fields (Gallery, Amenities, etc.)
+	 *
+	 * @param string|null $post_type Voxel post type key (e.g., 'place', 'event').
 	 * @return array
 	 */
-	private static function get_post_exports() {
+	private static function get_post_exports( $post_type = null ) {
+		// Use Voxel's Exporter for post-type-specific fields when available
+		if ( $post_type && class_exists( '\\Voxel\\Dynamic_Data\\Exporter' ) ) {
+			$voxel_exports = self::get_voxel_post_exports( $post_type );
+			if ( ! empty( $voxel_exports ) ) {
+				return $voxel_exports;
+			}
+		}
+
+		// Fallback to static list (for environments without Voxel parent)
 		return [
 			// Basic post fields
 			[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
@@ -793,6 +828,168 @@ class REST_API {
 			[ 'key' => 'query_var', 'label' => 'Query variable', 'type' => 'method' ],
 			[ 'key' => 'math', 'label' => 'Math expression', 'type' => 'method' ],
 		];
+	}
+
+	/**
+	 * Get post-type-specific fields using Voxel's Exporter.
+	 *
+	 * Calls Voxel's Post_Data_Group::mock($post_type) which iterates all
+	 * registered fields for that post type and calls $field->dynamic_data()
+	 * on each. This gives us 1:1 parity with Voxel's Elementor dynamic tag tree.
+	 *
+	 * Evidence: themes/voxel/app/dynamic-data/exporter.php
+	 * Evidence: themes/voxel/app/dynamic-data/data-groups/post/post-data-group.php:145-157
+	 *
+	 * @param string $post_type Voxel post type key (e.g., 'place', 'event').
+	 * @return array Array of TagExport-compatible items.
+	 */
+	private static function get_voxel_post_exports( $post_type ) {
+		try {
+			$exporter = \Voxel\Dynamic_Data\Exporter::get();
+			$exporter->reset();
+			$exporter->add_group_by_key( 'post', $post_type );
+			$result = $exporter->export();
+
+			// Voxel's Exporter uses "post_type:{key}" as the group key, not just "post"
+			$group_key = 'post_type:' . $post_type;
+			$post_group = $result['groups'][ $group_key ] ?? $result['groups']['post'] ?? null;
+
+			if ( empty( $post_group ) || empty( $post_group['exports'] ) ) {
+				return [];
+			}
+
+			$exports = (array) $post_group['exports'];
+			$methods = (array) ( $post_group['methods'] ?? [] );
+
+			// Transform Voxel export format → our TagExport format
+			$items = [];
+			foreach ( $exports as $key => $export ) {
+				$export = (array) $export;
+
+				// Skip hidden fields
+				if ( ! empty( $export['hidden'] ) ) {
+					continue;
+				}
+
+				$item = [
+					'key'   => $key,
+					'label' => $export['label'] ?? ucfirst( str_replace( '_', ' ', $key ) ),
+					'type'  => $export['type'] ?? 'string',
+				];
+
+				// Fields with nested properties or subgroups get hasChildren
+				if ( ! empty( $export['exports'] ) || ! empty( $export['subgroup'] ) ) {
+					$item['hasChildren'] = true;
+					// Map object-list to object for UI display (tree handles both the same way)
+					if ( $item['type'] === 'object-list' ) {
+						$item['type'] = 'object';
+					}
+				}
+
+				$items[] = $item;
+			}
+
+			// Append methods (e.g., Post meta)
+			foreach ( $methods as $method_key => $method_config ) {
+				$method_config = (array) $method_config;
+				$items[] = [
+					'key'   => $method_key,
+					'label' => $method_config['label'] ?? ucfirst( str_replace( '_', ' ', $method_key ) ),
+					'type'  => 'method',
+				];
+			}
+
+			return $items;
+		} catch ( \Throwable $e ) {
+			// If Voxel Exporter fails, return empty (caller falls back to static)
+			return [];
+		}
+	}
+
+	/**
+	 * Get children of a post-type-specific field using Voxel's Exporter.
+	 *
+	 * When user expands a field like "Gallery" or "Location" in the tree,
+	 * this re-runs the Exporter and drills into the specific field's exports.
+	 *
+	 * @param string $post_type  Voxel post type key.
+	 * @param array  $field_path Path segments after 'post' (e.g., ['gallery'] or ['location', 'distance']).
+	 * @return array|null Array of TagExport items, or null if not found (falls through to hardcoded handlers).
+	 */
+	private static function get_voxel_field_children( $post_type, $field_path ) {
+		if ( ! class_exists( '\\Voxel\\Dynamic_Data\\Exporter' ) ) {
+			return null;
+		}
+
+		try {
+			$exporter = \Voxel\Dynamic_Data\Exporter::get();
+			$exporter->reset();
+			$exporter->add_group_by_key( 'post', $post_type );
+			$result = $exporter->export();
+
+			// Voxel uses "post_type:{key}" as the group key
+			$group_key = 'post_type:' . $post_type;
+			$post_group = $result['groups'][ $group_key ] ?? $result['groups']['post'] ?? null;
+
+			if ( empty( $post_group ) || empty( $post_group['exports'] ) ) {
+				return null;
+			}
+
+			// Navigate into the field tree following the path
+			$current = (array) $post_group['exports'];
+			foreach ( $field_path as $segment ) {
+				if ( ! isset( $current[ $segment ] ) ) {
+					// Field not found in Voxel exports — return null to fall through
+					return null;
+				}
+				$field = (array) $current[ $segment ];
+
+				// Check if this field has a subgroup (e.g., taxonomy fields reference Term_Data_Group)
+				if ( ! empty( $field['subgroup'] ) ) {
+					$subgroup_key = $field['subgroup']['key'] ?? '';
+					// Look for the subgroup in the exported groups
+					if ( ! empty( $result['groups'][ $subgroup_key ]['exports'] ) ) {
+						$current = (array) $result['groups'][ $subgroup_key ]['exports'];
+						continue;
+					}
+				}
+
+				if ( ! empty( $field['exports'] ) ) {
+					$current = (array) $field['exports'];
+				} else {
+					// Leaf node with no children
+					return [];
+				}
+			}
+
+			// Transform the current level's exports to TagExport format
+			$items = [];
+			foreach ( $current as $key => $export ) {
+				$export = (array) $export;
+				if ( ! empty( $export['hidden'] ) ) {
+					continue;
+				}
+
+				$item = [
+					'key'   => $key,
+					'label' => $export['label'] ?? ucfirst( str_replace( '_', ' ', $key ) ),
+					'type'  => $export['type'] ?? 'string',
+				];
+
+				if ( ! empty( $export['exports'] ) || ! empty( $export['subgroup'] ) ) {
+					$item['hasChildren'] = true;
+					if ( $item['type'] === 'object-list' ) {
+						$item['type'] = 'object';
+					}
+				}
+
+				$items[] = $item;
+			}
+
+			return $items;
+		} catch ( \Throwable $e ) {
+			return null;
+		}
 	}
 
 	/**
@@ -1167,6 +1364,37 @@ class REST_API {
 		];
 
 		return new \WP_REST_Response( $modifiers, 200 );
+	}
+
+	/**
+	 * Get visibility rule definitions for the editor modal.
+	 *
+	 * Calls Voxel's Config::get_visibility_rules() and returns each rule's
+	 * editor config (type, label, arguments with choices).
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public static function get_visibility_rules( $request ) {
+		$rules_registry = \Voxel\Dynamic_Data\Config::get_visibility_rules();
+		$rules = [];
+
+		foreach ( $rules_registry as $type => $class ) {
+			if ( ! class_exists( $class ) ) {
+				continue;
+			}
+
+			try {
+				$rule = new $class();
+				$config = $rule->get_editor_config();
+				$rules[] = $config;
+			} catch ( \Throwable $e ) {
+				// Skip rules that fail to instantiate (e.g., missing dependencies)
+				continue;
+			}
+		}
+
+		return new \WP_REST_Response( $rules, 200 );
 	}
 
 	/**

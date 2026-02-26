@@ -37,6 +37,7 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 export interface FieldPopupProps {
 	/** Whether popup is open */
@@ -91,6 +92,11 @@ export function FieldPopup({
 	className = '',
 	popupStyle,
 }: FieldPopupProps) {
+	// Detect Gutenberg device preview (desktop/tablet/mobile)
+	// Returns 'desktop' on frontend where wp.data is unavailable
+	const deviceType = useDeviceType();
+	const isMobilePreview = deviceType === 'mobile' || deviceType === 'tablet';
+
 	const popupRef = useRef<HTMLDivElement>(null);
 	const popupBoxRef = useRef<HTMLDivElement>(null);
 	// Initialize with position:absolute to prevent layout flash before reposition() runs
@@ -106,6 +112,9 @@ export function FieldPopup({
 	// POSITIONING LOGIC (from Voxel.mixins.popup)
 	// =====================================================
 	const reposition = useCallback((forceSync = false) => {
+		// Skip positioning in mobile/tablet preview — CSS handles fixed bottom-sheet layout
+		if (isMobilePreview) return;
+
 		if (!popupBoxRef.current || !target.current || !popupRef.current) {
 			return;
 		}
@@ -224,7 +233,7 @@ export function FieldPopup({
 		} else {
 			requestAnimationFrame(() => setStyles(newStyles));
 		}
-	}, [target]);
+	}, [target, isMobilePreview]);
 
 	// EXACT Voxel: Handle backdrop clicks to close popup (blurable mixin)
 	// Evidence: themes/voxel/assets/dist/commons.js (Voxel.mixins.blurable)
@@ -364,10 +373,18 @@ export function FieldPopup({
 		</svg>
 	);
 
-	// Portal target: always use document.body
-	// In editor: React runs in parent frame, portal goes to parent body
-	// On frontend: portal goes to frontend body (standard Voxel behavior)
-	const portalTarget = document.body;
+	// Portal target selection:
+	// - Desktop editor: parent frame body (popup needs iframe offset calculation)
+	// - Mobile/tablet preview: editor iframe body (popup contained within narrow viewport,
+	//   Voxel's native @media (max-width:1024px) CSS applies naturally for bottom-sheet layout)
+	// - Frontend: document.body (standard Voxel behavior)
+	const editorIframeForPortal = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+	const portalTarget = (isMobilePreview && editorIframeForPortal?.contentDocument?.body)
+		? editorIframeForPortal.contentDocument.body
+		: document.body;
+
+	// In mobile/tablet preview, skip inline positioning — CSS handles fixed bottom-sheet layout
+	const effectiveStyles: React.CSSProperties = isMobilePreview ? {} : styles;
 
 	// Render popup via React Portal
 	// EXACT Voxel HTML structure from themes/voxel/templates/components/popup.php
@@ -375,14 +392,15 @@ export function FieldPopup({
 	// CRITICAL: Size classes (lg-width, md-height, xl-width, xl-height) go on outer vx-popup wrapper
 	return createPortal(
 		<div className={`elementor vx-popup ${className}`.trim()}>
-			{/* Editor: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
-			{isEditor && (
+			{/* Editor desktop: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
+			{/* Mobile/tablet preview: allow backdrop for authentic bottom-sheet look */}
+			{isEditor && !isMobilePreview && (
 				<style>{`.vx-popup .ts-popup-root > div::after { pointer-events: none !important; }`}</style>
 			)}
 			<div className="ts-popup-root elementor-element">
 				<div
 					className="ts-form elementor-element"
-					style={styles}
+					style={effectiveStyles}
 					ref={popupRef}
 				>
 					<div className="ts-field-popup-container">

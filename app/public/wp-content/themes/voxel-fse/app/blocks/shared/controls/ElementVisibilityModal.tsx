@@ -7,12 +7,21 @@
  * Based on: voxel/templates/backend/dynamic-data/mode-edit-visibility/edit-visibility.php
  * Pattern from: shared/dynamic-tags/DynamicTagBuilder/index.tsx
  *
+ * Rule definitions (condition list + argument fields) are fetched dynamically from the
+ * REST API (/voxel-fse/v1/dynamic-data/visibility-rules) which calls Voxel's
+ * Config::get_visibility_rules() -> get_editor_config() for each rule.
+ * This ensures we always show the same conditions and fields as Voxel's Elementor editor,
+ * including module-specific rules (e.g., listing plans only when paid-listings is active).
+ *
  * @package VoxelFSE
  */
 
 // @ts-nocheck - WordPress types incomplete
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import apiFetch from '@wordpress/api-fetch';
+import { useTagAutocomplete } from '@shared/dynamic-tags/DynamicTagBuilder/useTagAutocomplete';
+import type { TagSuggestion } from '@shared/dynamic-tags/DynamicTagBuilder/useTagAutocomplete';
 
 // Simple UUID generator
 const generateRuleId = (): string => {
@@ -30,10 +39,15 @@ export interface VisibilityRule {
 	arguments?: string[];
 	/** Legacy operator field (kept for non-dtag rules) */
 	operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'empty' | 'not_empty';
-	/** For non-dtag rules: the comparison value */
+	/** For non-dtag rules: the comparison value (legacy, still supported) */
 	value?: string;
 	/** Group index for OR logic between groups (rules within same group are AND'd) */
 	groupIndex?: number;
+	/**
+	 * Dynamic argument values stored by key (e.g., author_id, taxonomy, term_id, page_id, post_type).
+	 * Matches Voxel's rule structure where args are keyed by name from define_args().
+	 */
+	ruleArgs?: Record<string, string>;
 }
 
 interface ElementVisibilityModalProps {
@@ -43,43 +57,25 @@ interface ElementVisibilityModalProps {
 	onSave: (rules: VisibilityRule[]) => void;
 }
 
-// Voxel's condition options from vx-dynamic-data
-export const CONDITION_OPTIONS = [
-	{ value: '', label: __('Select condition', 'voxel-fse') },
-	{ value: 'dtag', label: __('Dynamic tag', 'voxel-fse') },
-	{ value: 'user:logged_in', label: __('User is logged in', 'voxel-fse') },
-	{ value: 'user:logged_out', label: __('User is logged out', 'voxel-fse') },
-	{ value: 'user:plan', label: __('User membership plan is', 'voxel-fse') },
-	{ value: 'user:role', label: __('User role is', 'voxel-fse') },
-	{ value: 'user:is_author', label: __('User is author of current post', 'voxel-fse') },
-	{ value: 'user:can_create_post', label: __('User can create new post', 'voxel-fse') },
-	{ value: 'user:can_edit_post', label: __('User can edit current post', 'voxel-fse') },
-	{ value: 'user:is_verified', label: __('User is verified', 'voxel-fse') },
-	{ value: 'user:is_vendor', label: __('User is a Stripe Connect vendor', 'voxel-fse') },
-	{ value: 'user:has_bought_product', label: __('User has bought product', 'voxel-fse') },
-	{ value: 'user:has_bought_product_type', label: __('User has bought product type', 'voxel-fse') },
-	{ value: 'user:is_customer_of_author', label: __('User is customer of author', 'voxel-fse') },
-	{ value: 'user:follows_post', label: __('User follows post', 'voxel-fse') },
-	{ value: 'user:follows_author', label: __('User follows author', 'voxel-fse') },
-	{ value: 'author:plan', label: __('Author membership plan is', 'voxel-fse') },
-	{ value: 'author:role', label: __('Author role is', 'voxel-fse') },
-	{ value: 'author:is_verified', label: __('Author is verified', 'voxel-fse') },
-	{ value: 'author:is_vendor', label: __('Author is a Stripe Connect vendor', 'voxel-fse') },
-	{ value: 'template:is_page', label: __('Is page', 'voxel-fse') },
-	{ value: 'template:is_child_of_page', label: __('Is child of page', 'voxel-fse') },
-	{ value: 'template:is_single_post', label: __('Is single post', 'voxel-fse') },
-	{ value: 'template:is_post_type_archive', label: __('Is post type archive', 'voxel-fse') },
-	{ value: 'template:is_author', label: __('Is author profile', 'voxel-fse') },
-	{ value: 'template:is_single_term', label: __('Is single term', 'voxel-fse') },
-	{ value: 'template:is_homepage', label: __('Is homepage', 'voxel-fse') },
-	{ value: 'template:is_404', label: __('Is 404 page', 'voxel-fse') },
-	{ value: 'post:is_verified', label: __('Post is verified', 'voxel-fse') },
-	{ value: 'product:is_available', label: __('Product is available', 'voxel-fse') },
-	{ value: 'product_type:is', label: __('Product type is', 'voxel-fse') },
-	{ value: 'listing:plan', label: __('Listing plan is', 'voxel-fse') },
-	{ value: 'user:has_listing_plan', label: __('User has bought listing plan', 'voxel-fse') },
-	{ value: 'author:has_listing_plan', label: __('Author has bought listing plan', 'voxel-fse') },
-];
+/**
+ * Rule definition from the REST API (matches Voxel's get_editor_config() output).
+ * Each rule has a type, label, and an object of argument definitions.
+ */
+interface RuleArgDef {
+	type: 'select' | 'text' | 'hidden';
+	label: string;
+	choices?: Record<string, string>;
+	description?: string;
+	placeholder?: string;
+	value?: unknown;
+	'v-if'?: string;
+}
+
+interface RuleDefinition {
+	type: string;
+	label: string;
+	arguments: Record<string, RuleArgDef>;
+}
 
 /**
  * Compare operators for dtag rules.
@@ -115,109 +111,48 @@ const COMPARE_NEEDS_VALUE = new Set([
 	'does_not_contain',
 ]);
 
-// Conditions that require a value field (non-dtag)
-type ValueType = 'membership_plan' | 'role' | 'post_type' | 'page' | 'product_type' | 'listing_plan' | 'text';
+/** Module-level cache for fetched rule definitions */
+let _cachedRuleDefinitions: RuleDefinition[] | null = null;
 
-const CONDITIONS_WITH_VALUES: Record<string, ValueType> = {
-	'user:plan': 'membership_plan',
-	'user:role': 'role',
-	'user:can_create_post': 'post_type',
-	'user:has_bought_product_type': 'product_type',
-	'author:plan': 'membership_plan',
-	'author:role': 'role',
-	'template:is_page': 'page',
-	'template:is_child_of_page': 'page',
-	'template:is_single_post': 'post_type',
-	'template:is_post_type_archive': 'post_type',
-	'template:is_single_term': 'text',
-	'product_type:is': 'product_type',
-	'listing:plan': 'listing_plan',
-	'user:has_listing_plan': 'listing_plan',
-	'author:has_listing_plan': 'listing_plan',
-};
+/**
+ * Fetch visibility rule definitions from the REST API.
+ * Caches the result so subsequent opens don't re-fetch.
+ */
+async function fetchRuleDefinitions(): Promise<RuleDefinition[]> {
+	if (_cachedRuleDefinitions) {
+		return _cachedRuleDefinitions;
+	}
 
-// Helper to check if a condition requires a value
-const conditionRequiresValue = (filterKey: string): boolean => {
-	return filterKey in CONDITIONS_WITH_VALUES;
-};
+	try {
+		const data = await apiFetch<RuleDefinition[]>({
+			path: '/voxel-fse/v1/dynamic-data/visibility-rules',
+		});
 
-// Get value options based on value type
-interface ValueOption {
-	value: string;
-	label: string;
+		_cachedRuleDefinitions = Array.isArray(data) ? data : [];
+		return _cachedRuleDefinitions;
+	} catch {
+		// Fallback: return empty, conditions dropdown will be empty
+		return [];
+	}
 }
 
-const getValueOptions = (valueType: ValueType): ValueOption[] => {
-	const Voxel = (window as any).Voxel;
-	const voxelConfig = Voxel?.config || {};
+/**
+ * Evaluate a v-if condition string from Voxel's rule arguments.
+ * Voxel uses Vue-style conditions like: rule.post_type === ':custom'
+ * We parse a simple subset: "rule.{key} === '{value}'"
+ */
+function evaluateVIf(condition: string | undefined, rule: VisibilityRule): boolean {
+	if (!condition) return true;
 
-	switch (valueType) {
-		case 'membership_plan':
-			if (voxelConfig.membership_plans) {
-				return Object.entries(voxelConfig.membership_plans).map(([key, plan]: [string, any]) => ({
-					value: key,
-					label: plan.label || plan.title || key,
-				}));
-			}
-			return [
-				{ value: '', label: __('Select an option', 'voxel-fse') },
-				{ value: 'default', label: __('Free plan', 'voxel-fse') },
-			];
-
-		case 'role':
-			if (voxelConfig.roles) {
-				return Object.entries(voxelConfig.roles).map(([key, role]: [string, any]) => ({
-					value: key,
-					label: role.label || role.name || key,
-				}));
-			}
-			return [
-				{ value: '', label: __('Select an option', 'voxel-fse') },
-				{ value: 'administrator', label: __('Administrator', 'voxel-fse') },
-				{ value: 'editor', label: __('Editor', 'voxel-fse') },
-				{ value: 'author', label: __('Author', 'voxel-fse') },
-				{ value: 'contributor', label: __('Contributor', 'voxel-fse') },
-				{ value: 'subscriber', label: __('Subscriber', 'voxel-fse') },
-			];
-
-		case 'post_type':
-			if (voxelConfig.post_types) {
-				return [
-					{ value: '', label: __('Select an option', 'voxel-fse') },
-					...Object.entries(voxelConfig.post_types).map(([key, pt]: [string, any]) => ({
-						value: key,
-						label: pt.label || pt.singular_name || key,
-					})),
-				];
-			}
-			return [{ value: '', label: __('Select an option', 'voxel-fse') }];
-
-		case 'product_type':
-			return [
-				{ value: '', label: __('Select an option', 'voxel-fse') },
-				{ value: 'booking', label: __('Booking', 'voxel-fse') },
-				{ value: 'claim', label: __('Claim', 'voxel-fse') },
-				{ value: 'promotion', label: __('Promotion', 'voxel-fse') },
-			];
-
-		case 'listing_plan':
-			if (voxelConfig.listing_plans) {
-				return [
-					{ value: '', label: __('Select an option', 'voxel-fse') },
-					...Object.entries(voxelConfig.listing_plans).map(([key, plan]: [string, any]) => ({
-						value: key,
-						label: plan.label || plan.title || key,
-					})),
-				];
-			}
-			return [{ value: '', label: __('Select an option', 'voxel-fse') }];
-
-		case 'page':
-		case 'text':
-		default:
-			return [];
+	// Match: rule.{key} === '{value}'
+	const match = condition.match(/rule\.(\w+)\s*===\s*'([^']*)'/);
+	if (match) {
+		const [, key, expected] = match;
+		return (rule.ruleArgs?.[key] || '') === expected;
 	}
-};
+
+	return true; // If we can't parse, show the field
+}
 
 /**
  * VoxelScript Syntax Highlighter
@@ -294,6 +229,18 @@ function VoxelScriptInput({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const preRef = useRef<HTMLPreElement>(null);
 
+	const {
+		showAutocomplete,
+		suggestions,
+		selectedIndex,
+		autocompletePosition,
+		autocompleteRef,
+		setSelectedIndex,
+		handleInputChange,
+		handleKeyDown,
+		handleSelectSuggestion,
+	} = useTagAutocomplete(textareaRef, value, onChange, '.dtags-content');
+
 	const handleScroll = useCallback(() => {
 		if (textareaRef.current && preRef.current) {
 			preRef.current.scrollLeft = textareaRef.current.scrollLeft;
@@ -305,7 +252,7 @@ function VoxelScriptInput({
 
 	return (
 		<div className="dtags-mode-input">
-			<div className="dtags-mode-input__content">
+			<div className="dtags-mode-input__content dtags-content">
 				<pre
 					ref={preRef}
 					className="ts-snippet nvx-scrollable"
@@ -314,50 +261,91 @@ function VoxelScriptInput({
 				<textarea
 					ref={textareaRef}
 					value={value || ''}
-					onChange={(e) => onChange(e.target.value)}
+					onChange={(e) => handleInputChange(e.target.value)}
+					onKeyDown={handleKeyDown}
 					onScroll={handleScroll}
 					placeholder={placeholder}
 					rows={1}
 					spellCheck={false}
 					className="nvx-scrollable"
 				/>
+				{/* @-triggered quick tags autocomplete dropdown */}
+				{showAutocomplete && suggestions.length > 0 && (
+					<div
+						ref={autocompleteRef}
+						className="dtags-ac nvx-scrollable"
+						style={{
+							top: `${autocompletePosition.top}px`,
+							left: `${autocompletePosition.left}px`,
+						}}
+					>
+						<ul className="nvx-quick-tags">
+							{suggestions.map((suggestion: TagSuggestion, index: number) => (
+								<li
+									key={index}
+									className={index === selectedIndex ? 'is-active' : ''}
+									data-result-index={index}
+									title={`${suggestion.breadcrumb} / ${suggestion.label}`}
+									onClick={() => handleSelectSuggestion(suggestion)}
+									onMouseEnter={() => setSelectedIndex(index)}
+								>
+									<span>{suggestion.breadcrumb}</span>
+									<p>{suggestion.label}</p>
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
 			</div>
 		</div>
 	);
 }
 
 /**
- * Migrate legacy dtag rules that stored everything in `value` field.
- * Old format: { filterKey: 'dtag', value: '@post(:status.key)' }
- * New format: { filterKey: 'dtag', tag: '@post(:status.key)', compare: 'is_equal_to', arguments: ['publish'] }
+ * Migrate legacy rules to ensure consistent shape.
+ * Preserves all extra keys (like author_id, taxonomy, term_id, etc.) in ruleArgs.
  */
-function migrateRule(r: any, defaultGroupIndex = 0): VisibilityRule {
-	const base = {
-		id: r.id || generateRuleId(),
-		filterKey: r.filterKey || '',
-		operator: r.operator || 'equals',
-		value: r.value || '',
-		groupIndex: r.groupIndex ?? defaultGroupIndex,
+function migrateRule(r: Record<string, unknown>, defaultGroupIndex = 0): VisibilityRule {
+	const knownKeys = new Set(['id', 'filterKey', 'type', 'operator', 'groupIndex', 'tag', 'compare', 'arguments', 'value', 'ruleArgs']);
+
+	const base: VisibilityRule = {
+		id: (r.id as string) || generateRuleId(),
+		filterKey: (r.filterKey as string) || (r.type as string) || '',
+		operator: (r.operator as VisibilityRule['operator']) || 'equals',
+		value: (r.value as string) || '',
+		groupIndex: (r.groupIndex as number) ?? defaultGroupIndex,
 	};
 
-	if (r.filterKey === 'dtag') {
-		// Already new format
-		if (r.tag !== undefined) {
-			return {
-				...base,
-				tag: r.tag || '',
-				compare: r.compare || '',
-				arguments: Array.isArray(r.arguments) ? r.arguments : [],
-			};
+	// Collect extra properties into ruleArgs (argument values like author_id, taxonomy, term_id, page_id, etc.)
+	const ruleArgs: Record<string, string> = {};
+	if (r.ruleArgs && typeof r.ruleArgs === 'object') {
+		Object.assign(ruleArgs, r.ruleArgs);
+	}
+	for (const key of Object.keys(r)) {
+		if (!knownKeys.has(key) && typeof r[key] === 'string') {
+			ruleArgs[key] = r[key] as string;
 		}
-		// Legacy format: value contains the full expression
-		return {
-			...base,
-			tag: r.value || '',
-			compare: '',
-			arguments: [],
-			value: '',
-		};
+	}
+	// Also store 'value' in ruleArgs for rules that use 'value' as an arg key (e.g., user:plan, user:role)
+	if (base.value) {
+		ruleArgs['value'] = base.value;
+	}
+	if (Object.keys(ruleArgs).length > 0) {
+		base.ruleArgs = ruleArgs;
+	}
+
+	if (base.filterKey === 'dtag') {
+		if (r.tag !== undefined) {
+			base.tag = (r.tag as string) || '';
+			base.compare = (r.compare as string) || '';
+			base.arguments = Array.isArray(r.arguments) ? r.arguments : [];
+		} else {
+			// Legacy format: value contains the full expression
+			base.tag = base.value || '';
+			base.compare = '';
+			base.arguments = [];
+			base.value = '';
+		}
 	}
 
 	return base;
@@ -395,6 +383,25 @@ export default function ElementVisibilityModal({
 	onSave,
 }: ElementVisibilityModalProps) {
 	const [ruleGroups, setRuleGroups] = useState<VisibilityRule[][]>([]);
+	const [ruleDefinitions, setRuleDefinitions] = useState<RuleDefinition[]>([]);
+	const [isLoading, setIsLoading] = useState(false);
+
+	// Fetch rule definitions from REST API when modal opens
+	useEffect(() => {
+		if (!isOpen) return;
+
+		let cancelled = false;
+		setIsLoading(true);
+
+		fetchRuleDefinitions().then((defs) => {
+			if (!cancelled) {
+				setRuleDefinitions(defs);
+				setIsLoading(false);
+			}
+		});
+
+		return () => { cancelled = true; };
+	}, [isOpen]);
 
 	// Initialize local rules when modal opens
 	useEffect(() => {
@@ -402,7 +409,7 @@ export default function ElementVisibilityModal({
 			const normalizedRules = Array.isArray(rules)
 				? rules
 					.filter((r): r is VisibilityRule => r != null && typeof r === 'object')
-					.map((r) => migrateRule(r))
+					.map((r) => migrateRule(r as Record<string, unknown>))
 				: [];
 
 			if (normalizedRules.length === 0) {
@@ -413,7 +420,6 @@ export default function ElementVisibilityModal({
 							id: generateRuleId(),
 							filterKey: '',
 							operator: 'equals',
-							value: '',
 							groupIndex: 0,
 						},
 					],
@@ -438,20 +444,26 @@ export default function ElementVisibilityModal({
 		document.head.appendChild(link);
 	}, [isOpen]);
 
+	/** Get the rule definition for a given type */
+	const getRuleDef = useCallback(
+		(type: string): RuleDefinition | undefined => {
+			return ruleDefinitions.find((d) => d.type === type);
+		},
+		[ruleDefinitions]
+	);
+
+	const createEmptyRule = (groupIdx: number): VisibilityRule => ({
+		id: generateRuleId(),
+		filterKey: '',
+		operator: 'equals',
+		groupIndex: groupIdx,
+	});
+
 	const addCondition = (groupIdx: number) => {
 		setRuleGroups(
 			ruleGroups.map((group, gi) =>
 				gi === groupIdx
-					? [
-						...group,
-						{
-							id: generateRuleId(),
-							filterKey: '',
-							operator: 'equals',
-							value: '',
-							groupIndex: groupIdx,
-						},
-					]
+					? [...group, createEmptyRule(groupIdx)]
 					: group
 			)
 		);
@@ -460,15 +472,7 @@ export default function ElementVisibilityModal({
 	const addRuleGroup = () => {
 		setRuleGroups([
 			...ruleGroups,
-			[
-				{
-					id: generateRuleId(),
-					filterKey: '',
-					operator: 'equals',
-					value: '',
-					groupIndex: ruleGroups.length,
-				},
-			],
+			[createEmptyRule(ruleGroups.length)],
 		]);
 	};
 
@@ -480,18 +484,7 @@ export default function ElementVisibilityModal({
 		// Remove empty groups
 		const filtered = updated.filter((g) => g.length > 0);
 		if (filtered.length === 0) {
-			// Keep at least one group with one empty rule
-			setRuleGroups([
-				[
-					{
-						id: generateRuleId(),
-						filterKey: '',
-						operator: 'equals',
-						value: '',
-						groupIndex: 0,
-					},
-				],
-			]);
+			setRuleGroups([[createEmptyRule(0)]]);
 		} else {
 			setRuleGroups(filtered);
 		}
@@ -508,10 +501,18 @@ export default function ElementVisibilityModal({
 
 	const updateCondition = (groupIdx: number, ruleId: string, condition: string) => {
 		updateRule(groupIdx, ruleId, (r) => {
+			const base: VisibilityRule = {
+				id: r.id,
+				filterKey: condition,
+				operator: 'equals',
+				groupIndex: r.groupIndex,
+			};
 			if (condition === 'dtag') {
-				return { ...r, filterKey: condition, tag: '', compare: '', arguments: [], value: '' };
+				base.tag = '';
+				base.compare = '';
+				base.arguments = [];
 			}
-			return { ...r, filterKey: condition, operator: 'equals', value: '' };
+			return base;
 		});
 	};
 
@@ -532,8 +533,12 @@ export default function ElementVisibilityModal({
 		});
 	};
 
-	const updateValue = (groupIdx: number, ruleId: string, value: string) => {
-		updateRule(groupIdx, ruleId, (r) => ({ ...r, value }));
+	/** Update a dynamic argument value by its key (e.g., 'author_id', 'taxonomy', 'term_id') */
+	const updateRuleArg = (groupIdx: number, ruleId: string, argKey: string, val: string) => {
+		updateRule(groupIdx, ruleId, (r) => ({
+			...r,
+			ruleArgs: { ...r.ruleArgs, [argKey]: val },
+		}));
 	};
 
 	const handleSave = () => {
@@ -583,6 +588,12 @@ export default function ElementVisibilityModal({
 			<div className="nvx-editor-body">
 				<div className="nvx-scrollable nvx-visibility-rules">
 					<div className="nvx-rules-container">
+						{isLoading && (
+							<div className="nvx-rule-group" style={{ textAlign: 'center', padding: '20px' }}>
+								{__('Loading conditions...', 'voxel-fse')}
+							</div>
+						)}
+
 						{ruleGroups.map((group, groupIdx) => (
 							<div key={groupIdx} className="nvx-rule-group">
 								<div className="x-row">
@@ -596,6 +607,7 @@ export default function ElementVisibilityModal({
 										}
 										const filterKey = rule.filterKey || '';
 										const isDtag = filterKey === 'dtag';
+										const ruleDef = filterKey ? getRuleDef(filterKey) : undefined;
 
 										return (
 											<div key={rule.id} className="nvx-rule x-col-12">
@@ -613,9 +625,10 @@ export default function ElementVisibilityModal({
 																updateCondition(groupIdx, rule.id, e.target.value)
 															}
 														>
-															{CONDITION_OPTIONS.map((opt) => (
-																<option key={opt.value} value={opt.value}>
-																	{opt.label}
+															<option value="">{__('Select condition', 'voxel-fse')}</option>
+															{ruleDefinitions.map((def) => (
+																<option key={def.type} value={def.type}>
+																	{def.label}
 																</option>
 															))}
 														</select>
@@ -630,7 +643,7 @@ export default function ElementVisibilityModal({
 																<VoxelScriptInput
 																	value={rule.tag || ''}
 																	onChange={(val) => updateDtagField(groupIdx, rule.id, 'tag', val)}
-																	placeholder={__('e.g. @post(:status.key)', 'voxel-fse')}
+																	placeholder={__('Press @ to pick tag', 'voxel-fse')}
 																/>
 															</div>
 
@@ -677,37 +690,64 @@ export default function ElementVisibilityModal({
 														</>
 													)}
 
-													{/* Non-dtag value field */}
-													{!isDtag && filterKey && conditionRequiresValue(filterKey) && (() => {
-														const valueType = CONDITIONS_WITH_VALUES[filterKey];
-														const valueOptions = valueType ? getValueOptions(valueType) : [];
-														const useTextInput = valueType === 'text' || valueType === 'page' || valueOptions.length === 0;
+													{/* Non-dtag: render dynamic argument fields from rule definition */}
+													{!isDtag && filterKey && ruleDef && Object.entries(ruleDef.arguments).map(([argKey, argDef]) => {
+														// Skip hidden fields
+														if (argDef.type === 'hidden') return null;
 
-														return (
-															<div className="ts-form-group x-col-2 x-grow">
-																<label>{__('Value', 'voxel-fse')}</label>
-																{useTextInput ? (
-																	<input
-																		type="text"
-																		value={rule.value || ''}
-																		onChange={(e) => updateValue(groupIdx, rule.id, e.target.value)}
-																		placeholder={valueType === 'page' ? __('Enter page ID or slug', 'voxel-fse') : __('Enter value', 'voxel-fse')}
-																	/>
-																) : (
+														// Evaluate v-if conditions (e.g., post_id only when post_type === ':custom')
+														if (!evaluateVIf(argDef['v-if'], rule)) return null;
+
+														const argValue = rule.ruleArgs?.[argKey] || '';
+
+														if (argDef.type === 'select' && argDef.choices) {
+															return (
+																<div key={argKey} className="ts-form-group x-col-3 x-grow">
+																	{argDef.description && (
+																		<span className="vx-info-box" style={{ float: 'right' }}>
+																			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+																				<path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm.75 6a.75.75 0 00-1.5 0v1a.75.75 0 001.5 0V8zm-.75 3.25a.75.75 0 00-.75.75v4a.75.75 0 001.5 0v-4a.75.75 0 00-.75-.75z" fill="currentColor"/>
+																			</svg>
+																			<p>{argDef.description}</p>
+																		</span>
+																	)}
+																	<label>{argDef.label}</label>
 																	<select
-																		value={rule.value || ''}
-																		onChange={(e) => updateValue(groupIdx, rule.id, e.target.value)}
+																		value={argValue}
+																		onChange={(e) => updateRuleArg(groupIdx, rule.id, argKey, e.target.value)}
 																	>
-																		{valueOptions.map((opt) => (
-																			<option key={opt.value} value={opt.value}>
-																				{opt.label}
+																		<option value="">{__('Select an option', 'voxel-fse')}</option>
+																		{Object.entries(argDef.choices).map(([choiceValue, choiceLabel]) => (
+																			<option key={choiceValue} value={choiceValue}>
+																				{choiceLabel}
 																			</option>
 																		))}
 																	</select>
+																</div>
+															);
+														}
+
+														// Text input
+														return (
+															<div key={argKey} className="ts-form-group x-col-3 x-grow">
+																{argDef.description && (
+																	<span className="vx-info-box" style={{ float: 'right' }}>
+																		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+																			<path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm.75 6a.75.75 0 00-1.5 0v1a.75.75 0 001.5 0V8zm-.75 3.25a.75.75 0 00-.75.75v4a.75.75 0 001.5 0v-4a.75.75 0 00-.75-.75z" fill="currentColor"/>
+																		</svg>
+																		<p>{argDef.description}</p>
+																	</span>
 																)}
+																<label>{argDef.label}</label>
+																<input
+																	type="text"
+																	value={argValue}
+																	onChange={(e) => updateRuleArg(groupIdx, rule.id, argKey, e.target.value)}
+																	placeholder={argDef.placeholder || ''}
+																/>
 															</div>
 														);
-													})()}
+													})}
 
 													{/* Delete button */}
 													<div className="x-col-2 x-grow-0 ts-form-group">
@@ -776,7 +816,8 @@ export default function ElementVisibilityModal({
 }
 
 /**
- * Get the display label for a visibility rule
+ * Get the display label for a visibility rule.
+ * Uses cached rule definitions if available, otherwise falls back to filterKey.
  */
 export function getVisibilityRuleLabel(rule: VisibilityRule): string {
 	if (rule === undefined || rule === null) return '';
@@ -785,24 +826,17 @@ export function getVisibilityRuleLabel(rule: VisibilityRule): string {
 	const filterKey = rule.filterKey;
 	if (!filterKey || typeof filterKey !== 'string') return '';
 
-	const options = CONDITION_OPTIONS || [];
-	if (!Array.isArray(options)) return filterKey;
-
-	const option = options.find((opt) => opt && opt.value === filterKey);
-
-	if (!option || !option.label) {
-		return filterKey || '';
-	}
+	// Try to find label from cached definitions
+	const def = _cachedRuleDefinitions?.find((d) => d.type === filterKey);
+	const label = def?.label || filterKey;
 
 	// DTag rules: show "Dynamic tag @post(:status.key)"
 	if (filterKey === 'dtag' && rule.tag) {
-		return `${option.label} ${rule.tag}`;
+		return `${label} ${rule.tag}`;
 	}
 
-	// Legacy or non-dtag: show "Condition value"
-	if (rule.value) {
-		return `${option.label} ${rule.value}`;
-	}
-
-	return option.label;
+	return label;
 }
+
+/** Exported for backward compatibility — consumers that imported CONDITION_OPTIONS can still use this */
+export const CONDITION_OPTIONS: Array<{ value: string; label: string }> = [];

@@ -238,8 +238,8 @@
 			]
 		},
 		"layout": {
-			"contentSize": "100%",
-			"wideSize": "100%"
+			"contentSize": "1200px",
+			"wideSize": "1500px"
 		},
 		"custom": {
 			"borderRadius": {

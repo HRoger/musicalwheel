@@ -61,6 +61,22 @@ if ( \Voxel\is_elementor_active() ) {
 
 // FSE mode: Let WordPress handle it via block templates
 // WordPress will use the block template hierarchy (taxonomy.html, archive.html, index.html)
+
+// NectarBlocks bug workaround: it accesses $post->post_content without a null check
+// on wp_enqueue_scripts (priority 99). Hook in at priority 98 to ensure $post is set.
+add_action( 'wp_enqueue_scripts', function() {
+	global $post, $wp_query;
+	if ( $post === null ) {
+		if ( ! empty( $wp_query->posts ) ) {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			$post = $wp_query->posts[0];
+		} else {
+			// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			$post = (object) [ 'ID' => 0, 'post_content' => '' ];
+		}
+	}
+}, 98 );
+
 get_header();
 \Voxel\print_header();
 

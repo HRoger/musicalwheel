@@ -18,6 +18,7 @@
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useDeviceType } from '@shared/utils/deviceType';
 
 export interface FormPopupProps {
 	/** Whether popup is open */
@@ -75,6 +76,11 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 	minWidth: propMinWidth,
 	headerActions,
 }) => {
+	// Detect Gutenberg device preview (desktop/tablet/mobile)
+	// Returns 'desktop' on frontend where wp.data is unavailable
+	const deviceType = useDeviceType();
+	const isMobilePreview = deviceType === 'mobile' || deviceType === 'tablet';
+
 	const popupRef = useRef<HTMLDivElement>(null); // .ts-form element (receives positioning styles)
 	const popupBoxRef = useRef<HTMLDivElement>(null); // .ts-field-popup element
 	const [styles, setStyles] = useState<React.CSSProperties>({
@@ -97,6 +103,9 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 	//     a = s.left + n/2 > a/2 + 1 ? s.left - i + n : s.left;
 	// =====================================================
 	const reposition = useCallback(() => {
+		// Skip positioning in mobile/tablet preview — CSS handles fixed bottom-sheet layout
+		if (isMobilePreview) return;
+
 		if (!popupBoxRef.current || !target || !popupRef.current) {
 			return;
 		}
@@ -204,7 +213,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		lastStylesRef.current = serializedStyles;
 
 		setStyles(newStyles);
-	}, [target, propMinWidth]);
+	}, [target, propMinWidth, isMobilePreview]);
 
 	// Handle ESC key to close
 	useEffect(() => {
@@ -342,16 +351,25 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 		</svg>
 	);
 
-	// Portal target: always use document.body
-	// In editor: React runs in parent frame, portal goes to parent body
-	// On frontend: portal goes to frontend body (standard Voxel behavior)
-	const portalTarget = document.body;
+	// Portal target selection:
+	// - Desktop editor: parent frame body (popup needs iframe offset calculation)
+	// - Mobile/tablet preview: editor iframe body (popup contained within narrow viewport,
+	//   Voxel's native @media (max-width:1024px) CSS applies naturally for bottom-sheet layout)
+	// - Frontend: document.body (standard Voxel behavior)
+	const editorIframeForPortal = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+	const portalTarget = (isMobilePreview && editorIframeForPortal?.contentDocument?.body)
+		? editorIframeForPortal.contentDocument.body
+		: document.body;
+
+	// In mobile/tablet preview, skip inline positioning — CSS handles fixed bottom-sheet layout
+	const effectiveStyles: React.CSSProperties = isMobilePreview ? {} : styles;
 
 	// Render popup via React Portal
 	return createPortal(
 		<div className={`elementor vx-popup ${popupClass}`.trim()}>
-			{/* Editor: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
-			{isEditor && (
+			{/* Editor desktop: disable the full-screen ::after backdrop so clicks reach sidebar elements */}
+			{/* Mobile/tablet preview: allow backdrop for authentic bottom-sheet look */}
+			{isEditor && !isMobilePreview && (
 				<style>{`.vx-popup .ts-popup-root > div::after { pointer-events: none !important; }`}</style>
 			)}
 			<div className="ts-popup-root elementor-element">
@@ -359,7 +377,7 @@ export const FormPopup: React.FC<FormPopupProps> = ({
 				<div
 					ref={popupRef}
 					className="ts-form elementor-element"
-					style={styles}
+					style={effectiveStyles}
 				>
 					<div className="ts-field-popup-container">
 						{/* Actual popup box - backdrop clicks handled by event listeners */}

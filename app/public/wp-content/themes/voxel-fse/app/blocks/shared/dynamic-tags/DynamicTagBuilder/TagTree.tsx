@@ -1,13 +1,26 @@
 /**
  * TagTree Component
  *
- * Displays hierarchical tree of available dynamic tags grouped by data source.
+ * React port of Voxel's `group-list` + `property-list` Vue components.
+ *
+ * Key architectural decisions (matching Voxel exactly):
+ * - In NORMAL mode: accordion behavior (one group open, one child-group open per level)
+ *   with lazy loading of children via onLoadChildren callback.
+ * - In SEARCH mode: the parent passes a fully pre-filtered tree. The tree renders it
+ *   with the first group auto-expanded recursively. No lazy loading.
+ * - When search clears, the parent passes the original unfiltered groups.
+ *   The component re-renders fresh with no stale state.
+ *
+ * Evidence: themes/voxel/assets/dist/dynamic-data.js (group-list, property-list components)
+ * Evidence: themes/voxel/templates/backend/dynamic-data/_group-list.php
  *
  * @package MusicalWheel
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DataGroup, TagExport } from './types';
+
+// ─── Public API ────────────────────────────────────────────────
 
 interface TagTreeProps {
 	groups: DataGroup[];
@@ -16,157 +29,177 @@ interface TagTreeProps {
 	onLoadChildren?: (groupType: string, parent?: string) => Promise<any[]>;
 }
 
-interface TagItemProps {
-	group: string;
-	tag: TagExport;
-	level: number;
-	searchQuery: string;
+// ─── PropertyList (mirrors Voxel's property-list component) ────
+
+interface PropertyListProps {
+	groupType: string;
+	exports: TagExport[];
+	parentPath: string;
 	onSelectTag: (group: string, property: string, tagType?: string) => void;
 	onLoadChildren?: (groupType: string, parent?: string) => Promise<any[]>;
-	parentPath?: string; // Accumulated path from root to this tag's parent
-	expandedPath: string; // Path of currently expanded item at this level
-	onExpandChange: (path: string) => void; // Callback when expansion changes
+	isSearchMode: boolean;
+	/** In search mode, auto-expand the first group at each level */
+	autoExpandFirst?: boolean;
 }
 
-const TagItem: React.FC<TagItemProps> = ({
-	group,
-	tag,
-	level,
-	searchQuery,
+const PropertyList: React.FC<PropertyListProps> = ({
+	groupType,
+	exports: propExports,
+	parentPath,
 	onSelectTag,
 	onLoadChildren,
-	parentPath = '',
-	expandedPath,
-	onExpandChange
+	isSearchMode,
+	autoExpandFirst = false,
 }) => {
-	const [isLoading, setIsLoading] = useState(false);
-	const [localChildren, setLocalChildren] = useState<TagExport[]>(tag.children || []);
-	const [childExpandedPath, setChildExpandedPath] = useState('');
+	// Which sub-group key is open (accordion: only one at a time per level)
+	const [openKey, setOpenKey] = useState<string>('');
+	// Cache of lazily loaded children keyed by tag key
+	const [loadedChildren, setLoadedChildren] = useState<Record<string, TagExport[]>>({});
+	const [loadingKey, setLoadingKey] = useState<string>('');
 
-	const hasChildren = tag.hasChildren || (tag.children && tag.children.length > 0);
-	const needsLazyLoad = tag.hasChildren && !tag.isLoaded && localChildren.length === 0;
-
-	// Build the full path to this tag
-	const currentPath = parentPath ? `${parentPath}.${tag.key}` : tag.key;
-
-	// Check if this item is expanded (accordion behavior)
-	const isExpanded = expandedPath === currentPath;
-
-	// Filter based on search query
-	const matchesSearch = searchQuery === '' ||
-		tag.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-		tag.key.toLowerCase().includes(searchQuery.toLowerCase());
-
-	if (!matchesSearch && !hasChildren) {
-		return null;
-	}
-
-	const handleToggle = async () => {
-		if (hasChildren) {
-			// Toggle: if already expanded, collapse; otherwise expand
-			const willExpand = !isExpanded;
-
-			if (willExpand) {
-				// Notify parent to expand this item (and collapse siblings)
-				onExpandChange(currentPath);
-
-				// Lazy load if needed
-				if (needsLazyLoad && onLoadChildren) {
-					setIsLoading(true);
-					try {
-						const children = await onLoadChildren(group, `${group}.${currentPath}`);
-						setLocalChildren(children);
-					} catch (err) {
-						console.error(`Failed to load children for ${tag.key}:`, err);
-					} finally {
-						setIsLoading(false);
-					}
-				}
-			} else {
-				// Collapse this item
-				onExpandChange('');
+	// In search mode with autoExpandFirst: mirrors Voxel's $nextTick recursive expand.
+	// Voxel uses `:scope > ul > li.is-group:first-child > span` which means it ONLY
+	// auto-expands if the FIRST child at this level is a group node. If the first child
+	// is a leaf, the recursion stops (no auto-expand at this level).
+	useEffect(() => {
+		if (isSearchMode && autoExpandFirst && propExports.length > 0) {
+			const firstExport = propExports[0];
+			const firstIsGroup = firstExport &&
+				(firstExport.type === 'object' || firstExport.type === 'object-list' || firstExport.type === 'object_list') &&
+				(firstExport.hasChildren || (firstExport.children && firstExport.children.length > 0));
+			if (firstIsGroup) {
+				setOpenKey(firstExport.key);
 			}
-		} else {
-			// Pass the FULL PATH from root to this leaf, including type for methods
-			onSelectTag(group, currentPath, tag.type);
 		}
-	};
+	}, [isSearchMode, autoExpandFirst, propExports]);
 
-	// Build className with proper states
-	const classNames = [];
-	if (hasChildren) {
-		classNames.push('is-group');
-		if (isExpanded) classNames.push('is-open');
-	}
-	const className = classNames.join(' ');
+	// Reset openKey when exports change (e.g., different group expanded, search changed)
+	const exportsKey = propExports.map(e => e.key).join(',');
+	useEffect(() => {
+		if (!isSearchMode) {
+			setOpenKey('');
+		}
+	}, [exportsKey, isSearchMode]);
 
-	// Check if this is a method (Evidence: voxel/_group-list.php:69 uses <i class="las la-code"></i>)
-	const isMethod = tag.type === 'method';
+	const toggleSubgroup = useCallback(async (tag: TagExport) => {
+		// Accordion: close current, open clicked (or close if same)
+		const newOpen = openKey === tag.key ? '' : tag.key;
+		setOpenKey(newOpen);
+
+		// Lazy load children if needed
+		if (newOpen && tag.hasChildren && !loadedChildren[tag.key] && !(tag.children && tag.children.length > 0) && onLoadChildren) {
+			const fullPath = parentPath ? `${parentPath}.${tag.key}` : `${groupType}.${tag.key}`;
+			setLoadingKey(tag.key);
+			try {
+				const children = await onLoadChildren(groupType, `${groupType}.${fullPath.replace(`${groupType}.`, '')}`);
+				setLoadedChildren(prev => ({ ...prev, [tag.key]: children || [] }));
+			} catch (err) {
+				console.error(`Failed to load children for ${tag.key}:`, err);
+			} finally {
+				setLoadingKey('');
+			}
+		}
+	}, [isSearchMode, openKey, loadedChildren, onLoadChildren, groupType, parentPath]);
+
+	const handleLeafClick = useCallback((tag: TagExport) => {
+		const path = parentPath ? `${parentPath}.${tag.key}` : tag.key;
+		onSelectTag(groupType, path, tag.type);
+	}, [groupType, parentPath, onSelectTag]);
 
 	return (
-		<li className={className}>
-			<span
-				draggable={!hasChildren}
-				onClick={handleToggle}
-			>
-				{isMethod && <i className="las la-code"></i>}
-				{tag.label}
-			</span>
-			{hasChildren && isExpanded && (
-				<ul style={{ height: 'auto' }}>
-					{isLoading ? (
-						<li className="mw-tag-item__loading">
-							Loading...
+		<ul style={{ height: 'auto' }}>
+			{propExports.map((tag) => {
+				const isObject = tag.type === 'object' || tag.type === 'object-list' || tag.type === 'object_list';
+				const hasChildren = isObject && (tag.hasChildren || (tag.children && tag.children.length > 0));
+
+				if (hasChildren) {
+					// Group/object node — openKey is set by user click or auto-expand useEffect
+					const isOpen = openKey === tag.key;
+
+					// Get children: prefer pre-resolved (search mode), then lazy-loaded, then inline
+					const children = tag.children && tag.children.length > 0
+						? tag.children
+						: loadedChildren[tag.key] || [];
+
+					const isLoading = loadingKey === tag.key;
+					const childPath = parentPath ? `${parentPath}.${tag.key}` : tag.key;
+
+					return (
+						<li key={tag.key} className={`is-group${isOpen ? ' is-open' : ''}`}>
+							<span onClick={() => toggleSubgroup(tag)}>{tag.label}</span>
+							{isOpen && (
+								isLoading ? (
+									<ul style={{ height: 'auto' }}>
+										<li className="mw-tag-item__loading">Loading...</li>
+									</ul>
+								) : children.length > 0 ? (
+									<PropertyList
+										groupType={groupType}
+										exports={children}
+										parentPath={childPath}
+										onSelectTag={onSelectTag}
+										onLoadChildren={onLoadChildren}
+										isSearchMode={isSearchMode}
+										autoExpandFirst={autoExpandFirst && isOpen}
+									/>
+								) : null
+							)}
 						</li>
-					) : (
-						localChildren.map((child) => (
-							<TagItem
-								key={child.key}
-								group={group}
-								tag={child}
-								level={level + 1}
-								searchQuery={searchQuery}
-								onSelectTag={onSelectTag}
-								onLoadChildren={onLoadChildren}
-								parentPath={currentPath}
-								expandedPath={childExpandedPath}
-								onExpandChange={setChildExpandedPath}
-							/>
-						))
-					)}
-				</ul>
-			)}
-		</li>
+					);
+				} else {
+					// Leaf node
+					const isMethod = tag.type === 'method';
+					return (
+						<li key={tag.key}>
+							<span
+								draggable={true}
+								onClick={() => handleLeafClick(tag)}
+							>
+								{isMethod && <i className="las la-code"></i>}
+								{tag.label}
+							</span>
+						</li>
+					);
+				}
+			})}
+		</ul>
 	);
 };
 
+// ─── GroupItem (mirrors a single group in Voxel's group-list) ──
+
 interface GroupItemProps {
 	group: DataGroup;
-	searchQuery: string;
+	isOpen: boolean;
+	onToggle: () => void;
 	onSelectTag: (group: string, property: string, tagType?: string) => void;
 	onLoadChildren?: (groupType: string, parent?: string) => Promise<any[]>;
-	expandedPath: string; // Path of currently expanded group
-	onExpandChange: (path: string) => void; // Callback when expansion changes
+	isSearchMode: boolean;
+	autoExpandFirst: boolean;
 }
 
 const GroupItem: React.FC<GroupItemProps> = ({
 	group,
-	searchQuery,
+	isOpen,
+	onToggle,
 	onSelectTag,
 	onLoadChildren,
-	expandedPath,
-	onExpandChange
+	isSearchMode,
+	autoExpandFirst,
 }) => {
-	const [isLoading, setIsLoading] = useState(false);
 	const [localExports, setLocalExports] = useState<TagExport[]>(group.exports || []);
-	const [childExpandedPath, setChildExpandedPath] = useState('');
+	const [isLoading, setIsLoading] = useState(false);
 
-	// Check if this group is expanded
-	const isExpanded = expandedPath === group.type;
-
-	// Auto-load children when expanded with no children (handles default-expanded state)
+	// Sync exports from props (when parent changes groups, e.g., search results update)
 	useEffect(() => {
-		if (isExpanded && group.hasChildren && localExports.length === 0 && onLoadChildren && !isLoading) {
+		if (group.exports && group.exports.length > 0) {
+			setLocalExports(group.exports);
+		}
+	}, [group.exports]);
+
+	// Auto-load children when opened with no exports (normal mode lazy loading)
+	useEffect(() => {
+		if (isOpen && !isSearchMode && group.hasChildren && localExports.length === 0 && onLoadChildren && !isLoading) {
 			(async () => {
 				setIsLoading(true);
 				try {
@@ -179,88 +212,63 @@ const GroupItem: React.FC<GroupItemProps> = ({
 				}
 			})();
 		}
-	}, [isExpanded]);
-
-	const handleToggle = async () => {
-		// Toggle: if already expanded, collapse; otherwise expand
-		const willExpand = !isExpanded;
-
-		if (willExpand) {
-			// Notify parent to expand this group (and collapse siblings)
-			onExpandChange(group.type);
-
-			// Lazy load if needed
-			if (group.hasChildren && localExports.length === 0 && onLoadChildren) {
-				setIsLoading(true);
-				try {
-					const children = await onLoadChildren(group.type);
-					setLocalExports(children);
-				} catch (err) {
-					console.error(`Failed to load children for ${group.type}:`, err);
-				} finally {
-					setIsLoading(false);
-				}
-			}
-		} else {
-			// Collapse this group
-			onExpandChange('');
-		}
-	};
-
-	// Build className with proper states
-	const classNames = ['is-group'];
-	if (isExpanded) classNames.push('is-open');
-	const className = classNames.join(' ');
+	}, [isOpen, isSearchMode, group.hasChildren, group.type]);
 
 	return (
-		<li className={className}>
-			<span onClick={handleToggle}>
-				{group.label}
-			</span>
-			{isExpanded && (
-				<ul style={{ height: 'auto' }}>
-					{isLoading ? (
+		<li className={`is-group${isOpen ? ' is-open' : ''}`}>
+			<span onClick={onToggle}>{group.label}</span>
+			{isOpen && (
+				isLoading ? (
+					<ul style={{ height: 'auto' }}>
 						<li className="mw-tag-group__loading">Loading...</li>
-					) : (
-						localExports.map((tag) => (
-							<TagItem
-								key={tag.key}
-								group={group.type}
-								tag={tag}
-								level={0}
-								searchQuery={searchQuery}
-								onSelectTag={onSelectTag}
-								onLoadChildren={onLoadChildren}
-								expandedPath={childExpandedPath}
-								onExpandChange={setChildExpandedPath}
-							/>
-						))
-					)}
-				</ul>
+					</ul>
+				) : localExports.length > 0 ? (
+					<PropertyList
+						groupType={group.type}
+						exports={localExports}
+						parentPath=""
+						onSelectTag={onSelectTag}
+						onLoadChildren={onLoadChildren}
+						isSearchMode={isSearchMode}
+						autoExpandFirst={autoExpandFirst}
+					/>
+				) : null
 			)}
 		</li>
 	);
 };
 
-export const TagTree: React.FC<TagTreeProps> = ({ groups, searchQuery, onSelectTag, onLoadChildren }) => {
-	// Track which top-level group is expanded (accordion behavior)
-	// First group is expanded by default
-	const [expandedGroup, setExpandedGroup] = useState<string>(
-		groups && groups.length > 0 ? groups[0].type : ''
-	);
+// ─── TagTree (mirrors Voxel's group-list component) ────────────
 
-	// Reset expanded group only when the set of group types actually changes
-	// (e.g., context switched from post to term).  We derive a stable key from
-	// the group types so that new array references with the same content don't
-	// trigger a reset — which was causing the flicker/double-click bug.
-	const groupTypesKey = groups?.map((g) => g.type).join(',') ?? '';
+export const TagTree: React.FC<TagTreeProps> = ({ groups, searchQuery, onSelectTag, onLoadChildren }) => {
+	// Which top-level group is open (accordion: one at a time)
+	const [openGroupType, setOpenGroupType] = useState<string>('');
+
+	const isSearchMode = searchQuery.trim() !== '';
+
+	// When groups change: in search mode expand first group, in normal mode expand first group
+	// This mirrors Voxel's behavior: getGroups() auto-expands first group via $nextTick click
 	useEffect(() => {
 		if (groups && groups.length > 0) {
-			setExpandedGroup(groups[0].type);
+			setOpenGroupType(groups[0].type);
+		} else {
+			setOpenGroupType('');
 		}
-	}, [groupTypesKey]);
+	}, [groups]);
+
+	const handleToggleGroup = useCallback((groupType: string) => {
+		// Accordion: one group open at a time. Users CAN toggle in search mode.
+		setOpenGroupType(prev => prev === groupType ? '' : groupType);
+	}, []);
 
 	if (!groups || groups.length === 0) {
+		if (isSearchMode) {
+			return (
+				<div className="nvx-tagslist mw-tag-tree">
+					<ul><li>No results</li></ul>
+				</div>
+			);
+		}
 		return (
 			<div className="mw-tag-tree mw-tag-tree--empty">
 				<p>No data groups available.</p>
@@ -271,15 +279,16 @@ export const TagTree: React.FC<TagTreeProps> = ({ groups, searchQuery, onSelectT
 	return (
 		<div className="nvx-tagslist mw-tag-tree">
 			<ul>
-				{groups.map((group) => (
+				{groups.map((group, index) => (
 					<GroupItem
-						key={group.type}
+						key={`${group.type}-${isSearchMode ? 's' : 'n'}`}
 						group={group}
-						searchQuery={searchQuery}
+						isOpen={openGroupType === group.type}
+						onToggle={() => handleToggleGroup(group.type)}
 						onSelectTag={onSelectTag}
 						onLoadChildren={onLoadChildren}
-						expandedPath={expandedGroup}
-						onExpandChange={setExpandedGroup}
+						isSearchMode={isSearchMode}
+						autoExpandFirst={isSearchMode && index === 0}
 					/>
 				))}
 			</ul>

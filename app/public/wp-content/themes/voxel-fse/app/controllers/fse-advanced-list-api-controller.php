@@ -51,6 +51,9 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 						return is_numeric($param);
 					}
 				],
+				'post_type' => [
+					'type' => 'string',
+				],
 			],
 		] );
 
@@ -90,12 +93,28 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 	 * - show-post-on-map.php
 	 */
 	public function get_post_context( $request ) {
-		$post_id = $request->get_param( 'post_id' );
+		$post_id   = $request->get_param( 'post_id' );
+		$post_type = $request->get_param( 'post_type' );
+
+		// Resolve post_id from post_type if not given directly.
+		// Mirrors Voxel's get_post_for_preview(): use first published post of that type.
+		if ( ! $post_id && $post_type ) {
+			$sample = get_posts( [
+				'post_type'      => $post_type,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'orderby'        => 'date',
+				'order'          => 'ASC',
+			] );
+			if ( ! empty( $sample ) ) {
+				$post_id = $sample[0]->ID;
+			}
+		}
 
 		if ( ! $post_id ) {
 			return new \WP_REST_Response( [
 				'success' => false,
-				'message' => 'Post ID is required',
+				'message' => 'Post ID or post_type is required',
 			], 400 );
 		}
 
@@ -200,7 +219,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 			if ( is_numeric( $location['latitude'] ?? null ) && is_numeric( $location['longitude'] ?? null ) ) {
 				// Build the map link with location filter (show-post-on-map.php:14-21)
 				$map_link = null;
-				$post_type = $post->get_post_type();
+				$post_type = $post->post_type;
 				if ( $post_type ) {
 					foreach ( $post_type->get_filters() as $filter ) {
 						if ( $filter->get_type() === 'location' ) {
@@ -230,7 +249,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 
 		// View post stats link (view-post-stats-action.php:3-8)
 		$post_stats_link = null;
-		$post_type = $post->get_post_type();
+		$post_type = $post->post_type;
 		if ( $is_editable && $post_type && $post_type->is_tracking_enabled() ) {
 			$stats_template = \Voxel\get( 'templates.post_stats' );
 			if ( $stats_template ) {

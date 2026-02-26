@@ -68,6 +68,31 @@ $content = preg_replace(
 	1
 );
 
+// ─── Inject post ID for frontend.tsx post context fetching ───────────
+// Voxel parent uses \Voxel\get_current_post() server-side; we pass the ID
+// as a data attribute so the React frontend can fetch post context via REST.
+$current_post_id = null;
+if ( function_exists( '\Voxel\get_current_post' ) ) {
+	$vx_post = \Voxel\get_current_post();
+	if ( $vx_post ) {
+		$current_post_id = $vx_post->get_id();
+	}
+}
+// Fallback: use WordPress global post
+if ( ! $current_post_id ) {
+	$current_post_id = get_the_ID();
+}
+
+if ( $current_post_id ) {
+	// Add data-post-id attribute to the outer <ul> element
+	$content = preg_replace(
+		'/(<ul\b[^>]*class="[^"]*voxel-fse-advanced-list-frontend[^"]*")/s',
+		'$1 data-post-id="' . intval( $current_post_id ) . '"',
+		$content,
+		1
+	);
+}
+
 // If not in feed context, return content with filtered vxconfig (React hydrates client-side)
 if ( ! $is_feed_context ) {
 	return $content;
@@ -129,6 +154,36 @@ foreach ( $vxconfig['items'] as $item ) {
 		$icon_value = $item['icon']['value'] ?? '';
 		$icon_library = $item['icon']['library'] ?? '';
 
+		// Dynamic icon: resolve VoxelScript expression (e.g. @post(amenities.icon)) to actual icon
+		if ( $icon_library === 'dynamic' && ! empty( $icon_value ) && function_exists( 'VoxelFSE\Dynamic_Data\mw_render' ) ) {
+			$expression = $icon_value;
+			// Strip @tags()...@endtags() wrapper
+			if ( preg_match( '/@tags\(\)(.*?)@endtags\(\)/s', $expression, $tag_match ) ) {
+				$expression = $tag_match[1];
+			}
+			$resolved = \VoxelFSE\Dynamic_Data\mw_render( $expression );
+
+			// Parse resolved value: "svg:72" → attachment ID, or numeric ID, or direct URL
+			if ( preg_match( '/^svg:(\d+)$/', $resolved, $svg_match ) ) {
+				$attachment_id = (int) $svg_match[1];
+			} else {
+				$attachment_id = (int) $resolved;
+			}
+
+			if ( $attachment_id > 0 ) {
+				$attachment_url = wp_get_attachment_url( $attachment_id );
+				if ( $attachment_url ) {
+					// Re-assign so the existing SVG rendering path below handles it
+					$icon_value   = $attachment_url;
+					$icon_library = 'svg';
+				}
+			} elseif ( filter_var( $resolved, FILTER_VALIDATE_URL ) ) {
+				$icon_value   = $resolved;
+				$icon_library = 'svg';
+			}
+			// If resolution failed, icon_html stays empty
+		}
+
 		if ( ! empty( $icon_value ) ) {
 			if ( $icon_library === 'svg' || ( is_string( $icon_value ) && preg_match( '/\.svg$/i', $icon_value ) ) ) {
 				// SVG icon — render inline so CSS variables (--ts-icon-color) work.
@@ -161,7 +216,7 @@ foreach ( $vxconfig['items'] as $item ) {
 			} elseif ( is_string( $icon_value ) ) {
 				// Font icon class. When library is 'icon', value is already full class (e.g. "las la-bed").
 				// When library is a pack prefix (e.g. "las"), combine with value (e.g. "la-bed").
-				$icon_class = ( $icon_library && $icon_library !== 'icon' && $icon_library !== 'dynamic' )
+				$icon_class = ( $icon_library && $icon_library !== 'icon' )
 					? $icon_library . ' ' . $icon_value
 					: $icon_value;
 				$icon_html = '<i class="' . esc_attr( $icon_class ) . '"></i>';

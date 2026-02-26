@@ -673,17 +673,13 @@ function getRestUrl(): string {
 }
 
 /**
- * Fetch post context from REST API (if needed)
- * This provides data for post-dependent actions
+ * Fetch post context from REST API for a specific post ID.
+ *
+ * Post ID source: render.php injects `data-post-id` on each block container
+ * using \Voxel\get_current_post() (mirrors parent theme's server-side context).
  */
-async function fetchPostContext(): Promise<PostContext | null> {
-	// Try to get post ID from page context
-	// This would need to be enhanced based on how Voxel provides post context
-	const postIdMeta = document.querySelector<HTMLMetaElement>('meta[name="vx-post-id"]');
-	const postId = postIdMeta?.content ? parseInt(postIdMeta.content, 10) : null;
-
+async function fetchPostContext(postId: number): Promise<PostContext | null> {
 	if (!postId) {
-		// No post context available - post-dependent actions won't work
 		return null;
 	}
 
@@ -705,7 +701,7 @@ async function fetchPostContext(): Promise<PostContext | null> {
 		);
 
 		if (!response.ok) {
-			console.warn('[Advanced List] Failed to fetch post context');
+			console.warn('[Advanced List] Failed to fetch post context for post', postId);
 			return null;
 		}
 
@@ -770,34 +766,45 @@ async function initBlocks() {
 		return;
 	}
 
-	// Fetch post context once for all blocks
-	let postContext: PostContext | null = null;
-
-	// Check if any block needs post context
-	const configs: Array<{ container: HTMLElement; config: VxConfig }> = [];
+	// Parse configs and collect post IDs from data-post-id attributes
+	// (injected by render.php using \Voxel\get_current_post())
+	const configs: Array<{ container: HTMLElement; config: VxConfig; postId: number | null }> = [];
 
 	containers.forEach((container) => {
 		const config = parseVxConfig(container);
 		if (config) {
-			configs.push({ container, config });
+			const rawPostId = container.getAttribute('data-post-id');
+			const postId = rawPostId ? parseInt(rawPostId, 10) : null;
+			configs.push({ container, config, postId: postId && !isNaN(postId) ? postId : null });
 		}
 	});
 
-	// Check if we need to fetch post context
-	const needsContext = configs.some(({ config }) =>
-		needsPostContext(config.items)
-	);
+	// Fetch post contexts, deduplicating by post ID
+	// (multiple blocks on same page/card share the same post context)
+	const postContextCache = new Map<number, PostContext | null>();
+	const postIdsToFetch = new Set<number>();
 
-	if (needsContext) {
-		postContext = await fetchPostContext();
+	for (const { config, postId } of configs) {
+		if (postId && needsPostContext(config.items)) {
+			postIdsToFetch.add(postId);
+		}
 	}
 
+	// Fetch all needed post contexts in parallel
+	await Promise.all(
+		Array.from(postIdsToFetch).map(async (postId) => {
+			const ctx = await fetchPostContext(postId);
+			postContextCache.set(postId, ctx);
+		})
+	);
+
 	// Mount React components
-	for (const { container, config } of configs) {
+	for (const { container, config, postId } of configs) {
 		// Mark as mounted to prevent double initialization
 		container.setAttribute('data-react-mounted', 'true');
 
 		const attributes = buildAttributes(config);
+		const postContext = postId ? (postContextCache.get(postId) ?? null) : null;
 
 		// Generate and inject block-specific CSS (tooltip, hover, active, etc.)
 		const blockId = container.className.match(/voxel-fse-advanced-list-(advanced-list-\w+)/)?.[1] || 'advanced-list';

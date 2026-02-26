@@ -15,6 +15,7 @@ import { getAdvancedVoxelTabProps } from '../../shared/utils';
 import { useExpandedLoopItems } from '../../shared/utils/useExpandedLoopItems';
 import { useTemplateContext, useTemplatePostType } from '../../shared/utils/useTemplateContext';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
+import { useEditorPostContext } from './shared/useEditorPostContext';
 import ContentTab from './inspector/ContentTab';
 import StyleTab from './inspector/StyleTab';
 import { generateAdvancedListStyles } from './styles';
@@ -41,6 +42,11 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 	// Detect template context for dynamic tag preview resolution
 	const templateContext = useTemplateContext();
 	const templatePostType = useTemplatePostType();
+
+	// Fetch post context for editor preview (mirrors Voxel's get_post_for_preview)
+	// This provides permissions, status, product data, etc. so action buttons
+	// show/hide correctly in the editor (e.g. publish_post hidden when post is published)
+	const editorPostContext = useEditorPostContext(templatePostType);
 
 	// Expand items with loop configuration for editor preview
 	const { items: expandedItems } = useExpandedLoopItems({
@@ -114,7 +120,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 				{combinedCSS && (
 					<style dangerouslySetInnerHTML={{ __html: combinedCSS }} />
 				)}
-				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" templateContext={templateContext} templatePostType={templatePostType} />
+				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" postContext={editorPostContext} templateContext={templateContext} templatePostType={templatePostType} />
 			</div>
 		</>
 	);

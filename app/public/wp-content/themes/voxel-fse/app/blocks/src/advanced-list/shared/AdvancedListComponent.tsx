@@ -17,8 +17,8 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useCallback, useState, useRef } from 'react';
+import { FormPopup } from '@shared/popup-kit/FormPopup';
 import { InlineSvg } from '@shared/InlineSvg';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import type {
@@ -30,8 +30,7 @@ import type {
 	VxConfig,
 } from '../types';
 import { POST_DEPENDENT_ACTIONS, ACTIVE_STATE_ACTIONS } from '../types';
-import { useResolvedDynamicTexts } from '../../../shared/utils/useResolvedDynamicText';
-import { useVisibilityEvaluation } from './useVisibilityEvaluation';
+import { useResolvedDynamicTexts, useResolvedDynamicIcon } from '../../../shared/utils/useResolvedDynamicText';
 
 /**
  * Share configuration from Voxel's share.js
@@ -198,178 +197,38 @@ function getICalendarDataUrl(args: {
 }
 
 /**
- * Popup positioning hook — 1:1 match with Voxel.mixins.popup
- * Evidence: themes/voxel/assets/dist/commons.js, shared/popup-kit/FormPopup.tsx
- *
- * Voxel's algorithm:
- * 1. Get trigger bounding rect (viewport-relative) and offset (document-relative)
- * 2. Popup width = max(trigger width, popup CSS min-width)
- * 3. Left: if trigger center > body center → right-align, else left-align
- * 4. Top: below trigger; if not enough space below AND fits above → above
- */
-function usePopupPosition(
-	isOpen: boolean,
-	targetRef: React.RefObject<HTMLElement>,
-	popupRef: React.RefObject<HTMLDivElement>,
-	popupBoxRef: React.RefObject<HTMLDivElement>,
-) {
-	const [styles, setStyles] = useState<React.CSSProperties>({});
-	const lastStylesRef = useRef<string>('');
-
-	const reposition = useCallback(() => {
-		if (!popupBoxRef.current || !targetRef.current || !popupRef.current) return;
-
-		const bodyWidth = document.body.clientWidth;
-		const triggerRect = targetRef.current.getBoundingClientRect();
-		const triggerOuterWidth = targetRef.current.offsetWidth;
-		const triggerOffset = {
-			left: triggerRect.left + window.pageXOffset,
-			top: triggerRect.top + window.pageYOffset,
-		};
-		const popupRect = popupRef.current.getBoundingClientRect();
-		const computedStyle = window.getComputedStyle(popupBoxRef.current);
-		const cssMinWidth = parseFloat(computedStyle.minWidth) || 0;
-		const popupWidth = Math.max(triggerRect.width, cssMinWidth || Math.min(340, bodyWidth - 40));
-
-		const isRightSide = triggerOffset.left + triggerOuterWidth / 2 > bodyWidth / 2 + 1;
-		let leftPosition = isRightSide
-			? triggerOffset.left - popupWidth + triggerOuterWidth
-			: triggerOffset.left;
-
-		if (leftPosition < 0) leftPosition = 10;
-		if (leftPosition + popupWidth > bodyWidth) leftPosition = bodyWidth - popupWidth - 10;
-
-		let topPosition = triggerOffset.top + triggerRect.height;
-		const viewportHeight = window.innerHeight;
-		if (triggerRect.bottom + popupRect.height > viewportHeight && triggerRect.top - popupRect.height >= 0) {
-			topPosition = triggerOffset.top - popupRect.height;
-		}
-
-		const newStyles: React.CSSProperties = {
-			top: `${topPosition}px`,
-			left: `${leftPosition}px`,
-			width: `${popupWidth}px`,
-			position: 'absolute',
-		};
-
-		const serialized = JSON.stringify(newStyles);
-		if (serialized === lastStylesRef.current) return;
-		lastStylesRef.current = serialized;
-		setStyles(newStyles);
-	}, [targetRef, popupRef, popupBoxRef]);
-
-	useEffect(() => {
-		if (!isOpen) return;
-
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => reposition());
-		});
-
-		const onScroll = () => reposition();
-		const onResize = () => reposition();
-		window.addEventListener('scroll', onScroll, true);
-		window.addEventListener('resize', onResize, true);
-
-		let resizeObserver: ResizeObserver | null = null;
-		if (popupBoxRef.current) {
-			resizeObserver = new ResizeObserver(() => {
-				requestAnimationFrame(() => reposition());
-			});
-			resizeObserver.observe(popupBoxRef.current);
-		}
-
-		return () => {
-			window.removeEventListener('scroll', onScroll, true);
-			window.removeEventListener('resize', onResize, true);
-			resizeObserver?.disconnect();
-		};
-	}, [isOpen, reposition, popupBoxRef]);
-
-	return styles;
-}
-
-/**
- * Portal popup wrapper — renders popup at body level with Voxel positioning
- * Matches Voxel's <popup> component structure:
- * ts-popup-root → ts-form (positioned) → ts-field-popup-container → ts-field-popup
- */
-function PopupPortal({
-	isOpen,
-	targetRef,
-	onClose,
-	children,
-}: {
-	isOpen: boolean;
-	targetRef: React.RefObject<HTMLElement>;
-	onClose: () => void;
-	children: React.ReactNode;
-}) {
-	const popupRef = useRef<HTMLDivElement>(null);
-	const popupBoxRef = useRef<HTMLDivElement>(null);
-	const styles = usePopupPosition(isOpen, targetRef, popupRef as React.RefObject<HTMLDivElement>, popupBoxRef as React.RefObject<HTMLDivElement>);
-
-	// ESC key to close
-	useEffect(() => {
-		if (!isOpen) return;
-		const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-		document.addEventListener('keydown', handleEsc);
-		return () => document.removeEventListener('keydown', handleEsc);
-	}, [isOpen, onClose]);
-
-	// Click outside to close
-	useEffect(() => {
-		if (!isOpen) return;
-		const handleClickOutside = (e: MouseEvent) => {
-			const clickTarget = e.target as HTMLElement;
-			if (popupBoxRef.current?.contains(clickTarget)) return;
-			if (targetRef.current?.contains(clickTarget)) return;
-			onClose();
-		};
-		const rafId = requestAnimationFrame(() => {
-			document.addEventListener('mousedown', handleClickOutside);
-		});
-		return () => {
-			cancelAnimationFrame(rafId);
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
-	}, [isOpen, onClose, targetRef]);
-
-	if (!isOpen) return null;
-
-	return createPortal(
-		<div className="ts-popup-root elementor-element">
-			<div ref={popupRef} className="ts-form elementor-element" style={styles}>
-				<div className="ts-field-popup-container">
-					<div ref={popupBoxRef} className="ts-field-popup triggers-blur">
-						{children}
-					</div>
-				</div>
-			</div>
-		</div>,
-		document.body
-	);
-}
-
-/**
  * Edit Steps Popup Component
- * Matches edit-post-action.php:16-50 structure
+ * Uses shared FormPopup for correct FSE editor positioning.
+ * Matches edit-post-action.php:16-50 structure.
+ *
+ * The popup header (hide-d) is rendered inside children, NOT via FormPopup's
+ * showHeader prop, because Voxel's edit-post popup header uses hide-d class
+ * (hidden on desktop, shown on mobile) — FormPopup's built-in header has
+ * different behavior.
  */
 interface EditStepsPopupProps {
 	editSteps: Array<{ key: string; label: string; link: string }>;
 	icon: IconValue | null;
-	text: string;
-	closeIcon: IconValue;
+	resolvedIconUrl?: string | null;
 	onClose: () => void;
 	isOpen: boolean;
-	targetRef: React.RefObject<HTMLElement>;
+	target: HTMLElement | null;
 }
 
-function EditStepsPopup({ editSteps, icon, text: _text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
+function EditStepsPopup({ editSteps, icon, resolvedIconUrl, onClose, isOpen, target }: EditStepsPopupProps) {
 	return (
-		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
+		<FormPopup
+			isOpen={isOpen}
+			popupId="edit-steps-popup"
+			target={target}
+			showHeader={false}
+			showFooter={false}
+			onClose={onClose}
+		>
+			{/* edit-post-action.php:23-35 — hide-d: hidden on desktop, visible on mobile */}
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
-					{renderIcon(icon)}
+					{renderIcon(icon, resolvedIconUrl)}
 					<span>Edit</span>
 				</div>
 				<ul className="flexify simplify-ul">
@@ -383,11 +242,15 @@ function EditStepsPopup({ editSteps, icon, text: _text, closeIcon, onClose, isOp
 								onClose();
 							}}
 						>
-							{renderIcon(closeIcon)}
+							{/* FormPopup provides the close SVG; replicate it here for the mobile header */}
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z" fill="currentColor" />
+							</svg>
 						</a>
 					</li>
 				</ul>
 			</div>
+			{/* edit-post-action.php:36-47 */}
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll">
 					{editSteps.map((step) => (
@@ -399,25 +262,26 @@ function EditStepsPopup({ editSteps, icon, text: _text, closeIcon, onClose, isOp
 					))}
 				</ul>
 			</div>
-		</PopupPortal>
+		</FormPopup>
 	);
 }
 
 /**
  * Share Popup Component
- * Matches share-post-action.php:18-62 structure
+ * Uses shared FormPopup for correct FSE editor positioning.
+ * Matches share-post-action.php:18-62 structure.
  */
 interface SharePopupProps {
 	title: string;
 	link: string;
 	icon: IconValue | null;
-	closeIcon: IconValue;
+	resolvedIconUrl?: string | null;
 	onClose: () => void;
 	isOpen: boolean;
-	targetRef: React.RefObject<HTMLElement>;
+	target: HTMLElement | null;
 }
 
-function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }: SharePopupProps) {
+function SharePopup({ title, link, icon, resolvedIconUrl, onClose, isOpen, target }: SharePopupProps) {
 	const [copied, setCopied] = useState(false);
 
 	const handleShare = async (item: ShareItem, e: React.MouseEvent) => {
@@ -427,7 +291,7 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 				await navigator.clipboard.writeText(link);
 				setCopied(true);
 				setTimeout(() => setCopied(false), 2000);
-			} catch (err) {
+			} catch (_err) {
 				// Fallback for older browsers
 				const textarea = document.createElement('textarea');
 				textarea.value = link;
@@ -449,10 +313,18 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 	}));
 
 	return (
-		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
+		<FormPopup
+			isOpen={isOpen}
+			popupId="share-post-popup"
+			target={target}
+			showHeader={false}
+			showFooter={false}
+			onClose={onClose}
+		>
+			{/* share-post-action.php:21-33 — hide-d: hidden on desktop, visible on mobile */}
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
-					{renderIcon(icon)}
+					{renderIcon(icon, resolvedIconUrl)}
 					<span>Share post</span>
 				</div>
 				<ul className="flexify simplify-ul">
@@ -466,11 +338,14 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 								onClose();
 							}}
 						>
-							{renderIcon(closeIcon)}
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z" fill="currentColor" />
+							</svg>
 						</a>
 					</li>
 				</ul>
 			</div>
+			{/* share-post-action.php:37-58 */}
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll ts-social-share">
 					{shareList.map((item) => (
@@ -500,7 +375,7 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 					))}
 				</ul>
 			</div>
-		</PopupPortal>
+		</FormPopup>
 	);
 }
 
@@ -508,18 +383,29 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
  * Render icon from IconValue
  * Uses InlineSvg for SVG URLs (matching navbar/userbar pattern)
  * so CSS fill/color variables work correctly.
+ *
+ * @param icon - The icon value
+ * @param resolvedDynamicUrl - Pre-resolved URL for dynamic icons (from useResolvedDynamicIcon)
  */
-function renderIcon(icon: IconValue | null): React.ReactNode {
+function renderIcon(icon: IconValue | null, resolvedDynamicUrl?: string | null): React.ReactNode {
 	if (!icon || !icon.value) {
 		return null;
 	}
 	if (icon.library === 'svg') {
 		return <InlineSvg url={icon.value} />;
 	}
+	// Dynamic icon: render the resolved URL as inline SVG
+	if (icon.library === 'dynamic') {
+		if (resolvedDynamicUrl) {
+			return <InlineSvg url={resolvedDynamicUrl} />;
+		}
+		// Not yet resolved — render nothing (loading state)
+		return null;
+	}
 	// Build the full CSS class for the icon.
 	// When library is 'icon', value is already the full class (e.g. "las la-eye").
 	// When library is a pack prefix (e.g. "las", "lar", "lab"), combine with value.
-	const iconClass = icon.library && icon.library !== 'icon' && icon.library !== 'dynamic'
+	const iconClass = icon.library && icon.library !== 'icon'
 		? `${icon.library} ${icon.value}`
 		: icon.value;
 	return <i className={iconClass} aria-hidden="true" />;
@@ -671,10 +557,9 @@ interface ActionItemProps {
 	postContext?: PostContext | null;
 	templateContext?: string;
 	templatePostType?: string;
-	visibilityResults?: Record<string, boolean>;
 }
 
-function ActionItemComponent({ item, index, attributes, context, postContext, templateContext, templatePostType, visibilityResults }: ActionItemProps) {
+function ActionItemComponent({ item, index, attributes, context, postContext, templateContext, templatePostType }: ActionItemProps) {
 	// State for popups
 	const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
 	const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
@@ -720,112 +605,117 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 		return result;
 	}, [context, resolved, dynamicTexts]);
 
+	// Resolve dynamic icon tags for editor preview
+	// Each icon field (icon, activeIcon, cartOptsIcon) can have library: 'dynamic'
+	// with a @tags() wrapped VoxelScript expression that needs two-step resolution
+	const iconDynamicValue = context === 'editor' && item.icon?.library === 'dynamic'
+		? item.icon.value : undefined;
+	const activeIconDynamicValue = context === 'editor' && item.activeIcon?.library === 'dynamic'
+		? item.activeIcon.value : undefined;
+	const cartOptsIconDynamicValue = context === 'editor' && item.cartOptsIcon?.library === 'dynamic'
+		? item.cartOptsIcon.value : undefined;
+
+	const resolvedIcon = useResolvedDynamicIcon(iconDynamicValue, resolveOpts);
+	const resolvedActiveIcon = useResolvedDynamicIcon(activeIconDynamicValue, resolveOpts);
+	const resolvedCartOptsIcon = useResolvedDynamicIcon(cartOptsIconDynamicValue, resolveOpts);
+
 	// Determine if action should be rendered based on context and per-item visibility
 	//
-	// ARCHITECTURE NOTE (Dual-layer visibility evaluation):
-	//
-	// 1. SERVER-SIDE (render.php): Visibility_Evaluator filters items before React
-	//    hydrates on the frontend. Items that fail are removed from vxconfig JSON.
-	//    This matches Voxel parent's repeater-control.php::_voxel_should_render().
-	//
-	// 2. EDITOR-SIDE (useVisibilityEvaluation hook): REST endpoint evaluates rules
-	//    server-side via POST /voxel-fse/v1/advanced-list/evaluate-visibility and
-	//    returns results to React. This provides live visibility preview in the editor.
-	//
-	// Both layers use the same Visibility_Evaluator::evaluate() PHP class.
+	// VISIBILITY ARCHITECTURE:
+	// - Editor: Always show all items (matches Voxel Elementor repeater-control.php
+	//   _voxel_should_render() which returns true in edit mode).
+	// - Frontend: render.php filters items via Visibility_Evaluator before React
+	//   hydrates. Items that fail are removed from vxconfig JSON.
 	const shouldRender = useMemo(() => {
-		const hasVisibilityRules = item.visibilityRules && item.visibilityRules.length > 0;
+		// Editor always shows all items (1:1 Voxel Elementor parity)
+		if (context === 'editor') {
+			return true;
+		}
 
-		// Check visibility rules (applies to both editor and frontend)
-		if (hasVisibilityRules) {
-			if (context === 'editor' && visibilityResults) {
-				// Editor: use results from useVisibilityEvaluation REST call
-				const result = visibilityResults[item.id];
-				if (result === false) {
-					return false;
-				}
-				// result === undefined means evaluation hasn't returned yet — show the item
-			}
-			// Frontend: items with failing rules were already removed by render.php
-			// If the item is still in vxconfig, it passed server-side evaluation.
-		} else {
-			// No rules configured — rowVisibility is a simple toggle
-			// 'hide' with no rules = always hide (unusual but supported)
-			if (item.rowVisibility === 'hide') {
-				return false;
-			}
+		// Frontend: items with failing visibility rules were already removed by
+		// render.php. If the item is still in vxconfig, it passed evaluation.
+		// Only check simple rowVisibility toggle (no rules = direct toggle).
+		const hasVisibilityRules = item.visibilityRules && item.visibilityRules.length > 0;
+		if (!hasVisibilityRules && item.rowVisibility === 'hide') {
+			return false;
 		}
 
 		// For post-dependent actions in frontend, check if we have post context
-		if (context !== 'editor' && isPostDependent && !postContext) {
+		if (isPostDependent && !postContext) {
 			return false;
 		}
 
 		// edit_post requires editability (frontend only)
-		if (context !== 'editor' && item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
+		if (item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
 			return false;
 		}
 
 		return true;
-	}, [context, isPostDependent, postContext, item.actionType, item.id, item.rowVisibility, item.visibilityRules, visibilityResults]);
+	}, [context, isPostDependent, postContext, item.actionType, item.rowVisibility, item.visibilityRules]);
 
 	// Check visibility based on permissions
 	// (Replaces PHP early returns in each action template)
+	// Runs in BOTH editor and frontend when postContext is available.
+	// In editor: postContext comes from useEditorPostContext (preview post).
+	// In frontend: postContext comes from fetchPostContext (current post).
 	const canRender = useMemo(() => {
-		if (context === 'editor') return true;
 		if (!shouldRender) return false;
+
+		// When postContext is not yet loaded, show all items (loading state)
+		if (!postContext) {
+			// In editor without postContext, show non-post-dependent actions
+			// but hide post-dependent ones that have no context to evaluate
+			if (context === 'editor' && isPostDependent) return true;
+			return true;
+		}
 
 		// delete-post-action.php:3 - is_deletable_by_current_user()
 		if (item.actionType === 'delete_post') {
-			return postContext?.permissions?.delete ?? false;
+			return postContext.permissions?.delete ?? false;
 		}
 
 		// publish-post-action.php - requires editable + unpublished status
 		if (item.actionType === 'publish_post') {
-			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'unpublished';
+			return (postContext.permissions?.publish ?? false) && postContext.status === 'unpublished';
 		}
 
 		// unpublish-post-action.php - requires editable + publish status
 		if (item.actionType === 'unpublish_post') {
-			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'publish';
+			return (postContext.permissions?.publish ?? false) && postContext.status === 'publish';
 		}
 
 		// add-to-cart-action.php:16-20 - requires valid product
 		if (item.actionType === 'add_to_cart') {
-			return postContext?.product?.isEnabled ?? false;
+			return postContext.product?.isEnabled ?? false;
 		}
 
 		// show-post-on-map.php:7-11 - requires location with lat/lng
 		if (item.actionType === 'show_post_on_map') {
-			return postContext?.location?.mapLink != null;
+			return postContext.location?.mapLink != null;
 		}
 
 		// view-post-stats-action.php:3-8 - requires editable + tracking enabled
 		if (item.actionType === 'view_post_stats') {
-			return postContext?.postStatsLink != null;
+			return postContext.postStatsLink != null;
 		}
 
 		// promote-post-action.php:6-9 - requires is_promotable_by_user()
 		if (item.actionType === 'promote_post') {
-			return postContext?.promote?.isPromotable ?? false;
+			return postContext.promote?.isPromotable ?? false;
 		}
 
 		// follow-post-action.php:6-8, follow-user-action.php:6-8 - requires timeline enabled
 		if (['action_follow_post', 'action_follow'].includes(item.actionType)) {
-			if (postContext?.timelineEnabled === false) return false;
+			if (postContext.timelineEnabled === false) return false;
 		}
 
 		// follow-user-action.php:10-12 - requires author exists
 		if (item.actionType === 'action_follow') {
-			return postContext?.authorId != null;
+			return postContext.authorId != null;
 		}
 
 		return true;
-	}, [context, shouldRender, item.actionType, postContext]);
-
-	if (!canRender) {
-		return null;
-	}
+	}, [context, shouldRender, isPostDependent, item.actionType, postContext]);
 
 	// Build item styles
 	const itemStyles = buildItemStyles(attributes);
@@ -913,6 +803,8 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					href: item.link?.url || '#',
 					target: item.link?.isExternal ? '_blank' : undefined,
 					rel: item.link?.nofollow ? 'nofollow' : undefined,
+					// Prevent navigation in editor (Elementor preview also blocks link clicks)
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'delete_post':
@@ -925,6 +817,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					'vx-action': '', // Voxel directive (empty string = boolean attr)
 					rel: 'nofollow',
 					'data-confirm': postContext.confirmMessages?.delete || 'Are you sure?',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'publish_post':
@@ -936,6 +829,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					className: 'ts-action-con',
 					'vx-action': '',
 					rel: 'nofollow',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'unpublish_post':
@@ -947,6 +841,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					className: 'ts-action-con',
 					'vx-action': '',
 					rel: 'nofollow',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'add_to_cart':
@@ -973,6 +868,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					tag: 'a',
 					href: postContext.postLink,
 					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'select_addition':
@@ -996,6 +892,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					href: getVoxelActionUrl('user.follow_post', { post_id: postContext.postId }),
 					rel: 'nofollow',
 					role: 'button',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'action_follow':
@@ -1006,6 +903,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					href: getVoxelActionUrl('user.follow_user', { user_id: postContext.authorId || 0 }),
 					rel: 'nofollow',
 					role: 'button',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'show_post_on_map':
@@ -1017,6 +915,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 						rel: 'nofollow',
 						className: 'ts-action-con ts-action-show-on-map',
 						'data-post-id': postContext.postId,
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -1028,6 +927,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 						tag: 'a',
 						href: postContext.postStatsLink,
 						rel: 'nofollow',
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -1035,11 +935,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 			case 'promote_post':
 				// promote-post-action.php:12-40 - Promote or view active promotion
 				if (postContext?.promote?.isPromotable) {
+					const editorBlock = context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {};
 					if (postContext.promote.isActive && postContext.promote.orderLink) {
 						return {
 							tag: 'a',
 							href: postContext.promote.orderLink,
 							rel: 'nofollow',
+							...editorBlock,
 						};
 					} else if (postContext.promote.promoteLink) {
 						return {
@@ -1047,6 +949,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 							href: postContext.promote.promoteLink,
 							rel: 'nofollow',
 							role: 'button',
+							...editorBlock,
 						};
 					}
 				}
@@ -1067,7 +970,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 			case 'go_back':
 				return {
 					tag: 'a',
-					href: 'javascript:history.back();',
+					href: '#',
+					onClick: (e: React.MouseEvent) => {
+						e.preventDefault();
+						if (context !== 'editor') {
+							window.history.back();
+						}
+					},
 				};
 
 			case 'scroll_to_section':
@@ -1105,6 +1014,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					return {
 						tag: 'a',
 						href: postContext.editLink,
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -1142,6 +1052,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					target: '_blank',
 					rel: 'nofollow',
 					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 			}
 
@@ -1166,6 +1077,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					role: 'button',
 					rel: 'nofollow',
 					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 			}
 
@@ -1176,6 +1088,11 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 
 	const actionProps = getActionProps();
 	const Tag = actionProps.tag as keyof JSX.IntrinsicElements;
+
+	// All hooks called above — safe to return null now
+	if (!canRender) {
+		return null;
+	}
 
 	// Cart "Select Options" variant (add-to-cart-action.php:33-43):
 	// Uses cartOptsIcon/cartOptsText instead of normal icon/text
@@ -1191,13 +1108,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 				<>
 					<span className="ts-initial">
 						<div className="ts-action-icon" style={iconStyles}>
-							{renderIcon(item.icon)}
+							{renderIcon(item.icon, resolvedIcon.url)}
 						</div>
 						{txt.text}
 					</span>
 					<span className="ts-reveal">
 						<div className="ts-action-icon" style={iconStyles}>
-							{renderIcon(item.activeIcon)}
+							{renderIcon(item.activeIcon, resolvedActiveIcon.url)}
 						</div>
 						{txt.activeText}
 					</span>
@@ -1208,11 +1125,15 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 		// Cart "Select Options" variant uses different icon/text (add-to-cart-action.php:39-41)
 		const displayIcon = isCartSelectOptions ? (item.cartOptsIcon || item.icon) : item.icon;
 		const displayText = isCartSelectOptions ? txt.cartOptsText : txt.text;
+		// Pick the matching resolved URL for the displayed icon
+		const displayResolvedUrl = isCartSelectOptions
+			? (resolvedCartOptsIcon.url || resolvedIcon.url)
+			: resolvedIcon.url;
 
 		return (
 			<>
 				<div className="ts-action-icon" style={iconStyles}>
-					{renderIcon(displayIcon)}
+					{renderIcon(displayIcon, displayResolvedUrl)}
 				</div>
 				{displayText}
 			</>
@@ -1307,11 +1228,10 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 						<EditStepsPopup
 							editSteps={postContext.editSteps}
 							icon={item.icon}
-							text={txt.text}
-							closeIcon={attributes.closeIcon}
+							resolvedIconUrl={resolvedIcon.url}
 							isOpen={isEditPopupOpen}
 							onClose={() => setIsEditPopupOpen(false)}
-							targetRef={targetRef as React.RefObject<HTMLElement>}
+							target={targetRef.current}
 						/>
 					)}
 					{/* Share popup (share-post-action.php:18-62) */}
@@ -1320,10 +1240,10 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 							title={postContext.postTitle}
 							link={postContext.postLink}
 							icon={item.icon}
-							closeIcon={attributes.closeIcon}
+							resolvedIconUrl={resolvedIcon.url}
 							isOpen={isSharePopupOpen}
 							onClose={() => setIsSharePopupOpen(false)}
-							targetRef={targetRef as React.RefObject<HTMLElement>}
+							target={targetRef.current}
 						/>
 					)}
 				</div>
@@ -1361,12 +1281,6 @@ export function AdvancedListComponent({
 	templatePostType,
 }: AdvancedListComponentProps) {
 	const listStyles = buildListStyles(attributes);
-
-	// Evaluate visibility rules for all items (editor: REST call, frontend: server-side in render.php)
-	const visibilityResults = useVisibilityEvaluation(
-		context === 'editor' ? (attributes.items || []) : [],
-		templatePostType || '',
-	);
 
 	// Build vxconfig for re-rendering (Plan C+ pattern)
 	const vxConfig: VxConfig = useMemo(() => ({
@@ -1487,7 +1401,6 @@ export function AdvancedListComponent({
 					postContext={postContext}
 					templateContext={templateContext}
 					templatePostType={templatePostType}
-					visibilityResults={visibilityResults}
 				/>
 			))}
 		</ul>

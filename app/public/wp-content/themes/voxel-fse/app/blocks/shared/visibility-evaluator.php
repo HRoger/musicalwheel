@@ -29,7 +29,16 @@ class Visibility_Evaluator
         // Voxel logic: Admins in edit mode should always see the element
         // during normal page rendering (render.php, render_block filter).
         if ( ! $skip_edit_check ) {
+            // Elementor edit mode bypass
             if (function_exists('\Voxel\is_edit_mode') && \Voxel\is_edit_mode() && current_user_can('administrator')) {
+                return true;
+            }
+            // Gutenberg Site Editor bypass: when rendering block templates
+            // (wp_template, wp_template_part), there's no real post context for
+            // dtag rules like @post(:status.key). Show all items, matching Elementor.
+            // This applies both to Site Editor REST requests and iframe previews.
+            $current_post = get_post();
+            if ( $current_post && in_array( $current_post->post_type, [ 'wp_template', 'wp_template_part' ], true ) ) {
                 return true;
             }
         }
@@ -58,11 +67,23 @@ class Visibility_Evaluator
                     'arguments' => $rule['arguments'] ?? [],
                 ];
             } else {
-                $formatted_rule = [
-                    'type' => $type,
-                    'value' => $rule['value'] ?? '',
-                    'operator' => $rule['operator'] ?? 'equals',
-                ];
+                // Pass all rule keys through to Voxel's evaluator.
+                // Voxel's evaluate_visibility_rules() does: unset($rule_config['type']); $rule->set_args($rule_config);
+                // So arg keys like 'author_id', 'taxonomy', 'term_id', 'page_id', 'post_type', 'value'
+                // must be present in the formatted rule for the PHP rule class to read them.
+                $formatted_rule = [ 'type' => $type ];
+                $internal_keys = [ 'filterKey', 'id', 'operator', 'groupIndex', 'ruleArgs' ];
+                foreach ( $rule as $key => $val ) {
+                    if ( ! in_array( $key, $internal_keys, true ) && $key !== 'type' ) {
+                        $formatted_rule[ $key ] = $val;
+                    }
+                }
+                // Flatten ruleArgs into the formatted rule (new storage format)
+                if ( ! empty( $rule['ruleArgs'] ) && is_array( $rule['ruleArgs'] ) ) {
+                    foreach ( $rule['ruleArgs'] as $arg_key => $arg_val ) {
+                        $formatted_rule[ $arg_key ] = $arg_val;
+                    }
+                }
             }
 
             if ( ! isset( $groups_map[ $group_index ] ) ) {
@@ -100,6 +121,13 @@ class Visibility_Evaluator
     private static function evaluate_legacy(array $rules): bool
     {
         foreach ($rules as $rule) {
+            // Flatten ruleArgs into the rule for the legacy evaluator
+            // (same flattening done for the Voxel path above)
+            if ( ! empty( $rule['ruleArgs'] ) && is_array( $rule['ruleArgs'] ) ) {
+                foreach ( $rule['ruleArgs'] as $arg_key => $arg_val ) {
+                    $rule[ $arg_key ] = $arg_val;
+                }
+            }
             if (!self::evaluate_rule($rule)) {
                 return false;
             }
@@ -116,7 +144,27 @@ class Visibility_Evaluator
     private static function evaluate_rule(array $rule): bool
     {
         $type = $rule['filterKey'] ?? '';
+        // Resolve the primary value: check 'value' key first, then fall back to
+        // the specific arg key that Voxel's rule class uses for this rule type.
+        // After ruleArgs flattening in evaluate_legacy(), these keys are present
+        // directly on $rule (e.g., $rule['page_id'], $rule['post_type']).
         $value = $rule['value'] ?? '';
+        if ( $value === '' ) {
+            // Map of rule types to their primary argument key in Voxel
+            $arg_key_map = [
+                'template:is_page'              => 'page_id',
+                'template:is_child_of_page'     => 'page_id',
+                'template:is_single_post'       => 'post_type',
+                'template:is_post_type_archive'  => 'post_type',
+                'template:is_author'            => 'author_id',
+                'template:is_single_term'       => 'taxonomy',
+                'user:has_bought_product'       => 'product_id',
+                'user:has_bought_product_type'  => 'product_type',
+            ];
+            if ( isset( $arg_key_map[ $type ] ) && isset( $rule[ $arg_key_map[ $type ] ] ) ) {
+                $value = $rule[ $arg_key_map[ $type ] ];
+            }
+        }
 
         switch ($type) {
             // ============================================
