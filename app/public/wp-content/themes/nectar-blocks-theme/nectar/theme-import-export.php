@@ -54,7 +54,7 @@ class Theme_IE {
     $options = get_theme_mods();
 
     if (! class_exists('Kirki')) {
-      require_once NECTAR_THEME_DIRECTORY . '/vendor/aristath/kirki/kirki.php';
+      require_once NECTAR_THEME_DIRECTORY . '/vendor/kirki-framework/kirki/kirki.php';
     }
 
     if (! class_exists('NectarBlocks_Panel_Section_Helper')) {
@@ -83,7 +83,7 @@ class Theme_IE {
   private function import_thememods( array $import_data ) {
 
     if (! class_exists('Kirki')) {
-      require_once NECTAR_THEME_DIRECTORY . '/vendor/aristath/kirki/kirki.php';
+      require_once NECTAR_THEME_DIRECTORY . '/vendor/kirki-framework/kirki/kirki.php';
     }
 
     if (! class_exists('NectarBlocks_Panel_Section_Helper')) {

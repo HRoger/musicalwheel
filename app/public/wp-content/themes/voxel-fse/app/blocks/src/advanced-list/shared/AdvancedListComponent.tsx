@@ -18,6 +18,9 @@
  */
 
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { InlineSvg } from '@shared/InlineSvg';
+import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import type {
 	AdvancedListAttributes,
 	AdvancedListComponentProps,
@@ -27,6 +30,8 @@ import type {
 	VxConfig,
 } from '../types';
 import { POST_DEPENDENT_ACTIONS, ACTIVE_STATE_ACTIONS } from '../types';
+import { useResolvedDynamicTexts } from '../../../shared/utils/useResolvedDynamicText';
+import { useVisibilityEvaluation } from './useVisibilityEvaluation';
 
 /**
  * Share configuration from Voxel's share.js
@@ -77,6 +82,275 @@ function getShareLink(type: string, title: string, url: string): string {
 }
 
 /**
+ * Generate Google Calendar URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_google_calendar_link()
+ * See: themes/voxel/app/utils/sharer.php:161-189
+ */
+function getGoogleCalendarUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	timezone?: string;
+}): string | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const params = new URLSearchParams({
+		action: 'TEMPLATE',
+		trp: 'true',
+		text: args.title || '',
+		dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+	});
+
+	if (args.description) {
+		// Strip HTML tags like Voxel's wp_kses($args['description'], [])
+		const plainDescription = args.description.replace(/<[^>]*>/g, '');
+		params.set('details', plainDescription);
+	}
+	if (args.location) {
+		params.set('location', args.location);
+	}
+	if (args.timezone) {
+		params.set('ctz', args.timezone);
+	}
+
+	return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Generate iCalendar (ICS) data URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_icalendar_data()
+ * See: themes/voxel/app/utils/sharer.php:191-243
+ */
+function getICalendarDataUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	url?: string;
+}): { dataUrl: string; filename: string } | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const start = formatDate(startDate);
+	const end = formatDate(endDate);
+	const title = (args.title || 'event').replace(/[^\w\s-]/g, '');
+	const description = (args.description || '')
+		.replace(/<[^>]*>/g, '') // Strip HTML
+		.replace(/\r\n|\r|\n/g, '\\n') // Convert newlines
+		.replace(/&nbsp;/g, '');
+	const location = (args.location || '').replace(/[^\w\s,-]/g, '');
+	const url = args.url || '';
+	const dtstamp = formatDate(new Date());
+	const uid = `${window.location.origin}/?ics_uid=${btoa(JSON.stringify([title, start, end, url])).slice(0, 20)}`;
+
+	// Build ICS content (no leading whitespace per line - ICS format requirement)
+	const icsContent = [
+		'BEGIN:VCALENDAR',
+		'VERSION:2.0',
+		'PRODID:-//hacksw/handcal//NONSGML v1.0//EN',
+		'CALSCALE:GREGORIAN',
+		'BEGIN:VEVENT',
+		`LOCATION:${location}`,
+		`DESCRIPTION:${description}`,
+		`DTSTART:${start}`,
+		`DTEND:${end}`,
+		`SUMMARY:${title}`,
+		`URL;VALUE=URI:${url}`,
+		`DTSTAMP:${dtstamp}`,
+		`UID:${uid}`,
+		'END:VEVENT',
+		'END:VCALENDAR',
+	].join('\r\n');
+
+	// Create base64 data URL (matches Voxel's base64_encode approach)
+	const dataUrl = `data:text/calendar;base64,${btoa(icsContent)}`;
+	const filename = `${title || 'event'}.ics`;
+
+	return { dataUrl, filename };
+}
+
+/**
+ * Popup positioning hook — 1:1 match with Voxel.mixins.popup
+ * Evidence: themes/voxel/assets/dist/commons.js, shared/popup-kit/FormPopup.tsx
+ *
+ * Voxel's algorithm:
+ * 1. Get trigger bounding rect (viewport-relative) and offset (document-relative)
+ * 2. Popup width = max(trigger width, popup CSS min-width)
+ * 3. Left: if trigger center > body center → right-align, else left-align
+ * 4. Top: below trigger; if not enough space below AND fits above → above
+ */
+function usePopupPosition(
+	isOpen: boolean,
+	targetRef: React.RefObject<HTMLElement>,
+	popupRef: React.RefObject<HTMLDivElement>,
+	popupBoxRef: React.RefObject<HTMLDivElement>,
+) {
+	const [styles, setStyles] = useState<React.CSSProperties>({});
+	const lastStylesRef = useRef<string>('');
+
+	const reposition = useCallback(() => {
+		if (!popupBoxRef.current || !targetRef.current || !popupRef.current) return;
+
+		const bodyWidth = document.body.clientWidth;
+		const triggerRect = targetRef.current.getBoundingClientRect();
+		const triggerOuterWidth = targetRef.current.offsetWidth;
+		const triggerOffset = {
+			left: triggerRect.left + window.pageXOffset,
+			top: triggerRect.top + window.pageYOffset,
+		};
+		const popupRect = popupRef.current.getBoundingClientRect();
+		const computedStyle = window.getComputedStyle(popupBoxRef.current);
+		const cssMinWidth = parseFloat(computedStyle.minWidth) || 0;
+		const popupWidth = Math.max(triggerRect.width, cssMinWidth || Math.min(340, bodyWidth - 40));
+
+		const isRightSide = triggerOffset.left + triggerOuterWidth / 2 > bodyWidth / 2 + 1;
+		let leftPosition = isRightSide
+			? triggerOffset.left - popupWidth + triggerOuterWidth
+			: triggerOffset.left;
+
+		if (leftPosition < 0) leftPosition = 10;
+		if (leftPosition + popupWidth > bodyWidth) leftPosition = bodyWidth - popupWidth - 10;
+
+		let topPosition = triggerOffset.top + triggerRect.height;
+		const viewportHeight = window.innerHeight;
+		if (triggerRect.bottom + popupRect.height > viewportHeight && triggerRect.top - popupRect.height >= 0) {
+			topPosition = triggerOffset.top - popupRect.height;
+		}
+
+		const newStyles: React.CSSProperties = {
+			top: `${topPosition}px`,
+			left: `${leftPosition}px`,
+			width: `${popupWidth}px`,
+			position: 'absolute',
+		};
+
+		const serialized = JSON.stringify(newStyles);
+		if (serialized === lastStylesRef.current) return;
+		lastStylesRef.current = serialized;
+		setStyles(newStyles);
+	}, [targetRef, popupRef, popupBoxRef]);
+
+	useEffect(() => {
+		if (!isOpen) return;
+
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => reposition());
+		});
+
+		const onScroll = () => reposition();
+		const onResize = () => reposition();
+		window.addEventListener('scroll', onScroll, true);
+		window.addEventListener('resize', onResize, true);
+
+		let resizeObserver: ResizeObserver | null = null;
+		if (popupBoxRef.current) {
+			resizeObserver = new ResizeObserver(() => {
+				requestAnimationFrame(() => reposition());
+			});
+			resizeObserver.observe(popupBoxRef.current);
+		}
+
+		return () => {
+			window.removeEventListener('scroll', onScroll, true);
+			window.removeEventListener('resize', onResize, true);
+			resizeObserver?.disconnect();
+		};
+	}, [isOpen, reposition, popupBoxRef]);
+
+	return styles;
+}
+
+/**
+ * Portal popup wrapper — renders popup at body level with Voxel positioning
+ * Matches Voxel's <popup> component structure:
+ * ts-popup-root → ts-form (positioned) → ts-field-popup-container → ts-field-popup
+ */
+function PopupPortal({
+	isOpen,
+	targetRef,
+	onClose,
+	children,
+}: {
+	isOpen: boolean;
+	targetRef: React.RefObject<HTMLElement>;
+	onClose: () => void;
+	children: React.ReactNode;
+}) {
+	const popupRef = useRef<HTMLDivElement>(null);
+	const popupBoxRef = useRef<HTMLDivElement>(null);
+	const styles = usePopupPosition(isOpen, targetRef, popupRef as React.RefObject<HTMLDivElement>, popupBoxRef as React.RefObject<HTMLDivElement>);
+
+	// ESC key to close
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+		document.addEventListener('keydown', handleEsc);
+		return () => document.removeEventListener('keydown', handleEsc);
+	}, [isOpen, onClose]);
+
+	// Click outside to close
+	useEffect(() => {
+		if (!isOpen) return;
+		const handleClickOutside = (e: MouseEvent) => {
+			const clickTarget = e.target as HTMLElement;
+			if (popupBoxRef.current?.contains(clickTarget)) return;
+			if (targetRef.current?.contains(clickTarget)) return;
+			onClose();
+		};
+		const rafId = requestAnimationFrame(() => {
+			document.addEventListener('mousedown', handleClickOutside);
+		});
+		return () => {
+			cancelAnimationFrame(rafId);
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isOpen, onClose, targetRef]);
+
+	if (!isOpen) return null;
+
+	return createPortal(
+		<div className="ts-popup-root elementor-element">
+			<div ref={popupRef} className="ts-form elementor-element" style={styles}>
+				<div className="ts-field-popup-container">
+					<div ref={popupBoxRef} className="ts-field-popup triggers-blur">
+						{children}
+					</div>
+				</div>
+			</div>
+		</div>,
+		document.body
+	);
+}
+
+/**
  * Edit Steps Popup Component
  * Matches edit-post-action.php:16-50 structure
  */
@@ -90,32 +364,9 @@ interface EditStepsPopupProps {
 	targetRef: React.RefObject<HTMLElement>;
 }
 
-function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
-
-	if (!isOpen) return null;
-
+function EditStepsPopup({ editSteps, icon, text: _text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--edit-steps">
+		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
 					{renderIcon(icon)}
@@ -148,7 +399,7 @@ function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, tar
 					))}
 				</ul>
 			</div>
-		</div>
+		</PopupPortal>
 	);
 }
 
@@ -167,27 +418,7 @@ interface SharePopupProps {
 }
 
 function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }: SharePopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
 	const [copied, setCopied] = useState(false);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
 
 	const handleShare = async (item: ShareItem, e: React.MouseEvent) => {
 		if (item.type === 'copy') {
@@ -212,15 +443,13 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 		// For social links, let them open normally
 	};
 
-	if (!isOpen) return null;
-
 	const shareList: ShareItem[] = DEFAULT_SHARE_LIST.map((item) => ({
 		...item,
 		link: getShareLink(item.type, title, link),
 	}));
 
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--share">
+		<PopupPortal isOpen={isOpen} targetRef={targetRef} onClose={onClose}>
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
 					{renderIcon(icon)}
@@ -245,51 +474,55 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll ts-social-share">
 					{shareList.map((item) => (
-						<li key={item.type} className={`ts-share-${item.type}`}>
-							<a
-								href={item.link}
-								target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
-								className="flexify"
-								rel="nofollow"
-								onClick={(e) => handleShare(item, e)}
-							>
-								<div className="ts-term-icon">
-									<span dangerouslySetInnerHTML={{ __html: item.icon }} />
-								</div>
-								<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
-							</a>
-						</li>
+						item.type === 'ui-heading' ? (
+							/* ui-heading dividers (share-post-action.php:40-46) */
+							<li key={`heading-${item.label}`} className="ts-parent-item vx-noevent">
+								<a href="#" className="flexify">
+									<span>{item.label}</span>
+								</a>
+							</li>
+						) : (
+							<li key={item.type} className={`ts-share-${item.type}`}>
+								<a
+									href={item.link}
+									target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
+									className="flexify"
+									rel="nofollow"
+									onClick={(e) => handleShare(item, e)}
+								>
+									<div className="ts-term-icon">
+										<span dangerouslySetInnerHTML={{ __html: item.icon }} />
+									</div>
+									<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
+								</a>
+							</li>
+						)
 					))}
 				</ul>
 			</div>
-		</div>
+		</PopupPortal>
 	);
 }
 
 /**
  * Render icon from IconValue
+ * Uses InlineSvg for SVG URLs (matching navbar/userbar pattern)
+ * so CSS fill/color variables work correctly.
  */
 function renderIcon(icon: IconValue | null): React.ReactNode {
 	if (!icon || !icon.value) {
 		return null;
 	}
-
-	// Handle SVG icons (inline SVG)
-	if (icon.library === 'svg' || icon.value.startsWith('<svg')) {
-		return <span dangerouslySetInnerHTML={{ __html: icon.value }} />;
+	if (icon.library === 'svg') {
+		return <InlineSvg url={icon.value} />;
 	}
-
-	// Handle Font Awesome icons
-	if (icon.library === 'fa-solid' || icon.library === 'fa-regular' || icon.library === 'fa-brands') {
-		return <i className={icon.value} />;
-	}
-
-	// Handle icon class names
-	if (icon.value) {
-		return <i className={icon.value} />;
-	}
-
-	return null;
+	// Build the full CSS class for the icon.
+	// When library is 'icon', value is already the full class (e.g. "las la-eye").
+	// When library is a pack prefix (e.g. "las", "lar", "lab"), combine with value.
+	const iconClass = icon.library && icon.library !== 'icon' && icon.library !== 'dynamic'
+		? `${icon.library} ${icon.value}`
+		: icon.value;
+	return <i className={iconClass} aria-hidden="true" />;
 }
 
 /**
@@ -436,9 +669,12 @@ interface ActionItemProps {
 	attributes: AdvancedListAttributes;
 	context: 'editor' | 'frontend';
 	postContext?: PostContext | null;
+	templateContext?: string;
+	templatePostType?: string;
+	visibilityResults?: Record<string, boolean>;
 }
 
-function ActionItemComponent({ item, index, attributes, context, postContext }: ActionItemProps) {
+function ActionItemComponent({ item, index, attributes, context, postContext, templateContext, templatePostType, visibilityResults }: ActionItemProps) {
 	// State for popups
 	const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
 	const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
@@ -446,50 +682,92 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isPostDependent = POST_DEPENDENT_ACTIONS.includes(item.actionType);
 	const hasActiveState = ACTIVE_STATE_ACTIONS.includes(item.actionType);
 
-	// Determine if action should be rendered based on context and per-item visibility
-	// 
-	// ARCHITECTURE NOTE:
-	// Per-item visibility rules (rowVisibility, visibilityRules) are evaluated here.
-	// However, full Voxel visibility rule evaluation requires server-side context
-	// (post data, user data, etc.). For client-side:
-	// - rowVisibility='hide' with empty rules = always hide
-	// - rowVisibility='show' with empty rules = always show
-	// - Rules with conditions require server-side evaluation or dedicated API
-	// 
-	// For headless (Next.js), the raw visibility data is in vxconfig for custom evaluation.
-	const shouldRender = useMemo(() => {
-		// In editor, always show all items for preview
-		if (context === 'editor') {
-			return true;
+	// Resolve dynamic tags for editor preview
+	// Collects all text fields that might contain @tags()...@endtags() and resolves them in parallel
+	const resolveOpts = useMemo(() => ({ templateContext, templatePostType }), [templateContext, templatePostType]);
+	const dynamicTexts = useMemo(() => ({
+		text: item.text || '',
+		activeText: item.activeText || '',
+		tooltipText: item.tooltipText || '',
+		activeTooltipText: item.activeTooltipText || '',
+		cartOptsText: item.cartOptsText || '',
+		cartOptsTooltipText: item.cartOptsTooltipText || '',
+		calTitle: item.calTitle || '',
+		calDescription: item.calDescription || '',
+		calLocation: item.calLocation || '',
+		calUrl: item.calUrl || '',
+	}), [item.text, item.activeText, item.tooltipText, item.activeTooltipText,
+		item.cartOptsText, item.cartOptsTooltipText, item.calTitle, item.calDescription,
+		item.calLocation, item.calUrl]);
+	const resolved = useResolvedDynamicTexts(
+		context === 'editor' ? dynamicTexts : {},
+		resolveOpts,
+	);
+	// Use resolved values in editor, raw values on frontend (PHP handles resolution)
+	// When the API resolves to empty (no post context in template editor),
+	// fall back to showing the raw VoxelScript expression as a dimmed preview.
+	const txt = useMemo(() => {
+		if (context !== 'editor') return dynamicTexts;
+		const result = { ...resolved };
+		const rawTexts = dynamicTexts as Record<string, string>;
+		for (const key of Object.keys(result)) {
+			const raw = rawTexts[key] || '';
+			if (!result[key] && raw.includes('@tags()')) {
+				// Strip @tags()/@endtags() wrapper and show the raw expression
+				result[key] = raw.replace(/@tags\(\)/g, '').replace(/@endtags\(\)/g, '').trim();
+			}
 		}
+		return result;
+	}, [context, resolved, dynamicTexts]);
 
-		// Per-item rowVisibility: Basic client-side evaluation
-		// (Full rule evaluation requires server-side Voxel context)
+	// Determine if action should be rendered based on context and per-item visibility
+	//
+	// ARCHITECTURE NOTE (Dual-layer visibility evaluation):
+	//
+	// 1. SERVER-SIDE (render.php): Visibility_Evaluator filters items before React
+	//    hydrates on the frontend. Items that fail are removed from vxconfig JSON.
+	//    This matches Voxel parent's repeater-control.php::_voxel_should_render().
+	//
+	// 2. EDITOR-SIDE (useVisibilityEvaluation hook): REST endpoint evaluates rules
+	//    server-side via POST /voxel-fse/v1/advanced-list/evaluate-visibility and
+	//    returns results to React. This provides live visibility preview in the editor.
+	//
+	// Both layers use the same Visibility_Evaluator::evaluate() PHP class.
+	const shouldRender = useMemo(() => {
 		const hasVisibilityRules = item.visibilityRules && item.visibilityRules.length > 0;
 
-		if (!hasVisibilityRules) {
-			// No rules configured - rowVisibility is the simple toggle
+		// Check visibility rules (applies to both editor and frontend)
+		if (hasVisibilityRules) {
+			if (context === 'editor' && visibilityResults) {
+				// Editor: use results from useVisibilityEvaluation REST call
+				const result = visibilityResults[item.id];
+				if (result === false) {
+					return false;
+				}
+				// result === undefined means evaluation hasn't returned yet — show the item
+			}
+			// Frontend: items with failing rules were already removed by render.php
+			// If the item is still in vxconfig, it passed server-side evaluation.
+		} else {
+			// No rules configured — rowVisibility is a simple toggle
 			// 'hide' with no rules = always hide (unusual but supported)
 			if (item.rowVisibility === 'hide') {
 				return false;
 			}
 		}
-		// Note: When rules ARE present, they would need server-side evaluation
-		// For now, we default to showing (frontend can't evaluate dynamic rules)
-		// TODO: Implement rule evaluation API for client-side consumption
 
 		// For post-dependent actions in frontend, check if we have post context
-		if (isPostDependent && !postContext) {
+		if (context !== 'editor' && isPostDependent && !postContext) {
 			return false;
 		}
 
-		// edit_post requires editability
-		if (item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
+		// edit_post requires editability (frontend only)
+		if (context !== 'editor' && item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
 			return false;
 		}
 
 		return true;
-	}, [context, isPostDependent, postContext, item.actionType, item.rowVisibility, item.visibilityRules]);
+	}, [context, isPostDependent, postContext, item.actionType, item.id, item.rowVisibility, item.visibilityRules, visibilityResults]);
 
 	// Check visibility based on permissions
 	// (Replaces PHP early returns in each action template)
@@ -532,6 +810,11 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			return postContext?.promote?.isPromotable ?? false;
 		}
 
+		// follow-post-action.php:6-8, follow-user-action.php:6-8 - requires timeline enabled
+		if (['action_follow_post', 'action_follow'].includes(item.actionType)) {
+			if (postContext?.timelineEnabled === false) return false;
+		}
+
 		// follow-user-action.php:10-12 - requires author exists
 		if (item.actionType === 'action_follow') {
 			return postContext?.authorId != null;
@@ -554,8 +837,8 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		(iconStyles as Record<string, string>)['--ts-icon-color'] = item.customIconColor;
 	}
 
-	// Get tooltip data
-	const tooltipText = item.enableTooltip ? item.tooltipText : undefined;
+	// Get tooltip data (use resolved text in editor)
+	const tooltipText = item.enableTooltip ? txt.tooltipText : undefined;
 
 	// Determine active state for follow/save actions (follow-post-action.php:21, promote-post-action.php:12)
 	const isActive = useMemo(() => {
@@ -685,10 +968,11 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						}
 					};
 				}
-				// Default to linking to the post
+				// Select options variant (add-to-cart-action.php:33-43) — links to post with cart opts icon/text
 				return {
 					tag: 'a',
 					href: postContext.postLink,
+					className: 'ts-action-con',
 				};
 
 			case 'select_addition':
@@ -838,6 +1122,53 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					},
 				};
 
+			case 'action_gcal': {
+				// add-to-gcal-action.php:7-23 - Google Calendar link
+				// Uses \Voxel\Utils\Sharer::get_google_calendar_link()
+				const gcalUrl = getGoogleCalendarUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					// Note: timezone would need to come from post context if available
+				});
+				if (!gcalUrl) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: gcalUrl,
+					target: '_blank',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
+			case 'action_ical': {
+				// add-to-ical-action.php:6-24 - iCalendar download link
+				// Uses \Voxel\Utils\Sharer::get_icalendar_data()
+				const icalData = getICalendarDataUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					url: item.calUrl,
+				});
+				if (!icalData) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: icalData.dataUrl,
+					download: icalData.filename,
+					role: 'button',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+				};
+			}
+
 			default:
 				return { tag: 'div' };
 		}
@@ -846,35 +1177,44 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const actionProps = getActionProps();
 	const Tag = actionProps.tag as keyof JSX.IntrinsicElements;
 
+	// Cart "Select Options" variant (add-to-cart-action.php:33-43):
+	// Uses cartOptsIcon/cartOptsText instead of normal icon/text
+	const isCartSelectOptions = item.actionType === 'add_to_cart' && postContext?.product && !postContext.product.oneClick;
+
 	// Render content based on active state
+	// Voxel ALWAYS renders both .ts-initial and .ts-reveal spans for active-state actions
+	// (follow-post-action.php:33-40, follow-user-action.php:33-40, select-addon.php:15-20)
+	// CSS handles visibility via .active class on parent — no inline display:none needed
 	const renderContent = () => {
-		if (hasActiveState && isActive && item.activeText) {
-			// Active state content
+		if (hasActiveState) {
 			return (
 				<>
-					<span className="ts-initial" style={{ display: 'none' }}>
+					<span className="ts-initial">
 						<div className="ts-action-icon" style={iconStyles}>
 							{renderIcon(item.icon)}
 						</div>
-						{item.text}
+						{txt.text}
 					</span>
 					<span className="ts-reveal">
 						<div className="ts-action-icon" style={iconStyles}>
 							{renderIcon(item.activeIcon)}
 						</div>
-						{item.activeText}
+						{txt.activeText}
 					</span>
 				</>
 			);
 		}
 
-		// Normal state content
+		// Cart "Select Options" variant uses different icon/text (add-to-cart-action.php:39-41)
+		const displayIcon = isCartSelectOptions ? (item.cartOptsIcon || item.icon) : item.icon;
+		const displayText = isCartSelectOptions ? txt.cartOptsText : txt.text;
+
 		return (
 			<>
 				<div className="ts-action-icon" style={iconStyles}>
-					{renderIcon(item.icon)}
+					{renderIcon(displayIcon)}
 				</div>
-				{item.text}
+				{displayText}
 			</>
 		);
 	};
@@ -896,19 +1236,36 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		isIntermediate ? 'intermediate' : '',
 	].filter(Boolean).join(' ');
 
-	// Tooltip attributes (follow-post-action.php:25-30)
-	// For follow actions, use tooltip-inactive and tooltip-active attributes
-	// For other actions, use data-tooltip
+	// Tooltip attributes
+	// Different actions use different tooltip attribute patterns:
+	// - Follow actions (follow-post-action.php:25-30): tooltip-inactive, tooltip-active
+	// - Select addition (select-addon.php:6-12): data-tooltip, data-tooltip-default, data-tooltip-active
+	// - Other actions: data-tooltip
 	const isFollowAction = ['action_follow_post', 'action_follow'].includes(item.actionType);
+	const isSelectAddition = item.actionType === 'select_addition';
 	const tooltipAttrs: Record<string, string | undefined> = {};
 
 	if (isFollowAction) {
 		// Use tooltip-inactive for normal state and tooltip-active for active state
-		if (item.enableTooltip && item.tooltipText) {
-			tooltipAttrs['tooltip-inactive'] = item.tooltipText;
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['tooltip-inactive'] = txt.tooltipText;
 		}
-		if (item.activeEnableTooltip && item.activeTooltipText) {
-			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['tooltip-active'] = txt.activeTooltipText;
+		}
+	} else if (isSelectAddition) {
+		// select-addon.php:6-12 - Uses data-tooltip + data-tooltip-default for normal, data-tooltip-active for active
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.tooltipText;
+			tooltipAttrs['data-tooltip-default'] = txt.tooltipText;
+		}
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['data-tooltip-active'] = txt.activeTooltipText;
+		}
+	} else if (isCartSelectOptions) {
+		// Cart select options variant (add-to-cart-action.php:35-36) uses its own tooltip
+		if (item.cartOptsEnableTooltip && txt.cartOptsTooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.cartOptsTooltipText;
 		}
 	} else {
 		// Regular data-tooltip for non-follow actions
@@ -922,6 +1279,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isShareAction = item.actionType === 'share_post';
 	const needsWrapper = isEditAction || isShareAction;
 
+	const TagEl = Tag as any;
 	if (needsWrapper) {
 		// Wrapper class varies by action type (edit-post-action.php:17, share-post-action.php:10)
 		const wrapperClass = isShareAction
@@ -935,21 +1293,21 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				{...tooltipAttrs}
 			>
 				<div className={wrapperClass}>
-					<Tag
+					<TagEl
 						{...actionProps}
 						className={actionClasses}
 						style={itemStyles}
-						aria-label={item.text || tooltipText}
+						aria-label={txt.text || tooltipText}
 						role={Tag === 'a' ? undefined : 'button'}
 					>
 						{renderContent()}
-					</Tag>
+					</TagEl>
 					{/* Edit steps popup (edit-post-action.php:22-49) */}
 					{isEditAction && postContext && (
 						<EditStepsPopup
 							editSteps={postContext.editSteps}
 							icon={item.icon}
-							text={item.text}
+							text={txt.text}
 							closeIcon={attributes.closeIcon}
 							isOpen={isEditPopupOpen}
 							onClose={() => setIsEditPopupOpen(false)}
@@ -979,15 +1337,15 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			style={itemWidthStyle}
 			{...tooltipAttrs}
 		>
-			<Tag
+			<TagEl
 				{...actionProps}
 				className={actionClasses}
 				style={itemStyles}
-				aria-label={item.text || tooltipText}
+				aria-label={txt.text || tooltipText}
 				role={Tag === 'a' ? undefined : 'button'}
 			>
 				{renderContent()}
-			</Tag>
+			</TagEl>
 		</li>
 	);
 }
@@ -999,8 +1357,16 @@ export function AdvancedListComponent({
 	attributes,
 	context,
 	postContext,
+	templateContext,
+	templatePostType,
 }: AdvancedListComponentProps) {
 	const listStyles = buildListStyles(attributes);
+
+	// Evaluate visibility rules for all items (editor: REST call, frontend: server-side in render.php)
+	const visibilityResults = useVisibilityEvaluation(
+		context === 'editor' ? (attributes.items || []) : [],
+		templatePostType || '',
+	);
 
 	// Build vxconfig for re-rendering (Plan C+ pattern)
 	const vxConfig: VxConfig = useMemo(() => ({
@@ -1097,19 +1463,7 @@ export function AdvancedListComponent({
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 				<li className="flexify ts-action">
-					<div
-						className="ts-action-con"
-						style={{
-							padding: '16px 24px',
-							color: '#666',
-							background: '#f5f5f5',
-							borderRadius: '8px',
-						}}
-					>
-						{context === 'editor'
-							? 'Click "+ Add Item" in the sidebar to add actions'
-							: 'No actions configured'}
-					</div>
+					<EmptyPlaceholder />
 				</li>
 			</ul>
 		);
@@ -1131,6 +1485,9 @@ export function AdvancedListComponent({
 					attributes={attributes}
 					context={context}
 					postContext={postContext}
+					templateContext={templateContext}
+					templatePostType={templatePostType}
+					visibilityResults={visibilityResults}
 				/>
 			))}
 		</ul>

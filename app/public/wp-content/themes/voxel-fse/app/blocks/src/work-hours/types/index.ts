@@ -1,5 +1,6 @@
 import { IconValue } from '@shared/types';
 
+
 export interface TypographyValue {
   fontFamily?: string;
   fontSize?: number;
@@ -88,13 +89,19 @@ export interface WorkHoursAttributes {
   borderRadiusMobile: number;
   boxShadow: string;
   accordionButtonSize: number;
+  accordionButtonSize_tablet?: number;
+  accordionButtonSize_mobile?: number;
   accordionButtonIconSize: number;
+  accordionButtonIconSize_tablet?: number;
+  accordionButtonIconSize_mobile?: number;
   accordionButtonColor: string;
   accordionButtonBg: string;
   accordionButtonBorderType: string;
   accordionButtonBorderWidth: BorderWidthValue;
   accordionButtonBorderColor: string;
   accordionButtonBorderRadius: number;
+  accordionButtonBorderRadius_tablet?: number;
+  accordionButtonBorderRadius_mobile?: number;
   accordionButtonColorHover: string;
   accordionButtonBgHover: string;
   accordionButtonBorderColorHover: string;

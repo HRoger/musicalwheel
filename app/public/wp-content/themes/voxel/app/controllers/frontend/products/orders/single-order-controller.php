@@ -141,9 +141,25 @@ class Single_Order_Controller extends \Voxel\Controllers\Base_Controller {
 					}
 
 					$details = $item->get_order_page_details();
+
+					$claim_listing_title = null;
+					if ( $item->get_product_field_key() === 'voxel:claim_request' ) {
+						$post_id = $item->get_details( 'voxel:claim_request.post_id' );
+						if ( is_numeric( $post_id ) ) {
+							$post = \Voxel\Post::get( (int) $post_id );
+							if ( $post ) {
+								$claim_listing_title = $post->get_display_name();
+							}
+						}
+					}
+
 					return [
 						'id' => $item->get_id(),
 						'type' => $item->get_type(),
+						'product_type' => $item->get_product_type_key(),
+						'booking_status' => $item->get_details( 'booking_status' ),
+						'booking_type' => $item->get_details( 'booking.type' ),
+						'claim_listing_title' => $claim_listing_title,
 						'currency' => $item->get_currency(),
 						'quantity' => $item->get_quantity(),
 						'subtotal' => $item->get_subtotal(),

@@ -130,10 +130,10 @@ export function StatusActions({
 				aria-pressed={hasLiked}
 			>
 				<span className="vxf-action-icon">
-					{hasLiked && icons.liked?.svg ? (
-						<span dangerouslySetInnerHTML={{ __html: icons.liked.svg }} />
-					) : icons.like?.svg ? (
-						<span dangerouslySetInnerHTML={{ __html: icons.like.svg }} />
+					{hasLiked && (icons.liked as any)?.svg ? (
+						<span dangerouslySetInnerHTML={{ __html: (icons.liked as any).svg }} />
+					) : (icons.like as any)?.svg ? (
+						<span dangerouslySetInnerHTML={{ __html: (icons.like as any).svg }} />
 					) : (
 						<DefaultLikeIcon filled={hasLiked} />
 					)}
@@ -153,8 +153,8 @@ export function StatusActions({
 				aria-label={strings.comment}
 			>
 				<span className="vxf-action-icon">
-					{icons.comment?.svg ? (
-						<span dangerouslySetInnerHTML={{ __html: icons.comment.svg }} />
+					{(icons.comment as any)?.svg ? (
+						<span dangerouslySetInnerHTML={{ __html: (icons.comment as any).svg }} />
 					) : (
 						<DefaultCommentIcon />
 					)}
@@ -177,8 +177,8 @@ export function StatusActions({
 					aria-pressed={hasReposted}
 				>
 					<span className="vxf-action-icon">
-						{icons.repost?.svg ? (
-							<span dangerouslySetInnerHTML={{ __html: icons.repost.svg }} />
+						{(icons.repost as any)?.svg ? (
+							<span dangerouslySetInnerHTML={{ __html: (icons.repost as any).svg }} />
 						) : (
 							<DefaultRepostIcon />
 						)}

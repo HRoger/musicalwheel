@@ -22,6 +22,7 @@ import { useState, useEffect } from 'react';
 import QuickSearchComponent from './shared/QuickSearchComponent';
 import type { QuickSearchAttributes, PostTypeConfig, VxConfig } from './types';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
+declare const jQuery: any;
 
 /**
  * Get the REST API base URL
@@ -122,7 +123,16 @@ async function fetchPostTypes(postTypeKeys: string[]): Promise<PostTypeConfig[]>
 	const endpoint = `${restUrl}voxel-fse/v1/quick-search/post-types?post_types=${encodeURIComponent(postTypeKeys.join(','))}`;
 
 	try {
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
@@ -186,14 +196,14 @@ function buildAttributes(config: VxConfig): QuickSearchAttributes {
 		buttonBorderColorFilled: '',
 		buttonBorderWidthFilled: 0,
 		suffixHide: false,
-		suffixPadding: { top: 2, right: 8, bottom: 2, left: 8 },
+		suffixPadding: {},
 		suffixTextColor: '',
 		suffixBackground: '',
-		suffixBorderRadius: 50,
+		suffixBorderRadius: 0,
 		suffixMargin: 0,
 		tabsJustify: 'center',
 		tabsPadding: {},
-		tabsMargin: { top: 10, right: 0, bottom: 10, left: 0 },
+		tabsMargin: { top: '10', right: '0', bottom: '10', left: '0' },
 		tabsTextColor: '',
 		tabsActiveTextColor: '',
 		tabsBackground: '',
@@ -212,7 +222,7 @@ function buildAttributes(config: VxConfig): QuickSearchAttributes {
 		hideTablet: false,
 		hideMobile: false,
 		customClasses: '',
-	};
+	} as unknown as QuickSearchAttributes;
 }
 
 /**
@@ -303,7 +313,7 @@ function initQuickSearchBlocks() {
 
 	quickSearchBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -322,7 +332,7 @@ function initQuickSearchBlocks() {
 		const attributes = buildAttributes(vxConfig);
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Clear placeholder content
 		container.innerHTML = '';

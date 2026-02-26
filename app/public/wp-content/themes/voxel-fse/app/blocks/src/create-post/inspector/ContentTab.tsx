@@ -8,7 +8,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { SelectControl } from '@wordpress/components';
+import { SelectControl, TextControl } from '@wordpress/components';
 import {
 	AccordionPanelGroup,
 	AccordionPanel,
@@ -45,7 +45,7 @@ export function ContentTab({
 						{ label: __('Select a post type...', 'voxel-fse'), value: '' },
 						...postTypes,
 					]}
-					onChange={(postTypeKey) => setAttributes({ postTypeKey })}
+					onChange={(postTypeKey: any) => setAttributes({ postTypeKey })}
 				/>
 				{/* Note: cpt_filter_width slider has condition cpt_filter_cols = 'elementor-col-auto'
 				    which doesn't exist in FSE, so we omit it */}
@@ -192,6 +192,41 @@ export function ContentTab({
 						label={__('Load more icon', 'voxel-fse')}
 						value={(attributes.tsLoadMore as IconValue) || { library: '', value: '' }}
 						onChange={(value) => setAttributes({ tsLoadMore: value })}
+					/>
+				</AccordionPanel>
+			)}
+
+			{hasPostType && (
+				<AccordionPanel id="submit-labels" title={__('Submission Messages', 'voxel-fse')}>
+					<TextControl
+						label={__('Saved as draft', 'voxel-fse')}
+						value={attributes.submitLabelDraft ?? ''}
+						onChange={(value: string) => setAttributes({ submitLabelDraft: value })}
+						placeholder={__('Your post has been saved as draft.', 'voxel-fse')}
+					/>
+					<TextControl
+						label={__('Submitted for review', 'voxel-fse')}
+						value={attributes.submitLabelSubmittedForReview ?? ''}
+						onChange={(value: string) => setAttributes({ submitLabelSubmittedForReview: value })}
+						placeholder={__('Your post has been submitted for review.', 'voxel-fse')}
+					/>
+					<TextControl
+						label={__('Published', 'voxel-fse')}
+						value={attributes.submitLabelPublished ?? ''}
+						onChange={(value: string) => setAttributes({ submitLabelPublished: value })}
+						placeholder={__('Your post has been published.', 'voxel-fse')}
+					/>
+					<TextControl
+						label={__('Changes submitted for review (editing)', 'voxel-fse')}
+						value={attributes.submitLabelChangesSubmittedForReview ?? ''}
+						onChange={(value: string) => setAttributes({ submitLabelChangesSubmittedForReview: value })}
+						placeholder={__('Your changes have been submitted for review.', 'voxel-fse')}
+					/>
+					<TextControl
+						label={__('Changes applied (editing)', 'voxel-fse')}
+						value={attributes.submitLabelChangesApplied ?? ''}
+						onChange={(value: string) => setAttributes({ submitLabelChangesApplied: value })}
+						placeholder={__('Your changes have been applied.', 'voxel-fse')}
 					/>
 				</AccordionPanel>
 			)}

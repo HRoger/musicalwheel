@@ -56,10 +56,10 @@ function currencyFormat(amount: number, currency: string): string {
 function getItemQuantity(item: CartItem): number {
 	if (item.product_mode === 'regular') {
 		const value = item.value as Record<string, Record<string, number>>;
-		return value.stock?.quantity || 1;
+		return value['stock']?.['quantity'] || 1;
 	} else {
 		const value = item.value as Record<string, Record<string, number>>;
-		return value.variations?.quantity || 1;
+		return value['variations']?.['quantity'] || 1;
 	}
 }
 
@@ -287,7 +287,7 @@ function vendorHasMatchingRates(vendor: Vendor, shipping: ShippingState): boolea
 }
 
 export default function VendorShippingCards({
-	config,
+	config: _config,
 	shipping,
 	onShippingChange,
 	items,

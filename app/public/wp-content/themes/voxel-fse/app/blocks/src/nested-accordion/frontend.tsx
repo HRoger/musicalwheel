@@ -139,52 +139,52 @@ function normalizeConfig(raw: Record<string, unknown>): NestedAccordionVxConfig 
 
 	// Helper for accordion item normalization
 	const normalizeItem = (item: Record<string, unknown>) => ({
-		id: normalizeString(item.id ?? item.item_id, ''),
-		title: normalizeString(item.title ?? item.item_title, ''),
-		cssId: normalizeString(item.cssId ?? item.css_id ?? item.element_css_id, ''),
-		loop: item.loop ?? item._voxel_loop as LoopConfig | undefined,
-		visibility: item.visibility as VisibilityConfig | undefined,
+		id: normalizeString(item['id'] ?? item['item_id'], ''),
+		title: normalizeString(item['title'] ?? item['item_title'], ''),
+		cssId: normalizeString(item['cssId'] ?? item['css_id'] ?? item['element_css_id'], ''),
+		loop: item['loop'] ?? item['_voxel_loop'] as LoopConfig | undefined,
+		visibility: item['visibility'] as VisibilityConfig | undefined,
 	});
 
 	// Normalize items array
-	const rawItems = raw.items ?? raw.accordion_items ?? [];
+	const rawItems = raw['items'] ?? raw['accordion_items'] ?? [];
 	const items = Array.isArray(rawItems)
 		? rawItems.map((i) => normalizeItem(i as Record<string, unknown>))
 		: [];
 
 	// Normalize interactions object
-	const rawInteractions = (raw.interactions ?? {}) as Record<string, unknown>;
+	const rawInteractions = (raw['interactions'] ?? {}) as Record<string, unknown>;
 	const interactions = {
 		defaultState: normalizeString(
-			rawInteractions.defaultState ?? raw.defaultState ?? raw.default_state,
+			rawInteractions['defaultState'] ?? raw['defaultState'] ?? raw['default_state'],
 			'all_collapsed'
 		) as NestedAccordionVxConfig['interactions']['defaultState'],
 		maxItemsExpanded: normalizeString(
-			rawInteractions.maxItemsExpanded ?? raw.maxItemsExpanded ?? raw.max_items_expended,
+			rawInteractions['maxItemsExpanded'] ?? raw['maxItemsExpanded'] ?? raw['max_items_expended'],
 			'one'
 		) as NestedAccordionVxConfig['interactions']['maxItemsExpanded'],
 		animationDuration: normalizeNumber(
-			rawInteractions.animationDuration ?? raw.animationDuration ?? raw.n_accordion_animation_duration,
+			rawInteractions['animationDuration'] ?? raw['animationDuration'] ?? raw['n_accordion_animation_duration'],
 			400
 		),
 	};
 
 	// Normalize icons object
-	const rawIcons = (raw.icons ?? {}) as Record<string, unknown>;
+	const rawIcons = (raw['icons'] ?? {}) as Record<string, unknown>;
 	const icons = {
-		expand: rawIcons.expand ?? raw.expandIcon ?? raw.accordion_item_title_icon ?? null,
-		collapse: rawIcons.collapse ?? raw.collapseIcon ?? raw.accordion_item_title_icon_active ?? null,
+		expand: rawIcons['expand'] ?? raw['expandIcon'] ?? raw['accordion_item_title_icon'] ?? null,
+		collapse: rawIcons['collapse'] ?? raw['collapseIcon'] ?? raw['accordion_item_title_icon_active'] ?? null,
 		position: normalizeString(
-			rawIcons.position ?? raw.iconPosition ?? raw.accordion_item_title_icon_position,
+			rawIcons['position'] ?? raw['iconPosition'] ?? raw['accordion_item_title_icon_position'],
 			'end'
 		) as NestedAccordionVxConfig['icons']['position'],
 	};
 
 	// Normalize scalar values
-	const titleTag = normalizeString(raw.titleTag ?? raw.title_tag, 'div');
-	const faqSchema = normalizeBool(raw.faqSchema ?? raw.faq_schema, false);
+	const titleTag = normalizeString(raw['titleTag'] ?? raw['title_tag'], 'div');
+	const faqSchema = normalizeBool(raw['faqSchema'] ?? raw['faq_schema'], false);
 
-	return { items, interactions, icons, titleTag, faqSchema };
+	return { items, interactions, icons, titleTag, faqSchema } as any;
 }
 
 /**
@@ -192,7 +192,7 @@ function normalizeConfig(raw: Record<string, unknown>): NestedAccordionVxConfig 
  * Uses normalizeConfig() for API format compatibility
  */
 function parseVxConfig(container: HTMLElement): NestedAccordionVxConfig | null {
-	const vxconfigData = container.dataset.vxconfig;
+	const vxconfigData = container.dataset['vxconfig'];
 
 	if (vxconfigData) {
 		try {
@@ -394,7 +394,7 @@ function initAccordion(container: HTMLElement): void {
 	});
 
 	// Mark as initialized
-	container.dataset.initialized = 'true';
+	container.dataset['initialized'] = 'true';
 }
 
 /**

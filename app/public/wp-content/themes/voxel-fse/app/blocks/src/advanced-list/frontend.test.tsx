@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
 import type { AdvancedListAttributes, PostContext } from './types';
@@ -88,6 +88,7 @@ const mockPostContext: PostContext = {
     postLink: 'http://example.com/post/123',
     editLink: 'http://example.com/post/123/edit',
     isEditable: true,
+    timelineEnabled: false,
     isFollowed: false,
     isFollowRequested: false,
     isAuthorFollowed: false,

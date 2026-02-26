@@ -48,10 +48,19 @@ class Product_Price extends Base_Widget {
 				]
 			);
 
+			$this->add_group_control(
+				\Elementor\Group_Control_Typography::get_type(),
+				[
+					'name' => 'price_typo_discount',
+					'label' => __( 'Strikethrough text typography' ),
+					'selector' => '{{WRAPPER}} .vx-price s',
+				]
+			);
+
 			$this->add_responsive_control(
 				'ts_strike_col_text',
 				[
-					'label' => __( 'Linethrough text color', 'voxel-elementor' ),
+					'label' => __( 'Strikethrough text color', 'voxel-elementor' ),
 					'type' => \Elementor\Controls_Manager::COLOR,
 					'selectors' => [
 						'{{WRAPPER}} .vx-price s' => 'color: {{VALUE}}',
@@ -63,7 +72,7 @@ class Product_Price extends Base_Widget {
 			$this->add_responsive_control(
 				'ts_strike_col',
 				[
-					'label' => __( 'Linethrough line color', 'voxel-elementor' ),
+					'label' => __( 'Strikethrough color', 'voxel-elementor' ),
 					'type' => \Elementor\Controls_Manager::COLOR,
 					'selectors' => [
 						'{{WRAPPER}} .vx-price s' => 'text-decoration-color: {{VALUE}}',
@@ -75,7 +84,7 @@ class Product_Price extends Base_Widget {
 			$this->add_responsive_control(
 				'ts_strike_width',
 				[
-					'label' => __( 'Linethrough line width', 'voxel-elementor' ),
+					'label' => __( 'Strikethrough width', 'voxel-elementor' ),
 					'type' => \Elementor\Controls_Manager::SLIDER,
 					'size_units' => [ 'px' ],
 					'range' => [

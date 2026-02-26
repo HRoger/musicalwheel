@@ -78,10 +78,10 @@ class Quick_Search_Controller extends \Voxel\Controllers\Base_Controller {
 					LIMIT 10
 				SQL;
 
-				$post_ids = $wpdb->get_col( $query );
+				$post_ids = array_map( 'intval', $wpdb->get_col( $query ) );
 			} elseif ( count( $post_type_queries ) === 1 ) {
 				$query = join( '', $post_type_queries );
-				$post_ids = $wpdb->get_col( $query );
+				$post_ids = array_map( 'intval', $wpdb->get_col( $query ) );
 			} else {
 				$post_ids = [];
 			}
@@ -117,7 +117,7 @@ class Quick_Search_Controller extends \Voxel\Controllers\Base_Controller {
 				", $keywords, $keywords );
 
 				$_query_start_time = microtime( true );
-				$term_ids = $wpdb->get_col( $query );
+				$term_ids = array_map( 'intval', $wpdb->get_col( $query ) );
 				$dev['term_query_time'] = round( ( microtime( true ) - $_query_start_time ) * 1000, 1 ).'ms';
 				$dev['term_query'] = $query ?? '(none)';
 

@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import PostFeedComponent from './shared/PostFeedComponent';
 import type { PostFeedAttributes } from './types';
@@ -62,13 +62,13 @@ function createTestAttributes(overrides: Partial<PostFeedAttributes> = {}): Post
 		carouselAutoSlide: false,
 		loadingStyle: 'opacity',
 		loadingOpacity: 0.5,
-		loadMoreIcon: {},
-		noResultsIcon: {},
-		rightArrowIcon: {},
-		leftArrowIcon: {},
-		rightChevronIcon: {},
-		leftChevronIcon: {},
-		resetIcon: {},
+		loadMoreIcon: { library: '' as const, value: '' },
+		noResultsIcon: { library: '' as const, value: '' },
+		rightArrowIcon: { library: '' as const, value: '' },
+		leftArrowIcon: { library: '' as const, value: '' },
+		rightChevronIcon: { library: '' as const, value: '' },
+		leftChevronIcon: { library: '' as const, value: '' },
+		resetIcon: { library: '' as const, value: '' },
 		counterTypography: {},
 		counterTextColor: '',
 		orderByTypography: {},
@@ -104,7 +104,7 @@ function createTestAttributes(overrides: Partial<PostFeedAttributes> = {}): Post
 		customClasses: '',
 		customCSS: '',
 		...overrides,
-	};
+	} as PostFeedAttributes;
 }
 
 /**

@@ -50,7 +50,7 @@ export default function Edit({
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
 	// This handles: styles, className, responsiveCSS, customAttrs, elementId
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'ts-visits-chart voxel-fse-visit-chart',
 		selectorPrefix: 'voxel-fse-visit-chart',

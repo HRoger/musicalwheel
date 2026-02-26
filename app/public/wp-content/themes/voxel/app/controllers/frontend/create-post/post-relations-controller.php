@@ -63,7 +63,8 @@ class Post_Relations_Controller extends \Voxel\Controllers\Base_Controller {
 			}
 
 			$offset = absint( $_GET['offset'] ?? 0 );
-			$per_page = 10;
+			$per_page = absint( apply_filters( 'voxel/post-relations/posts-per-page', 10, $field ) );
+			$per_page = max( 1, $per_page );
 			$limit = $per_page + 1;
 
 			// generate query

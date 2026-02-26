@@ -16,7 +16,8 @@ import type { ProductFormAttributes } from './types';
 /**
  * Helper: Generate dimensions CSS (padding, margin)
  */
-function generateDimensionsCSS(
+// @ts-ignore -- unused but kept for future use
+function _generateDimensionsCSS(
 	dimensions: any | undefined,
 	property: string
 ): string {
@@ -399,45 +400,53 @@ export function generateProductFormResponsiveCSS(
 	// Targets the input value display in number steppers
 	if (attributes.stepperInputSize !== undefined) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-stepper-number { font-size: ${attributes.stepperInputSize}px; }`
+			`${selector} .ts-stepper-input .ts-stepper-number { font-size: ${attributes.stepperInputSize}px; }`
+		);
+	}
+
+	// Stepper input value color - ts_ns_value
+	// Verified: product-form.php:741-752 - '{{WRAPPER}} .ts-input-box'
+	if (attributes.stepperInputValueColor) {
+		cssRules.push(
+			`${selector} .ts-stepper-input .ts-stepper-number { color: ${attributes.stepperInputValueColor}; }`
 		);
 	}
 
 	// Stepper button icon color - ts_stepper_btn_color
-	// Verified: product-form.php:748 - '{{WRAPPER}} .pf-number-input .ts-icon-btn i'
+	// Verified: product-form.php:748 - '{{WRAPPER}} .ts-stepper-input .ts-icon-btn i'
 	if (attributes.stepperButtonIconColor) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn i { color: ${attributes.stepperButtonIconColor}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn i { color: ${attributes.stepperButtonIconColor}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn svg { fill: ${attributes.stepperButtonIconColor}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn svg { fill: ${attributes.stepperButtonIconColor}; }`
 		);
 	}
 
 	// Stepper button background - ts_stepper_btn_bg
-	// Verified: product-form.php:765 - '{{WRAPPER}} .pf-number-input .ts-icon-btn'
+	// Verified: product-form.php:765 - '{{WRAPPER}} .ts-stepper-input .ts-icon-btn'
 	if (attributes.stepperButtonBackground) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn { background-color: ${attributes.stepperButtonBackground}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn { background-color: ${attributes.stepperButtonBackground}; }`
 		);
 	}
 
 	// Stepper button border - ts_stepper_btn_border
-	// Verified: product-form.php:780 - '{{WRAPPER}} .pf-number-input .ts-icon-btn'
+	// Verified: product-form.php:780 - '{{WRAPPER}} .ts-stepper-input .ts-icon-btn'
 	if (attributes.stepperButtonBorder) {
 		const borderCSS = generateBorderCSS(attributes.stepperButtonBorder);
 		if (borderCSS) {
 			cssRules.push(
-				`${selector} .pf-number-input .ts-icon-btn { ${borderCSS} }`
+				`${selector} .ts-stepper-input .ts-icon-btn { ${borderCSS} }`
 			);
 		}
 	}
 
 	// Stepper button border radius - ts_stepper_btn_radius
-	// Verified: product-form.php:787 - '{{WRAPPER}} .pf-number-input .ts-icon-btn'
+	// Verified: product-form.php:787 - '{{WRAPPER}} .ts-stepper-input .ts-icon-btn'
 	if (attributes.stepperButtonBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn { border-radius: ${attributes.stepperButtonBorderRadius}px; }`
+			`${selector} .ts-stepper-input .ts-icon-btn { border-radius: ${attributes.stepperButtonBorderRadius}px; }`
 		);
 	}
 
@@ -446,24 +455,24 @@ export function generateProductFormResponsiveCSS(
 	// Button icon color hover - ts_stepper_btn_h
 	if (attributes.stepperButtonIconColorHover) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn:hover i { color: ${attributes.stepperButtonIconColorHover}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn:hover i { color: ${attributes.stepperButtonIconColorHover}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn:hover svg { fill: ${attributes.stepperButtonIconColorHover}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn:hover svg { fill: ${attributes.stepperButtonIconColorHover}; }`
 		);
 	}
 
 	// Button background hover - ts_stepper_btn_bg_h
 	if (attributes.stepperButtonBackgroundHover) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn:hover { background-color: ${attributes.stepperButtonBackgroundHover}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn:hover { background-color: ${attributes.stepperButtonBackgroundHover}; }`
 		);
 	}
 
 	// Button border color hover - ts_stepper_border_c_h
 	if (attributes.stepperButtonBorderColorHover) {
 		cssRules.push(
-			`${selector} .pf-number-input .ts-icon-btn:hover { border-color: ${attributes.stepperButtonBorderColorHover}; }`
+			`${selector} .ts-stepper-input .ts-icon-btn:hover { border-color: ${attributes.stepperButtonBorderColorHover}; }`
 		);
 	}
 
@@ -473,151 +482,151 @@ export function generateProductFormResponsiveCSS(
 	// ============================================
 
 	// Cards gap - ts_cards_gap
-	// Verified: product-form.php:900 - '{{WRAPPER}} .pf-card-choices'
+	// Verified: product-form.php:900 - '{{WRAPPER}} .addon-cards'
 	if (attributes.cardsGap !== undefined) {
 		cssRules.push(
-			`${selector} .pf-card-choices { gap: ${attributes.cardsGap}px; }`
+			`${selector} .addon-cards { gap: ${attributes.cardsGap}px; }`
 		);
 	}
 
 	// Cards background - ts_cards_bg
-	// Verified: product-form.php:919 - '{{WRAPPER}} .pf-card-choice'
+	// Verified: product-form.php:919 - '{{WRAPPER}} .addon-cards li'
 	if (attributes.cardsBackground) {
 		cssRules.push(
-			`${selector} .pf-card-choice { background-color: ${attributes.cardsBackground}; }`
+			`${selector} .addon-cards li { background-color: ${attributes.cardsBackground}; }`
 		);
 	}
 
 	// Cards border - ts_cards_border
-	// Verified: product-form.php:934 - '{{WRAPPER}} .pf-card-choice'
+	// Verified: product-form.php:934 - '{{WRAPPER}} .addon-cards li'
 	if (attributes.cardsBorder) {
 		const borderCSS = generateBorderCSS(attributes.cardsBorder);
 		if (borderCSS) {
-			cssRules.push(`${selector} .pf-card-choice { ${borderCSS} }`);
+			cssRules.push(`${selector} .addon-cards li { ${borderCSS} }`);
 		}
 	}
 
 	// Cards border radius - ts_cards_radius
-	// Verified: product-form.php:941 - '{{WRAPPER}} .pf-card-choice'
+	// Verified: product-form.php:941 - '{{WRAPPER}} .addon-cards li'
 	if (attributes.cardsBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-card-choice { border-radius: ${attributes.cardsBorderRadius}px; }`
+			`${selector} .addon-cards li { border-radius: ${attributes.cardsBorderRadius}px; }`
 		);
 	}
 
 	// Cards primary typography - ts_cards_primary
-	// Verified: product-form.php:973 - '{{WRAPPER}} .pf-card-choice .pf-cc-title'
+	// Verified: product-form.php:973 - '{{WRAPPER}} .addon-cards li .adc-title'
 	if (attributes.cardsPrimaryTypography) {
 		const typoCSS = generateTypographyCSS(attributes.cardsPrimaryTypography);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-card-choice .pf-cc-title { ${typoCSS} }`
+				`${selector} .addon-cards li .adc-title { ${typoCSS} }`
 			);
 		}
 	}
 
 	// Cards primary color - ts_cards_pr_c
-	// Verified: product-form.php:980 - '{{WRAPPER}} .pf-card-choice .pf-cc-title'
+	// Verified: product-form.php:980 - '{{WRAPPER}} .addon-cards li .adc-title'
 	if (attributes.cardsPrimaryColor) {
 		cssRules.push(
-			`${selector} .pf-card-choice .pf-cc-title { color: ${attributes.cardsPrimaryColor}; }`
+			`${selector} .addon-cards li .adc-title { color: ${attributes.cardsPrimaryColor}; }`
 		);
 	}
 
 	// Cards secondary typography - ts_cards_secondary
-	// Verified: product-form.php:994 - '{{WRAPPER}} .pf-card-choice .pf-cc-description'
+	// Verified: product-form.php:994 - '{{WRAPPER}} .addon-cards li .adc-subtitle'
 	if (attributes.cardsSecondaryTypography) {
 		const typoCSS = generateTypographyCSS(
 			attributes.cardsSecondaryTypography
 		);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-card-choice .pf-cc-description { ${typoCSS} }`
+				`${selector} .addon-cards li .adc-subtitle { ${typoCSS} }`
 			);
 		}
 	}
 
 	// Cards secondary color - ts_cards_sc_c
-	// Verified: product-form.php:1001 - '{{WRAPPER}} .pf-card-choice .pf-cc-description'
+	// Verified: product-form.php:1001 - '{{WRAPPER}} .addon-cards li .adc-subtitle'
 	if (attributes.cardsSecondaryColor) {
 		cssRules.push(
-			`${selector} .pf-card-choice .pf-cc-description { color: ${attributes.cardsSecondaryColor}; }`
+			`${selector} .addon-cards li .adc-subtitle { color: ${attributes.cardsSecondaryColor}; }`
 		);
 	}
 
 	// Cards price typography - ts_cards_price
-	// Verified: product-form.php:1015 - '{{WRAPPER}} .pf-card-choice .pf-cc-price'
+	// Verified: product-form.php:1015 - '{{WRAPPER}} .addon-cards li .adc-price'
 	if (attributes.cardsPriceTypography) {
 		const typoCSS = generateTypographyCSS(attributes.cardsPriceTypography);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-card-choice .pf-cc-price { ${typoCSS} }`
+				`${selector} .addon-cards li .adc-price { ${typoCSS} }`
 			);
 		}
 	}
 
 	// Cards price color - ts_cards_price_c
-	// Verified: product-form.php:1022 - '{{WRAPPER}} .pf-card-choice .pf-cc-price'
+	// Verified: product-form.php:1022 - '{{WRAPPER}} .addon-cards li .adc-price'
 	if (attributes.cardsPriceColor) {
 		cssRules.push(
-			`${selector} .pf-card-choice .pf-cc-price { color: ${attributes.cardsPriceColor}; }`
+			`${selector} .addon-cards li .adc-price { color: ${attributes.cardsPriceColor}; }`
 		);
 	}
 
 	// Cards image border radius - ts_cards_img_radius
-	// Verified: product-form.php:1043 - '{{WRAPPER}} .pf-card-choice .pf-cc-image'
+	// Verified: product-form.php:1043 - '{{WRAPPER}} .addon-cards li .addon-cards li img'
 	if (attributes.cardsImageBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-card-choice .pf-cc-image { border-radius: ${attributes.cardsImageBorderRadius}px; }`
+			`${selector} .addon-cards li .addon-cards li img { border-radius: ${attributes.cardsImageBorderRadius}px; }`
 		);
 	}
 
 	// Cards image size - ts_card_size
-	// Verified: product-form.php:1062 - '{{WRAPPER}} .pf-card-choice .pf-cc-image'
+	// Verified: product-form.php:1062 - '{{WRAPPER}} .addon-cards li .addon-cards li img'
 	if (attributes.cardsImageSize !== undefined) {
 		cssRules.push(
-			`${selector} .pf-card-choice .pf-cc-image { width: ${attributes.cardsImageSize}px; height: ${attributes.cardsImageSize}px; }`
+			`${selector} .addon-cards li .addon-cards li img { width: ${attributes.cardsImageSize}px; height: ${attributes.cardsImageSize}px; }`
 		);
 	}
 
 	// Cards selected state - ts_cards_selected
 
 	// Selected background - ts_cards_bg_selected
-	// Verified: product-form.php:1096 - '{{WRAPPER}} .pf-card-choice.pf-selected'
+	// Verified: product-form.php:1096 - '{{WRAPPER}} .addon-cards li.adc-selected'
 	if (attributes.cardsSelectedBackground) {
 		cssRules.push(
-			`${selector} .pf-card-choice.pf-selected { background-color: ${attributes.cardsSelectedBackground}; }`
+			`${selector} .addon-cards li.adc-selected { background-color: ${attributes.cardsSelectedBackground}; }`
 		);
 	}
 
 	// Selected border color - ts_cards_border_s
-	// Verified: product-form.php:1109 - '{{WRAPPER}} .pf-card-choice.pf-selected'
+	// Verified: product-form.php:1109 - '{{WRAPPER}} .addon-cards li.adc-selected'
 	if (attributes.cardsSelectedBorderColor) {
 		cssRules.push(
-			`${selector} .pf-card-choice.pf-selected { border-color: ${attributes.cardsSelectedBorderColor}; }`
+			`${selector} .addon-cards li.adc-selected { border-color: ${attributes.cardsSelectedBorderColor}; }`
 		);
 	}
 
 	// Selected box shadow - ts_cards_shadow_s
-	// Verified: product-form.php:1123 - '{{WRAPPER}} .pf-card-choice.pf-selected'
+	// Verified: product-form.php:1123 - '{{WRAPPER}} .addon-cards li.adc-selected'
 	if (attributes.cardsSelectedBoxShadow) {
 		const shadowCSS = generateBoxShadowCSS(attributes.cardsSelectedBoxShadow);
 		if (shadowCSS) {
 			cssRules.push(
-				`${selector} .pf-card-choice.pf-selected { ${shadowCSS} }`
+				`${selector} .addon-cards li.adc-selected { ${shadowCSS} }`
 			);
 		}
 	}
 
 	// Selected primary typography - ts_cards_primary_selected
-	// Verified: product-form.php:1132 - '{{WRAPPER}} .pf-card-choice.pf-selected .pf-cc-title'
+	// Verified: product-form.php:1132 - '{{WRAPPER}} .addon-cards li.adc-selected .adc-title'
 	if (attributes.cardsSelectedPrimaryTypography) {
 		const typoCSS = generateTypographyCSS(
 			attributes.cardsSelectedPrimaryTypography
 		);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-card-choice.pf-selected .pf-cc-title { ${typoCSS} }`
+				`${selector} .addon-cards li.adc-selected .adc-title { ${typoCSS} }`
 			);
 		}
 	}
@@ -628,82 +637,82 @@ export function generateProductFormResponsiveCSS(
 	// ============================================
 
 	// Buttons gap - ts_buttons_gap
-	// Verified: product-form.php:1172 - '{{WRAPPER}} .pf-btn-choices'
+	// Verified: product-form.php:1172 - '{{WRAPPER}} .addon-buttons'
 	if (attributes.buttonsGap !== undefined) {
 		cssRules.push(
-			`${selector} .pf-btn-choices { gap: ${attributes.buttonsGap}px; }`
+			`${selector} .addon-buttons { gap: ${attributes.buttonsGap}px; }`
 		);
 	}
 
 	// Buttons background - ts_buttons_bg
-	// Verified: product-form.php:1191 - '{{WRAPPER}} .pf-btn-choice'
+	// Verified: product-form.php:1191 - '{{WRAPPER}} .addon-buttons li'
 	if (attributes.buttonsBackground) {
 		cssRules.push(
-			`${selector} .pf-btn-choice { background-color: ${attributes.buttonsBackground}; }`
+			`${selector} .addon-buttons li { background-color: ${attributes.buttonsBackground}; }`
 		);
 	}
 
 	// Buttons border - ts_buttons_border
-	// Verified: product-form.php:1206 - '{{WRAPPER}} .pf-btn-choice'
+	// Verified: product-form.php:1206 - '{{WRAPPER}} .addon-buttons li'
 	if (attributes.buttonsBorder) {
 		const borderCSS = generateBorderCSS(attributes.buttonsBorder);
 		if (borderCSS) {
-			cssRules.push(`${selector} .pf-btn-choice { ${borderCSS} }`);
+			cssRules.push(`${selector} .addon-buttons li { ${borderCSS} }`);
 		}
 	}
 
 	// Buttons border radius - ts_buttons_radius
-	// Verified: product-form.php:1213 - '{{WRAPPER}} .pf-btn-choice'
+	// Verified: product-form.php:1213 - '{{WRAPPER}} .addon-buttons li'
 	if (attributes.buttonsBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-btn-choice { border-radius: ${attributes.buttonsBorderRadius}px; }`
+			`${selector} .addon-buttons li { border-radius: ${attributes.buttonsBorderRadius}px; }`
 		);
 	}
 
 	// Buttons text typography - ts_buttons_primary
-	// Verified: product-form.php:1236 - '{{WRAPPER}} .pf-btn-choice'
+	// Verified: product-form.php:1236 - '{{WRAPPER}} .addon-buttons li'
 	if (attributes.buttonsTextTypography) {
 		const typoCSS = generateTypographyCSS(attributes.buttonsTextTypography);
 		if (typoCSS) {
-			cssRules.push(`${selector} .pf-btn-choice { ${typoCSS} }`);
+			cssRules.push(`${selector} .addon-buttons li { ${typoCSS} }`);
 		}
 	}
 
 	// Buttons text color - ts_buttons_pr_c
-	// Verified: product-form.php:1243 - '{{WRAPPER}} .pf-btn-choice'
+	// Verified: product-form.php:1243 - '{{WRAPPER}} .addon-buttons li'
 	if (attributes.buttonsTextColor) {
 		cssRules.push(
-			`${selector} .pf-btn-choice { color: ${attributes.buttonsTextColor}; }`
+			`${selector} .addon-buttons li { color: ${attributes.buttonsTextColor}; }`
 		);
 	}
 
 	// Buttons selected state - ts_buttons_selected
 
 	// Selected background - ts_buttons_bg_selected
-	// Verified: product-form.php:1270 - '{{WRAPPER}} .pf-btn-choice.pf-selected'
+	// Verified: product-form.php:1270 - '{{WRAPPER}} .addon-buttons li.adb-selected'
 	if (attributes.buttonsSelectedBackground) {
 		cssRules.push(
-			`${selector} .pf-btn-choice.pf-selected { background-color: ${attributes.buttonsSelectedBackground}; }`
+			`${selector} .addon-buttons li.adb-selected { background-color: ${attributes.buttonsSelectedBackground}; }`
 		);
 	}
 
 	// Selected border color - ts_buttons_border_s
-	// Verified: product-form.php:1283 - '{{WRAPPER}} .pf-btn-choice.pf-selected'
+	// Verified: product-form.php:1283 - '{{WRAPPER}} .addon-buttons li.adb-selected'
 	if (attributes.buttonsSelectedBorderColor) {
 		cssRules.push(
-			`${selector} .pf-btn-choice.pf-selected { border-color: ${attributes.buttonsSelectedBorderColor}; }`
+			`${selector} .addon-buttons li.adb-selected { border-color: ${attributes.buttonsSelectedBorderColor}; }`
 		);
 	}
 
 	// Selected box shadow - ts_buttons_shadow_s
-	// Verified: product-form.php:1297 - '{{WRAPPER}} .pf-btn-choice.pf-selected'
+	// Verified: product-form.php:1297 - '{{WRAPPER}} .addon-buttons li.adb-selected'
 	if (attributes.buttonsSelectedBoxShadow) {
 		const shadowCSS = generateBoxShadowCSS(
 			attributes.buttonsSelectedBoxShadow
 		);
 		if (shadowCSS) {
 			cssRules.push(
-				`${selector} .pf-btn-choice.pf-selected { ${shadowCSS} }`
+				`${selector} .addon-buttons li.adb-selected { ${shadowCSS} }`
 			);
 		}
 	}
@@ -717,7 +726,7 @@ export function generateProductFormResponsiveCSS(
 	if (attributes.dropdownTypography) {
 		const typoCSS = generateTypographyCSS(attributes.dropdownTypography);
 		if (typoCSS) {
-			cssRules.push(`${selector} .pf-select { ${typoCSS} }`);
+			cssRules.push(`${selector} .ts-filter { ${typoCSS} }`);
 		}
 	}
 
@@ -725,21 +734,21 @@ export function generateProductFormResponsiveCSS(
 	if (attributes.dropdownBoxShadow) {
 		const shadowCSS = generateBoxShadowCSS(attributes.dropdownBoxShadow);
 		if (shadowCSS) {
-			cssRules.push(`${selector} .pf-select { ${shadowCSS} }`);
+			cssRules.push(`${selector} .ts-filter { ${shadowCSS} }`);
 		}
 	}
 
 	// Dropdown background - normal
 	if (attributes.dropdownBackground) {
 		cssRules.push(
-			`${selector} .pf-select { background-color: ${attributes.dropdownBackground}; }`
+			`${selector} .ts-filter { background-color: ${attributes.dropdownBackground}; }`
 		);
 	}
 
 	// Dropdown text color - normal
 	if (attributes.dropdownTextColor) {
 		cssRules.push(
-			`${selector} .pf-select { color: ${attributes.dropdownTextColor}; }`
+			`${selector} .ts-filter { color: ${attributes.dropdownTextColor}; }`
 		);
 	}
 
@@ -747,59 +756,59 @@ export function generateProductFormResponsiveCSS(
 	if (attributes.dropdownBorder) {
 		const borderCSS = generateBorderCSS(attributes.dropdownBorder);
 		if (borderCSS) {
-			cssRules.push(`${selector} .pf-select { ${borderCSS} }`);
+			cssRules.push(`${selector} .ts-filter { ${borderCSS} }`);
 		}
 	}
 
 	// Dropdown border radius - normal
 	if (attributes.dropdownBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-select { border-radius: ${attributes.dropdownBorderRadius}px; }`
+			`${selector} .ts-filter { border-radius: ${attributes.dropdownBorderRadius}px; }`
 		);
 	}
 
 	// Dropdown icon color - normal
 	if (attributes.dropdownIconColor) {
 		cssRules.push(
-			`${selector} .pf-select i { color: ${attributes.dropdownIconColor}; }`
+			`${selector} .ts-filter i { color: ${attributes.dropdownIconColor}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select svg { fill: ${attributes.dropdownIconColor}; }`
+			`${selector} .ts-filter svg { fill: ${attributes.dropdownIconColor}; }`
 		);
 	}
 
 	// Dropdown icon size
 	if (attributes.dropdownIconSize !== undefined) {
 		cssRules.push(
-			`${selector} .pf-select i { font-size: ${attributes.dropdownIconSize}px; }`
+			`${selector} .ts-filter i { font-size: ${attributes.dropdownIconSize}px; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select svg { width: ${attributes.dropdownIconSize}px; height: ${attributes.dropdownIconSize}px; }`
+			`${selector} .ts-filter svg { width: ${attributes.dropdownIconSize}px; height: ${attributes.dropdownIconSize}px; }`
 		);
 	}
 
 	// Dropdown icon/text spacing
 	if (attributes.dropdownIconTextSpacing !== undefined) {
 		cssRules.push(
-			`${selector} .pf-select i { margin-right: ${attributes.dropdownIconTextSpacing}px; }`
+			`${selector} .ts-filter i { margin-right: ${attributes.dropdownIconTextSpacing}px; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select svg { margin-right: ${attributes.dropdownIconTextSpacing}px; }`
+			`${selector} .ts-filter svg { margin-right: ${attributes.dropdownIconTextSpacing}px; }`
 		);
 	}
 
 	// Dropdown chevron visibility
 	if (attributes.dropdownHideChevron) {
-		cssRules.push(`${selector} .pf-select .ts-down-icon { display: none; }`);
+		cssRules.push(`${selector} .ts-filter .ts-down-icon { display: none; }`);
 	}
 
 	// Dropdown chevron color
 	if (attributes.dropdownChevronColor) {
 		cssRules.push(
-			`${selector} .pf-select .ts-down-icon { color: ${attributes.dropdownChevronColor}; }`
+			`${selector} .ts-filter .ts-down-icon { color: ${attributes.dropdownChevronColor}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select .ts-down-icon svg { fill: ${attributes.dropdownChevronColor}; }`
+			`${selector} .ts-filter .ts-down-icon svg { fill: ${attributes.dropdownChevronColor}; }`
 		);
 	}
 
@@ -808,31 +817,31 @@ export function generateProductFormResponsiveCSS(
 	// Background hover
 	if (attributes.dropdownBackgroundHover) {
 		cssRules.push(
-			`${selector} .pf-select:hover { background-color: ${attributes.dropdownBackgroundHover}; }`
+			`${selector} .ts-filter:hover { background-color: ${attributes.dropdownBackgroundHover}; }`
 		);
 	}
 
 	// Text color hover
 	if (attributes.dropdownTextColorHover) {
 		cssRules.push(
-			`${selector} .pf-select:hover { color: ${attributes.dropdownTextColorHover}; }`
+			`${selector} .ts-filter:hover { color: ${attributes.dropdownTextColorHover}; }`
 		);
 	}
 
 	// Border color hover
 	if (attributes.dropdownBorderColorHover) {
 		cssRules.push(
-			`${selector} .pf-select:hover { border-color: ${attributes.dropdownBorderColorHover}; }`
+			`${selector} .ts-filter:hover { border-color: ${attributes.dropdownBorderColorHover}; }`
 		);
 	}
 
 	// Icon color hover
 	if (attributes.dropdownIconColorHover) {
 		cssRules.push(
-			`${selector} .pf-select:hover i { color: ${attributes.dropdownIconColorHover}; }`
+			`${selector} .ts-filter:hover i { color: ${attributes.dropdownIconColorHover}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select:hover svg { fill: ${attributes.dropdownIconColorHover}; }`
+			`${selector} .ts-filter:hover svg { fill: ${attributes.dropdownIconColorHover}; }`
 		);
 	}
 
@@ -840,7 +849,7 @@ export function generateProductFormResponsiveCSS(
 	if (attributes.dropdownBoxShadowHover) {
 		const shadowCSS = generateBoxShadowCSS(attributes.dropdownBoxShadowHover);
 		if (shadowCSS) {
-			cssRules.push(`${selector} .pf-select:hover { ${shadowCSS} }`);
+			cssRules.push(`${selector} .ts-filter:hover { ${shadowCSS} }`);
 		}
 	}
 
@@ -852,45 +861,45 @@ export function generateProductFormResponsiveCSS(
 			attributes.dropdownFilledTypography
 		);
 		if (typoCSS) {
-			cssRules.push(`${selector} .pf-select.pf-filled { ${typoCSS} }`);
+			cssRules.push(`${selector} .ts-filter.ts-filled { ${typoCSS} }`);
 		}
 	}
 
 	// Filled background
 	if (attributes.dropdownFilledBackground) {
 		cssRules.push(
-			`${selector} .pf-select.pf-filled { background-color: ${attributes.dropdownFilledBackground}; }`
+			`${selector} .ts-filter.ts-filled { background-color: ${attributes.dropdownFilledBackground}; }`
 		);
 	}
 
 	// Filled text color
 	if (attributes.dropdownFilledTextColor) {
 		cssRules.push(
-			`${selector} .pf-select.pf-filled { color: ${attributes.dropdownFilledTextColor}; }`
+			`${selector} .ts-filter.ts-filled { color: ${attributes.dropdownFilledTextColor}; }`
 		);
 	}
 
 	// Filled icon color
 	if (attributes.dropdownFilledIconColor) {
 		cssRules.push(
-			`${selector} .pf-select.pf-filled i { color: ${attributes.dropdownFilledIconColor}; }`
+			`${selector} .ts-filter.ts-filled i { color: ${attributes.dropdownFilledIconColor}; }`
 		);
 		cssRules.push(
-			`${selector} .pf-select.pf-filled svg { fill: ${attributes.dropdownFilledIconColor}; }`
+			`${selector} .ts-filter.ts-filled svg { fill: ${attributes.dropdownFilledIconColor}; }`
 		);
 	}
 
 	// Filled border color
 	if (attributes.dropdownFilledBorderColor) {
 		cssRules.push(
-			`${selector} .pf-select.pf-filled { border-color: ${attributes.dropdownFilledBorderColor}; }`
+			`${selector} .ts-filter.ts-filled { border-color: ${attributes.dropdownFilledBorderColor}; }`
 		);
 	}
 
 	// Filled border width
 	if (attributes.dropdownFilledBorderWidth !== undefined) {
 		cssRules.push(
-			`${selector} .pf-select.pf-filled { border-width: ${attributes.dropdownFilledBorderWidth}px; }`
+			`${selector} .ts-filter.ts-filled { border-width: ${attributes.dropdownFilledBorderWidth}px; }`
 		);
 	}
 
@@ -900,7 +909,7 @@ export function generateProductFormResponsiveCSS(
 			attributes.dropdownFilledBoxShadow
 		);
 		if (shadowCSS) {
-			cssRules.push(`${selector} .pf-select.pf-filled { ${shadowCSS} }`);
+			cssRules.push(`${selector} .ts-filter.ts-filled { ${shadowCSS} }`);
 		}
 	}
 
@@ -912,7 +921,7 @@ export function generateProductFormResponsiveCSS(
 	// Radio/checkbox border color - normal
 	if (attributes.radioCheckboxBorderColor) {
 		cssRules.push(
-			`${selector} .pf-radio-choice, ${selector} .pf-checkbox-choice { border-color: ${attributes.radioCheckboxBorderColor}; }`
+			`${selector} .ts-addition-list .addition-body { border-color: ${attributes.radioCheckboxBorderColor}; }`
 		);
 	}
 
@@ -923,7 +932,7 @@ export function generateProductFormResponsiveCSS(
 		);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-radio-choice, ${selector} .pf-checkbox-choice { ${typoCSS} }`
+				`${selector} .ts-addition-list .addition-body { ${typoCSS} }`
 			);
 		}
 	}
@@ -931,7 +940,7 @@ export function generateProductFormResponsiveCSS(
 	// Radio/checkbox text color - normal
 	if (attributes.radioCheckboxTextColor) {
 		cssRules.push(
-			`${selector} .pf-radio-choice, ${selector} .pf-checkbox-choice { color: ${attributes.radioCheckboxTextColor}; }`
+			`${selector} .ts-addition-list .addition-body { color: ${attributes.radioCheckboxTextColor}; }`
 		);
 	}
 
@@ -940,7 +949,7 @@ export function generateProductFormResponsiveCSS(
 	// Selected background
 	if (attributes.radioCheckboxSelectedBackground) {
 		cssRules.push(
-			`${selector} .pf-radio-choice.pf-selected, ${selector} .pf-checkbox-choice.pf-selected { background-color: ${attributes.radioCheckboxSelectedBackground}; }`
+			`${selector} .ts-addition-list li.ts-checked .addition-body { background-color: ${attributes.radioCheckboxSelectedBackground}; }`
 		);
 	}
 
@@ -951,7 +960,7 @@ export function generateProductFormResponsiveCSS(
 		);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} .pf-radio-choice.pf-selected, ${selector} .pf-checkbox-choice.pf-selected { ${typoCSS} }`
+				`${selector} .ts-addition-list li.ts-checked .addition-body { ${typoCSS} }`
 			);
 		}
 	}
@@ -959,7 +968,7 @@ export function generateProductFormResponsiveCSS(
 	// Selected text color
 	if (attributes.radioCheckboxSelectedTextColor) {
 		cssRules.push(
-			`${selector} .pf-radio-choice.pf-selected, ${selector} .pf-checkbox-choice.pf-selected { color: ${attributes.radioCheckboxSelectedTextColor}; }`
+			`${selector} .ts-addition-list li.ts-checked .addition-body { color: ${attributes.radioCheckboxSelectedTextColor}; }`
 		);
 	}
 
@@ -970,7 +979,7 @@ export function generateProductFormResponsiveCSS(
 		);
 		if (shadowCSS) {
 			cssRules.push(
-				`${selector} .pf-radio-choice.pf-selected, ${selector} .pf-checkbox-choice.pf-selected { ${shadowCSS} }`
+				`${selector} .ts-addition-list li.ts-checked .addition-body { ${shadowCSS} }`
 			);
 		}
 	}
@@ -983,21 +992,21 @@ export function generateProductFormResponsiveCSS(
 	// Switcher background inactive
 	if (attributes.switcherBackgroundInactive) {
 		cssRules.push(
-			`${selector} .pf-switcher .ts-switcher { background-color: ${attributes.switcherBackgroundInactive}; }`
+			`${selector} .onoffswitch .onoffswitch-label { background-color: ${attributes.switcherBackgroundInactive}; }`
 		);
 	}
 
 	// Switcher background active
 	if (attributes.switcherBackgroundActive) {
 		cssRules.push(
-			`${selector} .pf-switcher input:checked + .ts-switcher { background-color: ${attributes.switcherBackgroundActive}; }`
+			`${selector} .onoffswitch .onoffswitch-checkbox:checked + .onoffswitch-label { background-color: ${attributes.switcherBackgroundActive}; }`
 		);
 	}
 
 	// Switcher handle background
 	if (attributes.switcherHandleBackground) {
 		cssRules.push(
-			`${selector} .pf-switcher .ts-switcher:before { background-color: ${attributes.switcherHandleBackground}; }`
+			`${selector} .onoffswitch .onoffswitch-label:before { background-color: ${attributes.switcherHandleBackground}; }`
 		);
 	}
 
@@ -1009,21 +1018,21 @@ export function generateProductFormResponsiveCSS(
 	// Images gap - normal
 	if (attributes.imagesGap !== undefined) {
 		cssRules.push(
-			`${selector} .pf-image-choices { gap: ${attributes.imagesGap}px; }`
+			`${selector} .addon-images { gap: ${attributes.imagesGap}px; }`
 		);
 	}
 
 	// Images border radius - normal
 	if (attributes.imagesBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-image-choice { border-radius: ${attributes.imagesBorderRadius}px; }`
+			`${selector} .addon-images li { border-radius: ${attributes.imagesBorderRadius}px; }`
 		);
 	}
 
 	// Images selected border color
 	if (attributes.imagesSelectedBorderColor) {
 		cssRules.push(
-			`${selector} .pf-image-choice.pf-selected { border-color: ${attributes.imagesSelectedBorderColor}; }`
+			`${selector} .addon-images li.adm-selected { border-color: ${attributes.imagesSelectedBorderColor}; }`
 		);
 	}
 
@@ -1035,28 +1044,28 @@ export function generateProductFormResponsiveCSS(
 	// Colors gap
 	if (attributes.colorsGap !== undefined) {
 		cssRules.push(
-			`${selector} .pf-color-choices { gap: ${attributes.colorsGap}px; }`
+			`${selector} .addon-colors { gap: ${attributes.colorsGap}px; }`
 		);
 	}
 
 	// Colors size
 	if (attributes.colorsSize !== undefined) {
 		cssRules.push(
-			`${selector} .pf-color-choice { width: ${attributes.colorsSize}px; height: ${attributes.colorsSize}px; }`
+			`${selector} .addon-colors li { width: ${attributes.colorsSize}px; height: ${attributes.colorsSize}px; }`
 		);
 	}
 
 	// Colors border radius
 	if (attributes.colorsBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} .pf-color-choice { border-radius: ${attributes.colorsBorderRadius}px; }`
+			`${selector} .addon-colors li { border-radius: ${attributes.colorsBorderRadius}px; }`
 		);
 	}
 
 	// Colors inset color
 	if (attributes.colorsInsetColor) {
 		cssRules.push(
-			`${selector} .pf-color-choice { box-shadow: inset 0 0 0 2px ${attributes.colorsInsetColor}; }`
+			`${selector} .addon-colors li { box-shadow: inset 0 0 0 2px ${attributes.colorsInsetColor}; }`
 		);
 	}
 
@@ -1068,7 +1077,7 @@ export function generateProductFormResponsiveCSS(
 	// Input placeholder color - normal
 	if (attributes.inputPlaceholderColor) {
 		cssRules.push(
-			`${selector} input.pf-input::placeholder, ${selector} textarea.pf-input::placeholder { color: ${attributes.inputPlaceholderColor}; }`
+			`${selector} input.ts-filter::placeholder, ${selector} textarea.ts-filter::placeholder { color: ${attributes.inputPlaceholderColor}; }`
 		);
 	}
 
@@ -1079,7 +1088,7 @@ export function generateProductFormResponsiveCSS(
 		);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} input.pf-input::placeholder, ${selector} textarea.pf-input::placeholder { ${typoCSS} }`
+				`${selector} input.ts-filter::placeholder, ${selector} textarea.ts-filter::placeholder { ${typoCSS} }`
 			);
 		}
 	}
@@ -1087,7 +1096,7 @@ export function generateProductFormResponsiveCSS(
 	// Input value color - normal
 	if (attributes.inputValueColor) {
 		cssRules.push(
-			`${selector} input.pf-input, ${selector} textarea.pf-input { color: ${attributes.inputValueColor}; }`
+			`${selector} input.ts-filter, ${selector} textarea.ts-filter { color: ${attributes.inputValueColor}; }`
 		);
 	}
 
@@ -1096,7 +1105,7 @@ export function generateProductFormResponsiveCSS(
 		const typoCSS = generateTypographyCSS(attributes.inputValueTypography);
 		if (typoCSS) {
 			cssRules.push(
-				`${selector} input.pf-input, ${selector} textarea.pf-input { ${typoCSS} }`
+				`${selector} input.ts-filter, ${selector} textarea.ts-filter { ${typoCSS} }`
 			);
 		}
 	}
@@ -1104,7 +1113,7 @@ export function generateProductFormResponsiveCSS(
 	// Input background - normal
 	if (attributes.inputBackground) {
 		cssRules.push(
-			`${selector} input.pf-input, ${selector} textarea.pf-input { background-color: ${attributes.inputBackground}; }`
+			`${selector} input.ts-filter, ${selector} textarea.ts-filter { background-color: ${attributes.inputBackground}; }`
 		);
 	}
 
@@ -1113,7 +1122,7 @@ export function generateProductFormResponsiveCSS(
 		const borderCSS = generateBorderCSS(attributes.inputBorder);
 		if (borderCSS) {
 			cssRules.push(
-				`${selector} input.pf-input, ${selector} textarea.pf-input { ${borderCSS} }`
+				`${selector} input.ts-filter, ${selector} textarea.ts-filter { ${borderCSS} }`
 			);
 		}
 	}
@@ -1121,7 +1130,7 @@ export function generateProductFormResponsiveCSS(
 	// Input border radius - normal
 	if (attributes.inputBorderRadius !== undefined) {
 		cssRules.push(
-			`${selector} input.pf-input, ${selector} textarea.pf-input { border-radius: ${attributes.inputBorderRadius}px; }`
+			`${selector} input.ts-filter, ${selector} textarea.ts-filter { border-radius: ${attributes.inputBorderRadius}px; }`
 		);
 	}
 
@@ -1130,28 +1139,28 @@ export function generateProductFormResponsiveCSS(
 	// Background hover
 	if (attributes.inputBackgroundHover) {
 		cssRules.push(
-			`${selector} input.pf-input:hover, ${selector} textarea.pf-input:hover { background-color: ${attributes.inputBackgroundHover}; }`
+			`${selector} input.ts-filter:hover, ${selector} textarea.ts-filter:hover { background-color: ${attributes.inputBackgroundHover}; }`
 		);
 	}
 
 	// Border color hover
 	if (attributes.inputBorderColorHover) {
 		cssRules.push(
-			`${selector} input.pf-input:hover, ${selector} textarea.pf-input:hover { border-color: ${attributes.inputBorderColorHover}; }`
+			`${selector} input.ts-filter:hover, ${selector} textarea.ts-filter:hover { border-color: ${attributes.inputBorderColorHover}; }`
 		);
 	}
 
 	// Placeholder color hover
 	if (attributes.inputPlaceholderColorHover) {
 		cssRules.push(
-			`${selector} input.pf-input:hover::placeholder, ${selector} textarea.pf-input:hover::placeholder { color: ${attributes.inputPlaceholderColorHover}; }`
+			`${selector} input.ts-filter:hover::placeholder, ${selector} textarea.ts-filter:hover::placeholder { color: ${attributes.inputPlaceholderColorHover}; }`
 		);
 	}
 
 	// Text color hover
 	if (attributes.inputTextColorHover) {
 		cssRules.push(
-			`${selector} input.pf-input:hover, ${selector} textarea.pf-input:hover { color: ${attributes.inputTextColorHover}; }`
+			`${selector} input.ts-filter:hover, ${selector} textarea.ts-filter:hover { color: ${attributes.inputTextColorHover}; }`
 		);
 	}
 
@@ -1160,21 +1169,21 @@ export function generateProductFormResponsiveCSS(
 	// Background active
 	if (attributes.inputBackgroundActive) {
 		cssRules.push(
-			`${selector} input.pf-input:focus, ${selector} textarea.pf-input:focus { background-color: ${attributes.inputBackgroundActive}; }`
+			`${selector} input.ts-filter:focus, ${selector} textarea.ts-filter:focus { background-color: ${attributes.inputBackgroundActive}; }`
 		);
 	}
 
 	// Border color active
 	if (attributes.inputBorderColorActive) {
 		cssRules.push(
-			`${selector} input.pf-input:focus, ${selector} textarea.pf-input:focus { border-color: ${attributes.inputBorderColorActive}; }`
+			`${selector} input.ts-filter:focus, ${selector} textarea.ts-filter:focus { border-color: ${attributes.inputBorderColorActive}; }`
 		);
 	}
 
 	// Text color active
 	if (attributes.inputTextColorActive) {
 		cssRules.push(
-			`${selector} input.pf-input:focus, ${selector} textarea.pf-input:focus { color: ${attributes.inputTextColorActive}; }`
+			`${selector} input.ts-filter:focus, ${selector} textarea.ts-filter:focus { color: ${attributes.inputTextColorActive}; }`
 		);
 	}
 

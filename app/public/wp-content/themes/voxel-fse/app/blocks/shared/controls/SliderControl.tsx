@@ -40,7 +40,7 @@ export const SliderControl: React.FC<SliderControlProps> = ({
 		)}
 		<RangeControl
 			value={value ?? 0}
-			onChange={(val) => onChange(val)}
+			onChange={(val: number | undefined) => onChange(val)}
 			min={min}
 			max={max}
 			step={step}

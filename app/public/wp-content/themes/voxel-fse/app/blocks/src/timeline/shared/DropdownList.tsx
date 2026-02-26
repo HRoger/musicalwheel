@@ -59,7 +59,7 @@ export function DropdownList({
 	const popupRef = useRef<HTMLDivElement>(null);
 	const popupBoxRef = useRef<HTMLDivElement>(null);
 	const [styles, setStyles] = useState<React.CSSProperties>({});
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	// @ts-ignore -- unused but kept for future use
 
 	/**
 	 * Calculate position relative to target
@@ -242,6 +242,25 @@ export function DropdownList({
 										{children}
 									</ul>
 								</div>
+							</div>
+							{/* Mobile close button — matches Voxel popup.php showClose mode */}
+							{/* Evidence: themes/voxel/templates/components/popup.php:42-50 */}
+							<div className="ts-popup-controller hide-d">
+								<ul className="flexify simplify-ul">
+									<li className="flexify ts-popup-close">
+										<a
+											href="#"
+											className="ts-icon-btn"
+											role="button"
+											onClick={(e) => {
+												e.preventDefault();
+												onBlur();
+											}}
+										>
+											<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.9545 5.95548C6.39384 5.51614 7.10616 5.51614 7.5455 5.95548L11.999 10.409L16.4524 5.95561C16.8918 5.51627 17.6041 5.51627 18.0434 5.95561C18.4827 6.39495 18.4827 7.10726 18.0434 7.5466L13.59 12L18.0434 16.4534C18.4827 16.8927 18.4827 17.605 18.0434 18.0444C17.6041 18.4837 16.8918 18.4837 16.4524 18.0444L11.999 13.591L7.5455 18.0445C7.10616 18.4839 6.39384 18.4839 5.9545 18.0445C5.51517 17.6052 5.51516 16.8929 5.9545 16.4535L10.408 12L5.9545 7.54647C5.51516 7.10713 5.51517 6.39482 5.9545 5.95548Z" fill="#343C54"/></svg>
+										</a>
+									</li>
+								</ul>
 							</div>
 						</div>
 					</div>

@@ -107,6 +107,8 @@ class User_Data_Group extends Base_Data_Group {
 		}
 
 		$key = strtolower( trim( (string) ( $property_path[0] ?? '' ) ) );
+		// Strip Voxel's native colon prefix for built-in fields (e.g. :username → username)
+		$key = ltrim( $key, ':' );
 
 		if ( empty( $key ) ) {
 			return '';

@@ -51,9 +51,9 @@ export default function FilterFollowingPost({
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const props = filterData.props || {};
-	const placeholder = props.placeholder || filterData.label || 'Following Post';
+	const placeholder = (props['placeholder'] as string) || filterData.label || 'Following Post';
 	// Post data from PHP frontend_props() - populated when set_value() was called
-	const propsPostData = props.post as PostData | undefined;
+	const propsPostData = props['post'] as PostData | undefined;
 
 	// Get filter icon from API data (HTML markup) or fallback
 	const filterIcon = filterData.icon || '';

@@ -7,7 +7,7 @@
  * @package VoxelFSE
  */
 
-import { voxelGet, voxelPost, voxelDelete, voxelAjax, voxelAjaxPost } from './voxel-fetch';
+import { voxelGet, voxelPost, voxelAjax, voxelAjaxPost } from './voxel-fetch';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 import type {
 	Status,
@@ -100,7 +100,7 @@ export async function getPostContext(
 ): Promise<PostContextResponse> {
 	const params: Record<string, string | number> = { mode };
 	if (postId) {
-		params.post_id = postId;
+		params['post_id'] = postId;
 	}
 	return voxelGet<PostContextResponse>(`${API_NAMESPACE}/post-context`, params);
 }
@@ -136,7 +136,7 @@ export async function publishStatus(
 
 	// Add link preview URL if detected (matches Voxel's timeline-main.beautified.js submit method)
 	if (payload.link_preview) {
-		dataPayload.link_preview = payload.link_preview;
+		dataPayload['link_preview'] = payload.link_preview;
 	}
 
 	const response = await voxelAjaxPost<{ status: Status; message?: string }>('timeline/v2/status.publish', {
@@ -321,6 +321,60 @@ export async function markStatusPending(statusId: number, nonce: string): Promis
 		status_id: statusId,
 		_wpnonce: nonce,
 	});
+}
+
+/**
+ * Pin a status to the top of a feed
+ * Voxel action: timeline/v2/status.pin_to_profile
+ * See: status-controller.php lines 770-831
+ *
+ * @param statusId - The status ID to pin
+ * @param mode - Feed mode (post_wall, post_timeline, author_timeline, user_timeline)
+ * @param postId - Post ID (required for post_wall/post_timeline modes)
+ * @param nonce - The timeline nonce (vx_timeline)
+ */
+export async function pinToProfile(
+	statusId: number,
+	mode: string,
+	postId: number | null,
+	nonce: string
+): Promise<{ success: boolean; message: string }> {
+	const params: Record<string, string | number | boolean | undefined> = {
+		status_id: statusId,
+		mode,
+		_wpnonce: nonce,
+	};
+	if (postId) {
+		params['post_id'] = postId;
+	}
+	return voxelAjaxPost<{ success: boolean; message: string }>('timeline/v2/status.pin_to_profile', params);
+}
+
+/**
+ * Unpin a status from the top of a feed
+ * Voxel action: timeline/v2/status.unpin_from_profile
+ * See: status-controller.php lines 833-887
+ *
+ * @param statusId - The status ID to unpin
+ * @param mode - Feed mode (post_wall, post_timeline, author_timeline, user_timeline)
+ * @param postId - Post ID (required for post_wall/post_timeline modes)
+ * @param nonce - The timeline nonce (vx_timeline)
+ */
+export async function unpinFromProfile(
+	statusId: number,
+	mode: string,
+	postId: number | null,
+	nonce: string
+): Promise<{ success: boolean; message: string }> {
+	const params: Record<string, string | number | boolean | undefined> = {
+		status_id: statusId,
+		mode,
+		_wpnonce: nonce,
+	};
+	if (postId) {
+		params['post_id'] = postId;
+	}
+	return voxelAjaxPost<{ success: boolean; message: string }>('timeline/v2/status.unpin_from_profile', params);
 }
 
 /**
@@ -532,6 +586,7 @@ export interface MentionResult {
 	id: number;
 	type: 'user' | 'post';
 	name: string;
+	username?: string;
 	avatar_url: string;
 	link: string;
 }

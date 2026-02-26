@@ -16,35 +16,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
-// WordPress media types
-declare global {
-	interface Window {
-		wp?: {
-			media: (options: MediaFrameOptions) => MediaFrame;
-		};
-	}
-}
-
-interface MediaFrameOptions {
-	title: string;
-	button: {
-		text: string;
-	};
-	multiple?: boolean;
-	library?: {
-		type?: string | string[];
-	};
-}
-
-interface MediaFrame {
-	on: (event: string, callback: () => void) => MediaFrame;
-	open: () => void;
-	state: () => {
-		get: (key: string) => {
-			toJSON: () => MediaAttachment[];
-		};
-	};
-}
 
 export interface MediaAttachment {
 	id: number;
@@ -99,11 +70,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 	const dropZoneRef = useRef<HTMLDivElement>(null);
 
 	// Check if wp.media is available (admin context)
-	const hasWpMedia = typeof window !== 'undefined' && window.wp && window.wp.media;
+	const hasWpMedia = typeof window !== 'undefined' && (window as any).wp && (window as any).wp.media;
 
 	// Open WordPress Media Library
 	const openMediaLibrary = useCallback(() => {
-		if (!hasWpMedia || !window.wp?.media) {
+		if (!hasWpMedia || !(window as any).wp?.media) {
 			// Fallback to file input if wp.media not available
 			fileInputRef.current?.click();
 			return;
@@ -117,7 +88,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 			libraryType = allowedTypes.split(',').map(t => t.trim().split('/')[0]);
 		}
 
-		const frame = window.wp.media({
+		const frame = (window as any).wp.media({
 			title: 'Select Files',
 			button: {
 				text: 'Select'
@@ -232,18 +203,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 			try {
 				const uploaded = await uploadFileToWordPress(file, (progress) => {
 					// Update progress
-					onChange(prev => {
+					(onChange as any)((prev: FileObject[]) => {
 						if (!Array.isArray(prev)) return prev;
-						return prev.map(f => 
+						return prev.map((f: FileObject) => 
 							f.id === placeholderId ? { ...f, progress } : f
 						);
 					});
 				});
 
 				// Replace placeholder with uploaded file
-				onChange(prev => {
+				(onChange as any)((prev: FileObject[]) => {
 					if (!Array.isArray(prev)) return prev;
-					return prev.map(f => 
+					return prev.map((f: FileObject) => 
 						f.id === placeholderId ? uploaded : f
 					);
 				});
@@ -251,9 +222,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 				console.error('Upload error:', error);
 				setUploadError(`Failed to upload ${file.name}`);
 				// Remove failed upload
-				onChange(prev => {
+				(onChange as any)((prev: FileObject[]) => {
 					if (!Array.isArray(prev)) return prev;
-					return prev.filter(f => f.id !== placeholderId);
+					return prev.filter((f: FileObject) => f.id !== placeholderId);
 				});
 			}
 		}

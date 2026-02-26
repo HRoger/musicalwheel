@@ -16,16 +16,23 @@
 
 import { __ } from '@wordpress/i18n';
 import { SelectControl, ToggleControl, TextControl } from '@wordpress/components';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
 	ResponsiveRangeControl,
 	AdvancedIconControl,
 	EnableTagsButton,
 	AccordionPanelGroup,
 	AccordionPanel,
+	RepeaterControl,
+	LoopVisibilityControl,
+	ElementVisibilityModal,
+	LoopElementModal,
+	generateRepeaterId,
 } from '@shared/controls';
+import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
+import type { LoopConfig } from '@shared/controls/LoopElementModal';
 import { DynamicTagBuilder } from '../../../shared/dynamic-tags';
-import type { TermFeedAttributes } from '../types';
+import type { TermFeedAttributes, ManualTermItem } from '../types';
 
 interface TaxonomyOption {
 	key: string;
@@ -57,9 +64,21 @@ export function ContentTab({
 	postTypes,
 	cardTemplates,
 }: ContentTabProps): JSX.Element {
-	// State for dynamic tag modals
+	// State for dynamic tag modals (filters mode)
 	const [parentTermIdModalOpen, setParentTermIdModalOpen] = useState(false);
 	const [perPageModalOpen, setPerPageModalOpen] = useState(false);
+
+	// State for repeater item dynamic tag modal (term_id field)
+	const [termIdModalOpen, setTermIdModalOpen] = useState(false);
+	const [editingTermItemId, setEditingTermItemId] = useState<string | null>(null);
+
+	// State for visibility rules modal (repeater items)
+	const [rulesModalOpen, setRulesModalOpen] = useState(false);
+	const [editingRulesItemId, setEditingRulesItemId] = useState<string | null>(null);
+
+	// State for loop modal (repeater items)
+	const [loopModalOpen, setLoopModalOpen] = useState(false);
+	const [editingLoopItemId, setEditingLoopItemId] = useState<string | null>(null);
 
 	// Build post type options for dropdown
 	const postTypeOptions = [
@@ -78,6 +97,74 @@ export function ContentTab({
 		value: template.id,
 		label: template.label,
 	}));
+
+	// --- Repeater helpers (manual mode) ---
+
+	const createManualTermItem = useCallback((): ManualTermItem => ({
+		id: generateRepeaterId(),
+		term_id: 0,
+		rowVisibility: 'show',
+		visibilityRules: [],
+	}), []);
+
+	const getTermItemLabel = useCallback((_item: ManualTermItem, index: number) => {
+		return `${__('Item', 'voxel-fse')} #${index + 1}`;
+	}, []);
+
+	// Handle edit visibility rules from repeater item
+	const handleEditRules = useCallback((itemId: string) => {
+		setEditingRulesItemId(itemId);
+		setRulesModalOpen(true);
+	}, []);
+
+	const handleSaveRules = useCallback((rules: VisibilityRule[]) => {
+		if (!editingRulesItemId) return;
+		const updatedItems = attributes.manualTerms.map((item) =>
+			item.id === editingRulesItemId
+				? { ...item, visibilityRules: rules }
+				: item
+		);
+		setAttributes({ manualTerms: updatedItems });
+		setRulesModalOpen(false);
+		setEditingRulesItemId(null);
+	}, [editingRulesItemId, attributes.manualTerms, setAttributes]);
+
+	// Handle edit loop from repeater item
+	const handleEditLoop = useCallback((itemId: string) => {
+		setEditingLoopItemId(itemId);
+		setLoopModalOpen(true);
+	}, []);
+
+	const handleSaveLoop = useCallback((config: LoopConfig) => {
+		if (!editingLoopItemId) return;
+		const updatedItems = attributes.manualTerms.map((item) =>
+			item.id === editingLoopItemId
+				? {
+					...item,
+					loopSource: config.loopSource,
+					loopProperty: config.loopProperty || '',
+					loopLimit: config.loopLimit,
+					loopOffset: config.loopOffset,
+				}
+				: item
+		);
+		setAttributes({ manualTerms: updatedItems as any });
+		setLoopModalOpen(false);
+		setEditingLoopItemId(null);
+	}, [editingLoopItemId, attributes.manualTerms, setAttributes]);
+
+	// Get editing items for modals
+	const editingRulesItem = editingRulesItemId
+		? attributes.manualTerms.find((item) => item.id === editingRulesItemId)
+		: null;
+
+	const editingLoopItem = editingLoopItemId
+		? attributes.manualTerms.find((item) => item.id === editingLoopItemId)
+		: null;
+
+	const editingTermItem = editingTermItemId
+		? attributes.manualTerms.find((item) => item.id === editingTermItemId)
+		: null;
 
 	return (
 		<>
@@ -106,7 +193,7 @@ export function ContentTab({
 							label: __('Manual selection', 'voxel-fse'),
 						},
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({
 							source: value as 'filters' | 'manual',
 						})
@@ -119,7 +206,7 @@ export function ContentTab({
 						label={__('Choose taxonomy', 'voxel-fse')}
 						value={attributes.taxonomy}
 						options={taxonomyOptions}
-						onChange={(value) => setAttributes({ taxonomy: value })}
+						onChange={(value: string) => setAttributes({ taxonomy: value })}
 					/>
 				)}
 
@@ -135,7 +222,7 @@ export function ContentTab({
 						<TextControl
 							type="number"
 							value={String(attributes.parentTermId || '')}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({
 									parentTermId: parseInt(value || '0', 10),
 								})
@@ -161,7 +248,7 @@ export function ContentTab({
 								label: __('Alphabetical', 'voxel-fse'),
 							},
 						]}
-						onChange={(value) =>
+						onChange={(value: string) =>
 							setAttributes({
 								order: value as 'default' | 'name',
 							})
@@ -181,7 +268,7 @@ export function ContentTab({
 						<TextControl
 							type="number"
 							value={String(attributes.perPage || '')}
-							onChange={(value) =>
+							onChange={(value: string) =>
 								setAttributes({
 									perPage: parseInt(value || '10', 10),
 								})
@@ -192,33 +279,76 @@ export function ContentTab({
 					</>
 				)}
 
-				{/* Manual selection - ts_manual_terms (manual mode only) */}
+				{/* Manual selection - ts_manual_terms (manual mode only)
+				 * PARITY: Matches Voxel Elementor repeater with term_id + loop + visibility
+				 * Evidence: themes/voxel/app/widgets/term-feed.php:44-56
+				 */}
 				{attributes.source === 'manual' && (
-					<div style={{ marginBottom: '16px' }}>
-						<TextControl
-							label={__('Term IDs (comma-separated)', 'voxel-fse')}
-							value={attributes.manualTerms.map((t) => t.term_id).join(',')}
-							onChange={(value) => {
-								const termIds = value
-									.split(',')
-									.map((id) => parseInt(id.trim(), 10))
-									.filter((id) => !isNaN(id) && id > 0);
-								setAttributes({
-									manualTerms: termIds.map((term_id) => ({
-										term_id,
-									})),
-								});
-							}}
-							help={__('Enter term IDs separated by commas', 'voxel-fse')}
-						/>
-					</div>
+					<RepeaterControl<ManualTermItem>
+						label={__('Choose terms', 'voxel-fse')}
+						items={attributes.manualTerms}
+						onChange={(items) => setAttributes({ manualTerms: items })}
+						createItem={createManualTermItem}
+						getItemLabel={getTermItemLabel}
+						addButtonText={__('Add Item', 'voxel-fse')}
+						attributes={attributes as Record<string, any>}
+						setAttributes={setAttributes as (attrs: Record<string, any>) => void}
+						renderContent={({ item, onUpdate }) => (
+							<div className="voxel-fse-term-item-editor">
+								{/* Dynamic tag button + Term ID field */}
+								<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+									<EnableTagsButton onClick={() => {
+										setEditingTermItemId(item.id);
+										setTermIdModalOpen(true);
+									}} />
+									<label style={{ margin: 0, fontWeight: 500 }}>
+										{__('Term ID', 'voxel-fse')}
+									</label>
+								</div>
+								<TextControl
+									type="number"
+									value={String(item.term_id || '')}
+									onChange={(value: string) =>
+										onUpdate({ term_id: parseInt(value || '0', 10) } as Partial<ManualTermItem>)
+									}
+									label=""
+								/>
+
+								{/* Loop & Visibility controls - matches Voxel Elementor */}
+								<LoopVisibilityControl
+									showLoopSection={true}
+									loopSource={item.loopSource}
+									loopProperty={item.loopProperty}
+									loopLimit={String(item.loopLimit ?? '')}
+									loopOffset={String(item.loopOffset ?? '')}
+									onEditLoop={() => handleEditLoop(item.id)}
+									onClearLoop={() => onUpdate({
+										loopSource: '',
+										loopProperty: '',
+										loopLimit: '',
+										loopOffset: '',
+									} as Partial<ManualTermItem>)}
+									onLoopLimitChange={(value) => onUpdate({ loopLimit: value } as Partial<ManualTermItem>)}
+									onLoopOffsetChange={(value) => onUpdate({ loopOffset: value } as Partial<ManualTermItem>)}
+									rowVisibility={item.rowVisibility || 'show'}
+									visibilityRules={item.visibilityRules || []}
+									onRowVisibilityChange={(value) => onUpdate({ rowVisibility: value } as Partial<ManualTermItem>)}
+									onEditVisibilityRules={() => handleEditRules(item.id)}
+									onClearVisibilityRules={() => onUpdate({
+										visibilityRules: [],
+										rowVisibility: 'show',
+									} as Partial<ManualTermItem>)}
+								/>
+							</div>
+						)}
+					/>
 				)}
 
 				{/* Hide empty terms? - ts_hide_empty */}
 				<ToggleControl
 					label={__('Hide empty terms?', 'voxel-fse')}
 					checked={attributes.hideEmpty}
-					onChange={(value) => setAttributes({ hideEmpty: value })}
+					onChange={(value: boolean) => setAttributes({ hideEmpty: value })}
 				/>
 
 				{/* Hide terms without a post in: - ts_hide_empty_pt (shown when hideEmpty is true) */}
@@ -227,7 +357,7 @@ export function ContentTab({
 						label={__('Hide terms without a post in:', 'voxel-fse')}
 						value={attributes.hideEmptyPostType}
 						options={postTypeOptions}
-						onChange={(value) => setAttributes({ hideEmptyPostType: value })}
+						onChange={(value: string) => setAttributes({ hideEmptyPostType: value })}
 					/>
 				)}
 
@@ -236,7 +366,7 @@ export function ContentTab({
 					label={__('Preview card template', 'voxel-fse')}
 					value={attributes.cardTemplate}
 					options={cardTemplateOptions}
-					onChange={(value) => setAttributes({ cardTemplate: value })}
+					onChange={(value: string) => setAttributes({ cardTemplate: value })}
 				/>
 			</AccordionPanel>
 
@@ -256,7 +386,7 @@ export function ContentTab({
 							label: __('Carousel', 'voxel-fse'),
 						},
 					]}
-					onChange={(value) =>
+					onChange={(value: string) =>
 						setAttributes({
 							layoutMode: value as 'ts-feed-grid-default' | 'ts-feed-nowrap',
 						})
@@ -274,9 +404,11 @@ export function ContentTab({
 								setAttributes as (attrs: Record<string, any>) => void
 							}
 							attributeBaseName="carouselItemWidth"
-							min={5}
-							max={100}
+							min={0}
+							max={attributes.carouselItemWidthUnit === '%' ? 100 : 800}
 							step={1}
+							availableUnits={['px', '%']}
+							unitAttributeName="carouselItemWidthUnit"
 							help={__(
 								'Set the width of an individual item in the carousel',
 								'voxel-fse'
@@ -287,7 +419,7 @@ export function ContentTab({
 						<ToggleControl
 							label={__('Auto slide?', 'voxel-fse')}
 							checked={attributes.carouselAutoplay}
-							onChange={(value) => setAttributes({ carouselAutoplay: value })}
+							onChange={(value: boolean) => setAttributes({ carouselAutoplay: value })}
 						/>
 
 						{/* Auto slide interval (ms) - carousel_autoplay_interval */}
@@ -296,7 +428,7 @@ export function ContentTab({
 								label={__('Auto slide interval (ms)', 'voxel-fse')}
 								type="number"
 								value={String(attributes.carouselAutoplayInterval || '')}
-								onChange={(value) =>
+								onChange={(value: string) =>
 									setAttributes({
 										carouselAutoplayInterval: parseInt(
 											value || '3000',
@@ -370,7 +502,7 @@ export function ContentTab({
 				<ToggleControl
 					label={__('Replace accent color?', 'voxel-fse')}
 					checked={attributes.replaceAccentColor}
-					onChange={(value) => setAttributes({ replaceAccentColor: value })}
+					onChange={(value: boolean) => setAttributes({ replaceAccentColor: value })}
 					help={__(
 						'Replaces the color of any element utilizing accent color to the term color',
 						'voxel-fse'
@@ -384,7 +516,7 @@ export function ContentTab({
 				<AdvancedIconControl
 					label={__('Right chevron', 'voxel-fse')}
 					value={attributes.rightChevronIcon}
-					onChange={(value) => setAttributes({ rightChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ rightChevronIcon: value })}
 					supportsDynamicTags={true}
 				/>
 
@@ -392,17 +524,17 @@ export function ContentTab({
 				<AdvancedIconControl
 					label={__('Left chevron', 'voxel-fse')}
 					value={attributes.leftChevronIcon}
-					onChange={(value) => setAttributes({ leftChevronIcon: value })}
+					onChange={(value: any) => setAttributes({ leftChevronIcon: value })}
 					supportsDynamicTags={true}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>
 
-		{/* Dynamic Tag Builder Modals */}
+		{/* Dynamic Tag Builder Modals (filters mode) */}
 		{parentTermIdModalOpen && (
 			<DynamicTagBuilder
 				value={String(attributes.parentTermId || '')}
-				onSave={(value) => {
+				onChange={(value: string) => {
 					setAttributes({ parentTermId: parseInt(value || '0', 10) });
 					setParentTermIdModalOpen(false);
 				}}
@@ -414,7 +546,7 @@ export function ContentTab({
 		{perPageModalOpen && (
 			<DynamicTagBuilder
 				value={String(attributes.perPage || '')}
-				onSave={(value) => {
+				onChange={(value: string) => {
 					setAttributes({ perPage: parseInt(value || '10', 10) });
 					setPerPageModalOpen(false);
 				}}
@@ -422,6 +554,55 @@ export function ContentTab({
 				context="term"
 			/>
 		)}
+
+		{/* Dynamic Tag Builder Modal for repeater item term_id */}
+		{termIdModalOpen && editingTermItem && (
+			<DynamicTagBuilder
+				value={String(editingTermItem.term_id || '')}
+				onChange={(value: string) => {
+					const updatedItems = attributes.manualTerms.map((item) =>
+						item.id === editingTermItemId
+							? { ...item, term_id: parseInt(value || '0', 10) }
+							: item
+					);
+					setAttributes({ manualTerms: updatedItems });
+					setTermIdModalOpen(false);
+					setEditingTermItemId(null);
+				}}
+				onClose={() => {
+					setTermIdModalOpen(false);
+					setEditingTermItemId(null);
+				}}
+				context="term"
+			/>
+		)}
+
+		{/* Visibility Rules Modal for repeater items */}
+		<ElementVisibilityModal
+			isOpen={rulesModalOpen}
+			onClose={() => {
+				setRulesModalOpen(false);
+				setEditingRulesItemId(null);
+			}}
+			rules={editingRulesItem?.visibilityRules || []}
+			onSave={handleSaveRules}
+		/>
+
+		{/* Loop Element Modal for repeater items */}
+		<LoopElementModal
+			isOpen={loopModalOpen}
+			onClose={() => {
+				setLoopModalOpen(false);
+				setEditingLoopItemId(null);
+			}}
+			config={{
+				loopSource: editingLoopItem?.loopSource || '',
+				loopProperty: editingLoopItem?.loopProperty || '',
+				loopLimit: editingLoopItem?.loopLimit || '',
+				loopOffset: editingLoopItem?.loopOffset || '',
+			}}
+			onSave={handleSaveLoop}
+		/>
 		</>
 	);
 }

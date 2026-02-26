@@ -13,13 +13,14 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 import { useState, useEffect, useMemo } from 'react';
 import { __ } from '@wordpress/i18n';
+import apiFetch from '@wordpress/api-fetch';
 import ProductPriceComponent from './shared/ProductPriceComponent';
 import { InspectorTabs } from '@shared/controls';
 import ContentTab from './inspector/ContentTab';
 import { generateProductPriceResponsiveCSS } from './styles';
+import { useTemplatePostType } from '@shared/utils/useTemplateContext';
 import type {
-	ProductPriceAttributes,
-	ProductPriceData,
+		ProductPriceData,
 	ProductPriceEditProps,
 } from './types';
 
@@ -83,8 +84,49 @@ export default function Edit({
 		[]
 	);
 
-	// Use context first, fallback to editor
-	const postId = context.postId || editorPostId;
+	// Detect template context for sample post resolution
+	const templatePostType = useTemplatePostType();
+
+	// Use context first, fallback to editor, or resolve sample post for templates
+	const rawPostId = context.postId || editorPostId;
+	const [samplePostId, setSamplePostId] = useState<number | null>(null);
+
+	// When editing a template (non-numeric postId), resolve a sample post
+	useEffect(() => {
+		if (rawPostId && typeof rawPostId === 'number' && rawPostId > 0) {
+			setSamplePostId(null);
+			return;
+		}
+
+		if (!templatePostType) {
+			setSamplePostId(null);
+			return;
+		}
+
+		const controller = new AbortController();
+		apiFetch<{ rendered: string }>({
+			path: '/voxel-fse/v1/dynamic-data/render',
+			method: 'POST',
+			data: {
+				expression: '@post(id)',
+				preview_context: { type: 'post', post_type: templatePostType },
+			},
+			signal: controller.signal,
+		})
+			.then((res) => {
+				const id = parseInt(res.rendered, 10);
+				if (!isNaN(id) && id > 0) {
+					setSamplePostId(id);
+				}
+			})
+			.catch(() => {
+				// Silently fail — block will show placeholder
+			});
+
+		return () => { controller.abort(); };
+	}, [rawPostId, templatePostType]);
+
+	const postId = (typeof rawPostId === 'number' && rawPostId > 0) ? rawPostId : samplePostId;
 
 	// Generate block ID if not set
 	useEffect(() => {

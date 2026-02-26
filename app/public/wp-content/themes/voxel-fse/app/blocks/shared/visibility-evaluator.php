@@ -19,20 +19,19 @@ class Visibility_Evaluator
      *
      * @param array $rules Visibility rules from block attributes
      * @param string $behavior 'show' or 'hide'
+     * @param bool  $skip_edit_check When true, always evaluate rules even in edit mode.
+     *              Used by REST endpoints that explicitly want evaluation results.
      * @return bool Whether block should render
      */
-    public static function evaluate(array $rules, string $behavior = 'show'): bool
+    public static function evaluate(array $rules, string $behavior = 'show', bool $skip_edit_check = false): bool
     {
-        // 1. Admin Edit Mode Check
+        // Admin Edit Mode Check (skippable for explicit evaluation requests)
         // Voxel logic: Admins in edit mode should always see the element
-        if (defined('REST_REQUEST') && REST_REQUEST && current_user_can('administrator')) {
-            // We are likely in the block editor (Save/Edit cycle)
-            return true;
-        }
-
-        // Also check Voxel's specific edit mode check if available
-        if (function_exists('\Voxel\is_edit_mode') && \Voxel\is_edit_mode() && current_user_can('administrator')) {
-            return true;
+        // during normal page rendering (render.php, render_block filter).
+        if ( ! $skip_edit_check ) {
+            if (function_exists('\Voxel\is_edit_mode') && \Voxel\is_edit_mode() && current_user_can('administrator')) {
+                return true;
+            }
         }
 
         // No rules = always visible
@@ -42,22 +41,39 @@ class Visibility_Evaluator
 
         // 2. Format rules for Voxel's evaluator
         // Voxel expects: Array of Groups (OR), where each Group is Array of Rules (AND)
-        // Our FSE blocks currently support a single list of rules (AND)
-        // So we wrap our rules in a SINGLE group: [ [ rule1, rule2 ] ]
-        
-        $formatted_group = [];
+        // Rules have a groupIndex field; rules in the same group are AND'd, groups are OR'd.
+        // Legacy rules without groupIndex default to group 0.
+
+        $groups_map = [];
         foreach ($rules as $rule) {
-            // Map FSE 'filterKey' to Voxel 'type'
-            // They are identical strings, just different keys
-            $formatted_rule = [
-                'type' => $rule['filterKey'] ?? '',
-                'value' => $rule['value'] ?? '',
-                'operator' => $rule['operator'] ?? 'equals',
-            ];
-            $formatted_group[] = $formatted_rule;
+            $type = $rule['filterKey'] ?? '';
+            $group_index = $rule['groupIndex'] ?? 0;
+
+            // DTag rules use Voxel's native structure: tag, compare, arguments
+            if ($type === 'dtag') {
+                $formatted_rule = [
+                    'type' => 'dtag',
+                    'tag' => $rule['tag'] ?? $rule['value'] ?? '',
+                    'compare' => $rule['compare'] ?? null,
+                    'arguments' => $rule['arguments'] ?? [],
+                ];
+            } else {
+                $formatted_rule = [
+                    'type' => $type,
+                    'value' => $rule['value'] ?? '',
+                    'operator' => $rule['operator'] ?? 'equals',
+                ];
+            }
+
+            if ( ! isset( $groups_map[ $group_index ] ) ) {
+                $groups_map[ $group_index ] = [];
+            }
+            $groups_map[ $group_index ][] = $formatted_rule;
         }
 
-        $voxel_rules_structure = [ $formatted_group ];
+        // Sort by group index and build the structure
+        ksort( $groups_map );
+        $voxel_rules_structure = array_values( $groups_map );
 
         // 3. Delegate to Voxel's native evaluator
         // This ensures 1:1 parity with Voxel's logic
@@ -215,8 +231,8 @@ class Visibility_Evaluator
             // DYNAMIC TAG
             // ============================================
             case 'dtag':
-                // Dynamic tag comparison - requires parsing the tag
-                return self::evaluate_dynamic_tag($value);
+                // Dynamic tag comparison using tag, compare, and arguments
+                return self::evaluate_dynamic_tag_rule($rule);
 
             default:
                 // Unknown rule types pass by default
@@ -497,10 +513,61 @@ class Visibility_Evaluator
     // DYNAMIC TAG HELPER
     // ========================================================================
 
-    private static function evaluate_dynamic_tag(string $tag_value): bool
+    /**
+     * Evaluate a dtag visibility rule.
+     *
+     * Mirrors Voxel's DTag_Rule::evaluate() from:
+     * voxel/app/dynamic-data/visibility-rules/dtag-rule.php
+     *
+     * Constructs a VoxelScript expression:
+     *   @site().then({tag}).{compare}({arguments}).then(yes).else(no)
+     * and checks if the result is 'yes'.
+     *
+     * @param array $rule Rule with 'tag', 'compare', 'arguments' fields
+     * @return bool
+     */
+    private static function evaluate_dynamic_tag_rule(array $rule): bool
     {
-        // Dynamic tag evaluation would parse @context.property format
-        // For now, return true as a fallback
+        $tag = $rule['tag'] ?? $rule['value'] ?? '';
+        $compare = $rule['compare'] ?? '';
+        $arguments = $rule['arguments'] ?? [];
+
+        if (empty($tag)) {
+            return false;
+        }
+
+        // If no compare operator, just check if tag resolves to non-empty
+        if (empty($compare)) {
+            if (function_exists('\\VoxelFSE\\Dynamic_Data\\render')) {
+                $result = \VoxelFSE\Dynamic_Data\render($tag);
+                return !empty($result);
+            }
+            return true;
+        }
+
+        // Build Voxel-style comparison statement
+        // Pattern from dtag-rule.php line 42:
+        // @site().then({tag}).{compare}({arguments}).then(yes).else(no)
+        $args_str = is_array($arguments) ? implode(',', $arguments) : '';
+        $statement = sprintf(
+            '@site().then(%s).%s(%s).then(yes).else(no)',
+            $tag,
+            $compare,
+            $args_str
+        );
+
+        // Try Voxel's native renderer first
+        if (function_exists('\\Voxel\\render')) {
+            $result = \Voxel\render($statement);
+            return $result === 'yes';
+        }
+
+        // Fallback: use our FSE renderer
+        if (function_exists('\\VoxelFSE\\Dynamic_Data\\render')) {
+            $result = \VoxelFSE\Dynamic_Data\render($statement);
+            return $result === 'yes';
+        }
+
         return true;
     }
 }

@@ -157,10 +157,10 @@ export interface BackgroundControlAttributes {
 	// === VIDEO BACKGROUND ===
 	// Video Link (YouTube/Vimeo/mp4 URL)
 	bgVideoLink?: string;
-	// Video Start Time (seconds)
-	bgVideoStartTime?: number;
-	// Video End Time (seconds)
-	bgVideoEndTime?: number;
+	// Video Start Time (seconds) — null means "unset" (undefined is ignored by setAttributes)
+	bgVideoStartTime?: number | null;
+	// Video End Time (seconds) — null means "unset"
+	bgVideoEndTime?: number | null;
 	// Play Once
 	bgVideoPlayOnce?: boolean;
 	// Play On Mobile
@@ -398,7 +398,7 @@ export default function BackgroundControl({
 	showSlideshowBackground = false,
 }: BackgroundControlProps) {
 	// Get WordPress's current device type
-	const wpDeviceType = useSelect((select) => getCurrentDeviceType(select), []);
+	const wpDeviceType = useSelect((select: any) => getCurrentDeviceType(select));
 
 	const wpDevice = wpDeviceType
 		? (wpDeviceType.toLowerCase() as DeviceType)
@@ -412,20 +412,18 @@ export default function BackgroundControl({
 
 	// Fetch media details for normal background image (for resolution selection)
 	const normalImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
+		(select: any) => {
 			const imageId = attributes.backgroundImage?.id;
 			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImage?.id]
+		}
 	);
 
 	// Fetch media details for hover background image (for resolution selection)
 	const hoverImageMedia = useSelect(
-		(select: (store: string) => Record<string, unknown>) => {
+		(select: any) => {
 			const imageId = attributes.backgroundImageHover?.id;
 			return imageId ? (select('core') as any).getMedia(imageId) : null;
-		},
-		[attributes.backgroundImageHover?.id]
+		}
 	);
 
 	// Render content for a single state (normal or hover)
@@ -1186,13 +1184,14 @@ export default function BackgroundControl({
 								label={__('Start Time', 'voxel-fse')}
 								type="number"
 								value={
-									attributes.bgVideoStartTime !== undefined
+									attributes.bgVideoStartTime != null
 										? String(attributes.bgVideoStartTime)
 										: ''
 								}
 								onChange={(value: string) =>
 									setAttributes({
-										bgVideoStartTime: value ? Number(value) : undefined,
+										// Use null instead of undefined — WordPress setAttributes ignores undefined
+										bgVideoStartTime: value ? Number(value) : null,
 									})
 								}
 								help={__('Specify a start time (in seconds).', 'voxel-fse')}
@@ -1206,13 +1205,14 @@ export default function BackgroundControl({
 								label={__('End Time', 'voxel-fse')}
 								type="number"
 								value={
-									attributes.bgVideoEndTime !== undefined
+									attributes.bgVideoEndTime != null
 										? String(attributes.bgVideoEndTime)
 										: ''
 								}
 								onChange={(value: string) =>
 									setAttributes({
-										bgVideoEndTime: value ? Number(value) : undefined,
+										// Use null instead of undefined — WordPress setAttributes ignores undefined
+										bgVideoEndTime: value ? Number(value) : null,
 									})
 								}
 								help={__('Specify an end time (in seconds).', 'voxel-fse')}

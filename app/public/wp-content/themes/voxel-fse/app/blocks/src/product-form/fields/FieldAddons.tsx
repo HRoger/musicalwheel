@@ -140,7 +140,7 @@ const FieldAddons = forwardRef<FieldAddonsRef, FieldAddonsProps>( function Field
 	 *
 	 * Evidence: voxel-product-form.beautified.js lines 1095-1113
 	 */
-	const getCustomPrice = useCallback( ( addon: AddonConfig ): CustomPriceConfig | null => {
+	const getCustomPrice = useCallback( ( _addon: AddonConfig ): CustomPriceConfig | null => {
 		const bookingField = config.props?.fields?.[ 'form-booking' ];
 
 		if ( productMode === 'booking' ) {

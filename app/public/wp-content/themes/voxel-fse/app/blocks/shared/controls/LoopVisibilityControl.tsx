@@ -89,7 +89,8 @@ export default function LoopVisibilityControl({
     className = '',
 }: LoopVisibilityControlProps): JSX.Element {
     const hasVisibilityRules = visibilityRules && visibilityRules.length > 0;
-    const hasLoopConfigured = Boolean(loopSource);
+    const hasLoopConfigured = Boolean(loopSource) && Boolean(loopProperty);
+    const hasIncompleteLoop = Boolean(loopSource) && !loopProperty;
 
     return (
         <div className={`voxel-fse-loop-visibility-wrapper ${className}`.trim()}>
@@ -100,7 +101,11 @@ export default function LoopVisibilityControl({
 
                     {hasLoopConfigured ? (
                         <p className="voxel-fse-loop-source">
-                            @{loopSource}({loopProperty || ''})
+                            @{loopSource}({loopProperty})
+                        </p>
+                    ) : hasIncompleteLoop ? (
+                        <p className="voxel-fse-loop-source" style={{ color: '#cc1818' }}>
+                            @{loopSource}() — {__('incomplete, select a property', 'voxel-fse')}
                         </p>
                     ) : (
                         <p className="voxel-fse-control-note">
@@ -115,7 +120,7 @@ export default function LoopVisibilityControl({
                         >
                             {__('Edit loop', 'voxel-fse')}
                         </Button>
-                        {hasLoopConfigured && onClearLoop && (
+                        {(hasLoopConfigured || hasIncompleteLoop) && onClearLoop && (
                             <Button
                                 variant="secondary"
                                 onClick={onClearLoop}
@@ -182,14 +187,33 @@ export default function LoopVisibilityControl({
                     />
                 )}
 
-                {/* Display visibility rules */}
+                {/* Display visibility rules grouped by groupIndex */}
                 {hasVisibilityRules ? (
                     <div className="voxel-fse-visibility-rules-display">
-                        {visibilityRules.map((rule, index) => (
-                            <p key={rule.id || index} className="voxel-fse-visibility-rule-text">
-                                {getVisibilityRuleLabel(rule)}
-                            </p>
-                        ))}
+                        {(() => {
+                            const groups: Map<number, VisibilityRule[]> = new Map();
+                            for (const rule of visibilityRules) {
+                                const gi = rule.groupIndex ?? 0;
+                                if (!groups.has(gi)) groups.set(gi, []);
+                                groups.get(gi)!.push(rule);
+                            }
+                            const sortedGroups = [...groups.entries()].sort((a, b) => a[0] - b[0]);
+
+                            return sortedGroups.map(([gi, groupRules], groupIdx) => (
+                                <div key={gi}>
+                                    {groupIdx > 0 && (
+                                        <p className="voxel-fse-visibility-rule-text" style={{ fontStyle: 'italic', opacity: 0.7 }}>
+                                            {__('— OR —', 'voxel-fse')}
+                                        </p>
+                                    )}
+                                    {groupRules.map((rule, ruleIdx) => (
+                                        <p key={rule.id || ruleIdx} className="voxel-fse-visibility-rule-text">
+                                            {ruleIdx > 0 ? `${__('AND', 'voxel-fse')} ` : ''}{getVisibilityRuleLabel(rule)}
+                                        </p>
+                                    ))}
+                                </div>
+                            ));
+                        })()}
                     </div>
                 ) : (
                     <p className="voxel-fse-control-note">

@@ -411,7 +411,7 @@ Description: Header Layout set to "Left Header" in theme options
      body[data-header-format="left-header"].woocommerce #nectar-content-wrap.container-wrap {
         padding-top:80px
     }
-     body[data-header-format="left-header"] #nectar-nav[data-lhe="animated_underline"] #top nav >ul >li:not([class*="button_"]) >a:hover >span:not(.nectar-menu-label):after, 
+     body[data-header-format="left-header"] #nectar-nav[data-lhe="animated_underline"] #top nav >ul >li:not([class*="button_"]) >a:hover >span:not(.nectar-menu-label):after,
 		 body[data-header-format="left-header"] #nectar-nav[data-lhe="animated_underline"] #top nav >ul >li:not([class*="button_"]).open-submenu >a >span:not(.nectar-menu-label):after,
 		 body[data-header-format="left-header"] #nectar-nav[data-lhe="animated_underline"] #top nav >ul >li:not([class*="button_"]).current_page_item >a >span:after,
 		 body[data-header-format="left-header"] #nectar-nav[data-lhe="animated_underline"] #top nav >ul >li:not([class*="button_"]).current-menu-item >a >span:after,
@@ -543,7 +543,7 @@ Description: Header Layout set to "Left Header" in theme options
          max-width:400px
     }
 }
- @media only screen and (max-width:1000px){
+ @media only screen and (max-width:1024px){
     body[data-header-format="left-header"] #nectar-nav #social-in-menu{
         display:none
     }
@@ -555,28 +555,12 @@ Description: Header Layout set to "Left Header" in theme options
 			position: absolute;
 			left: 0;
 	}
+
+  body[data-header-format="left-header"].material #search-outer {
+    height: auto;
+  }
 }
 
- body[data-header-format="left-header"] #search-outer,
- body[data-header-format="left-header"].ascend #search-outer {
-     position:fixed;
-     transform:rotateX(90deg);
-     padding-right:0;
-     padding-top:0;
-     padding-bottom: 0;
-		 top: 0;
-     z-index:10100!important;
-}
-body[data-header-format="left-header"].original #search-outer {
-	height: 100%;
-}
-
-body[data-header-format="left-header"].ascend #search-outer {
-	background-color: rgba(255,255,255,1);
-}
-body[data-header-format="left-header"][data-header-color="dark"].ascend #search-outer {
-    background-color: rgba(0,0,0,1);
-}
 
 body[data-header-format="left-header"].material #search-outer {
 	background-color: #fff;
@@ -586,6 +570,7 @@ body[data-header-format="left-header"].material #search-outer {
      position: fixed;
      width: calc(100% - var(--left-header-width, 275px));
      padding-left: 0;
+     transition: opacity 0.3s ease;
      left: var(--left-header-width, 275px);
 }
 

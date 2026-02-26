@@ -103,7 +103,7 @@ trait Security_Trait {
 
 		$totp = \Voxel\Vendor\OTPHP\TOTP::createFromSecret( $secret );
 		$totp->setLabel( $this->get_email() );
-		$totp->setIssuer( get_bloginfo( 'name' ) );
+		$totp->setIssuer( \Voxel\get_2fa_totp_issuer() );
 
 		// Generate QR code using Voxel's built-in QR code generator
 		return \Voxel\qrcode( $totp->getProvisioningUri() );
@@ -133,7 +133,7 @@ trait Security_Trait {
 
 		$totp = \Voxel\Vendor\OTPHP\TOTP::createFromSecret( $secret );
 		$totp->setLabel( $this->get_email() );
-		$totp->setIssuer( get_bloginfo( 'name' ) );
+		$totp->setIssuer( \Voxel\get_2fa_totp_issuer() );
 
 		// Allow 1 period before and after for clock drift (90 second window)
 		$verified = $totp->verify( $code, null, 1 );

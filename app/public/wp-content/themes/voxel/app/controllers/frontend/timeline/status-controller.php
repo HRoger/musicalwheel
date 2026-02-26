@@ -20,6 +20,8 @@ class Status_Controller extends \Voxel\Controllers\Base_Controller {
 		$this->on( 'voxel_ajax_timeline/v2/status.quote', '@quote_status' );
 		$this->on( 'voxel_ajax_timeline/v2/status.mark_approved', '@mark_approved' );
 		$this->on( 'voxel_ajax_timeline/v2/status.mark_pending', '@mark_pending' );
+		$this->on( 'voxel_ajax_timeline/v2/status.pin_to_profile', '@pin_to_profile' );
+		$this->on( 'voxel_ajax_timeline/v2/status.unpin_from_profile', '@unpin_from_profile' );
 	}
 
 	protected function publish_status() {
@@ -431,7 +433,21 @@ class Status_Controller extends \Voxel\Controllers\Base_Controller {
 				throw new \Exception( _x( 'You cannot delete this post.', 'timeline', 'voxel' ) );
 			}
 
+			$current_user_id = get_current_user_id();
+			$status_id = $status->get_id();
+			$status_post_id = $status->get_post_id();
+			$was_pinned_user = ( $current_user_id && (int) get_user_meta( $current_user_id, 'voxel_pinned_timeline_status_id', true ) === $status_id );
+
 			$status->delete();
+
+			if ( $was_pinned_user ) {
+				update_user_meta( $current_user_id, 'voxel_pinned_timeline_status_id', 0 );
+			}
+			foreach ( [ 'voxel_pinned_post_wall_status_id', 'voxel_pinned_post_timeline_status_id' ] as $post_pin_key ) {
+				if ( $status_post_id && (int) get_post_meta( $status_post_id, $post_pin_key, true ) === $status_id ) {
+					update_post_meta( $status_post_id, $post_pin_key, 0 );
+				}
+			}
 
 			return wp_send_json( [
 				'success' => true,
@@ -723,8 +739,8 @@ class Status_Controller extends \Voxel\Controllers\Base_Controller {
 		}
 	}
 
-	protected function mark_pending() {
-		try {
+		protected function mark_pending() {
+			try {
 			\Voxel\verify_nonce( $_REQUEST['_wpnonce'] ?? '', 'vx_timeline' );
 			if ( ( $_SERVER['REQUEST_METHOD'] ?? null ) !== 'POST' ) {
 				throw new \Exception( __( 'Invalid request.', 'voxel' ) );
@@ -741,6 +757,125 @@ class Status_Controller extends \Voxel\Controllers\Base_Controller {
 			return wp_send_json( [
 				'success' => true,
 				'badges' => $status->get_badges(),
+			] );
+		} catch ( \Exception $e ) {
+			return wp_send_json( [
+				'success' => false,
+				'message' => $e->getMessage(),
+				'code' => $e->getCode(),
+			] );
+		}
+	}
+
+	protected function pin_to_profile() {
+		try {
+			\Voxel\verify_nonce( $_REQUEST['_wpnonce'] ?? '', 'vx_timeline' );
+			if ( ( $_SERVER['REQUEST_METHOD'] ?? null ) !== 'POST' ) {
+				throw new \Exception( __( 'Invalid request.', 'voxel' ) );
+			}
+
+			$current_user = \Voxel\get_current_user();
+			if ( ! $current_user ) {
+				throw new \Exception( _x( 'You must be logged in to pin.', 'timeline', 'voxel' ) );
+			}
+
+			$mode = $_REQUEST['mode'] ?? 'author_timeline';
+			$post_id = ! empty( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : null;
+			$status = \Voxel\Timeline\Status::get( absint( $_REQUEST['status_id'] ?? null ) );
+			if ( ! $status ) {
+				throw new \Exception( _x( 'You cannot pin this post.', 'timeline', 'voxel' ) );
+			}
+
+			if ( $mode === 'post_wall' || $mode === 'post_timeline' ) {
+				if ( ! $post_id ) {
+					throw new \Exception( _x( 'Invalid request.', 'voxel' ) );
+				}
+				$post = \Voxel\Post::get( $post_id );
+				if ( ! ( $post && $post->post_type ) ) {
+					throw new \Exception( _x( 'You cannot pin this post.', 'timeline', 'voxel' ) );
+				}
+				if ( ! $current_user->can_moderate_timeline_feed( $mode, [ 'post' => $post ] ) && ! $post->is_editable_by_current_user() ) {
+					throw new \Exception( _x( 'You cannot pin this post.', 'timeline', 'voxel' ) );
+				}
+				if ( $status->get_post_id() !== $post->get_id() || $status->get_feed() !== $mode ) {
+					throw new \Exception( _x( 'This post cannot be pinned here.', 'timeline', 'voxel' ) );
+				}
+				$meta_key = $mode === 'post_timeline'
+					? 'voxel_pinned_post_timeline_status_id'
+					: 'voxel_pinned_post_wall_status_id';
+				update_post_meta( $post->get_id(), $meta_key, $status->get_id() );
+			} else {
+				if ( ! $status->is_editable_by_current_user() ) {
+					throw new \Exception( _x( 'You cannot pin this post.', 'timeline', 'voxel' ) );
+				}
+				if ( $status->get_author_id() !== $current_user->get_id() ) {
+					throw new \Exception( _x( 'You can only pin your own posts to the top.', 'timeline', 'voxel' ) );
+				}
+				if ( ! in_array( $status->get_feed(), [ 'user_timeline', 'post_wall', 'post_reviews' ], true ) ) {
+					throw new \Exception( _x( 'This post cannot be pinned.', 'timeline', 'voxel' ) );
+				}
+				update_user_meta( $current_user->get_id(), 'voxel_pinned_timeline_status_id', $status->get_id() );
+			}
+
+			return wp_send_json( [
+				'success' => true,
+				'message' => _x( 'Pinned to the top.', 'timeline', 'voxel' ),
+			] );
+		} catch ( \Exception $e ) {
+			return wp_send_json( [
+				'success' => false,
+				'message' => $e->getMessage(),
+				'code' => $e->getCode(),
+			] );
+		}
+	}
+
+	protected function unpin_from_profile() {
+		try {
+			\Voxel\verify_nonce( $_REQUEST['_wpnonce'] ?? '', 'vx_timeline' );
+			if ( ( $_SERVER['REQUEST_METHOD'] ?? null ) !== 'POST' ) {
+				throw new \Exception( __( 'Invalid request.', 'voxel' ) );
+			}
+
+			$current_user = \Voxel\get_current_user();
+			if ( ! $current_user ) {
+				throw new \Exception( _x( 'You must be logged in to unpin.', 'timeline', 'voxel' ) );
+			}
+
+			$mode = $_REQUEST['mode'] ?? 'author_timeline';
+			$post_id = ! empty( $_REQUEST['post_id'] ) ? absint( $_REQUEST['post_id'] ) : null;
+			$status_id = absint( $_REQUEST['status_id'] ?? null );
+
+			if ( $mode === 'post_wall' || $mode === 'post_timeline' ) {
+				if ( ! $post_id ) {
+					throw new \Exception( _x( 'Invalid request.', 'voxel' ) );
+				}
+				$post = \Voxel\Post::get( $post_id );
+				if ( ! ( $post && $post->post_type ) ) {
+					throw new \Exception( _x( 'Invalid request.', 'voxel' ) );
+				}
+				if ( ! $current_user->can_moderate_timeline_feed( $mode, [ 'post' => $post ] ) && ! $post->is_editable_by_current_user() ) {
+					throw new \Exception( _x( 'You cannot unpin this post.', 'timeline', 'voxel' ) );
+				}
+				$meta_key = $mode === 'post_timeline'
+					? 'voxel_pinned_post_timeline_status_id'
+					: 'voxel_pinned_post_wall_status_id';
+				$pinned_id = (int) get_post_meta( $post_id, $meta_key, true );
+				if ( $pinned_id !== $status_id ) {
+					throw new \Exception( _x( 'This post is not pinned.', 'timeline', 'voxel' ) );
+				}
+				update_post_meta( $post_id, $meta_key, 0 );
+			} else {
+				$pinned_id = (int) get_user_meta( $current_user->get_id(), 'voxel_pinned_timeline_status_id', true );
+				if ( $pinned_id !== $status_id ) {
+					throw new \Exception( _x( 'This post is not pinned.', 'timeline', 'voxel' ) );
+				}
+				update_user_meta( $current_user->get_id(), 'voxel_pinned_timeline_status_id', 0 );
+			}
+
+			return wp_send_json( [
+				'success' => true,
+				'message' => _x( 'Unpinned.', 'timeline', 'voxel' ),
 			] );
 		} catch ( \Exception $e ) {
 			return wp_send_json( [

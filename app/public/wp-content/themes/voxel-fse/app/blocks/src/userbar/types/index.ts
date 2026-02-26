@@ -11,6 +11,7 @@ import type { IconValue } from '@shared/types';
 import type { VisibilityRule } from '@shared/controls';
 
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontWeight?: string;
 	fontSize?: { size: number; unit: string };
@@ -53,6 +54,7 @@ export interface ComponentUrl {
 	url: string;
 	is_external: boolean;
 	nofollow: boolean;
+	customAttributes?: string;
 }
 
 /**
@@ -201,6 +203,10 @@ export interface UserbarAttributes {
 	itemMargin: BoxDimensions;
 	/** Item padding */
 	itemPadding: BoxDimensions;
+	/** Item box shadow */
+	itemBoxShadow: BoxShadowValue;
+	/** Item box shadow on hover */
+	itemBoxShadowHover: BoxShadowValue;
 
 	// Item Background
 	/** Item background color */
@@ -525,6 +531,8 @@ export interface VoxelFSEUserbarConfig {
 	templates: {
 		inbox: string;
 	};
+	/** Pre-rendered WordPress menu HTML keyed by menu location slug */
+	menus?: Record<string, string>;
 }
 
 declare global {

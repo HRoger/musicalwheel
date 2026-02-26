@@ -100,63 +100,67 @@ function normalizeConfig(raw: Record<string, unknown>): ProductPriceVxConfig {
 		if (!val || typeof val !== 'object') return undefined;
 		const t = val as Record<string, unknown>;
 		return {
-			fontFamily: typeof t.fontFamily === 'string' ? t.fontFamily : undefined,
-			fontSize: typeof t.fontSize === 'string' ? t.fontSize : undefined,
-			fontSize_tablet: typeof t.fontSize_tablet === 'string' ? t.fontSize_tablet : undefined,
-			fontSize_mobile: typeof t.fontSize_mobile === 'string' ? t.fontSize_mobile : undefined,
-			fontWeight: typeof t.fontWeight === 'string' ? t.fontWeight : undefined,
-			lineHeight: typeof t.lineHeight === 'string' ? t.lineHeight : undefined,
-			letterSpacing: typeof t.letterSpacing === 'string' ? t.letterSpacing : undefined,
+			fontFamily: typeof t['fontFamily'] === 'string' ? t['fontFamily'] : undefined,
+			fontSize: typeof t['fontSize'] === 'string' ? t['fontSize'] : undefined,
+			fontSize_tablet: typeof t['fontSize_tablet'] === 'string' ? t['fontSize_tablet'] : undefined,
+			fontSize_mobile: typeof t['fontSize_mobile'] === 'string' ? t['fontSize_mobile'] : undefined,
+			fontWeight: typeof t['fontWeight'] === 'string' ? t['fontWeight'] : undefined,
+			lineHeight: typeof t['lineHeight'] === 'string' ? t['lineHeight'] : undefined,
+			letterSpacing: typeof t['letterSpacing'] === 'string' ? t['letterSpacing'] : undefined,
 			textTransform: ['none', 'uppercase', 'lowercase', 'capitalize'].includes(
-				t.textTransform as string
+				t['textTransform'] as string
 			)
-				? (t.textTransform as TypographyConfig['textTransform'])
+				? (t['textTransform'] as TypographyConfig['textTransform'])
 				: undefined,
 		};
 	};
 
 	// Extract values with fallbacks (supports camelCase, snake_case, ts_* prefixed)
 	const priceColor = normalizeString(
-		raw.priceColor ?? raw.price_color ?? raw.ts_price_col,
+		raw['priceColor'] ?? raw['price_color'] ?? raw['ts_price_col'],
 		''
 	);
 
 	const strikethroughTextColor = normalizeString(
-		raw.strikethroughTextColor ?? raw.strikethrough_text_color ?? raw.ts_strike_col_text,
+		raw['strikethroughTextColor'] ?? raw['strikethrough_text_color'] ?? raw['ts_strike_col_text'],
 		''
 	);
 
 	const strikethroughLineColor = normalizeString(
-		raw.strikethroughLineColor ?? raw.strikethrough_line_color ?? raw.ts_strike_col,
+		raw['strikethroughLineColor'] ?? raw['strikethrough_line_color'] ?? raw['ts_strike_col'],
 		''
 	);
 
 	const strikethroughWidth = normalizeNumber(
-		raw.strikethroughWidth ?? raw.strikethrough_width ?? raw.ts_strike_width,
+		raw['strikethroughWidth'] ?? raw['strikethrough_width'] ?? raw['ts_strike_width'],
 		0
 	);
 
 	const strikethroughWidthUnit = normalizeString(
-		raw.strikethroughWidthUnit ?? raw.strikethrough_width_unit,
+		raw['strikethroughWidthUnit'] ?? raw['strikethrough_width_unit'],
 		'px'
 	);
 
 	const outOfStockColor = normalizeString(
-		raw.outOfStockColor ?? raw.out_of_stock_color ?? raw.ts_price_nostock,
+		raw['outOfStockColor'] ?? raw['out_of_stock_color'] ?? raw['ts_price_nostock'],
 		''
 	);
 
 	const typography = normalizeTypography(
-		raw.typography ?? raw.price_typo
+		raw['typography'] ?? raw['price_typo']
+	);
+
+	const strikethroughTypography = normalizeTypography(
+		raw['strikethroughTypography'] ?? raw['price_typo_discount']
 	);
 
 	const postId = normalizeNumber(
-		raw.postId ?? raw.post_id,
+		raw['postId'] ?? raw['post_id'],
 		0
 	) || undefined;
 
 	const postType = normalizeString(
-		raw.postType ?? raw.post_type,
+		raw['postType'] ?? raw['post_type'],
 		''
 	) || undefined;
 
@@ -168,6 +172,7 @@ function normalizeConfig(raw: Record<string, unknown>): ProductPriceVxConfig {
 		strikethroughWidthUnit: strikethroughWidthUnit || undefined,
 		outOfStockColor: outOfStockColor || undefined,
 		typography,
+		strikethroughTypography,
 		postId,
 		postType,
 	};
@@ -182,17 +187,30 @@ function getRestUrl(): string {
 }
 
 /**
- * Get the current post ID from page context
- * This is needed because save.tsx doesn't have access to post context
+ * Get the current post ID from page context.
+ * When `container` is provided, checks for a feed card ancestor first
+ * (`.ts-preview[data-post-id]`) so blocks inside Post Feed / Term Feed
+ * cards resolve the correct per-card post ID.
  */
-function getPostIdFromContext(): number | null {
-	// Try to get from Voxel's global context
+function getPostIdFromContext(container?: HTMLElement): number | null {
+	// 1. Check for feed card ancestor (Post Feed / Term Feed cards)
+	if (container) {
+		const feedCard = container.closest<HTMLElement>('.ts-preview[data-post-id]');
+		if (feedCard) {
+			const id = parseInt(feedCard.dataset['postId'] || '', 10);
+			if (!isNaN(id) && id > 0) {
+				return id;
+			}
+		}
+	}
+
+	// 2. Try to get from Voxel's global context
 	const voxelPost = (window as unknown as { voxelCurrentPost?: { id: number } }).voxelCurrentPost;
 	if (voxelPost?.id) {
 		return voxelPost.id;
 	}
 
-	// Try to get from body class (WordPress convention)
+	// 3. Try to get from body class (WordPress convention)
 	const bodyClasses = document.body.className.split(' ');
 	for (const cls of bodyClasses) {
 		if (cls.startsWith('postid-')) {
@@ -203,7 +221,7 @@ function getPostIdFromContext(): number | null {
 		}
 	}
 
-	// Try to get from wp.data (if available)
+	// 4. Try to get from wp.data (if available)
 	const wpData = (window as unknown as { wp?: { data?: { select: (store: string) => { getCurrentPostId?: () => number } } } }).wp;
 	if (wpData?.data?.select) {
 		const postId = wpData.data.select('core/editor')?.getCurrentPostId?.();
@@ -212,7 +230,7 @@ function getPostIdFromContext(): number | null {
 		}
 	}
 
-	// Try to get from closest article element
+	// 5. Try to get from closest article element
 	const article = document.querySelector('article[id^="post-"]');
 	if (article) {
 		const id = parseInt(article.id.replace('post-', ''), 10);
@@ -259,6 +277,7 @@ function buildAttributesFromVxConfig(
 		strikethroughWidthUnit: vxconfig.strikethroughWidthUnit,
 		outOfStockColor: vxconfig.outOfStockColor,
 		typography: vxconfig.typography as TypographyConfig,
+		strikethroughTypography: vxconfig.strikethroughTypography as TypographyConfig,
 	};
 }
 
@@ -269,7 +288,16 @@ async function fetchProductPrice(postId: number): Promise<ProductPriceData> {
 	const restUrl = getRestUrl();
 	const endpoint = `${restUrl}voxel-fse/v1/product-price?post_id=${postId}`;
 
-	const response = await fetch(endpoint);
+	const headers: HeadersInit = {};
+	const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+	if (nonce) {
+		headers['X-WP-Nonce'] = nonce;
+	}
+
+	const response = await fetch(endpoint, {
+		credentials: 'same-origin',
+		headers,
+	});
 
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));
@@ -338,12 +366,13 @@ function ProductPriceWrapper({ attributes, postId }: ProductPriceWrapperProps) {
  * Initialize product price blocks on the page
  */
 function initProductPriceBlocks() {
-	// Find all product price blocks
-	const containers = document.querySelectorAll<HTMLElement>('.vxfse-product-price');
+	// Find all product price block wrappers (outer container from save.tsx).
+	// Use the WP block class to avoid matching inner elements rendered by React.
+	const containers = document.querySelectorAll<HTMLElement>('.wp-block-voxel-fse-product-price');
 
 	containers.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -354,19 +383,19 @@ function initProductPriceBlocks() {
 			return;
 		}
 
-		// Get post ID from vxconfig or page context
-		const postId = vxconfig.postId || getPostIdFromContext();
+		// Get post ID from vxconfig or page context (pass container for feed card detection)
+		const postId = vxconfig.postId || getPostIdFromContext(container);
 		if (!postId) {
 			console.warn('Could not determine post ID for product price block');
 			return;
 		}
 
 		// Build attributes from vxconfig
-		const blockId = container.dataset.blockId || '';
+		const blockId = container.dataset['blockId'] || '';
 		const attributes = buildAttributesFromVxConfig(vxconfig, blockId);
 
 		// Mark as hydrated to prevent double-initialization
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Clear placeholder content
 		container.innerHTML = '';
@@ -392,3 +421,6 @@ if (document.readyState === 'loading') {
 // Support Turbo/PJAX navigation (for single-page app experience)
 window.addEventListener('turbo:load', initProductPriceBlocks);
 window.addEventListener('pjax:complete', initProductPriceBlocks);
+
+// Listen for Voxel markup updates (e.g., Post Feed/Term Feed AJAX card loading)
+document.addEventListener('voxel:markup-update', initProductPriceBlocks);

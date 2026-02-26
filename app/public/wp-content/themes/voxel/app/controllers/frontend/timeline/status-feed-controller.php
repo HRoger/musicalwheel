@@ -70,6 +70,7 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 			];
 
 			$mode = $_REQUEST['mode'] ?? null;
+			$pinned_status_id = 0;
 			if ( $mode === null || ! isset( $allowed_modes[ $mode ] ) ) {
 				throw new \Exception( _x( 'Could not load timeline.', 'timeline', 'voxel' ), 70 );
 			}
@@ -112,8 +113,13 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 				$args['post_id'] = $post->get_id();
 				$args['with_no_reposts'] = true;
 
-				if ( $filter_by === 'pending' && is_user_logged_in() ) {
-					if ( $current_user->can_moderate_timeline_feed( 'post_wall', [ 'post' => $post ] ) ) {
+			$pinned_status_id = (int) get_post_meta( $post->get_id(), 'voxel_pinned_post_wall_status_id', true );
+			if ( $pinned_status_id > 0 ) {
+				$args['id'] = -$pinned_status_id;
+			}
+
+			if ( $filter_by === 'pending' && is_user_logged_in() ) {
+				if ( $current_user->can_moderate_timeline_feed( 'post_wall', [ 'post' => $post ] ) ) {
 						$args['moderation'] = 0;
 						$args['moderation_strict'] = 1;
 					}
@@ -127,8 +133,13 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 				$args['post_id'] = $post->get_id();
 				$args['with_no_reposts'] = true;
 
-				if ( $filter_by === 'pending' && is_user_logged_in() ) {
-					if ( $current_user->can_moderate_timeline_feed( 'post_timeline', [ 'post' => $post ] ) ) {
+			$pinned_status_id = (int) get_post_meta( $post->get_id(), 'voxel_pinned_post_timeline_status_id', true );
+			if ( $pinned_status_id > 0 ) {
+				$args['id'] = -$pinned_status_id;
+			}
+
+			if ( $filter_by === 'pending' && is_user_logged_in() ) {
+				if ( $current_user->can_moderate_timeline_feed( 'post_timeline', [ 'post' => $post ] ) ) {
 						$args['moderation'] = 0;
 						$args['moderation_strict'] = 1;
 					}
@@ -140,6 +151,11 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 
 				$args['feed'] = [ 'user_timeline', 'post_wall', 'post_reviews' ];
 				$args['user_id'] = $user->get_id();
+
+				$pinned_status_id = (int) get_user_meta( $user->get_id(), 'voxel_pinned_timeline_status_id', true );
+				if ( $pinned_status_id > 0 ) {
+					$args['id'] = -$pinned_status_id;
+				}
 
 				if ( ! ( $current_user && $current_user->get_id() === $user->get_id() ) ) {
 					$args['with_current_user_visibility_checks'] = true;
@@ -311,7 +327,7 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 				$args['created_at'] = \Voxel\utc()->modify( 'first day of this week' )->format( 'Y-m-d 00:00:00' );
 			} elseif ( $time === 'this_month' ) {
 				$args['created_at'] = \Voxel\utc()->modify( 'first day of this month' )->format( 'Y-m-d 00:00:00' );
-			} elseif ( $time === 'this_month' ) {
+			} elseif ( $time === 'this_year' ) {
 				$args['created_at'] = \Voxel\utc()->modify( 'first day of this year' )->format( 'Y-m-d 00:00:00' );
 			} elseif ( $time === 'all_time' ) {
 				//
@@ -327,6 +343,34 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 			$has_more = $query['count'] > $per_page;
 			if ( $has_more && $query['count'] === count( $query['items'] ) ) {
 				array_pop( $statuses );
+			}
+
+			if ( $pinned_status_id > 0 && $page === 1 && $filter_by !== 'pending' ) {
+				$pinned_status = \Voxel\Timeline\Status::get( $pinned_status_id );
+				$prepend_pinned = false;
+				if ( $mode === 'author_timeline' && $user ) {
+					if ( $pinned_status && $pinned_status->get_author_id() === $user->get_id() && in_array( $pinned_status->get_feed(), [ 'user_timeline', 'post_wall', 'post_reviews' ], true ) ) {
+						if ( $pinned_status->get_moderation_status() === \Voxel\MODERATION_APPROVED || ( $current_user && $current_user->get_id() === $user->get_id() ) ) {
+							$prepend_pinned = true;
+						}
+					} elseif ( $pinned_status === null && $current_user && $current_user->get_id() === $user->get_id() ) {
+						update_user_meta( $user->get_id(), 'voxel_pinned_timeline_status_id', 0 );
+					}
+			} elseif ( ( $mode === 'post_wall' || $mode === 'post_timeline' ) && $post ) {
+				if ( $pinned_status && $pinned_status->get_post_id() === $post->get_id() && $pinned_status->get_feed() === $mode ) {
+					if ( $pinned_status->get_moderation_status() === \Voxel\MODERATION_APPROVED || ( $current_user && $current_user->can_moderate_timeline_feed( $mode, [ 'post' => $post ] ) ) ) {
+						$prepend_pinned = true;
+					}
+				} else {
+					$stale_key = $mode === 'post_timeline'
+						? 'voxel_pinned_post_timeline_status_id'
+						: 'voxel_pinned_post_wall_status_id';
+					update_post_meta( $post->get_id(), $stale_key, 0 );
+				}
+				}
+				if ( $prepend_pinned ) {
+					array_unshift( $statuses, $pinned_status );
+				}
 			}
 
 			if ( isset( $current_user_review ) ) {
@@ -358,10 +402,11 @@ class Status_Feed_Controller extends \Voxel\Controllers\Base_Controller {
 				}
 			};
 
-			$data = array_map( function( $status ) use ( $export_review_config, $mode ) {
+			$data = array_map( function( $status ) use ( $export_review_config, $mode, $pinned_status_id ) {
 				$export_review_config( $status );
 
 				$config = $status->get_frontend_config();
+				$config['is_pinned'] = ( $pinned_status_id > 0 && (int) $status->get_id() === $pinned_status_id );
 
 				// visibility checks for single_status mode
 				if ( $mode === 'single_status' && ! $status->is_viewable_by_current_user() ) {

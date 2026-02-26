@@ -15,16 +15,15 @@
  * This ensures all responsive controls stay in sync when any one is changed.
  */
 
-import { RangeControl, Button, TextControl } from '@wordpress/components';
+import { RangeControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { useState } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
-import UndoIcon from '../icons/UndoIcon';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlProps {
 	label: string;
@@ -38,12 +37,14 @@ interface ResponsiveRangeControlProps {
 	availableUnits?: UnitType[];
 	units?: UnitType[]; // Alias for availableUnits for backward compatibility
 	unitAttributeName?: string;
-	showResetButton?: boolean;
 	/** When false, hides the header row (label + responsive button). Useful when header is rendered externally. */
 	showHeader?: boolean;
 	/** Attribute name for storing custom CSS value (e.g., 'calc(100vh - 80px)'). Only used when unit is 'custom'. */
 	customValueAttributeName?: string;
 	enableDynamicTags?: boolean;
+	dynamicTagValue?: string;
+	onDynamicTagChange?: (value: string | undefined) => void;
+	dynamicTagContext?: string;
 	/** Optional prefix for the control key used in popup state persistence. Useful when the same attributeBaseName is used in multiple instances (e.g., inside repeater items). */
 	controlKeyPrefix?: string;
 }
@@ -60,7 +61,6 @@ export default function ResponsiveRangeControl({
 	availableUnits,
 	units,
 	unitAttributeName,
-	showResetButton = true,
 	showHeader = true,
 	customValueAttributeName,
 	enableDynamicTags = false,
@@ -73,7 +73,7 @@ export default function ResponsiveRangeControl({
 	const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = useSelect((select: any) => getCurrentDeviceType(select));
 
 	// Get attribute name for current device
 	const getAttributeName = () => {
@@ -183,7 +183,8 @@ export default function ResponsiveRangeControl({
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
 	// When unit is % and no value is set, use max as the initial position
-	const initialPosition = isPercentUnit ? effectiveMax : undefined;
+	// Otherwise, use min so the handle starts at the beginning of the bar (not the middle)
+	const initialPosition = isPercentUnit ? effectiveMax : min;
 
 	// Check if we should show the placeholder (no value set and unit is %)
 	const showPercentPlaceholder = isPercentUnit && (currentValue === undefined || currentValue === null) && !isTagsActive;
@@ -343,27 +344,6 @@ export default function ResponsiveRangeControl({
 							</div>
 						)}
 					</div>
-					{showResetButton && (
-						<Button
-							icon={<UndoIcon />}
-							label={__('Reset to default', 'voxel-fse')}
-							onClick={() => setValue(undefined)}
-							variant="tertiary"
-							size="small"
-							style={{
-								marginTop: '0',
-								color: '#0073aa',
-								padding: '4px',
-								minWidth: 'auto',
-								width: '32px',
-								height: '32px',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								flexShrink: 0,
-							}}
-						/>
-					)}
 				</div>
 			)}
 

@@ -13,7 +13,7 @@
 
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import apiFetch from '@wordpress/api-fetch';
 import type {
 	TermFeedAttributes,
@@ -28,7 +28,6 @@ import {
 import { getAdvancedVoxelTabProps } from '@shared/utils';
 import TermFeedComponent from './shared/TermFeedComponent';
 import { ContentTab, StyleTab } from './inspector';
-import { generateTermFeedResponsiveCSS } from './styles';
 
 interface EditProps {
 	attributes: TermFeedAttributes;
@@ -54,6 +53,37 @@ interface CardTemplatesResponse {
 interface TermsResponse {
 	terms: TermData[];
 	total: number;
+	styles?: string;
+}
+
+/**
+ * Inject template styles into the editor iframe document.
+ *
+ * Block React code runs in the parent frame, but styles need to go into the
+ * editor canvas iframe so they affect the rendered card HTML.
+ */
+function injectTemplateStyles(styles?: string): void {
+	if (!styles) return;
+
+	// Target the editor iframe document, fall back to parent document
+	const iframe = document.querySelector(
+		'iframe[name="editor-canvas"]'
+	) as HTMLIFrameElement | null;
+	const targetDoc = iframe?.contentDocument ?? document;
+	const targetHead = targetDoc.head;
+
+	const temp = document.createElement('div');
+	temp.innerHTML = styles;
+	Array.from(temp.children).forEach((el) => {
+		if (el instanceof HTMLStyleElement || el instanceof HTMLLinkElement) {
+			const id = el.id || (el as HTMLLinkElement).href;
+			if (id && !targetDoc.getElementById(id)) {
+				// Import the node into the target document if it's cross-document
+				const imported = targetDoc.importNode(el, true);
+				targetHead.appendChild(imported);
+			}
+		}
+	});
 }
 
 export default function Edit({
@@ -76,17 +106,27 @@ export default function Edit({
 		}
 	}, [attributes.blockId, clientId, setAttributes]);
 
-	// Inject Voxel Editor Styles
+	// Inject Voxel Editor Styles into the editor iframe
+	// post-feed.css contains .post-feed-nav and .ts-icon-btn carousel arrow styles
+	// that must be in the iframe (where React renders) not the parent document
 	useEffect(() => {
-		const cssId = 'voxel-post-feed-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
+		const cssId = 'voxel-term-feed-css';
+		const voxelConfig = (window as any).Voxel_Config;
+		const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+		const cssHref = `${siteUrl}/wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
+
+		// Inject into the editor iframe where block content renders
+		const iframe = document.querySelector(
+			'iframe[name="editor-canvas"]'
+		) as HTMLIFrameElement | null;
+		const targetDoc = iframe?.contentDocument ?? document;
+
+		if (!targetDoc.getElementById(cssId)) {
+			const link = targetDoc.createElement('link');
 			link.id = cssId;
 			link.rel = 'stylesheet';
-			const voxelConfig = (window as any).Voxel_Config;
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
+			link.href = cssHref;
+			targetDoc.head.appendChild(link);
 		}
 	}, []);
 
@@ -156,6 +196,7 @@ export default function Edit({
 					path: `/voxel-fse/v1/term-feed/terms?source=manual&term_ids=${termIds.join(',')}${attributes.hideEmpty ? '&hide_empty=1' : ''}${attributes.hideEmptyPostType !== ':all' ? `&hide_empty_pt=${attributes.hideEmptyPostType}` : ''}&card_template=${attributes.cardTemplate}`,
 				})) as TermsResponse;
 				setTerms(response.terms || []);
+				injectTemplateStyles(response.styles);
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : 'Failed to load terms'
@@ -197,6 +238,7 @@ export default function Edit({
 					path: `/voxel-fse/v1/term-feed/terms?${params.toString()}`,
 				})) as TermsResponse;
 				setTerms(response.terms || []);
+				injectTemplateStyles(response.styles);
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : 'Failed to load terms'
@@ -229,28 +271,29 @@ export default function Edit({
 		baseClass: 'voxel-fse-term-feed',
 	});
 
-	// Generate responsive CSS
-	const responsiveCSS = useMemo(
-		() => generateTermFeedResponsiveCSS(attributes, advancedProps.uniqueSelector),
-		[attributes, advancedProps.uniqueSelector]
-	);
+	// Note: Term-feed responsive CSS (carousel widths, gap, nav styles) is now generated
+	// inside the shared TermFeedComponent via cssSelector prop (DRY: works for both editor + frontend)
 
 	const blockProps = useBlockProps({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
-		style: advancedProps.styles,
+		style: {
+			...advancedProps.styles,
+			// Prevent carousel content from expanding the Gutenberg block wrapper
+			// Same fix as post-feed: overflow:hidden + min-width:0 contain scroll content
+			overflow: 'hidden',
+			minWidth: 0,
+		},
 		...advancedProps.customAttrs,
 	});
 
 	return (
 		<div {...blockProps}>
-			{/* Output responsive CSS */}
-			{(advancedProps.responsiveCSS || responsiveCSS) && (
+			{/* Output AdvancedTab responsive CSS (custom CSS, margins, etc.) */}
+			{advancedProps.responsiveCSS && (
 				<style
 					dangerouslySetInnerHTML={{
-						__html: [advancedProps.responsiveCSS, responsiveCSS]
-							.filter(Boolean)
-							.join('\n'),
+						__html: advancedProps.responsiveCSS,
 					}}
 				/>
 			)}
@@ -298,6 +341,7 @@ export default function Edit({
 				isLoading={isLoading}
 				error={error}
 				context="editor"
+				cssSelector={advancedProps.uniqueSelector}
 			/>
 		</div>
 	);

@@ -57,7 +57,7 @@ export function registerEditorWrapperFilters(): void {
 
 			// Build wrapper props and styles
 			const wrapperProps: Record<string, any> = { ...props.wrapperProps };
-			const wrapperStyle: Record<string, string> = { ...(wrapperProps.style || {}) };
+			const wrapperStyle: Record<string, string> = { ...(wrapperProps['style'] || {}) };
 
 			// ==========================================
 			// STICKY POSITION - Applies to ALL voxel-fse blocks
@@ -65,24 +65,24 @@ export function registerEditorWrapperFilters(): void {
 			// Check if sticky is enabled and desktop mode is sticky
 			// Note: stickyDesktop defaults to 'sticky', but WordPress may not serialize default values
 			if (attributes.stickyEnabled && (attributes.stickyDesktop ?? 'sticky') === 'sticky') {
-				wrapperStyle.position = 'sticky';
-				wrapperStyle.zIndex = '10'; // Ensure sticky element stays on top
+				wrapperStyle['position'] = 'sticky';
+				wrapperStyle['zIndex'] = '10'; // Ensure sticky element stays on top
 				// CRITICAL: align-self: flex-start prevents the sticky element from stretching
 				// to fill its parent in a flex layout. Without this, the sticky element would be
 				// the same height as its parent, leaving no room to "stick" during scrolling.
-				wrapperStyle.alignSelf = 'flex-start';
+				wrapperStyle['alignSelf'] = 'flex-start';
 
 				if (attributes.stickyTop !== undefined) {
-					wrapperStyle.top = `${attributes.stickyTop}${attributes.stickyTopUnit || 'px'}`;
+					wrapperStyle['top'] = `${attributes.stickyTop}${attributes.stickyTopUnit || 'px'}`;
 				}
 				if (attributes.stickyLeft !== undefined) {
-					wrapperStyle.left = `${attributes.stickyLeft}${attributes.stickyLeftUnit || 'px'}`;
+					wrapperStyle['left'] = `${attributes.stickyLeft}${attributes.stickyLeftUnit || 'px'}`;
 				}
 				if (attributes.stickyRight !== undefined) {
-					wrapperStyle.right = `${attributes.stickyRight}${attributes.stickyRightUnit || 'px'}`;
+					wrapperStyle['right'] = `${attributes.stickyRight}${attributes.stickyRightUnit || 'px'}`;
 				}
 				if (attributes.stickyBottom !== undefined) {
-					wrapperStyle.bottom = `${attributes.stickyBottom}${attributes.stickyBottomUnit || 'px'}`;
+					wrapperStyle['bottom'] = `${attributes.stickyBottom}${attributes.stickyBottomUnit || 'px'}`;
 				}
 			}
 
@@ -95,7 +95,7 @@ export function registerEditorWrapperFilters(): void {
 
 			// Only add wrapperProps if we have modifications
 			if (Object.keys(wrapperStyle).length > 0) {
-				wrapperProps.style = wrapperStyle;
+				wrapperProps['style'] = wrapperStyle;
 			}
 
 			// Check if we have any wrapper modifications

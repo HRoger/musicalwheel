@@ -13,6 +13,16 @@
 import React from 'react';
 import type { PopupKitAttributes } from '../types';
 
+// Placeholder matching Voxel's gradient demo image (avoids hardcoded URLs that break across environments)
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">' +
+    '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">' +
+    '<stop offset="0%" stop-color="#818cf8"/><stop offset="50%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/>' +
+    '</linearGradient></defs>' +
+    '<rect fill="url(#g)" width="150" height="150" rx="75"/>' +
+    '</svg>'
+);
+
 interface PopupKitPreviewProps {
     attributes: PopupKitAttributes;
     context: 'editor' | 'frontend';
@@ -171,7 +181,7 @@ function PopupHeadPreview({ attributes, onLinkClick }: { attributes: PopupKitAtt
  * Form Controls Preview
  * Shows switchers, steppers, and range sliders
  */
-function FormControlsPreview({ attributes }: { attributes: PopupKitAttributes }) {
+function FormControlsPreview({ attributes: _attributes }: { attributes: PopupKitAttributes }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -247,7 +257,7 @@ function FormControlsPreview({ attributes }: { attributes: PopupKitAttributes })
  * No Results Preview
  * Shows empty state styling
  */
-function NoResultsPreview({ attributes }: { attributes: PopupKitAttributes }) {
+function NoResultsPreview({ attributes: _attributes }: { attributes: PopupKitAttributes }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -274,7 +284,7 @@ function NoResultsPreview({ attributes }: { attributes: PopupKitAttributes }) {
  * Notifications Preview
  * Shows notification list with different states
  */
-function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function NotificationsPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup triggers-blur">
@@ -331,7 +341,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification ts-new-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unseen and unvisited with image</b>
@@ -342,7 +352,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="ts-unread-notification">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Unvisited with image</b>
@@ -353,7 +363,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li className="">
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" alt="" />
+                                    <img src={PLACEHOLDER_IMG} alt="" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Seen and visited with image</b>
@@ -364,7 +374,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
                         <li>
                             <a href="#" onClick={onLinkClick}>
                                 <div className="notification-image">
-                                    <img src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" width="150" height="150" />
+                                    <img src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" width="150" height="150" />
                                 </div>
                                 <div className="notification-details">
                                     <b>Notification prompt with actions</b>
@@ -397,7 +407,7 @@ function NotificationsPreview({ attributes, onLinkClick }: { attributes: PopupKi
  * Menu Dropdown Preview
  * Shows hierarchical menu with checkboxes
  */
-function MenuDropdownPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function MenuDropdownPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -467,7 +477,7 @@ function MenuDropdownPreview({ attributes, onLinkClick }: { attributes: PopupKit
  * Cart Preview
  * Shows shopping cart with items
  */
-function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function CartPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -502,7 +512,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                             <ul className="ts-cart-list simplify-ul">
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>
@@ -527,7 +537,7 @@ function CartPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribut
                                 </li>
                                 <li>
                                     <div className="cart-image">
-                                        <img width="150" height="150" src="http://voxel.local/stays/wp-content/themes/voxel/assets/images/bg.jpg" className="ts-status-avatar" alt="" />
+                                        <img width="150" height="150" src={PLACEHOLDER_IMG} className="ts-status-avatar" alt="" />
                                     </div>
                                     <div className="cart-item-details">
                                         <a href="#" onClick={onLinkClick}>
@@ -593,12 +603,12 @@ function DatepickerMarkup() {
                         </select>
                         </div>
                         <button className="pika-prev ts-icon-btn is-disabled" type="button">
-                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-left" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{ enableBackground: 'new 0 0 64 64' }} xmlSpace="preserve">
+                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-left" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{} as any} xmlSpace="preserve">
                                 <path d="M56,29.8H13.3l17-17.3c0.9-0.9,0.9-2.3,0-3.2c-0.9-0.9-2.3-0.9-3.2,0l-20.7,21c-0.9,0.9-0.9,2.3,0,3.2l20.7,21 c0.4,0.4,1,0.7,1.6,0.7c0.6,0,1.1-0.2,1.6-0.6c0.9-0.9,0.9-2.3,0-3.2L13.4,34.3H56c1.2,0,2.2-1,2.2-2.2C58.2,30.8,57.2,29.8,56,29.8 z"></path>
                             </svg>
                         </button>
                         <button className="pika-next ts-icon-btn" type="button">
-                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-right" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{ enableBackground: 'new 0 0 64 64' }} xmlSpace="preserve">
+                            <svg fill="#1C2033" width="52" height="52" version="1.1" id="lni_lni-arrow-right" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 64 64" style={{} as any} xmlSpace="preserve">
                                 <path d="M57.6,30.4l-20.7-21c-0.9-0.9-2.3-0.9-3.2,0c-0.9,0.9-0.9,2.3,0,3.2l16.8,17.1H8c-1.2,0-2.2,1-2.2,2.2s1,2.3,2.2,2.3h42.7 l-17,17.3c-0.9,0.9-0.9,2.3,0,3.2c0.4,0.4,1,0.6,1.6,0.6c0.6,0,1.2-0.2,1.6-0.7l20.7-21C58.5,32.7,58.5,31.3,57.6,30.4z"></path>
                             </svg>
                         </button>
@@ -742,7 +752,8 @@ function DatepickerMarkup() {
  * Calendar Preview
  * Shows date picker calendar
  */
-function CalendarPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+// @ts-ignore -- unused but kept for future use
+function _CalendarPreview({ attributes: _attributes, onLinkClick: _onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -769,7 +780,7 @@ function CalendarPreview({ attributes, onLinkClick }: { attributes: PopupKitAttr
 /**
  * Menu Dropdown (Radio/Back) Preview
  */
-function MenuDropdownRadioPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function MenuDropdownRadioPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -822,7 +833,7 @@ function MenuDropdownRadioPreview({ attributes, onLinkClick }: { attributes: Pop
  * Menu Dropdown (Submenu) Preview
  * Shows navigation menu with submenu items
  */
-function MenuDropdownSubmenuPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function MenuDropdownSubmenuPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-form elementor-element">
             <div className="ts-field-popup-container">
@@ -886,7 +897,7 @@ function MenuDropdownSubmenuPreview({ attributes, onLinkClick }: { attributes: P
 /**
  * Alert/Notice Preview
  */
-function AlertPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function AlertPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="popup-kit-holder">
             <div className="ts-notice ts-notice-info" style={{ position: 'static', transform: 'none', left: 'auto', animation: 'none' }}>
@@ -913,7 +924,7 @@ function AlertPreview({ attributes, onLinkClick }: { attributes: PopupKitAttribu
  * Booking Slots Preview
  * Shows booking date picker and time slot selection
  */
-function BookingSlotsPreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function BookingSlotsPreview({ attributes: _attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="ts-field-popup-container">
             <div className="ts-field-popup triggers-blur">
@@ -960,7 +971,7 @@ function BookingSlotsPreview({ attributes, onLinkClick }: { attributes: PopupKit
 /**
  * Booking Range Preview (Wide)
  */
-function BookingRangePreview({ attributes, onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
+function BookingRangePreview({ attributes: _attributes, onLinkClick: _onLinkClick }: { attributes: PopupKitAttributes; onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>) => void }) {
     return (
         <div className="popup-kit-holder1">
             <div className="ts-form elementor-element" style={{ gridColumnEnd: 'span 2' }}>
@@ -1177,7 +1188,9 @@ function PlusIcon() {
     );
 }
 
-function ReloadIcon() {
+// @ts-ignore -- unused but kept for future use
+
+function _ReloadIcon() {
     return (
         <svg fill="currentColor" width="52" height="52" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2.75C6.89137 2.75 2.75 6.89137 2.75 12C2.75 17.1086 6.89137 21.25 12 21.25C17.1086 21.25 21.25 17.1086 21.25 12C21.25 11.5858 21.5858 11.25 22 11.25C22.4142 11.25 22.75 11.5858 22.75 12C22.75 17.9371 17.9371 22.75 12 22.75C6.06294 22.75 1.25 17.9371 1.25 12C1.25 6.06294 6.06294 1.25 12 1.25C15.0949 1.25 17.8677 2.63214 19.75 4.79167V2C19.75 1.58579 20.0858 1.25 20.5 1.25C20.9142 1.25 21.25 1.58579 21.25 2V6.5C21.25 6.91421 20.9142 7.25 20.5 7.25H16C15.5858 7.25 15.25 6.91421 15.25 6.5C15.25 6.08579 15.5858 5.75 16 5.75H18.5104C16.9449 3.92289 14.6098 2.75 12 2.75Z"></path>
@@ -1200,18 +1213,22 @@ function FileIcon() {
             <path d="M4.5 9.75084V19.75C4.5 20.9926 5.50736 22 6.75 22H17.25C18.4926 22 19.5 20.9926 19.5 19.75V4.25C19.5 3.00736 18.4926 2 17.25 2H12.2474L12.2504 7.49924C12.2512 8.74244 11.2436 9.75084 10.0004 9.75084H4.5ZM9 13.75H15C15.4142 13.75 15.75 14.0858 15.75 14.5C15.75 14.9142 15.4142 15.25 15 15.25H9C8.58579 15.25 8.25 14.9142 8.25 14.5C8.25 14.0858 8.58579 13.75 9 13.75ZM9 16.75H12C12.4142 16.75 12.75 17.0858 12.75 17.5C12.75 17.9142 12.4142 18.25 12 18.25H9C8.58579 18.25 8.25 17.9142 8.25 17.5C8.25 17.0858 8.58579 16.75 9 16.75Z" fill="#343C54"></path>
         </svg>
     );
+// @ts-ignore -- unused but kept for future use
 }
 
-function BagIcon() {
+// @ts-ignore -- unused but kept for future use
+function _BagIcon() {
     return (
         <svg fill="currentColor" width="52" height="52" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 1.25C9.92893 1.25 8.25 2.92893 8.25 5H4.5C3.67157 5 3 5.67157 3 6.5C3 7.32843 3.67157 8 4.5 8H19.5C20.3284 8 21 7.32843 21 6.5C21 5.67157 20.3284 5 19.5 5H15.75C15.75 2.92893 14.0711 1.25 12 1.25ZM12 2.75C13.2426 2.75 14.25 3.75736 14.25 5H9.75C9.75 3.75736 10.7574 2.75 12 2.75Z"></path>
             <path d="M5 20V9.5H19V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20ZM10 16.25C9.58579 16.25 9.25 16.5858 9.25 17C9.25 17.4142 9.58579 17.75 10 17.75H14C14.4142 17.75 14.75 17.4142 14.75 17C14.75 16.5858 14.4142 16.25 14 16.25H10ZM7.75 13.5C7.75 13.9142 8.08579 14.25 8.5 14.25H15.5C15.9142 14.25 16.25 13.9142 16.25 13.5C16.25 13.0858 15.9142 12.75 15.5 12.75H8.5C8.08579 12.75 7.75 13.0858 7.75 13.5Z"></path>
         </svg>
+    // @ts-ignore -- unused but kept for future use
     );
 }
 
-function CloseIcon() {
+// @ts-ignore -- unused but kept for future use
+function _CloseIcon() {
     return (
         <svg fill="currentColor" width="52" height="52" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M1.46967 1.46967C1.76256 1.17678 2.23744 1.17678 2.53033 1.46967L12 10.9393L21.4697 1.46967C21.7626 1.17678 22.2374 1.17678 22.5303 1.46967C22.8232 1.76256 22.8232 2.23744 22.5303 2.53033L13.0607 12L22.5303 21.4697C22.8232 21.7626 22.8232 22.2374 22.5303 22.5303C22.2374 22.8232 21.7626 22.8232 21.4697 22.5303L12 13.0607L2.53033 22.5303C2.23744 22.8232 1.76256 22.8232 1.46967 22.5303C1.17678 22.2374 1.17678 21.7626 1.46967 21.4697L10.9393 12L1.46967 2.53033C1.17678 2.23744 1.17678 1.76256 1.46967 1.46967Z"></path>
@@ -1270,11 +1287,13 @@ function AlarmIcon() {
     return (
         <svg fill="currentColor" width="52" height="52" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
             <path d="M57.6,53.1l-2-3.1c-0.4-0.6-0.6-1.2-0.6-1.9V27.3c0-5.9-2.5-11.4-7.1-15.5C44.2,8.5,39.4,6.4,34.3,6V4c0-1.2-1-2.3-2.3-2.3 c-1.2,0-2.3,1-2.3,2.3v1.9c-0.2,0-0.4,0-0.6,0.1C17.5,7.3,8.8,16.6,8.8,27.7v20.4c-0.1,1-0.3,1.5-0.5,1.8l-1.9,3.2 c-0.6,1-0.6,2.2,0,3.2c0.6,0.9,1.6,1.5,2.7,1.5h20.7V60c0,1.2,1,2.3,2.3,2.3c1.2,0,2.3-1,2.3-2.3v-2.2H55c1.1,0,2.1-0.6,2.7-1.5 C58.3,55.3,58.3,54.1,57.6,53.1z M11.5,53.3l0.7-1.2c0.6-1,0.9-2.2,1.1-3.6l0-20.8c0-8.8,7-16.2,16.3-17.2 c5.7-0.6,11.3,1.1,15.4,4.7c3.6,3.2,5.6,7.5,5.6,12.1v20.8c0,1.5,0.4,2.9,1.3,4.3l0.6,0.9H11.5z"></path>
+        // @ts-ignore -- unused but kept for future use
         </svg>
     );
 }
 
-function SlotIcon() {
+// @ts-ignore -- unused but kept for future use
+function _SlotIcon() {
     return (
         <svg fill="currentColor" width="52" height="52" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22ZM12.75 6V11.6893L16.0303 14.9697C16.3232 15.2626 16.3232 15.7374 16.0303 16.0303C15.7374 16.3232 15.2626 16.3232 14.9697 16.0303L11.4697 12.5303C11.329 12.3897 11.25 12.1989 11.25 12V6C11.25 5.58579 11.5858 5.25 12 5.25C12.4142 5.25 12.75 5.58579 12.75 6Z"></path>

@@ -262,7 +262,14 @@ class Status {
 		$from = strtotime( $this->created_at ) + (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
 		$to = current_time( 'timestamp' );
 
-		return \Voxel\minimal_time_diff( $from, $to );
+		$time_for_display = \Voxel\minimal_time_diff( $from, $to );
+
+		return apply_filters(
+			'voxel/timeline/status/time-for-display',
+			$time_for_display,
+			$this,
+			$from
+		);
 	}
 
 	public function get_edit_time_for_display() {
@@ -270,8 +277,15 @@ class Status {
 			return null;
 		}
 
-		return \Voxel\datetime_format(
+		$edit_time_for_display = \Voxel\datetime_format(
 			$edited_at + (int) ( get_option( 'gmt_offset' ) * HOUR_IN_SECONDS )
+		);
+
+		return apply_filters(
+			'voxel/timeline/status/edit-time-for-display',
+			$edit_time_for_display,
+			$this,
+			$edited_at
 		);
 	}
 

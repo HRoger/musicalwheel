@@ -119,11 +119,11 @@ class Product_Form extends Base_Widget {
 				'ts_card_pointer_events',
 				[
 
-					'label' => __( 'Select/Deselect on click', 'voxel-elementor' ),
+					'label' => __( 'Disable Select/Deselect on click', 'voxel-elementor' ),
 					'description' => __( 'Useful if you are selecting add-ons through Select add-on action', 'voxel-elementor' ),
 					'type' => \Elementor\Controls_Manager::SWITCHER,
-					'label_on' => __( 'Disable', 'voxel-elementor' ),
-					'label_off' => __( 'Enable', 'voxel-elementor' ),
+					'label_on' => __( 'On', 'voxel-elementor' ),
+					'label_off' => __( 'Off', 'voxel-elementor' ),
 					'return_value' => 'yes',
 
 					'selectors' => [
@@ -725,24 +725,32 @@ class Product_Form extends Base_Widget {
 						'label' => __( 'Normal', 'voxel-elementor' ),
 					]
 				);
-					$this->add_control(
-						'popup_number_input_size',
+					
+
+					$this->add_group_control(
+						\Elementor\Group_Control_Typography::get_type(),
 						[
-							'label' => __( 'Input value size', 'voxel-elementor' ),
-							'type' => \Elementor\Controls_Manager::SLIDER,
-							'size_units' => [ 'px'],
-							'range' => [
-								'px' => [
-									'min' => 13,
-									'max' => 30,
-									'step' => 1,
-								],
-							],
-							'selectors' => [
-								'{{WRAPPER}} .ts-stepper-input input' => 'font-size: {{SIZE}}{{UNIT}};',
-							],
+							'name' => 'ts_stepper_input_type',
+							'label' => __( 'Input typography' ),
+							'selector' => '{{WRAPPER}} .ts-input-box',
 						]
 					);
+
+				
+
+					$this->add_responsive_control(
+						'ts_ns_value',
+						[
+							'label' => __( 'Value color', 'voxel-elementor' ),
+							'type' => \Elementor\Controls_Manager::COLOR,
+							'selectors' => [
+								'{{WRAPPER}} .ts-input-box' => 'color: {{VALUE}}',
+
+							],
+
+						]
+					);
+
 
 					$this->add_control(
 						'ts_stepper_btn_color',

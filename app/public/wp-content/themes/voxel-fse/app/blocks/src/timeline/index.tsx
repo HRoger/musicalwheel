@@ -11,7 +11,6 @@ import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
-import type { TimelineAttributes } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 // Import editor styles

@@ -111,6 +111,7 @@ export default function Edit({
 							id: `group_${Math.random().toString(36).substring(2, 11)}`,
 							label: __('All Plans', 'voxel-fse'),
 							prices: [],
+							icon: { library: '' as any, value: '' },
 						};
 						setAttributes({ priceGroups: [defaultGroup] });
 					}

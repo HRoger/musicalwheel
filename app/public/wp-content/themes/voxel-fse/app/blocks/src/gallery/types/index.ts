@@ -11,6 +11,7 @@
 
 import type { IconValue } from '@shared/types';
 import type { CombinedStyleAttributes } from '@shared/utils';
+import type { TypographyValue } from '@shared/controls/TypographyPopup';
 
 /**
  * Gallery image structure
@@ -142,6 +143,7 @@ export interface GalleryBlockAttributes extends Partial<CombinedStyleAttributes>
 	viewAllIconSize_mobile?: number;
 	viewAllTextColor: string;
 	viewAllTextColorHover: string;
+	viewAllTypography?: TypographyValue;
 
 	// Advanced - Visibility
 	hideDesktop: boolean;
@@ -153,6 +155,9 @@ export interface GalleryBlockAttributes extends Partial<CombinedStyleAttributes>
 	contentTabOpenPanel?: string;
 	styleTabOpenPanel?: string;
 	generalStateTab?: 'normal' | 'hover';
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**
@@ -217,6 +222,7 @@ export interface GalleryVxConfig {
 	viewAllIconSize_mobile?: number;
 	viewAllTextColor: string;
 	viewAllTextColorHover: string;
+	viewAllTypography?: TypographyValue;
 }
 
 /**
@@ -227,6 +233,10 @@ export interface GalleryComponentProps {
 	attributes: GalleryBlockAttributes;
 	context: 'editor' | 'frontend';
 	blockId: string;
+	/** Template context for dynamic tag resolution in editor */
+	templateContext?: string;
+	/** Post type extracted from template slug (e.g., 'place') */
+	templatePostType?: string;
 }
 
 /**

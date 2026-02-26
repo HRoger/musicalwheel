@@ -76,6 +76,7 @@ class Booking_Controller extends \Voxel\Controllers\Base_Controller {
 				throw new \Exception( _x( 'Permission check failed.', 'orders', 'voxel' ), 115 );
 			}
 
+			// mark this booking item as canceled
 			$order_item->set_details( 'booking_status', 'canceled' );
 			$order_item->save();
 

@@ -151,20 +151,20 @@ function normalizeConfig(raw: Record<string, unknown>): ProductFormVxConfig {
 	};
 
 	// Get nested settings object
-	const rawSettings = (raw.settings ?? {}) as Record<string, unknown>;
+	const rawSettings = (raw['settings'] ?? {}) as Record<string, unknown>;
 
 	// Get nested icons object
-	const rawIcons = (raw.icons ?? {}) as Record<string, unknown>;
+	const rawIcons = (raw['icons'] ?? {}) as Record<string, unknown>;
 
 	// Parse search context config
 	// Evidence: voxel-product-form.beautified.js lines 49-53
 	const searchContextConfig = (
-		rawSettings.searchContextConfig ?? rawSettings.search_context_config ?? null
+		rawSettings['searchContextConfig'] ?? rawSettings['search_context_config'] ?? null
 	) as SearchContextConfig | null;
 
 	// Parse existing search context from config
 	const existingSearchContext = (
-		rawSettings.searchContext ?? rawSettings.search_context ?? {}
+		rawSettings['searchContext'] ?? rawSettings['search_context'] ?? {}
 	) as Record<string, unknown>;
 
 	// Parse search context from referrer URL
@@ -179,32 +179,32 @@ function normalizeConfig(raw: Record<string, unknown>): ProductFormVxConfig {
 
 	return {
 		// Block ID
-		blockId: normalizeString(raw.blockId ?? raw.block_id, ''),
+		blockId: normalizeString(raw['blockId'] ?? raw['block_id'], ''),
 
 		// Settings - support both camelCase and snake_case
 		settings: {
 			showPriceCalculator: normalizeString(
-				rawSettings.showPriceCalculator ?? rawSettings.show_price_calculator,
+				rawSettings['showPriceCalculator'] ?? rawSettings['show_price_calculator'],
 				'show'
 			) as 'show' | 'hide' | 'subtotal',
 			showSubtotalOnly: normalizeBool(
-				rawSettings.showSubtotalOnly ?? rawSettings.show_subtotal_only,
+				rawSettings['showSubtotalOnly'] ?? rawSettings['show_subtotal_only'],
 				false
 			),
 			hideCardSubheading: normalizeBool(
-				rawSettings.hideCardSubheading ?? rawSettings.hide_card_subheading,
+				rawSettings['hideCardSubheading'] ?? rawSettings['hide_card_subheading'],
 				false
 			),
 			cardSelectOnClick: normalizeBool(
-				rawSettings.cardSelectOnClick ?? rawSettings.card_select_on_click,
+				rawSettings['cardSelectOnClick'] ?? rawSettings['card_select_on_click'],
 				true
 			),
 			productMode: normalizeString(
-				rawSettings.productMode ?? rawSettings.product_mode,
+				rawSettings['productMode'] ?? rawSettings['product_mode'],
 				'regular'
 			) as 'regular' | 'variable' | 'booking',
 			cartNonce: normalizeString(
-				rawSettings.cartNonce ?? rawSettings.cart_nonce,
+				rawSettings['cartNonce'] ?? rawSettings['cart_nonce'],
 				''
 			),
 			// Use merged search context (referrer URL + existing config)
@@ -214,18 +214,18 @@ function normalizeConfig(raw: Record<string, unknown>): ProductFormVxConfig {
 
 		// Icons - support both formats
 		icons: {
-			calendarIcon: rawIcons.calendarIcon ?? rawIcons.calendar_icon ?? null,
-			minusIcon: rawIcons.minusIcon ?? rawIcons.minus_icon ?? null,
-			plusIcon: rawIcons.plusIcon ?? rawIcons.plus_icon ?? null,
-			cartIcon: rawIcons.cartIcon ?? rawIcons.cart_icon ?? null,
-			checkIcon: rawIcons.checkIcon ?? rawIcons.check_icon ?? null,
-			downIcon: rawIcons.downIcon ?? rawIcons.down_icon ?? null,
-		} as Record<string, unknown>,
+			calendarIcon: rawIcons['calendarIcon'] ?? rawIcons['calendar_icon'] ?? null,
+			minusIcon: rawIcons['minusIcon'] ?? rawIcons['minus_icon'] ?? null,
+			plusIcon: rawIcons['plusIcon'] ?? rawIcons['plus_icon'] ?? null,
+			cartIcon: rawIcons['cartIcon'] ?? rawIcons['cart_icon'] ?? null,
+			checkIcon: rawIcons['checkIcon'] ?? rawIcons['check_icon'] ?? null,
+			downIcon: rawIcons['downIcon'] ?? rawIcons['down_icon'] ?? null,
+		} as unknown as import('./types').ProductFormIcons,
 
 		// Pass through props and value unchanged (already structured)
-		props: (raw.props ?? {}) as Record<string, unknown>,
-		value: (raw.value ?? {}) as Record<string, unknown>,
-		l10n: (raw.l10n ?? {}) as Record<string, string>,
+		props: (raw['props'] ?? {}) as Record<string, unknown>,
+		value: (raw['value'] ?? {}) as Record<string, unknown>,
+		l10n: (raw['l10n'] ?? {}) as Record<string, string>,
 	};
 }
 
@@ -259,11 +259,17 @@ async function fetchProductConfig(postId: number): Promise<ProductFormConfig | n
 	const endpoint = `${restUrl}voxel-fse/v1/product-form/config?post_id=${postId}`;
 
 	try {
+		const headers: HeadersInit = {
+			'Content-Type': 'application/json',
+		};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(endpoint, {
 			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers,
 		});
 
 		if (!response.ok) {
@@ -315,8 +321,9 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		let cancelled = false;
 
 		async function loadProductConfig() {
+			// Match Voxel behavior: if no post context, render nothing
+			// (Voxel's render() returns early with empty output)
 			if (!postId) {
-				setError('No post ID found');
 				setIsLoading(false);
 				return;
 			}
@@ -358,7 +365,12 @@ function ProductFormWrapper({ config, postId }: ProductFormWrapperProps): React.
 		);
 	}
 
-	// Show error state
+	// No post ID — match Voxel: render nothing
+	if (!postId) {
+		return <></>;
+	}
+
+	// Show error state (API/network errors only, not missing post ID)
 	if (error) {
 		return (
 			<div className="ts-product-main">
@@ -393,7 +405,7 @@ function initProductForms(): void {
 
 	productFormBlocks.forEach((container) => {
 		// Skip if already hydrated
-		if (container.dataset.hydrated === 'true') {
+		if (container.dataset['hydrated'] === 'true') {
 			return;
 		}
 
@@ -410,7 +422,7 @@ function initProductForms(): void {
 		}
 
 		// Mark as hydrated
-		container.dataset.hydrated = 'true';
+		container.dataset['hydrated'] = 'true';
 
 		// Remove placeholder
 		const placeholder = container.querySelector('.vx-loading-screen');

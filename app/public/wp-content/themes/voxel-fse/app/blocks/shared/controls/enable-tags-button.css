@@ -52,4 +52,5 @@
 	background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
 	border-radius: 50px;
 	z-index: 1;
+	pointer-events: none;
 }

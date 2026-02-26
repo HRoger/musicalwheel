@@ -117,7 +117,6 @@
  * ============================================================================
  */
 
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { SalesChartComponent } from './SalesChartComponent';
 import type {
@@ -175,8 +174,8 @@ function normalizeConfig(
       unknown
     >;
     return {
-      library: normalizeString(icon.library, ''),
-      value: normalizeString(icon.value, ''),
+      library: normalizeString(icon['library'], '') as IconValue['library'],
+      value: normalizeString(icon['value'], ''),
     };
   };
 
@@ -184,14 +183,14 @@ function normalizeConfig(
   // Support both camelCase and snake_case/ts_* prefixed names
   return {
     activeChart: normalizeChartRange(
-      raw.activeChart ?? raw.active_chart ?? raw.ts_active_chart
+      raw['activeChart'] ?? raw['active_chart'] ?? raw['ts_active_chart']
     ),
-    chartIcon: normalizeIcon(raw.chartIcon ?? raw.chart_icon),
+    chartIcon: normalizeIcon(raw['chartIcon'] ?? raw['chart_icon']),
     chevronRight: normalizeIcon(
-      raw.chevronRight ?? raw.chevron_right ?? raw.ts_chevron_right
+      raw['chevronRight'] ?? raw['chevron_right'] ?? raw['ts_chevron_right']
     ),
     chevronLeft: normalizeIcon(
-      raw.chevronLeft ?? raw.chevron_left ?? raw.ts_chevron_left
+      raw['chevronLeft'] ?? raw['chevron_left'] ?? raw['ts_chevron_left']
     ),
   };
 }
@@ -202,7 +201,8 @@ function normalizeConfig(
  * Handles the charts collection returned from REST API,
  * ensuring consistent data structure for all chart ranges.
  */
-function normalizeChartsData(
+// @ts-ignore -- unused but kept for future use
+function _normalizeChartsData(
   raw: Record<string, unknown>
 ): ChartsCollection | null {
   if (!raw || typeof raw !== 'object') {
@@ -243,10 +243,10 @@ function normalizeChartsData(
       unknown
     >;
     return {
-      label: normalizeString(item.label, ''),
-      percent: normalizeNumber(item.percent, 0),
-      earnings: normalizeString(item.earnings, '$0.00'),
-      orders: item.orders !== undefined ? item.orders as string | number : 0,
+      label: normalizeString(item['label'], ''),
+      percent: normalizeNumber(item['percent'], 0),
+      earnings: normalizeString(item['earnings'], '$0.00'),
+      orders: item['orders'] !== undefined ? item['orders'] as string | number : 0,
     };
   };
 
@@ -258,13 +258,13 @@ function normalizeChartsData(
     >;
     return {
       date:
-        state.date !== null && state.date !== undefined
-          ? normalizeString(state.date, null as unknown as string)
+        state['date'] !== null && state['date'] !== undefined
+          ? normalizeString(state['date'], null as unknown as string)
           : null,
-      has_next: normalizeBoolean(state.has_next ?? state.hasNext, false),
-      has_prev: normalizeBoolean(state.has_prev ?? state.hasPrev, false),
+      has_next: normalizeBoolean(state['has_next'] ?? state['hasNext'], false),
+      has_prev: normalizeBoolean(state['has_prev'] ?? state['hasPrev'], false),
       has_activity: normalizeBoolean(
-        state.has_activity ?? state.hasActivity,
+        state['has_activity'] ?? state['hasActivity'],
         false
       ),
     };
@@ -277,8 +277,8 @@ function normalizeChartsData(
       unknown
     >;
     return {
-      label: normalizeString(meta.label, ''),
-      state: normalizeMetaState(meta.state),
+      label: normalizeString(meta['label'], ''),
+      state: normalizeMetaState(meta['state']),
     };
   };
 
@@ -291,20 +291,20 @@ function normalizeChartsData(
 
     // Normalize items array
     let items: ChartItem[] = [];
-    if (Array.isArray(data.items)) {
-      items = data.items.map(normalizeChartItem);
+    if (Array.isArray(data['items'])) {
+      items = data['items'].map(normalizeChartItem);
     }
 
     // Normalize steps array
     let steps: string[] = [];
-    if (Array.isArray(data.steps)) {
-      steps = data.steps.map((s) => normalizeString(s, ''));
+    if (Array.isArray(data['steps'])) {
+      steps = data['steps'].map((s) => normalizeString(s, ''));
     }
 
     return {
       steps,
       items,
-      meta: normalizeChartMeta(data.meta),
+      meta: normalizeChartMeta(data['meta']),
     };
   };
 
@@ -379,17 +379,6 @@ function buildAttributes(
 /**
  * Get wpApiSettings from window (localized by Block_Loader.php)
  */
-interface WpApiSettings {
-  root?: string;
-  nonce?: string;
-}
-
-declare global {
-  interface Window {
-    wpApiSettings?: WpApiSettings;
-  }
-}
-
 import { getRestBaseUrl } from '@shared/utils/siteUrl';
 
 /**
@@ -435,7 +424,7 @@ function showVoxelAlert(message?: string, type: 'error' | 'success' = 'error'): 
  */
 async function fetchChartData(): Promise<SalesChartApiConfig | null> {
   try {
-    const wpApiSettings = window.wpApiSettings || {};
+    const wpApiSettings = (window as any).wpApiSettings || {};
     // MULTISITE FIX: Use getRestBaseUrl() for proper multisite support
     const restUrl = getRestBaseUrl();
     const nonce = wpApiSettings.nonce || '';
@@ -497,7 +486,6 @@ async function initSalesChart(block: Element): Promise<void> {
       config={null}
       isLoading={true}
       error={null}
-      context="frontend"
     />
   );
 
@@ -512,7 +500,6 @@ async function initSalesChart(block: Element): Promise<void> {
       config={config}
       isLoading={false}
       error={null}
-      context="frontend"
     />
   );
 }

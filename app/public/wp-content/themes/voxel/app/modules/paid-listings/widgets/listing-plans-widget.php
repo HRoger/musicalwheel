@@ -1672,7 +1672,7 @@ class Listing_Plans_Widget extends \Voxel\Widgets\Base_Widget {
 						'process' => $process,
 						'item_type' => $post_type?->get_key(),
 						'post_id' => $post?->get_id(),
-						'submit_to' => $submit_to,
+						'submit_to' => ! empty( $submit_to ) && wp_validate_redirect( $submit_to ) ? rawurlencode( $submit_to ) : null,
 						'_wpnonce' => wp_create_nonce( 'vx_choose_plan' ),
 					], home_url('/?vx=1') );
 

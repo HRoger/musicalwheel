@@ -43,12 +43,19 @@ const DATE_PRESETS = [
 	{ label: __('Upcoming', 'voxel-fse'), value: 'upcoming' },
 	{ label: __('Today', 'voxel-fse'), value: 'today' },
 	{ label: __('Tomorrow', 'voxel-fse'), value: 'tomorrow' },
+	{ label: __('This weekend', 'voxel-fse'), value: 'this-weekend' },
 	{ label: __('This week', 'voxel-fse'), value: 'this-week' },
 	{ label: __('Next week', 'voxel-fse'), value: 'next-week' },
-	{ label: __('This weekend', 'voxel-fse'), value: 'this-weekend' },
-	{ label: __('Next weekend', 'voxel-fse'), value: 'next-weekend' },
+	{ label: __('Next 7 days', 'voxel-fse'), value: 'next-7-days' },
 	{ label: __('This month', 'voxel-fse'), value: 'this-month' },
 	{ label: __('Next month', 'voxel-fse'), value: 'next-month' },
+	{ label: __('Next 30 days', 'voxel-fse'), value: 'next-30-days' },
+	{ label: __('This year', 'voxel-fse'), value: 'this-year' },
+	{ label: __('Next year', 'voxel-fse'), value: 'next-year' },
+	{ label: __('Next 365 days', 'voxel-fse'), value: 'next-365-days' },
+	{ label: __('Last 24h', 'voxel-fse'), value: 'last-24h' },
+	{ label: __('Last week', 'voxel-fse'), value: 'last-week' },
+	{ label: __('Last month', 'voxel-fse'), value: 'last-month' },
 ];
 
 interface FilterInspectorProps {
@@ -512,9 +519,9 @@ export default function FilterInspector({
 				/>
 			)}
 
-			{/* Switcher filter: open_in_popup toggle instead of display_as select */}
-			{/* Evidence: switcher-filter.php:14-21 */}
-			{filterData?.type === 'switcher' && (
+			{/* Switcher/Open Now filter: open_in_popup toggle instead of display_as select */}
+			{/* Evidence: switcher-filter.php:176, open-now-filter.php:111-116 */}
+			{(filterData?.type === 'switcher' || filterData?.type === 'open-now') && (
 				<ToggleControl
 					label={__('Open in popup', 'voxel-fse')}
 					checked={filter.openInPopup ?? false}

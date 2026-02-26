@@ -31,44 +31,27 @@ interface IconPackConfig {
 	family: string;
 	fetchJson?: string;
 	icons?: string[];
+	// Fields used for icon class generation
+	displayPrefix?: string;
+	prefix?: string;
+	list?: string[];
 }
 
 // WordPress media types
 declare global {
 	interface Window {
-		wp?: {
-			media: (options: MediaFrameOptions) => MediaFrame;
-		};
 		Voxel_Icon_Picker_Config?: Record<string, IconPackConfig>;
 		Vue?: unknown; // Third-party Vue library - unused, just checking existence
 	}
 }
 
-interface MediaFrameOptions {
-	title: string;
-	button: {
-		text: string;
-	};
-	multiple?: boolean;
-	library?: {
-		type?: string | string[];
-	};
-}
-
 /**
  * WordPress Media Selection object
  */
+// @ts-ignore -- used via wp.media API
 interface MediaSelection {
 	first: () => {
 		toJSON: () => MediaAttachment;
-	};
-}
-
-interface MediaFrame {
-	on: (event: string, callback: () => void) => MediaFrame;
-	open: () => void;
-	state: () => {
-		get: (key: 'selection') => MediaSelection;
 	};
 }
 
@@ -180,7 +163,7 @@ export const IconPickerControl: React.FC<IconPickerControlProps> = ({
 	const isTagsActive = hasDynamicTags();
 
 	// Check if wp.media is available
-	const hasWpMedia = typeof window !== 'undefined' && window.wp && window.wp.media;
+	const hasWpMedia = typeof window !== 'undefined' && (window as any).wp && (window as any).wp.media;
 
 	// Initialize active pack when config is available
 	useEffect(() => {
@@ -200,12 +183,12 @@ export const IconPickerControl: React.FC<IconPickerControlProps> = ({
 
 	// Handle Upload SVG button - open media library
 	const handleUploadSVG = useCallback(() => {
-		if (!hasWpMedia || !window.wp?.media) {
+		if (!hasWpMedia || !(window as any).wp?.media) {
 			console.warn('WordPress media library not available');
 			return;
 		}
 
-		const frame = window.wp.media({
+		const frame = (window as any).wp.media({
 			title: __('Select SVG Icon', 'voxel-fse'),
 			button: {
 				text: __('Select', 'voxel-fse'),
@@ -249,7 +232,7 @@ export const IconPickerControl: React.FC<IconPickerControlProps> = ({
 					icons = data as string[];
 				} else if (data && typeof data === 'object') {
 					const dataObj = data as Record<string, unknown>;
-					icons = (dataObj.icons || dataObj.list || []) as string[];
+					icons = (dataObj['icons'] || dataObj['list'] || []) as string[];
 				}
 				setIconLists((prev) => ({ ...prev, [packKey]: icons }));
 			}

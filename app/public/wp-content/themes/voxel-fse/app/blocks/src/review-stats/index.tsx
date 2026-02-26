@@ -13,7 +13,7 @@ import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
 import type { BlockConfiguration } from '@wordpress/blocks';
-import type { ReviewStatsAttributes, ReviewStatsVxConfig } from './types';
+import type { ReviewStatsVxConfig } from './types';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
 /**
@@ -21,7 +21,7 @@ import VoxelGridIcon from '@shared/VoxelGridIcon';
  * This was the old format before we fixed the Voxel behavior matching
  */
 const deprecatedSaveV1 = ({ attributes }: { attributes: any }) => {
-	const blockProps = useBlockProps.save({
+	const blockProps = (useBlockProps as any).save({
 		className: 'vxfse-review-stats',
 	});
 

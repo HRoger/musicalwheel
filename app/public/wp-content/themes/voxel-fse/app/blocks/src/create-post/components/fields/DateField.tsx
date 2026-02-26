@@ -150,7 +150,7 @@ export const DateField: React.FC<DateFieldProps> = ({ field, value, onChange, on
 
 	// Display value for the trigger
 	const displayValue = useMemo(() => {
-		return formatDateForDisplay(currentValue.date) || field.props?.['placeholder'] || field.label;
+		return formatDateForDisplay(currentValue.date) || String(field.props?.['placeholder'] || '') || field.label;
 	}, [currentValue.date, field.props, field.label]);
 
 	// EXACT Voxel: Get calendar icon from widget settings OR use Voxel default
