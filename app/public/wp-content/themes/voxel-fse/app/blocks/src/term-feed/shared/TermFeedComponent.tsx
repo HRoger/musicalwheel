@@ -22,7 +22,7 @@
  * @package VoxelFSE
  */
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import type {
 	TermFeedAttributes,
 	TermFeedVxConfig,
@@ -80,47 +80,58 @@ export default function TermFeedComponent({
 	cssSelector,
 }: TermFeedComponentProps) {
 	const feedRef = useRef<HTMLDivElement>(null);
-	const [canScrollLeft, setCanScrollLeft] = useState(false);
-	const [canScrollRight, setCanScrollRight] = useState(true);
+	const prevBtnRef = useRef<HTMLAnchorElement>(null);
+	const nextBtnRef = useRef<HTMLAnchorElement>(null);
 
-	// Check scroll state for carousel navigation (on scroll events)
-	const checkScrollState = useCallback(() => {
-		if (!feedRef.current || attributes.layoutMode !== 'ts-feed-nowrap') return;
-		const el = feedRef.current;
-		setCanScrollLeft(Math.abs(el.scrollLeft) > 10);
-		setCanScrollRight(el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
-	}, [attributes.layoutMode]);
-
-	// Enable/disable nav buttons when cards or item width change
-	// RAF ensures CSS has been applied before measuring
+	// Manage 'disabled' class on nav buttons entirely via refs.
+	// Matches Voxel carousel-nav.php: frontend starts with 'disabled' (opacity:0),
+	// commons.js removes it if scrollWidth > clientWidth.
+	//
+	// CRITICAL: We CANNOT put 'disabled' in JSX className because React
+	// re-renders (e.g. after voxel:markup-update) would overwrite any
+	// ref-based removal. Instead, we add/remove 'disabled' entirely via
+	// DOM manipulation so React's render cycle never touches it.
 	useEffect(() => {
+		if (context === 'editor') return; // Editor never has disabled class
+		const prev = prevBtnRef.current;
+		const next = nextBtnRef.current;
+		if (!prev || !next) return;
+
+		// Add disabled initially (matches carousel-nav.php: !is_admin)
+		prev.classList.add('disabled');
+		next.classList.add('disabled');
+
 		const el = feedRef.current;
 		if (!el || attributes.layoutMode !== 'ts-feed-nowrap') return;
 
-		requestAnimationFrame(() => {
-			if (!el) return;
-			const hasOverflow = el.scrollWidth > el.clientWidth;
-			setCanScrollLeft(false);
-			setCanScrollRight(hasOverflow);
-		});
-
-		el.addEventListener('scroll', checkScrollState, { passive: true });
-		window.addEventListener('resize', checkScrollState);
-
-		return () => {
-			el.removeEventListener('scroll', checkScrollState);
-			window.removeEventListener('resize', checkScrollState);
+		const checkOverflow = () => {
+			requestAnimationFrame(() => {
+				if (el && el.scrollWidth > el.clientWidth) {
+					prev.classList.remove('disabled');
+					next.classList.remove('disabled');
+				}
+			});
 		};
-	}, [checkScrollState, terms, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
 
-	// Handle carousel navigation — scroll by one item width (matches Voxel commons.js)
+		checkOverflow();
+		window.addEventListener('resize', checkOverflow);
+		return () => window.removeEventListener('resize', checkOverflow);
+	}, [terms, context, attributes.layoutMode, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
+
+	// Handle carousel navigation — wrapping scroll (matches Voxel commons.js)
+	// Voxel wraps: at the end, prev scrolls to end; at the start, next scrolls to start
 	const handlePrev = useCallback((e: React.MouseEvent) => {
 		e.preventDefault();
 		const el = feedRef.current;
 		if (!el) return;
 		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
 		const itemWidth = firstItem?.scrollWidth || 300;
-		el.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+		// If at or near the start, wrap to the end (matches Voxel's circular logic)
+		if (Math.abs(el.scrollLeft) <= 10) {
+			el.scrollBy({ left: el.scrollWidth - el.clientWidth - el.scrollLeft, behavior: 'smooth' });
+		} else {
+			el.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+		}
 	}, []);
 
 	const handleNext = useCallback((e: React.MouseEvent) => {
@@ -129,7 +140,12 @@ export default function TermFeedComponent({
 		if (!el) return;
 		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
 		const itemWidth = firstItem?.scrollWidth || 300;
-		el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+		// If at or near the end, wrap to the start (matches Voxel's circular logic)
+		if (el.clientWidth + Math.abs(el.scrollLeft) + 10 >= el.scrollWidth) {
+			el.scrollBy({ left: -el.scrollLeft, behavior: 'smooth' });
+		} else {
+			el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+		}
 	}, []);
 
 	// Autoplay with hover-pause (matches Voxel's setInterval approach)
@@ -354,12 +370,17 @@ export default function TermFeedComponent({
 			</div>
 
 			{/* Carousel navigation - matches Voxel's carousel-nav.php */}
+			{/* Voxel behavior (carousel-nav.php lines 4,9):
+			    - Frontend (!is_admin): arrows start with 'disabled' class (opacity:0),
+			      commons.js removes it if scrollWidth > clientWidth
+			    - Editor (is_admin): no 'disabled' class, arrows always visible */}
 			{attributes.layoutMode === 'ts-feed-nowrap' && (
 				<ul className="simplify-ul flexify post-feed-nav">
 					<li style={navListItemStyle}>
 						<a
+							ref={prevBtnRef}
 							href="#"
-							className={`ts-icon-btn ts-prev-page ${!canScrollLeft ? 'disabled' : ''}`}
+							className="ts-icon-btn ts-prev-page"
 							aria-label="Previous"
 							onClick={handlePrev}
 							style={navButtonStyle}
@@ -372,8 +393,9 @@ export default function TermFeedComponent({
 					</li>
 					<li style={navListItemStyle}>
 						<a
+							ref={nextBtnRef}
 							href="#"
-							className={`ts-icon-btn ts-next-page ${!canScrollRight ? 'disabled' : ''}`}
+							className="ts-icon-btn ts-next-page"
 							aria-label="Next"
 							onClick={handleNext}
 							style={navButtonStyle}

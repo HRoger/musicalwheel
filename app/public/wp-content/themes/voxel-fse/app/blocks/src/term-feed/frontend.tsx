@@ -481,6 +481,24 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
 		}
 
 		const data = await response.json();
+
+		// Inject Elementor template styles into the page if returned
+		if (data.styles) {
+			const styleContainer = document.getElementById('vx-assets-cache')
+				|| document.head;
+			const temp = document.createElement('div');
+			temp.innerHTML = data.styles;
+			Array.from(temp.children).forEach((el) => {
+				// Avoid duplicate style injections
+				if (el instanceof HTMLStyleElement || el instanceof HTMLLinkElement) {
+					const id = el.id || (el as HTMLLinkElement).href;
+					if (id && !document.getElementById(id)) {
+						styleContainer.appendChild(el);
+					}
+				}
+			});
+		}
+
 		return data.terms || [];
 	} catch (error) {
 		console.error('Failed to fetch terms:', error);
@@ -533,6 +551,21 @@ function TermFeedWrapper({ config, cssSelector }: TermFeedWrapperProps) {
 			cancelled = true;
 		};
 	}, [config]);
+
+	// Dispatch voxel:markup-update after terms are rendered so child blocks
+	// inside term card templates (e.g., product-price, advanced-list) can hydrate
+	useEffect(() => {
+		if (!isLoading && terms.length > 0) {
+			requestAnimationFrame(() => {
+				document.dispatchEvent(new CustomEvent('voxel:markup-update'));
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				if ((window as any).jQuery) {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					(window as any).jQuery(document).trigger('voxel:markup-update');
+				}
+			});
+		}
+	}, [isLoading, terms]);
 
 	// Build attributes from config
 	const attributes = buildAttributes(config);

@@ -32,7 +32,9 @@ class Post_Data_Group extends Base_Data_Group {
 		}
 
 		$key = strtolower( trim( (string) ( $property_path[0] ?? '' ) ) );
-		
+		// Strip Voxel's native colon prefix for built-in fields (e.g. :title → title)
+		$key = ltrim( $key, ':' );
+
 		if ( empty( $key ) ) {
 			return '';
 		}
@@ -85,11 +87,42 @@ class Post_Data_Group extends Base_Data_Group {
 				}
 				return $content;
 			case 'permalink':
+			case 'url':
 				$url = get_permalink( $this->post_id );
 				if ( ! is_string( $url ) ) {
 					$url = '';
 				}
 				return $url;
+			case 'date':
+				$date = isset( $post->post_date ) ? $post->post_date : '';
+				return is_string( $date ) ? $date : '';
+			case 'modified_date':
+				$date = isset( $post->post_modified ) ? $post->post_modified : '';
+				return is_string( $date ) ? $date : '';
+			case 'status':
+				$status = isset( $post->post_status ) ? $post->post_status : '';
+				$sub_key = ! empty( $property_path[1] ) ? strtolower( trim( ltrim( (string) $property_path[1], ':' ) ) ) : '';
+				if ( $sub_key === 'label' ) {
+					// Return human-readable status label (e.g. "Published", "Draft")
+					$status_obj = get_post_status_object( $status );
+					return $status_obj ? $status_obj->label : ucfirst( $status );
+				}
+				return $status;
+			case 'excerpt':
+				$excerpt = isset( $post->post_excerpt ) ? $post->post_excerpt : '';
+				if ( empty( $excerpt ) && ! empty( $post->post_content ) ) {
+					$excerpt = wp_trim_words( $post->post_content, 55, '...' );
+				}
+				return is_string( $excerpt ) ? $excerpt : '';
+			case 'author':
+				$author_id = isset( $post->post_author ) ? (int) $post->post_author : 0;
+				if ( ! $author_id ) {
+					return '';
+				}
+				$author = get_userdata( $author_id );
+				return $author ? $author->display_name : '';
+			case 'slug':
+				return isset( $post->post_name ) ? $post->post_name : '';
 			default:
 				// Voxel custom post fields — stored as post meta.
 				// Supports sub-properties like @post(gallery.ids), @post(gallery.url), @post(gallery.id)

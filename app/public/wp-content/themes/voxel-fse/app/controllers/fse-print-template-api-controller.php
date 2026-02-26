@@ -204,7 +204,10 @@ class FSE_Print_Template_API_Controller extends FSE_Base_Controller {
 		// in REST context (e.g. blocks that assume frontend globals).
 		try {
 			ob_start();
+			// Enable NB SSR for blocks without render callbacks (star-rating, icon)
+			FSE_NB_SSR_Controller::set_feed_context( true );
 			$template_content = do_blocks( $raw_content );
+			FSE_NB_SSR_Controller::set_feed_context( false );
 			$extra_output     = ob_get_clean();
 
 			// Append any extra output (e.g. inline styles from blocks).
@@ -212,6 +215,7 @@ class FSE_Print_Template_API_Controller extends FSE_Base_Controller {
 				$template_content = $extra_output . $template_content;
 			}
 		} catch ( \Throwable $e ) {
+			FSE_NB_SSR_Controller::set_feed_context( false );
 			ob_end_clean();
 			return new \WP_REST_Response( [
 				'success' => false,

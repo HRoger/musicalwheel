@@ -168,19 +168,17 @@ describe('ResponsiveRangeControlWithDropdown Component', () => {
 			expect(textInput).toHaveAttribute('placeholder', 'e.g., calc(100vh - 80px)');
 		});
 
-		it('should NOT show reset button in custom mode', () => {
+		it('should not have reset button in custom mode', () => {
 			const { container } = render(
 				<ResponsiveRangeControlWithDropdown
 					{...defaultProps}
 					attributes={{ testValueUnit: 'custom' }}
 					availableUnits={['px', '%', 'custom']}
 					unitAttributeName="testValueUnit"
-					showResetButton={true}
 				/>
 			);
 
-			// In custom mode, there should be NO reset button at all
-			// The reset button has a specific label "Reset to default"
+			// Reset button is no longer rendered (removed to match Elementor/NB pattern)
 			const buttons = container.querySelectorAll('button');
 			const resetButton = Array.from(buttons).find(
 				(btn) => btn.getAttribute('label') === 'Reset to default'
@@ -195,7 +193,6 @@ describe('ResponsiveRangeControlWithDropdown Component', () => {
 					attributes={{ testValueUnit: 'custom' }}
 					availableUnits={['px', '%', 'custom']}
 					unitAttributeName="testValueUnit"
-					showResetButton={true}
 				/>
 			);
 
@@ -225,23 +222,22 @@ describe('ResponsiveRangeControlWithDropdown Component', () => {
 			expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 		});
 
-		it('should show reset button for standard units when showResetButton is true', () => {
+		it('should not have reset button in standard mode', () => {
 			const { container } = render(
 				<ResponsiveRangeControlWithDropdown
 					{...defaultProps}
 					attributes={{ testValueUnit: 'px' }}
 					availableUnits={['px', '%', 'custom']}
 					unitAttributeName="testValueUnit"
-					showResetButton={true}
 				/>
 			);
 
-			// Reset button should exist in standard mode
+			// Reset button removed to match Elementor/NB pattern
 			const buttons = container.querySelectorAll('button');
 			const resetButton = Array.from(buttons).find(
 				(btn) => btn.getAttribute('label') === 'Reset to default'
 			);
-			expect(resetButton).toBeDefined();
+			expect(resetButton).toBeUndefined();
 		});
 
 		it('should respect min/max props', () => {

@@ -89,6 +89,16 @@ body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
     text-decoration: none;
 }
 
+/**
+ * Fix: Remove text-decoration and outline on Voxel icon buttons in editor.
+ * WordPress theme.json injects a:where(:not(.wp-element-button)) { text-decoration: underline }
+ * inside the editor iframe. Voxel icon buttons are <a> tags styled as circular buttons.
+ * Voxel's SVGs use fill:var(--ts-icon-color) so 'color' property is not needed here.
+ */
+a.ts-icon-btn {
+    text-decoration: none;
+}
+
 body .vxf-create-post {
     flex-wrap: nowrap !important;
 }
@@ -603,3 +613,4 @@ body .nectar-blocks-template-library__sidebar__item__link {
 .react-tabs svg path {
     color: inherit;
 }
+

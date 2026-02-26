@@ -159,25 +159,29 @@ function getTemplateSlug(select: any): string {
 
 /**
  * Returns the Voxel post type key from the current template slug.
- * e.g. "voxel-place-single" → "place", "voxel-real-estate-single" → "real-estate"
- * Returns undefined when not on a post single template.
+ * e.g. "voxel-place-single" → "place", "voxel-place-card" → "place"
+ * Returns undefined when not on a post template (term_card/user_card are excluded).
  *
- * NOTE: Regex supports hyphens in post type keys (e.g. "real-estate").
- * Original pattern /voxel-([a-z0-9_]+)-single/ would silently fail for hyphenated post types.
+ * NOTE: Matches both -single and -card suffixes. Guards against term_card/user_card
+ * slugs which contain the word "card" but are term/user context, not post.
  */
 export function useTemplatePostType(): string | undefined {
     return useSelect((select: any) => {
         const slug = getTemplateSlug(select);
-        const match = slug.match(/voxel-([a-z0-9_-]+)-single/);
-        if (match) return match[1];
+        const match = slug.match(/voxel-([a-z0-9_-]+)-(?:single|card)/);
+        if (match && !match[1].includes('term_') && !match[1].includes('user_')) {
+            return match[1];
+        }
         return undefined;
     }, []) as string | undefined;
 }
 ```
 
-**Why the regex supports hyphens:** Voxel post type keys can contain hyphens (e.g., `real-estate`). The original pattern `/voxel-([a-z0-9_]+)-single/` would match `voxel-real` (stopping at the first hyphen) and return an incorrect post type, causing sample post lookups to find `post_type: 'real'` posts which don't exist or lack the relevant fields.
+**Why the regex supports hyphens:** Voxel post type keys can contain hyphens (e.g., `real-estate`). The original pattern `/voxel-([a-z0-9_]+)-single/` would match `voxel-real` (stopping at the first hyphen) and return an incorrect post type.
 
-**Fix:** `/voxel-([a-z0-9_-]+)-single/` — the `-` inside the character class now allows hyphens in the captured post type name.
+**Card template fix (2026-02-25):** Voxel also generates card templates with the pattern `voxel-{post_type}-card` (e.g. `voxel-place-card`). These were not matched by `-single` and fell through to `post_type: undefined`, so PHP defaulted to fetching standard WordPress `post` type posts which have none of the Voxel custom fields.
+
+**Current pattern:** `/voxel-([a-z0-9_-]+)-(?:single|card)/` — matches both `-single` and `-card` suffixes. A guard (`!match[1].includes('term_') && !match[1].includes('user_')`) prevents false matches on `term_card` and `user_card` slugs, which contain "card" but represent term/user context, not post context.
 
 ---
 

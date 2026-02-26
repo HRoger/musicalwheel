@@ -1,6 +1,6 @@
 # NectarBlocks Integration
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-02-25
 **Status:** Complete — 23 parent blocks + 5 child blocks fully integrated
 **Test Coverage:** 38 passing tests
 
@@ -9,6 +9,20 @@
 ## 1. Overview
 
 This integration injects Voxel's dynamic data system into NectarBlocks' inspector controls and block toolbar. It allows NB blocks to use Voxel's `@tags()` expressions to populate fields dynamically from post/term/user data, and adds full Voxel Tab controls (sticky, visibility, loop) to every NB block.
+
+### Core Design Principle
+
+> **"If VoxelScript is correctly rendered, NectarBlocks will do its job naturally."**
+
+NectarBlocks generates its entire HTML output from its own block attributes — `<source src>`, `data-video` JSON, `background-image` styles, gallery `<img>` tags, etc. The integration never tries to generate or patch this HTML itself. Instead:
+
+1. The user sets a Voxel dynamic tag expression on an NB field (e.g. `@post(gallery)`)
+2. The integration resolves the tag via REST API → gets a real preview URL/value
+3. That real value is written into NB's native block attribute
+4. NB's own save function generates the correct HTML as if the user had set the value manually
+5. PHP replaces the preview value with the per-post live-resolved value at render time
+
+This means NB handles all the complex HTML serialization (nested JSON, MIME types, responsive image srcsets, etc.) — we just feed it the right data.
 
 **What it enables:**
 - Dynamic image sources (`@term(image)` → resolves to an `<img>` preview in the editor canvas)
@@ -154,7 +168,7 @@ These get the full VoxelTab (as 4th inspector tab) and EnableTag buttons injecte
 | `nectar-blocks/flex-box` | Z-Index only |
 | `nectar-blocks/icon` | Z-Index only + Advanced panel (icon color) |
 | `nectar-blocks/icon-list` | Z-Index only |
-| `nectar-blocks/image-gallery` | Z-Index only |
+| `nectar-blocks/image-gallery` | Z-Index (number), Gallery Images (galleryImages), Background Image (backgroundImage) |
 | `nectar-blocks/image-grid` | Z-Index only |
 | `nectar-blocks/milestone` | Z-Index only |
 | `nectar-blocks/post-content` | Z-Index only |
@@ -165,8 +179,8 @@ These get the full VoxelTab (as 4th inspector tab) and EnableTag buttons injecte
 | `nectar-blocks/taxonomy-grid` | Z-Index only |
 | `nectar-blocks/taxonomy-terms` | Z-Index only |
 | `nectar-blocks/testimonial` | Z-Index only |
-| `nectar-blocks/video-lightbox` | Z-Index only |
-| `nectar-blocks/video-player` | Z-Index only |
+| `nectar-blocks/video-lightbox` | Z-Index (number), Video URL (videoUrl), Local Video (videoLocal), Preview Image (previewImage), Preview Video (previewVideo) |
+| `nectar-blocks/video-player` | Z-Index (number), Video (video), Preview Image (previewImage) |
 
 ### 4.2 Child/Inner Blocks (5) — RowSettings
 
@@ -196,8 +210,21 @@ These controls add an EnableTagsButton next to NB's inspector fields. When a tag
 | 4 | `linkUrl` | Link URL | Layout | `url` | `inline` | nectar-blocks/image |
 | 5 | `zIndex` | Z-Index | Style | `number` | `corner` | All parent blocks |
 | 6 | `rating` | Rating | Layout | `number` | `corner` | nectar-blocks/star-rating |
+| 7 | `galleryImages` | Gallery Images | Layout | `image` | `corner` | nectar-blocks/image-gallery |
+| 8 | `backgroundImage` | Background Image | Style | `image` | `corner` | nectar-blocks/image-gallery |
+| 9 | `video` | Video | Layout | `video` | `corner` | nectar-blocks/video-player |
+| 10 | `videoUrl` | Video URL | Layout | `url` | `inline` | nectar-blocks/video-lightbox |
+| 11 | `videoLocal` | Video (local) | Layout | `video` | `corner` | nectar-blocks/video-lightbox |
+| 12 | `previewImage` | Preview Image | Layout | `image` | `corner` | nectar-blocks/video-lightbox, nectar-blocks/video-player |
+| 13 | `previewVideo` | Preview Video | Layout | `video` | `corner` | nectar-blocks/video-lightbox |
 
 **Z-Index nested field:** The "Value" sub-row is nested inside the "Z-Index" parent control row. Uses `parentLabelText: 'Z-Index'` to scope the match. Tag preview spans the parent's component area.
+
+**`imageSource` — dual portal:** The Image block registers **two** portals for the same `imageSource` field key:
+- **Corner portal** (sidebar): Injected next to the image picker widget (`.nectar-component__image-select-simple`). This is the primary tag control.
+- **URL field portal** (iframe): Injected next to the "Enter URL" text input (`.nectar-component__image-placeholder__url-field`) inside the editor canvas. Appears only when the user clicks "Insert from URL" in the canvas placeholder.
+
+Both portals share the same `fieldKey: 'imageSource'` and the same `voxelDynamicTags['imageSource']` attribute. The NB `image` attribute sync (Pattern B) fires when either portal's tag is saved. The DOM overlay (editor canvas `<img>` injection) is **skipped** for `nectar-blocks/image` to prevent a duplicate image — NB renders the `<img>` natively from its own `image` attribute.
 
 ### 5.2 Body-Observer Controls (Outside Sidebar)
 
@@ -224,6 +251,78 @@ When a tag is set, a dark panel replaces the NB control:
 ```
 
 EDIT TAGS is left-aligned, DISABLE TAGS is right-aligned.
+
+---
+
+## 5a. NB Attribute Sync — How Dynamic Tags Drive NB Rendering
+
+See the [Core Design Principle](#core-design-principle) in the Overview for the full explanation. In short: we feed NB real resolved values so it generates correct HTML naturally — we never patch NB's HTML output ourselves.
+
+### Two Patterns
+
+#### Pattern A — URL Placeholder (linkUrl only)
+
+Used for simple URL fields where NB's HTML output is a predictable `href="..."`.
+
+1. The `linkUrl` useEffect writes `#voxel-dynamic` into `link.href`.
+2. NB saves `<a href="#voxel-dynamic">`.
+3. PHP (`resolve_link_url()`) finds and replaces the placeholder with the resolved URL.
+
+**Only applicable to `linkUrl`.** Does NOT work for media or nested JSON fields.
+
+#### Pattern B — REST API Resolution (all media/video fields)
+
+Used for images, videos, and any field where NB serializes the value into a complex format (nested objects, JSON attributes).
+
+1. A `useEffect` fires when `voxelDynamicTags[fieldKey]` is set.
+2. Calls the REST endpoint `/voxel-fse/v1/dynamic-data/render` with the tag expression and current template context.
+3. Parses the rendered output (strips `@tags()...@endtags()` wrapper).
+4. Sets a **real preview URL** into the NB native attribute (e.g. `bgImage.desktop.url`, `link.localVideo.source.url`, `preview.video.source.url`).
+5. NB saves HTML with the preview URL embedded.
+6. PHP resolves the same tag at render time and replaces the preview URL with the per-post live value.
+
+This is the correct pattern because NB's save function handles all HTML generation — it knows how to build `<source src="...">`, `data-video='{"source":[...]}'`, `background-image`, etc. We just need to give it the right URL.
+
+### Field → NB Attribute Mapping
+
+| Field Key | NB Attribute Path | Pattern | PHP Resolver |
+|-----------|-------------------|---------|--------------|
+| `linkUrl` | `link.href` | A (placeholder) | `resolve_link_url()` |
+| `imageSource` | `image` (full media object `{url, alt, title, type:"wpm"}`) | B (REST) | `resolve_image_source()` |
+| `galleryImages` | `imageGalleryImages` (full media objects) | B (REST) | `resolve_gallery_images()` |
+| `video` | `video` (full media object) | B (REST) | `resolve_video()` |
+| `videoUrl` | `link.externalVideo` | B (REST) | `resolve_video_url()` |
+| `videoLocal` | `link.localVideo.source.{url,type}` | B (REST) | `resolve_video_local()` |
+| `previewImage` | `preview.image` (full media object) | B (REST) | `resolve_preview_image()` |
+| `previewVideo` | `preview.video.source.{url,type}` | B (REST) | `resolve_preview_video()` |
+| `backgroundImage` | `bgImage.desktop.{url,type}` | B (REST) | `resolve_background_image()` |
+
+### `imageSource` — Plain URL + Attachment ID Support
+
+The `imageSource` resolve useEffect handles both input types:
+
+- **Attachment ID** (e.g. `@term(image)` resolves to `96`): Fetches `GET /wp/v2/media/96` to get the image URL.
+- **Plain URL** (e.g. typed directly into the "Enter URL" field): If the rendered value starts with `http://`, `https://`, or `/`, it is used directly without a media API call.
+
+This means tags returning either form work correctly in the editor preview AND on the frontend.
+
+### Combined videoUrl + videoLocal Effect
+
+Both `videoUrl` and `videoLocal` modify the same NB `link` attribute. They are handled in a **single combined useEffect** to avoid race conditions on `link.type`. `videoLocal` takes priority for `link.type` — if both tags are set, the block renders in local mode.
+
+### `getFieldInitialContent` — Multi-Strategy Value Pre-population
+
+When the user clicks EnableTag on a field that already has a value, the DynamicTagBuilder modal is pre-filled with the existing input content.
+
+**Important:** Multiple portals can share the same `fieldKey`. For example, the `imageSource` field has **two** portals registered simultaneously — one for the sidebar corner (the image picker widget) and one for the "Enter URL" text input field injected into the editor iframe. The function iterates **all** matching portals in order and returns the first non-empty value found.
+
+The function tries three strategies for each matching portal, in order:
+
+1. **WP controls strategy** — Searches upward via `.closest('.components-base-control')` then finds the input/textarea. Used by inputs rendered in the WP Advanced panel.
+2. **NB sidebar sibling strategy** — For inline NB controls, the portal container lives in `.nectar-control-row__label > .nectar-control-row__reset-wrap`, while the input is in the **sibling** `.nectar-control-row__component`. Uses `closest('.nectar-control-row')` then `.querySelector('.nectar-control-row__component input, textarea, [contenteditable]')`.
+3. **Corner / URL-field portal strategy** — Portal container is a sibling of the input inside the same parent wrapper. Searches `parentElement` for adjacent inputs/textareas.
+
+**Bug fixed (2026-02-25):** Originally used `portals.find()` (returns first match only). For `imageSource`, the sidebar corner portal was registered first and was always returned — its parent (`.nectar-component__image-select-simple`) has no input, so the function always returned `""`. Fixed by changing to `portals.filter()` and iterating all matching portals, so the URL-field portal (whose parent IS a text input container) is also tried.
 
 ---
 
@@ -371,7 +470,35 @@ The `RowSettings` component renders the loop section and visibility rules sectio
 
 ## 11. PHP Server-Side Rendering
 
-`Block_Loader.php` → `apply_nb_child_block_features()` handles all NB blocks that need server-side processing.
+### 11a. NB Dynamic Tags Controller (`fse-nb-dynamic-tags-controller.php`)
+
+Handles resolution of Voxel tags in NB parent block HTML (image-gallery, video-lightbox, video-player, image, etc.).
+
+**How it works:**
+1. Hooked into `render_block` for all `nectar-blocks/*` parent blocks.
+2. Reads `voxelDynamicTags` from the block attributes.
+3. For each tag, resolves the expression via VoxelScript and calls the appropriate resolver method.
+4. Resolver methods do a targeted find-and-replace in the rendered HTML.
+
+**Resolver methods:**
+
+| Method | Field Key | What It Replaces |
+|--------|-----------|-----------------|
+| `resolve_link_url()` | `linkUrl` | `href="#voxel-dynamic"` on `<a>` tag |
+| `resolve_image_source()` | `imageSource` | `src` on `<img>` tag |
+| `resolve_gallery_images()` | `galleryImages` | Multiple `<img src>` tags in gallery HTML |
+| `resolve_video()` | `video` | `<source src>` in `<video>` element |
+| `resolve_video_url()` | `videoUrl` | `href` on `.nectar-blocks-video-lightbox__link` |
+| `resolve_video_local()` | `videoLocal` | `src` inside `data-video` JSON attribute + `<source src>` |
+| `resolve_preview_image()` | `previewImage` | `src` on preview `<img>` |
+| `resolve_preview_video()` | `previewVideo` | `<source src>` in preview `<video>` |
+| `resolve_background_image()` | `backgroundImage` | Inline `background-image` style |
+
+**`resolve_video_local()` note:** NB Video Lightbox (local mode) serializes the video URL inside a `data-video='{"source":[{"src":"url","type":"video/mp4"}],...}'` JSON attribute, NOT in `href`. The resolver uses `preg_replace_callback` + `json_decode`/`wp_json_encode` to safely parse and patch the JSON, then also replaces `<source src>` for the `<video>` element.
+
+### 11b. Child Block Features (`Block_Loader.php` → `apply_nb_child_block_features()`)
+
+Handles all NB **child** blocks that need server-side processing.
 
 **Supported blocks:** `nectar-blocks/accordion-section`, `nectar-blocks/icon`, `nectar-blocks/button`
 
@@ -553,7 +680,8 @@ npx vitest run app/blocks/shared/nb-integration/
 | Field registry | `app/blocks/shared/nb-integration/nectarBlocksConfig.ts` |
 | CSS | `app/blocks/shared/nb-integration/nb-dynamic-tag-injector.css` |
 | Tests | `app/blocks/shared/nb-integration/__tests__/nb-voxeltab-wiring.test.tsx` |
-| PHP rendering | `app/blocks/Block_Loader.php` → `apply_nb_child_block_features()` |
+| PHP — parent block tag resolution | `app/controllers/fse-nb-dynamic-tags-controller.php` |
+| PHP — child block features | `app/blocks/Block_Loader.php` → `apply_nb_child_block_features()` |
 | VoxelTab component | `app/blocks/shared/controls/VoxelTab.tsx` |
 | RowSettings component | `app/blocks/shared/controls/RowSettings.tsx` |
 | EnableTagsButton | `app/blocks/shared/controls/EnableTagsButton.tsx` |

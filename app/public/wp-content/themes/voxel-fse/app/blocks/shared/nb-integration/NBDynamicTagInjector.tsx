@@ -122,21 +122,21 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	// Track whether we injected a link.href placeholder via dynamic tag (to restore original on disable)
 	const linkInjectedRef = useRef(false);
 	const originalLinkRef = useRef<unknown>(null);
-	// Track whether we injected videoUrl (external video URL) placeholder
-	const videoUrlInjectedRef = useRef(false);
-	const originalVideoUrlRef = useRef<unknown>(null);
-	// Track whether we injected videoLocal (local video source URL) placeholder
-	const videoLocalInjectedRef = useRef(false);
-	const originalVideoLocalRef = useRef<unknown>(null);
+	// Track whether we injected videoUrl or videoLocal into the link attribute (combined — both share `link`)
+	const videoLinkInjectedRef = useRef(false);
+	const originalVideoLinkRef = useRef<unknown>(null);
 	// Track whether we injected previewImage (video-lightbox preview.image or video-player image)
 	const previewImageInjectedRef = useRef(false);
 	const originalPreviewImageRef = useRef<unknown>(null);
-	// Track whether we injected previewVideo (video-lightbox preview.video source URL)
+	// Track whether we injected previewVideo (video-lightbox preview.video)
 	const previewVideoInjectedRef = useRef(false);
 	const originalPreviewVideoRef = useRef<unknown>(null);
-	// Track whether we injected backgroundImage (image-gallery bgImage URL)
+	// Track whether we injected backgroundImage (image-gallery bgImage)
 	const bgImageInjectedRef = useRef(false);
 	const originalBgImageRef = useRef<unknown>(null);
+	// Track whether we injected imageSource into NB's native `image` attribute
+	const nbImageInjectedRef = useRef(false);
+	const originalNBImageRef = useRef<unknown>(null);
 	// Stable ref for current attributes (avoids infinite loop when setAttributes triggers re-render)
 	const attributesRef = useRef(attributes);
 	attributesRef.current = attributes;
@@ -340,33 +340,39 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			return '';
 		}
 
-		const portal = portals.find((p) => p.fieldKey === fieldKey);
-		if (!portal) return '';
+		// Multiple portals can share the same fieldKey (e.g. the sidebar corner portal
+		// AND the inline URL-field portal both use 'imageSource'). Try ALL matching
+		// portals and return the first non-empty value found.
+		const matchingPortals = portals.filter((p) => p.fieldKey === fieldKey);
+		if (!matchingPortals.length) return '';
 
-		// Strategy 1: WP controls (Advanced panel — components-base-control)
-		const wpWrapper = portal.container.closest('.components-base-control__field')
-			?? portal.container.closest('.components-base-control');
-		if (wpWrapper) {
-			const wpInput = wpWrapper.querySelector('input') ?? wpWrapper.querySelector('textarea');
-			if (wpInput?.value) return wpInput.value;
-		}
-
-		// Strategy 2: NB sidebar — inline portals live in __label,
-		// input is in the sibling __component div
-		const controlRow = portal.container.closest('.nectar-control-row');
-		if (controlRow) {
-			const componentDiv = controlRow.querySelector('.nectar-control-row__component');
-			if (componentDiv) {
-				const nbInput = componentDiv.querySelector('input') ?? componentDiv.querySelector('textarea');
-				if (nbInput?.value) return nbInput.value;
+		for (const portal of matchingPortals) {
+			// Strategy 1: WP controls (Advanced panel — components-base-control)
+			const wpWrapper = portal.container.closest('.components-base-control__field')
+				?? portal.container.closest('.components-base-control');
+			if (wpWrapper) {
+				const wpInput = wpWrapper.querySelector('input') ?? wpWrapper.querySelector('textarea');
+				if (wpInput?.value) return wpInput.value;
 			}
-		}
 
-		// Strategy 3: Corner portals — inside __component alongside the input
-		const parent = portal.container.parentElement;
-		if (parent) {
-			const fallbackInput = parent.querySelector('input') ?? parent.querySelector('textarea');
-			if (fallbackInput?.value) return fallbackInput.value;
+			// Strategy 2: NB sidebar — inline portals live in __label,
+			// input is in the sibling __component div
+			const controlRow = portal.container.closest('.nectar-control-row');
+			if (controlRow) {
+				const componentDiv = controlRow.querySelector('.nectar-control-row__component');
+				if (componentDiv) {
+					const nbInput = componentDiv.querySelector('input') ?? componentDiv.querySelector('textarea');
+					if (nbInput?.value) return nbInput.value;
+				}
+			}
+
+			// Strategy 3: Corner portals / URL-field portals — container is a sibling
+			// of the input inside the same parent wrapper
+			const parent = portal.container.parentElement;
+			if (parent) {
+				const fallbackInput = parent.querySelector('input') ?? parent.querySelector('textarea');
+				if (fallbackInput?.value) return fallbackInput.value;
+			}
 		}
 
 		return '';
@@ -1082,8 +1088,13 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				} else {
 					attachmentId = parseInt(rendered, 10);
 				}
+				// If rendered is a plain URL (not an attachment ID), use it directly
 				if (!attachmentId || isNaN(attachmentId)) {
-					if (!cancelled) setDynamicImageUrl(null);
+					if (rendered.startsWith("http://") || rendered.startsWith("https://") || rendered.startsWith("/")) {
+						if (!cancelled) setDynamicImageUrl(rendered);
+					} else {
+						if (!cancelled) setDynamicImageUrl(null);
+					}
 					return;
 				}
 
@@ -1111,6 +1122,125 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 		return () => { cancelled = true; };
 	}, [voxelTags, clientId, templateContext, templatePostType]);
+
+	/**
+	 * Sync imageSource dynamic tag into NB's native `image` attribute.
+	 * This ensures NB's save generates <img src="..."> so PHP can replace it at render time.
+	 * When tag is removed, restores the original `image` attribute.
+	 */
+	useEffect(() => {
+		if (blockConfig.blockName !== 'nectar-blocks/image') return;
+
+		const tag = voxelTags['imageSource'];
+
+		// When tag is removed, restore original image attribute
+		if (!tag) {
+			if (nbImageInjectedRef.current && originalNBImageRef.current !== null) {
+				setAttributes({ image: originalNBImageRef.current } as Record<string, unknown>);
+				nbImageInjectedRef.current = false;
+				originalNBImageRef.current = null;
+			}
+			return;
+		}
+
+		// Already injected — skip to prevent infinite loop
+		if (nbImageInjectedRef.current) return;
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) previewContext['post_type'] = templatePostType;
+
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: { expression: tag, preview_context: previewContext },
+				});
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wm = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wm) rendered = wm[1];
+
+				let imageUrl = '';
+				let nbSizes: Record<string, { url: string; width: number; height: number }> = {};
+				let nbSize = 'full';
+				let attachId: number | undefined;
+
+				// Plain URL
+				if (rendered.startsWith('http://') || rendered.startsWith('https://') || rendered.startsWith('/')) {
+					imageUrl = rendered;
+					// No attachment ID available — provide a single "full" entry so the dropdown isn't empty
+					nbSizes = { full: { url: rendered, width: 0, height: 0 } };
+				} else {
+					// Numeric attachment ID — fetch URL and sizes
+					const attachmentId = parseInt(rendered, 10);
+					if (attachmentId && !isNaN(attachmentId)) {
+						const media = await apiFetch<{
+							id: number;
+							source_url: string;
+							media_details?: {
+								width?: number;
+								height?: number;
+								sizes?: Record<string, { source_url: string; width: number; height: number }>;
+							};
+						}>({
+							path: `/wp/v2/media/${attachmentId}?context=edit`,
+						});
+						if (cancelled) return;
+						if (media) {
+							attachId = media.id;
+							imageUrl = media.media_details?.sizes?.['large']?.source_url || media.source_url;
+							nbSize = media.media_details?.sizes?.['large'] ? 'large' : 'full';
+
+							// Build NB-compatible sizes object from WP media_details
+							const wpSizes = media.media_details?.sizes;
+							if (wpSizes) {
+								for (const [key, sizeData] of Object.entries(wpSizes)) {
+									nbSizes[key] = {
+										url: sizeData.source_url,
+										width: sizeData.width,
+										height: sizeData.height,
+									};
+								}
+							}
+							// Always include "full" from source_url
+							if (!nbSizes['full']) {
+								nbSizes['full'] = {
+									url: media.source_url,
+									width: media.media_details?.width ?? 0,
+									height: media.media_details?.height ?? 0,
+								};
+							}
+						}
+					}
+				}
+
+				if (cancelled || !imageUrl) return;
+
+				// Save original before overwriting
+				if (!nbImageInjectedRef.current) {
+					originalNBImageRef.current = attributesRef.current['image'];
+				}
+
+				// Set NB's native image attribute with sizes for Resolution dropdown
+				const nbImage: Record<string, unknown> = {
+					url: imageUrl, alt: '', title: '', type: 'wpm',
+					sizes: nbSizes, size: nbSize,
+				};
+				if (attachId) nbImage['id'] = attachId;
+				setAttributes({ image: nbImage } as Record<string, unknown>);
+				nbImageInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) console.error('[NB] Failed to sync imageSource to NB attribute:', err);
+			}
+		})();
+
+		return () => { cancelled = true; };
+	// eslint-disable-next-line react-hooks/exhaustive-deps -- attributes accessed via ref
+	}, [voxelTags, clientId, setAttributes, blockConfig.blockName, templateContext, templatePostType]);
 
 	/**
 	 * Resolve galleryImages dynamic tag and set imageGalleryImages attribute natively.
@@ -1380,68 +1510,110 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [voxelTags, clientId, setAttributes]);
 
 	/**
-	 * Sync videoUrl dynamic tag into NB's native `link.externalVideo` attribute.
-	 * Pattern A: placeholder URL. NB's save writes the external video URL into its HTML.
-	 * PHP replaces `#voxel-dynamic` with the resolved URL at render time.
+	 * Sync videoUrl and/or videoLocal dynamic tags into NB's native `link` attribute.
+	 * Both fields share the `link` attribute, so we handle them in a single effect to avoid races.
+	 * Resolves via REST API → sets actual URL so NB generates valid HTML natively.
+	 * PHP replaces the preview URL with the per-post resolved URL at render time.
 	 */
 	useEffect(() => {
-		const tag = voxelTags['videoUrl'];
+		const videoUrlTag = voxelTags['videoUrl'];
+		const videoLocalTag = voxelTags['videoLocal'];
 
-		if (!tag) {
-			if (videoUrlInjectedRef.current && originalVideoUrlRef.current !== null) {
-				setAttributes({ link: originalVideoUrlRef.current } as Record<string, unknown>);
-				videoUrlInjectedRef.current = false;
-				originalVideoUrlRef.current = null;
+		// When both tags are removed, restore original link
+		if (!videoUrlTag && !videoLocalTag) {
+			if (videoLinkInjectedRef.current && originalVideoLinkRef.current !== null) {
+				setAttributes({ link: originalVideoLinkRef.current } as Record<string, unknown>);
+				videoLinkInjectedRef.current = false;
+				originalVideoLinkRef.current = null;
 			}
 			return;
 		}
 
-		if (videoUrlInjectedRef.current) return;
+		// Already injected — skip
+		if (videoLinkInjectedRef.current) return;
 
-		originalVideoUrlRef.current = attributesRef.current['link'];
-		const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
-		setAttributes({
-			link: { ...currentLink, type: 'external', externalVideo: '#voxel-dynamic' },
-		} as Record<string, unknown>);
-		videoUrlInjectedRef.current = true;
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [voxelTags, clientId, setAttributes]);
+		let cancelled = false;
 
-	/**
-	 * Sync videoLocal dynamic tag into NB's native `link.localVideo.source.url` attribute.
-	 * Pattern A: placeholder URL so NB's save generates `<source src="...">`.
-	 */
-	useEffect(() => {
-		const tag = voxelTags['videoLocal'];
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
 
-		if (!tag) {
-			if (videoLocalInjectedRef.current && originalVideoLocalRef.current !== null) {
-				setAttributes({ link: originalVideoLocalRef.current } as Record<string, unknown>);
-				videoLocalInjectedRef.current = false;
-				originalVideoLocalRef.current = null;
+				// Save original link before overwriting
+				originalVideoLinkRef.current = attributesRef.current['link'];
+				const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
+				const linkUpdate = { ...currentLink } as Record<string, unknown>;
+
+				// Resolve videoLocal if present (local video takes priority for link.type)
+				if (videoLocalTag) {
+					const renderResult = await apiFetch<{ rendered: string }>({
+						path: '/voxel-fse/v1/dynamic-data/render',
+						method: 'POST',
+						data: { expression: videoLocalTag, preview_context: previewContext },
+					});
+					if (cancelled) return;
+
+					let rendered = renderResult.rendered;
+					const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+					if (wrapperMatch) rendered = wrapperMatch[1];
+					const videoUrl = rendered.trim();
+
+					if (videoUrl) {
+						// Determine MIME type from URL extension
+						const ext = videoUrl.split('?')[0].split('.').pop()?.toLowerCase();
+						const mimeMap: Record<string, string> = {
+							mp4: 'video/mp4', webm: 'video/webm', ogg: 'video/ogg', ogv: 'video/ogg',
+						};
+						const mime = (ext && mimeMap[ext]) || 'video/mp4';
+
+						const currentLocalVideo = (currentLink['localVideo'] ?? {}) as Record<string, unknown>;
+						linkUpdate['type'] = 'local';
+						linkUpdate['localVideo'] = {
+							...currentLocalVideo,
+							source: { url: videoUrl, type: 'self-hosted', mime },
+						};
+					}
+				}
+
+				// Resolve videoUrl if present
+				if (videoUrlTag) {
+					const renderResult = await apiFetch<{ rendered: string }>({
+						path: '/voxel-fse/v1/dynamic-data/render',
+						method: 'POST',
+						data: { expression: videoUrlTag, preview_context: previewContext },
+					});
+					if (cancelled) return;
+
+					let rendered = renderResult.rendered;
+					const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+					if (wrapperMatch) rendered = wrapperMatch[1];
+					const externalUrl = rendered.trim();
+
+					if (externalUrl) {
+						linkUpdate['externalVideo'] = externalUrl;
+						// Only set type to 'external' if no local video tag
+						if (!videoLocalTag) {
+							linkUpdate['type'] = 'external';
+						}
+					}
+				}
+
+				if (cancelled) return;
+
+				setAttributes({ link: linkUpdate } as Record<string, unknown>);
+				videoLinkInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic video link tags:', err);
+				}
 			}
-			return;
-		}
+		})();
 
-		if (videoLocalInjectedRef.current) return;
-
-		originalVideoLocalRef.current = attributesRef.current['link'];
-		const currentLink = (attributesRef.current['link'] ?? {}) as Record<string, unknown>;
-		const currentLocalVideo = (currentLink['localVideo'] ?? {}) as Record<string, unknown>;
-		const currentSource = (currentLocalVideo['source'] ?? {}) as Record<string, unknown>;
-		setAttributes({
-			link: {
-				...currentLink,
-				type: 'local',
-				localVideo: {
-					...currentLocalVideo,
-					source: { ...currentSource, url: '#voxel-dynamic' },
-				},
-			},
-		} as Record<string, unknown>);
-		videoLocalInjectedRef.current = true;
+		return () => { cancelled = true; };
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [voxelTags, clientId, setAttributes]);
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
 
 	/**
 	 * Sync previewImage dynamic tag into NB's native attribute.
@@ -1579,8 +1751,8 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes, blockConfig.blockName]);
 
 	/**
-	 * Sync previewVideo dynamic tag into NB's native `preview.video.source.url`.
-	 * Pattern A: placeholder URL so NB's save generates video source markup.
+	 * Sync previewVideo dynamic tag into NB's native `preview.video.source`.
+	 * Resolves via REST API → sets actual URL so NB generates valid HTML natively.
 	 */
 	useEffect(() => {
 		const tag = voxelTags['previewVideo'];
@@ -1599,27 +1771,66 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 		if (previewVideoInjectedRef.current) return;
 
-		const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
-		const currentVideo = (currentPreview['video'] ?? {}) as Record<string, unknown>;
-		const currentSource = (currentVideo['source'] ?? {}) as Record<string, unknown>;
+		let cancelled = false;
 
-		originalPreviewVideoRef.current = currentVideo;
-		setAttributes({
-			preview: {
-				...currentPreview,
-				video: {
-					...currentVideo,
-					source: { ...currentSource, url: '#voxel-dynamic' },
-				},
-			},
-		} as Record<string, unknown>);
-		previewVideoInjectedRef.current = true;
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: { expression: tag, preview_context: previewContext },
+				});
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) rendered = wrapperMatch[1];
+				const videoUrl = rendered.trim();
+				if (!videoUrl) return;
+
+				// Determine MIME type from URL extension
+				const ext = videoUrl.split('?')[0].split('.').pop()?.toLowerCase();
+				const mimeMap: Record<string, string> = {
+					mp4: 'video/mp4', webm: 'video/webm', ogg: 'video/ogg', ogv: 'video/ogg',
+				};
+				const mime = (ext && mimeMap[ext]) || 'video/mp4';
+
+				const currentPreview = (attributesRef.current['preview'] ?? {}) as Record<string, unknown>;
+				const currentVideo = (currentPreview['video'] ?? {}) as Record<string, unknown>;
+
+				if (!previewVideoInjectedRef.current) {
+					originalPreviewVideoRef.current = currentVideo;
+				}
+
+				setAttributes({
+					preview: {
+						...currentPreview,
+						video: {
+							...currentVideo,
+							source: { url: videoUrl, type: 'self-hosted', mime },
+						},
+					},
+				} as Record<string, unknown>);
+				previewVideoInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic previewVideo tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [voxelTags, clientId, setAttributes]);
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
 
 	/**
-	 * Sync backgroundImage dynamic tag into NB's native `bgImage.desktop.url`.
-	 * Pattern A: placeholder URL so NB's save generates background-image CSS.
+	 * Sync backgroundImage dynamic tag into NB's native `bgImage` attribute.
+	 * Resolves via REST API → sets actual URL so NB generates valid HTML natively.
 	 */
 	useEffect(() => {
 		const tag = voxelTags['backgroundImage'];
@@ -1635,18 +1846,70 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 		if (bgImageInjectedRef.current) return;
 
-		originalBgImageRef.current = attributesRef.current['bgImage'];
-		const currentBgImage = (attributesRef.current['bgImage'] ?? {}) as Record<string, unknown>;
-		const currentDesktop = (currentBgImage['desktop'] ?? {}) as Record<string, unknown>;
-		setAttributes({
-			bgImage: {
-				...currentBgImage,
-				desktop: { ...currentDesktop, url: '#voxel-dynamic' },
-			},
-		} as Record<string, unknown>);
-		bgImageInjectedRef.current = true;
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: { expression: tag, preview_context: previewContext },
+				});
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) rendered = wrapperMatch[1];
+				const value = rendered.trim();
+				if (!value) return;
+
+				// Try to resolve as attachment ID to get full URL
+				let imageUrl = value;
+				const attachmentId = parseInt(value, 10);
+				if (attachmentId && !isNaN(attachmentId) && String(attachmentId) === value) {
+					try {
+						const media = await apiFetch<{ source_url: string }>({
+							path: `/wp/v2/media/${attachmentId}?context=edit`,
+						});
+						if (cancelled) return;
+						if (media?.source_url) {
+							imageUrl = media.source_url;
+						}
+					} catch {
+						// Fall back to using raw value as URL
+					}
+				}
+
+				if (cancelled || !imageUrl) return;
+
+				if (!bgImageInjectedRef.current) {
+					originalBgImageRef.current = attributesRef.current['bgImage'];
+				}
+
+				const currentBgImage = (attributesRef.current['bgImage'] ?? {}) as Record<string, unknown>;
+				const currentDesktop = (currentBgImage['desktop'] ?? {}) as Record<string, unknown>;
+				setAttributes({
+					bgImage: {
+						...currentBgImage,
+						desktop: { ...currentDesktop, url: imageUrl, type: 'wpm' },
+					},
+				} as Record<string, unknown>);
+				bgImageInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic backgroundImage tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
 	// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [voxelTags, clientId, setAttributes]);
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
 
 	/**
 	 * Inject EnableTag portal into the Video Player's "Insert self-hosted URL" input area
@@ -1801,6 +2064,145 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [clientId, isSelected, blockConfig.blockName]);
 
 	/**
+	 * Inject EnableTag portal into the Image block's "Enter URL" input area
+	 * inside the editor iframe. The URL field (.nectar-component__image-placeholder__url-field)
+	 * appears when the user clicks "Insert from URL" in the canvas placeholder.
+	 */
+	useEffect(() => {
+		if (blockConfig.blockName !== 'nectar-blocks/image') return;
+		if (!isSelected) return;
+
+		const injectImageUrlPortal = () => {
+			const found = getBlockElement(clientId);
+			if (!found) return;
+			const { el: blockEl } = found;
+
+			const urlField = blockEl.querySelector('.nectar-component__image-placeholder__url-field');
+			if (!urlField) return;
+
+			// Don't inject twice
+			if (urlField.querySelector('.voxel-nb-tag-portal')) return;
+
+			// Clean up stale portal entries
+			setPortals((prev) => prev.filter((p) => !(p.fieldKey === 'imageSource' && p.container.classList.contains('voxel-nb-tag-portal--image-url'))));
+
+			const container = document.createElement('span');
+			container.className = 'voxel-nb-tag-portal voxel-nb-tag-portal--image-url';
+			container.setAttribute('data-field-key', 'imageSource');
+			container.setAttribute('data-client-id', clientId);
+
+			urlField.appendChild(container);
+			setPortals((prev) => [...prev, { fieldKey: 'imageSource', container }]);
+		};
+
+		const iframe = document.querySelector('iframe[name="editor-canvas"]') as HTMLIFrameElement | null;
+		const iframeDoc = iframe?.contentDocument;
+		if (!iframeDoc) return;
+
+		// Inject CSS into iframe (same grid layout as video player)
+		const styleId = 'voxel-nb-image-url-portal-css';
+		if (!iframeDoc.getElementById(styleId)) {
+			const style = iframeDoc.createElement('style');
+			style.id = styleId;
+			style.textContent = `
+				.nectar-component__image-placeholder__url-field {
+					display: grid !important;
+					grid-template-columns: 1fr auto;
+					grid-template-rows: auto auto;
+					gap: 0;
+				}
+				.nectar-component__image-placeholder__url-field .nectar-component__text-control {
+					grid-column: 1;
+					grid-row: 1;
+					align-self: center;
+				}
+				.voxel-nb-tag-portal--image-url {
+					grid-column: 2;
+					grid-row: 1;
+					display: inline-flex;
+					align-items: center;
+					align-self: start;
+					margin-left: 6px;
+					margin-top: 4px;
+					flex-shrink: 0;
+				}
+				.nectar-component__image-placeholder__url-field__buttons {
+					grid-column: 1 / -1;
+					grid-row: 2;
+				}
+				.voxel-fse-enable-tags {
+					position: relative;
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					width: 24px;
+					height: 24px;
+					border: none;
+					background: transparent;
+					cursor: pointer;
+					padding: 0;
+					transition: 0.2s ease;
+				}
+				.voxel-fse-enable-tags:hover { transform: scale(1.1); }
+				.voxel-fse-enable-tags__icon {
+					position: relative;
+					z-index: 10;
+					width: 16px;
+					height: 16px;
+					display: block;
+					background-size: contain;
+					background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 206.34 206.34'%3E%3Cpolygon fill='%23000' points='114.63 91.71 114.63 137.56 22.93 45.85 45.85 22.93 22.93 22.93 0 45.85 0 114.63 91.71 206.34 114.63 206.34 114.63 160.49 137.56 160.49 206.34 91.71 206.34 22.93 183.41 22.93 114.63 91.71'/%3E%3Cpolygon fill='%23000' points='160.49 0 68.78 0 45.85 22.93 183.41 22.93 160.49 0'/%3E%3C/svg%3E");
+					background-repeat: no-repeat;
+					background-position: center;
+					filter: invert(1);
+				}
+				.voxel-fse-enable-tags::after {
+					content: "";
+					width: 28px;
+					height: 28px;
+					position: absolute;
+					background: radial-gradient(in oklch 115% 150% at 30% 10%, oklch(0.75 0.13 227.09) -30%, oklch(0.63 0.13 250.54) 30%, oklch(0.71 0.23 6.03) 55%, oklch(0.86 0.11 56.4) 110%);
+					border-radius: 50px;
+					z-index: 1;
+					pointer-events: none;
+				}
+			`;
+			iframeDoc.head.appendChild(style);
+		}
+
+		let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+		let disposed = false;
+		const debouncedInject = () => {
+			if (disposed) return;
+			if (debounceTimer) clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => {
+				if (disposed) return;
+				injectImageUrlPortal();
+			}, 500);
+		};
+
+		const blockEl = iframeDoc.querySelector(`[data-block="${clientId}"]`);
+		if (!blockEl) {
+			return () => { disposed = true; if (debounceTimer) clearTimeout(debounceTimer); };
+		}
+
+		const observer = new MutationObserver(() => { debouncedInject(); });
+		observer.observe(blockEl, { childList: true, subtree: true });
+
+		return () => {
+			disposed = true;
+			observer.disconnect();
+			if (debounceTimer) clearTimeout(debounceTimer);
+			const found = getBlockElement(clientId);
+			if (found) {
+				const portal = found.el.querySelector('.voxel-nb-tag-portal--image-url');
+				portal?.remove();
+			}
+			setPortals((prev) => prev.filter((p) => !(p.fieldKey === 'imageSource' && p.container.classList.contains('voxel-nb-tag-portal--image-url'))));
+		};
+	}, [clientId, isSelected, blockConfig.blockName]);
+
+	/**
 	 * Inject the resolved image (or remove it) in the NB block's iframe DOM.
 	 * Handles both image blocks (imageSource) and icon blocks (iconImage).
 	 */
@@ -1826,6 +2228,10 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 		// Determine if this is an icon image or a regular image
 		const isIconImage = Boolean(voxelTags['iconImage']);
+
+		// For the NB Image block (imageSource), NB renders natively via `image` attribute —
+		// skip DOM overlay to prevent a duplicate image.
+		if (!isIconImage && blockConfig.blockName === 'nectar-blocks/image') return;
 
 		// Inject CSS into iframe once
 		const styleId = 'voxel-nb-image-preview-css';
@@ -2173,6 +2579,12 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				// Video URL field — preview renders in the URL field area (inside iframe)
 				if (!targetComponentDiv && portal.container.classList.contains('voxel-nb-tag-portal--video-url')) {
 					targetComponentDiv = portal.container.closest('.nectar-component__video-placeholder__url-field')
+						?? null;
+				}
+
+				// Image URL field — preview renders in the URL field area (inside iframe)
+				if (!targetComponentDiv && portal.container.classList.contains('voxel-nb-tag-portal--image-url')) {
+					targetComponentDiv = portal.container.closest('.nectar-component__image-placeholder__url-field')
 						?? null;
 				}
 

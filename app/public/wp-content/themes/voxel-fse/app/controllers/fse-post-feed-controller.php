@@ -613,12 +613,22 @@ class FSE_Post_Feed_Controller extends FSE_Base_Controller {
 			$template_id = (int) $card_template;
 		}
 
+		// Try FSE card template rendering (do_blocks) instead of Elementor rendering.
+		// This enables product-price, advanced-list, etc. to render in the editor.
+		$fse_template_content = $this->get_fse_card_template_content( $post_type, $template_id );
+
+		if ( $fse_template_content ) {
+			return $this->search_with_fse_template(
+				$post_type, $args, $fse_template_content,
+				$limit, $offset, $page, $exclude,
+				$priority_min_val, $priority_max_val, $get_total_count
+			);
+		}
+
+		// Fallback: Voxel Elementor rendering via get_search_results()
 		// Capture any output buffered by Voxel (some methods echo styles/scripts)
-		// Evidence: Search form controller uses ob_start for similar reasons
 		ob_start();
 
-		// Execute the search
-		// Evidence: post-feed.php:1481-1488
 		$results = \Voxel\get_search_results( $args, [
 			'limit'          => $limit,
 			'offset'         => $offset,
@@ -630,14 +640,12 @@ class FSE_Post_Feed_Controller extends FSE_Base_Controller {
 		] );
 
 		// Clean up any buffered output
-		$buffered = ob_get_clean();
+		ob_get_clean();
 
 		// Calculate pagination info
 		$has_prev = $page > 1;
 		$has_next = $results['has_next'] ?? false;
 
-		// Build display count
-		// Evidence: Voxel search-controller.php:77-78
 		$total_count   = $results['total_count'] ?? 0;
 		$result_count  = count( $results['ids'] ?? [] );
 		$display_count = '';
@@ -661,4 +669,196 @@ class FSE_Post_Feed_Controller extends FSE_Base_Controller {
 			'page'         => $page,
 		] );
 	}
+
+	/**
+	 * Execute search and render cards using FSE block template via do_blocks().
+	 *
+	 * Uses Voxel's query system for post retrieval but renders each card
+	 * through the FSE block template pipeline instead of Elementor.
+	 * This ensures blocks like product-price, advanced-list, star-rating
+	 * render correctly in the editor preview.
+	 *
+	 * Mirrors fse-search-controller.php render_post_cards() logic.
+	 */
+	private function search_with_fse_template(
+		\Voxel\Post_Type $post_type,
+		array $args,
+		string $fse_template_content,
+		int $limit,
+		int $offset,
+		int $page,
+		array $exclude,
+		?int $priority_min,
+		?int $priority_max,
+		bool $get_total_count
+	): \WP_REST_Response {
+		// Query posts using Voxel's index system (no Elementor dependency)
+		$args['limit'] = $limit + 1; // +1 to check for next page
+
+		if ( $page > 1 ) {
+			$args['offset'] = ( $limit * ( $page - 1 ) );
+		}
+		if ( $offset >= 1 ) {
+			$args['offset'] = ( $args['offset'] ?? 0 ) + $offset;
+		}
+
+		// Build exclusion/priority callback
+		$cb = function( $query ) use ( $exclude, $priority_min, $priority_max ) {
+			if ( ! empty( $exclude ) ) {
+				$exclude_ids = array_values( array_filter( $exclude ) );
+				if ( ! empty( $exclude_ids ) ) {
+					$query->where( sprintf(
+						'`%s`.post_id NOT IN (%s)',
+						$query->table->get_escaped_name(),
+						join( ',', $exclude_ids )
+					) );
+				}
+			}
+
+			if ( $priority_min !== null && $priority_max !== null ) {
+				if ( $priority_min === $priority_max ) {
+					$query->where( sprintf( 'priority = %d', $priority_min ) );
+				} else {
+					$query->where( sprintf( 'priority >= %d AND priority <= %d', $priority_min, $priority_max ) );
+				}
+			} elseif ( $priority_min !== null ) {
+				$query->where( sprintf( 'priority >= %d', $priority_min ) );
+			} elseif ( $priority_max !== null ) {
+				$query->where( sprintf( 'priority <= %d', $priority_max ) );
+			}
+		};
+
+		$post_ids = $post_type->query( $args, $cb );
+
+		// Check for next page
+		$has_next = count( $post_ids ) > $limit;
+		if ( $has_next ) {
+			array_pop( $post_ids );
+		}
+
+		// Total count
+		$total_count = 0;
+		if ( $get_total_count ) {
+			$count_args = $args;
+			unset( $count_args['limit'], $count_args['offset'] );
+			$total_count = $post_type->get_index_query()->get_post_count( $count_args, $cb );
+		}
+
+		// Render cards via do_blocks()
+		$html = '';
+		if ( ! empty( $post_ids ) ) {
+			_prime_post_caches( array_map( 'absint', $post_ids ) );
+			$current_post = \Voxel\get_current_post();
+
+			// Enable NB SSR for blocks without render callbacks (star-rating, icon)
+			if ( class_exists( '\VoxelFSE\Controllers\FSE_NB_SSR_Controller' ) ) {
+				\VoxelFSE\Controllers\FSE_NB_SSR_Controller::set_feed_context( true );
+			}
+
+			ob_start();
+			foreach ( $post_ids as $post_id ) {
+				$post = \Voxel\Post::get( $post_id );
+				if ( ! $post ) {
+					continue;
+				}
+
+				\Voxel\set_current_post( $post );
+				echo '<div class="ts-preview" data-post-id="' . esc_attr( $post_id ) . '">';
+				echo do_blocks( $fse_template_content );
+				echo '</div>';
+			}
+			$html = ob_get_clean();
+
+			if ( class_exists( '\VoxelFSE\Controllers\FSE_NB_SSR_Controller' ) ) {
+				\VoxelFSE\Controllers\FSE_NB_SSR_Controller::set_feed_context( false );
+			}
+
+			// Restore original post context
+			if ( $current_post ) {
+				\Voxel\set_current_post( $current_post );
+			}
+		}
+
+		// NectarBlocks CSS from template post meta
+		$nb_css = '';
+		if ( $this->fse_template_wp_id ) {
+			$nb_meta = get_post_meta( $this->fse_template_wp_id, '_nectar_blocks_css', true );
+			if ( ! empty( $nb_meta ) && is_string( $nb_meta ) ) {
+				$nb_css = '<style id="nb-post-card-css">' . $nb_meta . '</style>';
+			}
+		}
+
+		// Display count
+		$result_count  = count( $post_ids );
+		$display_count = '';
+		if ( function_exists( '\Voxel\count_format' ) ) {
+			$display_count = \Voxel\count_format( $result_count, $total_count );
+		} else {
+			$display_count = $result_count . ( $total_count > $result_count ? ' of ' . $total_count : '' );
+		}
+
+		return rest_ensure_response( [
+			'success'      => true,
+			'html'         => $nb_css . $html,
+			'ids'          => $post_ids,
+			'hasResults'   => ! empty( $post_ids ),
+			'hasPrev'      => $page > 1,
+			'hasNext'      => $has_next,
+			'totalCount'   => $total_count,
+			'displayCount' => $display_count,
+			'templateId'   => null,
+			'page'         => $page,
+		] );
+	}
+
+	/**
+	 * Get the FSE card template content for a post type.
+	 *
+	 * Looks up the FSE card template from the post type's fse_templates config.
+	 * Mirrors fse-search-controller.php::get_fse_card_template_content().
+	 *
+	 * @param \Voxel\Post_Type $post_type The post type object
+	 * @param int|null $template_id Optional specific template ID
+	 * @return string|null Template block content, or null if not found
+	 */
+	private function get_fse_card_template_content( \Voxel\Post_Type $post_type, ?int $template_id = null ): ?string {
+		$this->fse_template_wp_id = null;
+
+		// If a specific template_id is provided, check if it's an FSE template
+		if ( $template_id ) {
+			$template_post = get_post( $template_id );
+			if ( $template_post && $template_post->post_type === 'wp_template' && ! empty( $template_post->post_content ) ) {
+				$this->fse_template_wp_id = $template_post->ID;
+				return $template_post->post_content;
+			}
+		}
+
+		// Fall back to the main FSE card template from post type config
+		$fse_templates = $post_type->repository->config['fse_templates'] ?? [];
+		$card_slug = $fse_templates['card'] ?? null;
+
+		if ( ! $card_slug ) {
+			$card_slug = sprintf( 'voxel-%s-card', $post_type->get_key() );
+		}
+
+		if ( ! class_exists( '\VoxelFSE\Controllers\Templates\Template_Manager' ) ) {
+			return null;
+		}
+
+		$resolved_id = \VoxelFSE\Controllers\Templates\Template_Manager::get_template_id_by_slug( $card_slug );
+		if ( ! $resolved_id ) {
+			return null;
+		}
+
+		$template_post = get_post( $resolved_id );
+		if ( ! $template_post || empty( $template_post->post_content ) ) {
+			return null;
+		}
+
+		$this->fse_template_wp_id = $template_post->ID;
+		return $template_post->post_content;
+	}
+
+	/** @var int|null Tracks the wp_id of the resolved FSE card template */
+	private ?int $fse_template_wp_id = null;
 }

@@ -27,7 +27,6 @@ export interface LinkedGapsControlProps {
 	min?: number;
 	max?: number;
 	availableUnits?: UnitType[];
-	showResetButton?: boolean;
 }
 
 export default function LinkedGapsControl({
@@ -41,7 +40,6 @@ export default function LinkedGapsControl({
 	min = 0,
 	max = 200,
 	availableUnits = ['px', 'em', '%'],
-	showResetButton: _showResetButton = true,
 }: LinkedGapsControlProps) {
 	// Get WordPress's current device type
 	const wpDevice = useDeviceType();

@@ -181,6 +181,29 @@ div.mce-tinymce .mce-btn.mce-active {
     border-top: 1px solid #dcdcde !important;
 }
 
+/**
+ * NectarBlocks columns inside AJAX-rendered card templates
+ *
+ * When card templates are rendered server-side via do_blocks() and injected
+ * as HTML (Post Feed, Term Feed), NectarBlocks columns lack their inline
+ * flex styles. The base NB CSS sets flex-basis:0px, collapsing them to 0 width.
+ * This gives them a sensible default so card content is visible.
+ */
+.ts-preview .wp-block-nectar-blocks-column,
+.ts-term-card .wp-block-nectar-blocks-column,
+.post-feed-grid .wp-block-nectar-blocks-column,
+.term-feed-grid .wp-block-nectar-blocks-column {
+    flex: 1 1 100%;
+}
+
+.ts-preview .wp-block-nectar-blocks-row,
+.ts-term-card .wp-block-nectar-blocks-row,
+.post-feed-grid .wp-block-nectar-blocks-row,
+.term-feed-grid .wp-block-nectar-blocks-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 
 
 /* === Child Theme: assets/gutenberg-editor-overrides.css === */
@@ -272,6 +295,16 @@ body.block-editor-page #vx-alert .alert-msg {
  */
 body :where(.editor-styles-wrapper) a:where(:not(.wp-element-button)),
 body :where(.block-editor-inner-blocks) a:where(:not(.wp-element-button)) {
+    text-decoration: none;
+}
+
+/**
+ * Fix: Remove text-decoration and outline on Voxel icon buttons in editor.
+ * WordPress theme.json injects a:where(:not(.wp-element-button)) { text-decoration: underline }
+ * inside the editor iframe. Voxel icon buttons are <a> tags styled as circular buttons.
+ * Voxel's SVGs use fill:var(--ts-icon-color) so 'color' property is not needed here.
+ */
+a.ts-icon-btn {
     text-decoration: none;
 }
 
@@ -789,6 +822,8 @@ body .nectar-blocks-template-library__sidebar__item__link {
 .react-tabs svg path {
     color: inherit;
 }
+
+
 
 /* === Child Theme: assets/css/responsive-visibility.css === */
 /**

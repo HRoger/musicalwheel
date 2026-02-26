@@ -372,6 +372,15 @@ require_once VOXEL_FSE_PATH . '/app/controllers/fse-loop-api-controller.php';
 new \VoxelFSE\Controllers\FSE_Loop_API_Controller();
 
 /**
+ * FSE NectarBlocks Server-Side Rendering Controller
+ * Provides server-side HTML for NB blocks (star-rating, icon) that have no render callback.
+ * Only active during feed context (do_blocks() calls from feed controllers).
+ */
+require_once VOXEL_FSE_PATH . '/app/controllers/fse-nb-ssr-controller.php';
+
+new \VoxelFSE\Controllers\FSE_NB_SSR_Controller();
+
+/**
  * FSE NectarBlocks Dynamic Tags Controller
  * Injects Voxel dynamic tag attributes into NB blocks and resolves them on render.
  */

@@ -371,6 +371,10 @@ export interface AdvancedListComponentProps {
 	attributes: AdvancedListAttributes;
 	context: 'editor' | 'frontend';
 	postContext?: PostContext | null;
+	/** Template context type for dynamic tag resolution in editor */
+	templateContext?: string;
+	/** Voxel post type for dynamic tag resolution in editor */
+	templatePostType?: string;
 }
 
 /**

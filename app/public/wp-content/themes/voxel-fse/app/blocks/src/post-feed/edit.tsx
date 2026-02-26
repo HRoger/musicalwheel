@@ -74,17 +74,25 @@ export default function Edit({
 		}
 	}, [attributes.blockId, setAttributes]);
 
-	// Inject Voxel Editor Styles
+	// Inject Voxel Editor Styles into the editor iframe
+	// post-feed.css contains carousel nav and card styles that must be in the iframe
 	useEffect(() => {
 		const cssId = 'voxel-post-feed-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
+		const voxelConfig = (window as any).Voxel_Config;
+		const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
+		const cssHref = `${siteUrl}/wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
+
+		const iframe = document.querySelector(
+			'iframe[name="editor-canvas"]'
+		) as HTMLIFrameElement | null;
+		const targetDoc = iframe?.contentDocument ?? document;
+
+		if (!targetDoc.getElementById(cssId)) {
+			const link = targetDoc.createElement('link');
 			link.id = cssId;
 			link.rel = 'stylesheet';
-			const voxelConfig = (window as any).Voxel_Config;
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/post-feed.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
+			link.href = cssHref;
+			targetDoc.head.appendChild(link);
 		}
 	}, []);
 

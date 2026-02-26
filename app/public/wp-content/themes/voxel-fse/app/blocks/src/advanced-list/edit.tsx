@@ -13,6 +13,7 @@ import { __ } from '@wordpress/i18n';
 import { InspectorTabs } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
 import { useExpandedLoopItems } from '../../shared/utils/useExpandedLoopItems';
+import { useTemplateContext, useTemplatePostType } from '../../shared/utils/useTemplateContext';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
 import ContentTab from './inspector/ContentTab';
 import StyleTab from './inspector/StyleTab';
@@ -36,6 +37,10 @@ function generateBlockId(): string {
  */
 export default function Edit({ attributes, setAttributes }: EditProps) {
 	const blockId = attributes.blockId || 'advanced-list';
+
+	// Detect template context for dynamic tag preview resolution
+	const templateContext = useTemplateContext();
+	const templatePostType = useTemplatePostType();
 
 	// Expand items with loop configuration for editor preview
 	const { items: expandedItems } = useExpandedLoopItems({
@@ -82,7 +87,10 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 							label: __('Content', 'voxel-fse'),
 							icon: '\ue92c',
 							render: () => (
-								<ContentTab attributes={attributes} setAttributes={setAttributes} />
+								<ContentTab
+									attributes={attributes}
+									setAttributes={setAttributes}
+								/>
 							),
 						},
 						{
@@ -106,7 +114,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 				{combinedCSS && (
 					<style dangerouslySetInnerHTML={{ __html: combinedCSS }} />
 				)}
-				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" />
+				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" templateContext={templateContext} templatePostType={templatePostType} />
 			</div>
 		</>
 	);

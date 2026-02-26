@@ -245,9 +245,24 @@ export default function AdvancedIconControl({
         },
     ];
 
+    // Determine if the current value is an icon class (not SVG/dynamic/empty)
+    const isIconLibraryValue = normalizedValue.library !== '' &&
+        normalizedValue.library !== 'svg' &&
+        normalizedValue.library !== 'dynamic';
+
+    // Build the full CSS class for icon preview
+    const getIconClassName = (): string => {
+        if (normalizedValue.library === 'icon') {
+            // Selected via Icon Library: value is already the full class (e.g. "las la-eye")
+            return normalizedValue.value;
+        }
+        // From template/Elementor data: library is the pack prefix (e.g. "las"), value is the icon name
+        return `${normalizedValue.library} ${normalizedValue.value}`;
+    };
+
     // Custom preview renderer
     const renderPreview = (previewValue: { url?: string }) => {
-        if (normalizedValue.library === 'icon') {
+        if (isIconLibraryValue) {
             return (
                 <div style={{
                     display: 'flex',
@@ -258,15 +273,10 @@ export default function AdvancedIconControl({
                     minHeight: '100px',
                     color: '#495157',
                 }}>
-                    <i className={previewValue.url} style={{ fontSize: '40px' }} />
+                    <i className={getIconClassName()} style={{ fontSize: '40px' }} />
                 </div>
             );
         }
-        // For SVG/Images, return null (undefined) to let ImageUploadControl render default img
-        // Or explicitly render it to ensure style match if needed.
-        // ImageUploadControl default img style: maxHeight: '150px', objectFit: 'cover'.
-        // Elementor icon style usually 'contain' for SVG?
-        // Let's rely on default for now, or render explicit img:
         return (
             <img
                 src={previewValue.url}
@@ -276,7 +286,7 @@ export default function AdvancedIconControl({
                     width: '100%',
                     height: 'auto',
                     maxHeight: '150px',
-                    objectFit: 'contain', // Changed to contain for SVGs
+                    objectFit: 'contain',
                     padding: '10px',
                 }}
             />

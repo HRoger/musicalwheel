@@ -187,17 +187,30 @@ function getRestUrl(): string {
 }
 
 /**
- * Get the current post ID from page context
- * This is needed because save.tsx doesn't have access to post context
+ * Get the current post ID from page context.
+ * When `container` is provided, checks for a feed card ancestor first
+ * (`.ts-preview[data-post-id]`) so blocks inside Post Feed / Term Feed
+ * cards resolve the correct per-card post ID.
  */
-function getPostIdFromContext(): number | null {
-	// Try to get from Voxel's global context
+function getPostIdFromContext(container?: HTMLElement): number | null {
+	// 1. Check for feed card ancestor (Post Feed / Term Feed cards)
+	if (container) {
+		const feedCard = container.closest<HTMLElement>('.ts-preview[data-post-id]');
+		if (feedCard) {
+			const id = parseInt(feedCard.dataset['postId'] || '', 10);
+			if (!isNaN(id) && id > 0) {
+				return id;
+			}
+		}
+	}
+
+	// 2. Try to get from Voxel's global context
 	const voxelPost = (window as unknown as { voxelCurrentPost?: { id: number } }).voxelCurrentPost;
 	if (voxelPost?.id) {
 		return voxelPost.id;
 	}
 
-	// Try to get from body class (WordPress convention)
+	// 3. Try to get from body class (WordPress convention)
 	const bodyClasses = document.body.className.split(' ');
 	for (const cls of bodyClasses) {
 		if (cls.startsWith('postid-')) {
@@ -208,7 +221,7 @@ function getPostIdFromContext(): number | null {
 		}
 	}
 
-	// Try to get from wp.data (if available)
+	// 4. Try to get from wp.data (if available)
 	const wpData = (window as unknown as { wp?: { data?: { select: (store: string) => { getCurrentPostId?: () => number } } } }).wp;
 	if (wpData?.data?.select) {
 		const postId = wpData.data.select('core/editor')?.getCurrentPostId?.();
@@ -217,7 +230,7 @@ function getPostIdFromContext(): number | null {
 		}
 	}
 
-	// Try to get from closest article element
+	// 5. Try to get from closest article element
 	const article = document.querySelector('article[id^="post-"]');
 	if (article) {
 		const id = parseInt(article.id.replace('post-', ''), 10);
@@ -353,8 +366,9 @@ function ProductPriceWrapper({ attributes, postId }: ProductPriceWrapperProps) {
  * Initialize product price blocks on the page
  */
 function initProductPriceBlocks() {
-	// Find all product price blocks
-	const containers = document.querySelectorAll<HTMLElement>('.vxfse-product-price');
+	// Find all product price block wrappers (outer container from save.tsx).
+	// Use the WP block class to avoid matching inner elements rendered by React.
+	const containers = document.querySelectorAll<HTMLElement>('.wp-block-voxel-fse-product-price');
 
 	containers.forEach((container) => {
 		// Skip if already hydrated
@@ -369,8 +383,8 @@ function initProductPriceBlocks() {
 			return;
 		}
 
-		// Get post ID from vxconfig or page context
-		const postId = vxconfig.postId || getPostIdFromContext();
+		// Get post ID from vxconfig or page context (pass container for feed card detection)
+		const postId = vxconfig.postId || getPostIdFromContext(container);
 		if (!postId) {
 			console.warn('Could not determine post ID for product price block');
 			return;
@@ -407,3 +421,6 @@ if (document.readyState === 'loading') {
 // Support Turbo/PJAX navigation (for single-page app experience)
 window.addEventListener('turbo:load', initProductPriceBlocks);
 window.addEventListener('pjax:complete', initProductPriceBlocks);
+
+// Listen for Voxel markup updates (e.g., Post Feed/Term Feed AJAX card loading)
+document.addEventListener('voxel:markup-update', initProductPriceBlocks);

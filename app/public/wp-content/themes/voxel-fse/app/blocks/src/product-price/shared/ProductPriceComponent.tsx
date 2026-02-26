@@ -168,6 +168,15 @@ export default function ProductPriceComponent({
 		.filter(Boolean)
 		.join(' ');
 
+	// Frontend context: render content directly (no wrapper div).
+	// The outer wrapper already exists from save.tsx / render.php output.
+	// Adding another .vxfse-product-price div would create duplicates
+	// that get re-hydrated by voxel:markup-update.
+	if (context === 'frontend') {
+		return <FrontendContent priceData={priceData} isLoading={isLoading} error={error} vxconfig={vxconfig} />;
+	}
+
+	// Editor context: render with wrapper div for proper styling
 	// Loading state
 	if (isLoading) {
 		return (
@@ -175,13 +184,12 @@ export default function ProductPriceComponent({
 				className={`vxfse-product-price ${visibilityClasses}`.trim()}
 				style={containerStyles as React.CSSProperties}
 			>
-				{/* Vxconfig for frontend re-renders */}
 				<script
 					type="text/json"
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{context === 'editor' && <EmptyPlaceholder />}
+				<EmptyPlaceholder />
 			</div>
 		);
 	}
@@ -198,7 +206,7 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{context === 'editor' && <EmptyPlaceholder />}
+				<EmptyPlaceholder />
 			</div>
 		);
 	}
@@ -215,50 +223,15 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{context === 'editor' && <EmptyPlaceholder />}
+				<EmptyPlaceholder />
 			</div>
 		);
 	}
 
 	// Product not available (out of stock / unavailable / no product configured)
 	if (!priceData.isAvailable) {
-		// "No product configured" - show EmptyPlaceholder in editor, nothing in frontend
 		const isNoProductConfigured = priceData.errorMessage === 'No product configured';
 
-		if (isNoProductConfigured) {
-			// Frontend: render nothing (empty wrapper for hydration)
-			if (context === 'frontend') {
-				return (
-					<div
-						className={`vxfse-product-price ${visibilityClasses}`.trim()}
-						style={containerStyles as React.CSSProperties}
-					>
-						<script
-							type="text/json"
-							className="vxconfig"
-							dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-						/>
-					</div>
-				);
-			}
-
-			// Editor: show EmptyPlaceholder
-			return (
-				<div
-					className={`vxfse-product-price ${visibilityClasses}`.trim()}
-					style={containerStyles as React.CSSProperties}
-				>
-					<script
-						type="text/json"
-						className="vxconfig"
-						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-					/>
-					<EmptyPlaceholder />
-				</div>
-			);
-		}
-
-		// Out of stock / Unavailable - show error message
 		return (
 			<div
 				className={`vxfse-product-price ${visibilityClasses}`.trim()}
@@ -269,10 +242,13 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{/* Voxel HTML: <span class="vx-price no-stock">Out of stock</span> */}
-				<span className="vx-price no-stock">
-					{priceData.errorMessage || 'Unavailable'}
-				</span>
+				{isNoProductConfigured ? (
+					<EmptyPlaceholder />
+				) : (
+					<span className="vx-price no-stock">
+						{priceData.errorMessage || 'Unavailable'}
+					</span>
+				)}
 			</div>
 		);
 	}
@@ -289,12 +265,10 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{/* Voxel HTML: <span class="vx-price">$discount_price / suffix</span> */}
 				<span className="vx-price">
 					{priceData.formattedDiscountPrice}
 					{priceData.suffix}
 				</span>
-				{/* Voxel HTML: <span class="vx-price"><s>$regular_price / suffix</s></span> */}
 				<span className="vx-price">
 					<s>
 						{priceData.formattedRegularPrice}
@@ -316,11 +290,81 @@ export default function ProductPriceComponent({
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 			/>
-			{/* Voxel HTML: <span class="vx-price">$regular_price / suffix</span> */}
 			<span className="vx-price">
 				{priceData.formattedRegularPrice}
 				{priceData.suffix}
 			</span>
 		</div>
+	);
+}
+
+/**
+ * Frontend-only content renderer.
+ * Renders content without a wrapper div since the outer container
+ * (from save.tsx) already provides the .vxfse-product-price wrapper.
+ */
+function FrontendContent({
+	priceData,
+	isLoading,
+	error,
+	vxconfig,
+}: {
+	priceData: ProductPriceData | null;
+	isLoading: boolean;
+	error: string | null;
+	vxconfig: ProductPriceVxConfig;
+}) {
+	const vxconfigScript = (
+		<script
+			type="text/json"
+			className="vxconfig"
+			dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
+		/>
+	);
+
+	if (isLoading || error || !priceData) {
+		return vxconfigScript;
+	}
+
+	if (!priceData.isAvailable) {
+		if (priceData.errorMessage === 'No product configured') {
+			return vxconfigScript;
+		}
+		return (
+			<>
+				{vxconfigScript}
+				<span className="vx-price no-stock">
+					{priceData.errorMessage || 'Unavailable'}
+				</span>
+			</>
+		);
+	}
+
+	if (priceData.hasDiscount) {
+		return (
+			<>
+				{vxconfigScript}
+				<span className="vx-price">
+					{priceData.formattedDiscountPrice}
+					{priceData.suffix}
+				</span>
+				<span className="vx-price">
+					<s>
+						{priceData.formattedRegularPrice}
+						{priceData.suffix}
+					</s>
+				</span>
+			</>
+		);
+	}
+
+	return (
+		<>
+			{vxconfigScript}
+			<span className="vx-price">
+				{priceData.formattedRegularPrice}
+				{priceData.suffix}
+			</span>
+		</>
 	);
 }

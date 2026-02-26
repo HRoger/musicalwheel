@@ -198,7 +198,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 					availableUnits={['px', '%', 'em', 'rem', 'vw', 'custom']}
 					unitAttributeName="contentWidthUnit"
 					customValueAttributeName="contentWidthCustom"
-					showResetButton={true}
+
 				/>
 
 				{/* Min Height - Responsive slider */}
@@ -212,7 +212,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 					availableUnits={['px', '%', 'em', 'rem', 'vh', 'vw', 'custom']}
 					unitAttributeName="minHeightUnit"
 					customValueAttributeName="minHeightCustom"
-					showResetButton={true}
+
 				/>
 
 				{/* Note about 100vh */}
@@ -273,7 +273,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 							min={0}
 							max={200}
 							availableUnits={['px', 'em', '%']}
-							showResetButton={true}
+		
 						/>
 
 						{/* Wrap - Responsive icon buttons */}
@@ -362,7 +362,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 							max={12}
 							availableUnits={['fr', 'px', '%', 'auto']}
 							unitAttributeName="gridColumnsUnit"
-							showResetButton={true}
+		
 						/>
 
 						{/* Grid Rows */}
@@ -375,7 +375,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 							max={12}
 							availableUnits={['fr', 'px', '%', 'auto']}
 							unitAttributeName="gridRowsUnit"
-							showResetButton={true}
+		
 						/>
 
 						{/* Gaps - Linked dual inputs (Column/Row) - same control for Grid */}
@@ -390,7 +390,7 @@ export function LayoutTab({ attributes, setAttributes }: LayoutTabProps): JSX.El
 							min={0}
 							max={200}
 							availableUnits={['px', 'em', '%']}
-							showResetButton={true}
+		
 						/>
 
 						{/* Auto Flow */}

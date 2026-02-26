@@ -30,6 +30,8 @@ import type {
 	VxConfig,
 } from '../types';
 import { POST_DEPENDENT_ACTIONS, ACTIVE_STATE_ACTIONS } from '../types';
+import { useResolvedDynamicTexts } from '../../../shared/utils/useResolvedDynamicText';
+import { useVisibilityEvaluation } from './useVisibilityEvaluation';
 
 /**
  * Share configuration from Voxel's share.js
@@ -514,7 +516,13 @@ function renderIcon(icon: IconValue | null): React.ReactNode {
 	if (icon.library === 'svg') {
 		return <InlineSvg url={icon.value} />;
 	}
-	return <i className={icon.value} aria-hidden="true" />;
+	// Build the full CSS class for the icon.
+	// When library is 'icon', value is already the full class (e.g. "las la-eye").
+	// When library is a pack prefix (e.g. "las", "lar", "lab"), combine with value.
+	const iconClass = icon.library && icon.library !== 'icon' && icon.library !== 'dynamic'
+		? `${icon.library} ${icon.value}`
+		: icon.value;
+	return <i className={iconClass} aria-hidden="true" />;
 }
 
 /**
@@ -661,9 +669,12 @@ interface ActionItemProps {
 	attributes: AdvancedListAttributes;
 	context: 'editor' | 'frontend';
 	postContext?: PostContext | null;
+	templateContext?: string;
+	templatePostType?: string;
+	visibilityResults?: Record<string, boolean>;
 }
 
-function ActionItemComponent({ item, index, attributes, context, postContext }: ActionItemProps) {
+function ActionItemComponent({ item, index, attributes, context, postContext, templateContext, templatePostType, visibilityResults }: ActionItemProps) {
 	// State for popups
 	const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
 	const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
@@ -671,50 +682,92 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isPostDependent = POST_DEPENDENT_ACTIONS.includes(item.actionType);
 	const hasActiveState = ACTIVE_STATE_ACTIONS.includes(item.actionType);
 
-	// Determine if action should be rendered based on context and per-item visibility
-	// 
-	// ARCHITECTURE NOTE:
-	// Per-item visibility rules (rowVisibility, visibilityRules) are evaluated here.
-	// However, full Voxel visibility rule evaluation requires server-side context
-	// (post data, user data, etc.). For client-side:
-	// - rowVisibility='hide' with empty rules = always hide
-	// - rowVisibility='show' with empty rules = always show
-	// - Rules with conditions require server-side evaluation or dedicated API
-	// 
-	// For headless (Next.js), the raw visibility data is in vxconfig for custom evaluation.
-	const shouldRender = useMemo(() => {
-		// In editor, always show all items for preview
-		if (context === 'editor') {
-			return true;
+	// Resolve dynamic tags for editor preview
+	// Collects all text fields that might contain @tags()...@endtags() and resolves them in parallel
+	const resolveOpts = useMemo(() => ({ templateContext, templatePostType }), [templateContext, templatePostType]);
+	const dynamicTexts = useMemo(() => ({
+		text: item.text || '',
+		activeText: item.activeText || '',
+		tooltipText: item.tooltipText || '',
+		activeTooltipText: item.activeTooltipText || '',
+		cartOptsText: item.cartOptsText || '',
+		cartOptsTooltipText: item.cartOptsTooltipText || '',
+		calTitle: item.calTitle || '',
+		calDescription: item.calDescription || '',
+		calLocation: item.calLocation || '',
+		calUrl: item.calUrl || '',
+	}), [item.text, item.activeText, item.tooltipText, item.activeTooltipText,
+		item.cartOptsText, item.cartOptsTooltipText, item.calTitle, item.calDescription,
+		item.calLocation, item.calUrl]);
+	const resolved = useResolvedDynamicTexts(
+		context === 'editor' ? dynamicTexts : {},
+		resolveOpts,
+	);
+	// Use resolved values in editor, raw values on frontend (PHP handles resolution)
+	// When the API resolves to empty (no post context in template editor),
+	// fall back to showing the raw VoxelScript expression as a dimmed preview.
+	const txt = useMemo(() => {
+		if (context !== 'editor') return dynamicTexts;
+		const result = { ...resolved };
+		const rawTexts = dynamicTexts as Record<string, string>;
+		for (const key of Object.keys(result)) {
+			const raw = rawTexts[key] || '';
+			if (!result[key] && raw.includes('@tags()')) {
+				// Strip @tags()/@endtags() wrapper and show the raw expression
+				result[key] = raw.replace(/@tags\(\)/g, '').replace(/@endtags\(\)/g, '').trim();
+			}
 		}
+		return result;
+	}, [context, resolved, dynamicTexts]);
 
-		// Per-item rowVisibility: Basic client-side evaluation
-		// (Full rule evaluation requires server-side Voxel context)
+	// Determine if action should be rendered based on context and per-item visibility
+	//
+	// ARCHITECTURE NOTE (Dual-layer visibility evaluation):
+	//
+	// 1. SERVER-SIDE (render.php): Visibility_Evaluator filters items before React
+	//    hydrates on the frontend. Items that fail are removed from vxconfig JSON.
+	//    This matches Voxel parent's repeater-control.php::_voxel_should_render().
+	//
+	// 2. EDITOR-SIDE (useVisibilityEvaluation hook): REST endpoint evaluates rules
+	//    server-side via POST /voxel-fse/v1/advanced-list/evaluate-visibility and
+	//    returns results to React. This provides live visibility preview in the editor.
+	//
+	// Both layers use the same Visibility_Evaluator::evaluate() PHP class.
+	const shouldRender = useMemo(() => {
 		const hasVisibilityRules = item.visibilityRules && item.visibilityRules.length > 0;
 
-		if (!hasVisibilityRules) {
-			// No rules configured - rowVisibility is the simple toggle
+		// Check visibility rules (applies to both editor and frontend)
+		if (hasVisibilityRules) {
+			if (context === 'editor' && visibilityResults) {
+				// Editor: use results from useVisibilityEvaluation REST call
+				const result = visibilityResults[item.id];
+				if (result === false) {
+					return false;
+				}
+				// result === undefined means evaluation hasn't returned yet — show the item
+			}
+			// Frontend: items with failing rules were already removed by render.php
+			// If the item is still in vxconfig, it passed server-side evaluation.
+		} else {
+			// No rules configured — rowVisibility is a simple toggle
 			// 'hide' with no rules = always hide (unusual but supported)
 			if (item.rowVisibility === 'hide') {
 				return false;
 			}
 		}
-		// Note: When rules ARE present, they would need server-side evaluation
-		// For now, we default to showing (frontend can't evaluate dynamic rules)
-		// TODO: Implement rule evaluation API for client-side consumption
 
 		// For post-dependent actions in frontend, check if we have post context
-		if (isPostDependent && !postContext) {
+		if (context !== 'editor' && isPostDependent && !postContext) {
 			return false;
 		}
 
-		// edit_post requires editability
-		if (item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
+		// edit_post requires editability (frontend only)
+		if (context !== 'editor' && item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
 			return false;
 		}
 
 		return true;
-	}, [context, isPostDependent, postContext, item.actionType, item.rowVisibility, item.visibilityRules]);
+	}, [context, isPostDependent, postContext, item.actionType, item.id, item.rowVisibility, item.visibilityRules, visibilityResults]);
 
 	// Check visibility based on permissions
 	// (Replaces PHP early returns in each action template)
@@ -784,8 +837,8 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		(iconStyles as Record<string, string>)['--ts-icon-color'] = item.customIconColor;
 	}
 
-	// Get tooltip data
-	const tooltipText = item.enableTooltip ? item.tooltipText : undefined;
+	// Get tooltip data (use resolved text in editor)
+	const tooltipText = item.enableTooltip ? txt.tooltipText : undefined;
 
 	// Determine active state for follow/save actions (follow-post-action.php:21, promote-post-action.php:12)
 	const isActive = useMemo(() => {
@@ -1140,13 +1193,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						<div className="ts-action-icon" style={iconStyles}>
 							{renderIcon(item.icon)}
 						</div>
-						{item.text}
+						{txt.text}
 					</span>
 					<span className="ts-reveal">
 						<div className="ts-action-icon" style={iconStyles}>
 							{renderIcon(item.activeIcon)}
 						</div>
-						{item.activeText}
+						{txt.activeText}
 					</span>
 				</>
 			);
@@ -1154,7 +1207,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 
 		// Cart "Select Options" variant uses different icon/text (add-to-cart-action.php:39-41)
 		const displayIcon = isCartSelectOptions ? (item.cartOptsIcon || item.icon) : item.icon;
-		const displayText = isCartSelectOptions ? item.cartOptsText : item.text;
+		const displayText = isCartSelectOptions ? txt.cartOptsText : txt.text;
 
 		return (
 			<>
@@ -1194,25 +1247,25 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 
 	if (isFollowAction) {
 		// Use tooltip-inactive for normal state and tooltip-active for active state
-		if (item.enableTooltip && item.tooltipText) {
-			tooltipAttrs['tooltip-inactive'] = item.tooltipText;
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['tooltip-inactive'] = txt.tooltipText;
 		}
-		if (item.activeEnableTooltip && item.activeTooltipText) {
-			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['tooltip-active'] = txt.activeTooltipText;
 		}
 	} else if (isSelectAddition) {
 		// select-addon.php:6-12 - Uses data-tooltip + data-tooltip-default for normal, data-tooltip-active for active
-		if (item.enableTooltip && item.tooltipText) {
-			tooltipAttrs['data-tooltip'] = item.tooltipText;
-			tooltipAttrs['data-tooltip-default'] = item.tooltipText;
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.tooltipText;
+			tooltipAttrs['data-tooltip-default'] = txt.tooltipText;
 		}
-		if (item.activeEnableTooltip && item.activeTooltipText) {
-			tooltipAttrs['data-tooltip-active'] = item.activeTooltipText;
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['data-tooltip-active'] = txt.activeTooltipText;
 		}
 	} else if (isCartSelectOptions) {
 		// Cart select options variant (add-to-cart-action.php:35-36) uses its own tooltip
-		if (item.cartOptsEnableTooltip && item.cartOptsTooltipText) {
-			tooltipAttrs['data-tooltip'] = item.cartOptsTooltipText;
+		if (item.cartOptsEnableTooltip && txt.cartOptsTooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.cartOptsTooltipText;
 		}
 	} else {
 		// Regular data-tooltip for non-follow actions
@@ -1244,7 +1297,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						{...actionProps}
 						className={actionClasses}
 						style={itemStyles}
-						aria-label={item.text || tooltipText}
+						aria-label={txt.text || tooltipText}
 						role={Tag === 'a' ? undefined : 'button'}
 					>
 						{renderContent()}
@@ -1254,7 +1307,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						<EditStepsPopup
 							editSteps={postContext.editSteps}
 							icon={item.icon}
-							text={item.text}
+							text={txt.text}
 							closeIcon={attributes.closeIcon}
 							isOpen={isEditPopupOpen}
 							onClose={() => setIsEditPopupOpen(false)}
@@ -1288,7 +1341,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				{...actionProps}
 				className={actionClasses}
 				style={itemStyles}
-				aria-label={item.text || tooltipText}
+				aria-label={txt.text || tooltipText}
 				role={Tag === 'a' ? undefined : 'button'}
 			>
 				{renderContent()}
@@ -1304,8 +1357,16 @@ export function AdvancedListComponent({
 	attributes,
 	context,
 	postContext,
+	templateContext,
+	templatePostType,
 }: AdvancedListComponentProps) {
 	const listStyles = buildListStyles(attributes);
+
+	// Evaluate visibility rules for all items (editor: REST call, frontend: server-side in render.php)
+	const visibilityResults = useVisibilityEvaluation(
+		context === 'editor' ? (attributes.items || []) : [],
+		templatePostType || '',
+	);
 
 	// Build vxconfig for re-rendering (Plan C+ pattern)
 	const vxConfig: VxConfig = useMemo(() => ({
@@ -1424,6 +1485,9 @@ export function AdvancedListComponent({
 					attributes={attributes}
 					context={context}
 					postContext={postContext}
+					templateContext={templateContext}
+					templatePostType={templatePostType}
+					visibilityResults={visibilityResults}
 				/>
 			))}
 		</ul>

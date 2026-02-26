@@ -54,8 +54,10 @@ const DEFAULT_ICONS = {
 	noResults: `<svg viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.25 2.75C6.14154 2.75 2 6.89029 2 11.998C2 17.1056 6.14154 21.2459 11.25 21.2459C13.5335 21.2459 15.6238 20.4187 17.2373 19.0475L20.7182 22.5287C21.011 22.8216 21.4859 22.8217 21.7788 22.5288C22.0717 22.2359 22.0718 21.761 21.7789 21.4681L18.2983 17.9872C19.6714 16.3736 20.5 14.2826 20.5 11.998C20.5 6.89029 16.3585 2.75 11.25 2.75ZM3.5 11.998C3.5 7.71905 6.96962 4.25 11.25 4.25C15.5304 4.25 19 7.71905 19 11.998C19 16.2769 15.5304 19.7459 11.25 19.7459C6.96962 19.7459 3.5 16.2769 3.5 11.998Z" fill="currentColor"/></svg>`,
 	leftArrow: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5m0 0l7 7m-7-7l7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 	rightArrow: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m0 0l-7-7m7 7l-7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
-	leftChevron: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15 19l-7-7 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
-	rightChevron: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
+	// Matches Voxel's chevron-left.svg / chevron-right.svg exactly (fill-based)
+	// Voxel CSS: .ts-icon-btn svg { fill: var(--ts-icon-color) } overrides the path fill
+	leftChevron: `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.746 6.00002C10.746 5.69663 10.5632 5.42312 10.2829 5.30707C10.0026 5.19101 9.67996 5.25526 9.4655 5.46986L3.51254 11.4266C3.35184 11.5642 3.25 11.7685 3.25 11.9966V11.9982C3.24959 12.1906 3.32276 12.3831 3.46949 12.53L9.46548 18.5302C9.67994 18.7448 10.0026 18.809 10.2829 18.693C10.5632 18.5769 10.746 18.3034 10.746 18L10.746 12.7466L20.0014 12.7466C20.4156 12.7466 20.7514 12.4108 20.7514 11.9966C20.7514 11.5824 20.4156 11.2466 20.0014 11.2466L10.746 11.2466V6.00002Z" fill="#343C54"/></svg>`,
+	rightChevron: `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5359 5.46986C14.3214 5.25526 13.9988 5.19101 13.7185 5.30707C13.4382 5.42312 13.2554 5.69663 13.2554 6.00002V11.2466L4 11.2466C3.58579 11.2466 3.25 11.5824 3.25 11.9966C3.25 12.4108 3.58579 12.7466 4 12.7466L13.2554 12.7466V18C13.2554 18.3034 13.4382 18.5769 13.7185 18.693C13.9988 18.809 14.3214 18.7448 14.5359 18.5302L20.5319 12.53C20.6786 12.3831 20.7518 12.1905 20.7514 11.9981L20.7514 11.9966C20.7514 11.7685 20.6495 11.5642 20.4888 11.4266L14.5359 5.46986Z" fill="#343C54"/></svg>`,
 	reset: `<svg fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 4v5h.582M19.938 13A8.001 8.001 0 005.217 9.144M4.582 9H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-14.721-3.856M14.42 15H19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
 };
 
@@ -620,9 +622,12 @@ export default function PostFeedComponent({
 				params.set('offset', String(attributes.offset));
 			}
 
-			// Add card template (for server-side rendering)
+			// Add card template ID for server-side rendering
+			// Evidence: voxel/app/controllers/frontend/search/search-controller.php:34
+			// Voxel reads $_GET['__template_id'] and passes as numeric to get_search_results()
+			// 'main' means default template (no param needed), numeric = custom template
 			if (attributes.cardTemplate && attributes.cardTemplate !== 'main') {
-				params.set('template', attributes.cardTemplate);
+				params.set('__template_id', attributes.cardTemplate);
 			}
 
 			// Add __load_markers=yes when a Map widget is connected
@@ -770,6 +775,8 @@ export default function PostFeedComponent({
 					if ((window as any).jQuery) {
 						(window as any).jQuery(document).trigger('voxel:markup-update');
 					}
+					// Also dispatch native CustomEvent so blocks using addEventListener receive it
+					document.dispatchEvent(new CustomEvent('voxel:markup-update'));
 
 					// MAP INTEGRATION: Extract markers from feed DOM and dispatch to Map block
 					// Reference: voxel-search-form.beautified.js:2501-2518 (_updateMarkers)
@@ -1134,30 +1141,35 @@ export default function PostFeedComponent({
 	 * Evidence: themes/voxel/assets/dist/post-feed.css - .ts-feed-nowrap scroll-snap rules
 	 */
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const [canScrollPrev, setCanScrollPrev] = useState(false);
-	const [canScrollNext, setCanScrollNext] = useState(true);
+	const carouselPrevRef = useRef<HTMLAnchorElement>(null);
+	const carouselNextRef = useRef<HTMLAnchorElement>(null);
 
-	// Check scroll state for carousel navigation (on scroll events)
-	// Matches term-feed pattern: update prev/next based on scroll position
-	const checkCarouselScrollState = useCallback(() => {
-		if (!scrollContainerRef.current || attributes.layoutMode !== 'carousel') return;
-		const el = scrollContainerRef.current;
-		setCanScrollPrev(Math.abs(el.scrollLeft) > 10);
-		setCanScrollNext(el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
-	}, [attributes.layoutMode]);
-
-	// Enable/disable nav buttons when cards or item width change
-	// RAF ensures CSS has been applied before measuring
-	// ResizeObserver catches the block becoming visible (e.g. hidden tab → visible)
+	// Manage 'disabled' class on nav buttons entirely via refs.
+	// Matches Voxel carousel-nav.php: frontend starts with 'disabled' (opacity:0),
+	// commons.js removes it if scrollWidth > clientWidth.
+	//
+	// CRITICAL: We CANNOT put 'disabled' in JSX className because React
+	// re-renders would overwrite any ref-based removal. Instead, we
+	// add/remove 'disabled' entirely via DOM manipulation.
 	useEffect(() => {
+		if (context === 'editor') return; // Editor never has disabled class
+		const prev = carouselPrevRef.current;
+		const next = carouselNextRef.current;
+		if (!prev || !next) return;
+
+		// Add disabled initially (matches carousel-nav.php: !is_admin)
+		prev.classList.add('disabled');
+		next.classList.add('disabled');
+
 		const el = scrollContainerRef.current;
 		if (!el || attributes.layoutMode !== 'carousel') return;
 
 		const measureOverflow = () => {
 			if (!el || el.clientWidth < 1) return;
-			const hasOverflow = el.scrollWidth > el.clientWidth;
-			setCanScrollPrev(Math.abs(el.scrollLeft) > 10);
-			setCanScrollNext(hasOverflow && el.scrollLeft + el.clientWidth + 10 < el.scrollWidth);
+			if (el.scrollWidth > el.clientWidth) {
+				prev.classList.remove('disabled');
+				next.classList.remove('disabled');
+			}
 		};
 
 		requestAnimationFrame(measureOverflow);
@@ -1171,15 +1183,13 @@ export default function PostFeedComponent({
 			ro.observe(el);
 		}
 
-		el.addEventListener('scroll', checkCarouselScrollState, { passive: true });
-		window.addEventListener('resize', checkCarouselScrollState);
+		window.addEventListener('resize', measureOverflow);
 
 		return () => {
 			ro?.disconnect();
-			el.removeEventListener('scroll', checkCarouselScrollState);
-			window.removeEventListener('resize', checkCarouselScrollState);
+			window.removeEventListener('resize', measureOverflow);
 		};
-	}, [checkCarouselScrollState, carouselCards.length, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
+	}, [carouselCards.length, context, attributes.layoutMode, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
 
 	/**
 	 * Scroll the carousel — 1:1 port of Voxel's commons.js `l()` function
@@ -1312,8 +1322,9 @@ export default function PostFeedComponent({
 		<ul className="simplify-ul flexify post-feed-nav">
 			<li>
 				<a
+					ref={carouselPrevRef}
 					href="#"
-					className={`ts-icon-btn ts-prev-page${!canScrollPrev ? ' disabled' : ''}`}
+					className="ts-icon-btn ts-prev-page"
 					aria-label={__('Previous', 'voxel-fse')}
 					onClick={handleCarouselPrev}
 				>
@@ -1324,8 +1335,9 @@ export default function PostFeedComponent({
 			</li>
 			<li>
 				<a
+					ref={carouselNextRef}
 					href="#"
-					className={`ts-icon-btn ts-next-page${!canScrollNext ? ' disabled' : ''}`}
+					className="ts-icon-btn ts-next-page"
 					aria-label={__('Next', 'voxel-fse')}
 					onClick={handleCarouselNext}
 				>

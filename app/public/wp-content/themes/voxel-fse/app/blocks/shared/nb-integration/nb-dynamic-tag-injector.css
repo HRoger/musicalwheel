@@ -9,93 +9,86 @@
 
 /* Portal container — sits inline with the label text */
 body .voxel-nb-tag-portal {
-	display: inline-flex;
-	align-items: center;
-	margin-left: 6px;
-	vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    vertical-align: middle;
 }
 
 /* Vertically center the reset-wrap when it contains our portal */
 body .nectar-control-row__reset-wrap:has(> .voxel-nb-tag-portal) {
-	align-items: center;
+    align-items: center;
 }
+
 /*image upload popups*/
 body .nectar-control-row--align-horizontal .nectar-control-row__label {
-	box-sizing: border-box;
-	min-width: 65px;
-	overflow-wrap: anywhere;
-	padding-right: 5px;
-	width: 65px;
+    box-sizing: border-box;
+    min-width: 65px;
+    overflow-wrap: anywhere;
+    padding-right: 5px;
+    width: 65px;
 }
 
 /* Corner placement — absolutely positioned in the top-right of the component area */
-.voxel-nb-tag-portal--corner {
-	position: absolute;
-	top: -25px;
-	right: 6px;
-	margin-left: 0;
-	z-index: 1;
+body .voxel-nb-tag-portal--corner {
+    position: absolute;
+    top: -25px;
+    right: 6px;
+    margin-left: 0;
+    z-index: 10;
 }
 
-/* Image upload fields — position EnableTag inside the upload box */
-body .nectar-component__image-select-simple .voxel-nb-tag-portal--corner {
-	position: absolute;
-	top: 6px;
-	right: 6px;
-	margin-left: 0;
-	z-index: 1;
+body .block-editor-block-inspector__advanced .voxel-nb-tag-portal--corner {
+    top: -3px;
 }
 
 /*rangecontrols*/
 body .nectar-control-row--align-horizontal .voxel-nb-tag-portal--corner {
-	position: absolute;
-	top: 4px;
-	right: 6px;
-	margin-left: 0;
-	z-index: 1;
+    top: 4px;
+
 }
 
-body .block-editor-block-inspector__advanced .voxel-nb-tag-portal--corner {
-	position: absolute;
-	top: -3px;
-	right: 6px;
-	margin-left: 0;
-	z-index: 10;
+/*image upload*/
+body .nectar-component__image-select-simple .voxel-nb-tag-portal--corner,
+body .nectar-component__image-select-simple__upload-button + .voxel-nb-tag-portal--corner,
+body .nectar-component__image-select-simple__image-preview + .voxel-nb-tag-portal--corner {
+    top: -25px;
 }
+
 
 /* Ensure the wrapper doesn't clip the absolutely-positioned button */
 .block-editor-block-inspector__advanced .components-base-control__field {
-	overflow: visible;
+    overflow: visible;
 }
 
 /* ─── Z-Index Value row layout fixes ─── */
 body .nectar__position-control__z-index .nectar-control-row .nectar-control-row__label {
-	align-self: center;
-	min-width: 30px;
-	padding-top: 0;
-	width: 61%;
+    align-self: center;
+    min-width: 30px;
+    padding-top: 0;
+    width: 61%;
 }
 
 body .nectar__position-control__z-index .nectar-control-row .nectar-control-row__label .nectar-control-row__reset-wrap {
-	align-items: center;
-	display: flex;
-	gap: 0;
+    align-items: center;
+    display: flex;
+    gap: 0;
 }
 
 /* Override EnableTagsButton size to fit NB's compact label area */
 .voxel-nb-tag-portal .voxel-fse-enable-tags {
-	width: 20px;
-	height: 20px;
+    width: 20px;
+    height: 20px;
 }
 
 .voxel-nb-tag-portal .voxel-fse-enable-tags__icon {
-	width: 12px;
-	height: 12px;
+    width: 12px;
+    height: 12px;
 }
 
 .voxel-nb-tag-portal .voxel-fse-enable-tags::after {
-	width: 22px;
-	height: 22px;
+    width: 22px;
+    height: 22px;
 }
 
 /* ─── Tag Preview Panel ─── */
@@ -110,31 +103,31 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
  * contain the preview deep inside, which would hide the sub-row itself via the sibling-hide rule.
  */
 .nectar-control-row:has(.voxel-nb-tag-preview) {
-	display: flex !important;
+    display: flex !important;
 }
 
 .nectar-control-row__component:has(> .voxel-nb-tag-preview) {
-	height: auto !important;
+    height: auto !important;
 }
 
 /* The preview replaces the entire component area — same pattern as VX image block */
 .voxel-nb-tag-preview {
-	position: relative;
-	z-index: 2;
-	min-height: 65px;
+    position: relative;
+    z-index: 2;
+    min-height: 65px;
 }
 
 .voxel-nb-tag-preview__inner {
-	background-color: rgb(47, 47, 49);
-	border-radius: 10px;
-	overflow: hidden;
-	padding: 12px;
+    background-color: rgb(47, 47, 49);
+    border-radius: 10px;
+    overflow: hidden;
+    padding: 12px;
 }
 
 /* Hide the original NB control content when a tag preview is active.
  * Uses :has(>) direct child selector to avoid hiding parent-level siblings. */
 .nectar-control-row__component:has(> .voxel-nb-tag-preview) > *:not(.voxel-nb-tag-preview) {
-	display: none !important;
+    display: none !important;
 }
 
 /* Hide the EnableTag portal in the label when a TagPreview is active in the
@@ -142,121 +135,130 @@ body .nectar__position-control__z-index .nectar-control-row .nectar-control-row_
  * the preview in .nectar-control-row__component — they're siblings under
  * .nectar-control-row. */
 .nectar-control-row:has(.nectar-control-row__component > .voxel-nb-tag-preview) .voxel-nb-tag-portal {
-	display: none !important;
+    display: none !important;
 }
 
 /* Body-observer fields (Text Content, CSS Classes, Custom ID) live inside
  * .components-base-control__field. The preview replaces the input area
  * but the label remains visible above it. */
 .components-base-control__field:has(> .voxel-nb-tag-preview) {
-	position: relative;
+    position: relative;
 }
 
 /* Preview flows naturally below the label */
 .components-base-control__field > .voxel-nb-tag-preview {
-	position: relative;
-	z-index: 5;
+    position: relative;
+    z-index: 5;
 }
 
 /* Hide input/textarea when preview is active — but keep label visible */
 .components-base-control__field:has(> .voxel-nb-tag-preview) > textarea,
 .components-base-control__field:has(> .voxel-nb-tag-preview) > input,
 .components-base-control__field:has(> .voxel-nb-tag-preview) > .components-text-control__input {
-	display: none;
+    display: none;
 }
 
 /* Hide the EnableTag button portal when the preview overlay is active */
 .components-base-control__field:has(> .voxel-nb-tag-preview) > .voxel-nb-tag-portal {
-	display: none;
+    display: none;
 }
 
 .voxel-nb-tag-preview__content {
-	color: #fff;
-	font-size: 12px;
-	font-family: inherit;
-	word-break: break-word;
-	display: block;
-	margin-bottom: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-family: inherit;
+    word-break: break-word;
+    display: block;
+    margin-bottom: 8px;
 }
 
 .voxel-nb-tag-preview__divider {
-	height: 1px;
-	background-color: rgba(255, 255, 255, 0.15);
-	margin-bottom: 6px;
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.15);
+    margin-bottom: 6px;
 }
 
 .voxel-nb-tag-preview__actions {
-	display: flex;
+    display: flex;
 }
 
 .voxel-nb-tag-preview__btn {
-	flex: 1;
-	background: transparent;
-	border: none;
-	color: rgba(255, 255, 255, 0.8);
-	font-size: 10px;
-	font-weight: 600;
-	letter-spacing: 0.5px;
-	text-transform: uppercase;
-	cursor: pointer;
-	padding: 6px 0;
-	text-align: left;
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 6px 0;
+    text-align: left;
 }
 
 .voxel-nb-tag-preview__btn--disable {
-	color: rgba(255, 255, 255, 0.5);
-	text-align: right;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: right;
 }
 
 .voxel-nb-tag-preview__btn:hover {
-	color: #fff;
+    color: #fff;
 }
 
 /* ─── Gallery Dialog: EnableTag next to Add Media ─── */
 
+/* Vertically center the Voxel portal + Add Media button in the right controls area */
+.nectar-gallery-editor__grid-controls__right {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
 /* Portal container inside the dialog's controls-right area */
 .nectar-gallery-editor__grid-controls__right .voxel-nb-tag-portal--gallery-dialog {
-	display: inline-flex;
-	align-items: center;
-	margin-right: 8px;
-	margin-left: 0;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+    margin-left: 0;
 }
 
 /* When tag is active, hide the empty grid placeholder and Add Media buttons */
 .image-gallery-modal:has(.voxel-nb-tag-preview) .nectar-gallery-editor__grid__empty {
-	display: none !important;
+    display: none !important;
 }
+
 .image-gallery-modal:has(.voxel-nb-tag-preview) .nectar-gallery-editor__grid-controls__right .nectar-component__button {
-	display: none !important;
+    display: none !important;
 }
 
 /* Tag preview in the top-right controls area of the gallery dialog */
 .nectar-gallery-editor__grid-controls__right > .voxel-nb-tag-preview {
-	display: inline-flex;
-	align-items: center;
-	min-height: auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: auto;
 }
+
 .nectar-gallery-editor__grid-controls__right > .voxel-nb-tag-preview .voxel-nb-tag-preview__inner {
-	min-width: 250px;
-	padding: 8px 12px;
+    min-width: 250px;
+    padding: 8px 12px;
 }
 
 /* Hide EnableTag portal when DynamicTagPopoverPanel is showing */
 .image-gallery-modal:has(.voxel-nb-tag-preview) .voxel-nb-tag-portal--gallery-dialog {
-	display: none;
+    display: none;
 }
 
 /* ─── Voxel Tab in NB Inspector ─── */
 
 /* Remove border-top from tab list */
 body .nectar-blocks-tab-list {
-	border-top: none;
+    border-top: none;
 }
 
 /* Remove borders from 2nd tab */
 body .nectar-blocks-tab-list li:nth-child(2) {
-	border-left: none;
-	border-right: none;
+    border-left: none;
+    border-right: none;
 }
 
 /* Hide NB tab labels — icon-only design matching image 2.
@@ -264,42 +266,42 @@ body .nectar-blocks-tab-list li:nth-child(2) {
  * We hide the text node by setting font-size: 0 on the li
  * and restoring it on the svg child. */
 .nectar-blocks-tab-list li {
-	font-size: 0 !important;
-	gap: 0 !important;
-	padding: 10px 0 !important;
+    font-size: 0 !important;
+    gap: 0 !important;
+    padding: 10px 0 !important;
 }
 
 /* Set tab border-bottom to 1px */
 .nectar-blocks-tab-list {
-	border-bottom-width: 1px;
+    border-bottom-width: 1px;
 }
 
 /* Voxel tab <li> — matches NB's .nectar-blocks-tab-list li styling */
 .nectar-blocks-tab-list li[data-voxel-tab="true"] {
-	align-items: center;
-	border: 0;
-	border-radius: 0;
-	display: flex;
-	flex-direction: column;
-	font-size: 0 !important;
-	font-weight: 500;
-	gap: 0 !important;
-	justify-content: center;
-	line-height: 1.2;
-	margin-bottom: 0;
-	padding: 10px 0 !important;
-	position: relative;
-	text-align: center;
-	transition: all 0.2s ease;
-	cursor: pointer;
-	color: inherit;
-	list-style: none;
-	border-left: none;
+    align-items: center;
+    border: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    font-size: 0 !important;
+    font-weight: 500;
+    gap: 0 !important;
+    justify-content: center;
+    line-height: 1.2;
+    margin-bottom: 0;
+    padding: 10px 0 !important;
+    position: relative;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: inherit;
+    list-style: none;
+    border-left: none;
 }
 
 /* Update tab widths: 4 tabs = 25% each */
 .nectar-blocks-tab-list:has([data-voxel-tab="true"]) li {
-	width: 25% !important;
+    width: 25% !important;
 }
 
 /* Voxel tab icon — match NB's SVG icon size (15px).
@@ -307,44 +309,44 @@ body .nectar-blocks-tab-list li:nth-child(2) {
  * We use an <img>, so we apply a grayscale filter to match NB's
  * default dark gray icon appearance. */
 .nectar-blocks-tab-list li[data-voxel-tab="true"] img {
-	width: 15px;
-	height: 15px;
-	object-fit: contain;
-	transition: all 0.2s ease;
-	/* Convert the Voxel blue logo to match NB's dark gray icon color */
-	filter: brightness(0) saturate(100%) invert(32%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(90%);
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+    transition: all 0.2s ease;
+    /* Convert the Voxel blue logo to match NB's dark gray icon color */
+    filter: brightness(0) saturate(100%) invert(32%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(90%) contrast(90%);
 }
 
 /* Hover state — match NB's #3452ff accent */
 .nectar-blocks-tab-list li[data-voxel-tab="true"]:hover {
-	color: #3452ff;
+    color: #3452ff;
 }
 
 .nectar-blocks-tab-list li[data-voxel-tab="true"]:hover img {
-	filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(4688%) hue-rotate(232deg) brightness(101%) contrast(106%);
+    filter: brightness(0) saturate(100%) invert(22%) sepia(96%) saturate(4688%) hue-rotate(232deg) brightness(101%) contrast(106%);
 }
 
 /* Active indicator — match NB's ::after pattern */
 .nectar-blocks-tab-list li[data-voxel-tab="true"]::after {
-	background-color: #3452ff !important;
-	border-radius: 10px;
-	bottom: 0 !important;
-	content: "";
-	filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.2));
-	height: 2px !important;
-	left: 0 !important;
-	position: absolute;
-	transform: scaleX(0);
-	transition: all 0.4s ease;
-	width: 100%;
+    background-color: #3452ff !important;
+    border-radius: 10px;
+    bottom: 0 !important;
+    content: "";
+    filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.2));
+    height: 2px !important;
+    left: 0 !important;
+    position: absolute;
+    transform: scaleX(0);
+    transition: all 0.4s ease;
+    width: 100%;
 }
 
 .nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected::after {
-	transform: scaleX(1);
+    transform: scaleX(1);
 }
 
 .nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected {
-	color: #3452ff;
+    color: #3452ff;
 }
 
 /*.nectar-blocks-tab-list li[data-voxel-tab="true"].react-tabs__tab--selected img {
@@ -357,17 +359,17 @@ body .nectar-blocks-tab-list li:nth-child(2) {
  * manually toggling react-tabs__tab--selected, which would fight react-tabs.
  */
 .nectar-blocks-tab-list[data-voxel-tab-active="true"] li:not([data-voxel-tab="true"])::after {
-	transform: scaleX(0) !important;
+    transform: scaleX(0) !important;
 }
 
 /* Voxel tab panel container */
 .voxel-nb-tab-panel {
-	display: none;
-	padding: 0;
+    display: none;
+    padding: 0;
 }
 
 .voxel-nb-tab-panel.is-active {
-	display: block;
+    display: block;
 }
 
 /* ─── VoxelTab panel content styling ─── */
@@ -405,40 +407,40 @@ body .nectar-blocks-tab-list li:nth-child(2) {
 
 /* Flex — base flex container */
 .voxel-nb-tab-panel .components-flex {
-	display: flex;
-	align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 /* HStack — horizontal stack (row) */
 .voxel-nb-tab-panel .components-h-stack {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
 
 /* VStack — vertical stack (column) */
 .voxel-nb-tab-panel .components-v-stack {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 /* FlexItem — generic flex child */
 .voxel-nb-tab-panel .components-flex-item {
-	display: block;
+    display: block;
 }
 
 /* FlexBlock — flex child that grows to fill space */
 .voxel-nb-tab-panel .components-flex-block {
-	flex: 1 1 auto;
+    flex: 1 1 auto;
 }
 
 /* InputControlSuffixWrapper — wrapper for suffix icons inside InputBase */
 .voxel-nb-tab-panel .components-input-control-suffix-wrapper {
-	display: flex;
-	align-items: center;
-	pointer-events: none;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
 }
 
 /* ────────────────────────────────────────────────────
@@ -446,61 +448,61 @@ body .nectar-blocks-tab-list li:nth-child(2) {
  * ──────────────────────────────────────────────────── */
 
 .voxel-nb-tab-panel .components-panel__body {
-	border-top: 1px solid #e0e0e0;
-	border-bottom: none;
+    border-top: 1px solid #e0e0e0;
+    border-bottom: none;
 }
 
 .voxel-nb-tab-panel .components-panel__body:first-child {
-	border-top: none;
+    border-top: none;
 }
 
 .voxel-nb-tab-panel .components-panel__body.is-opened {
-	padding: 16px;
+    padding: 16px;
 }
 
 .voxel-nb-tab-panel .components-panel__body > .components-panel__body-title {
-	display: block;
-	font-size: inherit;
-	margin: 0;
-	padding: 0;
+    display: block;
+    font-size: inherit;
+    margin: 0;
+    padding: 0;
 }
 
 .voxel-nb-tab-panel .components-panel__body.is-opened > .components-panel__body-title {
-	margin: -16px -16px 5px;
+    margin: -16px -16px 5px;
 }
 
 .voxel-nb-tab-panel .components-panel__body > .components-panel__body-title:hover {
-	background: #f0f0f0;
-	border: none;
+    background: #f0f0f0;
+    border: none;
 }
 
 .voxel-nb-tab-panel .components-panel__body-toggle.components-button {
-	border: none;
-	box-shadow: none;
-	color: #1e1e1e;
-	font-weight: 500;
-	outline: none;
-	padding: 16px 48px 16px 16px;
-	position: relative;
-	text-align: left;
-	width: 100%;
-	height: auto;
-	transition: background 0.1s ease-in-out;
+    border: none;
+    box-shadow: none;
+    color: #1e1e1e;
+    font-weight: 500;
+    outline: none;
+    padding: 16px 48px 16px 16px;
+    position: relative;
+    text-align: left;
+    width: 100%;
+    height: auto;
+    transition: background 0.1s ease-in-out;
 }
 
 .voxel-nb-tab-panel .components-panel__body-toggle.components-button:focus {
-	border-radius: 0;
-	box-shadow: inset 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
+    border-radius: 0;
+    box-shadow: inset 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
 }
 
 .voxel-nb-tab-panel .components-panel__body-toggle.components-button .components-panel__arrow {
-	color: #1e1e1e;
-	position: absolute;
-	right: 16px;
-	top: 50%;
-	transform: translateY(-50%);
-	fill: currentColor;
-	transition: color 0.1s ease-in-out;
+    color: #1e1e1e;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    fill: currentColor;
+    transition: color 0.1s ease-in-out;
 }
 
 /* ────────────────────────────────────────────────────
@@ -524,110 +526,110 @@ body .nectar-blocks-tab-list li:nth-child(2) {
  * No border here — the backdrop element inside .components-input-control__container
  * provides the border around just the input area, not covering the label. */
 .voxel-nb-tab-panel .components-input-base {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	position: relative;
-	border: none;
-	border-radius: 2px;
-	box-sizing: border-box;
-	min-height: 32px;
-	width: 100%;
-	background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
+    border: none;
+    border-radius: 2px;
+    box-sizing: border-box;
+    min-height: 32px;
+    width: 100%;
+    background: transparent;
 }
 
 /* Label wrapper (FlexItem) — show as block above the input */
 .voxel-nb-tab-panel .components-select-control .components-input-base > .components-flex-item {
-	display: block;
-	padding: 6px 0 6px;
+    display: block;
+    padding: 6px 0 6px;
 }
 
 /* The label inside InputBase — visible as uppercase text */
 .voxel-nb-tab-panel .components-select-control .components-input-control__label {
-	display: block;
-	font-size: 11px;
-	font-weight: 500;
-	line-height: 1.4;
-	text-transform: uppercase;
-	max-width: 100%;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	padding: 0;
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0;
 }
 
 /* Generic input-control__label hidden by default (range control number inputs) */
 .voxel-nb-tab-panel .components-input-control__label {
-	display: none;
+    display: none;
 }
 
 /* Inner container — holds select + suffix + backdrop.
  * position: relative so the absolute backdrop anchors here.
  * White background so the dropdown area has a visible bg. */
 .voxel-nb-tab-panel .components-input-control__container {
-	display: flex;
-	flex: 1 1 0%;
-	position: relative;
-	align-items: center;
-	width: 100%;
-	border-radius: 2px;
-	background: var(--wp-components-color-background, #fff);
+    display: flex;
+    flex: 1 1 0%;
+    position: relative;
+    align-items: center;
+    width: 100%;
+    border-radius: 2px;
+    background: var(--wp-components-color-background, #fff);
 }
 
 /* The actual <select> element */
 .voxel-nb-tab-panel .components-select-control__input {
-	border: none;
-	background: transparent;
-	width: 100%;
-	min-height: 32px;
-	padding: 0 24px 0 8px;
-	font-size: 13px;
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	color: var(--wp-components-color-foreground, #1e1e1e);
-	line-height: normal;
-	-webkit-appearance: none;
-	appearance: none;
-	outline: 0;
-	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-	cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    min-height: 32px;
+    padding: 0 24px 0 8px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    line-height: normal;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: 0;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    cursor: pointer;
 }
 
 /* Suffix — contains the chevron SVG, overlaid on the right */
 .voxel-nb-tab-panel .components-input-control__suffix {
-	position: absolute;
-	right: 4px;
-	top: 50%;
-	transform: translateY(-50%);
-	pointer-events: none;
-	display: flex;
-	align-items: center;
-	line-height: 0;
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    line-height: 0;
 }
 
 .voxel-nb-tab-panel .components-input-control__suffix svg {
-	fill: currentColor;
+    fill: currentColor;
 }
 
 /* Backdrop — provides the border around just the input container area.
  * Positioned absolutely inside .components-input-control__container,
  * so it only wraps the dropdown/input, not the label above. */
 .voxel-nb-tab-panel .components-input-control__backdrop {
-	display: block;
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	border: 1px solid #949494;
-	border-radius: 2px;
-	pointer-events: none;
-	background: transparent;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid #949494;
+    border-radius: 2px;
+    pointer-events: none;
+    background: transparent;
 }
 
 .voxel-nb-tab-panel .components-input-control__container:focus-within .components-input-control__backdrop {
-	border-color: var(--wp-components-color-accent, #3858e9);
-	box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
-	outline: 2px solid transparent;
+    border-color: var(--wp-components-color-accent, #3858e9);
+    box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
+    outline: 2px solid transparent;
 }
 
 /* ────────────────────────────────────────────────────
@@ -648,156 +650,156 @@ body .nectar-blocks-tab-list li:nth-child(2) {
 
 /* Root: horizontal flex container for slider + number input */
 .voxel-nb-tab-panel .components-range-control__root {
-	-webkit-tap-highlight-color: transparent;
-	display: flex;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 8px;
-	padding: 0;
-	position: relative;
-	touch-action: none;
-	width: 100%;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 0;
+    position: relative;
+    touch-action: none;
+    width: 100%;
 }
 
 /* Wrapper: holds the slider, track, and thumb */
 .voxel-nb-tab-panel .components-range-control__wrapper {
-	display: block;
-	flex: 1 1 0%;
-	position: relative;
-	width: 100%;
-	color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
-	height: 30px;
-	min-height: 30px;
+    display: block;
+    flex: 1 1 0%;
+    position: relative;
+    width: 100%;
+    color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+    height: 30px;
+    min-height: 30px;
 }
 
 /* The native <input type="range"> — invisible, sits on top for interaction */
 .voxel-nb-tab-panel .components-range-control__slider {
-	-webkit-appearance: none;
-	appearance: none;
-	background: transparent;
-	box-sizing: border-box;
-	cursor: pointer;
-	display: block;
-	height: 100%;
-	left: 0;
-	margin: 0 -6px;
-	opacity: 0;
-	outline: none;
-	position: absolute;
-	right: 0;
-	top: 0;
-	width: calc(100% + 12px);
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: block;
+    height: 100%;
+    left: 0;
+    margin: 0 -6px;
+    opacity: 0;
+    outline: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: calc(100% + 12px);
 }
 
 /* Rail — the gray background track line */
 .voxel-nb-tab-panel .components-range-control__wrapper > span:first-of-type {
-	background-color: #ddd;
-	left: 0;
-	pointer-events: none;
-	right: 0;
-	display: block;
-	height: 4px;
-	position: absolute;
-	margin-top: 13px;
-	top: 0;
-	border-radius: 9999px;
+    background-color: #ddd;
+    left: 0;
+    pointer-events: none;
+    right: 0;
+    display: block;
+    height: 4px;
+    position: absolute;
+    margin-top: 13px;
+    top: 0;
+    border-radius: 9999px;
 }
 
 /* Track — the colored fill portion */
 .voxel-nb-tab-panel .components-range-control__track {
-	border-radius: 9999px;
-	height: 4px;
-	pointer-events: none;
-	display: block;
-	position: absolute;
-	margin-top: 13px;
-	top: 0;
-	background: currentcolor;
+    border-radius: 9999px;
+    height: 4px;
+    pointer-events: none;
+    display: block;
+    position: absolute;
+    margin-top: 13px;
+    top: 0;
+    background: currentcolor;
 }
 
 /* Thumb — the draggable handle */
 .voxel-nb-tab-panel .components-range-control__thumb-wrapper {
-	align-items: center;
-	display: flex;
-	height: 12px;
-	justify-content: center;
-	margin-top: 9px;
-	outline: 0;
-	pointer-events: none;
-	position: absolute;
-	top: 0;
-	user-select: none;
-	width: 12px;
-	border-radius: 50%;
-	z-index: 3;
-	background-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
-	margin-left: -10px;
-	transform: translateX(4.5px);
+    align-items: center;
+    display: flex;
+    height: 12px;
+    justify-content: center;
+    margin-top: 9px;
+    outline: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    user-select: none;
+    width: 12px;
+    border-radius: 50%;
+    z-index: 3;
+    background-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+    margin-left: -10px;
+    transform: translateX(4.5px);
 }
 
 /* Tooltip above thumb */
 .voxel-nb-tab-panel .components-range-control__tooltip {
-	background: rgba(0, 0, 0, 0.8);
-	border-radius: 2px;
-	color: #fff;
-	display: none;
-	font-size: 12px;
-	min-width: 32px;
-	padding: 4px 8px;
-	pointer-events: none;
-	position: absolute;
-	text-align: center;
-	user-select: none;
-	line-height: 1.4;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 2px;
+    color: #fff;
+    display: none;
+    font-size: 12px;
+    min-width: 32px;
+    padding: 4px 8px;
+    pointer-events: none;
+    position: absolute;
+    text-align: center;
+    user-select: none;
+    line-height: 1.4;
 }
 
 .voxel-nb-tab-panel .components-range-control__wrapper:hover .components-range-control__tooltip {
-	display: block;
+    display: block;
 }
 
 /* Number input section — sits to the right of the slider */
 .voxel-nb-tab-panel .components-range-control__number {
-	flex: 0 0 auto;
-	display: block;
+    flex: 0 0 auto;
+    display: block;
 }
 
 /* Range number InputBase — override column layout back to row, no border */
 .voxel-nb-tab-panel .components-range-control__number .components-input-base {
-	flex-direction: row;
-	align-items: center;
-	border: none;
-	min-height: auto;
-	background: transparent;
+    flex-direction: row;
+    align-items: center;
+    border: none;
+    min-height: auto;
+    background: transparent;
 }
 
 /* The actual number <input> — uses body prefix to beat section 8 specificity.
  * Left-aligned text, visible spin arrows via default appearance. */
 body .voxel-nb-tab-panel .components-range-control__number .components-input-control__input {
-	width: 64px;
-	height: 26px;
-	padding: 0 0 0 12px;
-	text-align: left;
-	border: none;
-	border-radius: 4px;
-	min-height: 26px;
-	font-size: 13px;
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	color: var(--wp-components-color-foreground, #1e1e1e);
-	background: transparent;
-	box-sizing: border-box;
-	-webkit-appearance: auto;
-	appearance: auto;
+    width: 64px;
+    height: 26px;
+    padding: 0 0 0 12px;
+    text-align: left;
+    border: none;
+    border-radius: 4px;
+    min-height: 26px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    background: transparent;
+    box-sizing: border-box;
+    -webkit-appearance: auto;
+    appearance: auto;
 }
 
 body .voxel-nb-tab-panel .components-range-control__number .components-input-control__input:focus {
-	border-color: var(--wp-components-color-accent, #3858e9);
-	box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
-	outline: 2px solid transparent;
+    border-color: var(--wp-components-color-accent, #3858e9);
+    box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
+    outline: 2px solid transparent;
 }
 
 /* Hide suffix (spin buttons) in number input */
 .voxel-nb-tab-panel .components-range-control__number .components-input-control__suffix {
-	display: none;
+    display: none;
 }
 
 /* ────────────────────────────────────────────────────
@@ -816,118 +818,118 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
 
 /* Toggle base field — just remove bottom margin, HStack handles flex */
 .voxel-nb-tab-panel .components-toggle-control .components-base-control__field {
-	margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 /* The toggle switch container */
 .voxel-nb-tab-panel .components-form-toggle {
-	display: inline-block;
-	height: 16px;
-	position: relative;
+    display: inline-block;
+    height: 16px;
+    position: relative;
 }
 
 /* Track — the pill-shaped background */
 .voxel-nb-tab-panel .components-form-toggle .components-form-toggle__track {
-	display: inline-block;
-	height: 16px;
-	position: relative;
-	background-color: #fff;
-	border: 1px solid #949494;
-	border-radius: 8px;
-	box-sizing: border-box;
-	vertical-align: top;
-	width: 32px;
-	overflow: hidden;
-	transition: background-color 0.2s ease, border-color 0.2s ease;
+    display: inline-block;
+    height: 16px;
+    position: relative;
+    background-color: #fff;
+    border: 1px solid #949494;
+    border-radius: 8px;
+    box-sizing: border-box;
+    vertical-align: top;
+    width: 32px;
+    overflow: hidden;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .voxel-nb-tab-panel .components-form-toggle .components-form-toggle__track::after {
-	border-top: 16px solid transparent;
-	box-sizing: border-box;
-	content: "";
-	inset: 0;
-	position: absolute;
-	transition: opacity 0.2s ease;
-	opacity: 0;
+    border-top: 16px solid transparent;
+    box-sizing: border-box;
+    content: "";
+    inset: 0;
+    position: absolute;
+    transition: opacity 0.2s ease;
+    opacity: 0;
 }
 
 /* Thumb — the sliding circle */
 .voxel-nb-tab-panel .components-form-toggle .components-form-toggle__thumb {
-	border-radius: 50%;
-	box-sizing: border-box;
-	display: block;
-	height: 12px;
-	left: 2px;
-	position: absolute;
-	top: 2px;
-	width: 12px;
-	background-color: #1e1e1e;
-	border: 6px solid transparent;
-	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02), 0 3px 3px rgba(0, 0, 0, 0.02), 0 4px 4px rgba(0, 0, 0, 0.01);
-	transition: transform 0.2s ease, background-color 0.2s ease-out;
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: block;
+    height: 12px;
+    left: 2px;
+    position: absolute;
+    top: 2px;
+    width: 12px;
+    background-color: #1e1e1e;
+    border: 6px solid transparent;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02), 0 3px 3px rgba(0, 0, 0, 0.02), 0 4px 4px rgba(0, 0, 0, 0.01);
+    transition: transform 0.2s ease, background-color 0.2s ease-out;
 }
 
 /* Hidden native checkbox */
 .voxel-nb-tab-panel .components-form-toggle input.components-form-toggle__input[type="checkbox"] {
-	border: none;
-	height: 100%;
-	left: 0;
-	margin: 0;
-	opacity: 0;
-	padding: 0;
-	position: absolute;
-	top: 0;
-	width: 100%;
-	z-index: 1;
-	cursor: pointer;
+    border: none;
+    height: 100%;
+    left: 0;
+    margin: 0;
+    opacity: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 1;
+    cursor: pointer;
 }
 
 .voxel-nb-tab-panel .components-form-toggle input.components-form-toggle__input[type="checkbox"]::before {
-	content: "";
+    content: "";
 }
 
 .voxel-nb-tab-panel .components-form-toggle input.components-form-toggle__input[type="checkbox"]:checked {
-	background: none;
+    background: none;
 }
 
 /* Checked state — blue track, white thumb shifted right */
 .voxel-nb-tab-panel .components-form-toggle.is-checked .components-form-toggle__track {
-	background-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
-	border-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+    background-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+    border-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
 }
 
 .voxel-nb-tab-panel .components-form-toggle.is-checked .components-form-toggle__track::after {
-	opacity: 1;
+    opacity: 1;
 }
 
 .voxel-nb-tab-panel .components-form-toggle.is-checked .components-form-toggle__thumb {
-	background-color: #fff;
-	border-width: 0;
-	transform: translateX(16px);
+    background-color: #fff;
+    border-width: 0;
+    transform: translateX(16px);
 }
 
 /* Focus state */
 .voxel-nb-tab-panel .components-form-toggle .components-form-toggle__input:focus + .components-form-toggle__track {
-	box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 2px) #fff, 0 0 0 calc(var(--wp-admin-border-width-focus, 2px) * 2) var(--wp-components-color-accent, #3858e9);
-	outline: 2px solid transparent;
-	outline-offset: 2px;
+    box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 2px) #fff, 0 0 0 calc(var(--wp-admin-border-width-focus, 2px) * 2) var(--wp-components-color-accent, #3858e9);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
 }
 
 /* Toggle label — vertically centered with toggle, proper font size */
 .voxel-nb-tab-panel .components-toggle-control__label {
-	line-height: 16px;
-	cursor: pointer;
-	font-size: 11px;
-	font-weight: 500;
-	text-transform: uppercase;
+    line-height: 16px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
 }
 
 /* Toggle help text */
 .voxel-nb-tab-panel .components-toggle-control__help {
-	display: inline-block;
-	margin-inline-start: 0;
-	font-size: 12px;
-	color: #757575;
+    display: inline-block;
+    margin-inline-start: 0;
+    font-size: 12px;
+    color: #757575;
 }
 
 /* ────────────────────────────────────────────────────
@@ -935,121 +937,121 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
  * ──────────────────────────────────────────────────── */
 
 .voxel-nb-tab-panel .components-button {
-	-webkit-appearance: none;
-	background: none;
-	border: 0;
-	cursor: pointer;
-	display: inline-flex;
-	font-family: inherit;
-	font-size: 13px;
-	margin: 0;
-	align-items: center;
-	border-radius: 2px;
-	box-sizing: border-box;
-	color: var(--wp-components-color-foreground, #1e1e1e);
-	height: 36px;
-	padding: 6px 12px;
-	text-decoration: none;
-	transition: box-shadow 0.1s linear;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: inherit;
+    font-size: 13px;
+    margin: 0;
+    align-items: center;
+    border-radius: 2px;
+    box-sizing: border-box;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    height: 36px;
+    padding: 6px 12px;
+    text-decoration: none;
+    transition: box-shadow 0.1s linear;
 }
 
 .voxel-nb-tab-panel .components-button:hover:not(:disabled, [aria-disabled="true"]) {
-	color: var(--wp-components-color-accent, #3858e9);
+    color: var(--wp-components-color-accent, #3858e9);
 }
 
 .voxel-nb-tab-panel .components-button:focus:not(:disabled) {
-	box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
-	outline: 3px solid transparent;
+    box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
+    outline: 3px solid transparent;
 }
 
 /* Primary */
 .voxel-nb-tab-panel .components-button.is-primary {
-	background: var(--wp-components-color-accent, #3858e9);
-	color: var(--wp-components-color-accent-inverted, #fff);
-	outline: 1px solid transparent;
-	white-space: nowrap;
+    background: var(--wp-components-color-accent, #3858e9);
+    color: var(--wp-components-color-accent-inverted, #fff);
+    outline: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .voxel-nb-tab-panel .components-button.is-primary:hover:not(:disabled) {
-	background: var(--wp-components-color-accent-darker-10, #2145e6);
-	color: var(--wp-components-color-accent-inverted, #fff);
+    background: var(--wp-components-color-accent-darker-10, #2145e6);
+    color: var(--wp-components-color-accent-inverted, #fff);
 }
 
 .voxel-nb-tab-panel .components-button.is-primary:focus:not(:disabled) {
-	box-shadow: inset 0 0 0 1px #fff, 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
+    box-shadow: inset 0 0 0 1px #fff, 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
 }
 
 /* Secondary */
 .voxel-nb-tab-panel .components-button.is-secondary {
-	background: transparent;
-	box-shadow: inset 0 0 0 1px var(--wp-components-color-accent, #3858e9);
-	color: var(--wp-components-color-accent, #3858e9);
-	outline: 1px solid transparent;
-	white-space: nowrap;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--wp-components-color-accent, #3858e9);
+    color: var(--wp-components-color-accent, #3858e9);
+    outline: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .voxel-nb-tab-panel .components-button.is-secondary:hover:not(:disabled, [aria-disabled="true"]) {
-	box-shadow: inset 0 0 0 1px var(--wp-components-color-accent-darker-20, #183ad6);
-	color: var(--wp-components-color-accent-darker-20, #183ad6);
+    box-shadow: inset 0 0 0 1px var(--wp-components-color-accent-darker-20, #183ad6);
+    color: var(--wp-components-color-accent-darker-20, #183ad6);
 }
 
 .voxel-nb-tab-panel .components-button.is-secondary:focus:not(:disabled) {
-	box-shadow: 0 0 0 currentColor inset, 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
+    box-shadow: 0 0 0 currentColor inset, 0 0 0 var(--wp-admin-border-width-focus, 2px) var(--wp-components-color-accent, #3858e9);
 }
 
 /* Tertiary */
 .voxel-nb-tab-panel .components-button.is-tertiary {
-	background: transparent;
-	color: var(--wp-components-color-accent, #3858e9);
-	outline: 1px solid transparent;
-	white-space: nowrap;
+    background: transparent;
+    color: var(--wp-components-color-accent, #3858e9);
+    outline: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .voxel-nb-tab-panel .components-button.is-tertiary:hover:not(:disabled, [aria-disabled="true"]) {
-	color: var(--wp-components-color-accent-darker-20, #183ad6);
+    color: var(--wp-components-color-accent-darker-20, #183ad6);
 }
 
 /* Icon buttons */
 .voxel-nb-tab-panel .components-button.has-icon {
-	justify-content: center;
-	min-width: 36px;
-	padding: 6px;
+    justify-content: center;
+    min-width: 36px;
+    padding: 6px;
 }
 
 .voxel-nb-tab-panel .components-button svg {
-	fill: currentColor;
-	outline: none;
+    fill: currentColor;
+    outline: none;
 }
 
 /* ── Unit Dropdown Button ── */
 /* UnitDropdownButton uses DropdownMenu with a tertiary button.
  * Transparent by default, subtle accent tint on hover (matches WP .is-tertiary:hover). */
 .voxel-nb-tab-panel .e-units-wrapper .components-button {
-	min-width: auto;
-	padding: 2px 6px 4px;
-	height: 24px;
-	font-size: 12px;
-	font-weight: 500;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: transparent;
-	border: none;
-	border-radius: 2px;
+    min-width: auto;
+    padding: 2px 6px 4px;
+    height: 24px;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 2px;
 }
 
 .voxel-nb-tab-panel .e-units-wrapper .components-button:hover:not(:disabled, [aria-disabled="true"], .is-pressed) {
-	background: color-mix(in srgb, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)) 4%, transparent);
-	color: var(--wp-components-color-accent-darker-20, var(--wp-admin-theme-color-darker-20, #183ad6));
+    background: color-mix(in srgb, var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9)) 4%, transparent);
+    color: var(--wp-components-color-accent-darker-20, var(--wp-admin-theme-color-darker-20, #183ad6));
 }
 
 .voxel-nb-tab-panel .e-units-wrapper .components-button svg {
-	display: none;
+    display: none;
 }
 
 /* Custom unit active state — light accent tint */
 .voxel-nb-tab-panel .e-units-wrapper.e-units-custom .components-button {
-	background-color: color-mix(in srgb, var(--wp-components-color-accent, #3858e9) 10%, #f0f0f1);
+    background-color: color-mix(in srgb, var(--wp-components-color-accent, #3858e9) 10%, #f0f0f1);
 }
 
 /* ────────────────────────────────────────────────────
@@ -1058,27 +1060,27 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
 
 /* Base control field — block layout by default */
 .voxel-nb-tab-panel .components-base-control__field {
-	display: block;
-	margin-bottom: 8px;
+    display: block;
+    margin-bottom: 8px;
 }
 
 /* Labels — fix WP uppercase default, set correct size */
 .voxel-nb-tab-panel .components-base-control__label {
-	display: block;
-	margin-bottom: 4px;
-	font-size: 11px;
-	font-weight: 500;
-	line-height: 1.4;
-	text-transform: uppercase;
-	color: var(--wp-components-color-foreground, #1e1e1e);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: var(--wp-components-color-foreground, #1e1e1e);
 }
 
 /* Help text below controls */
 .voxel-nb-tab-panel .components-base-control__help {
-	margin-top: 4px;
-	font-size: 12px;
-	font-style: normal;
-	color: #757575;
+    margin-top: 4px;
+    font-size: 12px;
+    font-style: normal;
+    color: #757575;
 }
 
 /* ────────────────────────────────────────────────────
@@ -1086,36 +1088,36 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
  * ──────────────────────────────────────────────────── */
 
 .voxel-nb-tab-panel .components-text-control__input {
-	background: var(--wp-components-color-background, #fff);
-	border: 1px solid #949494;
-	border-radius: 2px;
-	box-shadow: 0 0 0 transparent;
-	color: var(--wp-components-color-foreground, #1e1e1e);
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	font-size: 13px;
-	height: 32px;
-	line-height: normal;
-	margin: 0;
-	padding: 6px 8px;
-	width: 100%;
-	transition: box-shadow 0.1s linear;
+    background: var(--wp-components-color-background, #fff);
+    border: 1px solid #949494;
+    border-radius: 2px;
+    box-shadow: 0 0 0 transparent;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    height: 32px;
+    line-height: normal;
+    margin: 0;
+    padding: 6px 8px;
+    width: 100%;
+    transition: box-shadow 0.1s linear;
 }
 
 .voxel-nb-tab-panel .components-text-control__input:focus {
-	border-color: var(--wp-components-color-accent, #3858e9);
-	box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
-	outline: 2px solid transparent;
+    border-color: var(--wp-components-color-accent, #3858e9);
+    box-shadow: 0 0 0 0.5px var(--wp-components-color-accent, #3858e9);
+    outline: 2px solid transparent;
 }
 
 .voxel-nb-tab-panel .components-text-control__input::placeholder {
-	color: #949494;
+    color: #949494;
 }
 
 /* 40px default size variant */
 .voxel-nb-tab-panel .components-text-control__input.is-next-40px-default-size {
-	height: 40px;
-	padding-left: 12px;
-	padding-right: 12px;
+    height: 40px;
+    padding-left: 12px;
+    padding-right: 12px;
 }
 
 /* ────────────────────────────────────────────────────
@@ -1128,17 +1130,17 @@ body .voxel-nb-tab-panel .components-range-control__number .components-input-con
 
 .voxel-nb-tab-panel .components-input-base .components-select-control__input,
 .voxel-nb-tab-panel .components-input-base .components-input-control__input {
-	border: none;
-	background: transparent;
-	width: 100%;
-	min-height: 32px;
-	padding: 0 24px 0 8px;
-	font-size: 13px;
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	color: var(--wp-components-color-foreground, #1e1e1e);
-	-webkit-appearance: none;
-	appearance: none;
-	outline: 0;
+    border: none;
+    background: transparent;
+    width: 100%;
+    min-height: 32px;
+    padding: 0 24px 0 8px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--wp-components-color-foreground, #1e1e1e);
+    -webkit-appearance: none;
+    appearance: none;
+    outline: 0;
 }
 
 /* ────────────────────────────────────────────────────

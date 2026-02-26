@@ -260,6 +260,9 @@ async function initBlocks(): Promise<void> {
 				if ((window as any).jQuery) {
 					(window as any).jQuery(document).trigger('voxel:markup-update');
 				}
+
+				// Also dispatch native CustomEvent so blocks using addEventListener receive it
+				document.dispatchEvent(new CustomEvent('voxel:markup-update'));
 			});
 		} catch (error) {
 			console.error('[post-feed] Initialization failed:', error);

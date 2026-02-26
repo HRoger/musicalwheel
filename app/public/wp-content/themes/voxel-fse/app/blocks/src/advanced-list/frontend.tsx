@@ -833,3 +833,6 @@ if (document.readyState === 'loading') {
 // Support Turbo/PJAX navigation
 window.addEventListener('turbo:load', initBlocks);
 window.addEventListener('pjax:complete', initBlocks);
+
+// Listen for Voxel markup updates (e.g., Post Feed/Term Feed AJAX card loading)
+document.addEventListener('voxel:markup-update', initBlocks);

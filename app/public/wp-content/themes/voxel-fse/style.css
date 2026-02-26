@@ -47,23 +47,3 @@ Supports project-specific branding via PROJECT_NAMESPACE constant.
 	position: fixed !important;
 }
 
-/*
- * Carousel Navigation Fix
- * Ensure arrows are visible (but dimmed) even when disabled/no-scroll
- * Fix z-index to prevent click-through to cards
- */
-.post-feed-nav {
-	z-index: 10;
-}
-
-.post-feed-nav .ts-icon-btn.disabled {
-	opacity: 0.4 !important;
-	pointer-events: auto !important;
-	/* Block clicks to underlying elements */
-	cursor: pointer !important;
-}
-
-/* Hide arrows if no results are shown */
-.ts-post-feed:has(.ts-no-posts:not(.hidden)) .post-feed-nav {
-	display: none !important;
-}

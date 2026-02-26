@@ -765,9 +765,18 @@ class REST_API_Controller extends FSE_Base_Controller {
 
 		$currency = \Voxel\get_primary_currency();
 
-		// Get currency config
-		$currency_config = \Voxel\Stripe\Currencies::get( $currency );
-		$currency_symbol = $currency_config['symbol'] ?? $currency;
+		// Get currency symbol via NumberFormatter (Voxel 1.7.6+ removed Stripe\Currencies)
+		$currency_symbol = $currency;
+		if ( class_exists( '\NumberFormatter' ) ) {
+			$fmt = new \NumberFormatter( get_locale(), \NumberFormatter::CURRENCY );
+			$currency_symbol = $fmt->getSymbol( \NumberFormatter::CURRENCY_SYMBOL );
+			// Format a zero amount to extract the actual symbol for this currency
+			$formatted_zero = $fmt->formatCurrency( 0, strtoupper( $currency ) );
+			$stripped = str_replace( [ '0', '.', ',', ' ', "\xC2\xA0" ], '', $formatted_zero );
+			if ( ! empty( $stripped ) ) {
+				$currency_symbol = $stripped;
+			}
+		}
 		$currency_position = apply_filters( 'voxel/currency_position', 'before' );
 
 		// Calculate suffix

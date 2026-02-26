@@ -8,6 +8,7 @@
  * - "voxel-term_card-*" → 'term'
  * - "voxel-user_card-*" → 'user'
  * - "voxel-{post_type}-single" → 'post' with post_type extracted
+ * - "voxel-{post_type}-card"   → 'post' with post_type extracted
  * - Everything else → 'post'
  *
  * @package VoxelFSE
@@ -56,20 +57,24 @@ export function useTemplateContext(): DynamicDataContext {
 /**
  * Extract the Voxel post type from the current template slug.
  *
- * Template slug format: "voxel-fse//voxel-{post_type}-single"
+ * Template slug format: "voxel-fse//voxel-{post_type}-single" or "voxel-fse//voxel-{post_type}-card"
  * Examples:
  * - "voxel-fse//voxel-place-single" → "place"
+ * - "voxel-fse//voxel-place-card"   → "place"
  * - "voxel-fse//voxel-event-single" → "event"
  * - "voxel-fse//voxel-term_card-wzgbmdvy" → undefined (not a post template)
  *
- * @returns The post type string or undefined if not a single post template
+ * @returns The post type string or undefined if not a post template
  */
 export function useTemplatePostType(): string | undefined {
 	return useSelect((select: any) => {
 		const slug = getTemplateSlug(select);
-		// Match pattern: voxel-{post_type}-single (supports hyphens in post type keys)
-		const match = slug.match(/voxel-([a-z0-9_-]+)-single/);
-		if (match) return match[1];
+		// Match both single templates (voxel-{type}-single) and card templates (voxel-{type}-card)
+		// Must NOT match term_card/user_card — those are term/user context, not post
+		const match = slug.match(/voxel-([a-z0-9_-]+)-(?:single|card)/);
+		if (match && !match[1].includes('term_') && !match[1].includes('user_')) {
+			return match[1];
+		}
 		return undefined;
 	}, []) as string | undefined;
 }

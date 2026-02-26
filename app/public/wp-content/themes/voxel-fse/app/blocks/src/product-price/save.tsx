@@ -1,12 +1,12 @@
 /**
  * Product Price Block - Save Component (Plan C+)
  *
- * Outputs static HTML with vxconfig JSON for frontend hydration.
- * This eliminates the need for render.php (server-side PHP rendering).
+ * Returns null for fully dynamic server-side rendering via render.php.
+ * This prevents WordPress block validation errors caused by NectarBlocks
+ * parent containers injecting external inline styles (e.g., align-self:center)
+ * that the save() function cannot predict.
  *
- * The save function outputs:
- * 1. A vxconfig script tag with block configuration
- * 2. A placeholder that will be replaced by React hydration
+ * Deprecated save functions are preserved for migration from older versions.
  *
  * @package VoxelFSE
  */
@@ -20,8 +20,20 @@ interface SaveProps {
 	attributes: ProductPriceAttributes;
 }
 
-function createSaveFn(includePlaceholder: boolean) {
-	return function save({ attributes }: SaveProps) {
+/**
+ * Current save function — returns null (fully dynamic block).
+ * render.php generates all HTML server-side.
+ */
+export default function save() {
+	return null;
+}
+
+// ============================================================================
+// DEPRECATED SAVE FUNCTIONS (for migration from older block versions)
+// ============================================================================
+
+function createDeprecatedSaveFn(includePlaceholder: boolean) {
+	return function deprecatedSave({ attributes }: SaveProps) {
 		// Use shared utility for AdvancedTab + VoxelTab wiring
 		const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 			blockId: (attributes as any).blockId || 'product-price',
@@ -42,11 +54,9 @@ function createSaveFn(includePlaceholder: boolean) {
 		const blockProps = (useBlockProps as any).save({
 			id: advancedProps.elementId,
 			className: advancedProps.className,
-			// Note: style will be merged with styleVars below
 		});
 
 		// Build vxconfig for frontend hydration
-		// This contains all styling information needed to render the component
 		const vxconfig: ProductPriceVxConfig = {
 			priceColor: attributes.priceColor,
 			strikethroughTextColor: attributes.strikethroughTextColor,
@@ -56,8 +66,6 @@ function createSaveFn(includePlaceholder: boolean) {
 			outOfStockColor: attributes.outOfStockColor,
 			typography: attributes.typography,
 			strikethroughTypography: attributes.strikethroughTypography,
-			// Note: postId is not available in save context
-			// It will be determined from page context on frontend
 		};
 
 		// Build CSS variables from attributes for initial render
@@ -103,12 +111,10 @@ function createSaveFn(includePlaceholder: boolean) {
 				{...blockProps}
 				data-block-id={(attributes as any).blockId}
 				style={mergedStyles as React.CSSProperties}
-				// Headless-ready: Visibility rules configuration
 				data-visibility-behavior={(attributes as any).visibilityBehavior || undefined}
 				data-visibility-rules={(attributes as any).visibilityRules?.length
 					? JSON.stringify((attributes as any).visibilityRules)
 					: undefined}
-				// Headless-ready: Loop element configuration
 				data-loop-source={(attributes as any).loopSource || undefined}
 				data-loop-limit={(attributes as any).loopLimit || undefined}
 				data-loop-offset={(attributes as any).loopOffset || undefined}
@@ -171,5 +177,8 @@ function createSaveFn(includePlaceholder: boolean) {
 	};
 }
 
-export default createSaveFn(false);
-export const saveWithPlaceholder = createSaveFn(true);
+/** Deprecated: save without placeholder (v1 - original) */
+export const deprecatedSaveV1 = createDeprecatedSaveFn(false);
+
+/** Deprecated: save with placeholder (v0 - earliest) */
+export const deprecatedSaveWithPlaceholder = createDeprecatedSaveFn(true);

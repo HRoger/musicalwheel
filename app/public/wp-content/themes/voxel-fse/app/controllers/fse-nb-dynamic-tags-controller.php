@@ -636,7 +636,15 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			return $content;
 		}
 
-		$img_tag = '<img src="' . esc_url( $image_url ) . '" alt="" class="voxel-dynamic-icon-image" style="width:100%;height:100%;object-fit:contain;" />';
+		$is_svg = preg_match( '/\.svg(\?|$)/i', $image_url );
+		$img_attrs = 'src="' . esc_url( $image_url ) . '" alt="" class="voxel-dynamic-icon-image"';
+		if ( $is_svg ) {
+			$img_attrs .= ' data-voxel-colored="true"';
+			$img_attrs .= ' style="width:100%;height:100%;-webkit-mask-image:url(' . esc_url( $image_url ) . ');mask-image:url(' . esc_url( $image_url ) . ');"';
+		} else {
+			$img_attrs .= ' style="width:100%;height:100%;object-fit:contain;"';
+		}
+		$img_tag = '<img ' . $img_attrs . ' />';
 
 		// Replace the SVG/icon element inside .nectar-blocks-icon__inner
 		// NB icon block renders: <i class="nectar-component__icon ...">...</i> or an inline SVG
@@ -735,7 +743,34 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			return $content;
 		}
 
-		// Replace <a href> on the lightbox link (attribute-order-independent)
+		// NB Video Lightbox (local mode) stores the video URL inside a data-video JSON attribute
+		// on the <a class="nectar-blocks-video-lightbox__link"> element.
+		// The JSON has: {"source":[{"src":"preview-url.mp4","type":"video/mp4"}],...}
+		// We need to replace the "src" value inside that JSON with the resolved URL.
+		if ( strpos( $content, 'nectar-blocks-video-lightbox__link' ) !== false && strpos( $content, 'data-video=' ) !== false ) {
+			$content = preg_replace_callback(
+				'/data-video=\'([^\']*)\'/s',
+				function ( $match ) use ( $url ) {
+					$json = html_entity_decode( $match[1], ENT_QUOTES, 'UTF-8' );
+					$data = json_decode( $json, true );
+					if ( is_array( $data ) && ! empty( $data['source'] ) && is_array( $data['source'] ) ) {
+						// Determine MIME type from resolved URL
+						$ext  = pathinfo( wp_parse_url( $url, PHP_URL_PATH ) ?: '', PATHINFO_EXTENSION );
+						$mime_map = [ 'mp4' => 'video/mp4', 'webm' => 'video/webm', 'ogg' => 'video/ogg', 'ogv' => 'video/ogg' ];
+						$mime = $mime_map[ strtolower( $ext ) ] ?? 'video/mp4';
+
+						$data['source'][0]['src']  = $url;
+						$data['source'][0]['type'] = $mime;
+					}
+					$new_json = wp_json_encode( $data );
+					return "data-video='" . esc_attr( $new_json ) . "'";
+				},
+				$content,
+				1
+			) ?? $content;
+		}
+
+		// Fallback: also replace <a href> if present (external mode stores href)
 		if ( strpos( $content, 'nectar-blocks-video-lightbox__link' ) !== false ) {
 			$content = preg_replace_callback(
 				'/<a\b([^>]*)>/',
@@ -744,7 +779,9 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 					if ( strpos( $attrs, 'nectar-blocks-video-lightbox__link' ) === false ) {
 						return $match[0];
 					}
-					$attrs = preg_replace( '/\bhref="[^"]*"/', 'href="' . esc_url( $url ) . '"', $attrs, 1 );
+					if ( strpos( $attrs, 'href="' ) !== false ) {
+						$attrs = preg_replace( '/\bhref="[^"]*"/', 'href="' . esc_url( $url ) . '"', $attrs, 1 );
+					}
 					return '<a' . $attrs . '>';
 				},
 				$content,
@@ -752,7 +789,7 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			) ?? $content;
 		}
 
-		// Replace <source src> inside <video>
+		// Replace <source src> inside <video> (if present)
 		$content = $this->replace_source_src( $content, $url );
 
 		return $content;

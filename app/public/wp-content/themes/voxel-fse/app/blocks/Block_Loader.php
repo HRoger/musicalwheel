@@ -253,6 +253,11 @@ class Block_Loader
         // NB child block features: icon size custom property for accordion-section
         add_filter('render_block', [__CLASS__, 'apply_nb_child_block_features'], 10, 2);
 
+        // Force-enqueue viewScripts for blocks used inside card templates
+        // WordPress doesn't auto-enqueue these because the blocks aren't in the page's post content
+        // (they're loaded via AJAX inside Post Feed/Term Feed card templates)
+        add_filter('render_block', [__CLASS__, 'enqueue_card_template_scripts'], 10, 2);
+
         // Output collected block CSS as a single <style> tag in wp_footer.
         // CSS is collected during render_block (above) and flushed once at end of page.
         // NOTE: map and slider blocks are excluded — they keep inline <style> tags
@@ -4770,6 +4775,7 @@ JAVASCRIPT;
         $attributes = $block['attrs'] ?? [];
         $inline_styles = [];
 
+
         // Icon size (accordion-section + button)
         $is_accordion = $block_name === 'nectar-blocks/accordion-section';
         $is_button = $block_name === 'nectar-blocks/button';
@@ -4814,6 +4820,7 @@ JAVASCRIPT;
 
         // Apply inline styles to the first HTML tag
         $style_str = implode( '; ', $inline_styles ) . ';';
+        $block_content = ltrim( $block_content );
         if ( preg_match( '/^(<[^>]+)(>)/s', $block_content, $matches ) ) {
             $tag = $matches[1];
             if ( strpos( $tag, 'style="' ) !== false ) {
@@ -4906,6 +4913,52 @@ JAVASCRIPT;
                 }
             ';
             $block_content = '<style>' . $global_css . '</style>' . $block_content;
+        }
+
+        return $block_content;
+    }
+
+    /**
+     * Force-enqueue viewScripts for blocks commonly used inside card templates.
+     *
+     * WordPress only auto-enqueues a block's viewScript when it detects the block
+     * in the page's post content. Card template blocks (loaded via AJAX by Post Feed
+     * and Term Feed) are invisible to this detection. This filter runs when post-feed
+     * or term-feed is rendered and force-enqueues their child blocks' viewScripts.
+     *
+     * @param string $block_content The block content.
+     * @param array  $block The full block, including name and attributes.
+     * @return string Unmodified block content.
+     */
+    public static function enqueue_card_template_scripts( $block_content, $block ) {
+        static $already_enqueued = false;
+
+        if ( $already_enqueued ) {
+            return $block_content;
+        }
+
+        $block_name = $block['blockName'] ?? '';
+        if ( $block_name !== 'voxel-fse/post-feed' && $block_name !== 'voxel-fse/term-feed' ) {
+            return $block_content;
+        }
+
+        $already_enqueued = true;
+
+        // Blocks commonly used in card templates that need their viewScripts force-enqueued
+        $card_blocks = [
+            'product-price',
+            'advanced-list',
+            'work-hours',
+            'ring-chart',
+            'review-stats',
+            'image',
+        ];
+
+        foreach ( $card_blocks as $name ) {
+            $handle = 'mw-block-' . $name . '-view';
+            if ( wp_script_is( $handle, 'registered' ) && ! wp_script_is( $handle, 'enqueued' ) ) {
+                wp_enqueue_script( $handle );
+            }
         }
 
         return $block_content;

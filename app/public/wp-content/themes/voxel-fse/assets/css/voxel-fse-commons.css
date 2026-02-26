@@ -129,3 +129,26 @@ div.mce-tinymce .mce-btn.mce-active {
     border-top: 1px solid #dcdcde !important;
 }
 
+/**
+ * NectarBlocks columns inside AJAX-rendered card templates
+ *
+ * When card templates are rendered server-side via do_blocks() and injected
+ * as HTML (Post Feed, Term Feed), NectarBlocks columns lack their inline
+ * flex styles. The base NB CSS sets flex-basis:0px, collapsing them to 0 width.
+ * This gives them a sensible default so card content is visible.
+ */
+.ts-preview .wp-block-nectar-blocks-column,
+.ts-term-card .wp-block-nectar-blocks-column,
+.post-feed-grid .wp-block-nectar-blocks-column,
+.term-feed-grid .wp-block-nectar-blocks-column {
+    flex: 1 1 100%;
+}
+
+.ts-preview .wp-block-nectar-blocks-row,
+.ts-term-card .wp-block-nectar-blocks-row,
+.post-feed-grid .wp-block-nectar-blocks-row,
+.term-feed-grid .wp-block-nectar-blocks-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+

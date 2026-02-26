@@ -15,13 +15,12 @@
  * This ensures all responsive controls stay in sync when any one is changed.
  */
 
-import { RangeControl, Button, TextControl } from '@wordpress/components';
+import { RangeControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { useState } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
-import UndoIcon from '../icons/UndoIcon';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
 import { getCurrentDeviceType } from '@shared/utils/deviceType';
@@ -38,7 +37,6 @@ interface ResponsiveRangeControlProps {
 	availableUnits?: UnitType[];
 	units?: UnitType[]; // Alias for availableUnits for backward compatibility
 	unitAttributeName?: string;
-	showResetButton?: boolean;
 	/** When false, hides the header row (label + responsive button). Useful when header is rendered externally. */
 	showHeader?: boolean;
 	/** Attribute name for storing custom CSS value (e.g., 'calc(100vh - 80px)'). Only used when unit is 'custom'. */
@@ -63,7 +61,6 @@ export default function ResponsiveRangeControl({
 	availableUnits,
 	units,
 	unitAttributeName,
-	showResetButton = true,
 	showHeader = true,
 	customValueAttributeName,
 	enableDynamicTags = false,
@@ -347,27 +344,6 @@ export default function ResponsiveRangeControl({
 							</div>
 						)}
 					</div>
-					{showResetButton && (
-						<Button
-							icon={<UndoIcon />}
-							label={__('Reset to default', 'voxel-fse')}
-							onClick={() => setValue(undefined)}
-							variant="tertiary"
-							size="small"
-							style={{
-								marginTop: '0',
-								color: 'var(--vxfse-accent-color, #3858e9)',
-								padding: '4px',
-								minWidth: 'auto',
-								width: '32px',
-								height: '32px',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								flexShrink: 0,
-							}}
-						/>
-					)}
 				</div>
 			)}
 

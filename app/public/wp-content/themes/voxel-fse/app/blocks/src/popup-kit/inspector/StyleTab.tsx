@@ -198,7 +198,6 @@ export function StyleTab({
 					step={1}
 					availableUnits={['px', '%']}
 					unitAttributeName="phAvatarRadiusUnit"
-					showResetButton={true}
 				/>
 			</AccordionPanel>
 
