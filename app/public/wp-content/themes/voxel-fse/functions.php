@@ -783,6 +783,258 @@ add_action('wp_enqueue_scripts', 'voxel_fse_disable_global_styles', 100);
 require_once VOXEL_FSE_PATH . '/clear-block-cache.php';
 
 /**
+ * Inject Voxel single post template into WordPress's native template hierarchy.
+ *
+ * WordPress resolves single post pages via: single-{post_type}-{slug} → single-{post_type} → single → index
+ * The FSE child theme stores Voxel post type templates as wp_template posts with slug "voxel-{post_type}-single".
+ * This filter injects that slug at position 0 so WordPress finds it natively — no per-post
+ * "Post Attributes" template selection required.
+ *
+ * Visibility rules for custom single_post templates are evaluated here too, falling back
+ * to the base single template when no custom template matches.
+ *
+ * @since 1.0.3
+ */
+add_filter( 'single_template_hierarchy', function ( array $templates ): array {
+	$post = get_queried_object();
+	if ( ! $post instanceof \WP_Post ) {
+		return $templates;
+	}
+
+	$post_type = \Voxel\Post_Type::get( $post->post_type );
+	if ( ! ( $post_type && $post_type->is_managed_by_voxel() ) ) {
+		return $templates;
+	}
+
+	// Evaluate custom single_post templates (with visibility rules) first.
+	$custom_templates = $post_type->templates->get_custom_templates()['single_post'] ?? [];
+	foreach ( $custom_templates as $tpl ) {
+		if ( ! empty( $tpl['visibility_rules'] ) && \Voxel\evaluate_visibility_rules( $tpl['visibility_rules'] ) ) {
+			// Custom template matched — its wp_template slug uses unique_key.
+			$unique_key = $tpl['unique_key'] ?? null;
+			if ( $unique_key ) {
+				array_unshift( $templates, 'voxel-' . $post_type->get_key() . '-single-' . $unique_key );
+			}
+			return $templates;
+		}
+	}
+
+	// Fall back to base single template: slug is "voxel-{post_type_key}-single".
+	array_unshift( $templates, 'voxel-' . $post_type->get_key() . '-single' );
+
+	return $templates;
+} );
+
+/**
+ * Inject Voxel archive template into WordPress's native template hierarchy.
+ *
+ * WordPress resolves post type archive pages via: archive-{post_type} → archive → index
+ * The FSE child theme stores Voxel archive templates as wp_template posts with slug "voxel-{post_type}-archive".
+ * This filter injects that slug at position 0 so the Voxel-designed archive page
+ * (with post feed, search form, etc.) renders automatically.
+ *
+ * @since 1.0.3
+ */
+add_filter( 'archive_template_hierarchy', function ( array $templates ): array {
+	if ( ! is_post_type_archive() ) {
+		return $templates;
+	}
+
+	$queried = get_queried_object();
+	if ( ! $queried instanceof \WP_Post_Type ) {
+		return $templates;
+	}
+
+	$post_type = \Voxel\Post_Type::get( $queried->name );
+	if ( ! ( $post_type && $post_type->is_managed_by_voxel() ) ) {
+		return $templates;
+	}
+
+	// Slug pattern: "voxel-{post_type_key}-archive"
+	array_unshift( $templates, 'voxel-' . $post_type->get_key() . '-archive' );
+
+	return $templates;
+} );
+
+/**
+ * Inject Voxel term template into WordPress's native template hierarchy.
+ *
+ * WordPress resolves taxonomy pages via: taxonomy-{tax}-{term} → taxonomy-{tax} → taxonomy → archive → index
+ * Voxel stores term templates as wp_template posts with slugs like "voxel-term_single-{key}".
+ * This filter injects the correct Voxel slug at position 0 so WordPress finds it natively
+ * through the FSE pipeline — no taxonomy.php workaround needed.
+ *
+ * @since 1.0.3
+ */
+add_filter( 'taxonomy_template_hierarchy', function ( array $templates ): array {
+	$term = get_queried_object();
+	if ( ! $term instanceof \WP_Term ) {
+		return $templates;
+	}
+
+	// Only handle Voxel-managed taxonomies
+	$voxel_term = \Voxel\Term::get( $term );
+	$taxonomy   = $voxel_term ? $voxel_term->taxonomy : null;
+	if ( ! ( $taxonomy && $taxonomy->is_managed_by_voxel() ) ) {
+		return $templates;
+	}
+
+	$custom_templates = \Voxel\get_custom_templates()['term_single'] ?? [];
+	if ( empty( $custom_templates ) ) {
+		return $templates;
+	}
+
+	// Resolve which template to use: first one with passing visibility rules,
+	// or fall back to the first available template (mirrors taxonomy.php behavior).
+	$matched = null;
+	foreach ( $custom_templates as $tpl ) {
+		if ( ! empty( $tpl['visibility_rules'] ) && \Voxel\evaluate_visibility_rules( $tpl['visibility_rules'] ) ) {
+			$matched = $tpl;
+			break;
+		}
+	}
+
+	if ( ! $matched ) {
+		$matched = $custom_templates[0];
+	}
+
+	$unique_key = $matched['unique_key'] ?? null;
+	if ( ! $unique_key ) {
+		return $templates;
+	}
+
+	// Build the slug WordPress will search for in get_block_templates()
+	$slug = 'voxel-term_single-' . $unique_key;
+
+	// Inject at position 0 — highest priority in the hierarchy
+	array_unshift( $templates, $slug );
+
+	return $templates;
+} );
+
+/**
+ * Wrap Voxel Design Menu templates with header/footer template parts.
+ *
+ * Templates created via Voxel's Design Menu (term_single, header, footer, etc.)
+ * store only body content — no header/footer template-part wrappers. When WordPress
+ * resolves these templates natively through the FSE pipeline, we need to wrap them
+ * so the full page structure renders correctly.
+ *
+ * @since 1.0.3
+ */
+add_filter( 'get_block_templates', function ( array $query_result ): array {
+	$theme  = get_stylesheet();
+	$header = '<!-- wp:template-part {"slug":"header","tagName":"header","theme":"' . $theme . '"} /-->';
+	$footer = '<!-- wp:template-part {"slug":"footer","tagName":"footer","theme":"' . $theme . '"} /-->';
+
+	foreach ( $query_result as $template ) {
+		// Wrap Voxel Design Menu templates that store only body content:
+		// - voxel-term_single-*      (taxonomy term pages)
+		// - voxel-{post_type}-single (single post pages)
+		// - voxel-{post_type}-archive (post type archive pages)
+		$is_voxel_template = (
+			strpos( $template->slug, 'voxel-term_single' ) === 0
+			|| preg_match( '/^voxel-[a-z0-9_]+-(single|archive)/', $template->slug )
+		);
+
+		if ( ! $is_voxel_template ) {
+			continue;
+		}
+
+		// Skip if already has header template part
+		if ( strpos( $template->content, '"slug":"header"' ) !== false ) {
+			continue;
+		}
+
+		$template->content = $header . "\n\n" . trim( $template->content ) . "\n\n" . $footer;
+	}
+
+	return $query_result;
+}, 10, 1 );
+
+/**
+ * NectarBlocks null-safety workaround for taxonomy/archive/404 pages.
+ *
+ * NectarBlocks' frontend_render_styles() (priority 99) has two null-safety issues:
+ * 1. Line 668: accesses $post->post_content without null check.
+ * 2. Line 744: accesses $block_template->wp_id without null check — get_block_template()
+ *    returns null when the template exists only as a file and not in the database.
+ *
+ * Fix #1: Provide a stub $post object on pages where $post is null.
+ * Fix #2: Use pre_get_block_template filter to return a stub object instead of null.
+ *
+ * @since 1.0.3
+ * @since 1.0.4 Added get_block_template() null-safety (line 744 fix).
+ */
+add_action( 'wp_enqueue_scripts', function () {
+	// Fix #1: Stub $post for pages where it's null.
+	global $post;
+	if ( $post === null && ( is_tax() || is_category() || is_tag() || is_archive() || is_author() || is_404() ) ) {
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		$post = (object) [ 'ID' => 0, 'post_content' => '' ];
+	}
+}, 98 );
+
+/**
+ * Prevent NectarBlocks crash when get_block_template() returns null.
+ *
+ * NB's Render.php line 744 accesses $block_template->wp_id without a null check.
+ * get_block_template() returns null when the current template only exists as a theme
+ * file and hasn't been saved/customized in the database (e.g., 404 pages, fresh templates).
+ *
+ * Strategy: Unhook NB's frontend_render_styles, re-add a wrapper that suppresses
+ * only the specific "Attempt to read property on null" warning from NB's Render.php.
+ * This is safe because the downstream code (get_dynamic_block_css) handles null $post_id
+ * gracefully by returning empty CSS.
+ *
+ * @since 1.0.4
+ */
+add_action( 'wp_enqueue_scripts', function () {
+	if ( ! wp_is_block_theme() ) {
+		return;
+	}
+
+	global $wp_filter;
+	if ( ! isset( $wp_filter['wp_enqueue_scripts']->callbacks[99] ) ) {
+		return;
+	}
+
+	$render_instance = null;
+	foreach ( $wp_filter['wp_enqueue_scripts']->callbacks[99] as $callback ) {
+		if ( is_array( $callback['function'] )
+			&& is_object( $callback['function'][0] )
+			&& $callback['function'][0] instanceof \Nectar\Render\Render
+			&& $callback['function'][1] === 'frontend_render_styles'
+		) {
+			$render_instance = $callback['function'][0];
+			break;
+		}
+	}
+
+	if ( ! $render_instance ) {
+		return;
+	}
+
+	remove_action( 'wp_enqueue_scripts', [ $render_instance, 'frontend_render_styles' ], 99 );
+
+	add_action( 'wp_enqueue_scripts', function () use ( $render_instance ) {
+		set_error_handler( function ( $errno, $errstr, $errfile ) {
+			// Suppress only "Attempt to read property on null" from NB's Render.php.
+			if ( strpos( $errfile, 'nectar-blocks' . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'Render' . DIRECTORY_SEPARATOR . 'Render.php' ) !== false
+				&& strpos( $errstr, 'Attempt to read property' ) !== false
+			) {
+				return true;
+			}
+			return false;
+		}, E_WARNING );
+
+		$render_instance->frontend_render_styles();
+
+		restore_error_handler();
+	}, 99 );
+}, 98 );
+
+/**
  * Verify FSE default templates on theme activation
  * 
  * WordPress automatically discovers templates from the templates/ directory.

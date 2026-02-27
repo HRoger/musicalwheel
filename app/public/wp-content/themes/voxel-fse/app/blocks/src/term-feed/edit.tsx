@@ -91,10 +91,18 @@ export default function Edit({
 	setAttributes,
 	clientId,
 }: EditProps) {
-	// State for dynamic options
-	const [taxonomies, setTaxonomies] = useState<TaxonomyOption[]>([]);
-	const [postTypes, setPostTypes] = useState<PostTypeOption[]>([]);
-	const [cardTemplates, setCardTemplates] = useState<CardTemplateOption[]>([]);
+	// Read inline editor config (injected by Block_Loader::inject_editor_config_data)
+	// Eliminates REST API spinners for inspector dropdowns
+	const inlineConfig = (window as any).__voxelFseEditorConfig?.termFeed as {
+		taxonomies?: TaxonomyOption[];
+		postTypes?: PostTypeOption[];
+		cardTemplates?: CardTemplateOption[];
+	} | undefined;
+
+	// State for dynamic options — pre-populate from inline config if available
+	const [taxonomies, setTaxonomies] = useState<TaxonomyOption[]>(inlineConfig?.taxonomies || []);
+	const [postTypes, setPostTypes] = useState<PostTypeOption[]>(inlineConfig?.postTypes || []);
+	const [cardTemplates, setCardTemplates] = useState<CardTemplateOption[]>(inlineConfig?.cardTemplates || []);
 	const [terms, setTerms] = useState<TermData[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -130,8 +138,15 @@ export default function Edit({
 		}
 	}, []);
 
-	// Fetch taxonomies on mount
+	// Fetch taxonomies on mount (skip if inline data available)
 	useEffect(() => {
+		if (inlineConfig?.taxonomies?.length) {
+			// Set default taxonomy if not set (same logic as REST path)
+			if (!attributes.taxonomy && inlineConfig.taxonomies.length > 0) {
+				setAttributes({ taxonomy: inlineConfig.taxonomies[0].key });
+			}
+			return;
+		}
 		apiFetch({
 			path: '/voxel-fse/v1/term-feed/taxonomies',
 		})
@@ -146,10 +161,12 @@ export default function Edit({
 			.catch((err) => {
 				console.error('Failed to fetch taxonomies:', err);
 			});
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// Fetch post types on mount
+	// Fetch post types on mount (skip if inline data available)
 	useEffect(() => {
+		if (inlineConfig?.postTypes?.length) return;
 		apiFetch({
 			path: '/voxel-fse/v1/term-feed/post-types',
 		})
@@ -162,8 +179,9 @@ export default function Edit({
 			});
 	}, []);
 
-	// Fetch card templates on mount
+	// Fetch card templates on mount (skip if inline data available)
 	useEffect(() => {
+		if (inlineConfig?.cardTemplates?.length) return;
 		apiFetch({
 			path: '/voxel-fse/v1/term-feed/card-templates',
 		})

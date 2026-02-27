@@ -512,14 +512,21 @@ async function fetchTerms(config: TermFeedVxConfig): Promise<TermData[]> {
 interface TermFeedWrapperProps {
 	config: TermFeedVxConfig;
 	cssSelector: string;
+	inlineTerms?: TermData[] | null;
 }
 
-function TermFeedWrapper({ config, cssSelector }: TermFeedWrapperProps) {
-	const [terms, setTerms] = useState<TermData[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+function TermFeedWrapper({ config, cssSelector, inlineTerms }: TermFeedWrapperProps) {
+	// If inline terms were injected server-side, use them immediately (no spinner)
+	const [terms, setTerms] = useState<TermData[]>(inlineTerms ?? []);
+	const [isLoading, setIsLoading] = useState(inlineTerms == null);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		// Skip REST fetch if data was already injected server-side
+		if (inlineTerms != null) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadTerms() {
@@ -550,7 +557,7 @@ function TermFeedWrapper({ config, cssSelector }: TermFeedWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [config]);
+	}, [config, inlineTerms]);
 
 	// Dispatch voxel:markup-update after terms are rendered so child blocks
 	// inside term card templates (e.g., product-price, advanced-list) can hydrate
@@ -604,6 +611,37 @@ function initTermFeeds() {
 			return;
 		}
 
+		// Read server-injected hydration data (vxconfig-hydrate) if available.
+		// Block_Loader::inject_term_feed_config() injects this at PHP render time
+		// so we can skip the REST API round-trip and show content immediately.
+		let inlineTerms: TermData[] | null = null;
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		if (hydrateScript?.textContent) {
+			try {
+				const hydrated = JSON.parse(hydrateScript.textContent);
+				if (Array.isArray(hydrated.terms)) {
+					inlineTerms = hydrated.terms as TermData[];
+
+					// Inject styles that were captured server-side during card rendering
+					if (hydrated.styles) {
+						const styleContainer = document.getElementById('vx-assets-cache') || document.head;
+						const temp = document.createElement('div');
+						temp.innerHTML = hydrated.styles;
+						Array.from(temp.children).forEach((el) => {
+							if (el instanceof HTMLStyleElement || el instanceof HTMLLinkElement) {
+								const id = el.id || (el as HTMLLinkElement).href;
+								if (!id || !document.getElementById(id)) {
+									styleContainer.appendChild(el);
+								}
+							}
+						});
+					}
+				}
+			} catch (_e) {
+				// Fall back to REST fetch
+			}
+		}
+
 		// Extract unique CSS selector from container classes (e.g., '.voxel-fse-term-feed-{uuid}')
 		const uniqueClass = Array.from(container.classList).find(
 			(cls) => cls.startsWith('voxel-fse-term-feed-') && cls !== 'voxel-fse-term-feed'
@@ -616,7 +654,7 @@ function initTermFeeds() {
 
 		// Create React root and render
 		const root = createRoot(container);
-		root.render(<TermFeedWrapper config={config} cssSelector={cssSelector} />);
+		root.render(<TermFeedWrapper config={config} cssSelector={cssSelector} inlineTerms={inlineTerms} />);
 	});
 }
 

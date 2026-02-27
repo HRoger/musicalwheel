@@ -152,3 +152,15 @@ div.mce-tinymce .mce-btn.mce-active {
     flex-wrap: wrap;
 }
 
+/**
+ * Term feed card link wrapper
+ *
+ * Term feed items use <a class="ts-preview"> for clickable cards.
+ * Reset link styling so card content inherits normal text colors.
+ */
+a.ts-preview {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+

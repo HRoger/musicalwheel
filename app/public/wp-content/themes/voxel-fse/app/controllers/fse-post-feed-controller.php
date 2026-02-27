@@ -861,4 +861,273 @@ class FSE_Post_Feed_Controller extends FSE_Base_Controller {
 
 	/** @var int|null Tracks the wp_id of the resolved FSE card template */
 	private ?int $fse_template_wp_id = null;
+
+	/**
+	 * Generate frontend hydration config for server-side rendering.
+	 *
+	 * Called at PHP render time (via Block_Loader) to inject pre-rendered post cards
+	 * into the page HTML, eliminating the AJAX round-trip on initial load.
+	 *
+	 * Mirrors the term-feed SSR pattern: term-feed uses generate_frontend_config()
+	 * to render cards via do_blocks() at PHP time. This does the same for posts.
+	 *
+	 * NOTE: We do NOT use Elementor's print_template(). All card rendering uses
+	 * do_blocks() with FSE block templates (e.g., voxel-place-card).
+	 *
+	 * @param array $attributes Block attributes from save.tsx
+	 * @return array|null Hydration data or null on failure
+	 */
+	public static function generate_frontend_config( array $attributes ): ?array {
+		try {
+			if ( ! class_exists( '\Voxel\Post_Type' ) ) {
+				return null;
+			}
+
+			$source        = $attributes['source'] ?? 'custom-query';
+			$post_type_key = $attributes['postType'] ?? '';
+			$per_page      = absint( $attributes['postsPerPage'] ?? 12 );
+			$card_template = $attributes['cardTemplate'] ?? 'main';
+			$offset_attr   = absint( $attributes['offset'] ?? 0 );
+			$exclude_str   = $attributes['excludePosts'] ?? '';
+			$priority_filter = (bool) ( $attributes['priorityFilter'] ?? false );
+			$priority_min  = absint( $attributes['priorityMin'] ?? 0 );
+			$priority_max  = absint( $attributes['priorityMax'] ?? 0 );
+			$display_details = (bool) ( $attributes['displayDetails'] ?? false );
+
+			// For search-form source, determine post type from linked Search Form
+			if ( $source === 'search-form' ) {
+				// If postType is empty, try to resolve from linked search form
+				if ( empty( $post_type_key ) ) {
+					$search_form_id = $attributes['searchFormId'] ?? '';
+					$post_type_key = self::resolve_search_form_post_type( $search_form_id );
+				}
+				if ( empty( $post_type_key ) ) {
+					return null;
+				}
+			}
+
+			// archive mode uses the current queried object
+			if ( $source === 'archive' ) {
+				if ( empty( $post_type_key ) ) {
+					return null;
+				}
+			}
+
+			// Need a post type for all modes except manual (which also needs one)
+			if ( empty( $post_type_key ) ) {
+				return null;
+			}
+
+			$post_type = \Voxel\Post_Type::get( $post_type_key );
+			if ( ! $post_type ) {
+				return null;
+			}
+
+			$instance = new self();
+
+			// Get FSE card template content
+			$template_id = null;
+			if ( $card_template && $card_template !== 'main' && is_numeric( $card_template ) ) {
+				$template_id = (int) $card_template;
+			}
+			$fse_template_content = $instance->get_fse_card_template_content( $post_type, $template_id );
+
+			if ( ! $fse_template_content ) {
+				return null; // No FSE template found — fall back to AJAX
+			}
+
+			// Build query args
+			$args = [];
+			$args['type'] = $post_type->get_key();
+
+			// Handle filters for search-filters source
+			if ( $source === 'search-filters' ) {
+				$filter_list = $attributes['filters'] ?? [];
+				if ( is_array( $filter_list ) ) {
+					foreach ( $filter_list as $filter_config ) {
+						$filter_key = $filter_config['filter'] ?? $filter_config['ts_choose_filter'] ?? null;
+						if ( ! $filter_key ) continue;
+
+						$filter = $post_type->get_filter( $filter_key );
+						if ( ! $filter ) continue;
+
+						$controls = [];
+						$elementor_controls = $filter->get_elementor_controls();
+						foreach ( $elementor_controls as $control_key => $control_def ) {
+							$full_key = $control_def['full_key'] ?? sprintf( '%s:%s', $filter->get_key(), $control_key );
+							$value = $filter_config[ $full_key ] ?? $filter_config[ $control_key ] ?? null;
+							$controls[ $control_key ] = $value;
+						}
+
+						$filter->set_elementor_config( $controls );
+						$filter_value = $filter->get_default_value_from_elementor( $controls );
+						if ( $filter_value !== null ) {
+							$args[ $filter->get_key() ] = $filter_value;
+						}
+					}
+				}
+			}
+
+			// Handle manual selection
+			if ( $source === 'manual' ) {
+				$manual_ids = $attributes['manualPostIds'] ?? [];
+				if ( ! empty( $manual_ids ) ) {
+					$args['post__in'] = is_array( $manual_ids )
+						? array_filter( array_map( 'absint', $manual_ids ) )
+						: array_filter( array_map( 'absint', explode( ',', $manual_ids ) ) );
+				}
+				if ( empty( $args['post__in'] ?? [] ) ) {
+					return [
+						'html'         => '',
+						'hasResults'   => false,
+						'hasPrev'      => false,
+						'hasNext'      => false,
+						'totalCount'   => 0,
+						'displayCount' => '0',
+						'styles'       => '',
+					];
+				}
+			}
+
+			// Exclusions
+			$exclude = array_filter( array_map( 'absint', explode( ',', $exclude_str ) ) );
+
+			// Priority filter
+			$priority_min_val = $priority_filter ? $priority_min : null;
+			$priority_max_val = $priority_filter ? $priority_max : null;
+
+			// Query posts
+			$limit = $per_page > 0 ? $per_page : 10;
+			$args['limit'] = $limit + 1; // +1 for next page detection
+
+			if ( $offset_attr >= 1 ) {
+				$args['offset'] = $offset_attr;
+			}
+
+			// Build callback for exclusion/priority
+			$cb = function( $query ) use ( $exclude, $priority_min_val, $priority_max_val ) {
+				if ( ! empty( $exclude ) ) {
+					$exclude_ids = array_values( array_filter( $exclude ) );
+					if ( ! empty( $exclude_ids ) ) {
+						$query->where( sprintf(
+							'`%s`.post_id NOT IN (%s)',
+							$query->table->get_escaped_name(),
+							join( ',', $exclude_ids )
+						) );
+					}
+				}
+
+				if ( $priority_min_val !== null && $priority_max_val !== null ) {
+					if ( $priority_min_val === $priority_max_val ) {
+						$query->where( sprintf( 'priority = %d', $priority_min_val ) );
+					} else {
+						$query->where( sprintf( 'priority >= %d AND priority <= %d', $priority_min_val, $priority_max_val ) );
+					}
+				} elseif ( $priority_min_val !== null ) {
+					$query->where( sprintf( 'priority >= %d', $priority_min_val ) );
+				} elseif ( $priority_max_val !== null ) {
+					$query->where( sprintf( 'priority <= %d', $priority_max_val ) );
+				}
+			};
+
+			$post_ids = $post_type->query( $args, $cb );
+
+			// Check for next page
+			$has_next = count( $post_ids ) > $limit;
+			if ( $has_next ) {
+				array_pop( $post_ids );
+			}
+
+			// Total count
+			$total_count = 0;
+			if ( $display_details ) {
+				$count_args = $args;
+				unset( $count_args['limit'], $count_args['offset'] );
+				$total_count = $post_type->get_index_query()->get_post_count( $count_args, $cb );
+			}
+
+			// Render cards via do_blocks()
+			$html = '';
+			if ( ! empty( $post_ids ) ) {
+				_prime_post_caches( array_map( 'absint', $post_ids ) );
+				$current_post = \Voxel\get_current_post();
+
+				if ( class_exists( '\VoxelFSE\Controllers\FSE_NB_SSR_Controller' ) ) {
+					\VoxelFSE\Controllers\FSE_NB_SSR_Controller::set_feed_context( true );
+				}
+
+				ob_start();
+				foreach ( $post_ids as $post_id ) {
+					$post = \Voxel\Post::get( $post_id );
+					if ( ! $post ) continue;
+
+					\Voxel\set_current_post( $post );
+					echo '<div class="ts-preview" data-post-id="' . esc_attr( $post_id ) . '">';
+					echo do_blocks( $fse_template_content );
+					echo '</div>';
+				}
+				$html = ob_get_clean();
+
+				if ( class_exists( '\VoxelFSE\Controllers\FSE_NB_SSR_Controller' ) ) {
+					\VoxelFSE\Controllers\FSE_NB_SSR_Controller::set_feed_context( false );
+				}
+
+				if ( $current_post ) {
+					\Voxel\set_current_post( $current_post );
+				}
+			}
+
+			// NectarBlocks CSS from template post meta
+			$styles = '';
+			if ( $instance->fse_template_wp_id ) {
+				$nb_meta = get_post_meta( $instance->fse_template_wp_id, '_nectar_blocks_css', true );
+				if ( ! empty( $nb_meta ) && is_string( $nb_meta ) ) {
+					$styles = '<style id="nb-post-card-css">' . $nb_meta . '</style>';
+				}
+			}
+
+			// Display count
+			$result_count = count( $post_ids );
+			$display_count = '';
+			if ( function_exists( '\Voxel\count_format' ) ) {
+				$display_count = \Voxel\count_format( $result_count, $total_count );
+			} else {
+				$display_count = $result_count . ( $total_count > $result_count ? ' of ' . $total_count : '' );
+			}
+
+			return [
+				'html'         => $styles . $html,
+				'hasResults'   => ! empty( $post_ids ),
+				'hasPrev'      => false, // Page 1, never has prev
+				'hasNext'      => $has_next,
+				'totalCount'   => $total_count,
+				'displayCount' => $display_count,
+			];
+
+		} catch ( \Throwable $e ) {
+			error_log( 'Post Feed generate_frontend_config Error: ' . $e->getMessage() );
+			return null;
+		}
+	}
+
+	/**
+	 * Resolve post type from a linked Search Form block's saved attributes.
+	 *
+	 * When post-feed source='search-form', the postType is often empty in attributes
+	 * because it was derived from the linked search form at edit time. We look up the
+	 * search form block on the same page/template and extract its first postType.
+	 *
+	 * @param string $search_form_id The searchFormId attribute
+	 * @return string|null The first post type key, or null
+	 */
+	private static function resolve_search_form_post_type( string $search_form_id ): ?string {
+		if ( empty( $search_form_id ) ) {
+			return null;
+		}
+
+		// In FSE context, we can try to find the search form in the current template
+		// But this is complex and unreliable at render time. Return null to let
+		// the frontend handle it (it can read data-post-types from the DOM).
+		return null;
+	}
 }

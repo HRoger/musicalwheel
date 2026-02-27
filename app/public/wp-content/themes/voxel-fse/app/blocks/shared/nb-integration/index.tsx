@@ -84,71 +84,68 @@ export function registerNBDynamicTagIntegration(): void {
 		(settings: Record<string, unknown>, name: string) => {
 			const attrs = (settings['attributes'] ?? {}) as Record<string, unknown>;
 
+			const isParent = NB_TARGET_BLOCK_NAMES.has(name);
+			const isChild = NB_ROW_SETTINGS_BLOCK_NAMES.has(name);
+
 			// Parent blocks: VoxelTab attributes + voxelDynamicTags
-			if (NB_TARGET_BLOCK_NAMES.has(name)) {
-				const parentAttrs: Record<string, unknown> = {
+			// Blocks can be in BOTH sets (e.g. column) — merge both attribute groups
+			if (isParent || isChild) {
+				const mergedAttrs: Record<string, unknown> = {
 					...attrs,
 					voxelDynamicTags: {
 						type: 'object' as const,
 						default: {},
 					},
-					...voxelTabAttributes,
 				};
 
-				// Toolbar blocks also get voxelDynamicContent
-				if (NB_TOOLBAR_TAG_BLOCK_NAMES.has(name)) {
-					parentAttrs['voxelDynamicContent'] = {
-						type: 'string' as const,
-						default: '',
-					};
-				}
+				// Parent: VoxelTab + EnableTags
+				if (isParent) {
+					Object.assign(mergedAttrs, voxelTabAttributes);
 
-				// Advanced panel blocks get their extra attributes
-				const advFields = NB_ADVANCED_PANEL_BLOCKS[name];
-				if (advFields) {
-					let needsIconAttrs = false;
-					for (const field of advFields) {
-						if (field.controlType === 'range' && field.attr === 'voxelIconSize') {
-							needsIconAttrs = true;
-							continue; // Icon size attrs registered below as a group
+					// Toolbar blocks also get voxelDynamicContent
+					if (NB_TOOLBAR_TAG_BLOCK_NAMES.has(name)) {
+						mergedAttrs['voxelDynamicContent'] = {
+							type: 'string' as const,
+							default: '',
+						};
+					}
+
+					// Advanced panel blocks get their extra attributes
+					const advFields = NB_ADVANCED_PANEL_BLOCKS[name];
+					if (advFields) {
+						let needsIconAttrs = false;
+						for (const field of advFields) {
+							if (field.controlType === 'range' && field.attr === 'voxelIconSize') {
+								needsIconAttrs = true;
+								continue;
+							}
+							if (field.controlType === 'color' && field.attr === 'voxelIconColor') {
+								needsIconAttrs = true;
+								continue;
+							}
+							if (!(field.attr in mergedAttrs)) {
+								mergedAttrs[field.attr] = {
+									type: 'string' as const,
+									default: '',
+								};
+							}
 						}
-						if (field.controlType === 'color' && field.attr === 'voxelIconColor') {
-							needsIconAttrs = true;
-							continue; // Registered below
-						}
-						if (!(field.attr in parentAttrs)) {
-							parentAttrs[field.attr] = {
-								type: 'string' as const,
-								default: '',
-							};
+						if (needsIconAttrs) {
+							mergedAttrs['voxelIconSize'] = { type: 'number' as const };
+							mergedAttrs['voxelIconSize_tablet'] = { type: 'number' as const };
+							mergedAttrs['voxelIconSize_mobile'] = { type: 'number' as const };
+							mergedAttrs['voxelIconSizeUnit'] = { type: 'string' as const, default: 'px' };
+							mergedAttrs['voxelIconColor'] = { type: 'string' as const, default: '' };
 						}
 					}
-					// Register icon size + color attributes as a group
-					if (needsIconAttrs) {
-						parentAttrs['voxelIconSize'] = { type: 'number' as const };
-						parentAttrs['voxelIconSize_tablet'] = { type: 'number' as const };
-						parentAttrs['voxelIconSize_mobile'] = { type: 'number' as const };
-						parentAttrs['voxelIconSizeUnit'] = { type: 'string' as const, default: 'px' };
-						parentAttrs['voxelIconColor'] = { type: 'string' as const, default: '' };
-					}
 				}
 
-				return { ...settings, attributes: parentAttrs };
-			}
+				// Child: RowSettings attributes
+				if (isChild) {
+					Object.assign(mergedAttrs, rowSettingsAttributes);
+				}
 
-			// Child blocks: RowSettings attributes + dynamic tag fields + voxelDynamicTags (for CSS Classes/Custom ID)
-			if (NB_ROW_SETTINGS_BLOCK_NAMES.has(name)) {
-				return {
-					...settings,
-					attributes: {
-						...attrs,
-						...rowSettingsAttributes,
-						voxelDynamicTags: {
-							type: 'object' as const,
-							default: {},
-						},
-					},
-				};
+				return { ...settings, attributes: mergedAttrs };
 			}
 
 			return settings;

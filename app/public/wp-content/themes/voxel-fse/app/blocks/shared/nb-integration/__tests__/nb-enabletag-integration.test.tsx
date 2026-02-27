@@ -462,6 +462,7 @@ describe('Advanced Panel Blocks (NB_ADVANCED_PANEL_BLOCKS)', () => {
 	});
 
 	it('should NOT define controls for blocks without advanced panels', () => {
+		expect(NB_ADVANCED_PANEL_BLOCKS['nectar-blocks/text']).toBeUndefined();
 		expect(NB_ADVANCED_PANEL_BLOCKS['nectar-blocks/image']).toBeUndefined();
 		expect(NB_ADVANCED_PANEL_BLOCKS['nectar-blocks/row']).toBeUndefined();
 		expect(NB_ADVANCED_PANEL_BLOCKS['nectar-blocks/carousel']).toBeUndefined();

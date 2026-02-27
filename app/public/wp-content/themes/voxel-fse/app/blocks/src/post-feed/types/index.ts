@@ -371,6 +371,23 @@ export interface PostFeedComponentProps {
 	 * Container element for scrolling and asset injection (frontend)
 	 */
 	containerElement?: HTMLElement;
+
+	/**
+	 * Server-side hydrated HTML (injected by Block_Loader at PHP render time).
+	 * When present, the component renders immediately without AJAX fetch.
+	 */
+	initialHtml?: string | null;
+
+	/**
+	 * Metadata from server-side hydration (pagination, counts).
+	 */
+	initialMeta?: {
+		hasResults: boolean;
+		hasPrev: boolean;
+		hasNext: boolean;
+		totalCount: number;
+		displayCount: string;
+	} | null;
 }
 
 /**

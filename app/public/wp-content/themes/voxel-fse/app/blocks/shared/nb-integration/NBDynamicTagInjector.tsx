@@ -131,9 +131,12 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	// Track whether we injected previewVideo (video-lightbox preview.video)
 	const previewVideoInjectedRef = useRef(false);
 	const originalPreviewVideoRef = useRef<unknown>(null);
-	// Track whether we injected backgroundImage (image-gallery bgImage)
+	// Track whether we injected backgroundImage (image-gallery/row/column bgImage)
 	const bgImageInjectedRef = useRef(false);
 	const originalBgImageRef = useRef<unknown>(null);
+	// Track whether we injected backgroundVideo (row/column bgVideo)
+	const bgVideoInjectedRef = useRef(false);
+	const originalBgVideoRef = useRef<unknown>(null);
 	// Track whether we injected imageSource into NB's native `image` attribute
 	const nbImageInjectedRef = useRef(false);
 	const originalNBImageRef = useRef<unknown>(null);
@@ -159,7 +162,8 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 
 	const getVoxelTags = useCallback((): Record<string, string> => {
 		const attrs = getBlockAttributes();
-		const tags = (attrs as Record<string, unknown>)['voxelDynamicTags'] as Record<string, string> ?? {};
+		// Spread to avoid mutating the store object in place
+		const tags = { ...((attrs as Record<string, unknown>)['voxelDynamicTags'] as Record<string, string> ?? {}) };
 
 		// For toolbar blocks, sync textContent from voxelDynamicContent attribute
 		if (isToolbarBlock) {
@@ -1912,6 +1916,94 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
 
 	/**
+	 * Sync backgroundVideo dynamic tag into NB's native `bgVideo` attribute.
+	 * Resolves via REST API → sets actual URL so NB generates valid HTML natively.
+	 * bgVideo structure: { desktop: { source: { url, id, type }, loop }, tablet: {...}, mobile: {...} }
+	 */
+	useEffect(() => {
+		const tag = voxelTags['backgroundVideo'];
+
+		if (!tag) {
+			if (bgVideoInjectedRef.current && originalBgVideoRef.current !== null) {
+				setAttributes({ bgVideo: originalBgVideoRef.current } as Record<string, unknown>);
+				bgVideoInjectedRef.current = false;
+				originalBgVideoRef.current = null;
+			}
+			return;
+		}
+
+		if (bgVideoInjectedRef.current) return;
+
+		let cancelled = false;
+
+		(async () => {
+			try {
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: { expression: tag, preview_context: previewContext },
+				});
+				if (cancelled) return;
+
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) rendered = wrapperMatch[1];
+				const value = rendered.trim();
+				if (!value) return;
+
+				// Try to resolve as attachment ID to get full URL
+				let videoUrl = value;
+				const attachmentId = parseInt(value, 10);
+				if (attachmentId && !isNaN(attachmentId) && String(attachmentId) === value) {
+					try {
+						const media = await apiFetch<{ source_url: string; mime_type?: string }>({
+							path: `/wp/v2/media/${attachmentId}?context=edit`,
+						});
+						if (cancelled) return;
+						if (media?.source_url) {
+							videoUrl = media.source_url;
+						}
+					} catch {
+						// Fall back to using raw value as URL
+					}
+				}
+
+				if (cancelled || !videoUrl) return;
+
+				if (!bgVideoInjectedRef.current) {
+					originalBgVideoRef.current = attributesRef.current['bgVideo'];
+				}
+
+				const currentBgVideo = (attributesRef.current['bgVideo'] ?? {}) as Record<string, unknown>;
+				const currentDesktop = (currentBgVideo['desktop'] ?? {}) as Record<string, unknown>;
+				const currentSource = (currentDesktop['source'] ?? {}) as Record<string, unknown>;
+				setAttributes({
+					bgVideo: {
+						...currentBgVideo,
+						desktop: {
+							...currentDesktop,
+							source: { ...currentSource, url: videoUrl, type: 'wpm' },
+						},
+					},
+				} as Record<string, unknown>);
+				bgVideoInjectedRef.current = true;
+			} catch (err) {
+				if (!cancelled) {
+					console.error('[NB] Failed to resolve dynamic backgroundVideo tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [voxelTags, clientId, templateContext, templatePostType, setAttributes]);
+
+	/**
 	 * Inject EnableTag portal into the Video Player's "Insert self-hosted URL" input area
 	 * inside the editor iframe. The URL field (.nectar-component__video-placeholder__url-field)
 	 * appears when the user clicks "Insert self-hosted URL" in the canvas placeholder.
@@ -2971,7 +3063,7 @@ function BodyFieldResolver({
 			if (btnTextEl) {
 				const overlay = iframeDoc.createElement('span');
 				overlay.className = 'voxel-nb-text-overlay';
-				overlay.textContent = resolvedText;
+				overlay.innerHTML = resolvedText;
 
 				// Copy computed styles from the RichText
 				const richText = btnTextEl.querySelector('[role="textbox"]');
@@ -2998,7 +3090,7 @@ function BodyFieldResolver({
 			if (container) {
 				const overlay = iframeDoc.createElement('p');
 				overlay.className = 'voxel-nb-text-overlay';
-				overlay.textContent = resolvedText;
+				overlay.innerHTML = resolvedText;
 
 				// Copy computed styles from the RichText <p> for identical appearance
 				const computed = iframeDoc.defaultView?.getComputedStyle(richTextEl);
@@ -3117,7 +3209,7 @@ function BodyFieldResolver({
 		if (titleTextEl) {
 			const overlay = iframeDoc.createElement('span');
 			overlay.className = 'voxel-nb-title-overlay';
-			overlay.textContent = resolvedTitle;
+			overlay.innerHTML = resolvedTitle;
 			titleTextEl.appendChild(overlay);
 			blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
 			return;
@@ -3128,7 +3220,7 @@ function BodyFieldResolver({
 		if (listItemContent) {
 			const overlay = iframeDoc.createElement('span');
 			overlay.className = 'voxel-nb-title-overlay';
-			overlay.textContent = resolvedTitle;
+			overlay.innerHTML = resolvedTitle;
 			listItemContent.appendChild(overlay);
 			blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
 			return;
@@ -3155,7 +3247,7 @@ function BodyFieldResolver({
 									const overlay = iframeDoc.createElement('span');
 									overlay.className = 'voxel-nb-tab-title-overlay';
 									overlay.setAttribute('data-tab-client-id', clientId);
-									overlay.textContent = resolvedTitle;
+									overlay.innerHTML = resolvedTitle;
 									navLink.insertBefore(overlay, navLink.firstChild);
 									blockEl.setAttribute('data-voxel-has-dynamic-title', 'true');
 								}

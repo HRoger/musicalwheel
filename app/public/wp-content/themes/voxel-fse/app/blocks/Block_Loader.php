@@ -1406,6 +1406,88 @@ CSS;
             // Silently skip
         }
 
+        // Term-feed: generate taxonomies, post types, and card templates inline
+        // Eliminates initial REST API calls for inspector dropdowns in term-feed/edit.tsx
+        try {
+            require_once dirname(__DIR__) . '/controllers/fse-term-feed-controller.php';
+            $term_feed_config = [];
+
+            // Taxonomies (mirrors GET /term-feed/taxonomies)
+            if (class_exists('\Voxel\Taxonomy')) {
+                $taxonomies = [];
+                foreach (\Voxel\Taxonomy::get_all() as $tax) {
+                    $taxonomies[] = [
+                        'key'   => $tax->get_key(),
+                        'label' => $tax->get_label(),
+                    ];
+                }
+                $term_feed_config['taxonomies'] = $taxonomies;
+            }
+
+            // Post types (mirrors GET /term-feed/post-types)
+            if (class_exists('\Voxel\Post_Type')) {
+                $tf_post_types = [];
+                foreach (\Voxel\Post_Type::get_voxel_types() as $pt) {
+                    $tf_post_types[] = [
+                        'key'   => $pt->get_key(),
+                        'label' => $pt->get_label(),
+                    ];
+                }
+                $term_feed_config['postTypes'] = $tf_post_types;
+            }
+
+            // Card templates (mirrors GET /term-feed/card-templates)
+            $tf_card_templates = [['id' => 'main', 'label' => 'Main template']];
+            if (class_exists('\VoxelFSE\Controllers\Templates\Template_Manager')) {
+                $all_templates = \VoxelFSE\Controllers\Templates\Template_Manager::get_all_templates();
+                foreach ($all_templates as $tpl) {
+                    $slug = $tpl['slug'] ?? '';
+                    if (strpos($slug, '-card') !== false || strpos($slug, 'card-') !== false) {
+                        $tf_card_templates[] = [
+                            'id'    => (string) ($tpl['id'] ?? ''),
+                            'label' => $tpl['title'] ?? $slug,
+                        ];
+                    }
+                }
+            }
+            $term_feed_config['cardTemplates'] = $tf_card_templates;
+
+            if (!empty($term_feed_config)) {
+                $config['termFeed'] = $term_feed_config;
+            }
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
+        // Post-feed: generate post types and config inline
+        // Eliminates initial REST API call for inspector dropdowns in post-feed/edit.tsx
+        // NOTE: Card HTML is NOT cached here — it depends on block-specific settings
+        // (postsPerPage, filters, cardTemplate, etc.) and must be fetched via AJAX.
+        try {
+            require_once dirname(__DIR__) . '/controllers/fse-post-feed-controller.php';
+            $pf_post_types = [];
+
+            if (class_exists('\Voxel\Post_Type')) {
+                foreach (\Voxel\Post_Type::get_voxel_types() as $pt) {
+                    $pf_post_types[] = [
+                        'key'      => $pt->get_key(),
+                        'label'    => $pt->get_label(),
+                        'singular' => $pt->get_singular_name(),
+                        'plural'   => $pt->get_plural_name(),
+                        'managed'  => true,
+                    ];
+                }
+            }
+
+            $config['postFeed'] = [
+                'postTypes' => $pf_post_types,
+                'ajaxUrl'   => admin_url('admin-ajax.php'),
+                'restUrl'   => rest_url('voxel-fse/v1/'),
+            ];
+        } catch (\Throwable $e) {
+            // Silently skip
+        }
+
         // Navbar: generate menu locations list
         // Must match REST API shape: { slug, name, description }
         // Used by edit.tsx getInlineNavbarLocations() → MenuLocation interface
@@ -4681,6 +4763,7 @@ JAVASCRIPT;
             $block_content = self::apply_map_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'post-feed' && $block_id) {
             $block_content = self::apply_post_feed_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_post_feed_config($block_content, $attributes);
         } elseif ($block_name === 'navbar' && $block_id) {
             $block_content = self::apply_navbar_styles($block_content, $attributes, $block_id);
             $block_content = self::inject_navbar_config($block_content, $attributes);
@@ -4705,6 +4788,7 @@ JAVASCRIPT;
             $block_content = self::apply_cart_summary_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'term-feed' && $block_id) {
             $block_content = self::apply_term_feed_styles($block_content, $attributes, $block_id);
+            $block_content = self::inject_term_feed_config($block_content, $attributes);
         } elseif ($block_name === 'slider' && $block_id) {
             $block_content = self::apply_slider_styles($block_content, $attributes, $block_id);
         } elseif ($block_name === 'image' && $block_id) {
@@ -6520,9 +6604,74 @@ JAVASCRIPT;
      * @param mixed  $data          Data to JSON-encode and inject.
      * @return string Modified block content with inline config.
      */
+
+    /**
+     * Inject post feed data inline to eliminate AJAX spinner on initial load.
+     *
+     * Calls FSE_Post_Feed_Controller::generate_frontend_config() server-side at
+     * render time so the frontend JS can render cards immediately from the
+     * vxconfig-hydrate script tag, instead of waiting for Voxel's ?vx=1 AJAX round-trip.
+     *
+     * NOTE: FSE cards use do_blocks(), NOT Elementor's print_template().
+     * Elementor is not needed or active. See: docs/block-conversions/instant-load-architecture.md
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_post_feed_config($block_content, $attributes)
+    {
+        // Skip injection in admin/editor — only needed on frontend
+        if (is_admin()) {
+            return $block_content;
+        }
+
+        require_once dirname(__DIR__) . '/controllers/fse-post-feed-controller.php';
+        $config = \VoxelFSE\Controllers\FSE_Post_Feed_Controller::generate_frontend_config($attributes);
+
+        if ($config === null) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
+    /**
+     * Inject term feed data inline to eliminate REST API spinner on initial load.
+     *
+     * Calls FSE_Term_Feed_Controller::generate_frontend_config() server-side at
+     * render time so the frontend JS can read terms synchronously from the
+     * vxconfig-hydrate script tag, instead of waiting for a REST API round-trip.
+     *
+     * @param string $block_content Block HTML content.
+     * @param array  $attributes    Block attributes from save.tsx.
+     * @return string Modified block content with inline config.
+     */
+    private static function inject_term_feed_config($block_content, $attributes)
+    {
+        // Skip injection in admin/editor — only needed on frontend
+        if (is_admin()) {
+            return $block_content;
+        }
+
+        require_once dirname(__DIR__) . '/controllers/fse-term-feed-controller.php';
+        $config = \VoxelFSE\Controllers\FSE_Term_Feed_Controller::generate_frontend_config($attributes);
+
+        if ($config === null) {
+            return $block_content;
+        }
+
+        return self::inject_inline_config($block_content, $config);
+    }
+
     private static function inject_inline_config($block_content, $data)
     {
-        $json = wp_json_encode($data);
+        // CRITICAL: Use JSON_HEX_TAG to encode < as \u003c and > as \u003e.
+        // This prevents NectarBlocks' accessible_svgs render_block filter from
+        // matching <svg> patterns inside the JSON and injecting unescaped
+        // role="none" attributes that break JSON.parse() on the frontend.
+        // JSON.parse() automatically decodes \u003c back to < so the data is unchanged.
+        $json = wp_json_encode($data, JSON_HEX_TAG);
         if ($json === false) {
             return $block_content;
         }

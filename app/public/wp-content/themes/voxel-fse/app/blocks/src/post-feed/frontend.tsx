@@ -237,6 +237,36 @@ async function initBlocks(): Promise<void> {
 			const vxConfig = normalizeConfig(rawConfig);
 			const attributes = buildAttributes(vxConfig);
 
+			// Check for server-side hydrated data (injected by Block_Loader::inject_post_feed_config)
+			// Same pattern as term-feed: PHP renders cards at page time, JS reads synchronously
+			let initialHtml: string | null = null;
+			let initialMeta: {
+				hasResults: boolean;
+				hasPrev: boolean;
+				hasNext: boolean;
+				totalCount: number;
+				displayCount: string;
+			} | null = null;
+
+			const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+			if (hydrateScript?.textContent) {
+				try {
+					const hydrated = JSON.parse(hydrateScript.textContent);
+					if (typeof hydrated.html === 'string') {
+						initialHtml = hydrated.html;
+						initialMeta = {
+							hasResults: hydrated.hasResults ?? false,
+							hasPrev: hydrated.hasPrev ?? false,
+							hasNext: hydrated.hasNext ?? false,
+							totalCount: hydrated.totalCount ?? 0,
+							displayCount: hydrated.displayCount ?? '0',
+						};
+					}
+				} catch (e) {
+					console.error('[post-feed] Failed to parse vxconfig-hydrate:', e);
+				}
+			}
+
 			// Mount React component
 			const root = createRoot(container);
 			root.render(
@@ -245,6 +275,8 @@ async function initBlocks(): Promise<void> {
 					config={null}
 					context="frontend"
 					containerElement={container}
+					initialHtml={initialHtml}
+					initialMeta={initialMeta}
 				/>
 			);
 

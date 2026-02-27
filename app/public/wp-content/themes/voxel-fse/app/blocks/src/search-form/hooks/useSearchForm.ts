@@ -234,8 +234,12 @@ export function useSearchForm({
 		}
 
 		// Auto-submit on post type change in frontend context
-		// This ensures Post Feed updates when user switches post type
-		if (context === 'frontend' && onSubmit) {
+		// VOXEL PARITY: Only auto-submit in 'feed' mode (post-to-feed).
+		// In 'archive' and 'page' modes, post type change just updates internal state.
+		// The actual navigation only happens when the Search button is clicked.
+		// Evidence: voxel-search-form.beautified.js:2016-2017 setPostType() just sets this.post_type
+		// Evidence: search-form.php:158 ts_search_on only applies to post-to-feed mode
+		if (context === 'frontend' && onSubmit && attributes.onSubmit === 'feed') {
 			// VOXEL PARITY: Only update URL after user has interacted with the form
 			// On initial load, Voxel skips URL update because previousQueryString === currentQueryString
 			// Evidence: voxel-search-form.beautified.js line 2058
@@ -249,8 +253,11 @@ export function useSearchForm({
 					postType: postTypeKey,
 				});
 			}, 50);
+		} else if (context === 'frontend') {
+			// In archive/page modes, still mark as interacted for the submit button
+			hasUserInteractedRef.current = true;
 		}
-	}, [context, onSubmit, onPostTypeChange, onFilterChange, attributes.updateUrl]);
+	}, [context, onSubmit, onPostTypeChange, onFilterChange, attributes.updateUrl, attributes.onSubmit]);
 
 	// Set individual filter value
 	const setFilterValue = useCallback(
@@ -335,9 +342,10 @@ export function useSearchForm({
 
 		// Clear URL parameters and emit clear event (frontend context only)
 		if (context === 'frontend') {
-			// Clear all filter params from URL, keeping only the post type (only if updateUrl is enabled)
-			// Note: We don't add reset values to URL since they're default state
-			if (attributes.updateUrl !== false) {
+			// Clear all filter params from URL, keeping only the post type
+			// VOXEL PARITY: Only update URL in 'feed' mode. Archive/page modes don't touch the URL.
+			// Evidence: search-form.php:4070 - updateUrl only set in post-to-feed mode
+			if (attributes.onSubmit === 'feed' && attributes.updateUrl !== false) {
 				clearUrlParams(state.currentPostType);
 			}
 
@@ -349,7 +357,7 @@ export function useSearchForm({
 			});
 			window.dispatchEvent(event);
 		}
-	}, [context, state.currentPostType, onFilterChange, attributes.updateUrl, currentPostTypeConfig?.filters]);
+	}, [context, state.currentPostType, onFilterChange, attributes.updateUrl, attributes.onSubmit, currentPostTypeConfig?.filters]);
 
 	// Toggle portal
 	const togglePortal = useCallback(() => {
@@ -535,19 +543,19 @@ export function useSearchForm({
 				});
 			}
 
-			// Update URL with filter parameters (only in frontend context, and only if updateUrl is enabled)
-			// VOXEL PARITY: Skip URL update on first submit (initial load)
-			// Voxel's getPosts() exits early when previousQueryString === currentQueryString
-			// Evidence: voxel-search-form.beautified.js line 2058
-			// NOTE: Event dispatch is handled by the onSubmit callback in frontend.tsx
-			// to ensure targetId is included for Post Feed connection
-			if (context === 'frontend' && attributes.updateUrl !== false && hasUserInteractedRef.current) {
+			// Update URL with filter parameters (only in 'feed' mode, and only if updateUrl is enabled)
+			// VOXEL PARITY: In archive/page mode, URL is never updated via replaceState.
+			// The archive redirect handles navigation via window.location.href in frontend.tsx.
+			// Evidence: search-form.php:4070 - updateUrl only set in post-to-feed mode
+			// Evidence: voxel-search-form.beautified.js:2291 - updateUrl check only in getPosts() (AJAX path)
+			const shouldUpdateUrl = attributes.onSubmit === 'feed' && attributes.updateUrl !== false;
+			if (context === 'frontend' && shouldUpdateUrl && hasUserInteractedRef.current) {
 				updateUrlParams(filterValues, postType);
 			}
 
 			setState((prev) => ({ ...prev, loading: false }));
 		},
-		[context, onSubmit, attributes.updateUrl]
+		[context, onSubmit, attributes.updateUrl, attributes.onSubmit]
 	);
 
 	// VOXEL PARITY: Track previous query string to skip duplicate searches
@@ -557,11 +565,12 @@ export function useSearchForm({
 
 	// Auto-submit when filter values change (Voxel's $watch pattern)
 	// Reference: voxel-search-form.beautified.js lines 1185-1192
-	// CRITICAL: Pass current values to handleSubmitInternal to avoid stale closures
-	// handleSubmitInternal is stable (no state deps), so this won't cause infinite loops
-	// FIX: Use query string comparison (like Voxel) instead of mount ref
+	// VOXEL PARITY: Auto-submit only applies in 'feed' mode (post-to-feed).
+	// In archive/page mode, filters update internal state only. Navigation happens on button click.
+	// Evidence: search-form.php:158 - ts_search_on condition: ts_on_submit === 'post-to-feed'
+	// Evidence: voxel-search-form.beautified.js:1975-1988 - $watch only calls getPosts() in filter_update mode
 	useEffect(() => {
-		if (attributes.searchOn === 'change' && context === 'frontend') {
+		if (attributes.searchOn === 'change' && attributes.onSubmit === 'feed' && context === 'frontend') {
 			// Build current query string (same format as Voxel)
 			// Evidence: voxel-search-form.beautified.js line 1991 - builds query from type + filters
 			const currentQueryString = JSON.stringify({
@@ -596,7 +605,7 @@ export function useSearchForm({
 			};
 		}
 		return undefined;
-	}, [state.filterValues, state.currentPostType, attributes.searchOn, context, handleSubmitInternal]);
+	}, [state.filterValues, state.currentPostType, attributes.searchOn, attributes.onSubmit, context, handleSubmitInternal]);
 
 	// VOXEL PARITY: Listen for PostFeed loading events to show spinner on submit button
 	// In Voxel, the Search Form owns getPosts() so this.loading drives the spinner.
@@ -607,7 +616,9 @@ export function useSearchForm({
 
 		const handleFeedLoading = (event: Event) => {
 			const detail = (event as CustomEvent).detail;
-			if (detail?.searchFormId === attributes.blockId) {
+			// Only show button spinner after user has interacted with the form.
+			// The Post Feed fires feed-loading on initial mount — we must not show the spinner then.
+			if (detail?.searchFormId === attributes.blockId && hasUserInteractedRef.current) {
 				setState(prev => ({ ...prev, loading: true }));
 			}
 		};

@@ -412,7 +412,7 @@ function parseVxConfig(container: HTMLElement): SearchFormAttributes {
  */
 interface SearchFormWrapperProps {
 	attributes: SearchFormAttributes;
-	onSubmit: (values: Record<string, unknown>) => void;
+	onSubmit: (values: Record<string, unknown>, postTypeConfigs?: PostTypeConfig[]) => void;
 	inlinePostTypes?: PostTypeConfig[] | null;
 }
 
@@ -452,7 +452,7 @@ function SearchFormWrapper({ attributes, onSubmit, inlinePostTypes }: SearchForm
 		onSubmit({
 			postType: defaultPostType,
 			...initialFilterValues,
-		});
+		}, postTypes);
 
 		hasDispatchedInitial.current = true;
 	}, [attributes.postTypes, onSubmit, isLoading, postTypes]);
@@ -514,6 +514,14 @@ function SearchFormWrapper({ attributes, onSubmit, inlinePostTypes }: SearchForm
 	// The Post Feed now fetches on mount using attributes.postType, matching Voxel's PHP behavior.
 	// The Search Form only needs to dispatch when filters CHANGE (handled by useSearchForm hook).
 
+	// Wrap onSubmit to pass postTypes (with archiveUrl) to parent callback
+	// This ensures the parent handleSubmit always has access to archive URLs
+	// regardless of whether data came from inline config or REST API
+	// IMPORTANT: Must be before early returns to maintain hook order
+	const handleSubmitWithPostTypes = useCallback((values: Record<string, unknown>) => {
+		onSubmit(values, postTypes);
+	}, [onSubmit, postTypes]);
+
 	// Loading state - matches Voxel's v-cloak pattern (display: none until ready)
 	// Since React renders when ready, we just show a simple loader without custom classes
 	if (isLoading) {
@@ -547,7 +555,7 @@ function SearchFormWrapper({ attributes, onSubmit, inlinePostTypes }: SearchForm
 			attributes={attributes}
 			postTypes={selectedPostTypes}
 			context="frontend"
-			onSubmit={onSubmit}
+			onSubmit={handleSubmitWithPostTypes}
 		/>
 	);
 }
@@ -571,8 +579,22 @@ function initSearchForms() {
 		// Parse attributes from vxconfig (matching Voxel pattern)
 		const attributes = parseVxConfig(container);
 
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlinePostTypes: PostTypeConfig[] | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlinePostTypes = JSON.parse(hydrateScript.textContent);
+			} catch (e) {
+				console.error('[SF-HYDRATE] parse error:', e);
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
 		// Handle form submission
-		const handleSubmit = (values: Record<string, unknown>) => {
+		// postTypeConfigs is passed from SearchFormWrapper (has archiveUrl from REST API or inline config)
+		const handleSubmit = (values: Record<string, unknown>, postTypeConfigs?: PostTypeConfig[]) => {
 			const valuesTyped = values as { postType?: string };
 			// Extract postType from values (set by useSearchForm hook)
 			const postType = valuesTyped.postType || attributes.postTypes?.[0] || '';
@@ -625,32 +647,24 @@ function initSearchForms() {
 						redirectToPage(values, attributes);
 					} else {
 						// Fallback to archive if no page ID set
-						updateUrlAndRefresh(values, attributes);
+						updateUrlAndRefresh(values, attributes, postTypeConfigs);
 					}
 					break;
 
 				case 'archive':
 				default:
 					// Update URL and reload page (archive mode)
-					updateUrlAndRefresh(values, attributes);
+					// Use postTypeConfigs from React component (always has archiveUrl)
+					updateUrlAndRefresh(values, attributes, postTypeConfigs);
 					break;
 			}
 		};
 
-		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
-		// See: docs/headless-architecture/17-server-side-config-injection.md
-		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
-		let inlinePostTypes: PostTypeConfig[] | null = null;
-		if (hydrateScript?.textContent) {
-			try {
-				inlinePostTypes = JSON.parse(hydrateScript.textContent);
-			} catch {
-				// Fall back to REST API if inline data is malformed
-			}
-		}
-
-		// Clear placeholder and create React root
-		container.innerHTML = '';
+		// Mount React into the container.
+		// When inlinePostTypes is available, React renders the full form on first paint
+		// (no loading spinner). We keep the server HTML visible until React replaces it,
+		// matching Voxel's v-cloak pattern where content stays visible until Vue mounts.
+		// React 18's createRoot().render() replaces container children automatically.
 		dataset.hydrated = 'true';
 
 		const root = createRoot(container);
@@ -665,93 +679,104 @@ function initSearchForms() {
 }
 
 /**
- * Update URL with filter values and refresh the page
+ * Navigate to post type archive with filter values (archive mode)
+ *
+ * VOXEL PARITY: Replicates voxel-search-form.beautified.js:2025-2030
+ * 1. Base URL = post_type.archive (from Post_Type::get_archive_link())
+ * 2. Params = currentValues (filter values only, NO 'type' param)
+ * 3. Redirect: archiveUrl?filterKey=value&...
+ *
+ * Evidence: voxel-search-form.beautified.js:2027 - jQuery.param(this.currentValues)
+ * Evidence: voxel-search-form.beautified.js:3039-3048 - currentValues has filter values only
  */
-function updateUrlAndRefresh(values: Record<string, unknown>, attributes: SearchFormAttributes) {
+function updateUrlAndRefresh(values: Record<string, unknown>, _attributes: SearchFormAttributes, postTypeConfigs?: PostTypeConfig[] | null) {
 	const valuesTyped = values as { postType?: string };
-	const url = new URL(window.location.href);
+	const postType = valuesTyped.postType;
 
-	// Clear existing filter params
-	// Support both Voxel format ('type', 'availability') and legacy FSE format ('post_type', 'filter_availability')
-	const keysToRemove: string[] = [];
-	url.searchParams.forEach((_, key) => {
-		// Remove legacy FSE format
-		if (key.startsWith('filter_') || key === 'post_type') {
-			keysToRemove.push(key);
+	// Get archive URL from post type config
+	// Evidence: search-form.php:4168 - 'archive' => $post_type->get_archive_link()
+	let archiveUrl = '';
+	if (postType && postTypeConfigs) {
+		const ptConfig = postTypeConfigs.find((pt) => pt.key === postType);
+		if (ptConfig?.archiveUrl) {
+			archiveUrl = ptConfig.archiveUrl;
 		}
-		// Remove Voxel format (type)
-		if (key === 'type') {
-			keysToRemove.push(key);
-		}
-	});
-	keysToRemove.forEach((key) => url.searchParams.delete(key));
-
-	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
-	const postType = valuesTyped.postType || attributes.postTypes?.[0];
-	if (postType && typeof postType === 'string') {
-		url.searchParams.set('type', postType);
 	}
 
-	// Add filter values - VOXEL PARITY: Use key directly without 'filter_' prefix
+	// Fallback: if no archive URL, use current page
+	if (!archiveUrl) {
+		archiveUrl = window.location.origin + window.location.pathname;
+	}
+
+	// Build params from filter values only (no 'type' param)
+	// Evidence: voxel-search-form.beautified.js:3039-3048 - currentValues only has filter values
+	const params = new URLSearchParams();
 	Object.entries(values).forEach(([key, value]) => {
+		// Skip postType — it's not a filter param in archive mode
 		if (key === 'postType') {
 			return;
 		}
-
 		if (value === null || value === undefined || value === '') {
 			return;
 		}
-
 		if (typeof value === 'object') {
-			url.searchParams.set(key, JSON.stringify(value));
+			params.set(key, JSON.stringify(value));
 		} else {
-			url.searchParams.set(key, String(value));
+			params.set(key, String(value));
 		}
 	});
 
-	// Navigate to new URL
-	window.location.href = url.toString();
+	// Build final URL: archiveUrl + ?params
+	// Evidence: voxel-search-form.beautified.js:2028-2029
+	let finalUrl = archiveUrl;
+	const paramString = params.toString();
+	if (paramString.length) {
+		finalUrl += '?' + paramString;
+	}
+
+	window.location.href = finalUrl;
 }
 
 /**
- * Redirect to a specific page with filter values
- * Used when onSubmit='page' and submitToPageId is set
+ * Redirect to a specific page with filter values (page mode)
+ *
+ * VOXEL PARITY: Replicates voxel-search-form.beautified.js:2031-2035
+ * Uses pageLink + ?currentQueryString (includes type + filter values)
+ * Evidence: voxel-search-form.beautified.js:3054-3065 - currentQueryString includes type param
  */
 function redirectToPage(values: Record<string, unknown>, attributes: SearchFormAttributes) {
 	const valuesTyped = values as { postType?: string };
-	// Get the site URL from WordPress or fallback to origin
-	const siteUrl = (window as any).voxelFseSiteUrl || window.location.origin;
 
-	// Build URL using WordPress ?p={id} format
-	// WordPress will automatically redirect to the proper permalink
-	const url = new URL(siteUrl);
-	url.searchParams.set('p', String(attributes.submitToPageId));
+	// Build query params matching Voxel's currentQueryString format
+	// Evidence: voxel-search-form.beautified.js:3057 - starts with type: this.post_type.key
+	const params = new URLSearchParams();
 
-	// Add current post type - VOXEL PARITY: Use 'type' not 'post_type'
 	const postType = valuesTyped.postType || attributes.postTypes?.[0];
 	if (postType && typeof postType === 'string') {
-		url.searchParams.set('type', postType);
+		params.set('type', postType);
 	}
 
-	// Add filter values - VOXEL PARITY: Use key directly without 'filter_' prefix
 	Object.entries(values).forEach(([key, value]) => {
 		if (key === 'postType') {
 			return;
 		}
-
 		if (value === null || value === undefined || value === '') {
 			return;
 		}
-
 		if (typeof value === 'object') {
-			url.searchParams.set(key, JSON.stringify(value));
+			params.set(key, JSON.stringify(value));
 		} else {
-			url.searchParams.set(key, String(value));
+			params.set(key, String(value));
 		}
 	});
 
-	// Navigate to target page
-	window.location.href = url.toString();
+	// Navigate to page: pageLink + ?queryString
+	// Evidence: voxel-search-form.beautified.js:2034
+	// Fallback to ?p=ID format if no permalink available
+	const siteUrl = (window as any).voxelFseSiteUrl || window.location.origin;
+	const pageLink = siteUrl + '/?p=' + String(attributes.submitToPageId);
+	const paramString = params.toString();
+	window.location.href = pageLink + (paramString.length ? '&' + paramString : '');
 }
 
 /**

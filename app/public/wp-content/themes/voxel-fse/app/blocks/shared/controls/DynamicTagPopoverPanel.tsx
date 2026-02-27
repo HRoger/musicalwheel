@@ -45,7 +45,10 @@ export default function DynamicTagPopoverPanel({
 
 	return (
 		<div className="voxel-nb-tag-preview__inner">
-			<span className="voxel-nb-tag-preview__content">{content}</span>
+			<span
+				className="voxel-nb-tag-preview__content"
+				dangerouslySetInnerHTML={{ __html: content }}
+			/>
 			<div className="voxel-nb-tag-preview__divider" />
 			<div className="voxel-nb-tag-preview__actions">
 				<button type="button" className="voxel-nb-tag-preview__btn" onClick={onEdit}>

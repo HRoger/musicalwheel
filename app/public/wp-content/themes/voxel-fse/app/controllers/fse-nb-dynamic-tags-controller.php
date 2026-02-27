@@ -587,6 +587,10 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 				// NB blocks: set background-image CSS on root element
 				return $this->resolve_background_image( $content, $resolved );
 
+			case 'backgroundVideo':
+				// NB blocks: replace <source> src inside .nectar__bg-video
+				return $this->resolve_background_video( $content, $resolved );
+
 			case 'galleryImages':
 				// Image Gallery: replace gallery image sources
 				return $this->resolve_gallery_images( $content, $resolved );
@@ -908,10 +912,13 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 	}
 
 	/**
-	 * Resolve background image — add background-image CSS to root element.
+	 * Resolve background image — set background-image on the .nectar__bg-image layer.
 	 *
-	 * NB stores background images as inline styles. We add/replace
-	 * the background-image property on the root element.
+	 * NB Row/Column blocks render background images on a nested div:
+	 *   <div class="nectar__bg-layer nectar__bg-image" style="background-image: url(...)"></div>
+	 *
+	 * We find that element and replace/add the background-image inline style there,
+	 * NOT on the root element (which has no effect on NB's background rendering).
 	 */
 	private function resolve_background_image( string $content, string $resolved ): string {
 		$url = $this->resolve_to_url( $resolved );
@@ -919,7 +926,61 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 			return $content;
 		}
 
-		return $this->add_inline_style( $content, 'background-image', 'url(' . esc_url( $url ) . ')' );
+		$bg_value = 'url(' . esc_url( $url ) . ')';
+
+		// Case 1: .nectar__bg-image already has a style with background-image — replace URL
+		if ( preg_match( '/class="[^"]*nectar__bg-image[^"]*"[^>]*style="[^"]*background-image\s*:/', $content ) ) {
+			$replaced = preg_replace(
+				'/(<div\b[^>]*class="[^"]*nectar__bg-image[^"]*"[^>]*style="[^"]*)\bbackground-image\s*:\s*[^;"]*/',
+				'$1background-image:' . esc_attr( $bg_value ),
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Case 2: .nectar__bg-image has a style attribute but no background-image — append
+		if ( preg_match( '/(<div\b[^>]*class="[^"]*nectar__bg-image[^"]*"[^>]*)\bstyle="([^"]*)"/', $content ) ) {
+			$replaced = preg_replace(
+				'/(<div\b[^>]*class="[^"]*nectar__bg-image[^"]*"[^>]*)\bstyle="([^"]*)"/',
+				'$1style="$2;background-image:' . esc_attr( $bg_value ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Case 3: .nectar__bg-image div exists but has no style — add style attribute
+		if ( strpos( $content, 'nectar__bg-image' ) !== false ) {
+			$replaced = preg_replace(
+				'/(<div\b[^>]*class="[^"]*nectar__bg-image[^"]*")/',
+				'$1 style="background-image:' . esc_attr( $bg_value ) . '"',
+				$content,
+				1
+			);
+			return $replaced ?? $content;
+		}
+
+		// Fallback: no .nectar__bg-image layer found — apply to root element
+		return $this->add_inline_style( $content, 'background-image', $bg_value );
+	}
+
+	/**
+	 * Resolve background video — replace <source> src inside the background video layer.
+	 *
+	 * NB renders background videos as:
+	 *   <div class="nectar__bg-layer nectar__bg-video ...">
+	 *     <video ...><source data-nectar-lazy-src="url" type="video/mp4"></video>
+	 *   </div>
+	 */
+	private function resolve_background_video( string $content, string $resolved ): string {
+		$url = $this->resolve_to_url( $resolved );
+		if ( empty( $url ) ) {
+			return $content;
+		}
+
+		// Replace src/data-nectar-lazy-src on <source> elements within the video background layer
+		return $this->replace_source_src( $content, $url );
 	}
 
 	/**
@@ -1140,30 +1201,44 @@ class FSE_NB_Dynamic_Tags_Controller extends FSE_Base_Controller {
 		// Replace inner text content of the block
 		// NB text blocks render as: <div class="nectar-text-...">...<p>text</p>...</div>
 		// NB button blocks render as: <a class="nectar-button ..."><span>text</span></a>
+		// Allow safe HTML (links, bold, italic, etc.) from resolved content
+		$safe_resolved = wp_kses_post( $resolved );
+
 		switch ( $block['blockName'] ) {
 			case 'nectar-blocks/text':
+				// Strip wrapping <p> tags from resolved content to avoid nested <p> (invalid HTML).
+				// Voxel's render() wraps descriptions in <p> via wpautop(), but the NB text block
+				// already renders as <p>, creating <p><p>...</p></p> which browsers auto-correct
+				// by splitting into empty + unstyled paragraphs (losing the NB ID-based CSS).
+				// Note: .truncate() can cut mid-HTML, leaving unclosed <p> with no </p>,
+				// so we strip leading <p> and trailing </p> independently.
+				$inner_resolved = preg_replace( '/^\s*<p[^>]*>/i', '', $safe_resolved );
+				$inner_resolved = preg_replace( '/<\/p>\s*$/i', '', $inner_resolved );
+
 				// Replace content inside text elements (p, h1-h6, span, li)
+				// Use .*? to match existing HTML content (not just plain text)
 				return preg_replace(
-					'/(<(?:p|h[1-6]|span|li)\\b[^>]*>)[^<]*(<\\/(?:p|h[1-6]|span|li)>)/',
-					'$1' . esc_html( $resolved ) . '$2',
-					$block_content
+					'/(<(?:p|h[1-6]|span|li)\\b[^>]*>).*?(<\\/(?:p|h[1-6]|span|li)>)/s',
+					'$1' . $inner_resolved . '$2',
+					$block_content,
+					1
 				) ?? $block_content;
 
 			case 'nectar-blocks/button':
 				// Replace text inside the <a> or <button> element
 				// NB button: <a class="nectar-button ..."><span>text</span></a>
-				if ( preg_match( '/<span\\b[^>]*>[^<]*<\\/span>/', $block_content ) ) {
+				if ( preg_match( '/<span\\b[^>]*>.*?<\\/span>/s', $block_content ) ) {
 					return preg_replace(
-						'/(<span\\b[^>]*>)[^<]*(<\\/span>)/',
-						'$1' . esc_html( $resolved ) . '$2',
+						'/(<span\\b[^>]*>).*?(<\\/span>)/s',
+						'$1' . $safe_resolved . '$2',
 						$block_content,
 						1
 					) ?? $block_content;
 				}
 				// Fallback: replace text inside <a> directly
 				return preg_replace(
-					'/(<a\\b[^>]*>)[^<]*(<\\/a>)/',
-					'$1' . esc_html( $resolved ) . '$2',
+					'/(<a\\b[^>]*>).*?(<\\/a>)/s',
+					'$1' . $safe_resolved . '$2',
 					$block_content,
 					1
 				) ?? $block_content;

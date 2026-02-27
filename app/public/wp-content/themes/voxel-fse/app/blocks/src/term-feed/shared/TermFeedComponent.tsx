@@ -10,9 +10,9 @@
  *
  * HTML Structure (from Voxel):
  * <div class="post-feed-grid {layoutMode} min-scroll min-scroll-h" data-auto-slide="0">
- *   <div class="ts-preview" data-term-id="{id}" style="--e-global-color-accent: {color};">
+ *   <a href="{term.link}" class="ts-preview" data-term-id="{id}" style="--e-global-color-accent: {color};">
  *     <!-- card template HTML -->
- *   </div>
+ *   </a>
  * </div>
  * <ul class="simplify-ul flexify post-feed-nav">
  *   <li><a href="#" class="ts-icon-btn ts-prev-page">...</a></li>
@@ -332,22 +332,26 @@ export default function TermFeedComponent({
 						: 0
 				}
 			>
-				{terms.map((term) => (
-					<div
-						key={term.id}
-						className="ts-preview"
-						data-term-id={term.id}
-						style={buildItemStyles(attributes, term.color)}
-					>
-						{/* Render term card HTML from API */}
-						{term.cardHtml ? (
-							<div
-								dangerouslySetInnerHTML={{
-									__html: term.cardHtml,
-								}}
-							/>
-						) : (
-							// Fallback simple card if no template HTML
+				{terms.map((term) =>
+					term.cardHtml ? (
+						// Render card HTML directly on the <a> — no extra wrapper div
+						<a
+							key={term.id}
+							href={term.link}
+							className="ts-preview"
+							data-term-id={term.id}
+							style={buildItemStyles(attributes, term.color)}
+							dangerouslySetInnerHTML={{ __html: term.cardHtml }}
+						/>
+					) : (
+						// Fallback simple card if no template HTML
+						<a
+							key={term.id}
+							href={term.link}
+							className="ts-preview"
+							data-term-id={term.id}
+							style={buildItemStyles(attributes, term.color)}
+						>
 							<div className="ts-term-card">
 								{term.icon && (
 									<div
@@ -364,9 +368,9 @@ export default function TermFeedComponent({
 									</div>
 								)}
 							</div>
-						)}
-					</div>
-				))}
+						</a>
+					)
+				)}
 			</div>
 
 			{/* Carousel navigation - matches Voxel's carousel-nav.php */}

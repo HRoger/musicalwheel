@@ -147,6 +147,8 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/row', fields: [
+		{ fieldKey: 'backgroundImage', label: 'Background Image', labelText: 'Image', tab: 'style', type: 'image', parentLabelText: 'Background', placement: 'corner' },
+		{ fieldKey: 'backgroundVideo', label: 'Background Video', labelText: 'Video', tab: 'style', type: 'image', parentLabelText: 'Background', placement: 'corner' },
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
 	] },
 	{ blockName: 'nectar-blocks/scrolling-marquee', fields: [
@@ -169,6 +171,10 @@ export const nectarBlocksRegistry: NBBlockConfig[] = [
 	] },
 	{ blockName: 'nectar-blocks/testimonial', fields: [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },
+	] },
+	{ blockName: 'nectar-blocks/column', fields: [
+		{ fieldKey: 'backgroundImage', label: 'Background Image', labelText: 'Image', tab: 'style', type: 'image', parentLabelText: 'Background', placement: 'corner' },
+		{ fieldKey: 'backgroundVideo', label: 'Background Video', labelText: 'Video', tab: 'style', type: 'image', parentLabelText: 'Background', placement: 'corner' },
 	] },
 	{ blockName: 'nectar-blocks/text', fields: [
 		{ fieldKey: 'zIndex', label: 'Z-Index', labelText: 'Value', tab: 'style', type: 'number', parentLabelText: 'Z-Index' },

@@ -347,6 +347,8 @@ export default function PostFeedComponent({
 	context,
 	editorFilters,
 	containerElement,
+	initialHtml,
+	initialMeta,
 }: PostFeedComponentProps): JSX.Element {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -356,16 +358,36 @@ export default function PostFeedComponent({
 	const hasMapWidgetRef = useRef(false);
 	const mapAdditionalMarkersRef = useRef(0);
 
-	// State for post feed - both editor and frontend start in loading state
-	const [state, setState] = useState<PostFeedState>({
-		loading: true,
-		page: 1,
-		results: '',
-		totalCount: 0,
-		displayCount: '0',
-		hasPrev: false,
-		hasNext: false,
-		hasResults: false,
+	// Server-side hydration: if PHP injected pre-rendered HTML, start with it
+	// This eliminates the AJAX round-trip and renders cards immediately (same as term-feed)
+	const isHydrated = context === 'frontend' && initialHtml !== null && initialHtml !== undefined;
+
+	// State for post feed
+	// If hydrated, start with data already loaded (no spinner)
+	// Otherwise, start in loading state (editor or non-hydrated frontend)
+	const [state, setState] = useState<PostFeedState>(() => {
+		if (isHydrated && initialMeta) {
+			return {
+				loading: false,
+				page: 1,
+				results: initialHtml ?? '',
+				totalCount: initialMeta.totalCount,
+				displayCount: initialMeta.displayCount,
+				hasPrev: initialMeta.hasPrev,
+				hasNext: initialMeta.hasNext,
+				hasResults: initialMeta.hasResults,
+			};
+		}
+		return {
+			loading: true,
+			page: 1,
+			results: '',
+			totalCount: 0,
+			displayCount: '0',
+			hasPrev: false,
+			hasNext: false,
+			hasResults: false,
+		};
 	});
 
 	// Dynamic filters from search form (for search-form source mode)
@@ -557,8 +579,6 @@ export default function PostFeedComponent({
 		overrideFilters?: Record<string, unknown>,
 		overridePostType?: string
 	) => {
-		console.log('[PostFeed] fetchPosts called - page:', page, 'overridePostType:', overridePostType, 'dynamicPostType:', dynamicPostType, 'attributes.postType:', attributes.postType);
-		console.log('[PostFeed] fetchPosts caller stack:', new Error().stack);
 		setState(prev => ({ ...prev, loading: true }));
 
 		// VOXEL PARITY: Notify connected blocks (Search Form, Map) that loading started
@@ -577,7 +597,6 @@ export default function PostFeedComponent({
 		try {
 			// Use override post type if provided, otherwise use dynamic or attribute
 			const postType = overridePostType || dynamicPostType || attributes.postType || '';
-			console.log('[PostFeed] fetchPosts using postType:', postType);
 
 			// For search-form source without linked form or postType, show placeholder in editor
 			if (context === 'editor' && attributes.source === 'search-form' && !postType) {
@@ -634,10 +653,8 @@ export default function PostFeedComponent({
 			// Evidence: voxel-search-form.beautified.js:2086-2091
 			// Evidence: voxel/app/controllers/frontend/search/search-controller.php:28
 			// Without this param, Voxel's get_search_results() won't render .ts-marker-wrapper elements
-			console.log('[PostFeed] hasMapWidgetRef.current:', hasMapWidgetRef.current);
 			if (hasMapWidgetRef.current) {
 				params.set('__load_markers', 'yes');
-				console.log('[PostFeed] Added __load_markers=yes to request');
 				if (mapAdditionalMarkersRef.current > 0) {
 					params.set('__load_additional_markers', String(mapAdditionalMarkersRef.current));
 				}
@@ -702,7 +719,6 @@ export default function PostFeedComponent({
 			}
 
 			const html = await response.text();
-			console.log('[PostFeed] fetchPosts response length:', html.length, 'first 500 chars:', html.substring(0, 500));
 
 			// Parse the response to extract metadata
 			const parser = new DOMParser();
@@ -714,7 +730,6 @@ export default function PostFeedComponent({
 			const hasResults = infoScript?.getAttribute('data-has-results') === 'true';
 			const totalCount = parseInt(infoScript?.getAttribute('data-total-count') || '0', 10);
 			const displayCount = infoScript?.getAttribute('data-display-count') || '0';
-			console.log('[PostFeed] fetchPosts parsed - hasResults:', hasResults, 'totalCount:', totalCount, 'hasPrev:', hasPrev, 'hasNext:', hasNext);
 
 			// VOXEL PARITY: Inject CSS assets to #vx-assets-cache and wait for load
 			// Reference: voxel-post-feed.beautified.js:143-174
@@ -783,16 +798,9 @@ export default function PostFeedComponent({
 					// Voxel reads from: feed.find(".post-feed-grid:first").find(".ts-marker-wrapper > .map-marker")
 					if (context === 'frontend' && attributes.source === 'search-form') {
 						const feedContainer = containerElement || containerRef.current;
-						console.log('[PostFeed] MAP INTEGRATION: feedContainer:', feedContainer);
 						if (feedContainer) {
-							// Debug: log the full HTML to see what's in the response
-							console.log('[PostFeed] Feed HTML (first 2000 chars):', feedContainer.innerHTML.substring(0, 2000));
-
 							// Extract marker data from .ts-marker-wrapper elements (Voxel embeds these in preview cards)
 							const markerEls = feedContainer.querySelectorAll('.post-feed-grid .ts-marker-wrapper > .map-marker');
-							console.log('[PostFeed] Found marker elements:', markerEls.length);
-							console.log('[PostFeed] All .ts-marker-wrapper elements:', feedContainer.querySelectorAll('.ts-marker-wrapper').length);
-							console.log('[PostFeed] All .map-marker elements:', feedContainer.querySelectorAll('.map-marker').length);
 							const markers: Array<{
 								postId: string;
 								lat: number;
@@ -824,7 +832,6 @@ export default function PostFeedComponent({
 
 							// Dispatch event with marker data for Map block
 							if (markers.length > 0) {
-								console.log('[PostFeed] Dispatching', markers.length, 'markers to Map block');
 								window.dispatchEvent(new CustomEvent('voxel-fse:post-feed-markers', {
 									detail: {
 										sourceBlockId: attributes.blockId,
@@ -920,6 +927,20 @@ export default function PostFeedComponent({
 			return;
 		}
 
+		// Skip initial fetch if server-side hydration provided the data
+		// The state was already initialized with hydrated HTML in useState above
+		if (isHydrated) {
+			initialFetchDoneRef.current = true;
+			// Trigger voxel:markup-update for any widgets in hydrated content
+			requestAnimationFrame(() => {
+				if ((window as any).jQuery) {
+					(window as any).jQuery(document).trigger('voxel:markup-update');
+				}
+				document.dispatchEvent(new CustomEvent('voxel:markup-update'));
+			});
+			return;
+		}
+
 		if (attributes.source !== 'search-form') {
 			initialFetchDoneRef.current = true;
 			fetchPosts(1);
@@ -931,12 +952,8 @@ export default function PostFeedComponent({
 			// Detect if a Map block exists on the page for __load_markers param
 			// Evidence: voxel-search-form.beautified.js:2086-2091
 			const mapElement = document.querySelector('.voxel-fse-map');
-			console.log('[PostFeed] Looking for .voxel-fse-map element:', mapElement);
 			if (mapElement) {
 				hasMapWidgetRef.current = true;
-				console.log('[PostFeed] Map element found! hasMapWidgetRef set to true');
-			} else {
-				console.log('[PostFeed] No map element found. All elements with voxel-fse class:', document.querySelectorAll('[class*="voxel-fse"]'));
 			}
 
 			// Mark initial fetch as done BEFORE calling fetchPosts
@@ -994,7 +1011,6 @@ export default function PostFeedComponent({
 					try {
 						linkedSearchForm = document.querySelector(selector);
 						if (linkedSearchForm) {
-							console.log('[PostFeed] Found Search Form with selector:', selector);
 							break;
 						}
 					} catch (e) {
@@ -1011,7 +1027,6 @@ export default function PostFeedComponent({
 							const postTypesArray = JSON.parse(postTypesAttr);
 							if (Array.isArray(postTypesArray) && postTypesArray.length > 0) {
 								postTypeToUse = postTypesArray[0];
-								console.log('[PostFeed] Got default postType from data-post-types:', postTypeToUse);
 							}
 						} catch (e) {
 							console.error('[PostFeed] Failed to parse data-post-types:', e);
@@ -1027,7 +1042,6 @@ export default function PostFeedComponent({
 								// Evidence: search-form/save.tsx:98 - postTypes: [...].map(key => ({ key, label: '', filters: [] }))
 								if (searchFormVxConfig.postTypes && searchFormVxConfig.postTypes.length > 0) {
 									postTypeToUse = searchFormVxConfig.postTypes[0].key;
-									console.log('[PostFeed] Got default postType from vxconfig:', postTypeToUse);
 								}
 							} catch (e) {
 								console.error('[PostFeed] Failed to parse Search Form vxconfig:', e);
@@ -1035,11 +1049,9 @@ export default function PostFeedComponent({
 						}
 					}
 				} else {
-					console.warn('[PostFeed] Could not find linked Search Form. searchFormId:', attributes.searchFormId, 'Tried selectors:', selectors);
+				// Linked Search Form not found — postTypeToUse stays empty
 				}
 			}
-
-			console.log('[PostFeed] Frontend initial fetch - postTypeToUse:', postTypeToUse, 'attributes.postType:', attributes.postType);
 
 			if (postTypeToUse) {
 				// Update state for subsequent filter changes
@@ -1054,7 +1066,7 @@ export default function PostFeedComponent({
 				// If we just called fetchPosts(1), dynamicPostType would still be empty
 				fetchPosts(1, false, Object.keys(urlFilters).length > 0 ? urlFilters : undefined, postTypeToUse);
 			} else {
-				console.warn('[PostFeed] No post type available. attributes.postType:', attributes.postType, 'searchFormId:', attributes.searchFormId);
+				// No post type available — skip initial fetch
 			}
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPosts intentionally excluded to prevent infinite loop
@@ -1568,6 +1580,18 @@ export default function PostFeedComponent({
 					className={gridClasses}
 					dangerouslySetInnerHTML={{ __html: state.results }}
 				/>
+			)}
+
+			{/* Frontend loading indicator — shows spinner during initial AJAX fetch
+			  * Prevents blank space while post cards load via Voxel's ?vx=1 system.
+			  * Uses Voxel's .ts-loader pattern for visual consistency.
+			  * Hidden once results arrive (state.loading becomes false). */}
+			{state.loading && !state.results && context === 'frontend' && (
+				<div className="ts-form ts-loading" style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+					<div className="ts-loader-wrapper">
+						<span className="ts-loader"></span>
+					</div>
+				</div>
 			)}
 
 			{/* No results placeholder - always rendered, shown/hidden via CSS */}

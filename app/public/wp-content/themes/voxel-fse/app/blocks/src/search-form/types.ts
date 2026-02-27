@@ -850,6 +850,9 @@ export interface PostTypeConfig {
 	// Card templates for Preview card template and Map popup template dropdowns
 	// Evidence: themes/voxel/app/widgets/search-form.php:453-472
 	templates?: CardTemplate[];
+	// Archive URL for this post type (used by onSubmit='archive' redirect)
+	// Evidence: themes/voxel/app/post-type.php:89-91 - Post_Type::get_archive_link()
+	archiveUrl?: string;
 }
 
 export interface FilterData {

@@ -475,13 +475,28 @@ class FSE_Search_Form_Controller extends FSE_Base_Controller {
 				$filter->reset_frontend_config();
 			}
 
+			// Get archive URL for this post type (used by archive redirect mode)
+			// Evidence: themes/voxel/app/post-type.php:89-91 - Post_Type::get_archive_link()
+			$archive_url = '';
+			$templates = $post_type->templates;
+			if ( $templates && method_exists( $templates, 'get_archive_page' ) ) {
+				$archive_page = $templates->get_archive_page();
+				if ( $archive_page ) {
+					$archive_url = get_permalink( $archive_page );
+				}
+			}
+			if ( ! $archive_url ) {
+				$archive_url = get_post_type_archive_link( $key ) ?: '';
+			}
+
 			$result[] = [
-				'key'      => $key,
-				'label'    => $post_type->get_label(),
-				'singular' => $post_type->get_singular_name(),
-				'plural'   => $post_type->get_plural_name(),
-				'icon'     => Icon_Processor::get_icon_markup( $post_type->get_icon() ),
-				'filters'  => $filters_data,
+				'key'        => $key,
+				'label'      => $post_type->get_label(),
+				'singular'   => $post_type->get_singular_name(),
+				'plural'     => $post_type->get_plural_name(),
+				'icon'       => Icon_Processor::get_icon_markup( $post_type->get_icon() ),
+				'filters'    => $filters_data,
+				'archiveUrl' => $archive_url,
 			];
 		}
 

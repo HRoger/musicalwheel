@@ -738,6 +738,183 @@ class FSE_Term_Feed_Controller extends FSE_Base_Controller {
 	}
 
 	/**
+	 * Generate frontend config for server-side injection (no REST call needed).
+	 *
+	 * Called by Block_Loader::inject_term_feed_config() at render time so the
+	 * frontend can read terms synchronously from the vxconfig-hydrate script tag
+	 * instead of making a REST API round-trip (which causes a loading spinner).
+	 *
+	 * @param array $attributes Block attributes from save.tsx (vxconfig values).
+	 * @return array|null Config array ready for JSON encoding, or null on failure.
+	 */
+	public static function generate_frontend_config( array $attributes ): ?array {
+		try {
+			if ( ! class_exists( '\Voxel\Term' ) ) {
+				return null;
+			}
+
+			global $wpdb;
+
+			$source         = $attributes['source'] ?? 'filters';
+			$term_ids_param = $attributes['manualTermIds'] ?? [];
+			$taxonomy       = $attributes['taxonomy'] ?? '';
+			$parent_term_id = $attributes['parentTermId'] ?? 0;
+			$order          = $attributes['order'] ?? 'default';
+			$per_page       = absint( $attributes['perPage'] ?? 12 );
+			$hide_empty     = (bool) ( $attributes['hideEmpty'] ?? false );
+			$hide_empty_pt  = $attributes['hideEmptyPostType'] ?? ':all';
+			$card_template  = $attributes['cardTemplate'] ?? 'main';
+
+			$instance = new self();
+
+			// Build term list — mirrors get_terms() logic
+			$voxel_terms = [];
+
+			if ( $source === 'manual' ) {
+				if ( empty( $term_ids_param ) ) {
+					return null;
+				}
+				$term_ids = is_array( $term_ids_param )
+					? array_filter( array_map( 'intval', $term_ids_param ) )
+					: array_filter( array_map( 'intval', explode( ',', $term_ids_param ) ) );
+
+				if ( ! empty( $term_ids ) ) {
+					_prime_term_caches( $term_ids );
+					foreach ( $term_ids as $tid ) {
+						try {
+							$vt = \Voxel\Term::get( (int) $tid );
+							if ( $vt ) {
+								$voxel_terms[] = $vt;
+							}
+						} catch ( \Throwable $e ) {
+							error_log( 'Term Feed SSR Voxel\Term::get Error: ' . $e->getMessage() );
+						}
+					}
+					if ( $hide_empty && ! empty( $voxel_terms ) ) {
+						$voxel_terms = array_filter( $voxel_terms, function( $term ) use ( $instance, $hide_empty_pt ) {
+							return $instance->term_has_posts( $term, $hide_empty_pt ?: ':all' );
+						} );
+					}
+				}
+			} else {
+				// Filters mode
+				if ( empty( $taxonomy ) ) {
+					return null;
+				}
+
+				$query_taxonomy = esc_sql( $taxonomy );
+				$query_limit    = $per_page > 0 ? $per_page : 10;
+				$query_order_by = 't.name ASC';
+
+				$joins  = [];
+				$wheres = [];
+
+				if ( is_numeric( $parent_term_id ) && $parent_term_id > 0 ) {
+					$wheres[] = $wpdb->prepare( 'tt.parent = %d', absint( $parent_term_id ) );
+				}
+
+				$join_clauses  = join( ' ', $joins );
+				$where_clauses = ! empty( $wheres ) ? ' AND ' . join( ' AND ', $wheres ) : '';
+
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$sql = "SELECT t.term_id FROM {$wpdb->terms} AS t
+					INNER JOIN {$wpdb->term_taxonomy} AS tt ON t.term_id = tt.term_id
+					{$join_clauses}
+					WHERE tt.taxonomy = '{$query_taxonomy}'
+					{$where_clauses}
+					ORDER BY {$query_order_by}
+					LIMIT {$query_limit}";
+
+				// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				$term_ids = $wpdb->get_col( $sql );
+
+				if ( ! empty( $term_ids ) ) {
+					_prime_term_caches( $term_ids );
+					foreach ( $term_ids as $tid ) {
+						try {
+							$vt = \Voxel\Term::get( (int) $tid );
+							if ( $vt ) {
+								$voxel_terms[] = $vt;
+							}
+						} catch ( \Throwable $e ) {
+							error_log( 'Term Feed SSR Voxel\Term::get Error: ' . $e->getMessage() );
+						}
+					}
+				}
+			}
+
+			if ( empty( $voxel_terms ) ) {
+				// Still inject — lets frontend know it's hydrated (zero terms, no spinner)
+				return [
+					'terms'   => [],
+					'total'   => 0,
+					'styles'  => '',
+				];
+			}
+
+			$numeric_template_id = $instance->resolve_term_card_template_id( $card_template );
+			$template_content    = $instance->get_term_card_template_content( $numeric_template_id );
+
+			$response_terms = [];
+			foreach ( $voxel_terms as $voxel_term ) {
+				$wp_term = get_term( $voxel_term->get_id() );
+				if ( ! $wp_term || is_wp_error( $wp_term ) ) {
+					continue;
+				}
+
+				$term_data = [
+					'id'          => $voxel_term->get_id(),
+					'name'        => $wp_term->name,
+					'slug'        => $wp_term->slug,
+					'description' => $wp_term->description,
+					'count'       => $wp_term->count,
+					'parent'      => $wp_term->parent,
+					'taxonomy'    => $wp_term->taxonomy,
+					'link'        => $voxel_term->get_link(),
+					'color'       => $voxel_term->get_color() ?? '',
+					'icon'        => '',
+					'cardHtml'    => '',
+				];
+
+				$icon_value = $voxel_term->get_icon();
+				if ( $icon_value && function_exists( '\Voxel\get_icon_markup' ) ) {
+					$term_data['icon'] = \Voxel\get_icon_markup( $icon_value );
+				}
+
+				if ( $template_content ) {
+					$term_data['cardHtml'] = $instance->render_term_card_html( $voxel_term, $template_content );
+				}
+
+				if ( empty( trim( $term_data['cardHtml'] ) ) ) {
+					$term_data['cardHtml'] = $instance->render_simple_card_from_term( $voxel_term );
+				}
+
+				$response_terms[] = $term_data;
+			}
+
+			// NOTE: Skip get_rendered_block_styles() here — it calls wp_print_styles()
+			// which outputs CSS too early (during render_block filter, before wp_head).
+			// Styles are already enqueued normally by WordPress on the frontend.
+			// Only get_nectar_blocks_css() is safe (reads post meta, no output side-effects).
+			$styles = '';
+			$nb_css = $instance->get_nectar_blocks_css( $numeric_template_id );
+			if ( $nb_css ) {
+				$styles .= '<style id="nb-term-card-css">' . $nb_css . '</style>';
+			}
+
+			return [
+				'terms'  => $response_terms,
+				'total'  => count( $response_terms ),
+				'styles' => $styles,
+			];
+
+		} catch ( \Throwable $e ) {
+			error_log( 'Term Feed generate_frontend_config Error: ' . $e->getMessage() );
+			return null;
+		}
+	}
+
+	/**
 	 * Check if a term has posts (for hide_empty filter)
 	 *
 	 * PARITY: themes/voxel/app/widgets/term-feed.php lines 624-644
