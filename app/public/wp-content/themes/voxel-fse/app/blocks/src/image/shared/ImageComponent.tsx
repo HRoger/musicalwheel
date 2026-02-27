@@ -3,7 +3,7 @@
  *
  * 1:1 match with Elementor Widget_Image HTML structure:
  * - figure.wp-caption wrapper (when has caption)
- * - a.elementor-clickable link (when linked)
+ * - a link (when linked; .elementor-clickable editor-only per Elementor image.php:746-749)
  * - img with elementor-animation-* class (when hover animation set)
  * - figcaption.widget-image-caption (when has caption)
  *
@@ -14,14 +14,27 @@
  * @package VoxelFSE
  */
 
+import { useCallback, useState, useEffect } from 'react';
 import { __ } from '@wordpress/i18n';
 import type { ImageBlockAttributes, SliderValue } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import apiFetch from '@wordpress/api-fetch';
+
+/**
+ * Global VoxelLightbox API (provided by assets/dist/yarl-lightbox.js)
+ */
+interface VoxelLightboxAPI {
+	open: (slides: Array<{ src: string; alt?: string }>, index?: number) => void;
+	close: () => void;
+}
 
 interface ImageComponentProps {
 	attributes: ImageBlockAttributes;
 	context: 'editor' | 'frontend';
-	onSelectImage?: (media: any) => void;
+	/** Template context for dynamic tag resolution in editor (e.g., 'term', 'post', 'user') */
+	templateContext?: string;
+	/** Post type extracted from template slug (e.g., 'place') */
+	templatePostType?: string;
 }
 
 /**
@@ -40,17 +53,6 @@ function buildImageStyles(attributes: ImageBlockAttributes): React.CSSProperties
 	if (attributes.aspectRatio) {
 		styles.aspectRatio = attributes.aspectRatio;
 	}
-
-	return styles;
-}
-
-/**
- * Build inline styles for the wrapper
- */
-function buildWrapperStyles(_attributes: ImageBlockAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	// Text Align handled via generated CSS in styles.ts
 
 	return styles;
 }
@@ -107,15 +109,19 @@ function getImageClass(attributes: ImageBlockAttributes): string {
 
 /**
  * Get caption text
+ * Evidence: Elementor image.php:710-722 uses wp_get_attachment_caption() for 'attachment' source
  */
-function getCaption(attributes: ImageBlockAttributes): string {
+function getCaption(attributes: ImageBlockAttributes, context: 'editor' | 'frontend'): string {
 	if (attributes.captionSource === 'custom') {
 		return attributes.caption || '';
 	}
 	if (attributes.captionSource === 'attachment') {
-		// For frontend, this would be resolved from the image attachment
-		// For editor, we return the alt text as a fallback
-		return attributes.image.alt || '';
+		// Frontend: render.php resolves wp_get_attachment_caption() server-side
+		// Editor: show placeholder text so the user knows a caption will appear
+		if (context === 'editor') {
+			return attributes.image.alt || '(Attachment caption)';
+		}
+		return '';
 	}
 	return '';
 }
@@ -143,14 +149,104 @@ function getLinkUrl(attributes: ImageBlockAttributes): string | null {
 	return null;
 }
 
-export default function ImageComponent({ attributes, context, onSelectImage }: ImageComponentProps) {
+export default function ImageComponent({ attributes, context, templateContext = 'post', templatePostType }: ImageComponentProps) {
 	const imageStyles = buildImageStyles(attributes);
-	const wrapperStyles = buildWrapperStyles(attributes);
 	const captionStyles = buildCaptionStyles(attributes);
 	const imageClass = getImageClass(attributes);
-	const caption = getCaption(attributes);
+	const caption = getCaption(attributes, context);
 	const showCaption = hasCaption(attributes);
 	const linkUrl = getLinkUrl(attributes);
+
+	// Dynamic image tag resolution for editor preview
+	const hasDynamicImage = attributes.imageDynamicTag && attributes.imageDynamicTag.includes('@');
+	const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+
+	// templateContext is passed from edit.tsx via useTemplateContext()
+
+	useEffect(() => {
+		if (context !== 'editor' || !hasDynamicImage) {
+			setDynamicImageUrl(null);
+			return;
+		}
+
+		let cancelled = false;
+		
+		(async () => {
+			try {
+				// Build preview context so the server can find a sample term/post
+				const previewContext: Record<string, string> = { type: templateContext };
+				if (templatePostType) {
+					previewContext['post_type'] = templatePostType;
+				}
+
+				// Step 1: Resolve the dynamic tag to get the attachment ID
+				const renderResult = await apiFetch<{ rendered: string }>({
+					path: '/voxel-fse/v1/dynamic-data/render',
+					method: 'POST',
+					data: {
+						expression: attributes.imageDynamicTag,
+						preview_context: previewContext,
+					},
+				});
+
+				if (cancelled) return;
+
+				// Strip @tags()...@endtags() wrapper from rendered result
+				let rendered = renderResult.rendered;
+				const wrapperMatch = rendered.match(/@tags\(\)(.*?)@endtags\(\)/s);
+				if (wrapperMatch) {
+					rendered = wrapperMatch[1];
+				}
+
+				const attachmentId = parseInt(rendered, 10);
+				if (!attachmentId || isNaN(attachmentId)) {
+					setDynamicImageUrl(null);
+					return;
+				}
+
+				// Step 2: Get the image URL from the WordPress media REST API
+				// Request media_details to access registered size URLs
+				const media = await apiFetch<{
+					source_url: string;
+					alt_text?: string;
+					media_details?: { sizes?: Record<string, { source_url: string }> };
+				}>({
+					path: `/wp/v2/media/${attachmentId}?context=edit`,
+				});
+
+				if (cancelled) return;
+
+				if (media) {
+					// Use the requested imageSize if available, fall back to full-size source_url
+					const requestedSize = attributes.imageSize || 'large';
+					const sizedUrl = media.media_details?.sizes?.[requestedSize]?.source_url;
+					setDynamicImageUrl(sizedUrl || media.source_url);
+				}
+			} catch (err) {
+				if (!cancelled) {
+					console.error('Failed to resolve dynamic image tag:', err);
+				}
+			}
+		})();
+
+		return () => { cancelled = true; };
+	}, [context, attributes.imageDynamicTag, hasDynamicImage, templateContext, templatePostType, attributes.imageSize]);
+
+	// Use resolved dynamic image URL when no static image is set
+	const effectiveImageUrl = attributes.image.url || dynamicImageUrl;
+
+	// Lightbox click handler for "file" link type
+	const handleLightboxClick = useCallback(
+		(e: React.MouseEvent<HTMLAnchorElement | HTMLImageElement>) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const lightbox = (window as unknown as { VoxelLightbox?: VoxelLightboxAPI }).VoxelLightbox;
+			if (lightbox && effectiveImageUrl) {
+				lightbox.open([{ src: effectiveImageUrl, alt: attributes.image.alt || '' }], 0);
+			}
+		},
+		[effectiveImageUrl, attributes.image.alt]
+	);
 
 	// Visibility classes
 	const visibilityClasses: string[] = [];
@@ -162,11 +258,11 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	// Build wrapper class
 	const wrapperClass = ['voxel-fse-image-wrapper', `voxel-fse-image-wrapper-${attributes.blockId}`, ...visibilityClasses].filter(Boolean).join(' ');
 
-	// No image selected - show placeholder
-	if (!attributes.image.url) {
+	// No image selected and no dynamic tag - show placeholder
+	if (!effectiveImageUrl) {
 		if (context === 'editor') {
 			return (
-				<div className={wrapperClass} style={wrapperStyles}>
+				<div className={wrapperClass}>
 					<EmptyPlaceholder />
 				</div>
 			);
@@ -175,11 +271,14 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 		return null;
 	}
 
+	// Determine if image should open lightbox in editor
+	const isEditorLightbox = context === 'editor' && attributes.linkTo === 'file' && attributes.openLightbox !== 'no';
+
 	// Build the image element - matches Elementor output exactly
 	// Evidence: plugins/elementor/includes/widgets/image.php:752
 	const imageElement = (
 		<img
-			src={attributes.image.url}
+			src={effectiveImageUrl}
 			alt={attributes.image.alt}
 			title={attributes.image.alt || ''}
 			loading="lazy"
@@ -189,16 +288,22 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 	);
 
 	// Wrap with link if needed
+	// Evidence: .elementor-clickable is editor-only in Elementor (image.php:746-749)
 	let content = imageElement;
 	if (linkUrl) {
-		const linkAttributes: React.AnchorHTMLAttributes<HTMLAnchorElement> = {
+		const linkAttributes: any = {
 			href: linkUrl,
-			className: 'elementor-clickable',
+			className: context === 'editor' ? 'elementor-clickable' : undefined,
 		};
 
-		// Add lightbox data attribute
+		// Add lightbox data attributes and click handler
+		// Evidence: Elementor image.php:752-754
 		if (attributes.linkTo === 'file' && attributes.openLightbox !== 'no') {
 			linkAttributes['data-elementor-open-lightbox'] = attributes.openLightbox;
+			if (attributes.lightboxGroup) {
+				linkAttributes['data-elementor-lightbox-slideshow'] = attributes.lightboxGroup;
+			}
+			linkAttributes.onClick = handleLightboxClick;
 		}
 
 		// Add target/rel for custom links
@@ -211,13 +316,19 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 			}
 		}
 
-		content = <a {...linkAttributes}>{imageElement}</a>;
+		// In editor: override display:contents from style.css so <a> has a box
+		// and can receive click events. Same pattern as GalleryComponent.
+		if (context === 'editor' && isEditorLightbox) {
+			linkAttributes.style = { display: 'inline-block', cursor: 'pointer' };
+		}
+
+		content = <a {...(linkAttributes as React.AnchorHTMLAttributes<HTMLAnchorElement>)}>{imageElement}</a>;
 	}
 
 	// Wrap with figure if has caption
 	if (showCaption) {
 		return (
-			<div className={wrapperClass} style={wrapperStyles}>
+			<div className={wrapperClass}>
 				<figure className="wp-caption">
 					{content}
 					{caption && (
@@ -232,7 +343,7 @@ export default function ImageComponent({ attributes, context, onSelectImage }: I
 
 	// No caption - just the image (possibly linked)
 	return (
-		<div className={wrapperClass} style={wrapperStyles}>
+		<div className={wrapperClass}>
 			{content}
 		</div>
 	);

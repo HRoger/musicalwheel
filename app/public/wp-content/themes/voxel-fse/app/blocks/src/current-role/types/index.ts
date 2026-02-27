@@ -15,7 +15,7 @@
  * Icon value structure (matches Elementor ICONS control)
  */
 export interface IconValue {
-	library: 'icon' | 'svg' | '';
+	library: 'icon' | 'svg' | 'dynamic' | 'fa-solid' | 'fa-regular' | 'fa-brands' | 'line-awesome' | '';
 	value: string;
 }
 
@@ -23,6 +23,7 @@ export interface IconValue {
  * Helper interfaces for style values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSizeUnit?: string;

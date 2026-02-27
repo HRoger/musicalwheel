@@ -14,9 +14,9 @@ import React from 'react';
  * Based on WordPress default admin color scheme
  */
 export const WP_COLORS = {
-	// Primary colors
-	primary: '#2271b1',        // WordPress blue (active states)
-	primaryHover: '#135e96',   // Hover state
+	// Primary colors - uses CSS variable for theme-ability (NectarBlocks override)
+	primary: 'var(--vxfse-accent-color, #3858e9)',
+	primaryHover: 'var(--vxfse-accent-color-darker, #2145e6)',
 	primaryLight: '#f0f6fc',   // Light background
 
 	// Secondary/inactive colors

@@ -20,7 +20,7 @@ export const DayOfWeekCondition: React.FC<DayOfWeekConditionProps> = ({
 	days,
 	onChange,
 	weekdays,
-	popupKey,
+	popupKey: _popupKey,
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [tempDays, setTempDays] = useState<string[]>(days);

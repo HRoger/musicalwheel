@@ -11,8 +11,6 @@ import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	SelectControl,
-	Spinner,
-	Placeholder,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useState, useEffect, useMemo } from 'react';
@@ -20,7 +18,6 @@ import type { LoginAttributes, AuthConfig, AuthScreen } from './types';
 import { IconPickerControl } from '@shared/controls/IconPickerControl';
 import TagMultiSelect from '@shared/controls/TagMultiSelect';
 import InspectorTabs from '@shared/controls/InspectorTabs';
-import VoxelGridIcon from '@shared/VoxelGridIcon';
 import LoginComponent from './shared/LoginComponent';
 import { DynamicTagTextControl } from '@shared/controls';
 import { StyleTab, FieldStyleTab } from './inspector';
@@ -425,14 +422,13 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 		/>
 	);
 
-	// Loading state
+	// Loading state - use Voxel's ts-loader pattern instead of Gutenberg Placeholder
 	if (isLoading) {
 		return (
 			<div {...blockProps}>
-				<Placeholder icon={<VoxelGridIcon />} label={__('Login / Register (VX)', 'voxel-fse')}>
-					<Spinner />
-					<p>{__('Loading auth configuration...', 'voxel-fse')}</p>
-				</Placeholder>
+				<div className="ts-no-posts">
+					<span className="ts-loader"></span>
+				</div>
 			</div>
 		);
 	}
@@ -476,12 +472,12 @@ export default function Edit({ attributes, setAttributes, clientId }: EditProps)
 				<InspectorControls>
 					{renderInspectorTabs()}
 				</InspectorControls>
-				<Placeholder icon="warning" label={__('Login / Register (VX)', 'voxel-fse')}>
+				<div className="ts-no-posts">
 					<p>
 						{__('Error loading configuration: ', 'voxel-fse')}
 						{error}
 					</p>
-				</Placeholder>
+				</div>
 			</div>
 		);
 	}

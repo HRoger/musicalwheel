@@ -185,14 +185,11 @@ describe('ResponsiveRangeControl Component', () => {
 					attributes={{ testValueUnit: 'custom' }}
 					availableUnits={['px', '%', 'custom']}
 					unitAttributeName="testValueUnit"
-					showResetButton={true}
 				/>
 			);
 
-			// Reset button should not be rendered in custom mode
-			// The component doesn't render the reset button section in custom mode
+			// Reset button is no longer rendered (removed to match Elementor/NB pattern)
 			const buttons = screen.queryAllByRole('button');
-			// Should only have dropdown toggle, not reset button
 			const resetButton = buttons.find(b => b.getAttribute('label') === 'Reset to default');
 			expect(resetButton).toBeUndefined();
 		});

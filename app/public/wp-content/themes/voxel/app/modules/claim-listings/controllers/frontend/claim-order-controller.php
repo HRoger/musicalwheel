@@ -16,6 +16,8 @@ class Claim_Order_Controller extends \Voxel\Controllers\Base_Controller {
 		$this->on( 'voxel/product-types/orders/order:updated', '@claim_order_updated' );
 		$this->on( 'voxel/product-types/orders/order:updated', '@listing_plan_order_updated', 100 );
 		$this->filter( 'voxel/orders/view_order/item/components', '@register_claim_component', 10, 3 );
+		$this->filter( 'voxel/order/customer_details', '@claim_order_customer_details', 10, 2 );
+		$this->filter( 'voxel/order/success_redirect', '@redirect_to_claim_order_after_plan_purchase', 110, 2 );
 	}
 
 	protected function claim_order_updated( $order ) {
@@ -113,17 +115,23 @@ class Claim_Order_Controller extends \Voxel\Controllers\Base_Controller {
 
 				global $wpdb;
 
+				$order_details = [
+					'pricing' => [
+						'currency' => \Voxel\get_primary_currency(),
+						'subtotal' => 0,
+						'total' => 0,
+					],
+				];
+				$listing_plan_order_notes = $order->get_details( 'order_notes' );
+				if ( is_string( $listing_plan_order_notes ) && $listing_plan_order_notes !== '' ) {
+					$order_details['order_notes'] = $listing_plan_order_notes;
+				}
+
 				$wpdb->insert( $wpdb->prefix.'vx_orders', [
 					'customer_id' => $customer->get_id(),
 					'status' => 'pending_approval',
 					'payment_method' => 'offline_payment',
-					'details' => wp_json_encode( Schema::optimize_for_storage( [
-						'pricing' => [
-							'currency' => \Voxel\get_primary_currency(),
-							'subtotal' => 0,
-							'total' => 0,
-						],
-					] ) ),
+					'details' => wp_json_encode( Schema::optimize_for_storage( $order_details ) ),
 					'testmode' => $order->is_test_mode() ? 1 : 0,
 					'created_at' => \Voxel\utc()->format( 'Y-m-d H:i:s' ),
 				] );
@@ -167,6 +175,66 @@ class Claim_Order_Controller extends \Voxel\Controllers\Base_Controller {
 		}
 	}
 
+	protected function redirect_to_claim_order_after_plan_purchase( $redirect_to, \Voxel\Order $order ) {
+		if ( ! in_array( $order->get_status(), [ 'completed', 'sub_active', 'sub_trialing' ], true ) ) {
+			return $redirect_to;
+		}
+
+		$customer_id = $order->get_customer_id();
+		foreach ( $order->get_items() as $order_item ) {
+			$package = Paid_Listings\Listing_Package::get( $order_item );
+			if ( ! $package ) {
+				continue;
+			}
+			$checkout_context = $order_item->get_details( 'voxel:checkout_context' );
+			if ( ( $checkout_context['process'] ?? null ) !== 'claim' ) {
+				continue;
+			}
+
+			$package_id = $package->get_id();
+			$claim_orders = \Voxel\Product_Types\Orders\Order::query( [
+				'customer_id' => $customer_id,
+				'product_type' => 'voxel:claim_request',
+				'limit' => 50,
+				'order_by' => 'id',
+				'order' => 'desc',
+			] );
+
+			foreach ( $claim_orders as $claim_order ) {
+				$items = $claim_order->get_items();
+				if ( count( $items ) !== 1 ) {
+					continue;
+				}
+				$claim_item = reset( $items );
+				if ( (int) $claim_item->get_details( 'voxel:claim_request.package_id' ) === $package_id ) {
+					return $claim_order->get_link();
+				}
+			}
+		}
+
+		return $redirect_to;
+	}
+
+	protected function claim_order_customer_details( $details, $order ) {
+		$items = $order->get_items();
+		if ( count( $items ) !== 1 ) {
+			return $details;
+		}
+		$item = reset( $items );
+		if ( $item->get_product_field_key() !== 'voxel:claim_request' ) {
+			return $details;
+		}
+		$package_id = $item->get_details( 'voxel:claim_request.package_id' );
+		if ( ! is_numeric( $package_id ) ) {
+			return $details;
+		}
+		$package = Paid_Listings\Listing_Package::get( (int) $package_id );
+		if ( ! $package ) {
+			return $details;
+		}
+		return $package->order->get_customer_details();
+	}
+
 	protected function register_claim_component( $components, $order_item, $order ) {
 		if ( $order_item->get_product_field_key() !== 'voxel:claim_request' ) {
 			return $components;
@@ -194,9 +262,9 @@ class Claim_Order_Controller extends \Voxel\Controllers\Base_Controller {
 			],
 			'l10n' => [
 				'proof_of_ownership' => _x( 'Proof of ownership', 'single order', 'voxel' ),
-				'claim_submitted' => _x( 'Your claim request has been submitted', 'single order', 'voxel' ),
-				'claim_declined' => _x( 'Your claim request has been declined', 'single order', 'voxel' ),
-				'claim_successful' => _x( 'Your claim request has been approved', 'single order', 'voxel' ),
+				'claim_submitted' => _x( 'Claim request is awaiting approval', 'single order', 'voxel' ),
+				'claim_declined' => _x( 'Claim request has been declined', 'single order', 'voxel' ),
+				'claim_successful' => _x( 'Claim request has been approved', 'single order', 'voxel' ),
 				'view_listing' => _x( 'View listing', 'single order', 'voxel' ),
 				'view_plan' => _x( 'View plan', 'single order', 'voxel' ),
 			],

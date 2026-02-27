@@ -41,6 +41,7 @@ export interface BoxValues {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontWeight?: string;
@@ -75,43 +76,250 @@ export interface OrdersBlockAttributes {
 	trashIcon: IconValue;
 	calendarIcon: IconValue;
 
-	// Title styling
+	// Legacy title styling
 	titleTypography: TypographyValue;
 	titleColor: string;
 	subtitleTypography: TypographyValue;
 	subtitleColor: string;
 
-	// Card styling
+	// Style Tab panel state
+	styleTabOpenPanel: string;
+
+	// Section 1: General
+	generalTitleTypography: TypographyValue;
+	generalTitleColor: string;
+	generalSubtitleTypography: TypographyValue;
+	generalSubtitleColor: string;
+	generalSpacing: number;
+	generalSpacing_tablet: number;
+	generalSpacing_mobile: number;
+
+	// Section 2: Primary button
+	primaryBtnState: string;
+	primaryBtnTypography: TypographyValue;
+	primaryBtnBorderType: string;
+	primaryBtnBorderRadius: number;
+	primaryBtnBorderRadius_tablet: number;
+	primaryBtnBorderRadius_mobile: number;
+	primaryBtnBoxShadow: Record<string, unknown>;
+	primaryBtnTextColor: string;
+	primaryBtnBackground: string;
+	primaryBtnIconSize: number;
+	primaryBtnIconSize_tablet: number;
+	primaryBtnIconSize_mobile: number;
+	primaryBtnIconColor: string;
+	primaryBtnIconSpacing: number;
+	primaryBtnIconSpacing_tablet: number;
+	primaryBtnIconSpacing_mobile: number;
+	primaryBtnTextColorHover: string;
+	primaryBtnBackgroundHover: string;
+	primaryBtnBorderColorHover: string;
+	primaryBtnBoxShadowHover: Record<string, unknown>;
+	primaryBtnIconColorHover: string;
+
+	// Section 3: Secondary button
+	secondaryBtnState: string;
+	secondaryBtnIconColor: string;
+	secondaryBtnIconSize: number;
+	secondaryBtnIconSize_tablet: number;
+	secondaryBtnIconSize_mobile: number;
+	secondaryBtnIconSpacing: number;
+	secondaryBtnIconSpacing_tablet: number;
+	secondaryBtnIconSpacing_mobile: number;
+	secondaryBtnBackground: string;
+	secondaryBtnBorderType: string;
+	secondaryBtnBorderRadius: number;
+	secondaryBtnBorderRadius_tablet: number;
+	secondaryBtnBorderRadius_mobile: number;
+	secondaryBtnTypography: TypographyValue;
+	secondaryBtnTextColor: string;
+	secondaryBtnIconColorHover: string;
+	secondaryBtnBackgroundHover: string;
+	secondaryBtnBorderColorHover: string;
+	secondaryBtnTextColorHover: string;
+
+	// Section 4: Cards
+	cardState: string;
 	cardBackground: string;
-	cardBackgroundHover: string;
+	cardBorderType: string;
 	cardBorderRadius: number;
+	cardBorderRadius_tablet: number;
+	cardBorderRadius_mobile: number;
+	cardAvatarSize: number;
+	cardAvatarSize_tablet: number;
+	cardAvatarSize_mobile: number;
+	cardAvatarBorderRadius: number;
+	cardAvatarBorderRadius_tablet: number;
+	cardAvatarBorderRadius_mobile: number;
+	cardOrderIdTypography: TypographyValue;
+	cardOrderIdColor: string;
+	cardOrderIdBackground: string;
+	cardOrderIdBorderRadius: number;
+	cardOrderIdBorderRadius_tablet: number;
+	cardOrderIdBorderRadius_mobile: number;
+	cardOrderTitleTypography: TypographyValue;
+	cardOrderTitleTypographyPending: TypographyValue;
+	cardOrderTitleColor: string;
+	cardOrderDetailsTypography: TypographyValue;
+	cardOrderDetailsColor: string;
+	cardBackgroundHover: string;
+	cardBorderColorHover: string;
 	cardPadding: BoxValues;
 	cardPadding_tablet: BoxValues;
 	cardPadding_mobile: BoxValues;
 
-	// Status colors
+	// Section 5: Order statuses
+	statusPadding: BoxValues;
+	statusBorderRadius: number;
+	statusBorderRadius_tablet: number;
+	statusBorderRadius_mobile: number;
+	statusTypography: TypographyValue;
+	statusOrangeColor: string;
+	statusGreenColor: string;
+	statusNeutralColor: string;
+	statusRedColor: string;
+	statusGreyColor: string;
+	statusBlueColor: string;
 	statusPendingColor: string;
 	statusCompletedColor: string;
 	statusCancelledColor: string;
 	statusRefundedColor: string;
 
-	// Primary button styling
+	// Section 6: Filters common styles
+	filterCommonState: string;
+	filterHeight: number;
+	filterHeight_tablet: number;
+	filterHeight_mobile: number;
+	filterBorderRadius: number;
+	filterBorderRadius_tablet: number;
+	filterBorderRadius_mobile: number;
+	filterBoxShadow: Record<string, unknown>;
+	filterBorderType: string;
+	filterBackground: string;
+	filterTextColor: string;
+	filterTypography: TypographyValue;
+	filterChevronColor: string;
+	filterBoxShadowHover: Record<string, unknown>;
+	filterBorderColorHover: string;
+	filterBackgroundHover: string;
+	filterTextColorHover: string;
+	filterChevronColorHover: string;
+	filterBackgroundActive: string;
+	filterTextColorActive: string;
+
+	// Section 7: Filter dropdown
+	filterDropdownState: string;
+	filterDropdownTypography: TypographyValue;
+	filterDropdownBackground: string;
+	filterDropdownTextColor: string;
+	filterDropdownBorderColor: string;
+	filterDropdownBorderWidth: number;
+	filterDropdownBorderWidth_tablet: number;
+	filterDropdownBorderWidth_mobile: number;
+	filterDropdownBoxShadow: Record<string, unknown>;
+	filterDropdownChevronColor: string;
+
+	// Section 8: Filter input
+	filterInputState: string;
+	filterInputPlaceholderColor: string;
+	filterInputIconSize: number;
+	filterInputIconSize_tablet: number;
+	filterInputIconSize_mobile: number;
+	filterInputIconColor: string;
+	filterInputIconMargin: number;
+	filterInputIconMargin_tablet: number;
+	filterInputIconMargin_mobile: number;
+	filterInputBackgroundFocus: string;
+	filterInputBorderColorFocus: string;
+
+	// Section 9: Single order event
+	singleEventAvatarSize: number;
+	singleEventAvatarSize_tablet: number;
+	singleEventAvatarSize_mobile: number;
+	singleEventAvatarBorderRadius: number;
+	singleEventAvatarBorderRadius_tablet: number;
+	singleEventAvatarBorderRadius_mobile: number;
+	singleEventOrderTitleTypography: TypographyValue;
+	singleEventOrderTitleColor: string;
+	singleEventTitleTypography: TypographyValue;
+	singleEventTitleColor: string;
+	singleEventDetailsTypography: TypographyValue;
+	singleEventDetailsColor: string;
+	singleEventDividerColor: string;
+	singleEventFilesTypography: TypographyValue;
+	singleEventFilesColor: string;
+
+	// Section 10: Single event box
+	singleEventBoxPadding: BoxValues;
+	singleEventBoxBorderType: string;
+	singleEventBoxBorderRadius: number;
+	singleEventBoxBorderRadius_tablet: number;
+	singleEventBoxBorderRadius_mobile: number;
+	singleEventBoxBackground: string;
+
+	// Section 11: Single order items
+	singleItemSpacing: number;
+	singleItemSpacing_tablet: number;
+	singleItemSpacing_mobile: number;
+	singleItemContentSpacing: number;
+	singleItemContentSpacing_tablet: number;
+	singleItemContentSpacing_mobile: number;
+	singleItemPictureSize: number;
+	singleItemPictureSize_tablet: number;
+	singleItemPictureSize_mobile: number;
+	singleItemPictureRadius: number;
+	singleItemPictureRadius_tablet: number;
+	singleItemPictureRadius_mobile: number;
+	singleItemTitleTypography: TypographyValue;
+	singleItemTitleColor: string;
+	singleItemSubtitleTypography: TypographyValue;
+	singleItemSubtitleColor: string;
+
+	// Section 12: Single table
+	singleTableListSpacing: number;
+	singleTableListSpacing_tablet: number;
+	singleTableListSpacing_mobile: number;
+	singleTableTypography: TypographyValue;
+	singleTableTextColor: string;
+	singleTableTypographyTotal: TypographyValue;
+	singleTableTextColorTotal: string;
+
+	// Section 13: Single accordion title
+	singleAccordionTitleTypography: TypographyValue;
+	singleAccordionTitleColor: string;
+	singleAccordionIconColor: string;
+	singleAccordionDividerColor: string;
+
+	// Section 14: Single notes
+	singleNotesTypography: TypographyValue;
+	singleNotesTextColor: string;
+	singleNotesLinkColor: string;
+
+	// Section 15: No results
+	noResultsContentGap: number;
+	noResultsContentGap_tablet: number;
+	noResultsContentGap_mobile: number;
+	noResultsIconSize: number;
+	noResultsIconSize_tablet: number;
+	noResultsIconSize_mobile: number;
+	noResultsIconColor: string;
+	noResultsTypography: TypographyValue;
+	noResultsTextColor: string;
+	noResultsLinkColor: string;
+
+	// Section 16: Loading spinner
+	loadingSpinnerColor1: string;
+	loadingSpinnerColor2: string;
+
+	// Legacy button styling
 	primaryButtonBackground: string;
 	primaryButtonBackgroundHover: string;
 	primaryButtonTextColor: string;
 	primaryButtonTextColorHover: string;
-
-	// Secondary button styling
 	secondaryButtonBackground: string;
 	secondaryButtonBackgroundHover: string;
 	secondaryButtonTextColor: string;
 	secondaryButtonTextColorHover: string;
-
-	// Filter styling
-	filterBackground: string;
-	filterBackgroundActive: string;
-	filterTextColor: string;
-	filterTextColorActive: string;
 
 	// Block spacing
 	blockMargin: BoxValues;
@@ -129,6 +337,9 @@ export interface OrdersBlockAttributes {
 	// Custom
 	customClasses: string;
 	customCSS: string;
+
+	// Allow dynamic attribute access for shared controls
+	[key: string]: unknown;
 }
 
 /**
@@ -218,6 +429,10 @@ export interface PromotionPackage {
 	post_id: number;
 	post_title: string;
 	post_link: string;
+	/** Link to promotion stats page */
+	stats_link?: string;
+	/** Whether promotion is assigned to a post */
+	assigned_to_post?: boolean;
 }
 
 /**
@@ -379,6 +594,10 @@ export interface OrderListItem {
 	subtotal: number | null;
 	total: number | null;
 	currency: string;
+	product_type?: string | null;
+	first_item_label?: string | null;
+	first_item_type?: string | null;
+	first_item_claim_title?: string | null;
 }
 
 /**
@@ -417,6 +636,8 @@ export interface OrdersConfig {
 	statuses_ui: Record<OrderStatus, { class: string }>;
 	shipping_statuses: Record<ShippingStatus, StatusConfig>;
 	product_types: ProductTypeFilter[];
+	available_statuses: string[];
+	available_shipping_statuses: string[];
 	is_vendor: boolean;
 	is_admin: boolean;
 	current_user_id: number | null;
@@ -497,6 +718,8 @@ export interface OrdersComponentProps {
 	context: BlockContext;
 	isLoading: boolean;
 	error: string | null;
+	currentPage: number;
+	totalPages: number;
 	onSearch?: (query: string) => void;
 	onStatusFilter?: (status: OrderStatus | null) => void;
 	onProductTypeFilter?: (productType: string | null) => void;
@@ -516,6 +739,9 @@ export interface OrdersListProps {
 	attributes: OrdersBlockAttributes;
 	isLoading: boolean;
 	onOrderSelect: (orderId: number) => void;
+	currentPage: number;
+	totalPages: number;
+	onPageChange: (page: number) => void;
 }
 
 /**
@@ -538,6 +764,7 @@ export interface SingleOrderProps {
 export interface OrdersFilterState {
 	searchQuery: string;
 	status: OrderStatus | null;
+	shippingStatus: string | null;
 	productType: string | null;
 	page: number;
 }
@@ -632,4 +859,6 @@ export interface ItemPromotionDetailsProps {
 	config: OrdersConfig | null;
 	onCancelPromotion: () => Promise<void>;
 	isRunningAction: boolean;
+	/** Info icon from block attributes for .order-event-icon */
+	infoIcon?: IconValue;
 }

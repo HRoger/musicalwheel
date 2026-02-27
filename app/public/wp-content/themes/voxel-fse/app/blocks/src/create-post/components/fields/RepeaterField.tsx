@@ -38,7 +38,6 @@ import {
 	VOXEL_TRASH_CAN_ICON,
 	VOXEL_PLUS_ICON,
 	VOXEL_CHEVRON_DOWN_ICON,
-	VOXEL_DRAG_HANDLE_ICON,
 } from '../../utils/voxelDefaultIcons';
 
 interface RepeaterFieldProps {
@@ -131,8 +130,9 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 		}
 
 		// 2. If editing existing post with data (alternative format)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		if (Array.isArray(value) && value.length > 0) {
-			return value.map((row, index) => {
+			return (value as any[]).map((row: any, index: number) => {
 				// If row already has meta:state with _uid, preserve it
 				if (row['meta:state'] && row['meta:state']._uid) {
 					return row;
@@ -223,7 +223,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 			};
 		} else {
 			// Simple structure: store value directly
-			newRows[rowIndex][fieldKey] = fieldValue;
+			newRows[rowIndex][fieldKey] = fieldValue as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 		}
 
 		// Update row label if this is the label field
@@ -255,7 +255,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 			}
 
 			newRows[rowIndex]['meta:state'].label =
-				labelValue || `${l10n.item} ${rowIndex + 1}`;
+				String(labelValue || `${l10n.item} ${rowIndex + 1}`);
 		}
 
 		setRows(newRows);
@@ -266,7 +266,8 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 	// Voxel rows contain full field configs, not just values
 	const renderRowFields = (row: RepeaterRow, rowIndex: number) => {
 		// Get fields from row (Voxel structure) OR use blueprint for new rows
-		const rowFields: VoxelField[] = (() => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const rowFields: VoxelField[] = ((() => {
 			// If row has full field configs (Voxel structure), iterate over them
 			const rowEntries = Object.entries(row).filter(
 				([key]) => key !== 'meta:state'
@@ -274,7 +275,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 
 			if (rowEntries.length > 0 && rowEntries[0][1] && typeof rowEntries[0][1] === 'object' && 'type' in rowEntries[0][1]) {
 				// Row contains full field configs (Voxel's rows structure)
-				return rowEntries.map(([_, fieldConfig]) => fieldConfig as VoxelField);
+				return rowEntries.map(([_, fieldConfig]) => fieldConfig as unknown as VoxelField);
 			}
 
 			// Otherwise use blueprint and merge with row values (our simplified structure)
@@ -282,7 +283,7 @@ export const RepeaterField: React.FC<RepeaterFieldProps> = ({
 				...fieldConfig,
 				value: row[fieldConfig.key] ?? fieldConfig.value ?? null,
 			}));
-		})();
+		})() as VoxelField[]);
 
 		return rowFields.map((fieldConfig) => {
 			// Create field instance for this row

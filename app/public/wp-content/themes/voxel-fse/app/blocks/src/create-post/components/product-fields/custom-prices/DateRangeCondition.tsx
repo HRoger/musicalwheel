@@ -309,7 +309,7 @@ export const DateRangeCondition: React.FC<DateRangeConditionProps> = ({
 	from,
 	to,
 	onChange,
-	popupKey,
+	popupKey: _popupKey,
 }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [tempFrom, setTempFrom] = useState<string | null>(from);

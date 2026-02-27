@@ -265,6 +265,17 @@ vi.mock('@wordpress/element', async (importOriginal) => {
 	};
 });
 
+// Mock ResizeObserver (not available in jsdom)
+global.ResizeObserver = class ResizeObserver {
+	callback: ResizeObserverCallback;
+	constructor(callback: ResizeObserverCallback) {
+		this.callback = callback;
+	}
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+};
+
 // Reset mocks before each test
 beforeEach(() => {
 	vi.clearAllMocks();

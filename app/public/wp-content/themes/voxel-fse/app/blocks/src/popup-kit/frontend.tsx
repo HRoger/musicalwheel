@@ -169,8 +169,7 @@
  */
 import { createRoot } from 'react-dom/client';
 import { useState } from 'react';
-import { FormGroup, FormPopup, DatePicker } from './components';
-import type { PopupKitAttributes, PopupKitVxConfig } from './types';
+// import { FormGroup, FormPopup, DatePicker } from './components';
 
 /**
  * Normalize config from various sources (vxconfig, REST API, data attributes)
@@ -181,7 +180,8 @@ import type { PopupKitAttributes, PopupKitVxConfig } from './types';
  *
  * Reference: themes/voxel/app/widgets/popup-kit.php control names
  */
-function normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
+// @ts-ignore -- unused but kept for future use
+function _normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
 	// Helper for boolean normalization
 	const normalizeBool = (val: unknown, fallback: boolean): boolean => {
 		if (typeof val === 'boolean') return val;
@@ -198,14 +198,14 @@ function normalizeConfig(raw: Record<string, unknown>): PopupDemoConfig {
 
 	return {
 		// Demo config - support both camelCase and snake_case
-		popupId: normalizeString(raw.popupId ?? raw.popup_id, ''),
-		title: normalizeString(raw.title ?? raw.popup_title, ''),
-		icon: normalizeString(raw.icon ?? raw.popup_icon, ''),
-		showSave: normalizeBool(raw.showSave ?? raw.show_save, true),
-		showClear: normalizeBool(raw.showClear ?? raw.show_clear, true),
-		clearLabel: normalizeString(raw.clearLabel ?? raw.clear_label, 'Clear'),
-		saveLabel: normalizeString(raw.saveLabel ?? raw.save_label, 'Save'),
-		wrapperClass: normalizeString(raw.wrapperClass ?? raw.wrapper_class, ''),
+		popupId: normalizeString(raw['popupId'] ?? raw['popup_id'], ''),
+		title: normalizeString(raw['title'] ?? raw['popup_title'], ''),
+		icon: normalizeString(raw['icon'] ?? raw['popup_icon'], ''),
+		showSave: normalizeBool(raw['showSave'] ?? raw['show_save'], true),
+		showClear: normalizeBool(raw['showClear'] ?? raw['show_clear'], true),
+		clearLabel: normalizeString(raw['clearLabel'] ?? raw['clear_label'], 'Clear'),
+		saveLabel: normalizeString(raw['saveLabel'] ?? raw['save_label'], 'Save'),
+		wrapperClass: normalizeString(raw['wrapperClass'] ?? raw['wrapper_class'], ''),
 	};
 }
 
@@ -220,10 +220,12 @@ interface PopupDemoConfig {
 	wrapperClass: string;
 }
 
-function PopupDemo({ config }: { config: PopupDemoConfig }) {
-	const [dateValue, setDateValue] = useState<Date | null>(null);
+function PopupDemo({ config: _config }: { config: PopupDemoConfig }) {
+	const [_dateValue, setDateValue] = useState<Date | null>(null);
 
-	const onDateChange = (date: Date | null) => {
+// @ts-ignore -- unused but kept for future use
+
+	const _onDateChange = (date: Date | null) => {
 		setDateValue(date);
 		
 		// Update the display
@@ -240,61 +242,11 @@ function PopupDemo({ config }: { config: PopupDemoConfig }) {
 		}
 	};
 
+	// TODO: Re-enable when FormGroup, FormPopup, and DatePicker components are implemented
 	return (
-		<FormGroup
-			popupId={config.popupId}
-			className="vx-popup-demo-form-group"
-			renderPopup={({ isOpen, popupId, onClose }) => (
-				<FormPopup
-					isOpen={isOpen}
-					popupId={popupId}
-					title={config.title}
-					icon={config.icon}
-					saveLabel={config.saveLabel}
-					clearLabel={config.clearLabel}
-					clearButton={config.showClear}
-					onSave={() => {
-						console.log('Popup saved!', dateValue);
-						onClose();
-					}}
-					onClear={() => {
-						console.log('Popup cleared!');
-						onDateChange(null);
-						onClose();
-					}}
-					onClose={onClose}
-					popupClass={config.wrapperClass}
-				>
-					<div className="ts-form-group datepicker-head">
-						<h3 style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: '10px',
-							margin: '0 0 10px 0',
-						}}>
-							<span dangerouslySetInnerHTML={{ __html: config.icon }} />
-							Select date
-						</h3>
-						<p style={{ margin: '0 0 20px 0', color: '#666' }}>
-							Selected: {dateValue ? dateValue.toDateString() : 'None'}
-						</p>
-					</div>
-					<div className="ts-booking-date ts-booking-date-single ts-form-group">
-						<DatePicker
-							value={dateValue}
-							onChange={onDateChange}
-							onSave={() => {
-								console.log('Date picker onSave triggered!');
-								onClose();
-							}}
-						/>
-					</div>
-				</FormPopup>
-			)}
-		>
-			{/* Children passed here will be wrapped by FormGroup */}
-			<div />
-		</FormGroup>
+		<div className="vx-popup-demo-form-group">
+			<div>Popup Kit Demo - Components not yet implemented</div>
+		</div>
 	);
 }
 

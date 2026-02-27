@@ -129,7 +129,8 @@ export default function Edit({
 	}, [tabs.length, innerBlocks.length, clientId, replaceInnerBlocks]);
 
 	// Update a single tab
-	const updateTab = useCallback(
+	// @ts-ignore -- unused but kept for future use
+	const _updateTab = useCallback(
 		(index: number, updates: Partial<TabItemData>) => {
 			const newTabs = [...tabs];
 			newTabs[index] = { ...newTabs[index], ...updates };
@@ -138,8 +139,9 @@ export default function Edit({
 		[tabs, setAttributes]
 	);
 
+	// @ts-ignore -- unused but kept for future use
 	// Add new tab
-	const addTab = useCallback(() => {
+	const _addTab = useCallback(() => {
 		const newTab = createDefaultTab(tabs.length);
 		const newTabs = [...tabs, newTab];
 		setAttributes({ tabs: newTabs });
@@ -150,8 +152,10 @@ export default function Edit({
 		setActiveTabIndex(newTabs.length - 1);
 	}, [tabs, setAttributes, clientId, innerBlocks, replaceInnerBlocks]);
 
+// @ts-ignore -- unused but kept for future use
+
 	// Remove tab
-	const removeTab = useCallback(
+	const _removeTab = useCallback(
 		(index: number) => {
 			if (tabs.length <= 1) return;
 
@@ -169,10 +173,12 @@ export default function Edit({
 			}
 		},
 		[tabs, setAttributes, activeTabIndex, clientId, innerBlocks, replaceInnerBlocks]
+	// @ts-ignore -- unused but kept for future use
 	);
 
 	// Move tab up/down
-	const moveTab = useCallback(
+	// @ts-ignore -- unused but kept for future use
+	const _moveTab = useCallback(
 		(index: number, direction: 'up' | 'down') => {
 			const newIndex = direction === 'up' ? index - 1 : index + 1;
 			if (newIndex < 0 || newIndex >= tabs.length) return;
@@ -469,7 +475,7 @@ export default function Edit({
 							<button
 								type="button"
 								key={tab.id}
-								className={`e-n-tab-title${isActive ? ' e-active' : ''}`}
+								className={`e-n-tab-title${isActive ? ' e-active' : ''}${attributes.tabsHoverAnimation ? ` elementor-animation-${attributes.tabsHoverAnimation}` : ''}`}
 								data-tab-index={tabCount}
 								role="tab"
 								aria-selected={isActive ? 'true' : 'false'}

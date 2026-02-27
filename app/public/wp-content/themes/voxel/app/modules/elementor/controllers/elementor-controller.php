@@ -76,10 +76,6 @@ class Elementor_Controller extends \Voxel\Controllers\Base_Controller {
 		// print form-group and popup templates only in "Elementor Canvas"
 		$this->on( 'elementor/page_templates/canvas/before_content', '@print_required_templates_in_canvas' );
 
-		if ( apply_filters( 'voxel/custom-elementor-settings-parser', true ) !== false ) {
-			$this->on( 'elementor/frontend/before_render', '@custom_settings_parser' );
-		}
-
 		// workaround for https://github.com/elementor/elementor/issues/13038
 		if ( apply_filters( 'voxel/elementor-missing-globals-bugfix', true ) !== false ) {
 			$this->on( 'rest_api_init', '@missing_globals_bugfix' );
@@ -780,118 +776,6 @@ class Elementor_Controller extends \Voxel\Controllers\Base_Controller {
 		$manager->register_location('footer');
 	}
 
-	protected function custom_settings_parser( $element ) {
-		$get_settings = static::class.'::_get_active_settings';
-		( \Closure::bind( function( $element ) use ( $get_settings ) {
-			if ( ! $element->parsed_active_settings ) {
-				$settings = \Voxel\is_elementor_pro_active()
-					? $element->get_parsed_dynamic_settings()
-					: $element->get_settings();
-
-				$element->parsed_active_settings = $get_settings( $element, $settings, $element->get_controls() );
-			}
-		}, null, \Elementor\Controls_Stack::class ) )( $element );
-	}
-
-	public static function _get_active_settings( $element, $settings, $controls ) {
-		// \Voxel\measure_start( 'elementor/get_active_settings' );
-		$is_first_request = ! $settings && ! $element->active_settings;
-
-		if ( ! $settings ) {
-			if ( $element->active_settings ) {
-				return $element->active_settings;
-			}
-
-			$settings = $element->get_controls_settings();
-
-			$controls = $element->get_controls();
-		}
-
-		$active_settings = [];
-
-		foreach ( $settings as $setting_key => $setting ) {
-			if ( ! isset( $controls[ $setting_key ] ) ) {
-				$active_settings[ $setting_key ] = $setting;
-
-				continue;
-			}
-
-			$control = $controls[ $setting_key ];
-
-			if ( static::_is_control_visible( $element, $control, $settings ) ) {
-				$control_obj = \Elementor\Plugin::$instance->controls_manager->get_control( $control['type'] );
-
-				if ( $control_obj instanceof \Elementor\Control_Repeater ) {
-					foreach ( $setting as & $item ) {
-						$item = static::_get_active_settings( $element, $item, $control['fields'] );
-					}
-				}
-
-				$active_settings[ $setting_key ] = $setting;
-			} else {
-				$active_settings[ $setting_key ] = null;
-			}
-		}
-
-		if ( $is_first_request ) {
-			$element->active_settings = $active_settings;
-		}
-
-		// \Voxel\measure_end( 'elementor/get_active_settings' );
-		return $active_settings;
-	}
-
-	public static function _is_control_visible( $element, $control, $values = null ) {
-		if ( null === $values ) {
-			$values = $element->get_settings();
-		}
-
-		if ( ! empty( $control['conditions'] ) && ! \Elementor\Conditions::check( $control['conditions'], $values ) ) {
-			return false;
-		}
-
-		if ( empty( $control['condition'] ) ) {
-			return true;
-		}
-
-		foreach ( $control['condition'] as $condition_key => $condition_value ) {
-			$parts = explode( '!', $condition_key );
-			$keys = explode( '[', $parts[0] );
-
-			$pure_condition_key = $keys[0];
-			$condition_sub_key = isset( $keys[1] ) ? substr( $keys[1], 0, -1 ) : null;
-			$is_negative_condition = isset( $parts[1] );
-
-			if ( ! isset( $values[ $pure_condition_key ] ) || null === $values[ $pure_condition_key ] ) {
-				return false;
-			}
-
-			$instance_value = $values[ $pure_condition_key ];
-
-			if ( $condition_sub_key && is_array( $instance_value ) ) {
-				if ( ! isset( $instance_value[ $condition_sub_key ] ) ) {
-					return false;
-				}
-
-				$instance_value = $instance_value[ $condition_sub_key ];
-			}
-
-			if ( is_array( $condition_value ) && ! empty( $condition_value ) ) {
-				$is_contains = in_array( $instance_value, $condition_value, true );
-			} elseif ( is_array( $instance_value ) && ! empty( $instance_value ) ) {
-				$is_contains = in_array( $condition_value, $instance_value, true );
-			} else {
-				$is_contains = $instance_value === $condition_value;
-			}
-
-			if ( $is_negative_condition && $is_contains || ! $is_negative_condition && ! $is_contains ) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
 	protected function print_required_templates_in_canvas() {
 		require locate_template( 'templates/components/popup.php' );
 		require locate_template( 'templates/components/form-group.php' );
@@ -1145,7 +1029,6 @@ class Elementor_Controller extends \Voxel\Controllers\Base_Controller {
 
 		require locate_template( 'templates/backend/dynamic-data/dynamic-data.php' );
 	}
-
 
 	private function enqueue_elementor_dark_mode() {
 		$assets = trailingslashit( get_template_directory_uri() ).'assets/';

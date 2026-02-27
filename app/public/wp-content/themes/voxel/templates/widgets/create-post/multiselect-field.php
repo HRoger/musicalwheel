@@ -51,10 +51,10 @@
 					</div>
 				</div>
 			</label>
-			<div class="ts-filter ts-popup-target" :class="{'ts-filled': field.value !== null}" @mousedown="$root.activePopup = field.id+':'+index">
+			<div class="ts-filter ts-popup-target" :class="{'ts-filled': displayValue}" @mousedown="$root.activePopup = field.id+':'+index">
 				<?= \Voxel\get_icon_markup( $this->get_settings_for_display('popup_icon') ) ?: \Voxel\svg( 'menu.svg' ) ?>
 				<div class="ts-filter-text">
-					<span v-if="field.value !== null">{{ displayValue }}</span>
+					<span v-if="displayValue">{{ displayValue }}</span>
 					<span v-else>{{ field.props.placeholder }}</span>
 				</div>
 				<div class="ts-down-icon"></div>

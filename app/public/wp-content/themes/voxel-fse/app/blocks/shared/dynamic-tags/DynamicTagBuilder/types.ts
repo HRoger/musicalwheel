@@ -15,7 +15,7 @@ export interface DataGroup {
 export interface TagExport {
 	key: string;
 	label: string;
-	type: 'string' | 'number' | 'email' | 'url' | 'bool' | 'boolean' | 'date' | 'object' | 'object_list' | 'method';
+	type: 'string' | 'number' | 'email' | 'url' | 'bool' | 'boolean' | 'date' | 'object' | 'object_list' | 'object-list' | 'method';
 	description?: string;
 	children?: TagExport[];
 	hasChildren?: boolean;  // Indicates if this export has children that need to be lazy loaded

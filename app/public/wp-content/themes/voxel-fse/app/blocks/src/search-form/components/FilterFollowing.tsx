@@ -47,10 +47,10 @@ export default function FilterFollowing( {
 	const containerRef = useRef< HTMLDivElement >( null );
 
 	const props = filterData.props || {};
-	const placeholder = props.placeholder || filterData.label || 'Following';
+	const placeholder = ( props['placeholder'] as string ) || filterData.label || 'Following';
 	// User data from PHP frontend_props() - populated when set_value() was called
 	// Evidence: themes/voxel/app/post-types/filters/followed-by-filter.php:72-85
-	const propsUserData = props.user as UserData | undefined;
+	const propsUserData = props['user'] as UserData | undefined;
 
 	// Get filter icon - from API data (HTML markup) or fallback
 	// Evidence: themes/voxel/app/post-types/filters/base-filter.php:100

@@ -88,7 +88,7 @@
 	padding: var(--n-tabs-content-padding, 0);
 }
 
-/* Tab content panels - support both Elementor's .e-con and WordPress InnerBlocks output */
+/* Tab content panels - hidden attribute for visibility (matches Elementor) */
 .vxfse-nested-tabs .e-n-tabs-content > .e-con,
 .vxfse-nested-tabs .e-n-tabs-content > .vxfse-tab-panel,
 .vxfse-nested-tabs .e-n-tabs-content > .wp-block-group {
@@ -96,9 +96,19 @@
 	order: var(--n-tabs-title-order, initial);
 }
 
+/* Show active panel - both hidden attribute removal and .e-active class */
 .vxfse-nested-tabs .e-n-tabs-content > .e-con.e-active,
 .vxfse-nested-tabs .e-n-tabs-content > .vxfse-tab-panel.e-active,
 .vxfse-nested-tabs .e-n-tabs-content > .wp-block-group.e-active {
+	display: block;
+}
+
+/* Hidden attribute (Elementor parity) - explicit override */
+.vxfse-nested-tabs .e-n-tabs-content > [hidden] {
+	display: none;
+}
+
+.vxfse-nested-tabs .e-n-tabs-content > .e-active:not([hidden]) {
 	display: block;
 }
 

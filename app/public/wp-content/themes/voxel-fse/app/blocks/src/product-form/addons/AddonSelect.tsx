@@ -9,7 +9,7 @@
  * @package VoxelFSE
  */
 
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import type {
 	AddonConfig,
 	AddonSelectValue,
@@ -39,8 +39,6 @@ export default function AddonSelect( {
 	value,
 	onChange,
 }: AddonSelectProps ) {
-	const [ isOpen, setIsOpen ] = useState( false );
-	const triggerRef = useRef<HTMLDivElement>( null );
 	const choices = addon.props.choices ?? {};
 	const choiceKeys = Object.keys( choices );
 
@@ -55,22 +53,26 @@ export default function AddonSelect( {
 	/**
 	 * Handle choice selection
 	 */
-	const handleSelect = useCallback( ( choiceKey: string ) => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleSelect = useCallback( ( choiceKey: string ) => {
 		onChange( { selected: choiceKey } );
-		setIsOpen( false );
 	}, [ onChange ] );
 
 	/**
 	 * Clear selection
 	 */
-	const handleClear = useCallback( () => {
+	// @ts-ignore -- unused but kept for future use
+	const _handleClear = useCallback( () => {
 		if ( ! addon.required ) {
 			onChange( { selected: null } );
 		}
 	}, [ addon.required, onChange ] );
 
+// @ts-ignore -- unused but kept for future use
+
 	// Get selected choice for display
-	const selectedChoice: AddonChoice | null = value.selected ? choices[ value.selected ] ?? null : null;
+	const _selectedChoice: AddonChoice | null = value.selected ? choices[ value.selected ] ?? null : null;
+	const displayMode = addon.props.display_mode ?? 'radio';
 
 	// Format price for a choice
 	const formatPrice = ( choice: AddonChoice ): string => {
@@ -80,58 +82,112 @@ export default function AddonSelect( {
 		return '';
 	};
 
-	return (
-		<div className="ts-form-group ts-addon-select">
-			<label>{ addon.label }</label>
-			<div
-				ref={ triggerRef }
-				className={ `ts-filter ts-popup-target${ selectedChoice ? ' ts-filled' : '' }` }
-				onClick={ () => setIsOpen( ! isOpen ) }
-				role="button"
-				tabIndex={ 0 }
-				onKeyDown={ ( e ) => e.key === 'Enter' && setIsOpen( ! isOpen ) }
-			>
-				<span className="ts-filter-text">
-					{ selectedChoice ? selectedChoice.label : 'Select...' }
-				</span>
-				<div className="ts-down-icon"></div>
-			</div>
+	/**
+	 * Toggle selection (for buttons/radio modes)
+	 */
+	const handleToggle = ( choiceKey: string ) => {
+		if ( value.selected === choiceKey && ! addon.required ) {
+			onChange( { selected: null } );
+		} else {
+			onChange( { selected: choiceKey } );
+		}
+	};
 
-			{ isOpen && (
-				<div className="ts-popup-list">
-					<ul className="simplify-ul ts-form-options">
-						{ ! addon.required && value.selected && (
+	// Buttons mode
+	// Evidence: templates/widgets/product-form/form-addons/select.php:6-15
+	if ( displayMode === 'buttons' ) {
+		return (
+			<div className="ts-form-group ts-addon-select">
+				<label>{ addon.label }</label>
+				<ul className="simplify-ul addon-buttons flexify">
+					{ choiceKeys.map( ( choiceKey ) => {
+						const choice = choices[ choiceKey ];
+						return (
 							<li
-								className="ts-option ts-option-clear"
-								onClick={ handleClear }
-								role="option"
+								key={ choiceKey }
+								className={ `flexify${ value.selected === choiceKey ? ' adb-selected' : '' }` }
+								onClick={ () => handleToggle( choiceKey ) }
 							>
-								<span>Clear selection</span>
+								{ choice.label }
 							</li>
+						);
+					} ) }
+				</ul>
+			</div>
+		);
+	}
+
+	// Dropdown mode
+	// Evidence: templates/widgets/product-form/form-addons/select.php:16-27
+	if ( displayMode === 'dropdown' ) {
+		return (
+			<div className="ts-form-group ts-addon-select">
+				<label>{ addon.label }</label>
+				<div className="ts-filter">
+					<select
+						value={ value.selected ?? '' }
+						onChange={ ( e ) => {
+							const val = e.target.value;
+							onChange( { selected: val || null } );
+						} }
+					>
+						{ ! addon.required && (
+							<option value="">Select choice</option>
 						) }
 						{ choiceKeys.map( ( choiceKey ) => {
 							const choice = choices[ choiceKey ];
-							const isSelected = value.selected === choiceKey;
-							const priceLabel = formatPrice( choice );
-
 							return (
-								<li
-									key={ choiceKey }
-									className={ `ts-option${ isSelected ? ' ts-selected' : '' }` }
-									onClick={ () => handleSelect( choiceKey ) }
-									role="option"
-									aria-selected={ isSelected }
-								>
-									<span className="option-label">{ choice.label }</span>
-									{ priceLabel && (
-										<span className="option-price">{ priceLabel }</span>
-									) }
-								</li>
+								<option key={ choiceKey } value={ choiceKey }>
+									{ choice.label }
+								</option>
 							);
 						} ) }
-					</ul>
+					</select>
+					<div className="ts-down-icon"></div>
 				</div>
-			) }
+			</div>
+		);
+	}
+
+	// Radio mode (default)
+	// Evidence: templates/widgets/product-form/form-addons/select.php:28-46
+	return (
+		<div className="ts-form-group inline-terms-wrapper ts-inline-filter ts-addon-select">
+			<label>{ addon.label }</label>
+			<ul className="simplify-ul ts-addition-list flexify">
+				{ choiceKeys.map( ( choiceKey ) => {
+					const choice = choices[ choiceKey ];
+					const isSelected = value.selected === choiceKey;
+					const priceLabel = formatPrice( choice );
+
+					return (
+						<li
+							key={ choiceKey }
+							className={ `flexify${ isSelected ? ' ts-checked' : '' }` }
+						>
+							<div
+								className="addition-body"
+								onClick={ () => handleToggle( choiceKey ) }
+							>
+								<label className="container-radio">
+									<input
+										type="radio"
+										checked={ isSelected }
+										onChange={ () => {} }
+										disabled
+										hidden
+									/>
+									<span className="checkmark"></span>
+								</label>
+								<span>{ choice.label }</span>
+								{ priceLabel && (
+									<div className="vx-addon-price">{ priceLabel }</div>
+								) }
+							</div>
+						</li>
+					);
+				} ) }
+			</ul>
 		</div>
 	);
 }

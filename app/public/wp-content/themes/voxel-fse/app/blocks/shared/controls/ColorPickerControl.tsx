@@ -130,11 +130,18 @@ export default function ColorPickerControl({
 		});
 
 		const handleClickOutside = (event: MouseEvent) => {
-			if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-				if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-					setIsOpen(false);
-				}
+			const target = event.target as Node;
+			// Don't close if clicking inside our popup or button
+			if (popupRef.current?.contains(target) || buttonRef.current?.contains(target)) {
+				return;
 			}
+			// Don't close if clicking inside a WordPress Popover (e.g. custom color picker)
+			// These render in portals outside our DOM tree
+			const popoverEl = (target as Element).closest?.('.components-popover');
+			if (popoverEl) {
+				return;
+			}
+			setIsOpen(false);
 		};
 
 		window.addEventListener('resize', updatePosition);
@@ -225,7 +232,7 @@ export default function ColorPickerControl({
 								border: 'none',
 								background: 'transparent',
 								cursor: 'pointer',
-								color: '#007cba',
+								color: 'var(--vxfse-accent-color, #3858e9)',
 							}}
 						>
 							<span
@@ -278,7 +285,7 @@ export default function ColorPickerControl({
 					<ColorPalette
 						colors={colors}
 						value={value}
-						onChange={(newColor) => {
+						onChange={(newColor: string | undefined) => {
 							// When color is cleared (undefined from ColorPalette), use empty string
 							// Gutenberg properly serializes empty strings, hasValue('') returns false
 							onChange(newColor ?? '');

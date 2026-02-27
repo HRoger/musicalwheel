@@ -13,38 +13,46 @@ class Yoast_Seo_Controller extends \Voxel\Controllers\Base_Controller {
 	}
 
 	protected function hooks() {
-		$this->filter( 'wpseo_replacements', '@render_replacements', 100, 2 );
+		$this->filter( 'wpseo_title', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_metadesc', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_opengraph_title', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_opengraph_desc', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_opengraph_image', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_twitter_title', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_twitter_description', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_twitter_image', '@render_dynamic_tags', 100 );
+		$this->filter( 'wpseo_canonical', '@render_dynamic_tags', 100 );
 	}
 
 	/**
-	 * Render dynamic tags added in the format `vx(<dtag>)`, e.g.
-	 * `vx(@post(:title)) %%sep%% %%sitename%%`
+	 * Render dynamic tags in Yoast SEO output.
+	 * Supports format: `vx(@post(:title))` or direct `@post(:title)`
 	 *
 	 * @since 1.2.8
 	 */
-	protected function render_replacements( $replacements, $args ) {
-		foreach ( debug_backtrace(0, 8) as $frame ) {
-			if ( ( $frame['class'] ?? '' ) === 'WPSEO_Replace_Vars' && ( $frame['function'] ?? '' ) === 'replace' ) {
-				$content = is_string( $frame['args'][0] ?? null ) ? $frame['args'][0] : '';
-
-				$tokenizer = new \Voxel\Dynamic_Data\VoxelScript\Tokenizer;
-				$token_list = $tokenizer->tokenize( $content );
-
-				if ( is_author() && ( $current_author = \Voxel\User::get( get_the_author_meta('ID') ) ) ) {
-					\Voxel\set_current_post( $current_author->get_or_create_profile() );
-				}
-
-				foreach ( $token_list->get_tokens() as $token ) {
-					if ( $token instanceof \Voxel\Dynamic_Data\VoxelScript\Tokens\Dynamic_Tag ) {
-						$tag = $token->to_script();
-						$replacements[ 'vx('.$tag.')' ] = \Voxel\render( $tag );
-					}
-				}
-
-				break;
-			}
+	protected function render_dynamic_tags( $content ) {
+		if ( ! is_string( $content ) || strpos( $content, '@' ) === false ) {
+			return $content;
 		}
 
-		return $replacements;
+		$this->_setup_post_context();
+
+		// render vx(...) wrapped tags
+		$content = preg_replace_callback( '/vx\((@[^)]+\)(?:\.[^)]+\))*)\)/', function( $matches ) {
+			return \Voxel\render( $matches[1] );
+		}, $content );
+
+		// render direct @group(...) tags
+		$content = \Voxel\render( $content );
+
+		return $content;
+	}
+
+	protected function _setup_post_context(): void {
+		if ( is_author() && ( $current_author = \Voxel\User::get( get_the_author_meta('ID') ) ) ) {
+			\Voxel\set_current_post( $current_author->get_or_create_profile() );
+		} elseif ( is_singular() && ( $queried_post = \Voxel\Post::get( get_queried_object_id() ) ) ) {
+			\Voxel\set_current_post( $queried_post );
+		}
 	}
 }

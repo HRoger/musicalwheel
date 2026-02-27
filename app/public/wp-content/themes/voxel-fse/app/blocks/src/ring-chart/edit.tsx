@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { InspectorControls, useBlockProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import type { BlockEditProps } from '@wordpress/blocks';
@@ -24,14 +24,14 @@ export default function Edit({
   setAttributes,
   clientId,
 }: BlockEditProps<RingChartAttributes>): JSX.Element {
-  const blockId = attributes.blockId || clientId;
+  const blockId = (attributes as any).blockId || clientId;
 
   // Set blockId if not set
   useEffect(() => {
-    if (!attributes.blockId) {
-      setAttributes({ blockId: clientId });
+    if (!(attributes as any).blockId) {
+      setAttributes({ blockId: clientId } as any);
     }
-  }, [attributes.blockId, clientId, setAttributes]);
+  }, [(attributes as any).blockId, clientId, setAttributes]);
 
   // Inject Voxel Editor Styles
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function Edit({
   }, []);
 
   // Use shared utility for AdvancedTab + VoxelTab wiring
-  const advancedProps = getAdvancedVoxelTabProps(attributes, {
+  const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
     blockId,
     baseClass: 'voxel-fse-ring-chart',
     selectorPrefix: 'voxel-fse-ring-chart',

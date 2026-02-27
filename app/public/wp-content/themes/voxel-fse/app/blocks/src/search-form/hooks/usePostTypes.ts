@@ -34,9 +34,26 @@ interface UsePostTypesOptions {
 	filterConfigs?: Record<string, FilterConfig[]>;
 }
 
+/**
+ * Get pre-injected editor config from window.__voxelFseEditorConfig
+ * This is set by Block_Loader::inject_editor_config_data() via wp_add_inline_script
+ */
+function getInlineEditorConfig(): PostTypeConfig[] | null {
+	try {
+		const config = (window as any).__voxelFseEditorConfig?.searchForm;
+		if (Array.isArray(config) && config.length > 0) {
+			return config;
+		}
+	} catch {}
+	return null;
+}
+
 export function usePostTypes(options: UsePostTypesOptions = {}): UsePostTypesReturn {
-	const [ postTypes, setPostTypes ] = useState<PostTypeConfig[]>( [] );
-	const [ isLoading, setIsLoading ] = useState( true );
+	// Check for pre-injected data on initial render (eliminates spinner)
+	const inlineData = getInlineEditorConfig();
+
+	const [ postTypes, setPostTypes ] = useState<PostTypeConfig[]>( inlineData || [] );
+	const [ isLoading, setIsLoading ] = useState( !inlineData );
 	const [ error, setError ] = useState<string | null>( null );
 
 	// Track the last filterConfigs to detect changes
@@ -84,8 +101,10 @@ export function usePostTypes(options: UsePostTypesOptions = {}): UsePostTypesRet
 				});
 			} else {
 				// GET for basic post types (no filter config needed)
+				// Uses frontend-config (public) instead of post-types (editor-only)
+				// to avoid 401 errors for logged-out users
 				data = await apiFetch<PostTypeConfig[]>( {
-					path: '/voxel-fse/v1/search-form/post-types',
+					path: '/voxel-fse/v1/search-form/frontend-config',
 				} );
 			}
 
@@ -99,8 +118,13 @@ export function usePostTypes(options: UsePostTypesOptions = {}): UsePostTypesRet
 		}
 	}, []);
 
-	// Initial fetch
+	// Initial fetch - skip if we have inline data and no filter configs
 	useEffect( () => {
+		const hasFilterConfigs = options.filterConfigs && Object.keys(options.filterConfigs).length > 0;
+		if (inlineData && !hasFilterConfigs) {
+			// Already have data from inline injection, skip REST call
+			return;
+		}
 		fetchPostTypes(options.filterConfigs);
 	}, [] );
 

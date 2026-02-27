@@ -45,17 +45,17 @@ export const SubscriptionIntervalField: React.FC<SubscriptionIntervalFieldProps>
 		if (typeof value === 'object' && value !== null) {
 			return {
 				frequency: value.frequency || 1,
-				unit: value.unit || 'month',
+				unit: (value.unit || 'month') as 'day' | 'week' | 'month' | 'year',
 			};
 		}
 		return {
 			frequency: 1,
-			unit: 'month',
+			unit: 'month' as 'day' | 'week' | 'month' | 'year',
 		};
 	}, [value]);
 
 	// Get max frequency from field props (Voxel: line 20 :max="maxFrequency")
-	const maxFrequency = field.props?.max_frequency || 999;
+	const maxFrequency = (field.props?.['max_frequency'] as number | undefined) ?? 999;
 
 	// Handle frequency change
 	const handleFrequencyChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +70,7 @@ export const SubscriptionIntervalField: React.FC<SubscriptionIntervalFieldProps>
 	const handleUnitChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
 		onChange({
 			...intervalValue,
-			unit: e.target.value,
+			unit: e.target.value as 'day' | 'week' | 'month' | 'year',
 		});
 	}, [intervalValue, onChange]);
 

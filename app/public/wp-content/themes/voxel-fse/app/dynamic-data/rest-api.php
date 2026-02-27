@@ -77,6 +77,17 @@ class REST_API {
 				]
 			);
 
+			// Get visibility rule definitions for the editor modal
+			register_rest_route(
+				$namespace,
+				'/dynamic-data/visibility-rules',
+				[
+					'methods'             => 'GET',
+					'callback'            => [ __CLASS__, 'get_visibility_rules' ],
+					'permission_callback' => [ __CLASS__, 'check_permission' ],
+				]
+			);
+
 			// Render dynamic tag expression
 			register_rest_route(
 				$namespace,
@@ -120,13 +131,14 @@ class REST_API {
 	 * @return \WP_REST_Response
 	 */
 	public static function get_data_groups( $request ) {
-		$context = $request->get_param( 'context' ) ?: 'post';
-		$group   = $request->get_param( 'group' );
-		$parent  = $request->get_param( 'parent' );
+		$context   = $request->get_param( 'context' ) ?: 'post';
+		$group     = $request->get_param( 'group' );
+		$parent    = $request->get_param( 'parent' );
+		$post_type = $request->get_param( 'post_type' );
 
 		// If requesting children of a specific group
 		if ( $group ) {
-			$children = self::get_group_children( $group, $parent );
+			$children = self::get_group_children( $group, $parent, $post_type );
 			return new \WP_REST_Response( $children, 200 );
 		}
 
@@ -143,32 +155,74 @@ class REST_API {
 	 * @return array
 	 */
 	private static function get_top_level_groups( $context ) {
-		return [
-			[
-				'type'        => 'post',
-				'label'       => 'Post',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'author',
-				'label'       => 'Author',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'user',
-				'label'       => 'User',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-			[
-				'type'        => 'site',
-				'label'       => 'Site',
-				'exports'     => [],
-				'hasChildren' => true,
-			],
-		];
+		switch ( $context ) {
+			case 'term':
+				return [
+					[
+						'type'        => 'term',
+						'label'       => 'Term',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+
+			case 'user':
+				return [
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+
+			case 'post':
+			default:
+				return [
+					[
+						'type'        => 'post',
+						'label'       => 'Post',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'author',
+						'label'       => 'Author',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'user',
+						'label'       => 'User',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+					[
+						'type'        => 'site',
+						'label'       => 'Site',
+						'exports'     => [],
+						'hasChildren' => true,
+					],
+				];
+		}
 	}
 
 	/**
@@ -178,11 +232,21 @@ class REST_API {
 	 * @param string $parent Parent path (e.g., 'post.author', 'author.profile').
 	 * @return array
 	 */
-	private static function get_group_children( $group, $parent = null ) {
+	private static function get_group_children( $group, $parent = null, $post_type = null ) {
 		// If parent is provided, parse the path to determine what children to return
 		if ( $parent ) {
 			$parts = explode( '.', $parent );
 			$last  = end( $parts );
+
+			// Try Voxel Exporter for post-type-specific field children
+			// e.g., parent=post.gallery, parent=post.location, parent=post.amenities
+			if ( $group === 'post' && $post_type && count( $parts ) >= 2 ) {
+				$field_path = array_slice( $parts, 1 ); // Remove 'post' prefix
+				$voxel_children = self::get_voxel_field_children( $post_type, $field_path );
+				if ( $voxel_children !== null ) {
+					return $voxel_children;
+				}
+			}
 
 			// Handle nested paths like "author.profile"
 			if ( $last === 'profile' ) {
@@ -442,12 +506,62 @@ class REST_API {
 					[ 'key' => 'file_name', 'label' => 'File name', 'type' => 'string' ],
 				];
 			}
+
+			// Handle Area structure (term.area)
+			if ( $last === 'area' ) {
+				return [
+					[ 'key' => 'address', 'label' => 'Address', 'type' => 'string' ],
+					[
+						'key'         => 'southwest',
+						'label'       => 'Southwest',
+						'type'        => 'object',
+						'hasChildren' => true,
+					],
+					[
+						'key'         => 'northeast',
+						'label'       => 'Northeast',
+						'type'        => 'object',
+						'hasChildren' => true,
+					],
+				];
+			}
+
+			// Handle southwest/northeast coordinates (term.area.southwest, term.area.northeast)
+			if ( $last === 'southwest' || $last === 'northeast' ) {
+				return [
+					[ 'key' => 'lat', 'label' => 'Latitude', 'type' => 'number' ],
+					[ 'key' => 'lng', 'label' => 'Longitude', 'type' => 'number' ],
+				];
+			}
+
+			// Handle Parent term (term.parent) — returns same properties as term
+			if ( $last === 'parent' && $group === 'term' ) {
+				return [
+					[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
+					[ 'key' => 'label', 'label' => 'Label', 'type' => 'string' ],
+					[ 'key' => 'slug', 'label' => 'Slug', 'type' => 'string' ],
+					[ 'key' => 'description', 'label' => 'Description', 'type' => 'string' ],
+					[ 'key' => 'icon', 'label' => 'Icon', 'type' => 'string' ],
+					[ 'key' => 'link', 'label' => 'Permalink', 'type' => 'url' ],
+					[ 'key' => 'image', 'label' => 'Image', 'type' => 'number' ],
+					[ 'key' => 'color', 'label' => 'Color', 'type' => 'string' ],
+				];
+			}
+
+			// Handle Taxonomy structure (term.taxonomy)
+			if ( $last === 'taxonomy' && $group === 'term' ) {
+				return [
+					[ 'key' => 'key', 'label' => 'Key', 'type' => 'string' ],
+					[ 'key' => 'singular_name', 'label' => 'Singular name', 'type' => 'string' ],
+					[ 'key' => 'plural_name', 'label' => 'Plural name', 'type' => 'string' ],
+				];
+			}
 		}
 
 		// Top-level group requests (no parent)
 		switch ( $group ) {
 			case 'post':
-				return self::get_post_exports();
+				return self::get_post_exports( $post_type );
 
 			case 'author':
 				return self::get_author_exports( null );
@@ -458,17 +572,74 @@ class REST_API {
 			case 'site':
 				return self::get_site_exports( null );
 
+			case 'term':
+				return self::get_term_exports();
+
 			default:
 				return [];
 		}
 	}
 
 	/**
-	 * Get Post data exports (matching Voxel structure exactly)
+	 * Get Term data exports (matching Voxel Term_Data_Group properties)
+	 *
+	 * Evidence: themes/voxel-fse/app/dynamic-data/data-groups/Term_Data_Group.php
 	 *
 	 * @return array
 	 */
-	private static function get_post_exports() {
+	private static function get_term_exports() {
+		return [
+			[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
+			[ 'key' => 'label', 'label' => 'Label', 'type' => 'string' ],
+			[ 'key' => 'slug', 'label' => 'Slug', 'type' => 'string' ],
+			[ 'key' => 'description', 'label' => 'Description', 'type' => 'string' ],
+			[ 'key' => 'icon', 'label' => 'Icon', 'type' => 'string' ],
+			[ 'key' => 'link', 'label' => 'Permalink', 'type' => 'url' ],
+			[ 'key' => 'image', 'label' => 'Image', 'type' => 'number' ],
+			[ 'key' => 'color', 'label' => 'Color', 'type' => 'string' ],
+			[
+				'key'         => 'area',
+				'label'       => 'Area',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			[
+				'key'         => 'parent',
+				'label'       => 'Parent term',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			[
+				'key'         => 'taxonomy',
+				'label'       => 'Taxonomy',
+				'type'        => 'object',
+				'hasChildren' => true,
+			],
+			// Method-style exports (matching Voxel's </> prefix in the tree)
+			[ 'key' => 'meta', 'label' => 'Term meta', 'type' => 'method' ],
+			[ 'key' => 'post_count', 'label' => 'Post count', 'type' => 'method' ],
+		];
+	}
+
+	/**
+	 * Get Post data exports (matching Voxel structure exactly)
+	 *
+	 * When $post_type is provided and Voxel's Exporter is available,
+	 * dynamically generates post-type-specific fields (Gallery, Amenities, etc.)
+	 *
+	 * @param string|null $post_type Voxel post type key (e.g., 'place', 'event').
+	 * @return array
+	 */
+	private static function get_post_exports( $post_type = null ) {
+		// Use Voxel's Exporter for post-type-specific fields when available
+		if ( $post_type && class_exists( '\\Voxel\\Dynamic_Data\\Exporter' ) ) {
+			$voxel_exports = self::get_voxel_post_exports( $post_type );
+			if ( ! empty( $voxel_exports ) ) {
+				return $voxel_exports;
+			}
+		}
+
+		// Fallback to static list (for environments without Voxel parent)
 		return [
 			// Basic post fields
 			[ 'key' => 'id', 'label' => 'ID', 'type' => 'number' ],
@@ -657,6 +828,168 @@ class REST_API {
 			[ 'key' => 'query_var', 'label' => 'Query variable', 'type' => 'method' ],
 			[ 'key' => 'math', 'label' => 'Math expression', 'type' => 'method' ],
 		];
+	}
+
+	/**
+	 * Get post-type-specific fields using Voxel's Exporter.
+	 *
+	 * Calls Voxel's Post_Data_Group::mock($post_type) which iterates all
+	 * registered fields for that post type and calls $field->dynamic_data()
+	 * on each. This gives us 1:1 parity with Voxel's Elementor dynamic tag tree.
+	 *
+	 * Evidence: themes/voxel/app/dynamic-data/exporter.php
+	 * Evidence: themes/voxel/app/dynamic-data/data-groups/post/post-data-group.php:145-157
+	 *
+	 * @param string $post_type Voxel post type key (e.g., 'place', 'event').
+	 * @return array Array of TagExport-compatible items.
+	 */
+	private static function get_voxel_post_exports( $post_type ) {
+		try {
+			$exporter = \Voxel\Dynamic_Data\Exporter::get();
+			$exporter->reset();
+			$exporter->add_group_by_key( 'post', $post_type );
+			$result = $exporter->export();
+
+			// Voxel's Exporter uses "post_type:{key}" as the group key, not just "post"
+			$group_key = 'post_type:' . $post_type;
+			$post_group = $result['groups'][ $group_key ] ?? $result['groups']['post'] ?? null;
+
+			if ( empty( $post_group ) || empty( $post_group['exports'] ) ) {
+				return [];
+			}
+
+			$exports = (array) $post_group['exports'];
+			$methods = (array) ( $post_group['methods'] ?? [] );
+
+			// Transform Voxel export format → our TagExport format
+			$items = [];
+			foreach ( $exports as $key => $export ) {
+				$export = (array) $export;
+
+				// Skip hidden fields
+				if ( ! empty( $export['hidden'] ) ) {
+					continue;
+				}
+
+				$item = [
+					'key'   => $key,
+					'label' => $export['label'] ?? ucfirst( str_replace( '_', ' ', $key ) ),
+					'type'  => $export['type'] ?? 'string',
+				];
+
+				// Fields with nested properties or subgroups get hasChildren
+				if ( ! empty( $export['exports'] ) || ! empty( $export['subgroup'] ) ) {
+					$item['hasChildren'] = true;
+					// Map object-list to object for UI display (tree handles both the same way)
+					if ( $item['type'] === 'object-list' ) {
+						$item['type'] = 'object';
+					}
+				}
+
+				$items[] = $item;
+			}
+
+			// Append methods (e.g., Post meta)
+			foreach ( $methods as $method_key => $method_config ) {
+				$method_config = (array) $method_config;
+				$items[] = [
+					'key'   => $method_key,
+					'label' => $method_config['label'] ?? ucfirst( str_replace( '_', ' ', $method_key ) ),
+					'type'  => 'method',
+				];
+			}
+
+			return $items;
+		} catch ( \Throwable $e ) {
+			// If Voxel Exporter fails, return empty (caller falls back to static)
+			return [];
+		}
+	}
+
+	/**
+	 * Get children of a post-type-specific field using Voxel's Exporter.
+	 *
+	 * When user expands a field like "Gallery" or "Location" in the tree,
+	 * this re-runs the Exporter and drills into the specific field's exports.
+	 *
+	 * @param string $post_type  Voxel post type key.
+	 * @param array  $field_path Path segments after 'post' (e.g., ['gallery'] or ['location', 'distance']).
+	 * @return array|null Array of TagExport items, or null if not found (falls through to hardcoded handlers).
+	 */
+	private static function get_voxel_field_children( $post_type, $field_path ) {
+		if ( ! class_exists( '\\Voxel\\Dynamic_Data\\Exporter' ) ) {
+			return null;
+		}
+
+		try {
+			$exporter = \Voxel\Dynamic_Data\Exporter::get();
+			$exporter->reset();
+			$exporter->add_group_by_key( 'post', $post_type );
+			$result = $exporter->export();
+
+			// Voxel uses "post_type:{key}" as the group key
+			$group_key = 'post_type:' . $post_type;
+			$post_group = $result['groups'][ $group_key ] ?? $result['groups']['post'] ?? null;
+
+			if ( empty( $post_group ) || empty( $post_group['exports'] ) ) {
+				return null;
+			}
+
+			// Navigate into the field tree following the path
+			$current = (array) $post_group['exports'];
+			foreach ( $field_path as $segment ) {
+				if ( ! isset( $current[ $segment ] ) ) {
+					// Field not found in Voxel exports — return null to fall through
+					return null;
+				}
+				$field = (array) $current[ $segment ];
+
+				// Check if this field has a subgroup (e.g., taxonomy fields reference Term_Data_Group)
+				if ( ! empty( $field['subgroup'] ) ) {
+					$subgroup_key = $field['subgroup']['key'] ?? '';
+					// Look for the subgroup in the exported groups
+					if ( ! empty( $result['groups'][ $subgroup_key ]['exports'] ) ) {
+						$current = (array) $result['groups'][ $subgroup_key ]['exports'];
+						continue;
+					}
+				}
+
+				if ( ! empty( $field['exports'] ) ) {
+					$current = (array) $field['exports'];
+				} else {
+					// Leaf node with no children
+					return [];
+				}
+			}
+
+			// Transform the current level's exports to TagExport format
+			$items = [];
+			foreach ( $current as $key => $export ) {
+				$export = (array) $export;
+				if ( ! empty( $export['hidden'] ) ) {
+					continue;
+				}
+
+				$item = [
+					'key'   => $key,
+					'label' => $export['label'] ?? ucfirst( str_replace( '_', ' ', $key ) ),
+					'type'  => $export['type'] ?? 'string',
+				];
+
+				if ( ! empty( $export['exports'] ) || ! empty( $export['subgroup'] ) ) {
+					$item['hasChildren'] = true;
+					if ( $item['type'] === 'object-list' ) {
+						$item['type'] = 'object';
+					}
+				}
+
+				$items[] = $item;
+			}
+
+			return $items;
+		} catch ( \Throwable $e ) {
+			return null;
+		}
 	}
 
 	/**
@@ -1034,6 +1367,37 @@ class REST_API {
 	}
 
 	/**
+	 * Get visibility rule definitions for the editor modal.
+	 *
+	 * Calls Voxel's Config::get_visibility_rules() and returns each rule's
+	 * editor config (type, label, arguments with choices).
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response
+	 */
+	public static function get_visibility_rules( $request ) {
+		$rules_registry = \Voxel\Dynamic_Data\Config::get_visibility_rules();
+		$rules = [];
+
+		foreach ( $rules_registry as $type => $class ) {
+			if ( ! class_exists( $class ) ) {
+				continue;
+			}
+
+			try {
+				$rule = new $class();
+				$config = $rule->get_editor_config();
+				$rules[] = $config;
+			} catch ( \Throwable $e ) {
+				// Skip rules that fail to instantiate (e.g., missing dependencies)
+				continue;
+			}
+		}
+
+		return new \WP_REST_Response( $rules, 200 );
+	}
+
+	/**
 	 * Get flat list of all tags for autocomplete (matching Voxel's structure)
 	 *
 	 * Returns a flattened list of all tags with breadcrumb for easy searching
@@ -1113,8 +1477,14 @@ class REST_API {
 	 * @return \WP_REST_Response
 	 */
 	public static function render_expression( $request ) {
-		$expression = $request->get_param( 'expression' );
-		$context    = $request->get_param( 'context' );
+		$expression      = $request->get_param( 'expression' );
+		$context         = $request->get_param( 'context' );
+		$preview_context = $request->get_param( 'preview_context' );
+
+		// Build preview context for editor (e.g., term card template needs a sample term)
+		if ( ! empty( $preview_context ) && is_array( $preview_context ) ) {
+			$context = self::build_preview_context( $preview_context );
+		}
 
 		// Use Block_Renderer to render the expression
 		$rendered = \VoxelFSE\Dynamic_Data\Block_Renderer::render_expression( $expression, $context );
@@ -1126,6 +1496,83 @@ class REST_API {
 			],
 			200
 		);
+	}
+
+	/**
+	 * Build data group context for editor preview
+	 *
+	 * When editing a term_card template, there's no queried term.
+	 * This method finds a sample term to use for dynamic tag preview.
+	 *
+	 * @param array $preview_context {type: 'term', taxonomy: 'area'}
+	 * @return array Data group instances for rendering.
+	 */
+	private static function build_preview_context( array $preview_context ): array {
+		$current_user_id = get_current_user_id();
+
+		$context = [
+			'site' => new \VoxelFSE\Dynamic_Data\Data_Groups\Site_Data_Group(),
+			'user' => \VoxelFSE\Dynamic_Data\Data_Groups\User_Data_Group::get( $current_user_id ),
+		];
+
+		$type = $preview_context['type'] ?? '';
+
+		if ( 'term' === $type ) {
+			$taxonomy = $preview_context['taxonomy'] ?? '';
+
+			if ( ! empty( $taxonomy ) ) {
+				// Get a sample term from this taxonomy for preview
+				$terms = get_terms( [
+					'taxonomy'   => $taxonomy,
+					'number'     => 1,
+					'hide_empty' => false,
+				] );
+
+				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+					$sample_term    = $terms[0];
+					$context['term'] = \VoxelFSE\Dynamic_Data\Data_Groups\Term_Data_Group::get(
+						$sample_term->term_id,
+						$sample_term->taxonomy
+					);
+				}
+			} else {
+				// No taxonomy specified — try all Voxel taxonomies
+				$voxel_taxonomies = get_taxonomies( [ 'public' => true ], 'names' );
+				foreach ( $voxel_taxonomies as $tax ) {
+					$terms = get_terms( [
+						'taxonomy'   => $tax,
+						'number'     => 1,
+						'hide_empty' => false,
+						'meta_query' => [
+							[
+								'key'     => 'voxel_image',
+								'compare' => 'EXISTS',
+							],
+						],
+					] );
+					if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+						$sample_term    = $terms[0];
+						$context['term'] = \VoxelFSE\Dynamic_Data\Data_Groups\Term_Data_Group::get(
+							$sample_term->term_id,
+							$sample_term->taxonomy
+						);
+						break;
+					}
+				}
+			}
+		} elseif ( 'post' === $type ) {
+			$post_type = $preview_context['post_type'] ?? 'post';
+			$posts     = get_posts( [
+				'post_type'      => $post_type,
+				'posts_per_page' => 1,
+				'post_status'    => 'publish',
+			] );
+			if ( ! empty( $posts ) ) {
+				$context['post'] = new \VoxelFSE\Dynamic_Data\Data_Groups\Post_Data_Group( $posts[0]->ID );
+			}
+		}
+
+		return $context;
 	}
 }
 

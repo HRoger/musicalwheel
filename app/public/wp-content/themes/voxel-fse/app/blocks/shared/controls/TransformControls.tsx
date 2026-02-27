@@ -14,7 +14,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, ToggleControl, RangeControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import ResponsiveRangeControl from './ResponsiveRangeControl';
 import ChooseControl from './ChooseControl';
@@ -27,7 +26,7 @@ const ElementorIcon = ({ icon }: { icon: string }) => (
 	<span className={`eicon ${icon}`} style={{ fontSize: '16px', width: '16px', height: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} />
 );
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 // Global state for device changes - survives component remounts
 // This is needed because WordPress may remount the inspector panel during desktop transitions
@@ -40,7 +39,7 @@ declare global {
 
 // Hook to sync with WordPress device type
 function useWordPressDevice(): DeviceType {
-	return useSelect((select) => getCurrentDeviceType(select), []);
+	return useDeviceType();
 }
 
 // Shared Popover wrapper component
@@ -141,7 +140,7 @@ function TransformPopover({ label, isOpen, onToggle, onReset, children, hasValue
 							icon={<UndoIcon />}
 							size="small"
 							variant="tertiary"
-							onClick={(e) => {
+							onClick={(e: React.MouseEvent) => {
 								e.stopPropagation();
 								onReset();
 							}}
@@ -425,62 +424,64 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 	};
 
 	// Reset functions
+	// Note: null is used instead of undefined because WordPress setAttributes() ignores undefined values entirely.
+	// null is stored and treated as falsy by the CSS generator (which uses truthiness checks).
 	const resetRotate = (isHover: boolean) => {
 		const suffix = isHover ? 'Hover' : '';
 		setAttributes({
-			[`transformRotate${suffix}`]: undefined,
-			[`transformRotate${suffix}_tablet`]: undefined,
-			[`transformRotate${suffix}_mobile`]: undefined,
-			[`transformRotate3D${suffix}`]: undefined,
-			[`transformRotateX${suffix}`]: undefined,
-			[`transformRotateX${suffix}_tablet`]: undefined,
-			[`transformRotateX${suffix}_mobile`]: undefined,
-			[`transformRotateY${suffix}`]: undefined,
-			[`transformRotateY${suffix}_tablet`]: undefined,
-			[`transformRotateY${suffix}_mobile`]: undefined,
-			[`transformPerspective${suffix}`]: undefined,
-			[`transformPerspective${suffix}_tablet`]: undefined,
-			[`transformPerspective${suffix}_mobile`]: undefined,
+			[`transformRotate${suffix}`]: null,
+			[`transformRotate${suffix}_tablet`]: null,
+			[`transformRotate${suffix}_mobile`]: null,
+			[`transformRotate3D${suffix}`]: null,
+			[`transformRotateX${suffix}`]: null,
+			[`transformRotateX${suffix}_tablet`]: null,
+			[`transformRotateX${suffix}_mobile`]: null,
+			[`transformRotateY${suffix}`]: null,
+			[`transformRotateY${suffix}_tablet`]: null,
+			[`transformRotateY${suffix}_mobile`]: null,
+			[`transformPerspective${suffix}`]: null,
+			[`transformPerspective${suffix}_tablet`]: null,
+			[`transformPerspective${suffix}_mobile`]: null,
 		});
 	};
 
 	const resetOffset = (isHover: boolean) => {
 		const suffix = isHover ? 'Hover' : '';
 		setAttributes({
-			[`transformTranslateX${suffix}`]: undefined,
-			[`transformTranslateX${suffix}_tablet`]: undefined,
-			[`transformTranslateX${suffix}_mobile`]: undefined,
-			[`transformTranslateY${suffix}`]: undefined,
-			[`transformTranslateY${suffix}_tablet`]: undefined,
-			[`transformTranslateY${suffix}_mobile`]: undefined,
+			[`transformTranslateX${suffix}`]: null,
+			[`transformTranslateX${suffix}_tablet`]: null,
+			[`transformTranslateX${suffix}_mobile`]: null,
+			[`transformTranslateY${suffix}`]: null,
+			[`transformTranslateY${suffix}_tablet`]: null,
+			[`transformTranslateY${suffix}_mobile`]: null,
 		});
 	};
 
 	const resetScale = (isHover: boolean) => {
 		const suffix = isHover ? 'Hover' : '';
 		setAttributes({
-			[`transformScaleProportions${suffix}`]: undefined,
-			[`transformScale${suffix}`]: undefined,
-			[`transformScale${suffix}_tablet`]: undefined,
-			[`transformScale${suffix}_mobile`]: undefined,
-			[`transformScaleX${suffix}`]: undefined,
-			[`transformScaleX${suffix}_tablet`]: undefined,
-			[`transformScaleX${suffix}_mobile`]: undefined,
-			[`transformScaleY${suffix}`]: undefined,
-			[`transformScaleY${suffix}_tablet`]: undefined,
-			[`transformScaleY${suffix}_mobile`]: undefined,
+			[`transformScaleProportions${suffix}`]: null,
+			[`transformScale${suffix}`]: null,
+			[`transformScale${suffix}_tablet`]: null,
+			[`transformScale${suffix}_mobile`]: null,
+			[`transformScaleX${suffix}`]: null,
+			[`transformScaleX${suffix}_tablet`]: null,
+			[`transformScaleX${suffix}_mobile`]: null,
+			[`transformScaleY${suffix}`]: null,
+			[`transformScaleY${suffix}_tablet`]: null,
+			[`transformScaleY${suffix}_mobile`]: null,
 		});
 	};
 
 	const resetSkew = (isHover: boolean) => {
 		const suffix = isHover ? 'Hover' : '';
 		setAttributes({
-			[`transformSkewX${suffix}`]: undefined,
-			[`transformSkewX${suffix}_tablet`]: undefined,
-			[`transformSkewX${suffix}_mobile`]: undefined,
-			[`transformSkewY${suffix}`]: undefined,
-			[`transformSkewY${suffix}_tablet`]: undefined,
-			[`transformSkewY${suffix}_mobile`]: undefined,
+			[`transformSkewX${suffix}`]: null,
+			[`transformSkewX${suffix}_tablet`]: null,
+			[`transformSkewX${suffix}_mobile`]: null,
+			[`transformSkewY${suffix}`]: null,
+			[`transformSkewY${suffix}_tablet`]: null,
+			[`transformSkewY${suffix}_mobile`]: null,
 		});
 	};
 
@@ -534,7 +535,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 							<ToggleControl
 								label={__('3D Rotate', 'voxel-fse')}
 								checked={is3DRotate || false}
-								onChange={(value) => setAttributes({ [`transformRotate3D${suffix}`]: value })}
+								onChange={(value: boolean) => setAttributes({ [`transformRotate3D${suffix}`]: value })}
 								__nextHasNoMarginBottom
 							/>
 
@@ -654,7 +655,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 							<ToggleControl
 								label={__('Keep Proportions', 'voxel-fse')}
 								checked={keepProportions}
-								onChange={(value) => setAttributes({ [`transformScaleProportions${suffix}`]: value })}
+								onChange={(value: boolean) => setAttributes({ [`transformScaleProportions${suffix}`]: value })}
 								__nextHasNoMarginBottom
 							/>
 
@@ -838,7 +839,7 @@ export default function TransformControls({ attributes, setAttributes }: Transfo
 								<RangeControl
 									label={__('Transition Duration (ms)', 'voxel-fse')}
 									value={attributes.transformTransitionDuration ?? 300}
-									onChange={(value) => setAttributes({ transformTransitionDuration: value })}
+									onChange={(value: number | undefined) => setAttributes({ transformTransitionDuration: value })}
 									min={0}
 									max={3000}
 									step={50}

@@ -6,7 +6,7 @@
  * @package MusicalWheel
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { DataGroup, TagExport, Modifier } from './types';
 
 interface AutocompleteProps {
@@ -33,7 +33,7 @@ export const Autocomplete: React.FC<AutocompleteProps> = ({
 	items,
 	selectedIndex,
 	onSelect,
-	onClose,
+	onClose: _onClose,
 }) => {
 	const listRef = useRef<HTMLDivElement>(null);
 

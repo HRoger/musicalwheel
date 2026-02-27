@@ -153,6 +153,16 @@ class Create_Post extends Base_Widget {
 			);
 
 			$this->add_control(
+				'home_icon',
+				[
+					'label' => __( 'Home icon', 'text-domain' ),
+					'type' => \Elementor\Controls_Manager::ICONS,
+					'skin' => 'inline',
+					'label_block' => false,
+				]
+			);
+
+			$this->add_control(
 				'draft_icon',
 				[
 					'label' => __( 'Draft icon', 'text-domain' ),
@@ -382,7 +392,65 @@ class Create_Post extends Base_Widget {
 
 		$this->end_controls_section();
 
+		$this->start_controls_section(
+			'ts_submit_labels',
+			[
+				'label' => __( 'Submit labels', 'voxel-elementor' ),
+				'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
+			]
+		);
 
+			$this->add_control(
+				'ts_submit_label_draft',
+				[
+					'label' => __( 'Saved as draft', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::TEXT,
+					'default' => '',
+					'placeholder' => _x( 'Your post has been saved as draft.', 'create post', 'voxel' ),
+				]
+			);
+
+			$this->add_control(
+				'ts_submit_label_submitted_for_review',
+				[
+					'label' => __( 'Submitted for review', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::TEXT,
+					'default' => '',
+					'placeholder' => _x( 'Your post has been submitted for review.', 'create post', 'voxel' ),
+				]
+			);
+
+			$this->add_control(
+				'ts_submit_label_published',
+				[
+					'label' => __( 'Published', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::TEXT,
+					'default' => '',
+					'placeholder' => _x( 'Your post has been published.', 'create post', 'voxel' ),
+				]
+			);
+
+			$this->add_control(
+				'ts_submit_label_changes_submitted_for_review',
+				[
+					'label' => __( 'Changes submitted for review (editing)', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::TEXT,
+					'default' => '',
+					'placeholder' => _x( 'Your changes have been submitted for review.', 'create post', 'voxel' ),
+				]
+			);
+
+			$this->add_control(
+				'ts_submit_label_changes_applied',
+				[
+					'label' => __( 'Changes applied (editing)', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::TEXT,
+					'default' => '',
+					'placeholder' => _x( 'Your changes have been applied.', 'create post', 'voxel' ),
+				]
+			);
+
+		$this->end_controls_section();
 
 		$this->start_controls_section(
 			'ts_form_head',
@@ -4965,12 +5033,21 @@ class Create_Post extends Base_Widget {
 
 		$is_admin_mode = !! $this->get_settings('_ts_admin_mode');
 
+		$submit_labels = [];
+		foreach ( [ 'draft' => 'ts_submit_label_draft', 'submitted_for_review' => 'ts_submit_label_submitted_for_review', 'published' => 'ts_submit_label_published', 'changes_submitted_for_review' => 'ts_submit_label_changes_submitted_for_review', 'changes_applied' => 'ts_submit_label_changes_applied' ] as $key => $control ) {
+			$val = $this->get_settings_for_display( $control );
+			if ( is_string( $val ) && $val !== '' ) {
+				$submit_labels[ $key ] = $val;
+			}
+		}
+
 		$config = [
 			'is_admin_mode' => $is_admin_mode,
 			'admin_mode_nonce' => $this->get_settings('_ts_admin_mode_nonce'),
 			'autocomplete' => $this->_get_autocomplete_config(),
 			'can_save_draft' => true,
 			'validation_errors' => $this->_get_validation_errors(),
+			'submit_labels' => $submit_labels,
 		];
 
 		$config['post_type'] = [

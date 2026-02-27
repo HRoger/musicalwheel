@@ -23,17 +23,6 @@ import EnableTagsButton from './EnableTagsButton';
 
 declare global {
 	interface Window {
-		wp: {
-			codeEditor?: {
-				initialize: (
-					textarea: HTMLTextAreaElement,
-					settings?: CodeMirrorSettings
-				) => CodeMirrorInstance;
-				defaultSettings?: {
-					codemirror: CodeMirrorOptions;
-				};
-			};
-		};
 		CodeMirror?: any;
 	}
 }
@@ -167,7 +156,7 @@ export default function CodeEditorControl({
 	// Check if CodeMirror is available
 	useEffect(() => {
 		const checkCodeMirror = () => {
-			if (window.wp?.codeEditor && window.CodeMirror) {
+			if ((window as any).wp?.codeEditor && window.CodeMirror) {
 				setIsCodeMirrorAvailable(true);
 				return true;
 			}
@@ -179,6 +168,7 @@ export default function CodeEditorControl({
 			const timer = setTimeout(checkCodeMirror, 500);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, []);
 
 	// Initialize CodeMirror
@@ -214,7 +204,7 @@ export default function CodeEditorControl({
 		};
 
 		try {
-			const editor = window.wp!.codeEditor!.initialize(textareaRef.current, settings);
+			const editor = (window as any).wp?.codeEditor?.initialize(textareaRef.current, settings);
 			editorRef.current = editor;
 
 			// Set initial value
@@ -244,6 +234,7 @@ export default function CodeEditorControl({
 		} catch (error) {
 			console.warn('Failed to initialize CodeMirror:', error);
 		}
+		return undefined;
 	}, [isCodeMirrorAvailable, mode, lineNumbers]);
 
 	// Sync external value changes

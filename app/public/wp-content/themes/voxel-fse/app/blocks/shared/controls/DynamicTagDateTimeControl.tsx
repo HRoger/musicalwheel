@@ -128,7 +128,7 @@ export default function DynamicTagDateTimeControl({
 			dateFormat: 'Y-m-d H:i:S',
 			time_24hr: true,
 			defaultDate: value || undefined,
-			onChange: (selectedDates, dateStr) => {
+			onChange: (_selectedDates, dateStr) => {
 				onChange(dateStr);
 			},
 		});
@@ -164,8 +164,8 @@ export default function DynamicTagDateTimeControl({
 					color: #1e1e1e;
 				}
 				.voxel-dynamic-tag-datetime-control .datetime-text-input:focus {
-					border-color: #007cba;
-					box-shadow: 0 0 0 1px #007cba;
+					border-color: var(--vxfse-accent-color, #3858e9);
+					box-shadow: 0 0 0 1px var(--vxfse-accent-color, #3858e9);
 					outline: none;
 				}
 				.voxel-dynamic-tag-datetime-control .datetime-text-input::placeholder {

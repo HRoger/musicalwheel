@@ -7,7 +7,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { TextControl, ToggleControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
 import {
 	AccordionPanelGroup,
 	AccordionPanel,
@@ -20,7 +20,6 @@ import {
 	StateTabPanel,
 	TypographyControl,
 } from '@shared/controls';
-import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 import type { StripeAccountAttributes } from '../types';
 
 interface StyleTabProps {
@@ -48,7 +47,7 @@ export function StyleTab({
 						borderWidth: attributes.panelBorderWidth || {},
 						borderColor: attributes.panelBorderColor || '',
 					}}
-					onChange={(value) => {
+					onChange={(value: any) => {
 						const updates: Partial<StripeAccountAttributes> = {};
 						if (value.borderType !== undefined) {
 							updates.panelBorderType = value.borderType;
@@ -77,7 +76,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background', 'voxel-fse')}
 					value={attributes.panelBackground}
-					onChange={(value) => setAttributes({ panelBackground: value })}
+					onChange={(value: string | undefined) => setAttributes({ panelBackground: value })}
 				/>
 
 				<BoxShadowPopup
@@ -115,13 +114,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="panelTypography"
+					typographyAttributeName="panelTypography"
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.panelTextColor}
-					onChange={(value) => setAttributes({ panelTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ panelTextColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -133,13 +132,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="fieldLabelTypography"
+					typographyAttributeName="fieldLabelTypography"
 				/>
 
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.fieldLabelColor}
-					onChange={(value) => setAttributes({ fieldLabelColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ fieldLabelColor: value })}
 				/>
 
 				<SectionHeading label={__('Select/Unselect', 'voxel-fse')} />
@@ -147,7 +146,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.fieldSelectColor}
-					onChange={(value) => setAttributes({ fieldSelectColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ fieldSelectColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -172,14 +171,14 @@ export function StyleTab({
 									<ColorControl
 										label={__('Placeholder color', 'voxel-fse')}
 										value={attributes.inputPlaceholderColor}
-										onChange={(value) => setAttributes({ inputPlaceholderColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputPlaceholderColor: value })}
 									/>
 
 									<TypographyControl
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="inputPlaceholderTypography"
+										typographyAttributeName="inputPlaceholderTypography"
 									/>
 
 									<SectionHeading label={__('Value', 'voxel-fse')} />
@@ -187,14 +186,14 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.inputValueTextColor}
-										onChange={(value) => setAttributes({ inputValueTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputValueTextColor: value })}
 									/>
 
 									<TypographyControl
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="inputValueTypography"
+										typographyAttributeName="inputValueTypography"
 									/>
 
 									<SectionHeading label={__('General', 'voxel-fse')} />
@@ -202,7 +201,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.inputBackgroundColor}
-										onChange={(value) => setAttributes({ inputBackgroundColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputBackgroundColor: value })}
 									/>
 
 									<BorderGroupControl
@@ -212,7 +211,7 @@ export function StyleTab({
 											borderWidth: attributes.inputBorderWidth || {},
 											borderColor: attributes.inputBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.inputBorderType = value.borderType;
@@ -285,31 +284,31 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.inputBackgroundColorHover}
-										onChange={(value) => setAttributes({ inputBackgroundColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputBackgroundColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.inputBorderColorHover}
-										onChange={(value) => setAttributes({ inputBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputBorderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Placeholder color', 'voxel-fse')}
 										value={attributes.inputPlaceholderColorHover}
-										onChange={(value) => setAttributes({ inputPlaceholderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputPlaceholderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.inputTextColorHover}
-										onChange={(value) => setAttributes({ inputTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputTextColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.inputIconColorHover}
-										onChange={(value) => setAttributes({ inputIconColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputIconColorHover: value })}
 									/>
 								</>
 							)}
@@ -319,25 +318,25 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.inputBackgroundColorActive}
-										onChange={(value) => setAttributes({ inputBackgroundColorActive: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputBackgroundColorActive: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.inputBorderColorActive}
-										onChange={(value) => setAttributes({ inputBorderColorActive: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputBorderColorActive: value })}
 									/>
 
 									<ColorControl
 										label={__('Placeholder color', 'voxel-fse')}
 										value={attributes.inputPlaceholderColorActive}
-										onChange={(value) => setAttributes({ inputPlaceholderColorActive: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputPlaceholderColorActive: value })}
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.inputTextColorActive}
-										onChange={(value) => setAttributes({ inputTextColorActive: value })}
+										onChange={(value: string | undefined) => setAttributes({ inputTextColorActive: value })}
 									/>
 								</>
 							)}
@@ -352,19 +351,19 @@ export function StyleTab({
 					label={__('Button typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="inputSuffixButtonTypography"
+					typographyAttributeName="inputSuffixButtonTypography"
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.inputSuffixTextColor}
-					onChange={(value) => setAttributes({ inputSuffixTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ inputSuffixTextColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Background color', 'voxel-fse')}
 					value={attributes.inputSuffixBackgroundColor}
-					onChange={(value) => setAttributes({ inputSuffixBackgroundColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ inputSuffixBackgroundColor: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -397,7 +396,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.inputSuffixIconColor}
-					onChange={(value) => setAttributes({ inputSuffixIconColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ inputSuffixIconColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -408,19 +407,19 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background (Inactive)', 'voxel-fse')}
 					value={attributes.switcherBackgroundInactive}
-					onChange={(value) => setAttributes({ switcherBackgroundInactive: value })}
+					onChange={(value: string | undefined) => setAttributes({ switcherBackgroundInactive: value })}
 				/>
 
 				<ColorControl
 					label={__('Background (Active)', 'voxel-fse')}
 					value={attributes.switcherBackgroundActive}
-					onChange={(value) => setAttributes({ switcherBackgroundActive: value })}
+					onChange={(value: string | undefined) => setAttributes({ switcherBackgroundActive: value })}
 				/>
 
 				<ColorControl
 					label={__('Handle background', 'voxel-fse')}
 					value={attributes.switcherHandleBackground}
-					onChange={(value) => setAttributes({ switcherHandleBackground: value })}
+					onChange={(value: string | undefined) => setAttributes({ switcherHandleBackground: value })}
 				/>
 			</AccordionPanel>
 
@@ -451,13 +450,13 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.selectBackgroundColor}
-										onChange={(value) => setAttributes({ selectBackgroundColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectBackgroundColor: value })}
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.selectTextColor}
-										onChange={(value) => setAttributes({ selectTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectTextColor: value })}
 									/>
 
 									<BorderGroupControl
@@ -467,7 +466,7 @@ export function StyleTab({
 											borderWidth: attributes.selectBorderWidth || {},
 											borderColor: attributes.selectBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.selectBorderType = value.borderType;
@@ -498,13 +497,13 @@ export function StyleTab({
 									<ToggleControl
 										label={__('Hide chevron', 'voxel-fse')}
 										checked={attributes.selectHideChevron || false}
-										onChange={(value) => setAttributes({ selectHideChevron: value })}
+										onChange={(value: boolean) => setAttributes({ selectHideChevron: value })}
 									/>
 
 									<ColorControl
 										label={__('Chevron color', 'voxel-fse')}
 										value={attributes.selectChevronColor}
-										onChange={(value) => setAttributes({ selectChevronColor: value })}
+										onChange={(value: string) => setAttributes({ selectChevronColor: value })}
 									/>
 								</>
 							)}
@@ -514,25 +513,25 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.selectBackgroundColorHover}
-										onChange={(value) => setAttributes({ selectBackgroundColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectBackgroundColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.selectTextColorHover}
-										onChange={(value) => setAttributes({ selectTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectTextColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.selectBorderColorHover}
-										onChange={(value) => setAttributes({ selectBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectBorderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.selectIconColorHover}
-										onChange={(value) => setAttributes({ selectIconColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ selectIconColorHover: value })}
 									/>
 
 									<BoxShadowPopup
@@ -576,7 +575,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background', 'voxel-fse')}
 										value={attributes.tabsBackground}
-										onChange={(value) => setAttributes({ tabsBackground: value })}
+										onChange={(value: string | undefined) => setAttributes({ tabsBackground: value })}
 									/>
 
 									<BorderGroupControl
@@ -586,7 +585,7 @@ export function StyleTab({
 											borderWidth: attributes.tabsBorderWidth || {},
 											borderColor: attributes.tabsBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.tabsBorderType = value.borderType;
@@ -618,13 +617,13 @@ export function StyleTab({
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="tabsTextTypography"
+										typographyAttributeName="tabsTextTypography"
 									/>
 
 									<ColorControl
 										label={__('Text Color', 'voxel-fse')}
 										value={attributes.tabsTextColor}
-										onChange={(value) => setAttributes({ tabsTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ tabsTextColor: value })}
 									/>
 								</>
 							)}
@@ -634,19 +633,19 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background', 'voxel-fse')}
 										value={attributes.tabsBackgroundSelected}
-										onChange={(value) => setAttributes({ tabsBackgroundSelected: value })}
+										onChange={(value: string | undefined) => setAttributes({ tabsBackgroundSelected: value })}
 									/>
 
 									<ColorControl
 										label={__('Color', 'voxel-fse')}
 										value={attributes.tabsColorSelected}
-										onChange={(value) => setAttributes({ tabsColorSelected: value })}
+										onChange={(value: string | undefined) => setAttributes({ tabsColorSelected: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.tabsBorderColorSelected}
-										onChange={(value) => setAttributes({ tabsBorderColorSelected: value })}
+										onChange={(value: string | undefined) => setAttributes({ tabsBorderColorSelected: value })}
 									/>
 
 									<BoxShadowPopup
@@ -668,13 +667,13 @@ export function StyleTab({
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="headingTypography"
+					typographyAttributeName="headingTypography"
 				/>
 
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.headingColor}
-					onChange={(value) => setAttributes({ headingColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ headingColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -683,7 +682,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background', 'voxel-fse')}
 					value={attributes.repeaterBackground}
-					onChange={(value) => setAttributes({ repeaterBackground: value })}
+					onChange={(value: string | undefined) => setAttributes({ repeaterBackground: value })}
 				/>
 
 				<BorderGroupControl
@@ -693,7 +692,7 @@ export function StyleTab({
 						borderWidth: attributes.repeaterBorderWidth || {},
 						borderColor: attributes.repeaterBorderColor || '',
 					}}
-					onChange={(value) => {
+					onChange={(value: any) => {
 						const updates: Partial<StripeAccountAttributes> = {};
 						if (value.borderType !== undefined) {
 							updates.repeaterBorderType = value.borderType;
@@ -734,14 +733,14 @@ export function StyleTab({
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.repeaterHeadSecondaryColor}
-					onChange={(value) => setAttributes({ repeaterHeadSecondaryColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ repeaterHeadSecondaryColor: value })}
 				/>
 
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					attributes={attributes as Record<string, any>}
 					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-					attributeBaseName="repeaterHeadSecondaryTypography"
+					typographyAttributeName="repeaterHeadSecondaryTypography"
 				/>
 
 				<SectionHeading label={__('Other', 'voxel-fse')} />
@@ -749,13 +748,13 @@ export function StyleTab({
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.repeaterHeadIconColor}
-					onChange={(value) => setAttributes({ repeaterHeadIconColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ repeaterHeadIconColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Border color', 'voxel-fse')}
 					value={attributes.repeaterHeadBorderColor}
-					onChange={(value) => setAttributes({ repeaterHeadBorderColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ repeaterHeadBorderColor: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -789,13 +788,13 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.repeaterIconButtonColor}
-										onChange={(value) => setAttributes({ repeaterIconButtonColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ repeaterIconButtonColor: value })}
 									/>
 
 									<ColorControl
 										label={__('Button background', 'voxel-fse')}
 										value={attributes.repeaterIconButtonBackground}
-										onChange={(value) => setAttributes({ repeaterIconButtonBackground: value })}
+										onChange={(value: string | undefined) => setAttributes({ repeaterIconButtonBackground: value })}
 									/>
 
 									<BorderGroupControl
@@ -805,7 +804,7 @@ export function StyleTab({
 											borderWidth: attributes.repeaterIconButtonBorderWidth || {},
 											borderColor: attributes.repeaterIconButtonBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.repeaterIconButtonBorderType = value.borderType;
@@ -838,19 +837,19 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.repeaterIconButtonColorHover}
-										onChange={(value) => setAttributes({ repeaterIconButtonColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ repeaterIconButtonColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Button background color', 'voxel-fse')}
 										value={attributes.repeaterIconButtonBackgroundHover}
-										onChange={(value) => setAttributes({ repeaterIconButtonBackgroundHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ repeaterIconButtonBackgroundHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Button border color', 'voxel-fse')}
 										value={attributes.repeaterIconButtonBorderColorHover}
-										onChange={(value) => setAttributes({ repeaterIconButtonBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ repeaterIconButtonBorderColorHover: value })}
 									/>
 								</>
 							)}
@@ -878,7 +877,7 @@ export function StyleTab({
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="pillsTypography"
+										typographyAttributeName="pillsTypography"
 									/>
 
 									<ResponsiveRangeControl
@@ -894,13 +893,13 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.pillsTextColor}
-										onChange={(value) => setAttributes({ pillsTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ pillsTextColor: value })}
 									/>
 
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.pillsBackgroundColor}
-										onChange={(value) => setAttributes({ pillsBackgroundColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ pillsBackgroundColor: value })}
 									/>
 								</>
 							)}
@@ -910,13 +909,13 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.pillsTextColorHover}
-										onChange={(value) => setAttributes({ pillsTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ pillsTextColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.pillsBackgroundColorHover}
-										onChange={(value) => setAttributes({ pillsBackgroundColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ pillsBackgroundColorHover: value })}
 									/>
 								</>
 							)}
@@ -944,7 +943,7 @@ export function StyleTab({
 										label={__('Button typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="primaryButtonTypography"
+										typographyAttributeName="primaryButtonTypography"
 									/>
 
 									<BorderGroupControl
@@ -954,7 +953,7 @@ export function StyleTab({
 											borderWidth: attributes.primaryButtonBorderWidth || {},
 											borderColor: attributes.primaryButtonBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.primaryButtonBorderType = value.borderType;
@@ -990,19 +989,19 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.primaryButtonTextColor}
-										onChange={(value) => setAttributes({ primaryButtonTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonTextColor: value })}
 									/>
 
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.primaryButtonBackgroundColor}
-										onChange={(value) => setAttributes({ primaryButtonBackgroundColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonBackgroundColor: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.primaryButtonBorderColor}
-										onChange={(value) => setAttributes({ primaryButtonBorderColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonBorderColor: value })}
 									/>
 
 									<BoxShadowPopup
@@ -1015,7 +1014,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.primaryButtonIconColor}
-										onChange={(value) => setAttributes({ primaryButtonIconColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonIconColor: value })}
 									/>
 
 									<ResponsiveRangeControl
@@ -1055,25 +1054,25 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.primaryButtonTextColorHover}
-										onChange={(value) => setAttributes({ primaryButtonTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonTextColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.primaryButtonBackgroundColorHover}
-										onChange={(value) => setAttributes({ primaryButtonBackgroundColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonBackgroundColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.primaryButtonBorderColorHover}
-										onChange={(value) => setAttributes({ primaryButtonBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonBorderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.primaryButtonIconColorHover}
-										onChange={(value) => setAttributes({ primaryButtonIconColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ primaryButtonIconColorHover: value })}
 									/>
 								</>
 							)}
@@ -1101,7 +1100,7 @@ export function StyleTab({
 										label={__('Button typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="secondaryButtonTypography"
+										typographyAttributeName="secondaryButtonTypography"
 									/>
 
 									<ResponsiveRangeControl
@@ -1117,7 +1116,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.secondaryButtonTextColor}
-										onChange={(value) => setAttributes({ secondaryButtonTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonTextColor: value })}
 									/>
 
 									<DimensionsControl
@@ -1139,7 +1138,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.secondaryButtonBackgroundColor}
-										onChange={(value) => setAttributes({ secondaryButtonBackgroundColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonBackgroundColor: value })}
 									/>
 
 									<BorderGroupControl
@@ -1149,7 +1148,7 @@ export function StyleTab({
 											borderWidth: attributes.secondaryButtonBorderWidth || {},
 											borderColor: attributes.secondaryButtonBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.secondaryButtonBorderType = value.borderType;
@@ -1188,7 +1187,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.secondaryButtonIconColor}
-										onChange={(value) => setAttributes({ secondaryButtonIconColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonIconColor: value })}
 									/>
 								</>
 							)}
@@ -1198,25 +1197,25 @@ export function StyleTab({
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.secondaryButtonTextColorHover}
-										onChange={(value) => setAttributes({ secondaryButtonTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonTextColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Background color', 'voxel-fse')}
 										value={attributes.secondaryButtonBackgroundColorHover}
-										onChange={(value) => setAttributes({ secondaryButtonBackgroundColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonBackgroundColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.secondaryButtonBorderColorHover}
-										onChange={(value) => setAttributes({ secondaryButtonBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonBorderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Icon color', 'voxel-fse')}
 										value={attributes.secondaryButtonIconColorHover}
-										onChange={(value) => setAttributes({ secondaryButtonIconColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ secondaryButtonIconColorHover: value })}
 									/>
 								</>
 							)}
@@ -1243,7 +1242,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.tertiaryButtonIconColor}
-										onChange={(value) => setAttributes({ tertiaryButtonIconColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonIconColor: value })}
 									/>
 
 									<ResponsiveRangeControl
@@ -1259,7 +1258,7 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button background', 'voxel-fse')}
 										value={attributes.tertiaryButtonBackground}
-										onChange={(value) => setAttributes({ tertiaryButtonBackground: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonBackground: value })}
 									/>
 
 									<BorderGroupControl
@@ -1269,7 +1268,7 @@ export function StyleTab({
 											borderWidth: attributes.tertiaryButtonBorderWidth || {},
 											borderColor: attributes.tertiaryButtonBorderColor || '',
 										}}
-										onChange={(value) => {
+										onChange={(value: any) => {
 											const updates: Partial<StripeAccountAttributes> = {};
 											if (value.borderType !== undefined) {
 												updates.tertiaryButtonBorderType = value.borderType;
@@ -1299,13 +1298,13 @@ export function StyleTab({
 										label={__('Typography', 'voxel-fse')}
 										attributes={attributes as Record<string, any>}
 										setAttributes={setAttributes as (attrs: Record<string, any>) => void}
-										attributeBaseName="tertiaryButtonTypography"
+										typographyAttributeName="tertiaryButtonTypography"
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.tertiaryButtonTextColor}
-										onChange={(value) => setAttributes({ tertiaryButtonTextColor: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonTextColor: value })}
 									/>
 								</>
 							)}
@@ -1315,25 +1314,25 @@ export function StyleTab({
 									<ColorControl
 										label={__('Button icon color', 'voxel-fse')}
 										value={attributes.tertiaryButtonIconColorHover}
-										onChange={(value) => setAttributes({ tertiaryButtonIconColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonIconColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Button background color', 'voxel-fse')}
 										value={attributes.tertiaryButtonBackgroundHover}
-										onChange={(value) => setAttributes({ tertiaryButtonBackgroundHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonBackgroundHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Border color', 'voxel-fse')}
 										value={attributes.tertiaryButtonBorderColorHover}
-										onChange={(value) => setAttributes({ tertiaryButtonBorderColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonBorderColorHover: value })}
 									/>
 
 									<ColorControl
 										label={__('Text color', 'voxel-fse')}
 										value={attributes.tertiaryButtonTextColorHover}
-										onChange={(value) => setAttributes({ tertiaryButtonTextColorHover: value })}
+										onChange={(value: string | undefined) => setAttributes({ tertiaryButtonTextColorHover: value })}
 									/>
 								</>
 							)}

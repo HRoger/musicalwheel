@@ -13,7 +13,7 @@
     padding: 15px;
     background: #fbfafb;
     border-radius: 4px;
-    margin: 0 -15px -15px;
+    margin: 0 -15px 0;
 }
 
 .voxel-fse-loop-visibility-wrapper .voxel-fse-loop-section,
@@ -59,6 +59,7 @@
     color: #1e1e1e;
     margin-bottom: 0;
     flex-shrink: 0;
+    text-transform: none;
 }
 
 .voxel-fse-loop-field .components-base-control__help {
@@ -108,7 +109,7 @@
     background: #f0f0f1;
     border-radius: 3px;
     margin-bottom: 4px;
-    border-left: 3px solid #007cba;
+    border-left: 3px solid var(--vxfse-accent-color);
 }
 
 .voxel-fse-visibility-rule-item:last-child {

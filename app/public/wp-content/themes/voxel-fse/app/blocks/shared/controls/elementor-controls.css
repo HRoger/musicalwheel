@@ -85,8 +85,8 @@
 
 .voxel-fse-device-button.is-pressed,
 .voxel-fse-device-button:hover {
-	background: #2271b1;
-	border-color: #2271b1;
+	background: var(--vxfse-accent-color);
+	border-color: var(--vxfse-accent-color);
 }
 
 .voxel-fse-device-button.is-pressed svg,
@@ -296,12 +296,12 @@
 }
 
 .vxfse-select2-wrap .select2-selection--multiple:hover {
-	border-color: #2271b1;
+	border-color: var(--vxfse-accent-color);
 }
 
 .vxfse-select2-wrap .select2-selection--focus {
-	border-color: #2271b1;
-	box-shadow: 0 0 0 1px #2271b1;
+	border-color: var(--vxfse-accent-color);
+	box-shadow: 0 0 0 1px var(--vxfse-accent-color);
 	outline: none;
 }
 
@@ -423,7 +423,7 @@
 }
 
 .vxfse-select2-dropdown .select2-results__option--selected {
-	background: #2271b1;
+	background: var(--vxfse-accent-color);
 	color: #fff;
 }
 
@@ -852,7 +852,7 @@
 	top: 50%;
 	height: 4px;
 	margin-top: -2px;
-	background: #2271b1;
+	background: var(--vxfse-accent-color);
 	border-radius: 2px;
 }
 
@@ -865,7 +865,7 @@
 	margin-top: -8px;
 	margin-left: -8px;
 	background: #fff;
-	border: 2px solid #2271b1;
+	border: 2px solid var(--vxfse-accent-color);
 	border-radius: 50%;
 	cursor: grab;
 	transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -874,18 +874,18 @@
 
 .voxel-fse-range-slider-handle:hover {
 	transform: scale(1.1);
-	box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.15);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--vxfse-accent-color) 15%, transparent);
 }
 
 .voxel-fse-range-slider-handle.is-dragging {
 	cursor: grabbing;
 	transform: scale(1.15);
-	box-shadow: 0 0 0 6px rgba(34, 113, 177, 0.2);
+	box-shadow: 0 0 0 6px color-mix(in srgb, var(--vxfse-accent-color) 20%, transparent);
 }
 
 .voxel-fse-range-slider-handle:focus {
 	outline: none;
-	box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.3);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--vxfse-accent-color) 30%, transparent);
 }
 
 /* Input fields */
@@ -1019,8 +1019,8 @@
 /* Focus state for accessibility */
 .voxel-fse-image-upload-empty:focus {
 	outline: none;
-	border-color: #2271b1;
-	box-shadow: 0 0 0 1px #2271b1;
+	border-color: var(--vxfse-accent-color);
+	box-shadow: 0 0 0 1px var(--vxfse-accent-color);
 }
 
 /* Hover overlay - hidden by default, shown on hover */
@@ -1030,7 +1030,7 @@
 	left: 0;
 	right: 0;
 	bottom: 0;
-	height: 27px;
+	height: 32px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1041,7 +1041,8 @@
 	z-index: 10;
 }
 
-.voxel-fse-image-upload-empty:hover .voxel-fse-image-upload-empty__overlay {
+.voxel-fse-image-upload-empty:hover .voxel-fse-image-upload-empty__overlay,
+.voxel-fse-image-upload-preview:hover .voxel-fse-image-upload-empty__overlay {
 	opacity: 1;
 	visibility: visible;
 }
@@ -1158,16 +1159,16 @@
 
 /* Focus state - accessible keyboard navigation */
 .elementor-visual-choice-element input[type="radio"]:focus+.elementor-visual-choice-label {
-	border-color: #2271b1;
-	box-shadow: 0 0 0 1px #2271b1;
+	border-color: var(--vxfse-accent-color);
+	box-shadow: 0 0 0 1px var(--vxfse-accent-color);
 }
 
 /* Selected state */
 .elementor-visual-choice-element-selected .elementor-visual-choice-label,
 .elementor-visual-choice-element input[type="radio"]:checked+.elementor-visual-choice-label {
-	border-color: #2271b1;
+	border-color: var(--vxfse-accent-color);
 	border-width: 2px;
-	background-color: #f0f7fc;
+	background-color: color-mix(in srgb, var(--vxfse-accent-color) 8%, #fff);
 }
 
 /* Image inside label */

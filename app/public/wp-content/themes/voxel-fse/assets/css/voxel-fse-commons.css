@@ -17,6 +17,18 @@
     --e-global-color-primary: #313135;
     --e-global-color-text: #313135;
     --e-global-typography-text-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --e-global-typography-text-font-size: 16px;
+    --e-global-typography-secondary-font-weight: 500;
+    --ts-shade-1: #313135;
+    --ts-shade-2: #797a88;
+    --ts-shade-3: #bfc3c8;
+    --ts-shade-4: #dadfe4;
+    --ts-shade-5: #f3f3f3;
+    --ts-shade-6: #f8f8f8;
+    --ts-shade-7: #fcfcfc;
+    --ts-accent-1: var(--e-global-color-accent);
+    --ts-accent-2: var(--e-global-color-accent);
+    font-family: var(--e-global-typography-text-font-family),sans-serif;
 }
 
 .components-base-control .components-select-control__input {
@@ -115,5 +127,40 @@ div.mce-tinymce .mce-btn.mce-active {
 .voxel-fse-create-post-frontend div.mce-edit-area,
 .editor-container div.mce-edit-area {
     border-top: 1px solid #dcdcde !important;
+}
+
+/**
+ * NectarBlocks columns inside AJAX-rendered card templates
+ *
+ * When card templates are rendered server-side via do_blocks() and injected
+ * as HTML (Post Feed, Term Feed), NectarBlocks columns lack their inline
+ * flex styles. The base NB CSS sets flex-basis:0px, collapsing them to 0 width.
+ * This gives them a sensible default so card content is visible.
+ */
+.ts-preview .wp-block-nectar-blocks-column,
+.ts-term-card .wp-block-nectar-blocks-column,
+.post-feed-grid .wp-block-nectar-blocks-column,
+.term-feed-grid .wp-block-nectar-blocks-column {
+    flex: 1 1 100%;
+}
+
+.ts-preview .wp-block-nectar-blocks-row,
+.ts-term-card .wp-block-nectar-blocks-row,
+.post-feed-grid .wp-block-nectar-blocks-row,
+.term-feed-grid .wp-block-nectar-blocks-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/**
+ * Term feed card link wrapper
+ *
+ * Term feed items use <a class="ts-preview"> for clickable cards.
+ * Reset link styling so card content inherits normal text colors.
+ */
+a.ts-preview {
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
 

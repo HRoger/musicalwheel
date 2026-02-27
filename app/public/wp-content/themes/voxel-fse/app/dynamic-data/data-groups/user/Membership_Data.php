@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Membership Data Trait
  *
  * Provides membership/subscription data for user data group.
- * Returns placeholder data until membership backend is implemented.
+ * Uses Voxel's membership API for period dates.
  *
  * @package MusicalWheel
  */
@@ -46,13 +46,23 @@ trait Membership_Data {
 				return '';
 
 			case 'start_date':
-				// Membership start date
-				// TODO: Implement when membership backend exists
+				$user_obj = \Voxel\User::get( $this->user_id );
+				if ( $user_obj ) {
+					$membership = $user_obj->get_membership();
+					if ( $membership && $membership->get_type() === 'order' ) {
+						return $membership->get_current_period_start() ?: '';
+					}
+				}
 				return '';
 
 			case 'end_date':
-				// Membership end date
-				// TODO: Implement when membership backend exists
+				$user_obj = \Voxel\User::get( $this->user_id );
+				if ( $user_obj ) {
+					$membership = $user_obj->get_membership();
+					if ( $membership && $membership->get_type() === 'order' ) {
+						return $membership->get_current_period_end() ?: '';
+					}
+				}
 				return '';
 
 			default:

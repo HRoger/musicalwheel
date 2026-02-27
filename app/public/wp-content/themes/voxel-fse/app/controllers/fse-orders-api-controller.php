@@ -70,6 +70,11 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 					'type'              => 'string',
 					'sanitize_callback' => 'sanitize_text_field',
 				],
+				'shipping_status' => [
+					'required'          => false,
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
 			],
 		] );
 
@@ -130,14 +135,43 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		$is_vendor = $this->is_user_vendor( $current_user_id );
 		$is_admin = $this->is_user_admin( $current_user_id );
 
+		// Messages config (DMS / direct messaging)
+		$messages = null;
+		if ( function_exists( '\Voxel\get' ) ) {
+			$inbox_id = \Voxel\get( 'templates.inbox' );
+			$inbox_url = $inbox_id ? get_permalink( $inbox_id ) : home_url( '/' );
+			$messages = [
+				'url'          => $inbox_url ?: home_url( '/' ),
+				'enquiry_text' => [
+					'vendor'   => _x( 'Hello, we\'re enquiring about your order #@order_id', 'vendor enquiry text', 'voxel' ),
+					'customer' => _x( 'Hello, I\'m enquiring about my order #@order_id', 'customer enquiry text', 'voxel' ),
+				],
+			];
+		}
+
+		// Data inputs config
+		$data_inputs = [
+			'content_length' => apply_filters( 'voxel/single_order/data_inputs/max_content_length', 128 ),
+		];
+
+		// Get available statuses (statuses that actually exist in the orders table)
+		// Reference: Voxel orders.php:2409-2444
+		$available_statuses = $this->get_available_statuses( $current_user_id );
+		$available_shipping_statuses = $this->get_available_shipping_statuses( $current_user_id );
+
 		return rest_ensure_response( [
-			'statuses'          => $statuses,
-			'statuses_ui'       => $statuses_ui,
-			'shipping_statuses' => $shipping_statuses,
-			'product_types'     => $product_types,
-			'is_vendor'         => $is_vendor,
-			'is_admin'          => $is_admin,
-			'current_user_id'   => $current_user_id ?: null,
+			'statuses'                    => $statuses,
+			'statuses_ui'                 => $statuses_ui,
+			'shipping_statuses'           => $shipping_statuses,
+			'product_types'               => $product_types,
+			'available_statuses'          => $available_statuses,
+			'available_shipping_statuses' => $available_shipping_statuses,
+			'is_vendor'                   => $is_vendor,
+			'is_admin'                    => $is_admin,
+			'current_user_id'             => $current_user_id ?: null,
+			'nonce'                       => wp_create_nonce( 'vx_orders' ),
+			'messages'                    => $messages,
+			'data_inputs'                 => $data_inputs,
 		] );
 	}
 
@@ -161,6 +195,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		$page = $request->get_param( 'page' ) ?: 1;
 		$per_page = min( $request->get_param( 'per_page' ) ?: 10, 50 );
 		$status = $request->get_param( 'status' );
+		$shipping_status = $request->get_param( 'shipping_status' );
 		$product_type = $request->get_param( 'product_type' );
 		$search = $request->get_param( 'search' );
 
@@ -175,34 +210,49 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		}
 
 		try {
-			// Build query args
+			// Build query args matching Voxel parent: orders-controller.php:25-30
 			$args = [
-				'limit'  => $per_page,
-				'offset' => ( $page - 1 ) * $per_page,
+				'limit'      => $per_page,
+				'offset'     => $page <= 1 ? null : ( ( $page - 1 ) * $per_page ),
+				'with_items' => false,
+				'parent_id'  => 0,
 			];
 
-			// Determine if user is viewing as customer or vendor
-			$is_vendor = $this->is_user_vendor( $current_user_id );
+			// Determine user role and filter accordingly
+			// Voxel parent uses party_id for non-admins (matches both vendor and customer)
 			$is_admin = $this->is_user_admin( $current_user_id );
 
 			if ( $is_admin ) {
-				// Admin can see all orders
-				$args['vendor_id'] = null;
-				$args['customer_id'] = null;
-			} elseif ( $is_vendor ) {
-				// Vendor sees orders where they are the vendor
-				$args['vendor_id'] = $current_user_id;
+				// Admin can see all orders - no party filter needed
+				// But still show only top-level orders (parent_id = 0)
 			} else {
-				// Customer sees their own orders
-				$args['customer_id'] = $current_user_id;
+				// Non-admin: use party_id to match as either customer or vendor
+				// Reference: Voxel orders-controller.php:35-36
+				$args['party_id'] = $current_user_id;
+				$args['parent_id'] = null;
 			}
 
-			// Add filters
-			if ( $status ) {
+			// Status filter - exclude pending_payment by default
+			// Reference: Voxel orders-controller.php:39-43
+			if ( empty( $status ) || $status === 'all' ) {
+				$args['status_not_in'] = [ 'pending_payment' ];
+			} else {
 				$args['status'] = $status;
 			}
 
-			if ( $search ) {
+			// Shipping status filter
+			// Reference: Voxel orders-controller.php:45-47
+			if ( ! empty( $shipping_status ) && $shipping_status !== 'all' ) {
+				$args['shipping_status'] = $shipping_status;
+			}
+
+			// Product type filter
+			// Reference: Voxel orders-controller.php:49-51
+			if ( ! empty( $product_type ) && $product_type !== 'all' ) {
+				$args['product_type'] = $product_type;
+			}
+
+			if ( ! empty( $search ) ) {
 				$args['search'] = $search;
 			}
 
@@ -210,10 +260,15 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 			$orders = \Voxel\Order::query( $args );
 			$total = \Voxel\Order::count( $args );
 
+			// Batch-query first item summaries for personalized titles
+			$order_ids = array_map( function( $o ) { return $o->get_id(); }, $orders );
+			$first_item_summaries = $this->get_orders_first_item_summary( $order_ids );
+
 			// Format orders for response
 			$formatted_orders = [];
 			foreach ( $orders as $order ) {
-				$formatted_orders[] = $this->format_order_list_item( $order );
+				$summary = $first_item_summaries[ $order->get_id() ] ?? null;
+				$formatted_orders[] = $this->format_order_list_item( $order, $summary );
 			}
 
 			return rest_ensure_response( [
@@ -451,6 +506,76 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 	}
 
 	/**
+	 * Get available statuses (statuses that actually exist in the orders table for this user)
+	 *
+	 * Reference: Voxel orders.php:2409-2435
+	 *
+	 * @param int $user_id Current user ID.
+	 * @return array List of status keys that have orders.
+	 */
+	protected function get_available_statuses( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'vx_orders';
+
+		// Check if the table exists
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return [];
+		}
+
+		$testmode = \Voxel\is_test_mode() ? 'true' : 'false';
+
+		if ( $this->is_user_admin( $user_id ) ) {
+			return $wpdb->get_col( "SELECT `status` FROM {$table} WHERE testmode IS {$testmode} GROUP BY `status`" );
+		}
+
+		if ( ! $user_id ) {
+			return [];
+		}
+
+		return $wpdb->get_col( $wpdb->prepare(
+			"SELECT `status` FROM {$table} WHERE ( customer_id = %d OR vendor_id = %d ) AND testmode IS {$testmode} GROUP BY `status`",
+			$user_id,
+			$user_id
+		) );
+	}
+
+	/**
+	 * Get available shipping statuses (shipping statuses that actually exist in the orders table for this user)
+	 *
+	 * Reference: Voxel orders.php:2415-2442
+	 *
+	 * @param int $user_id Current user ID.
+	 * @return array List of shipping status keys that have orders.
+	 */
+	protected function get_available_shipping_statuses( int $user_id ): array {
+		global $wpdb;
+
+		$table = $wpdb->prefix . 'vx_orders';
+
+		// Check if the table exists
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return [];
+		}
+
+		$testmode = \Voxel\is_test_mode() ? 'true' : 'false';
+
+		if ( $this->is_user_admin( $user_id ) ) {
+			return $wpdb->get_col( "SELECT `shipping_status` FROM {$table} WHERE shipping_status IS NOT NULL AND testmode IS {$testmode} GROUP BY `shipping_status`" );
+		}
+
+		if ( ! $user_id ) {
+			return [];
+		}
+
+		return $wpdb->get_col( $wpdb->prepare(
+			"SELECT `shipping_status` FROM {$table} WHERE ( customer_id = %d OR vendor_id = %d ) AND shipping_status IS NOT NULL AND testmode IS {$testmode} GROUP BY `shipping_status`",
+			$user_id,
+			$user_id
+		) );
+	}
+
+	/**
 	 * Check if user is a vendor (has Stripe Connect account)
 	 *
 	 * @param int $user_id User ID.
@@ -549,30 +674,91 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 	 * @param \Voxel\Order $order Order object.
 	 * @return array
 	 */
-	protected function format_order_list_item( $order ): array {
+	protected function format_order_list_item( $order, ?array $summary = null ): array {
 		$customer = $order->get_customer();
 		$vendor = $order->get_vendor();
 
+		// Resolve claimed listing title for claim_request orders
+		$first_item_claim_title = null;
+		if ( isset( $summary['product_type'], $summary['claim_post_id'] ) && $summary['product_type'] === 'voxel:claim_request' && $summary['claim_post_id'] ) {
+			$post = \Voxel\Post::get( $summary['claim_post_id'] );
+			if ( $post ) {
+				$first_item_claim_title = $post->get_display_name();
+			}
+		}
+
 		return [
-			'id'              => $order->get_id(),
-			'status'          => $order->get_status(),
-			'shipping_status' => $order->get_shipping_status(),
-			'created_at'      => $order->get_created_at()->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
-			'item_count'      => count( $order->get_items() ),
-			'customer'        => [
+			'id'                        => $order->get_id(),
+			'status'                    => $order->get_status(),
+			'shipping_status'           => $order->get_shipping_status(),
+			'created_at'                => $order->get_created_at()->format( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+			'item_count'                => count( $order->get_items() ),
+			'customer'                  => [
 				'id'     => $customer ? $customer->get_id() : null,
 				'name'   => $customer ? $customer->get_display_name() : __( 'Guest', 'voxel-fse' ),
 				'avatar' => $customer ? $customer->get_avatar_markup() : '',
 			],
-			'vendor'          => [
+			'vendor'                    => [
 				'id'     => $vendor ? $vendor->get_id() : null,
 				'name'   => $vendor ? $vendor->get_display_name() : __( 'Platform', 'voxel-fse' ),
 				'avatar' => $vendor ? $vendor->get_avatar_markup() : '',
 			],
-			'subtotal'        => $order->get_subtotal(),
-			'total'           => $order->get_total(),
-			'currency'        => $order->get_currency(),
+			'subtotal'                  => $order->get_subtotal(),
+			'total'                     => $order->get_total(),
+			'currency'                  => $order->get_currency(),
+			'product_type'              => $summary['product_type'] ?? null,
+			'first_item_label'          => $summary['product_label'] ?? null,
+			'first_item_type'           => $summary['item_type'] ?? null,
+			'first_item_claim_title'    => $first_item_claim_title,
 		];
+	}
+
+	/**
+	 * Get first item summary for each order (batch query).
+	 *
+	 * Mirrors Voxel parent's orders-controller.php:get_orders_first_item_summary().
+	 * Returns product_type, item_type, booking_status, claim_post_id, and product_label
+	 * for the first item of each order in a single SQL query.
+	 *
+	 * @param int[] $order_ids Array of order IDs.
+	 * @return array<int, array{product_type: string, item_type: string|null, booking_status: string|null, booking_type: string|null, claim_post_id: int|null, product_label: string|null}>
+	 */
+	protected function get_orders_first_item_summary( array $order_ids ): array {
+		global $wpdb;
+		if ( empty( $order_ids ) ) {
+			return [];
+		}
+		$order_ids = array_map( 'absint', $order_ids );
+		$ids_list  = implode( ',', $order_ids );
+		$table     = $wpdb->prefix . 'vx_order_items';
+		$results   = $wpdb->get_results( <<<SQL
+			SELECT i.order_id, i.product_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.type' ) ) AS item_type,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking_status' ) ) AS booking_status,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.booking.type' ) ) AS booking_type,
+				CAST( JSON_UNQUOTE( JSON_EXTRACT( i.details, '$."voxel:claim_request".post_id' ) ) AS UNSIGNED ) AS claim_post_id,
+				JSON_UNQUOTE( JSON_EXTRACT( i.details, '$.product.label' ) ) AS product_label
+			FROM {$table} i
+			INNER JOIN (
+				SELECT order_id, MIN(id) AS min_id
+				FROM {$table}
+				WHERE order_id IN ({$ids_list})
+				GROUP BY order_id
+			) first ON i.order_id = first.order_id AND i.id = first.min_id
+		SQL, ARRAY_A );
+
+		$out = [];
+		foreach ( (array) $results as $row ) {
+			$out[ (int) $row['order_id'] ] = [
+				'product_type'   => (string) $row['product_type'],
+				'item_type'      => isset( $row['item_type'] ) && $row['item_type'] !== '' ? (string) $row['item_type'] : null,
+				'booking_status' => isset( $row['booking_status'] ) && $row['booking_status'] !== '' ? (string) $row['booking_status'] : null,
+				'booking_type'   => isset( $row['booking_type'] ) && $row['booking_type'] !== '' ? (string) $row['booking_type'] : null,
+				'claim_post_id'  => isset( $row['claim_post_id'] ) && $row['claim_post_id'] ? (int) $row['claim_post_id'] : null,
+				'product_label'  => isset( $row['product_label'] ) && $row['product_label'] !== '' ? (string) $row['product_label'] : null,
+			];
+		}
+		return $out;
 	}
 
 	/**
@@ -778,6 +964,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		}
 
 		// DMS (Direct Messaging) configuration
+		// Reference: Voxel single-order-controller.php:282-306
 		$dms = [
 			'enabled'       => false,
 			'vendor_target' => null,
@@ -785,7 +972,7 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 
 		if ( class_exists( '\Voxel\DM' ) && $order->get_vendor_id() ) {
 			$dms['enabled'] = true;
-			$dms['vendor_target'] = $order->get_vendor_id();
+			$dms['vendor_target'] = $this->get_dms_vendor_target( $order );
 		}
 
 		return [
@@ -835,5 +1022,43 @@ class FSE_Orders_API_Controller extends FSE_Base_Controller {
 		// Voxel handles the action via its own AJAX system
 		// We return success and let the frontend refetch the order
 		return true;
+	}
+
+	/**
+	 * Get DMS vendor target for an order
+	 *
+	 * Matches Voxel parent logic: single-order-controller.php:282-306
+	 * For single-item orders with a post that has messages enabled, returns "p{postId}".
+	 * Otherwise returns "u{vendorId}".
+	 *
+	 * @param \Voxel\Order $order Order object.
+	 * @return string|null Vendor target string (e.g. "p123" or "u456") or null.
+	 */
+	protected function get_dms_vendor_target( $order ) {
+		$vendor = $order->get_vendor();
+		if ( ! $vendor ) {
+			return null;
+		}
+
+		if ( count( $order->get_items() ) === 1 ) {
+			foreach ( $order->get_items() as $order_item ) {
+				// Skip promotion items
+				if ( $order_item->get_type() === 'regular' && in_array( $order_item->get_product_field_key(), [ 'voxel:promotion' ], true ) ) {
+					break;
+				}
+
+				$post = $order_item->get_post();
+				if ( ! ( $post && $post->post_type ) ) {
+					break;
+				}
+
+				// If the post type has messaging enabled, target the post
+				if ( $post->post_type->config( 'settings.messages.enabled' ) ) {
+					return sprintf( 'p%d', $post->get_id() );
+				}
+			}
+		}
+
+		return sprintf( 'u%d', $vendor->get_id() );
 	}
 }

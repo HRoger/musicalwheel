@@ -102,12 +102,12 @@ function normalizeConfig(raw: any): PostFeedVxConfig {
 		pagination: raw.pagination ?? 'none',
 		postsPerPage: raw.postsPerPage ?? raw.posts_per_page ?? 12,
 		displayDetails: raw.displayDetails ?? raw.display_details ?? false,
-		noResultsLabel: raw.noResultsLabel ?? raw.no_results_label ?? 'No results found',
+		noResultsLabel: raw.noResultsLabel ?? raw.no_results_label ?? 'There are no results matching your search',
 		layoutMode: raw.layoutMode ?? raw.layout_mode ?? 'grid',
 		columns: raw.columns ?? 3,
 		columns_tablet: raw.columns_tablet ?? raw.columnsTablet ?? 2,
 		columns_mobile: raw.columns_mobile ?? raw.columnsMobile ?? 1,
-		itemGap: raw.itemGap ?? raw.item_gap ?? 25,
+		itemGap: raw.itemGap ?? raw.item_gap ?? 20,
 		itemGap_tablet: raw.itemGap_tablet ?? raw.itemGapTablet ?? 20,
 		itemGap_mobile: raw.itemGap_mobile ?? raw.itemGapMobile ?? 15,
 		carouselItemWidth: raw.carouselItemWidth ?? raw.carousel_item_width ?? 300,
@@ -115,6 +115,7 @@ function normalizeConfig(raw: any): PostFeedVxConfig {
 		carouselItemWidth_mobile: raw.carouselItemWidth_mobile ?? raw.carouselItemWidthMobile ?? 200,
 		carouselItemWidthUnit: raw.carouselItemWidthUnit ?? raw.carousel_item_width_unit ?? 'px',
 		carouselAutoSlide: raw.carouselAutoSlide ?? raw.carousel_auto_slide ?? false,
+		carouselAutoSlideInterval: raw.carouselAutoSlideInterval ?? raw.carousel_auto_slide_interval ?? 3000,
 		scrollPadding: raw.scrollPadding ?? raw.scroll_padding ?? 0,
 		scrollPadding_tablet: raw.scrollPadding_tablet ?? raw.scrollPaddingTablet ?? 0,
 		scrollPadding_mobile: raw.scrollPadding_mobile ?? raw.scrollPaddingMobile ?? 0,
@@ -161,6 +162,7 @@ function buildAttributes(vxConfig: PostFeedVxConfig): PostFeedAttributes {
 		carouselItemWidth_mobile: vxConfig.carouselItemWidth_mobile,
 		carouselItemWidthUnit: vxConfig.carouselItemWidthUnit,
 		carouselAutoSlide: vxConfig.carouselAutoSlide,
+		carouselAutoSlideInterval: vxConfig.carouselAutoSlideInterval,
 		scrollPadding: vxConfig.scrollPadding,
 		scrollPadding_tablet: vxConfig.scrollPadding_tablet,
 		scrollPadding_mobile: vxConfig.scrollPadding_mobile,
@@ -212,7 +214,7 @@ function buildAttributes(vxConfig: PostFeedVxConfig): PostFeedAttributes {
 		hideMobile: false,
 		customClasses: '',
 		customCSS: '',
-	};
+	} as unknown as PostFeedAttributes;
 }
 
 /**
@@ -235,6 +237,36 @@ async function initBlocks(): Promise<void> {
 			const vxConfig = normalizeConfig(rawConfig);
 			const attributes = buildAttributes(vxConfig);
 
+			// Check for server-side hydrated data (injected by Block_Loader::inject_post_feed_config)
+			// Same pattern as term-feed: PHP renders cards at page time, JS reads synchronously
+			let initialHtml: string | null = null;
+			let initialMeta: {
+				hasResults: boolean;
+				hasPrev: boolean;
+				hasNext: boolean;
+				totalCount: number;
+				displayCount: string;
+			} | null = null;
+
+			const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+			if (hydrateScript?.textContent) {
+				try {
+					const hydrated = JSON.parse(hydrateScript.textContent);
+					if (typeof hydrated.html === 'string') {
+						initialHtml = hydrated.html;
+						initialMeta = {
+							hasResults: hydrated.hasResults ?? false,
+							hasPrev: hydrated.hasPrev ?? false,
+							hasNext: hydrated.hasNext ?? false,
+							totalCount: hydrated.totalCount ?? 0,
+							displayCount: hydrated.displayCount ?? '0',
+						};
+					}
+				} catch (e) {
+					console.error('[post-feed] Failed to parse vxconfig-hydrate:', e);
+				}
+			}
+
 			// Mount React component
 			const root = createRoot(container);
 			root.render(
@@ -243,6 +275,8 @@ async function initBlocks(): Promise<void> {
 					config={null}
 					context="frontend"
 					containerElement={container}
+					initialHtml={initialHtml}
+					initialMeta={initialMeta}
 				/>
 			);
 
@@ -258,6 +292,9 @@ async function initBlocks(): Promise<void> {
 				if ((window as any).jQuery) {
 					(window as any).jQuery(document).trigger('voxel:markup-update');
 				}
+
+				// Also dispatch native CustomEvent so blocks using addEventListener receive it
+				document.dispatchEvent(new CustomEvent('voxel:markup-update'));
 			});
 		} catch (error) {
 			console.error('[post-feed] Initialization failed:', error);
@@ -318,6 +355,6 @@ window.addEventListener('turbo:load', initBlocks);
 document.addEventListener('voxel:markup-update', initBlocks);
 
 // Export for external use
-(window as unknown as Record<string, unknown>).VoxelFSEPostFeed = {
+(window as unknown as Record<string, unknown>)['VoxelFSEPostFeed'] = {
 	init: initBlocks,
 };

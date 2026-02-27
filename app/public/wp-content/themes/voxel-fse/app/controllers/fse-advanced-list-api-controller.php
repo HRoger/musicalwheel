@@ -51,6 +51,28 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 						return is_numeric($param);
 					}
 				],
+				'post_type' => [
+					'type' => 'string',
+				],
+			],
+		] );
+
+		// Evaluate visibility rules for repeater items (editor preview + frontend)
+		register_rest_route( self::REST_NAMESPACE, '/advanced-list/evaluate-visibility', [
+			'methods'             => 'POST',
+			'callback'            => [ $this, 'evaluate_visibility' ],
+			'permission_callback' => function() {
+				return current_user_can( 'edit_posts' );
+			},
+			'args'                => [
+				'items' => [
+					'required' => true,
+					'type'     => 'array',
+				],
+				'post_type' => [
+					'type'    => 'string',
+					'default' => '',
+				],
 			],
 		] );
 	}
@@ -71,12 +93,28 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 	 * - show-post-on-map.php
 	 */
 	public function get_post_context( $request ) {
-		$post_id = $request->get_param( 'post_id' );
+		$post_id   = $request->get_param( 'post_id' );
+		$post_type = $request->get_param( 'post_type' );
+
+		// Resolve post_id from post_type if not given directly.
+		// Mirrors Voxel's get_post_for_preview(): use first published post of that type.
+		if ( ! $post_id && $post_type ) {
+			$sample = get_posts( [
+				'post_type'      => $post_type,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'orderby'        => 'date',
+				'order'          => 'ASC',
+			] );
+			if ( ! empty( $sample ) ) {
+				$post_id = $sample[0]->ID;
+			}
+		}
 
 		if ( ! $post_id ) {
 			return new \WP_REST_Response( [
 				'success' => false,
-				'message' => 'Post ID is required',
+				'message' => 'Post ID or post_type is required',
 			], 400 );
 		}
 
@@ -91,10 +129,14 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 		$current_user = \Voxel\current_user();
 		$is_logged_in = is_user_logged_in();
 
+		// Timeline enabled check (follow-post-action.php:6-8, follow-user-action.php:6-8)
+		// When timeline is disabled, follow actions should not render
+		$timeline_enabled = (bool) \Voxel\get( 'settings.timeline.enabled', true );
+
 		// Calculate follow status (follow-post-action.php:13-22)
 		$is_followed = false;
 		$is_follow_requested = false;
-		if ( $is_logged_in && $current_user ) {
+		if ( $timeline_enabled && $is_logged_in && $current_user ) {
 			$status = $current_user->get_follow_status( 'post', $post->get_id() );
 			$is_followed = $status === \Voxel\FOLLOW_ACCEPTED;
 			$is_follow_requested = $status === \Voxel\FOLLOW_REQUESTED;
@@ -105,7 +147,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 		$is_author_follow_requested = false;
 		$author = $post->get_author();
 		$author_id = $author ? $author->get_id() : null;
-		if ( $is_logged_in && $current_user && $author_id ) {
+		if ( $timeline_enabled && $is_logged_in && $current_user && $author_id ) {
 			$status = $current_user->get_follow_status( 'user', $author_id );
 			$is_author_followed = $status === \Voxel\FOLLOW_ACCEPTED;
 			$is_author_follow_requested = $status === \Voxel\FOLLOW_REQUESTED;
@@ -177,7 +219,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 			if ( is_numeric( $location['latitude'] ?? null ) && is_numeric( $location['longitude'] ?? null ) ) {
 				// Build the map link with location filter (show-post-on-map.php:14-21)
 				$map_link = null;
-				$post_type = $post->get_post_type();
+				$post_type = $post->post_type;
 				if ( $post_type ) {
 					foreach ( $post_type->get_filters() as $filter ) {
 						if ( $filter->get_type() === 'location' ) {
@@ -207,7 +249,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 
 		// View post stats link (view-post-stats-action.php:3-8)
 		$post_stats_link = null;
-		$post_type = $post->get_post_type();
+		$post_type = $post->post_type;
 		if ( $is_editable && $post_type && $post_type->is_tracking_enabled() ) {
 			$stats_template = \Voxel\get( 'templates.post_stats' );
 			if ( $stats_template ) {
@@ -260,6 +302,7 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 			'postLink' => $post->get_link(),
 			'editLink' => $edit_link,
 			'isEditable' => $is_editable,
+			'timelineEnabled' => $timeline_enabled,
 			'isFollowed' => $is_followed,
 			'isFollowRequested' => $is_follow_requested,
 			'isAuthorFollowed' => $is_author_followed,
@@ -294,6 +337,82 @@ class FSE_Advanced_List_API_Controller extends FSE_Base_Controller {
 		];
 
 		return new \WP_REST_Response( $data );
+	}
+
+	/**
+	 * Evaluate visibility rules for advanced-list repeater items.
+	 *
+	 * Receives an array of items (each with id, visibilityRules, rowVisibility)
+	 * and returns a map of item_id → shouldRender boolean.
+	 *
+	 * Uses the same Visibility_Evaluator as render.php but with skip_edit_check=true
+	 * so rules are actually evaluated rather than bypassed in admin context.
+	 *
+	 * For dtag rules, the evaluator needs a post context. The endpoint accepts
+	 * an optional post_type to set up the preview context (sample post).
+	 */
+	public function evaluate_visibility( $request ) {
+		$items     = $request->get_param( 'items' );
+		$post_type = $request->get_param( 'post_type' );
+
+		if ( ! is_array( $items ) ) {
+			return new \WP_REST_Response( [
+				'success' => false,
+				'message' => 'Items must be an array',
+			], 400 );
+		}
+
+		require_once dirname( __DIR__ ) . '/blocks/shared/visibility-evaluator.php';
+
+		// Set up post context for dtag rules that reference @post(...)
+		// This mirrors what the dynamic-data render endpoint does.
+		if ( $post_type && function_exists( '\Voxel\Post_Type' ) ) {
+			$pt = \Voxel\Post_Type::get( $post_type );
+			if ( $pt ) {
+				$sample_posts = get_posts( [
+					'post_type'      => $post_type,
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'orderby'        => 'date',
+					'order'          => 'DESC',
+				] );
+				if ( ! empty( $sample_posts ) ) {
+					// Set global post so Voxel's @post() tags resolve
+					global $post;
+					$post = $sample_posts[0];
+					setup_postdata( $post );
+				}
+			}
+		}
+
+		$results = [];
+		foreach ( $items as $item ) {
+			$item_id  = $item['id'] ?? '';
+			$rules    = $item['visibilityRules'] ?? [];
+			$behavior = $item['rowVisibility'] ?? 'show';
+
+			if ( empty( $rules ) || ! is_array( $rules ) ) {
+				// No rules — always visible
+				$results[ $item_id ] = true;
+				continue;
+			}
+
+			// Evaluate with skip_edit_check=true so rules are actually evaluated
+			// even though this is a REST request from the editor
+			$results[ $item_id ] = \VoxelFSE\Blocks\Shared\Visibility_Evaluator::evaluate(
+				$rules,
+				$behavior,
+				true // skip_edit_check — we explicitly want evaluation
+			);
+		}
+
+		// Restore global post
+		wp_reset_postdata();
+
+		return new \WP_REST_Response( [
+			'success' => true,
+			'results' => $results,
+		] );
 	}
 
 }

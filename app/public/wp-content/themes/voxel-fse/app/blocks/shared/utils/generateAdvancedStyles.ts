@@ -417,24 +417,24 @@ export function generateAdvancedStyles(attributes: AdvancedStyleAttributes): Ext
 		styles.opacity = attributes.opacity;
 	}
 
-	// Border (normal state)
+	// Border (normal state) - width/color only apply when a border type is active
 	if (attributes.borderType && attributes.borderType !== 'none') {
 		styles.borderStyle = attributes.borderType;
-	}
-	if (attributes.borderColor) {
-		styles.borderColor = attributes.borderColor;
-	}
-	if (attributes.borderWidth) {
-		const bw = attributes.borderWidth;
-		const unit = bw.unit || 'px';
-		const topVal = formatDimensionValue(bw.top, unit);
-		const rightVal = formatDimensionValue(bw.right, unit);
-		const bottomVal = formatDimensionValue(bw.bottom, unit);
-		const leftVal = formatDimensionValue(bw.left, unit);
-		if (topVal) styles.borderTopWidth = topVal;
-		if (rightVal) styles.borderRightWidth = rightVal;
-		if (bottomVal) styles.borderBottomWidth = bottomVal;
-		if (leftVal) styles.borderLeftWidth = leftVal;
+		if (attributes.borderColor) {
+			styles.borderColor = attributes.borderColor;
+		}
+		if (attributes.borderWidth) {
+			const bw = attributes.borderWidth;
+			const unit = bw.unit || 'px';
+			const topVal = formatDimensionValue(bw.top, unit);
+			const rightVal = formatDimensionValue(bw.right, unit);
+			const bottomVal = formatDimensionValue(bw.bottom, unit);
+			const leftVal = formatDimensionValue(bw.left, unit);
+			if (topVal) styles.borderTopWidth = topVal;
+			if (rightVal) styles.borderRightWidth = rightVal;
+			if (bottomVal) styles.borderBottomWidth = bottomVal;
+			if (leftVal) styles.borderLeftWidth = leftVal;
+		}
 	}
 	// Border Radius - DimensionsConfig uses top/right/bottom/left for corners
 	// Maps to: top = top-left, right = top-right, bottom = bottom-right, left = bottom-left
@@ -945,13 +945,13 @@ export function generateAdvancedResponsiveCSS(
 	const hoverStyles: string[] = [];
 	if (attributes.borderTypeHover && attributes.borderTypeHover !== 'none') {
 		hoverStyles.push(`border-style: ${attributes.borderTypeHover}`);
-	}
-	if (attributes.borderColorHover) {
-		hoverStyles.push(`border-color: ${attributes.borderColorHover}`);
-	}
-	if (attributes.borderWidthHover) {
-		const css = generateBorderWidthCSS(attributes.borderWidthHover);
-		if (css) hoverStyles.push(css);
+		if (attributes.borderColorHover) {
+			hoverStyles.push(`border-color: ${attributes.borderColorHover}`);
+		}
+		if (attributes.borderWidthHover) {
+			const css = generateBorderWidthCSS(attributes.borderWidthHover);
+			if (css) hoverStyles.push(css);
+		}
 	}
 	if (attributes.borderRadiusHover) {
 		const css = generateBorderRadiusCSS(attributes.borderRadiusHover);

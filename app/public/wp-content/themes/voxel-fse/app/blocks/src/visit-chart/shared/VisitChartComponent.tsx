@@ -18,8 +18,7 @@ import type {
 	ChartItem,
 	ChartState,
 	ChartDataResponse,
-	VisitChartVxConfig,
-} from '../types';
+	} from '../types';
 
 /**
  * Tab labels for timeframes
@@ -33,19 +32,29 @@ const TAB_LABELS: Record<ChartTimeframe, string> = {
 
 /**
  * Default chart icon SVG (fallback when no icon configured)
- * Matches Voxel's chart.svg default
+ * Source: themes/voxel/assets/images/svgs/chart.svg
  */
 const DefaultChartIcon = () => (
 	<svg
+		width="80"
+		height="80"
+		viewBox="0 0 24 25"
+		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
-		width="48"
-		height="48"
-		fill="currentColor"
+		transform="rotate(0 0 0)"
 	>
-		<rect x="4" y="12" width="4" height="8" rx="0.5" />
-		<rect x="10" y="8" width="4" height="12" rx="0.5" />
-		<rect x="16" y="4" width="4" height="16" rx="0.5" />
+		<path
+			d="M11.833 3.75C10.5904 3.75 9.58301 4.75736 9.58301 6V18.9991C9.58301 20.2417 10.5904 21.2491 11.833 21.2491H12.1663C13.409 21.2491 14.4163 20.2417 14.4163 18.9991V6C14.4163 4.75736 13.409 3.75 12.1663 3.75H11.833Z"
+			fill="#343C54"
+		/>
+		<path
+			d="M5.5 12.5625C4.25736 12.5625 3.25 13.5699 3.25 14.8125V19C3.25 20.2426 4.25736 21.25 5.5 21.25H5.83333C7.07597 21.25 8.08333 20.2426 8.08333 19V14.8125C8.08333 13.5699 7.07598 12.5625 5.83333 12.5625H5.5Z"
+			fill="#343C54"
+		/>
+		<path
+			d="M18.166 8.66016C16.9234 8.66016 15.916 9.66752 15.916 10.9102V19.0001C15.916 20.2427 16.9234 21.2501 18.166 21.2501H18.4993C19.742 21.2501 20.7493 20.2427 20.7493 19.0001V10.9102C20.7493 9.66752 19.742 8.66016 18.4993 8.66016H18.166Z"
+			fill="#343C54"
+		/>
 	</svg>
 );
 
@@ -123,7 +132,8 @@ export default function VisitChartComponent({
 	/**
 	 * Get REST API URL
 	 */
-	const getRestUrl = useCallback((): string => {
+	// @ts-ignore -- unused but kept for future use
+	const _getRestUrl = useCallback((): string => {
 		if (typeof window !== 'undefined' && window.wpApiSettings?.root) {
 			return window.wpApiSettings.root;
 		}
@@ -159,7 +169,7 @@ export default function VisitChartComponent({
 				}
 
 				// Use Voxel's AJAX endpoint
-				const ajaxUrl = window.Voxel_Config?.ajax_url || '/wp-admin/admin-ajax.php?';
+				const ajaxUrl = window.Voxel_Config?.['ajax_url'] || '/wp-admin/admin-ajax.php?';
 				const url = `${ajaxUrl}&action=tracking.get_chart_data&${params.toString()}`;
 
 				const response = await fetch(url);
@@ -170,14 +180,14 @@ export default function VisitChartComponent({
 						...prev,
 						[timeframe]: {
 							loaded: true,
-							steps: data.data.steps,
-							items: data.data.items,
-							meta: data.data.meta,
+							steps: data.data?.steps,
+							items: data.data?.items,
+							meta: data.data?.meta,
 						},
 					}));
 				} else {
 					// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
-					const errorMessage = data.message || window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+					const errorMessage = data.message || (window.Voxel_Config?.['l10n'] as any)?.ajaxError || 'An error occurred';
 					if (window.Voxel?.alert) {
 						window.Voxel.alert(errorMessage, 'error');
 					}
@@ -191,7 +201,7 @@ export default function VisitChartComponent({
 				}
 			} catch {
 				// Voxel parity: Use Voxel.alert() for error notifications (line 146-147 of beautified reference)
-				const errorMessage = window.Voxel_Config?.l10n?.ajaxError || 'An error occurred';
+				const errorMessage = (window.Voxel_Config?.['l10n'] as any)?.ajaxError || 'An error occurred';
 				if (window.Voxel?.alert) {
 					window.Voxel.alert(errorMessage, 'error');
 				}
@@ -319,6 +329,7 @@ export default function VisitChartComponent({
 
 	/**
 	 * Render editor placeholder
+	 * Matches Voxel's Elementor preview: tabs + "Loading data" icon state
 	 */
 	if (context === 'editor') {
 		return (
@@ -343,49 +354,14 @@ export default function VisitChartComponent({
 					))}
 				</ul>
 
-				{/* Editor Preview Chart */}
+				{/* Loading data state - matches Voxel's editor preview */}
 				<div className={`ts-chart chart-${activeChart}`}>
 					<div className="chart-contain">
-						<div className="chart-content">
-							<div className="bar-item-con bar-values">
-								<span>100</span>
-								<span>80</span>
-								<span>60</span>
-								<span>40</span>
-								<span>20</span>
-								<span>0</span>
-							</div>
-						</div>
-						<div className="chart-content min-scroll min-scroll-h">
-							{/* Sample bars for preview */}
-							{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(
-								(day, index) => (
-									<div key={day} className="bar-item-con">
-										<div className="bi-hold">
-											<div
-												className="bar-item bar-animate"
-												style={{
-													height: `${20 + Math.random() * 60}%`,
-												}}
-											/>
-										</div>
-										<span>{day}</span>
-									</div>
-								)
-							)}
+						<div className="ts-no-posts">
+							{renderIcon(attributes.chartIcon)}
+							<p>{__('Loading data', 'voxel-fse')}</p>
 						</div>
 					</div>
-				</div>
-
-				{/* Info text for editor */}
-				<div className="voxel-fse-editor-info">
-					<small>
-						{__('Source:', 'voxel-fse')} {attributes.source} |{' '}
-						{__('Data:', 'voxel-fse')}{' '}
-						{attributes.viewType === 'unique_views'
-							? __('Unique views', 'voxel-fse')
-							: __('Total views', 'voxel-fse')}
-					</small>
 				</div>
 			</div>
 		);

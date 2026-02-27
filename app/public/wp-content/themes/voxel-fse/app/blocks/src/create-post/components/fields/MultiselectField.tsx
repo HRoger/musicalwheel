@@ -275,7 +275,7 @@ export const MultiselectField: React.FC<MultiselectFieldProps> = ({
 					{displayValue ? (
 						<span>{displayValue}</span>
 					) : (
-						<span>{field.props?.['placeholder']}</span>
+						<span>{String(field.props?.['placeholder'] || '')}</span>
 					)}
 				</div>
 				<div className="ts-down-icon"></div>

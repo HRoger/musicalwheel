@@ -13,7 +13,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { SelectControl } from '@wordpress/components';
+import { SelectControl, RangeControl } from '@wordpress/components';
 import {
 	AccordionPanelGroup,
 	AccordionPanel,
@@ -270,9 +270,23 @@ export function StyleTab({
 									label={__('Border Type', 'voxel-fse')}
 									value={attributes.navBorderType}
 									options={BORDER_TYPE_OPTIONS}
-									onChange={(value) => setAttributes({ navBorderType: value })}
+									onChange={(value: any) => setAttributes({ navBorderType: value })}
 									__nextHasNoMarginBottom
 								/>
+
+								{/* Border width - Normal (conditional on border type) */}
+								{/* Evidence: slider.php:553 - Border group control includes width */}
+								{attributes.navBorderType && attributes.navBorderType !== 'none' && (
+									<RangeControl
+										label={__('Border width', 'voxel-fse')}
+										value={attributes.navBorderWidth ?? 1}
+										onChange={(value: any) => setAttributes({ navBorderWidth: value })}
+										min={0}
+										max={10}
+										step={1}
+										__nextHasNoMarginBottom
+									/>
+								)}
 
 								{/* Border color - Normal (conditional on border type) */}
 								{attributes.navBorderType && attributes.navBorderType !== 'none' && (

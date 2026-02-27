@@ -12,7 +12,10 @@ import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { InspectorTabs } from '@shared/controls';
 import { getAdvancedVoxelTabProps } from '../../shared/utils';
+import { useExpandedLoopItems } from '../../shared/utils/useExpandedLoopItems';
+import { useTemplateContext, useTemplatePostType } from '../../shared/utils/useTemplateContext';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
+import { useEditorPostContext } from './shared/useEditorPostContext';
 import ContentTab from './inspector/ContentTab';
 import StyleTab from './inspector/StyleTab';
 import { generateAdvancedListStyles } from './styles';
@@ -36,6 +39,20 @@ function generateBlockId(): string {
 export default function Edit({ attributes, setAttributes }: EditProps) {
 	const blockId = attributes.blockId || 'advanced-list';
 
+	// Detect template context for dynamic tag preview resolution
+	const templateContext = useTemplateContext();
+	const templatePostType = useTemplatePostType();
+
+	// Fetch post context for editor preview (mirrors Voxel's get_post_for_preview)
+	// This provides permissions, status, product data, etc. so action buttons
+	// show/hide correctly in the editor (e.g. publish_post hidden when post is published)
+	const editorPostContext = useEditorPostContext(templatePostType);
+
+	// Expand items with loop configuration for editor preview
+	const { items: expandedItems } = useExpandedLoopItems({
+		items: attributes.items,
+	});
+
 	// Generate block ID on mount if not set
 	useEffect(() => {
 		if (!attributes.blockId) {
@@ -43,19 +60,8 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 		}
 	}, [attributes.blockId, setAttributes]);
 
-	// Inject Voxel Editor Styles
-	useEffect(() => {
-		const cssId = 'voxel-action-css';
-		if (!document.getElementById(cssId)) {
-			const link = document.createElement('link');
-			link.id = cssId;
-			link.rel = 'stylesheet';
-			const voxelConfig = (window as any).Voxel_Config;
-			const siteUrl = (voxelConfig?.site_url || window.location.origin).replace(/\/$/, '');
-			link.href = `${siteUrl}/wp-content/themes/voxel/assets/dist/action.css?ver=1.7.5.2`;
-			document.head.appendChild(link);
-		}
-	}, []);
+	// NOTE: Voxel's action.css is enqueued via Block_Loader.php (enqueue_voxel_core_scripts)
+	// No dynamic <link> injection needed here.
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
 	const advancedProps = getAdvancedVoxelTabProps(attributes, {
@@ -87,7 +93,10 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 							label: __('Content', 'voxel-fse'),
 							icon: '\ue92c',
 							render: () => (
-								<ContentTab attributes={attributes} setAttributes={setAttributes} />
+								<ContentTab
+									attributes={attributes}
+									setAttributes={setAttributes}
+								/>
 							),
 						},
 						{
@@ -111,7 +120,7 @@ export default function Edit({ attributes, setAttributes }: EditProps) {
 				{combinedCSS && (
 					<style dangerouslySetInnerHTML={{ __html: combinedCSS }} />
 				)}
-				<AdvancedListComponent attributes={attributes} context="editor" />
+				<AdvancedListComponent attributes={{ ...attributes, items: expandedItems }} context="editor" postContext={editorPostContext} templateContext={templateContext} templatePostType={templatePostType} />
 			</div>
 		</>
 	);

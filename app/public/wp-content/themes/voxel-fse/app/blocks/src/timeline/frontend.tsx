@@ -68,6 +68,79 @@ console.log('[Timeline Frontend] Script loaded!', {
 });
 
 /**
+ * Patch Voxel's render_static_popups to handle React-rendered DOM.
+ *
+ * Voxel's render_static_popups() scans for .ts-popup-component elements and mounts
+ * Vue apps on them. The Vue mixin's mounted() hook calls:
+ *   this.$root.$options.el.closest(".elementor-element").dataset.id
+ * which crashes with "Cannot read properties of null (reading 'dataset')"
+ * when the element is inside React-rendered HTML without Elementor wrappers.
+ *
+ * This patch wraps the original function to skip elements that lack the
+ * required .elementor-element parent.
+ */
+function patchRenderStaticPopups(): void {
+	const win = window as unknown as {
+		render_static_popups?: () => void;
+		_original_render_static_popups?: () => void;
+	};
+
+	// Wait for commons.js to define the function
+	const tryPatch = (): boolean => {
+		if (typeof win.render_static_popups !== 'function') return false;
+		if (win._original_render_static_popups) return true; // Already patched
+
+		win._original_render_static_popups = win.render_static_popups;
+
+		win.render_static_popups = () => {
+			// Remove .ts-popup-component elements that lack Elementor wrappers
+			// before calling the original, so Vue won't try to mount on them.
+			const popups = document.querySelectorAll<HTMLElement>('.ts-popup-component');
+			const toSkip: Array<{ el: HTMLElement; hadClass: boolean }> = [];
+
+			popups.forEach((el) => {
+				if ((el as any).__vue_app__) return; // Already has a Vue app, skip
+				const elementorEl = el.closest('.elementor-element');
+				if (!elementorEl || !elementorEl.getAttribute('data-id')) {
+					// This element would crash - temporarily remove the class
+					el.classList.remove('ts-popup-component');
+					el.classList.add('ts-popup-component--fse-skip');
+					toSkip.push({ el, hadClass: true });
+				}
+			});
+
+			// Call original safely
+			try {
+				win._original_render_static_popups!();
+			} catch (e) {
+				console.warn('[FSE] render_static_popups error caught:', e);
+			}
+
+			// Restore classes
+			toSkip.forEach(({ el }) => {
+				el.classList.remove('ts-popup-component--fse-skip');
+				el.classList.add('ts-popup-component');
+			});
+		};
+
+		console.log('[FSE] Patched render_static_popups for React compatibility');
+		return true;
+	};
+
+	// Try immediately, then retry after a tick if commons.js hasn't loaded yet
+	if (!tryPatch()) {
+		setTimeout(tryPatch, 0);
+		// Also try after DOMContentLoaded in case commons.js loads late
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', tryPatch, { once: true });
+		}
+	}
+}
+
+// Apply the patch immediately
+patchRenderStaticPopups();
+
+/**
  * Block config structure from save.tsx vxconfig-block script
  */
 interface BlockConfig {
@@ -153,53 +226,53 @@ function getCurrentPostId(): number | undefined {
  * @returns Normalized BlockConfig with consistent field names
  */
 function normalizeConfig(raw: Record<string, unknown>): BlockConfig {
-	const timeline = (raw.timeline ?? raw.Timeline ?? {}) as Record<string, unknown>;
-	const blockSettings = (raw.block_settings ?? raw.blockSettings ?? {}) as Record<string, unknown>;
-	const icons = (raw.icons ?? {}) as Record<string, string>;
+	const timeline = (raw['timeline'] ?? raw['Timeline'] ?? {}) as Record<string, unknown>;
+	const blockSettings = (raw['block_settings'] ?? raw['blockSettings'] ?? {}) as Record<string, unknown>;
+	const icons = (raw['icons'] ?? {}) as Record<string, string>;
 
 	// Normalize ordering options array (handle both snake_case and camelCase)
 	const rawOrderingOptions = (
-		blockSettings.ordering_options ??
-		blockSettings.orderingOptions ??
+		blockSettings['ordering_options'] ??
+		blockSettings['orderingOptions'] ??
 		[]
 	) as Array<Record<string, unknown>>;
 
 	const orderingOptions = Array.isArray(rawOrderingOptions)
 		? rawOrderingOptions.map((opt) => ({
-				_id: (opt._id ?? opt.id ?? 'default') as string,
-				label: (opt.label ?? 'Latest') as string,
-				order: (opt.order ?? 'latest') as string,
-				time: (opt.time ?? 'all_time') as string,
-				time_custom: (opt.time_custom ?? opt.timeCustom ?? 7) as number,
+				_id: (opt['_id'] ?? opt['id'] ?? 'default') as string,
+				label: (opt['label'] ?? 'Latest') as string,
+				order: (opt['order'] ?? 'latest') as string,
+				time: (opt['time'] ?? 'all_time') as string,
+				time_custom: (opt['time_custom'] ?? opt['timeCustom'] ?? 7) as number,
 			}))
 		: [];
 
 	return {
 		timeline: {
-			mode: (timeline.mode ?? 'user_feed') as string,
+			mode: (timeline['mode'] ?? 'user_feed') as string,
 		},
 		block_settings: {
-			no_status_text: (blockSettings.no_status_text ?? blockSettings.noStatusText ?? 'No posts available') as string,
-			search_enabled: (blockSettings.search_enabled ?? blockSettings.searchEnabled ?? true) as boolean,
-			search_value: (blockSettings.search_value ?? blockSettings.searchValue ?? '') as string,
+			no_status_text: (blockSettings['no_status_text'] ?? blockSettings['noStatusText'] ?? 'No posts available') as string,
+			search_enabled: (blockSettings['search_enabled'] ?? blockSettings['searchEnabled'] ?? true) as boolean,
+			search_value: (blockSettings['search_value'] ?? blockSettings['searchValue'] ?? '') as string,
 			ordering_options: orderingOptions,
 		},
 		icons: {
-			verified: icons.verified,
-			repost: icons.repost,
-			more: icons.more,
-			like: icons.like,
-			liked: icons.liked,
-			comment: icons.comment,
-			reply: icons.reply,
-			gallery: icons.gallery,
-			upload: icons.upload,
-			emoji: icons.emoji,
-			search: icons.search,
-			trash: icons.trash,
-			external: icons.external ?? icons.externalLink,
-			loadMore: icons.loadMore ?? icons.load_more,
-			noPosts: icons.noPosts ?? icons.no_posts,
+			verified: icons['verified'],
+			repost: icons['repost'],
+			more: icons['more'],
+			like: icons['like'],
+			liked: icons['liked'],
+			comment: icons['comment'],
+			reply: icons['reply'],
+			gallery: icons['gallery'],
+			upload: icons['upload'],
+			emoji: icons['emoji'],
+			search: icons['search'],
+			trash: icons['trash'],
+			external: icons['external'] ?? icons['externalLink'],
+			loadMore: icons['loadMore'] ?? icons['load_more'],
+			noPosts: icons['noPosts'] ?? icons['no_posts'],
 		},
 	};
 }
@@ -253,21 +326,21 @@ function configToAttributes(config: BlockConfig): TimelineAttributes {
 		searchValue: blockSettings.search_value || '',
 
 		// Icons - convert SVG strings to IconValue format if provided
-		verifiedIcon: icons.verified ? { svg: icons.verified } : null,
-		repostIcon: icons.repost ? { svg: icons.repost } : null,
-		moreIcon: icons.more ? { svg: icons.more } : null,
-		likeIcon: icons.like ? { svg: icons.like } : null,
-		likedIcon: icons.liked ? { svg: icons.liked } : null,
-		commentIcon: icons.comment ? { svg: icons.comment } : null,
-		replyIcon: icons.reply ? { svg: icons.reply } : null,
-		galleryIcon: icons.gallery ? { svg: icons.gallery } : null,
-		uploadIcon: icons.upload ? { svg: icons.upload } : null,
-		emojiIcon: icons.emoji ? { svg: icons.emoji } : null,
-		searchIcon: icons.search ? { svg: icons.search } : null,
-		trashIcon: icons.trash ? { svg: icons.trash } : null,
-		externalIcon: icons.external ? { svg: icons.external } : null,
-		loadMoreIcon: icons.loadMore ? { svg: icons.loadMore } : null,
-		noPostsIcon: icons.noPosts ? { svg: icons.noPosts } : null,
+		verifiedIcon: icons.verified ? { library: 'svg' as const, value: icons.verified } : null,
+		repostIcon: icons.repost ? { library: 'svg' as const, value: icons.repost } : null,
+		moreIcon: icons.more ? { library: 'svg' as const, value: icons.more } : null,
+		likeIcon: icons.like ? { library: 'svg' as const, value: icons.like } : null,
+		likedIcon: icons.liked ? { library: 'svg' as const, value: icons.liked } : null,
+		commentIcon: icons.comment ? { library: 'svg' as const, value: icons.comment } : null,
+		replyIcon: icons.reply ? { library: 'svg' as const, value: icons.reply } : null,
+		galleryIcon: icons.gallery ? { library: 'svg' as const, value: icons.gallery } : null,
+		uploadIcon: icons.upload ? { library: 'svg' as const, value: icons.upload } : null,
+		emojiIcon: icons.emoji ? { library: 'svg' as const, value: icons.emoji } : null,
+		searchIcon: icons.search ? { library: 'svg' as const, value: icons.search } : null,
+		trashIcon: icons.trash ? { library: 'svg' as const, value: icons.trash } : null,
+		externalIcon: icons.external ? { library: 'svg' as const, value: icons.external } : null,
+		loadMoreIcon: icons.loadMore ? { library: 'svg' as const, value: icons.loadMore } : null,
+		noPostsIcon: icons.noPosts ? { library: 'svg' as const, value: icons.noPosts } : null,
 	};
 }
 

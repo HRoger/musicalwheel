@@ -10,7 +10,8 @@
 import type { NestedTabsAttributes } from './types';
 
 // Helper functions for complex CSS generation
-function generateDimensionsCSS(dimensions: any, property: string): string {
+// @ts-ignore -- unused but kept for future use
+function _generateDimensionsCSS(dimensions: any, property: string): string {
 	if (!dimensions) return '';
 	const { unit = 'px' } = dimensions;
 	const top = parseFloat(String(dimensions.top)) || 0;
@@ -385,6 +386,12 @@ export function generateNestedTabsResponsiveCSS(
 	if (attributes.contentBorderRadius?.mobile) {
 		const cbr = attributes.contentBorderRadius.mobile;
 		mobileRules.push(`${selector} { --n-tabs-content-border-radius: ${cbr.top || '0'} ${cbr.right || '0'} ${cbr.bottom || '0'} ${cbr.left || '0'}; }`);
+	}
+
+	// Transition Duration on tab buttons (for hover animation)
+	const transitionVal = attributes.tabsTransitionDuration?.desktop;
+	if (transitionVal !== undefined && transitionVal !== ('' as any)) {
+		cssRules.push(`${selector} .e-n-tab-title { transition-duration: ${transitionVal}s; }`);
 	}
 
 	// ============================================

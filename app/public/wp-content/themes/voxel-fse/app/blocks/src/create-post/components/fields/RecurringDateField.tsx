@@ -99,7 +99,7 @@ interface DateItemProps {
 const DateItem: React.FC<DateItemProps> = ({
 	date,
 	index,
-	field,
+	field: _field,
 	onUpdate,
 	onRemove,
 	props,
@@ -416,16 +416,16 @@ export const RecurringDateField: React.FC<RecurringDateFieldProps> = ({
 	field,
 	value,
 	onChange,
-	onBlur,
-	icons,
+	onBlur: _onBlur,
+	icons: _icons,
 }) => {
 	// Get field props with defaults
 	const props: RecurringDateFieldPropsConfig = {
-		max_date_count: field.props?.max_date_count ?? 3,
+		max_date_count: field.props?.max_date_count ?? 1,
 		allow_recurrence: field.props?.allow_recurrence ?? true,
 		enable_timepicker: field.props?.enable_timepicker ?? true,
-		units: field.props?.units ?? DEFAULT_UNITS,
-		l10n: field.props?.l10n ?? { from: 'From', to: 'To' },
+		units: (field.props?.['units'] ?? DEFAULT_UNITS) as Record<string, string>,
+		l10n: (field.props?.['l10n'] ?? { from: 'From', to: 'To' }) as { from: string; to: string },
 	};
 
 	// Initialize dates from value or empty array

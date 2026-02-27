@@ -13,7 +13,6 @@
  * @package VoxelFSE
  */
 
-import React from 'react';
 import { useBlockProps } from '@wordpress/block-editor';
 import { getAdvancedVoxelTabProps, renderBackgroundElements } from '@shared/utils';
 import { renderIcon, DefaultChartIcon, DefaultChevronLeft, DefaultChevronRight } from './utils';

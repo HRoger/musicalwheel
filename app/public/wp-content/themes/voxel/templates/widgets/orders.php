@@ -182,7 +182,30 @@ require_once locate_template( 'templates/widgets/orders/single-order.php' );
 								<span class="order-badge vx-hide-mobile">
 									#{{ order.id }}
 								</span>
-								<b><?= \Voxel\replace_vars( _x( '@customer_name placed an order @date', 'orders', 'voxel' ), [
+								<b v-if="order.item_count === 1 && order.product_type === 'voxel:listing_plan_subscription' && order.first_item_label"><?= \Voxel\replace_vars( _x( '@customer_name subscribed to @plan_name listing plan', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+									'@plan_name' => '{{ order.first_item_label }}',
+								] ) ?></b>
+								<b v-else-if="order.item_count === 1 && order.product_type === 'voxel:listing_plan_payment' && order.first_item_label"><?= \Voxel\replace_vars( _x( '@customer_name purchased @plan_name listing plan', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+									'@plan_name' => '{{ order.first_item_label }}',
+								] ) ?></b>
+								<b v-else-if="order.item_count === 1 && order.product_type === 'voxel:membership_plan' && order.first_item_label"><?= \Voxel\replace_vars( _x( '@customer_name subscribed to @plan_name plan', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+									'@plan_name' => '{{ order.first_item_label }}',
+								] ) ?></b>
+								<b v-else-if="order.item_count === 1 && order.product_type === 'voxel:claim_request' && order.first_item_claim_title"><?= \Voxel\replace_vars( _x( '@customer_name requested to claim @listing_title', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+									'@listing_title' => '{{ order.first_item_claim_title }}',
+								] ) ?></b>
+								<b v-else-if="order.item_count === 1 && order.product_type === 'voxel:claim_request'"><?= \Voxel\replace_vars( _x( '@customer_name requested to claim a listing', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+								] ) ?></b>
+								<b v-else-if="order.item_count === 1 && order.first_item_type === 'booking' && order.first_item_label"><?= \Voxel\replace_vars( _x( '@customer_name booked @product_name', 'orders', 'voxel' ), [
+									'@customer_name' => '{{ order.customer.name }}',
+									'@product_name' => '{{ order.first_item_label }}',
+								] ) ?></b>
+								<b v-else><?= \Voxel\replace_vars( _x( '@customer_name placed an order @date', 'orders', 'voxel' ), [
 									'@customer_name' => '{{ order.customer.name }}',
 									'@date' => '{{ order.created_at }}',
 								] ) ?></b>
@@ -198,6 +221,12 @@ require_once locate_template( 'templates/widgets/orders/single-order.php' );
 							</div>
 							<div v-if="order.status === 'completed' && order.shipping_status !== null" class="order-status" :class="config.shipping_statuses[ order.shipping_status ]?.class || 'vx-neutral'">
 								{{ config.shipping_statuses[ order.shipping_status ]?.label || order.shipping_status }}
+							</div>
+							<div v-else-if="order.item_count === 1 && order.first_item_type === 'booking' && order.first_item_booking_status === 'canceled' && order.first_item_booking_type === 'timeslots'" class="order-status vx-red">
+								<?= _x( 'Appointment canceled', 'orders', 'voxel' ) ?>
+							</div>
+							<div v-else-if="order.item_count === 1 && order.first_item_type === 'booking' && order.first_item_booking_status === 'canceled'" class="order-status vx-red">
+								<?= _x( 'Booking canceled', 'orders', 'voxel' ) ?>
 							</div>
 							<div v-else class="order-status" :class="config.statuses_ui[ order.status ]?.class || 'vx-neutral'">
 								{{ config.statuses[ order.status ]?.label || order.status }}
