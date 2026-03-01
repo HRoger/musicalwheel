@@ -33,11 +33,11 @@ function initSlideshow(container: HTMLElement): void {
 
 	// Parse config from data attributes
 	const config: SlideshowConfig = {
-		duration: parseInt(container.dataset.duration || '5000', 10),
-		transition: container.dataset.transition || 'fade',
-		transitionDuration: parseInt(container.dataset.transitionDuration || '500', 10),
-		kenBurns: container.dataset.kenBurns === 'true',
-		infinite: container.dataset.infinite !== 'false',
+		duration: parseInt(container.dataset['duration'] || '5000', 10),
+		transition: container.dataset['transition'] || 'fade',
+		transitionDuration: parseInt(container.dataset['transitionDuration'] || '500', 10),
+		kenBurns: container.dataset['kenBurns'] === 'true',
+		infinite: container.dataset['infinite'] !== 'false',
 	};
 
 	let currentIndex = 0;
@@ -289,11 +289,11 @@ function initSlideshow(container: HTMLElement): void {
 		handleDragMove(e.clientX, e.clientY);
 	}
 
-	function onMouseUp(e: MouseEvent): void {
+	function onMouseUp(_e: MouseEvent): void {
 		handleDragEnd();
 	}
 
-	function onMouseLeave(e: MouseEvent): void {
+	function onMouseLeave(_e: MouseEvent): void {
 		if (dragState.isDragging) {
 			handleDragEnd();
 		}
@@ -312,7 +312,7 @@ function initSlideshow(container: HTMLElement): void {
 		handleDragMove(touch.clientX, touch.clientY);
 	}
 
-	function onTouchEnd(e: TouchEvent): void {
+	function onTouchEnd(_e: TouchEvent): void {
 		handleDragEnd();
 	}
 
@@ -391,6 +391,53 @@ function addKenBurnsStyles(): void {
 	document.head.appendChild(style);
 }
 
+/**
+ * Initialize entrance animations using IntersectionObserver.
+ * Matches Elementor's animated class system.
+ */
+function initEntranceAnimations(): void {
+	const containers = document.querySelectorAll<HTMLElement>('.voxel-fse-flex-container[data-animation]');
+	if (!containers.length) return;
+
+	const observer = new IntersectionObserver(
+		(entries) => {
+			entries.forEach((entry) => {
+				if (entry.isIntersecting) {
+					const el = entry.target as HTMLElement;
+					const animation = el.dataset['animation'];
+					const duration = el.dataset['animationDuration'];
+					const delay = el.dataset['animationDelay'];
+
+					if (!animation) return;
+
+					// Apply delay if set
+					if (delay && parseFloat(delay) > 0) {
+						el.style.animationDelay = `${delay}ms`;
+					}
+
+					// Apply duration class (slow, fast, faster)
+					if (duration) {
+						el.classList.add(`animated-${duration}`);
+					}
+
+					// Add animation class to trigger it
+					el.classList.add('animated', animation);
+
+					// Stop observing after animation triggers
+					observer.unobserve(el);
+				}
+			});
+		},
+		{ threshold: 0.1 }
+	);
+
+	containers.forEach((container) => {
+		// Hide initially until animation triggers
+		container.style.opacity = '0';
+		observer.observe(container);
+	});
+}
+
 // Initialize when DOM is ready
 console.log('[Flex Container] Frontend script loaded, readyState:', document.readyState);
 if (document.readyState === 'loading') {
@@ -398,9 +445,11 @@ if (document.readyState === 'loading') {
 		console.log('[Flex Container] DOMContentLoaded fired');
 		addKenBurnsStyles();
 		initAllSlideshows();
+		initEntranceAnimations();
 	});
 } else {
 	console.log('[Flex Container] DOM already loaded, initializing immediately');
 	addKenBurnsStyles();
 	initAllSlideshows();
+	initEntranceAnimations();
 }

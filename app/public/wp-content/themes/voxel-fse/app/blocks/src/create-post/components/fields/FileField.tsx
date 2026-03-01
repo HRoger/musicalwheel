@@ -45,7 +45,7 @@
  * [{ source: 'new_upload', file: File, name: 'file.jpg', type: 'image/jpeg', preview: 'blob:...' }]
  * [{ source: 'existing', id: 123, name: 'file.jpg', type: 'image/jpeg', preview: 'url' }]
  */
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import type { VoxelField, FieldIcons } from '../../types';
 import { getUploadIcon } from '../../utils/fieldIconsHelper';
 import { MediaPopup } from '@shared';
@@ -61,15 +61,9 @@ interface SessionFile {
 	_id: string;
 }
 
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: SessionFile[];
-	}
-}
-
-// Initialize global cache
-if (typeof window !== 'undefined' && typeof window._vx_file_upload_cache === 'undefined') {
-	window._vx_file_upload_cache = [];
+// Initialize global cache (use any cast to avoid Window interface conflicts)
+if (typeof window !== 'undefined' && typeof (window as any)._vx_file_upload_cache === 'undefined') {
+	(window as any)._vx_file_upload_cache = [];
 }
 
 // Generate unique 8-character session ID (matches Voxel pattern)
@@ -79,21 +73,21 @@ const generateSessionId = (): string => {
 
 // Add file to global cache with deduplication
 const addToSessionCache = (file: File): string => {
-	if (!Array.isArray(window._vx_file_upload_cache)) {
-		window._vx_file_upload_cache = [];
+	if (!Array.isArray((window as any)._vx_file_upload_cache)) {
+		(window as any)._vx_file_upload_cache = [];
 	}
 
 	// Check if file already exists (by name, type, size, lastModified)
-	const exists = window._vx_file_upload_cache.find(
-		(cached) =>
+	const exists = (window as any)._vx_file_upload_cache.find(
+		(cached: SessionFile) =>
 			cached.name === file.name &&
 			cached.type === file.type &&
 			cached.size === file.size &&
-			cached.item.lastModified === file.lastModified
+			cached.item!.lastModified === file.lastModified
 	);
 
 	if (exists) {
-		return exists._id;
+		return exists._id ?? '';
 	}
 
 	// Create new session file
@@ -109,7 +103,7 @@ const addToSessionCache = (file: File): string => {
 	};
 
 	// Add to cache (unshift = add to beginning, most recent first)
-	window._vx_file_upload_cache.unshift(sessionFile);
+	(window as any)._vx_file_upload_cache.unshift(sessionFile);
 
 	return sessionId;
 };
@@ -146,22 +140,39 @@ interface FileFieldProps {
 export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, onBlur, icons }) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [dragActive, setDragActive] = useState(false);
+	// Drag-reorder state for sortable files
+	const [dragReorderIndex, setDragReorderIndex] = useState<number | null>(null);
 
 	// Normalize value to FileObject array
 	const files: FileObject[] = Array.isArray(value) ? value : [];
 
+	// Cleanup blob URLs on unmount to prevent memory leaks
+	// Evidence: Voxel calls URL.revokeObjectURL() in unmounted hook
+	useEffect(() => {
+		return () => {
+			files.forEach((file) => {
+				if (file.source === 'new_upload' && file.preview?.startsWith('blob:')) {
+					URL.revokeObjectURL(file.preview);
+				}
+			});
+		};
+	}, []);
+
 	// Field configuration from Voxel props
 	const maxCount = field.props?.['max-count'] || field.props?.['maxCount'] || 1;
+	// Evidence: file-field-trait.php:145 — sortable flag enables drag-and-drop reordering
+	const sortable = field.props?.['sortable'] === true;
 	const isImageField = field.type === 'image' || field.type === 'profile-avatar' || field.type === 'logo' || field.type === 'cover-image' || field.type === 'gallery';
 
 	// Preview images - always true (Voxel backend always returns previews)
 	const previewImages = true;
 
 	// Get allowed file types
+	// Evidence: file-field-trait.php:144 returns 'allowedTypes' (camelCase)
 	const getAllowedTypes = () => {
 		if (isImageField) return 'image/*';
-		const allowedTypes = field.props?.['allowed-types'] || [];
-		return allowedTypes.length > 0 ? allowedTypes.join(',') : '*';
+		const allowedTypes = field.props?.['allowedTypes'] || field.props?.['allowed-types'] || [];
+		return Array.isArray(allowedTypes) && allowedTypes.length > 0 ? allowedTypes.join(',') : '*';
 	};
 
 	// Get validation error
@@ -173,12 +184,28 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		if (!selectedFiles) return;
 
 		const newFiles: FileObject[] = [];
-		const maxSize = (field.props?.['max-size'] || field.props?.['maxSize'] || 2000) * 1000; // Convert KB to bytes
+		const maxSize = Number(field.props?.['max-size'] || field.props?.['maxSize'] || 2000) * 1000; // Convert KB to bytes
 		const validationErrors: string[] = [];
+
+		// Get allowed MIME types for validation
+		const allowedTypes = field.props?.['allowedTypes'] || field.props?.['allowed-types'] || [];
+		const allowedMimes: string[] = Array.isArray(allowedTypes) ? allowedTypes : [];
 
 		// Process all selected files (matches Voxel: allow upload, then validate)
 		for (let i = 0; i < selectedFiles.length; i++) {
 			const file = selectedFiles[i];
+
+			// Validate MIME type against allowedTypes
+			// Evidence: Voxel file-field-trait.php validates allowed_types server-side
+			if (allowedMimes.length > 0 && !allowedMimes.some((mime) => {
+				if (mime.endsWith('/*')) {
+					return file.type.startsWith(mime.replace('/*', '/'));
+				}
+				return file.type === mime;
+			})) {
+				validationErrors.push(`${file.name}: file type not allowed`);
+				continue;
+			}
 
 			// Add file to global session cache (shared with MediaPopup)
 			const sessionId = addToSessionCache(file);
@@ -210,8 +237,8 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		onChange(allFiles);
 
 		// Validate file count AFTER adding files (matches Voxel file-field-trait.php line 65-70)
-		if (allFiles.length > maxCount) {
-			validationErrors.push(`You cannot pick more than ${maxCount} ${maxCount === 1 ? 'file' : 'files'}`);
+		if (allFiles.length > Number(maxCount)) {
+			validationErrors.push(`You cannot pick more than ${Number(maxCount)} ${Number(maxCount) === 1 ? 'file' : 'files'}`);
 		}
 
 		// Set validation errors (matches Voxel: errors displayed in label area)
@@ -220,11 +247,26 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		}
 	};
 
-	// Handle drag & drop
+	// Handle drag & drop - uses DataTransferItemList API with .files fallback
+	// Evidence: Modern browsers provide items[] which filters non-file entries
 	const handleDrop = (e: React.DragEvent) => {
 		e.preventDefault();
 		setDragActive(false);
-		handleFileSelect(e.dataTransfer.files);
+
+		// Prefer DataTransferItemList (filters non-file items like text selections)
+		if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+			const dt = new DataTransfer();
+			for (let i = 0; i < e.dataTransfer.items.length; i++) {
+				const item = e.dataTransfer.items[i];
+				if (item.kind === 'file') {
+					const file = item.getAsFile();
+					if (file) dt.items.add(file);
+				}
+			}
+			handleFileSelect(dt.files);
+		} else {
+			handleFileSelect(e.dataTransfer.files);
+		}
 	};
 
 	// Remove file
@@ -232,6 +274,27 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 		const newFiles = [...files];
 		newFiles.splice(index, 1);
 		onChange(newFiles);
+	};
+
+	// Drag-reorder handlers for sortable files
+	// Evidence: file-field-trait.php:136-137 — Voxel enqueues 'sortable' and 'vue-draggable' when sortable=true
+	const handleDragReorderStart = (index: number) => {
+		setDragReorderIndex(index);
+	};
+
+	const handleDragReorderOver = (e: React.DragEvent, index: number) => {
+		e.preventDefault();
+		if (dragReorderIndex === null || dragReorderIndex === index) return;
+
+		const reordered = [...files];
+		const [moved] = reordered.splice(dragReorderIndex, 1);
+		reordered.splice(index, 0, moved);
+		onChange(reordered);
+		setDragReorderIndex(index);
+	};
+
+	const handleDragReorderEnd = () => {
+		setDragReorderIndex(null);
 	};
 
 	// Handle media library file selection - matches Voxel file-field.php line 63 @save callback
@@ -267,8 +330,8 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 
 		// Validate file count (same as upload validation)
 		const validationErrors: string[] = [];
-		if (allFiles.length > maxCount) {
-			validationErrors.push(`You cannot pick more than ${maxCount} ${maxCount === 1 ? 'file' : 'files'}`);
+		if (allFiles.length > Number(maxCount)) {
+			validationErrors.push(`You cannot pick more than ${Number(maxCount)} ${Number(maxCount) === 1 ? 'file' : 'files'}`);
 		}
 
 		// Set validation errors
@@ -351,8 +414,14 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 				{files.map((file, index) => (
 					<div
 						key={index}
-						className={`ts-file ${previewImages && file.type.startsWith('image/') ? 'ts-file-img' : ''}`}
+						className={`ts-file ${previewImages && file.type.startsWith('image/') ? 'ts-file-img' : ''} ${dragReorderIndex === index ? 'ts-dragging' : ''}`}
 						style={getStyle(file)}
+						{...(sortable ? {
+							draggable: true,
+							onDragStart: () => handleDragReorderStart(index),
+							onDragOver: (e: React.DragEvent) => handleDragReorderOver(e, index),
+							onDragEnd: handleDragReorderEnd,
+						} : {})}
 					>
 						<div className="ts-file-info">
 							<svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -383,7 +452,7 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 			<div style={{ textAlign: 'center', marginTop: '15px' }}>
 				<MediaPopup
 					onSave={handleMediaPopupSave}
-					multiple={maxCount > 1}
+					multiple={Number(maxCount) > 1}
 					saveLabel="Save"
 				/>
 			</div>
@@ -393,7 +462,7 @@ export const FileField: React.FC<FileFieldProps> = ({ field, value, onChange, on
 				ref={inputRef}
 				type="file"
 				className="hidden"
-				multiple={maxCount > 1}
+				multiple={Number(maxCount) > 1}
 				accept={getAllowedTypes()}
 				onChange={(e) => handleFileSelect(e.target.files)}
 				onBlur={onBlur}

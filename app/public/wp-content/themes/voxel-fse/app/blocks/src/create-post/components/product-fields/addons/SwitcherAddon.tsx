@@ -15,18 +15,7 @@ import React from 'react';
 import type { AddonConfig, SwitcherAddonValue } from '../../../types';
 import { AddonWrapper } from './AddonWrapper';
 
-/**
- * Voxel config interface for window global
- */
-interface VoxelConfig {
-	currency?: string;
-}
-
-declare global {
-	interface Window {
-		Voxel_Config?: VoxelConfig;
-	}
-}
+// Voxel_Config is declared globally in voxelShim.ts
 
 /**
  * Component props interface
@@ -57,7 +46,7 @@ export const SwitcherAddon: React.FC<SwitcherAddonProps> = ({
 	onChange,
 }) => {
 	// Get currency from global config (default to USD if not set)
-	const currency = window.Voxel_Config?.currency || 'USD';
+	const currency = (window as any).Voxel_Config?.currency || 'USD';
 
 	// Ensure we have a value object
 	const currentValue = value || getDefaultValue();

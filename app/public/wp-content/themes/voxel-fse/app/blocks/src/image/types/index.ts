@@ -73,6 +73,7 @@ export interface BoxShadowValue {
  * Typography values
  */
 export interface TypographyValue {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: SliderValue;
 	fontWeight?: string;
@@ -112,20 +113,24 @@ export interface ImageBlockAttributes {
 	linkTo: 'none' | 'file' | 'custom';
 	link: LinkObject;
 	openLightbox: 'default' | 'yes' | 'no';
+	lightboxGroup: string;
 
 	// Style - Image
 	imageAlign: string;
 	imageAlign_tablet?: string;
 	imageAlign_mobile?: string;
-	width: SliderValue;
-	width_tablet?: SliderValue;
-	width_mobile?: SliderValue;
-	maxWidth: SliderValue;
-	maxWidth_tablet?: SliderValue;
-	maxWidth_mobile?: SliderValue;
-	height: SliderValue;
-	height_tablet?: SliderValue;
-	height_mobile?: SliderValue;
+	width?: number;
+	width_tablet?: number;
+	width_mobile?: number;
+	widthUnit?: string;
+	maxWidth?: number;
+	maxWidth_tablet?: number;
+	maxWidth_mobile?: number;
+	maxWidthUnit?: string;
+	height?: number;
+	height_tablet?: number;
+	height_mobile?: number;
+	heightUnit?: string;
 	objectFit: string;
 	objectFit_tablet?: string;
 	objectFit_mobile?: string;
@@ -133,22 +138,8 @@ export interface ImageBlockAttributes {
 	objectPosition_tablet?: string;
 	objectPosition_mobile?: string;
 
-	// Style - Effects
-	opacity?: number;
-	cssFilters: CSSFilters;
-	opacityHover?: number;
-	cssFiltersHover: CSSFilters;
-	transitionDuration?: number;
+	// Style - Effects & Border (active attributes, prefixed with 'image')
 	hoverAnimation: string;
-
-	// Style - Border
-	borderType: string;
-	borderWidth: BoxDimensions;
-	borderColor: string;
-	borderRadius: BoxDimensions;
-	borderRadius_tablet?: BoxDimensions;
-	borderRadius_mobile?: BoxDimensions;
-	boxShadow: BoxShadowValue;
 	aspectRatio: string;
 
 	// Style - Caption
@@ -182,6 +173,9 @@ export interface ImageBlockAttributes {
 	imageBorderRadius?: BoxDimensions;
 	imageBoxShadow?: BoxShadowValue;
 	imageTransitionDuration?: number;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**
@@ -207,37 +201,35 @@ export interface ImageVxConfig {
 	imageAlign: string;
 	imageAlign_tablet?: string;
 	imageAlign_mobile?: string;
-	width: SliderValue;
-	width_tablet?: SliderValue;
-	width_mobile?: SliderValue;
-	maxWidth: SliderValue;
-	maxWidth_tablet?: SliderValue;
-	maxWidth_mobile?: SliderValue;
-	height: SliderValue;
-	height_tablet?: SliderValue;
-	height_mobile?: SliderValue;
+	width?: number;
+	width_tablet?: number;
+	width_mobile?: number;
+	widthUnit?: string;
+	maxWidth?: number;
+	maxWidth_tablet?: number;
+	maxWidth_mobile?: number;
+	maxWidthUnit?: string;
+	height?: number;
+	height_tablet?: number;
+	height_mobile?: number;
+	heightUnit?: string;
 	objectFit: string;
 	objectFit_tablet?: string;
 	objectFit_mobile?: string;
 	objectPosition: string;
 
-	// Style - Effects
-	opacity?: number;
-	cssFilters: CSSFilters;
-	opacityHover?: number;
-	cssFiltersHover: CSSFilters;
-	transitionDuration?: number;
+	// Style - Effects & Border
 	hoverAnimation: string;
-
-	// Style - Border
-	borderType: string;
-	borderWidth: BoxDimensions;
-	borderColor: string;
-	borderRadius: BoxDimensions;
-	borderRadius_tablet?: BoxDimensions;
-	borderRadius_mobile?: BoxDimensions;
-	boxShadow: BoxShadowValue;
 	aspectRatio: string;
+
+	// Active prefixed attributes
+	imageOpacity?: number;
+	imageOpacityHover?: number;
+	imageCssFilters?: CSSFilters;
+	imageCssFiltersHover?: CSSFilters;
+	imageTransitionDuration?: number;
+	imageBorder?: any;
+	imageBoxShadow?: BoxShadowValue;
 
 	// Style - Caption
 	captionAlign: string;

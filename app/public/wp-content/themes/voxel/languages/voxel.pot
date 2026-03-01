@@ -6,7 +6,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-01-23 15:02+0000\n"
+"POT-Creation-Date: 2026-02-24 01:49+0000\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
 "X-Poedit-SearchPath-0: .\n"
@@ -59,12 +59,12 @@ msgstr ""
 msgid "Could not determine your address."
 msgstr ""
 
-#: app/controllers/assets-controller.php:254, app/widgets/product-form.php:2423
+#: app/controllers/assets-controller.php:254, app/widgets/product-form.php:2431
 msgctxt "product form"
 msgid "View cart"
 msgstr ""
 
-#: app/controllers/assets-controller.php:255, app/widgets/product-form.php:2422
+#: app/controllers/assets-controller.php:255, app/widgets/product-form.php:2430
 msgctxt "product form"
 msgid "Your product has been added to cart."
 msgstr ""
@@ -249,47 +249,47 @@ msgctxt "reviews"
 msgid "Excellent"
 msgstr ""
 
-#: app/timeline/reply.php:378, app/timeline/status.php:725
+#: app/timeline/reply.php:392, app/timeline/status.php:739
 msgctxt "timeline"
 msgid "Pending"
 msgstr ""
 
-#: app/timeline/status.php:686
+#: app/timeline/status.php:700
 msgctxt "timeline"
 msgid "%s and 10+ others liked"
 msgstr ""
 
-#: app/timeline/status.php:681
+#: app/timeline/status.php:695
 msgctxt "timeline"
 msgid "%s and %d others liked"
 msgstr ""
 
-#: app/timeline/status.php:671
+#: app/timeline/status.php:685
 msgctxt "timeline"
 msgid "%s and %s liked"
 msgstr ""
 
-#: app/timeline/status.php:662
+#: app/timeline/status.php:676
 msgctxt "timeline"
 msgid "%s liked"
 msgstr ""
 
-#: app/timeline/status.php:653
+#: app/timeline/status.php:667
 msgctxt "timeline"
 msgid "%s and 10+ others reposted"
 msgstr ""
 
-#: app/timeline/status.php:648
+#: app/timeline/status.php:662
 msgctxt "timeline"
 msgid "%s and %d others reposted"
 msgstr ""
 
-#: app/timeline/status.php:638
+#: app/timeline/status.php:652
 msgctxt "timeline"
 msgid "%s and %s reposted"
 msgstr ""
 
-#: app/timeline/status.php:629
+#: app/timeline/status.php:643
 msgctxt "timeline"
 msgid "%s reposted"
 msgstr ""
@@ -314,7 +314,7 @@ msgctxt "auth"
 msgid "Your recovery code is %s"
 msgstr ""
 
-#: app/users/security-trait.php:30, app/users/security-trait.php:62, app/controllers/async/purge-stats-cache-action.php:22, app/controllers/frontend/tabs-controller.php:26, app/controllers/frontend/tabs-controller.php:32, app/controllers/frontend/tabs-controller.php:40, app/controllers/frontend/tabs-controller.php:107, app/controllers/frontend/tabs-controller.php:121, app/controllers/onboarding/onboarding-controller.php:134, app/controllers/timeline/timeline-controller.php:266, app/controllers/timeline/timeline-controller.php:270, app/controllers/frontend/statistics/visits-chart-controller.php:64, app/controllers/frontend/statistics/visits-chart-controller.php:25, app/controllers/frontend/statistics/visits-chart-controller.php:30, app/controllers/frontend/statistics/visits-chart-controller.php:128, app/controllers/frontend/statistics/visits-chart-controller.php:148, app/controllers/frontend/statistics/visits-chart-controller.php:174, app/controllers/frontend/timeline/comment-controller.php:26, app/controllers/frontend/timeline/comment-controller.php:184, app/controllers/frontend/timeline/comment-controller.php:253, app/controllers/frontend/timeline/comment-controller.php:287, app/controllers/frontend/timeline/comment-controller.php:344, app/controllers/frontend/timeline/comment-controller.php:372, app/controllers/frontend/timeline/comment-feed-controller.php:21, app/controllers/frontend/timeline/status-controller.php:29, app/controllers/frontend/timeline/status-controller.php:312, app/controllers/frontend/timeline/status-controller.php:426, app/controllers/frontend/timeline/status-controller.php:453, app/controllers/frontend/timeline/status-controller.php:482, app/controllers/frontend/timeline/status-controller.php:543, app/controllers/frontend/timeline/status-controller.php:609, app/controllers/frontend/timeline/status-controller.php:702, app/controllers/frontend/timeline/status-controller.php:730, app/controllers/frontend/timeline/status-feed-controller.php:21, app/controllers/frontend/timeline/suggestions-controller.php:21, app/modules/collections/controllers/frontend/frontend-controller.php:24, app/modules/collections/controllers/frontend/frontend-controller.php:197, app/modules/direct-messages/controllers/frontend/inbox-controller.php:289, app/modules/direct-messages/controllers/frontend/inbox-controller.php:567, app/modules/direct-messages/controllers/frontend/inbox-controller.php:626, app/modules/direct-messages/controllers/frontend/inbox-controller.php:675, app/modules/direct-messages/controllers/frontend/inbox-controller.php:679, app/modules/paddle-payments/controllers/backend/paddle-settings-controller.php:33, app/modules/paid-memberships/controllers/frontend/cart-controller.php:62, app/modules/paid-memberships/controllers/frontend/cart-controller.php:66, app/modules/paid-memberships/controllers/frontend/cart-controller.php:71, app/modules/paid-memberships/controllers/frontend/cart-controller.php:75, app/modules/paypal-payments/controllers/backend/paypal-settings-controller.php:29, app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:53, app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:169, app/modules/stripe-payments/controllers/backend/settings-controller.php:32, app/modules/stripe-payments/controllers/backend/settings-controller.php:77, app/modules/stripe-payments/controllers/backend/settings-controller.php:165
+#: app/users/security-trait.php:30, app/users/security-trait.php:62, app/controllers/async/purge-stats-cache-action.php:22, app/controllers/frontend/tabs-controller.php:26, app/controllers/frontend/tabs-controller.php:32, app/controllers/frontend/tabs-controller.php:40, app/controllers/frontend/tabs-controller.php:107, app/controllers/frontend/tabs-controller.php:121, app/controllers/onboarding/onboarding-controller.php:134, app/controllers/timeline/timeline-controller.php:266, app/controllers/timeline/timeline-controller.php:270, app/controllers/frontend/statistics/visits-chart-controller.php:64, app/controllers/frontend/statistics/visits-chart-controller.php:25, app/controllers/frontend/statistics/visits-chart-controller.php:30, app/controllers/frontend/statistics/visits-chart-controller.php:128, app/controllers/frontend/statistics/visits-chart-controller.php:148, app/controllers/frontend/statistics/visits-chart-controller.php:174, app/controllers/frontend/timeline/comment-controller.php:26, app/controllers/frontend/timeline/comment-controller.php:184, app/controllers/frontend/timeline/comment-controller.php:253, app/controllers/frontend/timeline/comment-controller.php:287, app/controllers/frontend/timeline/comment-controller.php:344, app/controllers/frontend/timeline/comment-controller.php:372, app/controllers/frontend/timeline/comment-feed-controller.php:21, app/controllers/frontend/timeline/status-controller.php:31, app/controllers/frontend/timeline/status-controller.php:314, app/controllers/frontend/timeline/status-controller.php:428, app/controllers/frontend/timeline/status-controller.php:469, app/controllers/frontend/timeline/status-controller.php:498, app/controllers/frontend/timeline/status-controller.php:559, app/controllers/frontend/timeline/status-controller.php:625, app/controllers/frontend/timeline/status-controller.php:718, app/controllers/frontend/timeline/status-controller.php:746, app/controllers/frontend/timeline/status-controller.php:774, app/controllers/frontend/timeline/status-controller.php:837, app/controllers/frontend/timeline/status-feed-controller.php:21, app/controllers/frontend/timeline/suggestions-controller.php:21, app/modules/collections/controllers/frontend/frontend-controller.php:24, app/modules/collections/controllers/frontend/frontend-controller.php:197, app/modules/direct-messages/controllers/frontend/inbox-controller.php:289, app/modules/direct-messages/controllers/frontend/inbox-controller.php:567, app/modules/direct-messages/controllers/frontend/inbox-controller.php:626, app/modules/direct-messages/controllers/frontend/inbox-controller.php:675, app/modules/direct-messages/controllers/frontend/inbox-controller.php:679, app/modules/paddle-payments/controllers/backend/paddle-settings-controller.php:33, app/modules/paid-memberships/controllers/frontend/cart-controller.php:62, app/modules/paid-memberships/controllers/frontend/cart-controller.php:66, app/modules/paid-memberships/controllers/frontend/cart-controller.php:71, app/modules/paid-memberships/controllers/frontend/cart-controller.php:75, app/modules/paypal-payments/controllers/backend/paypal-settings-controller.php:29, app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:53, app/modules/stripe-connect/controllers/frontend/connect-frontend-controller.php:169, app/modules/stripe-payments/controllers/backend/settings-controller.php:32, app/modules/stripe-payments/controllers/backend/settings-controller.php:77, app/modules/stripe-payments/controllers/backend/settings-controller.php:165
 msgid "Invalid request."
 msgstr ""
 
@@ -639,142 +639,142 @@ msgctxt "price interval"
 msgid "every %s days"
 msgstr ""
 
-#: app/utils/utils.php:993
+#: app/utils/utils.php:1123
 msgctxt "range presets"
 msgid "All"
 msgstr ""
 
-#: app/utils/utils.php:1003
+#: app/utils/utils.php:1133
 msgctxt "range presets"
 msgid "Upcoming"
 msgstr ""
 
-#: app/utils/utils.php:1013
+#: app/utils/utils.php:1143
 msgctxt "range presets"
 msgid "Today"
 msgstr ""
 
-#: app/utils/utils.php:1023
+#: app/utils/utils.php:1153
 msgctxt "range presets"
 msgid "Tomorrow"
 msgstr ""
 
-#: app/utils/utils.php:1033
+#: app/utils/utils.php:1163
 msgctxt "range presets"
 msgid "This weekend"
 msgstr ""
 
-#: app/utils/utils.php:1044
+#: app/utils/utils.php:1174
 msgctxt "range presets"
 msgid "This week"
 msgstr ""
 
-#: app/utils/utils.php:1057
+#: app/utils/utils.php:1187
 msgctxt "range presets"
 msgid "Next week"
 msgstr ""
 
-#: app/utils/utils.php:1069
+#: app/utils/utils.php:1199
 msgctxt "range presets"
 msgid "Next 7 days"
 msgstr ""
 
-#: app/utils/utils.php:1079
+#: app/utils/utils.php:1209
 msgctxt "range presets"
 msgid "This month"
 msgstr ""
 
-#: app/utils/utils.php:1089
+#: app/utils/utils.php:1219
 msgctxt "range presets"
 msgid "Next month"
 msgstr ""
 
-#: app/utils/utils.php:1099
+#: app/utils/utils.php:1229
 msgctxt "range presets"
 msgid "Next 30 days"
 msgstr ""
 
-#: app/utils/utils.php:1109
+#: app/utils/utils.php:1239
 msgctxt "range presets"
 msgid "This year"
 msgstr ""
 
-#: app/utils/utils.php:1119
+#: app/utils/utils.php:1249
 msgctxt "range presets"
 msgid "Next year"
 msgstr ""
 
-#: app/utils/utils.php:1129
+#: app/utils/utils.php:1259
 msgctxt "range presets"
 msgid "Next 365 days"
 msgstr ""
 
-#: app/utils/utils.php:1139
+#: app/utils/utils.php:1269
 msgctxt "range presets"
 msgid "Last 24h"
 msgstr ""
 
-#: app/utils/utils.php:1149
+#: app/utils/utils.php:1279
 msgctxt "range presets"
 msgid "Last week"
 msgstr ""
 
-#: app/utils/utils.php:1159
+#: app/utils/utils.php:1289
 msgctxt "range presets"
 msgid "Last month"
 msgstr ""
 
-#: app/utils/utils.php:1377
+#: app/utils/utils.php:1507
 msgctxt "post feed"
 msgid "@count out of @total results"
 msgstr ""
 
-#: app/utils/utils.php:1373
+#: app/utils/utils.php:1503
 msgctxt "post feed"
 msgid "@count results"
 msgstr ""
 
-#: app/utils/utils.php:1371
+#: app/utils/utils.php:1501
 msgctxt "post feed"
 msgid "One result"
 msgstr ""
 
-#: app/utils/utils.php:1369
+#: app/utils/utils.php:1499
 msgctxt "post feed"
 msgid "No results"
 msgstr ""
 
-#: app/utils/utils.php:1569
+#: app/utils/utils.php:1699
 msgctxt "time diff"
 msgid "%dy"
 msgstr ""
 
-#: app/utils/utils.php:1566
+#: app/utils/utils.php:1696
 msgctxt "time diff"
 msgid "%dw"
 msgstr ""
 
-#: app/utils/utils.php:1563
+#: app/utils/utils.php:1693
 msgctxt "time diff"
 msgid "%dd"
 msgstr ""
 
-#: app/utils/utils.php:1560
+#: app/utils/utils.php:1690
 msgctxt "time diff"
 msgid "%dh"
 msgstr ""
 
-#: app/utils/utils.php:1557
+#: app/utils/utils.php:1687
 msgctxt "time diff"
 msgid "%dm"
 msgstr ""
 
-#: app/utils/utils.php:1554
+#: app/utils/utils.php:1684
 msgctxt "time diff"
 msgid "%ds"
 msgstr ""
 
-#: app/utils/utils.php:1551
+#: app/utils/utils.php:1681
 msgctxt "time diff"
 msgid "now"
 msgstr ""
@@ -809,127 +809,152 @@ msgctxt "cart summary"
 msgid "Free"
 msgstr ""
 
-#: app/widgets/create-post.php:5113
+#: app/widgets/create-post.php:409, app/controllers/frontend/create-post/submission-controller.php:297
+msgctxt "create post"
+msgid "Your post has been saved as draft."
+msgstr ""
+
+#: app/widgets/create-post.php:419, app/controllers/frontend/create-post/submission-controller.php:300, app/controllers/frontend/create-post/submission-controller.php:287
+msgctxt "create post"
+msgid "Your post has been submitted for review."
+msgstr ""
+
+#: app/widgets/create-post.php:429, app/controllers/frontend/create-post/submission-controller.php:303, app/controllers/frontend/create-post/submission-controller.php:288
+msgctxt "create post"
+msgid "Your post has been published."
+msgstr ""
+
+#: app/widgets/create-post.php:439, app/controllers/frontend/create-post/submission-controller.php:279
+msgctxt "create post"
+msgid "Your changes have been submitted for review."
+msgstr ""
+
+#: app/widgets/create-post.php:449, app/controllers/frontend/create-post/submission-controller.php:291
+msgctxt "create post"
+msgid "Your changes have been applied."
+msgstr ""
+
+#: app/widgets/create-post.php:5190
 msgctxt "field validation"
 msgid "Required"
 msgstr ""
 
-#: app/widgets/create-post.php:5114
+#: app/widgets/create-post.php:5191
 msgctxt "field validation"
 msgid "Value cannot be shorter than @minlength characters"
 msgstr ""
 
-#: app/widgets/create-post.php:5115
+#: app/widgets/create-post.php:5192
 msgctxt "field validation"
 msgid "Value cannot be longer than @maxlength characters"
 msgstr ""
 
-#: app/widgets/create-post.php:5116
+#: app/widgets/create-post.php:5193
 msgctxt "field validation"
 msgid "Please match the requested format"
 msgstr ""
 
-#: app/widgets/create-post.php:5117
+#: app/widgets/create-post.php:5194
 msgctxt "field validation"
 msgid "You must provide a valid email address"
 msgstr ""
 
-#: app/widgets/create-post.php:5118
+#: app/widgets/create-post.php:5195
 msgctxt "field validation"
 msgid "Value cannot be less than @min"
 msgstr ""
 
-#: app/widgets/create-post.php:5119
+#: app/widgets/create-post.php:5196
 msgctxt "field validation"
 msgid "Value cannot be more than @max"
 msgstr ""
 
-#: app/widgets/create-post.php:5120
+#: app/widgets/create-post.php:5197
 msgctxt "field validation"
 msgid "You must provide a valid URL"
 msgstr ""
 
-#: app/widgets/create-post.php:5121
+#: app/widgets/create-post.php:5198
 msgctxt "field validation"
 msgid "You cannot pick more than @max items"
 msgstr ""
 
-#: app/widgets/create-post.php:5122
+#: app/widgets/create-post.php:5199
 msgctxt "field validation"
 msgid "You must select at least @min terms"
 msgstr ""
 
-#: app/widgets/create-post.php:5123
+#: app/widgets/create-post.php:5200
 msgctxt "field validation"
 msgid "You cannot select more than @max terms"
 msgstr ""
 
-#: app/widgets/create-post.php:5124
+#: app/widgets/create-post.php:5201
 msgctxt "field validation"
 msgid "You cannot pick more than @max files"
 msgstr ""
 
-#: app/widgets/create-post.php:5125
+#: app/widgets/create-post.php:5202
 msgctxt "field validation"
 msgid "@filename is over the @limit_mb MB limit"
 msgstr ""
 
-#: app/widgets/create-post.php:5126
+#: app/widgets/create-post.php:5203
 msgctxt "field validation"
 msgid "Unsupported file type: @filename"
 msgstr ""
 
-#: app/widgets/create-post.php:5127
+#: app/widgets/create-post.php:5204
 msgctxt "field validation"
 msgid "You cannot add more than @max dates"
 msgstr ""
 
-#: app/widgets/create-post.php:5128
+#: app/widgets/create-post.php:5205
 msgctxt "field validation"
 msgid "Date cannot be empty"
 msgstr ""
 
-#: app/widgets/create-post.php:5129
+#: app/widgets/create-post.php:5206
 msgctxt "field validation"
 msgid "Recurring dates must have a final date set"
 msgstr ""
 
-#: app/widgets/create-post.php:5130
+#: app/widgets/create-post.php:5207
 msgctxt "field validation"
 msgid "You must provide a valid color"
 msgstr ""
 
-#: app/widgets/create-post.php:5131
+#: app/widgets/create-post.php:5208
 msgctxt "field validation"
 msgid "The provided coordinates are not valid"
 msgstr ""
 
-#: app/widgets/create-post.php:5132
+#: app/widgets/create-post.php:5209
 msgctxt "field validation"
 msgid "You must add at least @min entries"
 msgstr ""
 
-#: app/widgets/create-post.php:5133
+#: app/widgets/create-post.php:5210
 msgctxt "field validation"
 msgid "You cannot add more than @max entries"
 msgstr ""
 
-#: app/widgets/create-post.php:5134
+#: app/widgets/create-post.php:5211
 msgctxt "field validation"
 msgid "Label and price are required"
 msgstr ""
 
-#: app/widgets/create-post.php:5135
+#: app/widgets/create-post.php:5212
 msgctxt "field validation"
 msgid "Quantity is required"
 msgstr ""
 
-#: app/widgets/create-post.php:5136
+#: app/widgets/create-post.php:5213
 msgctxt "repeater row validation"
 msgid "Missing data"
 msgstr ""
 
-#: app/widgets/create-post.php:5137
+#: app/widgets/create-post.php:5214
 msgctxt "repeater row validation"
 msgid "Please fill in all required fields"
 msgstr ""
@@ -984,27 +1009,27 @@ msgctxt "customer enquiry text"
 msgid "Hello, I'm enquiring about my order #@order_id"
 msgstr ""
 
-#: app/widgets/product-form.php:2421
+#: app/widgets/product-form.php:2429
 msgctxt "product form"
 msgid "Quantity"
 msgstr ""
 
-#: app/widgets/product-price.php:129
+#: app/widgets/product-price.php:138
 msgctxt "product price widget"
 msgid "Unavailable"
 msgstr ""
 
-#: app/widgets/product-price.php:127
+#: app/widgets/product-price.php:136
 msgctxt "product price widget"
 msgid "Out of stock"
 msgstr ""
 
-#: app/widgets/product-price.php:152
+#: app/widgets/product-price.php:161
 msgctxt "product price"
 msgid " / day"
 msgstr ""
 
-#: app/widgets/product-price.php:150
+#: app/widgets/product-price.php:159
 msgctxt "product price"
 msgid " / night"
 msgstr ""
@@ -1013,113 +1038,113 @@ msgstr ""
 msgid "Switch position to center of screen"
 msgstr ""
 
-#: app/widgets/search-form.php:3300
+#: app/widgets/search-form.php:3304
 msgid "Min width"
 msgstr ""
 
-#: app/widgets/search-form.php:3302, app/widgets/search-form.php:3326, app/widgets/search-form.php:3350
+#: app/widgets/search-form.php:3306, app/widgets/search-form.php:3330, app/widgets/search-form.php:3354
 msgid "Does not affect mobile"
 msgstr ""
 
-#: app/widgets/search-form.php:3324
+#: app/widgets/search-form.php:3328
 msgid "Max width"
 msgstr ""
 
-#: app/widgets/search-form.php:3348
+#: app/widgets/search-form.php:3352
 msgid "Max height"
 msgstr ""
 
-#: app/widgets/timeline.php:466, app/widgets/timeline.php:589
+#: app/widgets/timeline.php:477, app/widgets/timeline.php:601
 msgctxt "timeline"
 msgid "What's on your mind?"
 msgstr ""
 
-#: app/widgets/timeline.php:487
+#: app/widgets/timeline.php:498
 msgctxt "timeline filters"
 msgid "All"
 msgstr ""
 
-#: app/widgets/timeline.php:493, app/modules/direct-messages/widgets/messages-widget.php:1856
+#: app/widgets/timeline.php:504, app/modules/direct-messages/widgets/messages-widget.php:1856
 msgctxt "emoji popup"
 msgid "Smileys & Emotion"
 msgstr ""
 
-#: app/widgets/timeline.php:494, app/modules/direct-messages/widgets/messages-widget.php:1857
+#: app/widgets/timeline.php:505, app/modules/direct-messages/widgets/messages-widget.php:1857
 msgctxt "emoji popup"
 msgid "People & Body"
 msgstr ""
 
-#: app/widgets/timeline.php:495, app/modules/direct-messages/widgets/messages-widget.php:1858
+#: app/widgets/timeline.php:506, app/modules/direct-messages/widgets/messages-widget.php:1858
 msgctxt "emoji popup"
 msgid "Animals & Nature"
 msgstr ""
 
-#: app/widgets/timeline.php:496, app/modules/direct-messages/widgets/messages-widget.php:1859
+#: app/widgets/timeline.php:507, app/modules/direct-messages/widgets/messages-widget.php:1859
 msgctxt "emoji popup"
 msgid "Food & Drink"
 msgstr ""
 
-#: app/widgets/timeline.php:497, app/modules/direct-messages/widgets/messages-widget.php:1860
+#: app/widgets/timeline.php:508, app/modules/direct-messages/widgets/messages-widget.php:1860
 msgctxt "emoji popup"
 msgid "Travel & Places"
 msgstr ""
 
-#: app/widgets/timeline.php:498, app/modules/direct-messages/widgets/messages-widget.php:1861
+#: app/widgets/timeline.php:509, app/modules/direct-messages/widgets/messages-widget.php:1861
 msgctxt "emoji popup"
 msgid "Activities"
 msgstr ""
 
-#: app/widgets/timeline.php:499, app/modules/direct-messages/widgets/messages-widget.php:1862
+#: app/widgets/timeline.php:510, app/modules/direct-messages/widgets/messages-widget.php:1862
 msgctxt "emoji popup"
 msgid "Objects"
 msgstr ""
 
-#: app/widgets/timeline.php:502
+#: app/widgets/timeline.php:513
 msgctxt "timeline"
 msgid "Edited on @date"
 msgstr ""
 
-#: app/widgets/timeline.php:503
+#: app/widgets/timeline.php:514
 msgctxt "timeline"
 msgid "1 like"
 msgstr ""
 
-#: app/widgets/timeline.php:504
+#: app/widgets/timeline.php:515
 msgctxt "timeline"
 msgid "@count likes"
 msgstr ""
 
-#: app/widgets/timeline.php:505
+#: app/widgets/timeline.php:516
 msgctxt "timeline"
 msgid "1 reply"
 msgstr ""
 
-#: app/widgets/timeline.php:506
+#: app/widgets/timeline.php:517
 msgctxt "timeline"
 msgid "@count replies"
 msgstr ""
 
-#: app/widgets/timeline.php:507
+#: app/widgets/timeline.php:518
 msgctxt "timeline"
 msgid "Your changes will be lost. Do you wish to proceed?"
 msgstr ""
 
-#: app/widgets/timeline.php:530
+#: app/widgets/timeline.php:541
 msgctxt "timeline filters"
 msgid "Liked"
 msgstr ""
 
-#: app/widgets/timeline.php:534
+#: app/widgets/timeline.php:545
 msgctxt "timeline filters"
 msgid "Pending"
 msgstr ""
 
-#: app/widgets/timeline.php:622, app/widgets/timeline.php:611, app/widgets/timeline.php:600, app/widgets/timeline.php:577
+#: app/widgets/timeline.php:634, app/widgets/timeline.php:623, app/widgets/timeline.php:612, app/widgets/timeline.php:589
 msgctxt "timeline"
 msgid "What's on your mind, %s?"
 msgstr ""
 
-#: app/widgets/timeline.php:564
+#: app/widgets/timeline.php:576
 msgctxt "timeline"
 msgid "Write a review for %s"
 msgstr ""
@@ -1928,7 +1953,7 @@ msgctxt "payment methods"
 msgid "None"
 msgstr ""
 
-#: app/product-types/payment-methods/zero-amount-payment.php:43, app/product-types/payment-methods/zero-amount-subscription.php:43, app/modules/paddle-payments/payment-methods/paddle-payment.php:96, app/modules/paddle-payments/payment-methods/paddle-subscription.php:140, app/modules/paypal-payments/payment-methods/paypal-payment.php:91, app/modules/paypal-payments/payment-methods/paypal-subscription.php:101, app/modules/stripe-payments/payment-methods/stripe-payment.php:211, app/modules/stripe-payments/payment-methods/stripe-subscription.php:180, app/controllers/frontend/products/orders/single-order-controller.php:206, app/controllers/frontend/products/orders/single-order-controller.php:266
+#: app/product-types/payment-methods/zero-amount-payment.php:43, app/product-types/payment-methods/zero-amount-subscription.php:43, app/modules/paddle-payments/payment-methods/paddle-payment.php:96, app/modules/paddle-payments/payment-methods/paddle-subscription.php:140, app/modules/paypal-payments/payment-methods/paypal-payment.php:91, app/modules/paypal-payments/payment-methods/paypal-subscription.php:101, app/modules/stripe-payments/payment-methods/stripe-payment.php:211, app/modules/stripe-payments/payment-methods/stripe-subscription.php:180, app/controllers/frontend/products/orders/single-order-controller.php:222, app/controllers/frontend/products/orders/single-order-controller.php:282
 msgctxt "checkout"
 msgid "Something went wrong"
 msgstr ""
@@ -2345,7 +2370,7 @@ msgctxt "roles"
 msgid "You cannot switch to this role."
 msgstr ""
 
-#: app/controllers/frontend/create-post/post-relations-controller.php:19, app/controllers/frontend/create-post/post-relations-controller.php:42, app/controllers/frontend/create-post/post-relations-controller.php:54, app/controllers/frontend/create-post/submission-controller.php:21, app/controllers/frontend/create-post/submission-controller.php:25, app/controllers/frontend/create-post/submission-controller.php:40, app/controllers/frontend/create-post/submission-controller.php:56, app/controllers/frontend/create-post/submission-controller.php:61, app/controllers/frontend/create-post/submission-controller.php:333, app/controllers/frontend/create-post/submission-controller.php:339, app/controllers/frontend/create-post/submission-controller.php:343, app/controllers/frontend/create-post/submission-controller.php:352, app/controllers/frontend/products/cart-controller.php:357, app/controllers/frontend/products/cart-controller.php:361, app/controllers/frontend/products/cart-controller.php:402
+#: app/controllers/frontend/create-post/post-relations-controller.php:19, app/controllers/frontend/create-post/post-relations-controller.php:42, app/controllers/frontend/create-post/post-relations-controller.php:54, app/controllers/frontend/create-post/submission-controller.php:21, app/controllers/frontend/create-post/submission-controller.php:25, app/controllers/frontend/create-post/submission-controller.php:40, app/controllers/frontend/create-post/submission-controller.php:56, app/controllers/frontend/create-post/submission-controller.php:61, app/controllers/frontend/create-post/submission-controller.php:351, app/controllers/frontend/create-post/submission-controller.php:357, app/controllers/frontend/create-post/submission-controller.php:361, app/controllers/frontend/create-post/submission-controller.php:370, app/controllers/frontend/products/cart-controller.php:357, app/controllers/frontend/products/cart-controller.php:361, app/controllers/frontend/products/cart-controller.php:402
 msgid "Invalid request"
 msgstr ""
 
@@ -2359,7 +2384,7 @@ msgctxt "create post"
 msgid "Edits not allowed."
 msgstr ""
 
-#: app/controllers/frontend/create-post/submission-controller.php:52, app/controllers/frontend/create-post/submission-controller.php:348
+#: app/controllers/frontend/create-post/submission-controller.php:52, app/controllers/frontend/create-post/submission-controller.php:366
 msgid "Permission check failed."
 msgstr ""
 
@@ -2378,37 +2403,12 @@ msgctxt "create post"
 msgid "Could not save post."
 msgstr ""
 
-#: app/controllers/frontend/create-post/submission-controller.php:289, app/controllers/frontend/create-post/submission-controller.php:277
-msgctxt "create post"
-msgid "Your post has been published."
-msgstr ""
-
-#: app/controllers/frontend/create-post/submission-controller.php:287, app/controllers/frontend/create-post/submission-controller.php:275
-msgctxt "create post"
-msgid "Your post has been submitted for review."
-msgstr ""
-
-#: app/controllers/frontend/create-post/submission-controller.php:285
-msgctxt "create post"
-msgid "Your post has been saved as draft."
-msgstr ""
-
-#: app/controllers/frontend/create-post/submission-controller.php:280
-msgctxt "create post"
-msgid "Your changes have been applied."
-msgstr ""
-
-#: app/controllers/frontend/create-post/submission-controller.php:271
+#: app/controllers/frontend/create-post/submission-controller.php:282
 msgctxt "create post"
 msgid "Your changes have been submitted and will be applied once approved."
 msgstr ""
 
-#: app/controllers/frontend/create-post/submission-controller.php:269
-msgctxt "create post"
-msgid "Your changes have been submitted for review."
-msgstr ""
-
-#: app/controllers/frontend/products/cart-controller.php:32, app/controllers/frontend/products/cart-controller.php:39, app/controllers/frontend/products/cart-controller.php:93, app/controllers/frontend/products/cart-controller.php:121, app/controllers/frontend/products/cart-controller.php:149, app/controllers/frontend/products/cart-controller.php:196, app/controllers/frontend/products/cart-controller.php:201, app/controllers/frontend/products/cart-controller.php:228, app/controllers/frontend/products/cart-controller.php:287, app/controllers/frontend/products/cart-controller.php:292, app/controllers/frontend/products/cart-controller.php:297, app/controllers/frontend/products/cart-controller.php:302, app/controllers/frontend/products/checkout-controller.php:19, app/controllers/frontend/products/checkout-controller.php:87, app/controllers/frontend/products/checkout-controller.php:119, app/controllers/frontend/products/checkout-controller.php:125, app/controllers/frontend/products/checkout-controller.php:133, app/controllers/frontend/products/checkout-controller.php:138, app/controllers/frontend/search/search-controller.php:165, app/controllers/frontend/products/orders/single-order-controller.php:225, app/controllers/frontend/products/orders/modules/booking-controller.php:21, app/controllers/frontend/products/orders/modules/booking-controller.php:108, app/controllers/frontend/products/orders/modules/deliverables-controller.php:21, app/controllers/frontend/products/orders/modules/deliverables-controller.php:192, app/controllers/frontend/products/orders/modules/promotion-controller.php:132, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:20, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:60, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:100
+#: app/controllers/frontend/products/cart-controller.php:32, app/controllers/frontend/products/cart-controller.php:39, app/controllers/frontend/products/cart-controller.php:93, app/controllers/frontend/products/cart-controller.php:121, app/controllers/frontend/products/cart-controller.php:149, app/controllers/frontend/products/cart-controller.php:196, app/controllers/frontend/products/cart-controller.php:201, app/controllers/frontend/products/cart-controller.php:228, app/controllers/frontend/products/cart-controller.php:287, app/controllers/frontend/products/cart-controller.php:292, app/controllers/frontend/products/cart-controller.php:297, app/controllers/frontend/products/cart-controller.php:302, app/controllers/frontend/products/checkout-controller.php:19, app/controllers/frontend/products/checkout-controller.php:87, app/controllers/frontend/products/checkout-controller.php:119, app/controllers/frontend/products/checkout-controller.php:125, app/controllers/frontend/products/checkout-controller.php:133, app/controllers/frontend/products/checkout-controller.php:138, app/controllers/frontend/search/search-controller.php:165, app/controllers/frontend/products/orders/single-order-controller.php:241, app/controllers/frontend/products/orders/modules/booking-controller.php:21, app/controllers/frontend/products/orders/modules/booking-controller.php:109, app/controllers/frontend/products/orders/modules/deliverables-controller.php:21, app/controllers/frontend/products/orders/modules/deliverables-controller.php:192, app/controllers/frontend/products/orders/modules/promotion-controller.php:132, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:20, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:60, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:100
 msgid "Could not process request"
 msgstr ""
 
@@ -2475,7 +2475,7 @@ msgctxt "timeline"
 msgid "You're commenting too often, try again later."
 msgstr ""
 
-#: app/controllers/frontend/timeline/comment-controller.php:49, app/controllers/frontend/timeline/comment-controller.php:207, app/controllers/frontend/timeline/status-controller.php:53, app/controllers/frontend/timeline/status-controller.php:341, app/controllers/frontend/timeline/status-controller.php:641
+#: app/controllers/frontend/timeline/comment-controller.php:49, app/controllers/frontend/timeline/comment-controller.php:207, app/controllers/frontend/timeline/status-controller.php:55, app/controllers/frontend/timeline/status-controller.php:343, app/controllers/frontend/timeline/status-controller.php:657
 msgctxt "field validation"
 msgid "Content can't be longer than @length characters"
 msgstr ""
@@ -2525,127 +2525,182 @@ msgctxt "timeline"
 msgid "Could not load comments."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:34, app/controllers/frontend/timeline/status-controller.php:552, app/controllers/frontend/timeline/status-controller.php:618
+#: app/controllers/frontend/timeline/status-controller.php:36, app/controllers/frontend/timeline/status-controller.php:568, app/controllers/frontend/timeline/status-controller.php:634
 msgctxt "timeline"
 msgid "You're posting too often, try again later."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:65, app/controllers/frontend/timeline/status-controller.php:70, app/controllers/frontend/timeline/status-controller.php:249
+#: app/controllers/frontend/timeline/status-controller.php:67, app/controllers/frontend/timeline/status-controller.php:72, app/controllers/frontend/timeline/status-controller.php:251
 msgctxt "voxel"
 msgid "Something went wrong."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:216, app/controllers/frontend/timeline/status-controller.php:125, app/controllers/frontend/timeline/status-controller.php:84, app/controllers/frontend/timeline/status-controller.php:388, app/controllers/frontend/timeline/status-controller.php:651
+#: app/controllers/frontend/timeline/status-controller.php:218, app/controllers/frontend/timeline/status-controller.php:127, app/controllers/frontend/timeline/status-controller.php:86, app/controllers/frontend/timeline/status-controller.php:390, app/controllers/frontend/timeline/status-controller.php:667
 msgctxt "timeline"
 msgid "Post cannot be empty."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:160
+#: app/controllers/frontend/timeline/status-controller.php:162
 msgctxt "timeline"
 msgid "You're not allowed to review this item."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:164
+#: app/controllers/frontend/timeline/status-controller.php:166
 msgctxt "timeline"
 msgid "You have already reviewed this item."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:169, app/controllers/frontend/timeline/status-controller.php:358
+#: app/controllers/frontend/timeline/status-controller.php:171, app/controllers/frontend/timeline/status-controller.php:360
 msgctxt "timeline"
 msgid "Please choose a rating"
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:121
+#: app/controllers/frontend/timeline/status-controller.php:123
 msgctxt "timeline"
 msgid "You cannot post to this item's wall."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:76
+#: app/controllers/frontend/timeline/status-controller.php:78
 msgctxt "timeline"
 msgid "Permission denied."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:80
+#: app/controllers/frontend/timeline/status-controller.php:82
 msgctxt "timeline"
 msgid "Timeline posts are not enabled for this post type."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:286, app/controllers/frontend/timeline/status-controller.php:297
+#: app/controllers/frontend/timeline/status-controller.php:288, app/controllers/frontend/timeline/status-controller.php:299
 msgctxt "reviews"
 msgid "You must choose a rating for @category_label"
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:327, app/controllers/frontend/timeline/status-controller.php:333, app/controllers/frontend/timeline/status-controller.php:353
+#: app/controllers/frontend/timeline/status-controller.php:329, app/controllers/frontend/timeline/status-controller.php:335, app/controllers/frontend/timeline/status-controller.php:355
 msgctxt "timeline"
 msgid "You cannot edit this post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:410
+#: app/controllers/frontend/timeline/status-controller.php:412
 msgctxt "timeline"
 msgid "Post updated."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:384
+#: app/controllers/frontend/timeline/status-controller.php:386
 msgctxt "timeline"
 msgid "Review updated."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:431
+#: app/controllers/frontend/timeline/status-controller.php:433
 msgctxt "timeline"
 msgid "You cannot delete this post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:438
+#: app/controllers/frontend/timeline/status-controller.php:454
 msgctxt "timeline"
 msgid "Post deleted."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:458, app/controllers/frontend/timeline/status-controller.php:707, app/controllers/frontend/timeline/status-controller.php:735
+#: app/controllers/frontend/timeline/status-controller.php:474, app/controllers/frontend/timeline/status-controller.php:723, app/controllers/frontend/timeline/status-controller.php:751
 msgctxt "timeline"
 msgid "You cannot modify this post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:487, app/controllers/frontend/timeline/status-controller.php:516
+#: app/controllers/frontend/timeline/status-controller.php:503, app/controllers/frontend/timeline/status-controller.php:532
 msgctxt "timeline"
 msgid "You cannot like this post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:547, app/controllers/frontend/timeline/status-controller.php:557, app/controllers/frontend/timeline/status-controller.php:575
+#: app/controllers/frontend/timeline/status-controller.php:563, app/controllers/frontend/timeline/status-controller.php:573, app/controllers/frontend/timeline/status-controller.php:591
 msgctxt "timeline"
 msgid "You cannot repost this item."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:613, app/controllers/frontend/timeline/status-controller.php:633
+#: app/controllers/frontend/timeline/status-controller.php:629, app/controllers/frontend/timeline/status-controller.php:649
 msgctxt "timeline"
 msgid "You cannot quote this item."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-controller.php:687
+#: app/controllers/frontend/timeline/status-controller.php:703
 msgctxt "timeline"
 msgid "Quote posted to your timeline"
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-feed-controller.php:74, app/controllers/frontend/timeline/status-feed-controller.php:269, app/controllers/frontend/timeline/status-feed-controller.php:305
+#: app/controllers/frontend/timeline/status-controller.php:779
+msgctxt "timeline"
+msgid "You must be logged in to pin."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:786, app/controllers/frontend/timeline/status-controller.php:809, app/controllers/frontend/timeline/status-controller.php:795, app/controllers/frontend/timeline/status-controller.php:798
+msgctxt "timeline"
+msgid "You cannot pin this post."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:812
+msgctxt "timeline"
+msgid "You can only pin your own posts to the top."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:815
+msgctxt "timeline"
+msgid "This post cannot be pinned."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:791, app/controllers/frontend/timeline/status-controller.php:851, app/controllers/frontend/timeline/status-controller.php:855
+msgctxt "voxel"
+msgid "Invalid request."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:801
+msgctxt "timeline"
+msgid "This post cannot be pinned here."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:822
+msgctxt "timeline"
+msgid "Pinned to the top."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:842
+msgctxt "timeline"
+msgid "You must be logged in to unpin."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:871, app/controllers/frontend/timeline/status-controller.php:865
+msgctxt "timeline"
+msgid "This post is not pinned."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:858
+msgctxt "timeline"
+msgid "You cannot unpin this post."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-controller.php:878
+msgctxt "timeline"
+msgid "Unpinned."
+msgstr ""
+
+#: app/controllers/frontend/timeline/status-feed-controller.php:75, app/controllers/frontend/timeline/status-feed-controller.php:285, app/controllers/frontend/timeline/status-feed-controller.php:321
 msgctxt "timeline"
 msgid "Could not load timeline."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-feed-controller.php:138
+#: app/controllers/frontend/timeline/status-feed-controller.php:149
 msgctxt "timeline"
 msgid "Could not retrieve timeline for user."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-feed-controller.php:123
+#: app/controllers/frontend/timeline/status-feed-controller.php:129
 msgctxt "timeline"
 msgid "Could not retrieve timeline for post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-feed-controller.php:108
+#: app/controllers/frontend/timeline/status-feed-controller.php:109
 msgctxt "timeline"
 msgid "Could not retrieve timeline items for post."
 msgstr ""
 
-#: app/controllers/frontend/timeline/status-feed-controller.php:79
+#: app/controllers/frontend/timeline/status-feed-controller.php:80
 msgctxt "timeline"
 msgid "Could not retrieve reviews for post."
 msgstr ""
@@ -3207,17 +3262,17 @@ msgctxt "cart summary"
 msgid "Shipping via \"@shipping_rate\" requires a minimum order amount of @amount"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/orders-controller.php:76, app/controllers/frontend/products/orders/single-order-controller.php:87, app/controllers/frontend/products/orders/single-order-controller.php:168
+#: app/controllers/frontend/products/orders/orders-controller.php:92, app/controllers/frontend/products/orders/single-order-controller.php:87, app/controllers/frontend/products/orders/single-order-controller.php:184
 msgctxt "deleted user account"
 msgid "(deleted account)"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/single-order-controller.php:20, app/controllers/frontend/products/orders/single-order-controller.php:232, app/controllers/frontend/products/orders/modules/booking-controller.php:29, app/controllers/frontend/products/orders/modules/booking-controller.php:116, app/controllers/frontend/products/orders/modules/deliverables-controller.php:29, app/controllers/frontend/products/orders/modules/deliverables-controller.php:101, app/controllers/frontend/products/orders/modules/deliverables-controller.php:201, app/controllers/frontend/products/orders/modules/promotion-controller.php:139, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:27, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:67, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:107
+#: app/controllers/frontend/products/orders/single-order-controller.php:20, app/controllers/frontend/products/orders/single-order-controller.php:248, app/controllers/frontend/products/orders/modules/booking-controller.php:29, app/controllers/frontend/products/orders/modules/booking-controller.php:117, app/controllers/frontend/products/orders/modules/deliverables-controller.php:29, app/controllers/frontend/products/orders/modules/deliverables-controller.php:101, app/controllers/frontend/products/orders/modules/deliverables-controller.php:201, app/controllers/frontend/products/orders/modules/promotion-controller.php:139, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:27, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:67, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:107
 msgctxt "orders"
 msgid "Missing order id."
 msgstr ""
 
-#: app/controllers/frontend/products/orders/single-order-controller.php:36, app/controllers/frontend/products/orders/single-order-controller.php:248
+#: app/controllers/frontend/products/orders/single-order-controller.php:36, app/controllers/frontend/products/orders/single-order-controller.php:264
 msgctxt "orders"
 msgid "Could not find order."
 msgstr ""
@@ -3227,12 +3282,12 @@ msgctxt "single order"
 msgid "Quantity: %d"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/single-order-controller.php:173
+#: app/controllers/frontend/products/orders/single-order-controller.php:189
 msgctxt "items sold by platform"
 msgid "platform"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/single-order-controller.php:262
+#: app/controllers/frontend/products/orders/single-order-controller.php:278
 msgid "Could not process action"
 msgstr ""
 
@@ -3286,37 +3341,37 @@ msgctxt "cart summary"
 msgid "Listing plan"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:140
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:148
 msgctxt "cart summary"
 msgid "Claim request"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:196
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:264
 msgctxt "single order"
 msgid "Proof of ownership"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:197
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:265
 msgctxt "single order"
-msgid "Your claim request has been submitted"
+msgid "Claim request is awaiting approval"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:198
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:266
 msgctxt "single order"
-msgid "Your claim request has been declined"
+msgid "Claim request has been declined"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:199
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:267
 msgctxt "single order"
-msgid "Your claim request has been approved"
+msgid "Claim request has been approved"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:200, templates/widgets/orders/item-promotion-details.php:32
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:268, templates/widgets/orders/item-promotion-details.php:32
 msgctxt "single order"
 msgid "View listing"
 msgstr ""
 
-#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:201
+#: app/modules/claim-listings/controllers/frontend/claim-order-controller.php:269
 msgctxt "single order"
 msgid "View plan"
 msgstr ""
@@ -3667,7 +3722,7 @@ msgctxt "listing plan details"
 msgid "%d/%d used"
 msgstr ""
 
-#: app/modules/paid-listings/controllers/frontend/order-controller.php:284, app/modules/paid-listings/controllers/frontend/order-controller.php:291, app/controllers/frontend/products/orders/modules/booking-controller.php:35, app/controllers/frontend/products/orders/modules/booking-controller.php:39, app/controllers/frontend/products/orders/modules/booking-controller.php:44, app/controllers/frontend/products/orders/modules/booking-controller.php:49, app/controllers/frontend/products/orders/modules/booking-controller.php:61, app/controllers/frontend/products/orders/modules/booking-controller.php:65, app/controllers/frontend/products/orders/modules/booking-controller.php:71, app/controllers/frontend/products/orders/modules/booking-controller.php:76, app/controllers/frontend/products/orders/modules/booking-controller.php:122, app/controllers/frontend/products/orders/modules/booking-controller.php:126, app/controllers/frontend/products/orders/modules/booking-controller.php:131, app/controllers/frontend/products/orders/modules/booking-controller.php:136, app/controllers/frontend/products/orders/modules/booking-controller.php:148, app/controllers/frontend/products/orders/modules/booking-controller.php:152, app/controllers/frontend/products/orders/modules/booking-controller.php:158, app/controllers/frontend/products/orders/modules/booking-controller.php:164, app/controllers/frontend/products/orders/modules/deliverables-controller.php:35, app/controllers/frontend/products/orders/modules/deliverables-controller.php:40, app/controllers/frontend/products/orders/modules/deliverables-controller.php:107, app/controllers/frontend/products/orders/modules/deliverables-controller.php:115, app/controllers/frontend/products/orders/modules/deliverables-controller.php:120, app/controllers/frontend/products/orders/modules/deliverables-controller.php:126, app/controllers/frontend/products/orders/modules/deliverables-controller.php:149, app/controllers/frontend/products/orders/modules/deliverables-controller.php:207, app/controllers/frontend/products/orders/modules/deliverables-controller.php:212, app/controllers/frontend/products/orders/modules/promotion-controller.php:149, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:33, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:37, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:73, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:113, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:117
+#: app/modules/paid-listings/controllers/frontend/order-controller.php:284, app/modules/paid-listings/controllers/frontend/order-controller.php:291, app/controllers/frontend/products/orders/modules/booking-controller.php:35, app/controllers/frontend/products/orders/modules/booking-controller.php:39, app/controllers/frontend/products/orders/modules/booking-controller.php:44, app/controllers/frontend/products/orders/modules/booking-controller.php:49, app/controllers/frontend/products/orders/modules/booking-controller.php:61, app/controllers/frontend/products/orders/modules/booking-controller.php:65, app/controllers/frontend/products/orders/modules/booking-controller.php:71, app/controllers/frontend/products/orders/modules/booking-controller.php:76, app/controllers/frontend/products/orders/modules/booking-controller.php:123, app/controllers/frontend/products/orders/modules/booking-controller.php:127, app/controllers/frontend/products/orders/modules/booking-controller.php:132, app/controllers/frontend/products/orders/modules/booking-controller.php:137, app/controllers/frontend/products/orders/modules/booking-controller.php:149, app/controllers/frontend/products/orders/modules/booking-controller.php:153, app/controllers/frontend/products/orders/modules/booking-controller.php:159, app/controllers/frontend/products/orders/modules/booking-controller.php:165, app/controllers/frontend/products/orders/modules/deliverables-controller.php:35, app/controllers/frontend/products/orders/modules/deliverables-controller.php:40, app/controllers/frontend/products/orders/modules/deliverables-controller.php:107, app/controllers/frontend/products/orders/modules/deliverables-controller.php:115, app/controllers/frontend/products/orders/modules/deliverables-controller.php:120, app/controllers/frontend/products/orders/modules/deliverables-controller.php:126, app/controllers/frontend/products/orders/modules/deliverables-controller.php:149, app/controllers/frontend/products/orders/modules/deliverables-controller.php:207, app/controllers/frontend/products/orders/modules/deliverables-controller.php:212, app/controllers/frontend/products/orders/modules/promotion-controller.php:149, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:33, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:37, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:73, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:113, app/modules/ecommerce/shipping/controllers/frontend/shipping-actions-controller.php:117
 msgctxt "orders"
 msgid "Permission check failed."
 msgstr ""
@@ -4293,67 +4348,67 @@ msgctxt "order customer details"
 msgid "Phone number"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:185
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:186
 msgctxt "reschedule booking"
 msgid "Please select a date"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:173
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:174
 msgctxt "reschedule booking"
 msgid "Please select a date and time"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:391
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:392
 msgctxt "order booking details"
 msgid "Appointment was canceled"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:392
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:393
 msgctxt "order booking details"
 msgid "Appointment is confirmed"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:393
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:394
 msgctxt "order booking details"
 msgid "Booking was canceled"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:394
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:395
 msgctxt "order booking details"
 msgid "Booking is confirmed"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:395
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:396
 msgctxt "order booking details"
 msgid "Google Cal"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:396
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:397
 msgctxt "order booking details"
 msgid "iCal"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:397
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:398
 msgctxt "order booking details"
 msgid "Cancel booking"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:398
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:399
 msgctxt "order booking reschedule"
 msgid "Cancel"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:399
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:400
 msgctxt "order booking reschedule"
 msgid "Reschedule"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:400
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:401
 msgctxt "order booking reschedule"
 msgid "Time"
 msgstr ""
 
-#: app/controllers/frontend/products/orders/modules/booking-controller.php:401
+#: app/controllers/frontend/products/orders/modules/booking-controller.php:402
 msgctxt "order booking reschedule"
 msgid "Pick a time"
 msgstr ""
@@ -4626,37 +4681,42 @@ msgctxt "create post"
 msgid "Back to editing"
 msgstr ""
 
-#: templates/widgets/create-post.php:65
+#: templates/widgets/create-post.php:51
+msgctxt "create post"
+msgid "Go to homepage"
+msgstr ""
+
+#: templates/widgets/create-post.php:69
 msgctxt "create post"
 msgid "Save as draft"
 msgstr ""
 
-#: templates/widgets/create-post.php:70, templates/widgets/create-post.php:157
+#: templates/widgets/create-post.php:74, templates/widgets/create-post.php:161
 msgctxt "create post"
 msgid "Previous step"
 msgstr ""
 
-#: templates/widgets/create-post.php:73, templates/widgets/create-post.php:162
+#: templates/widgets/create-post.php:77, templates/widgets/create-post.php:166
 msgctxt "create post"
 msgid "Next step"
 msgstr ""
 
-#: templates/widgets/create-post.php:136, templates/widgets/create-post/repeater-field.php:48, templates/widgets/create-post/texteditor-field.php:9, templates/widgets/create-post/texteditor-field.php:35
+#: templates/widgets/create-post.php:140, templates/widgets/create-post/repeater-field.php:48, templates/widgets/create-post/texteditor-field.php:9, templates/widgets/create-post/texteditor-field.php:35
 msgctxt "create post"
 msgid "Optional"
 msgstr ""
 
-#: templates/widgets/create-post.php:179, templates/widgets/create-post.php:194
+#: templates/widgets/create-post.php:183, templates/widgets/create-post.php:198
 msgctxt "create post"
 msgid "Please wait..."
 msgstr ""
 
-#: templates/widgets/create-post.php:184
+#: templates/widgets/create-post.php:188
 msgctxt "create post"
 msgid "Publish"
 msgstr ""
 
-#: templates/widgets/create-post.php:199
+#: templates/widgets/create-post.php:203
 msgctxt "create post"
 msgid "Save changes"
 msgstr ""
@@ -4713,28 +4773,68 @@ msgstr ""
 
 #: templates/widgets/orders.php:185
 msgctxt "orders"
+msgid "@customer_name subscribed to @plan_name listing plan"
+msgstr ""
+
+#: templates/widgets/orders.php:189
+msgctxt "orders"
+msgid "@customer_name purchased @plan_name listing plan"
+msgstr ""
+
+#: templates/widgets/orders.php:193
+msgctxt "orders"
+msgid "@customer_name subscribed to @plan_name plan"
+msgstr ""
+
+#: templates/widgets/orders.php:197
+msgctxt "orders"
+msgid "@customer_name requested to claim @listing_title"
+msgstr ""
+
+#: templates/widgets/orders.php:201
+msgctxt "orders"
+msgid "@customer_name requested to claim a listing"
+msgstr ""
+
+#: templates/widgets/orders.php:204
+msgctxt "orders"
+msgid "@customer_name booked @product_name"
+msgstr ""
+
+#: templates/widgets/orders.php:208
+msgctxt "orders"
 msgid "@customer_name placed an order @date"
 msgstr ""
 
-#: templates/widgets/orders.php:192, templates/widgets/orders/single-order.php:118
+#: templates/widgets/orders.php:215, templates/widgets/orders/single-order.php:153
 msgctxt "orders"
 msgid "@count items"
 msgstr ""
 
-#: templates/widgets/orders.php:213
+#: templates/widgets/orders.php:226, templates/widgets/orders/single-order.php:81
+msgctxt "orders"
+msgid "Appointment canceled"
+msgstr ""
+
+#: templates/widgets/orders.php:229, templates/widgets/orders/single-order.php:84
+msgctxt "orders"
+msgid "Booking canceled"
+msgstr ""
+
+#: templates/widgets/orders.php:242
 msgid "Previous"
 msgstr ""
 
-#: templates/widgets/orders.php:216
+#: templates/widgets/orders.php:245
 msgid "Next"
 msgstr ""
 
-#: templates/widgets/orders.php:223
+#: templates/widgets/orders.php:252
 msgctxt "orders"
 msgid "No orders found"
 msgstr ""
 
-#: templates/widgets/orders.php:229
+#: templates/widgets/orders.php:258
 msgctxt "order downloads"
 msgid "Upload file"
 msgstr ""
@@ -5452,82 +5552,112 @@ msgctxt "single order"
 msgid "More actions"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:84
+#: templates/widgets/orders/single-order.php:90
 msgctxt "orders"
-msgid "@customer_name placed order #@order_id"
+msgid "@customer_name subscribed to @plan_name listing plan #@order_id"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:95
+msgctxt "orders"
+msgid "@customer_name purchased @plan_name listing plan #@order_id"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:100
+msgctxt "orders"
+msgid "@customer_name subscribed to @plan_name plan #@order_id"
 msgstr ""
 
 #: templates/widgets/orders/single-order.php:105
 msgctxt "orders"
-msgid "One item sold by @vendor_name"
+msgid "@customer_name requested to claim @listing_title #@order_id"
 msgstr ""
 
 #: templates/widgets/orders/single-order.php:110
 msgctxt "orders"
+msgid "@customer_name requested to claim a listing #@order_id"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:114
+msgctxt "orders"
+msgid "@customer_name booked @product_name #@order_id"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:119
+msgctxt "orders"
+msgid "@customer_name placed order #@order_id"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:140
+msgctxt "orders"
+msgid "One item sold by @vendor_name"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:145
+msgctxt "orders"
 msgid "@count items sold by @vendor_name"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:179
+#: templates/widgets/orders/single-order.php:214
 msgctxt "timeline"
 msgid "Collapse &#9652;"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:182
+#: templates/widgets/orders/single-order.php:217
 msgctxt "timeline"
 msgid "Expand &#9662;"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:192
+#: templates/widgets/orders/single-order.php:228
 msgctxt "single order"
 msgid "Subtotal"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:196
+#: templates/widgets/orders/single-order.php:232
 msgctxt "single order"
 msgid "Discount"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:200
+#: templates/widgets/orders/single-order.php:236
 msgctxt "single order"
 msgid "Tax"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:204
+#: templates/widgets/orders/single-order.php:240
 msgctxt "single order"
 msgid "Shipping"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:208, templates/widgets/orders/single-order.php:228
+#: templates/widgets/orders/single-order.php:244, templates/widgets/orders/single-order.php:264
 msgctxt "single order"
 msgid "Total"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:213
+#: templates/widgets/orders/single-order.php:249
 msgctxt "single order"
 msgid "Renews"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:218
+#: templates/widgets/orders/single-order.php:254
 msgctxt "single order"
 msgid "Vendor fees"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:262
-msgctxt "single order"
-msgid "Customer details"
-msgstr ""
-
-#: templates/widgets/orders/single-order.php:274
+#: templates/widgets/orders/single-order.php:299
 msgctxt "single order"
 msgid "Shipping details"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:288
+#: templates/widgets/orders/single-order.php:313
+msgctxt "single order"
+msgid "Customer details"
+msgstr ""
+
+#: templates/widgets/orders/single-order.php:325
 msgctxt "single order"
 msgid "Order notes"
 msgstr ""
 
-#: templates/widgets/orders/single-order.php:297
+#: templates/widgets/orders/single-order.php:334
 msgctxt "single order"
 msgid "Notes to customer"
 msgstr ""
@@ -6155,7 +6285,7 @@ msgctxt "location filter"
 msgid "Distance"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:43, templates/widgets/timeline/status/status.php:78
+#: templates/widgets/timeline/comment/comment.php:43, templates/widgets/timeline/status/status.php:82
 msgctxt "timeline"
 msgid "Copy link"
 msgstr ""
@@ -6165,32 +6295,32 @@ msgctxt "timeline"
 msgid "Share"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:53, templates/widgets/timeline/status/status.php:93
+#: templates/widgets/timeline/comment/comment.php:53, templates/widgets/timeline/status/status.php:97
 msgctxt "timeline"
 msgid "Edit"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:59, templates/widgets/timeline/status/status.php:99
+#: templates/widgets/timeline/comment/comment.php:59, templates/widgets/timeline/status/status.php:103
 msgctxt "timeline"
 msgid "Approve"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:64, templates/widgets/timeline/status/status.php:104
+#: templates/widgets/timeline/comment/comment.php:64, templates/widgets/timeline/status/status.php:108
 msgctxt "timeline"
 msgid "Mark as pending"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:70, templates/widgets/timeline/status/status.php:110
+#: templates/widgets/timeline/comment/comment.php:70, templates/widgets/timeline/status/status.php:124
 msgctxt "timeline"
 msgid "Delete"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:79, templates/widgets/timeline/status/status.php:146
+#: templates/widgets/timeline/comment/comment.php:79, templates/widgets/timeline/status/status.php:160
 msgctxt "timeline"
 msgid "Read less &#9652;"
 msgstr ""
 
-#: templates/widgets/timeline/comment/comment.php:82, templates/widgets/timeline/status/status.php:149
+#: templates/widgets/timeline/comment/comment.php:82, templates/widgets/timeline/status/status.php:163
 msgctxt "timeline"
 msgid "Read more &#9662;"
 msgstr ""
@@ -6225,37 +6355,52 @@ msgctxt "timeline"
 msgid "Load more replies"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:44
+#: templates/widgets/timeline/status/status.php:36
+msgctxt "timeline"
+msgid "Pinned"
+msgstr ""
+
+#: templates/widgets/timeline/status/status.php:48
 msgctxt "timeline"
 msgid "reposted"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:83
+#: templates/widgets/timeline/status/status.php:87
 msgctxt "timeline"
 msgid "Share via"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:88
+#: templates/widgets/timeline/status/status.php:92
 msgctxt "timeline"
 msgid "Remove link preview"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:154, templates/widgets/timeline/status/_quoted-status.php:42
+#: templates/widgets/timeline/status/status.php:114
+msgctxt "timeline"
+msgid "Pin to top"
+msgstr ""
+
+#: templates/widgets/timeline/status/status.php:119
+msgctxt "timeline"
+msgid "Unpin"
+msgstr ""
+
+#: templates/widgets/timeline/status/status.php:168, templates/widgets/timeline/status/_quoted-status.php:42
 msgctxt "timeline"
 msgid "This post has restricted visibility."
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:251
+#: templates/widgets/timeline/status/status.php:265
 msgctxt "timeline"
 msgid "Unrepost"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:254
+#: templates/widgets/timeline/status/status.php:268
 msgctxt "timeline"
 msgid "Repost"
 msgstr ""
 
-#: templates/widgets/timeline/status/status.php:261
+#: templates/widgets/timeline/status/status.php:275
 msgctxt "timeline"
 msgid "Quote"
 msgstr ""

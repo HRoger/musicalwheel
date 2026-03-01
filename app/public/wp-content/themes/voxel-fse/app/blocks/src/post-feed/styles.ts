@@ -142,6 +142,20 @@ export function generatePostFeedStyles(
 	const selector = `[data-block-id="${blockId}"]`;
 
 	// ============================================
+	// CONTAINER POSITIONING
+	// Evidence: themes/voxel/assets/dist/post-feed.css - .post-feed-nav uses position:absolute
+	// The carousel nav is position:absolute and expects its container to be position:relative
+	// In Voxel, this is provided by .elementor-element ancestor
+	// In FSE, we add it to the block container itself
+	// FIX: Add layout constraints to prevent carousel from expanding parent
+	// Evidence: Browser inspection showed container expanding to content width (1134px) instead of parent (400px)
+	// causing scrollWidth == clientWidth and breaking carousel functionality
+	// overflow: hidden prevents carousel content from pushing the flex parent wider
+	// In Elementor, the widget wrapper has a fixed column width that constrains the carousel;
+	// In FSE's flex-based layout, we need overflow: hidden to achieve the same containment
+	cssRules.push(`${selector} { position: relative; max-width: 100%; min-width: 0; overflow: hidden; }`);
+
+	// ============================================
 	// COUNTER STYLES
 	// Evidence: post-feed.php:488-535
 	// ============================================
@@ -301,11 +315,14 @@ export function generatePostFeedStyles(
 		cssRules.push(`${selector} .feed-pagination .ts-btn { gap: ${attributes.paginationIconTextSpacing}px; }`);
 	}
 
-	// Pagination border type - Evidence: post-feed.php:919-923
-	if (attributes.paginationBorderType) {
-		cssRules.push(`${selector} .feed-pagination .ts-btn { border-style: ${attributes.paginationBorderType}; }`);
-		if (attributes.paginationBorderType !== 'none') {
-			cssRules.push(`${selector} .feed-pagination .ts-btn { border-width: 1px; }`); // Default width if type set?
+	// Pagination border - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	const paginationBorder = attributes.paginationBorder || {};
+	if (paginationBorder.borderType && paginationBorder.borderType !== 'none' && paginationBorder.borderType !== '') {
+		cssRules.push(`${selector} .feed-pagination .ts-btn { border-style: ${paginationBorder.borderType}; }`);
+		const bwCSS = generateDimensionsCSS(paginationBorder.borderWidth as DimensionsConfig, 'border-width');
+		cssRules.push(`${selector} .feed-pagination .ts-btn { ${bwCSS || 'border-width: 1px;'} }`);
+		if (paginationBorder.borderColor) {
+			cssRules.push(`${selector} .feed-pagination .ts-btn { border-color: ${paginationBorder.borderColor}; }`);
 		}
 	}
 
@@ -449,11 +466,14 @@ export function generatePostFeedStyles(
 		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { backdrop-filter: blur(${attributes.carouselNavBackdropBlur}px); -webkit-backdrop-filter: blur(${attributes.carouselNavBackdropBlur}px); }`);
 	}
 
-	// Carousel nav border type - Evidence: post-feed.php:1241-1250
-	if (attributes.carouselNavBorderType) {
-		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-style: ${attributes.carouselNavBorderType}; }`);
-		if (attributes.carouselNavBorderType !== 'none') {
-			cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-width: 1px; }`); // Default width
+	// Carousel nav border - Evidence: post-feed.php GROUP_CONTROL_BORDER
+	const carouselNavBorder = attributes.carouselNavBorder || {};
+	if (carouselNavBorder.borderType && carouselNavBorder.borderType !== 'none' && carouselNavBorder.borderType !== '') {
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-style: ${carouselNavBorder.borderType}; }`);
+		const cnbwCSS = generateDimensionsCSS(carouselNavBorder.borderWidth as DimensionsConfig, 'border-width');
+		cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { ${cnbwCSS || 'border-width: 1px;'} }`);
+		if (carouselNavBorder.borderColor) {
+			cssRules.push(`${selector} .post-feed-nav .ts-icon-btn { border-color: ${carouselNavBorder.borderColor}; }`);
 		}
 	}
 
@@ -511,9 +531,60 @@ export function generatePostFeedStyles(
 	// Evidence: post-feed.php:588-680
 	// ============================================
 
-	// Loading opacity - Evidence: post-feed.php:611-621
+	// Loading opacity - Evidence: post-feed.css line 1
+	// Voxel CSS: .vx-loading .post-feed-grid.vx-opacity { opacity: .5 }
+	// Custom opacity overrides the default .5 with user-set value
 	if (attributes.loadingStyle === 'opacity' && attributes.loadingOpacity !== undefined) {
-		cssRules.push(`${selector} .post-feed-grid.vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+		cssRules.push(`${selector}.vx-loading .post-feed-grid.vx-opacity { opacity: ${attributes.loadingOpacity}; }`);
+	}
+
+	// Skeleton loading rules - Evidence: post-feed.css
+	// Voxel CSS: .vx-loading .post-feed-grid.vx-skeleton { opacity: .5 }
+	//            .vx-loading .post-feed-grid.vx-skeleton .ts-preview { background-repeat: no-repeat; background-size: cover }
+	//            .vx-loading .post-feed-grid.vx-skeleton .ts-preview > div { opacity: 0 }
+	// Voxel control: Group_Control_Background classic/gradient (post-feed.php:633-642)
+	if (attributes.loadingStyle === 'skeleton') {
+		// Hide card content so the background shows through as the skeleton
+		cssRules.push(`${selector}.vx-loading .post-feed-grid.vx-skeleton .ts-preview > div { opacity: 0; }`);
+
+		const bgTarget = `${selector}.vx-loading .post-feed-grid.vx-skeleton .ts-preview`;
+		const bgType = attributes.skeletonBackgroundType || 'classic';
+
+		if (bgType === 'gradient') {
+			const c1 = attributes.skeletonGradientColor || '#000000';
+			const l1 = attributes.skeletonGradientLocation ?? 0;
+			const c2 = attributes.skeletonGradientSecondColor || '#ffffff';
+			const l2 = attributes.skeletonGradientSecondLocation ?? 100;
+			let gradientCSS: string;
+			if (attributes.skeletonGradientType === 'radial') {
+				const pos = attributes.skeletonGradientPosition || 'center center';
+				gradientCSS = `radial-gradient(at ${pos}, ${c1} ${l1}%, ${c2} ${l2}%)`;
+			} else {
+				const angle = attributes.skeletonGradientAngle ?? 180;
+				gradientCSS = `linear-gradient(${angle}deg, ${c1} ${l1}%, ${c2} ${l2}%)`;
+			}
+			cssRules.push(`${bgTarget} { background-image: ${gradientCSS}; background-repeat: no-repeat; background-size: cover; }`);
+		} else {
+			// classic: color + optional image
+			const parts: string[] = [];
+			if (attributes.skeletonBackgroundColor) {
+				parts.push(`background-color: ${attributes.skeletonBackgroundColor};`);
+			}
+			if (attributes.skeletonBackgroundImage?.url) {
+				parts.push(`background-image: url(${attributes.skeletonBackgroundImage.url});`);
+				parts.push(`background-repeat: ${attributes.skeletonBgImageRepeat || 'no-repeat'};`);
+				parts.push(`background-size: ${attributes.skeletonBgImageSize || 'cover'};`);
+				if (attributes.skeletonBgImagePosition) {
+					parts.push(`background-position: ${attributes.skeletonBgImagePosition};`);
+				}
+				if (attributes.skeletonBgImageAttachment) {
+					parts.push(`background-attachment: ${attributes.skeletonBgImageAttachment};`);
+				}
+			}
+			if (parts.length > 0) {
+				cssRules.push(`${bgTarget} { ${parts.join(' ')} }`);
+			}
+		}
 	}
 
 	// ============================================

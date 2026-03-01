@@ -2408,38 +2408,42 @@ class Search_Form extends Base_Widget {
 		);
 
 
-				$this->add_control(
-					'ts_popup_number',
-					[
-						'label' => __( 'Number popup', 'voxel-elementor' ),
-						'type' => \Elementor\Controls_Manager::HEADING,
-						'separator' => 'before',
-					]
-				);
+			$this->add_group_control(
+				\Elementor\Group_Control_Typography::get_type(),
+				[
+					'name' => 'ts_stepper_input_type',
+					'label' => __( 'Input typography' ),
+					'selector' => '{{WRAPPER}} .ts-inline-filter .ts-input-box',
+				]
+			);
 
+		
 
-				$this->add_control(
-					'popup_number_input_size',
-					[
-						'label' => __( 'Input value size', 'voxel-elementor' ),
-						'type' => \Elementor\Controls_Manager::SLIDER,
-						'size_units' => [ 'px'],
-						'range' => [
-							'px' => [
-								'min' => 13,
-								'max' => 30,
-								'step' => 1,
-							],
-						],
-						'default' => [
-							'unit' => 'px',
-							'size' => 20,
-						],
-						'selectors' => [
-							'{{WRAPPER}} .ts-inline-filter .ts-stepper-input input' => 'font-size: {{SIZE}}{{UNIT}};',
-						],
-					]
-				);
+			$this->add_responsive_control(
+				'ts_ns_value',
+				[
+					'label' => __( 'Value color', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::COLOR,
+					'selectors' => [
+						'{{WRAPPER}} .ts-inline-filter .ts-input-box' => 'color: {{VALUE}}',
+
+					],
+
+				]
+			);
+
+			$this->add_responsive_control(
+				'ts_ns_placeholder',
+				[
+					'label' => __( 'Value placeholder', 'voxel-elementor' ),
+					'type' => \Elementor\Controls_Manager::COLOR,
+					'selectors' => [
+						'{{WRAPPER}} .ts-inline-filter .ts-input-box::placeholder' => 'color: {{VALUE}}',
+
+					],
+
+				]
+			);
 
 
 		$this->end_controls_section();

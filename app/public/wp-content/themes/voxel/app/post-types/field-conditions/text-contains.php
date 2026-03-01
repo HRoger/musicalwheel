@@ -18,6 +18,6 @@ class Text_Contains extends Base_Condition {
 	}
 
 	public function evaluate( $value ): bool {
-		return str_contains( strtolower( $value ), strtolower( $this->props['value'] ) );
+		return str_contains( strtolower( (string) $value ), strtolower( (string) $this->props['value'] ) );
 	}
 }

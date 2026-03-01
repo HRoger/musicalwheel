@@ -30,7 +30,12 @@ export function EmptyPlaceholder({
 	icon = '\ue817', // eicon-apps (grid icon)
 	className = '',
 	style = {},
-}: EmptyPlaceholderProps): JSX.Element {
+}: EmptyPlaceholderProps): JSX.Element | null {
+	// Never render on frontend - editor only
+	if (typeof window !== 'undefined' && !(window as any).wp?.blockEditor) {
+		return null;
+	}
+
 	return (
 		<div
 			className={`voxel-empty-placeholder ${className}`}
@@ -44,8 +49,10 @@ export function EmptyPlaceholder({
 				borderRadius: '0',
 				color: '#666',
 				fontSize: '13px',
-				height: '45px',
+				height: '100%',
+				minHeight: '45px',
 				width: '100%',
+				boxSizing: 'border-box',
 				...style,
 			}}
 		>

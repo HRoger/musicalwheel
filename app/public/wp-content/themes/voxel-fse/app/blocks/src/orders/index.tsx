@@ -8,7 +8,7 @@
 
 import { registerBlockType } from '@wordpress/blocks';
 import Edit from './edit';
-import save from './save';
+import save, { saveWithPlaceholder } from './save';
 import metadata from './block.json';
 import VoxelGridIcon from '@shared/VoxelGridIcon';
 
@@ -18,9 +18,17 @@ import type { OrdersBlockAttributes } from './types';
 // Type assertion for block.json metadata
 const blockMetadata = metadata as unknown as BlockConfiguration<OrdersBlockAttributes>;
 
-registerBlockType<OrdersBlockAttributes>(blockMetadata.name, {
+const deprecated = [
+	{
+		attributes: blockMetadata.attributes,
+		save: saveWithPlaceholder,
+	},
+];
+
+registerBlockType<OrdersBlockAttributes>(blockMetadata['name'], {
 	...blockMetadata,
 	icon: VoxelGridIcon,
 	edit: Edit,
 	save,
+	deprecated,
 });

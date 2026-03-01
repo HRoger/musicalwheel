@@ -54,7 +54,7 @@ export const FormGroup: React.FC<FormGroupProps> = ({
 	}, []);
 
 	// EXACT Voxel: onFocus handler
-	const handleFocus = useCallback((e: React.FocusEvent) => {
+	const handleFocus = useCallback((_e: React.FocusEvent) => {
 		if (!popupActive) {
 			open();
 		}

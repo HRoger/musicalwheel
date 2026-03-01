@@ -26,7 +26,6 @@
 		"className": true,
 		"customClassName": true
 	},
-	"editorScript": "file:./index.js",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php",
 	"attributes": {
@@ -106,7 +105,7 @@
 		},
 		"noResultsLabel": {
 			"type": "string",
-			"default": "No results available"
+			"default": "There are no results matching your search"
 		},
 		"layoutMode": {
 			"type": "string",
@@ -128,7 +127,7 @@
 		},
 		"itemGap": {
 			"type": "number",
-			"default": 25
+			"default": 20
 		},
 		"itemGap_tablet": {
 			"type": "number"
@@ -152,6 +151,10 @@
 		"carouselAutoSlide": {
 			"type": "boolean",
 			"default": false
+		},
+		"carouselAutoSlideInterval": {
+			"type": "number",
+			"default": 3000
 		},
 		"scrollPadding": {
 			"type": "number"
@@ -241,6 +244,55 @@
 			"type": "number",
 			"default": 0.5
 		},
+		"skeletonBackgroundColor": {
+			"type": "string",
+			"default": ""
+		},
+		"skeletonBackgroundType": {
+			"type": "string",
+			"default": "classic"
+		},
+		"skeletonBackgroundImage": {
+			"type": "object"
+		},
+		"skeletonBgImagePosition": {
+			"type": "string"
+		},
+		"skeletonBgImageAttachment": {
+			"type": "string"
+		},
+		"skeletonBgImageRepeat": {
+			"type": "string"
+		},
+		"skeletonBgImageSize": {
+			"type": "string"
+		},
+		"skeletonGradientColor": {
+			"type": "string"
+		},
+		"skeletonGradientLocation": {
+			"type": "number",
+			"default": 0
+		},
+		"skeletonGradientSecondColor": {
+			"type": "string"
+		},
+		"skeletonGradientSecondLocation": {
+			"type": "number",
+			"default": 100
+		},
+		"skeletonGradientType": {
+			"type": "string",
+			"default": "linear"
+		},
+		"skeletonGradientAngle": {
+			"type": "number",
+			"default": 180
+		},
+		"skeletonGradientPosition": {
+			"type": "string",
+			"default": "center center"
+		},
 		"noResultsHideScreen": {
 			"type": "boolean",
 			"default": false
@@ -326,9 +378,9 @@
 		"paginationSpacing_mobile": {
 			"type": "number"
 		},
-		"paginationBorderType": {
-			"type": "string",
-			"default": ""
+		"paginationBorder": {
+			"type": "object",
+			"default": {}
 		},
 		"paginationBorderRadius": {
 			"type": "number"
@@ -420,9 +472,9 @@
 		"carouselNavBackdropBlur": {
 			"type": "number"
 		},
-		"carouselNavBorderType": {
-			"type": "string",
-			"default": ""
+		"carouselNavBorder": {
+			"type": "object",
+			"default": {}
 		},
 		"carouselNavBorderRadius": {
 			"type": "number"

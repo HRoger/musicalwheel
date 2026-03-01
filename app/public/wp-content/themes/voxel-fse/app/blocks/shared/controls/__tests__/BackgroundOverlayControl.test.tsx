@@ -159,7 +159,8 @@ vi.mock('../ResponsiveRangeControl', () => ({
 }));
 
 vi.mock('../CssFiltersPopup', () => ({
-	default: ({ label, value, onChange }: any) => (
+	// @ts-ignore -- unused but kept for future use
+	default: ({ label, _value, onChange }: any) => (
 		<div data-testid="css-filters-popup">
 			<label>{label}</label>
 			<button onClick={() => onChange({ blur: 5 })}>

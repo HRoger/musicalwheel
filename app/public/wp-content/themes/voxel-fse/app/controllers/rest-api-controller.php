@@ -413,6 +413,36 @@ class REST_API_Controller extends FSE_Base_Controller {
 				],
 			],
 		] );
+
+		// Endpoint: /wp-json/voxel-fse/v1/post-search
+		// Editor-only: Searches posts by title or ID across multiple post types.
+		// Matches Voxel's voxel-post-select custom control behavior using WP_Query.
+		register_rest_route( 'voxel-fse/v1', '/post-search', [
+			'methods'             => \WP_REST_Server::READABLE,
+			'callback'            => [ $this, 'search_posts_for_select' ],
+			'permission_callback' => function () {
+				return current_user_can( 'edit_posts' );
+			},
+			'args'                => [
+				'search' => [
+					'required'          => true,
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
+				'post_types' => [
+					'required'          => false,
+					'type'              => 'string',
+					'default'           => 'page,wp_block,wp_template,wp_template_part',
+					'sanitize_callback' => 'sanitize_text_field',
+				],
+				'per_page' => [
+					'required'          => false,
+					'type'              => 'integer',
+					'default'           => 20,
+					'sanitize_callback' => 'absint',
+				],
+			],
+		] );
 	}
 
 	/**
@@ -735,9 +765,18 @@ class REST_API_Controller extends FSE_Base_Controller {
 
 		$currency = \Voxel\get_primary_currency();
 
-		// Get currency config
-		$currency_config = \Voxel\Stripe\Currencies::get( $currency );
-		$currency_symbol = $currency_config['symbol'] ?? $currency;
+		// Get currency symbol via NumberFormatter (Voxel 1.7.6+ removed Stripe\Currencies)
+		$currency_symbol = $currency;
+		if ( class_exists( '\NumberFormatter' ) ) {
+			$fmt = new \NumberFormatter( get_locale(), \NumberFormatter::CURRENCY );
+			$currency_symbol = $fmt->getSymbol( \NumberFormatter::CURRENCY_SYMBOL );
+			// Format a zero amount to extract the actual symbol for this currency
+			$formatted_zero = $fmt->formatCurrency( 0, strtoupper( $currency ) );
+			$stripped = str_replace( [ '0', '.', ',', ' ', "\xC2\xA0" ], '', $formatted_zero );
+			if ( ! empty( $stripped ) ) {
+				$currency_symbol = $stripped;
+			}
+		}
 		$currency_position = apply_filters( 'voxel/currency_position', 'before' );
 
 		// Calculate suffix
@@ -2285,6 +2324,7 @@ class REST_API_Controller extends FSE_Base_Controller {
 							'planKey'               => $active_plan && method_exists( $active_plan, 'get_key' ) ? $active_plan->get_key() : 'default',
 							'priceKey'              => method_exists( $membership, 'get_price_key' ) ? $membership->get_price_key() : null,
 							'isSubscriptionCanceled' => false,
+							'isInitialState'        => method_exists( $membership, 'is_initial_state' ) ? $membership->is_initial_state() : false,
 						];
 
 						// Check if subscription is canceled
@@ -2538,12 +2578,13 @@ class REST_API_Controller extends FSE_Base_Controller {
 	 * Get listing plans data
 	 *
 	 * Returns all available listing plans with pricing information
-	 * for the Listing Plans block.
+	 * for the Listing Plans block. Matches Voxel widget render() 1:1.
 	 *
 	 * Evidence:
-	 * - Voxel widget: themes/voxel/app/modules/paid-listings/widgets/listing-plans-widget.php
+	 * - Voxel widget render(): themes/voxel/app/modules/paid-listings/widgets/listing-plans-widget.php:1587-1785
 	 * - Voxel template: themes/voxel/app/modules/paid-listings/templates/frontend/listing-plans-widget.php
 	 * - Voxel Listing_Plan class: themes/voxel/app/modules/paid-listings/listing-plan.php
+	 * - Voxel currency_format(): themes/voxel/app/utils/utils.php:426 (3rd param $amount_is_in_cents)
 	 *
 	 * @param \WP_REST_Request $request REST request object
 	 * @return \WP_REST_Response Response object
@@ -2554,6 +2595,9 @@ class REST_API_Controller extends FSE_Base_Controller {
 			'isLoggedIn'      => is_user_logged_in(),
 			'availablePlans'  => [],
 			'priceGroups'     => [],
+			'packagesByPlan'  => (object) [],
+			'currentPlanKey'  => null,
+			'process'         => null,
 		];
 
 		// Check if Voxel's Listing_Plan class is available
@@ -2561,13 +2605,72 @@ class REST_API_Controller extends FSE_Base_Controller {
 			return rest_ensure_response( $response );
 		}
 
+		// Read process context from URL params (matches widget render() line 1589)
+		$process = \Voxel\from_list( $_GET['process'] ?? null, [ 'new', 'relist', 'claim', 'switch' ], null );
+		$post = null;
+		$post_type = null;
+		$submit_to = null;
+		$redirect_to = $_GET['redirect_to'] ?? null;
+
+		if ( $process === 'new' ) {
+			$post_type = \Voxel\Post_Type::get( $_GET['item_type'] ?? null );
+			$submit_to = $_GET['submit_to'] ?? null;
+			if ( ! ( $post_type && $post_type->is_managed_by_voxel() ) ) {
+				$process = null;
+				$post_type = null;
+			}
+		} elseif ( $process === 'relist' ) {
+			$post = \Voxel\Post::get( $_GET['post_id'] ?? null );
+			if ( $post && $post->post_type && $post->is_editable_by_current_user()
+				&& in_array( $post->get_status(), [ 'expired', 'rejected' ], true ) ) {
+				$post_type = $post->post_type;
+			} else {
+				$process = null;
+			}
+		} elseif ( $process === 'switch' ) {
+			$post = \Voxel\Post::get( $_GET['post_id'] ?? null );
+			if ( $post && $post->post_type && $post->is_editable_by_current_user()
+				&& $post->get_status() === 'publish'
+				&& \Voxel\Modules\Paid_Listings\has_plans_for_post_type( $post->post_type ) ) {
+				$post_type = $post->post_type;
+			} else {
+				$process = null;
+			}
+		} elseif ( $process === 'claim' ) {
+			$post = \Voxel\Post::get( $_GET['post_id'] ?? null );
+			if ( $post && \Voxel\Modules\Claim_Listings\is_claimable( $post ) ) {
+				$post_type = $post->post_type;
+			} else {
+				$process = null;
+			}
+		}
+
+		$response['process'] = $process;
+
+		// Get current plan key for switch process (line 66 of template)
+		if ( $process === 'switch' && $post ) {
+			$assigned = \Voxel\Modules\Paid_Listings\get_assigned_package( $post );
+			if ( $assigned && isset( $assigned['details']['plan'] ) ) {
+				$response['currentPlanKey'] = $assigned['details']['plan'];
+			}
+		}
+
 		// Get all listing plans
 		$plans = \Voxel\Modules\Paid_Listings\Listing_Plan::all();
 		$available_plans = [];
 		$all_prices = [];
+		$currency = function_exists( '\Voxel\get_primary_currency' )
+			? strtoupper( \Voxel\get_primary_currency() )
+			: 'USD';
 
 		foreach ( $plans as $plan ) {
 			$plan_key = $plan->get_key();
+
+			// Filter by post type if in a process flow (line 1764-1766)
+			if ( $post_type !== null && ! $plan->supports_post_type( $post_type ) ) {
+				continue;
+			}
+
 			$plan_label = $plan->get_label();
 			$plan_description = $plan->get_description() ?? '';
 
@@ -2596,31 +2699,32 @@ class REST_API_Controller extends FSE_Base_Controller {
 				}
 			}
 
-			// Determine if free
-			$is_free = ( $amount <= 0 );
+			// Determine if free (matches widget line 1685)
+			$is_free = ( floatval( $amount ) === 0.0 );
 
-			// Format amount
-			$currency = function_exists( '\Voxel\get_primary_currency' ) ? \Voxel\get_primary_currency() : 'usd';
+			// Format amount — Voxel stores billing amount as raw float (e.g. 9.99),
+			// NOT in cents. currency_format() 3rd param=false means "not in cents".
+			// Evidence: listing-plans-widget.php:1686-1689 passes raw amount with false
 			$formatted_amount = '';
 			if ( ! $is_free ) {
 				if ( function_exists( '\Voxel\currency_format' ) ) {
-					$formatted_amount = \Voxel\currency_format( $amount * 100, $currency, false ); // Voxel stores in cents
+					$formatted_amount = \Voxel\currency_format( $amount, $currency, false );
 				} else {
-					$formatted_amount = number_format( $amount, 2 ) . ' ' . strtoupper( $currency );
+					$formatted_amount = number_format( $amount, 2 ) . ' ' . $currency;
 				}
 			}
 
-			// Format discount amount
+			// Format discount amount (line 1691-1696)
 			$formatted_discount = null;
-			if ( $discount_amount && $discount_amount > 0 ) {
+			if ( $discount_amount !== null && $discount_amount > 0 ) {
 				if ( function_exists( '\Voxel\currency_format' ) ) {
-					$formatted_discount = \Voxel\currency_format( $discount_amount * 100, $currency, false );
+					$formatted_discount = \Voxel\currency_format( $discount_amount, $currency, false );
 				} else {
-					$formatted_discount = number_format( $discount_amount, 2 ) . ' ' . strtoupper( $currency );
+					$formatted_discount = number_format( $discount_amount, 2 ) . ' ' . $currency;
 				}
 			}
 
-			// Format period for subscriptions
+			// Format period for subscriptions (line 1697-1702)
 			$formatted_period = null;
 			if ( $billing_mode === 'subscription' && $interval ) {
 				if ( function_exists( '\Voxel\interval_format' ) ) {
@@ -2630,8 +2734,10 @@ class REST_API_Controller extends FSE_Base_Controller {
 				}
 			}
 
-			// Build checkout link
-			$checkout_link = $this->get_listing_plan_checkout_link( $plan_key );
+			// Build checkout link — matches Voxel's choose_plan action (line 1668-1677)
+			$checkout_link = $this->get_listing_plan_checkout_link(
+				$plan_key, $process, $post_type, $post, $submit_to, $redirect_to
+			);
 
 			$available_plans[] = [
 				'key'         => $plan_key,
@@ -2643,22 +2749,75 @@ class REST_API_Controller extends FSE_Base_Controller {
 				],
 			];
 
-			// Build price data for this plan
+			// Build price data for this plan (matches line 1705-1718)
 			$price_data = [
-				'planKey'        => $plan_key,
-				'key'            => $plan_key,
-				'label'          => $plan_label,
-				'description'    => $plan_description,
-				'image'          => null,
-				'features'       => [],
-				'link'           => $checkout_link,
-				'isFree'         => $is_free,
-				'amount'         => $is_free ? __( 'Free', 'voxel-fse' ) : $formatted_amount,
-				'discountAmount' => $formatted_discount,
-				'period'         => $formatted_period,
+				'planKey'                => $plan_key,
+				'key'                    => $plan_key,
+				'label'                  => $plan_label,
+				'description'            => $plan_description,
+				'image'                  => null,
+				'features'               => [],
+				'link'                   => $checkout_link,
+				'isFree'                 => $is_free,
+				'amount'                 => $is_free ? __( 'Free', 'voxel-fse' ) : $formatted_amount,
+				'discountAmount'         => $formatted_discount,
+				'period'                 => $formatted_period,
+				'disableRepeatPurchase'  => (bool) $plan->config( 'billing.disable_repeat_purchase' ),
+				'alreadyPurchased'       => false,
 			];
 
 			$all_prices[] = $price_data;
+		}
+
+		// Check already purchased plans (matches widget lines 1769-1773)
+		if ( is_user_logged_in() && ! empty( $all_prices ) ) {
+			$current_user = \Voxel\get_current_user();
+			$already_purchased_keys = $this->get_already_purchased_listing_plans( $current_user, $all_prices );
+
+			foreach ( $all_prices as &$price ) {
+				if ( in_array( $price['planKey'], $already_purchased_keys, true ) ) {
+					$price['alreadyPurchased'] = true;
+				}
+			}
+			unset( $price );
+
+			// Get available packages (matches widget lines 1727-1767)
+			if ( $post_type !== null ) {
+				$packages = \Voxel\Modules\Paid_Listings\get_available_packages( $current_user, $post_type );
+				$packages_by_plan = [];
+
+				foreach ( $packages as $package ) {
+					$pkg_plan = $package->get_plan();
+					if ( ! $pkg_plan ) {
+						continue;
+					}
+
+					$pkg_plan_key = $pkg_plan->get_key();
+					if ( ! isset( $packages_by_plan[ $pkg_plan_key ] ) ) {
+						$packages_by_plan[ $pkg_plan_key ] = [
+							'total'     => 0,
+							'used'      => 0,
+							'packageId' => null,
+						];
+					}
+
+					foreach ( $package->get_limits() as $limit ) {
+						if (
+							in_array( $post_type->get_key(), $limit['post_types'], true )
+							&& $limit['total'] > $limit['usage']['count']
+						) {
+							$packages_by_plan[ $pkg_plan_key ]['total'] += $limit['total'];
+							$packages_by_plan[ $pkg_plan_key ]['used'] += $limit['usage']['count'];
+
+							if ( $packages_by_plan[ $pkg_plan_key ]['packageId'] === null ) {
+								$packages_by_plan[ $pkg_plan_key ]['packageId'] = $package->get_id();
+							}
+						}
+					}
+				}
+
+				$response['packagesByPlan'] = ! empty( $packages_by_plan ) ? $packages_by_plan : (object) [];
+			}
 		}
 
 		$response['availablePlans'] = $available_plans;
@@ -2678,20 +2837,98 @@ class REST_API_Controller extends FSE_Base_Controller {
 	/**
 	 * Get checkout link for a listing plan
 	 *
+	 * Matches Voxel widget line 1668-1677: uses paid_listings.choose_plan action
+	 * with process-aware parameters.
+	 *
 	 * @param string $plan_key Plan key
+	 * @param string|null $process Process type (new/relist/claim/switch)
+	 * @param \Voxel\Post_Type|null $post_type Target post type
+	 * @param \Voxel\Post|null $post Target post (for relist/switch/claim)
+	 * @param string|null $submit_to Submit destination
+	 * @param string|null $redirect_to Redirect URL after purchase
 	 * @return string Checkout URL
 	 */
-	private function get_listing_plan_checkout_link( string $plan_key ): string {
-		// Get the create post page URL with plan parameter
-		// This follows Voxel's pattern for listing plan checkout
-		$checkout_url = add_query_arg( [
-			'vx'      => 1,
-			'action'  => 'paid_listings.checkout',
-			'plan'    => $plan_key,
-			'_wpnonce' => wp_create_nonce( 'vx_listing_plan_checkout' ),
-		], home_url( '/' ) );
+	private function get_listing_plan_checkout_link(
+		string $plan_key,
+		?string $process = null,
+		$post_type = null,
+		$post = null,
+		?string $submit_to = null,
+		?string $redirect_to = null
+	): string {
+		$args = [
+			'vx'        => 1,
+			'action'    => 'paid_listings.choose_plan',
+			'plan'      => $plan_key,
+			'_wpnonce'  => wp_create_nonce( 'vx_choose_plan' ),
+		];
 
-		return $checkout_url;
+		// Add process-aware params (matches widget line 1668-1677)
+		if ( $redirect_to ) {
+			$args['redirect_to'] = $redirect_to;
+		}
+		if ( $process ) {
+			$args['process'] = $process;
+		}
+		if ( $post_type ) {
+			$args['item_type'] = $post_type->get_key();
+		}
+		if ( $post ) {
+			$args['post_id'] = $post->get_id();
+		}
+		if ( $submit_to ) {
+			$args['submit_to'] = $submit_to;
+		}
+
+		return add_query_arg( $args, home_url( '/?vx=1' ) );
+	}
+
+	/**
+	 * Check which listing plans have already been purchased by a user
+	 *
+	 * Matches Voxel widget _get_already_purchased_plans() line 1816-1853
+	 *
+	 * @param \Voxel\User $user Current user
+	 * @param array $prices Price data array
+	 * @return array Plan keys that have been purchased
+	 */
+	private function get_already_purchased_listing_plans( $user, array $prices ): array {
+		global $wpdb;
+
+		$plans_to_check = [];
+		foreach ( $prices as $price ) {
+			if ( ! empty( $price['disableRepeatPurchase'] ) ) {
+				$plans_to_check[] = $price['planKey'];
+			}
+		}
+
+		if ( empty( $plans_to_check ) ) {
+			return [];
+		}
+
+		$testmode = \Voxel\is_test_mode() ? 'true' : 'false';
+		$plan_placeholders = implode( ',', array_fill( 0, count( $plans_to_check ), '%s' ) );
+
+		$sql = $wpdb->prepare( <<<SQL
+			SELECT DISTINCT JSON_UNQUOTE( JSON_EXTRACT(
+				items.details,
+				'$."voxel:listing_plan".plan'
+			) ) as plan_key
+			FROM {$wpdb->prefix}vx_order_items AS items
+			LEFT JOIN {$wpdb->prefix}vx_orders AS orders ON ( items.order_id = orders.id )
+			WHERE orders.customer_id = %d
+				AND orders.status IN ('completed','sub_active','sub_trialing')
+				AND items.field_key = 'voxel:listing_plan'
+				AND JSON_VALID( items.details )
+				AND JSON_UNQUOTE( JSON_EXTRACT(
+					items.details,
+					'$."voxel:listing_plan".plan'
+				) ) IN ({$plan_placeholders})
+				AND orders.testmode IS {$testmode}
+		SQL, array_merge( [ $user->get_id() ], $plans_to_check ) );
+
+		$results = $wpdb->get_col( $sql );
+		return is_array( $results ) ? $results : [];
 	}
 
 	// =====================================================
@@ -3022,5 +3259,81 @@ class REST_API_Controller extends FSE_Base_Controller {
 			return \Voxel\get_redirect_url();
 		}
 		return home_url( '/' );
+	}
+
+	/**
+	 * Search posts for PostSelectControl
+	 *
+	 * Matches Voxel's voxel-post-select control behavior:
+	 * - Searches by title (LIKE query)
+	 * - Searches by ID (exact match when input is numeric or starts with #)
+	 * - Searches across multiple post types (page, wp_block, wp_template, wp_template_part)
+	 * - Returns results in Voxel format: #ID: Title
+	 *
+	 * Evidence: themes/voxel/app/modules/elementor/custom-controls/post-select-control.php
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return \WP_REST_Response
+	 */
+	public function search_posts_for_select( $request ) {
+		$search     = $request->get_param( 'search' );
+		$post_types = array_filter( array_map( 'trim', explode( ',', $request->get_param( 'post_types' ) ) ) );
+		$per_page   = min( (int) $request->get_param( 'per_page' ), 50 );
+
+		if ( empty( $post_types ) ) {
+			$post_types = [ 'page', 'wp_block', 'wp_template', 'wp_template_part' ];
+		}
+
+		$results = [];
+
+		// Check if searching by ID (e.g., "#175", "175", or just a number)
+		$search_id = null;
+		$clean_search = ltrim( $search, '#' );
+		if ( is_numeric( $clean_search ) ) {
+			$search_id = (int) $clean_search;
+		}
+
+		// 1. If searching by ID, fetch that post directly (no post_type restriction for explicit ID search)
+		if ( $search_id ) {
+			$post = get_post( $search_id );
+			if ( $post && in_array( $post->post_status, [ 'publish', 'draft', 'private' ], true ) ) {
+				$results[] = [
+					'id'    => (string) $post->ID,
+					'title' => '#' . $post->ID . ': ' . $post->post_title,
+					'type'  => $post->post_type,
+				];
+			}
+		}
+
+		// 2. Search by title across all specified post types
+		$query_args = [
+			'post_type'      => $post_types,
+			'post_status'    => [ 'publish', 'draft', 'private' ],
+			's'              => $search,
+			'posts_per_page' => $per_page,
+			'orderby'        => 'ID',
+			'order'          => 'DESC',
+		];
+
+		$query = new \WP_Query( $query_args );
+
+		if ( $query->have_posts() ) {
+			foreach ( $query->posts as $post ) {
+				// Skip if already added by ID search
+				if ( $search_id && (int) $post->ID === $search_id ) {
+					continue;
+				}
+
+				$results[] = [
+					'id'    => (string) $post->ID,
+					'title' => '#' . $post->ID . ': ' . $post->post_title,
+					'type'  => $post->post_type,
+				];
+			}
+		}
+
+		wp_reset_postdata();
+
+		return new \WP_REST_Response( $results, 200 );
 	}
 }

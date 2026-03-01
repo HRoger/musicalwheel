@@ -139,7 +139,7 @@ export default function StyleTab({
                                         />
                                     </div>
 
-                                    <SectionHeading>{__('Icons', 'voxel-fse')}</SectionHeading>
+                                    <SectionHeading label={__('Icons', 'voxel-fse')} />
 
                                     <ResponsiveColorControl
                                         label={__('Icon color', 'voxel-fse')}
@@ -332,7 +332,7 @@ export default function StyleTab({
                         if (tab.name === 'normal') {
                             return (
                                 <>
-                                    <SectionHeading>{__('Timeline tabs', 'voxel-fse')}</SectionHeading>
+                                    <SectionHeading label={__('Timeline tabs', 'voxel-fse')} />
 
                                     <ResponsiveColorControl
                                         label={__('Text color', 'voxel-fse')}
@@ -377,7 +377,7 @@ export default function StyleTab({
                         if (tab.name === 'hover') {
                             return (
                                 <>
-                                    <SectionHeading>{__('Timeline tabs', 'voxel-fse')}</SectionHeading>
+                                    <SectionHeading label={__('Timeline tabs', 'voxel-fse')} />
 
                                     <ResponsiveColorControl
                                         label={__('Text color', 'voxel-fse')}

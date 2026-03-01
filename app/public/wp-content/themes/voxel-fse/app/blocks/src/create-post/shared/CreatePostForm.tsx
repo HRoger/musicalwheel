@@ -81,7 +81,6 @@ import { FieldRenderer } from '../components/FieldRenderer';
 import { renderIcon, defaultIcons } from '../utils/iconRenderer';
 import { getSiteBaseUrl } from '@shared/utils/siteUrl';
 import { useConditions } from '../hooks/useConditions';
-import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 
 /**
  * Get the Voxel AJAX URL, handling subdirectory installations
@@ -290,7 +289,8 @@ export const CreatePostForm = ({
 	// CRITICAL: Use prop first (from REST API), then fall back to wpData (from wp_localize_script)
 	// Plan C+ pattern: REST API is primary source, wpData is legacy fallback
 	const editingPostId = wpData?.postId || postId;
-	const isEditMode = !!editingPostId && editingPostId > 0;
+	// @ts-ignore -- unused but kept for future use
+	const _isEditMode = !!editingPostId && editingPostId > 0;
 	const postStatus = postStatusProp || wpData?.postStatus || null; // 'draft', 'publish', 'pending', etc.
 	const isPublishedPost = postStatus && postStatus !== 'draft';
 
@@ -346,12 +346,12 @@ export const CreatePostForm = ({
 					const fileObjects: FileObject[] = rawFileObjects.map((fileObj: unknown) => {
 						const obj = fileObj as Record<string, unknown>;
 						return {
-							source: (obj.source as 'existing' | 'new_upload') || 'existing',
-							id: obj.id as number | undefined,
-							name: (obj.name as string) || '',
-							type: (obj.type as string) || '',
+							source: (obj['source'] as 'existing' | 'new_upload') || 'existing',
+							id: obj['id'] as number | undefined,
+							name: (obj['name'] as string) || '',
+							type: (obj['type'] as string) || '',
 							// CRITICAL FIX: Use 'preview' if available, fall back to 'url'
-							preview: (obj.preview as string) || (obj.url as string) || '',
+							preview: (obj['preview'] as string) || (obj['url'] as string) || '',
 						};
 					});
 
@@ -404,7 +404,7 @@ export const CreatePostForm = ({
 		// A product field is considered "empty" if enabled is false (or missing)
 		// For required product fields, enabled must be true
 		if (field.type === 'product' && typeof value === 'object') {
-			return !value.enabled;
+			return !value['enabled'];
 		}
 
 		// Multiselect/object fields - check if object is empty or has no true values
@@ -479,7 +479,7 @@ export const CreatePostForm = ({
 				isEmpty = !subFieldValue ||
 					(subFieldValue.amount === null ||
 						subFieldValue.amount === undefined ||
-						subFieldValue.amount === '');
+						(subFieldValue.amount as any) === '');
 			}
 			// Stock validation (optional by default in many setups)
 			else if (subFieldKey === 'stock') {
@@ -496,7 +496,7 @@ export const CreatePostForm = ({
 			else {
 				isEmpty = subFieldValue === null ||
 					subFieldValue === undefined ||
-					subFieldValue === '' ||
+					(subFieldValue as any) === '' ||
 					(typeof subFieldValue === 'object' && Object.keys(subFieldValue).length === 0);
 			}
 
@@ -527,7 +527,7 @@ export const CreatePostForm = ({
 		// If this is a file field with an array of FileObjects, store actual Files in ref
 		if (isFileField && Array.isArray(value)) {
 			// Type guard: ensure each item has the FileObject structure
-			const fileObjects = value as FileObject[];
+			const fileObjects = value as unknown as FileObject[];
 
 			// Store the File objects in the ref (won't be serialized)
 			fileObjectsRef.current[fieldKey] = fileObjects;
@@ -584,7 +584,7 @@ export const CreatePostForm = ({
 
 			// Number field min/max validation
 			if (field.type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const num = typeof value === 'string' ? parseFloat(value) : value;
+				const num = (typeof value === 'string' ? parseFloat(value) : value) as number;
 				if (!isNaN(num)) {
 					if (field.props?.min !== undefined && num < field.props.min) {
 						errors.push(`Value cannot be less than ${field.props.min}`);
@@ -598,7 +598,7 @@ export const CreatePostForm = ({
 			// Texteditor/Description field minlength validation
 			if ((field.type === 'texteditor' || field.type === 'description') && value && typeof value === 'string') {
 				const minLength = field.props?.['minlength'];
-				if (minLength !== undefined && value.length < minLength) {
+				if (minLength != null && value.length < (minLength as number)) {
 					errors.push(`Value cannot be shorter than ${minLength} characters`);
 				}
 			}
@@ -660,7 +660,7 @@ export const CreatePostForm = ({
 
 			// Number field min/max validation
 			if (field.type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const num = typeof value === 'string' ? parseFloat(value) : value;
+				const num = (typeof value === 'string' ? parseFloat(value) : value) as number;
 				if (!isNaN(num)) {
 					if (field.props?.min !== undefined && num < field.props.min) {
 						errors.push(`Value cannot be less than ${field.props.min}`);
@@ -1001,6 +1001,12 @@ export const CreatePostForm = ({
 				const formDataObj = new FormData();
 				const postdataForJson: Record<string, any> = {};
 
+				// File deduplication tracking - matches Voxel's _vx_file_aliases system
+				// Evidence: voxel-create-post.beautified.js lines 4173-4221
+				// Voxel deduplicates files across FormData using JSON.stringify({name,type,size,lastModified})
+				const fileAliases: Record<string, string> = {};
+				const appendedFileKeys: Set<string> = new Set();
+
 				// Process each field in submissionData
 				Object.keys(submissionData).forEach((fieldKey) => {
 					let value = submissionData[fieldKey];
@@ -1022,14 +1028,32 @@ export const CreatePostForm = ({
 						// Get the actual File objects from the ref
 						const fileObjects = fileObjectsRef.current[fieldKey] || [];
 
+						// Determine FormData key - supports repeater nested paths
+						// Evidence: Voxel uses files[field_id::row-path][] for repeater files
+						const fileFormKey = field.repeater_id
+							? `files[${field.id}::row-${field.repeater_index}][]`
+							: `files[${field.id}][]`;
+
 						// Initialize postdata array for this field
 						postdataForJson[fieldKey] = [];
 
 						// Process each file object
 						fileObjects.forEach((fileObj) => {
 							if (fileObj.source === 'new_upload' && fileObj.file) {
-								// Add File object to FormData (Channel 2)
-								formDataObj.append(`files[${field.id}][]`, fileObj.file);
+								// Deduplication check - same file may appear in multiple fields
+								const fileSignature = JSON.stringify({
+									name: fileObj.file.name,
+									type: fileObj.file.type,
+									size: fileObj.file.size,
+									lastModified: fileObj.file.lastModified,
+								});
+
+								if (!appendedFileKeys.has(fileSignature)) {
+									// First occurrence: append to FormData
+									formDataObj.append(fileFormKey, fileObj.file);
+									appendedFileKeys.add(fileSignature);
+									fileAliases[fileSignature] = fileFormKey;
+								}
 								// Add marker to postdata (Channel 1)
 								(postdataForJson[fieldKey] as (string | number)[]).push('uploaded_file');
 							} else if (fileObj.source === 'existing' && fileObj.id) {
@@ -1042,6 +1066,11 @@ export const CreatePostForm = ({
 						postdataForJson[fieldKey] = value;
 					}
 				});
+
+				// Append file aliases for deduplication (Voxel's _vx_file_aliases system)
+				if (Object.keys(fileAliases).length > 0) {
+					formDataObj.append('_vx_file_aliases', JSON.stringify(fileAliases));
+				}
 
 				// Append JSON-stringified postdata
 				formDataObj.append('postdata', JSON.stringify(postdataForJson));
@@ -1140,9 +1169,9 @@ export const CreatePostForm = ({
 					status: result.status,
 				});
 
-				// Notify parent window (for admin metabox) - 1:1 match with Voxel
-				// Wrap in try-catch to prevent browser extension errors
-				if (window.parent !== window) {
+				// Notify parent window (for admin metabox only) - 1:1 match with Voxel
+				// Evidence: Voxel only sends postMessage when in admin iframe context
+				if (isAdminMode && window.parent !== window) {
 					try {
 						window.parent.postMessage('create-post:submitted', '*');
 					} catch (error) {
@@ -1152,9 +1181,9 @@ export const CreatePostForm = ({
 				}
 
 				// Scroll to top (matches Voxel's scrollIntoView behavior)
-				setTimeout(() => {
+				requestAnimationFrame(() => {
 					window.scrollTo({ top: 0, behavior: 'smooth' });
-				}, 100);
+				});
 
 				// DO NOT redirect automatically - Voxel shows success screen with buttons
 				if (attributes.redirectAfterSubmit && !result.edit_link && !result.view_link) {
@@ -1177,15 +1206,13 @@ export const CreatePostForm = ({
 				});
 
 				// Scroll to top to show inline error notification (works in all contexts)
-				setTimeout(() => {
+				requestAnimationFrame(() => {
 					window.scrollTo({ top: 0, behavior: 'smooth' });
-				}, 100);
+				});
 
 				// Also show Voxel.alert if available (for frontend consistency)
-				// @ts-expect-error - Window interface conflicts across files
-				if (window.Voxel?.alert) {
-					// @ts-expect-error - Window interface conflicts across files
-					window.Voxel.alert(errorMessage, 'error');
+				if ((window as any).Voxel?.alert) {
+					(window as any).Voxel.alert(errorMessage, 'error');
 				}
 			}
 		} catch (error) {
@@ -1200,15 +1227,13 @@ export const CreatePostForm = ({
 			});
 
 			// Scroll to top to show inline error notification (works in all contexts)
-			setTimeout(() => {
+			requestAnimationFrame(() => {
 				window.scrollTo({ top: 0, behavior: 'smooth' });
-			}, 100);
+			});
 
 			// Also show Voxel.alert if available (for frontend consistency)
-			// @ts-expect-error - Window interface conflicts across files
-			if (window.Voxel?.alert) {
-				// @ts-expect-error - Window interface conflicts across files
-				window.Voxel.alert(networkErrorMessage, 'error');
+			if ((window as any).Voxel?.alert) {
+				(window as any).Voxel.alert(networkErrorMessage, 'error');
 			}
 		}
 	};
@@ -1217,6 +1242,10 @@ export const CreatePostForm = ({
 	 * Handle save as draft
 	 */
 	const handleSaveDraft = async () => {
+		// Voxel pattern: Skip required field validation for drafts
+		// Evidence: voxel-create-post.beautified.js lines 4139-4143
+		// this.validateRequired = false; → allows empty required fields
+		// We skip validateForm() entirely for drafts — Voxel only validates non-required constraints
 		setSubmission({ ...submission, processing: true });
 
 		try {

@@ -20,11 +20,11 @@ import {
 	AccordionPanel,
 	BorderGroupControl,
 } from '@shared/controls';
-import type { PopupKitBlockAttributes } from '../types';
+import type { PopupKitAttributes } from '../types';
 
 interface StyleTabProps {
-	attributes: PopupKitBlockAttributes;
-	setAttributes: (attrs: Partial<PopupKitBlockAttributes>) => void;
+	attributes: PopupKitAttributes;
+	setAttributes: (attrs: Partial<PopupKitAttributes>) => void;
 }
 
 export function StyleTab({
@@ -83,7 +83,7 @@ export function StyleTab({
 							setAttributes({ pgBorder: undefined });
 						} else if (value.borderType === 'none') {
 							// For 'none', we still need to store the type so CSS can output 'border: none'
-							setAttributes({ pgBorder: { type: 'none' } });
+							setAttributes({ pgBorder: { type: 'none', width: 0, color: '' } });
 						} else {
 							// For actual border types, store all values
 							setAttributes({
@@ -198,7 +198,6 @@ export function StyleTab({
 					step={1}
 					availableUnits={['px', '%']}
 					unitAttributeName="phAvatarRadiusUnit"
-					showResetButton={true}
 				/>
 			</AccordionPanel>
 
@@ -763,7 +762,7 @@ export function StyleTab({
 								},
 							};
 							if (value.borderWidth?.top !== undefined) {
-								updates.pcCheckboxBorderWidth = parseFloat(String(value.borderWidth.top));
+								updates['pcCheckboxBorderWidth'] = parseFloat(String(value.borderWidth.top));
 							}
 							setAttributes(updates);
 						}
@@ -834,7 +833,7 @@ export function StyleTab({
 								},
 							};
 							if (value.borderWidth?.top !== undefined) {
-								updates.prRadioBorderWidth = parseFloat(String(value.borderWidth.top));
+								updates['prRadioBorderWidth'] = parseFloat(String(value.borderWidth.top));
 							}
 							setAttributes(updates);
 						}
@@ -1013,7 +1012,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pfBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pfBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1275,7 +1274,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.prRangeHandleBorderWidth = parseFloat(String(value.borderWidth.top));
+							updates['prRangeHandleBorderWidth'] = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}
@@ -1354,7 +1353,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pibBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pibBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1782,7 +1781,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.pnotUnseenBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['pnotUnseenBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1926,7 +1925,7 @@ export function StyleTab({
 												},
 											};
 											if (value.borderWidth?.top !== undefined) {
-												updates.ptextBorderWidth = parseFloat(String(value.borderWidth.top));
+												updates['ptextBorderWidth'] = parseFloat(String(value.borderWidth.top));
 											}
 											setAttributes(updates);
 										}}
@@ -1977,7 +1976,7 @@ export function StyleTab({
 							},
 						};
 						if (value.borderWidth?.top !== undefined) {
-							updates.palertBorderWidth = parseFloat(String(value.borderWidth.top));
+							updates['palertBorderWidth'] = parseFloat(String(value.borderWidth.top));
 						}
 						setAttributes(updates);
 					}}

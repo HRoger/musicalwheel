@@ -124,7 +124,7 @@ export default function Edit({ attributes, setAttributes }: EditProps): JSX.Elem
 							label: __('Advanced', 'voxel-fse'),
 							icon: '\ue916',
 							render: () => (
-								<AdvancedTab attributes={attributes} setAttributes={setAttributes} />
+								<AdvancedTab attributes={attributes as any} setAttributes={setAttributes as any} />
 							),
 						},
 						{

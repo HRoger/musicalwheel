@@ -10,7 +10,8 @@
  */
 import React from 'react';
 import { FileField } from '../fields/FileField';
-import type { VoxelField, FileObject } from '../../types';
+import type { VoxelField } from '../../types';
+import type { FileObject } from '../popup-kit';
 
 interface DeliverablesFieldProps {
 	field: VoxelField; // Sub-field configuration from product type
@@ -46,8 +47,8 @@ export const DeliverablesField: React.FC<DeliverablesFieldProps> = ({
 	return (
 		<FileField
 			field={fieldWithDefaults}
-			value={value}
-			onChange={onChange}
+			value={value as any}
+			onChange={onChange as any}
 			onBlur={() => {}}
 			icons={undefined}
 		/>

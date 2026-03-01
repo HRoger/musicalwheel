@@ -17,7 +17,10 @@
  * @package VoxelFSE
  */
 
-import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { useMemo, useCallback, useState, useRef } from 'react';
+import { FormPopup } from '@shared/popup-kit/FormPopup';
+import { InlineSvg } from '@shared/InlineSvg';
+import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import type {
 	AdvancedListAttributes,
 	AdvancedListComponentProps,
@@ -27,6 +30,7 @@ import type {
 	VxConfig,
 } from '../types';
 import { POST_DEPENDENT_ACTIONS, ACTIVE_STATE_ACTIONS } from '../types';
+import { useResolvedDynamicTexts, useResolvedDynamicIcon } from '../../../shared/utils/useResolvedDynamicText';
 
 /**
  * Share configuration from Voxel's share.js
@@ -77,48 +81,154 @@ function getShareLink(type: string, title: string, url: string): string {
 }
 
 /**
+ * Generate Google Calendar URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_google_calendar_link()
+ * See: themes/voxel/app/utils/sharer.php:161-189
+ */
+function getGoogleCalendarUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	timezone?: string;
+}): string | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const params = new URLSearchParams({
+		action: 'TEMPLATE',
+		trp: 'true',
+		text: args.title || '',
+		dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+	});
+
+	if (args.description) {
+		// Strip HTML tags like Voxel's wp_kses($args['description'], [])
+		const plainDescription = args.description.replace(/<[^>]*>/g, '');
+		params.set('details', plainDescription);
+	}
+	if (args.location) {
+		params.set('location', args.location);
+	}
+	if (args.timezone) {
+		params.set('ctz', args.timezone);
+	}
+
+	return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * Generate iCalendar (ICS) data URL
+ * Matches Voxel's \Voxel\Utils\Sharer::get_icalendar_data()
+ * See: themes/voxel/app/utils/sharer.php:191-243
+ */
+function getICalendarDataUrl(args: {
+	start: string;
+	end?: string;
+	title: string;
+	description?: string;
+	location?: string;
+	url?: string;
+}): { dataUrl: string; filename: string } | null {
+	const startDate = args.start ? new Date(args.start) : null;
+	if (!startDate || isNaN(startDate.getTime())) {
+		return null;
+	}
+
+	let endDate = args.end ? new Date(args.end) : null;
+	if (!endDate || isNaN(endDate.getTime()) || endDate < startDate) {
+		endDate = startDate;
+	}
+
+	// Format: YYYYMMDDTHHMMSS
+	const formatDate = (d: Date): string => {
+		return d.toISOString().replace(/[-:]/g, '').split('.')[0];
+	};
+
+	const start = formatDate(startDate);
+	const end = formatDate(endDate);
+	const title = (args.title || 'event').replace(/[^\w\s-]/g, '');
+	const description = (args.description || '')
+		.replace(/<[^>]*>/g, '') // Strip HTML
+		.replace(/\r\n|\r|\n/g, '\\n') // Convert newlines
+		.replace(/&nbsp;/g, '');
+	const location = (args.location || '').replace(/[^\w\s,-]/g, '');
+	const url = args.url || '';
+	const dtstamp = formatDate(new Date());
+	const uid = `${window.location.origin}/?ics_uid=${btoa(JSON.stringify([title, start, end, url])).slice(0, 20)}`;
+
+	// Build ICS content (no leading whitespace per line - ICS format requirement)
+	const icsContent = [
+		'BEGIN:VCALENDAR',
+		'VERSION:2.0',
+		'PRODID:-//hacksw/handcal//NONSGML v1.0//EN',
+		'CALSCALE:GREGORIAN',
+		'BEGIN:VEVENT',
+		`LOCATION:${location}`,
+		`DESCRIPTION:${description}`,
+		`DTSTART:${start}`,
+		`DTEND:${end}`,
+		`SUMMARY:${title}`,
+		`URL;VALUE=URI:${url}`,
+		`DTSTAMP:${dtstamp}`,
+		`UID:${uid}`,
+		'END:VEVENT',
+		'END:VCALENDAR',
+	].join('\r\n');
+
+	// Create base64 data URL (matches Voxel's base64_encode approach)
+	const dataUrl = `data:text/calendar;base64,${btoa(icsContent)}`;
+	const filename = `${title || 'event'}.ics`;
+
+	return { dataUrl, filename };
+}
+
+/**
  * Edit Steps Popup Component
- * Matches edit-post-action.php:16-50 structure
+ * Uses shared FormPopup for correct FSE editor positioning.
+ * Matches edit-post-action.php:16-50 structure.
+ *
+ * The popup header (hide-d) is rendered inside children, NOT via FormPopup's
+ * showHeader prop, because Voxel's edit-post popup header uses hide-d class
+ * (hidden on desktop, shown on mobile) — FormPopup's built-in header has
+ * different behavior.
  */
 interface EditStepsPopupProps {
 	editSteps: Array<{ key: string; label: string; link: string }>;
 	icon: IconValue | null;
-	text: string;
-	closeIcon: IconValue;
+	resolvedIconUrl?: string | null;
 	onClose: () => void;
 	isOpen: boolean;
-	targetRef: React.RefObject<HTMLElement>;
+	target: HTMLElement | null;
 }
 
-function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, targetRef }: EditStepsPopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
-
-	if (!isOpen) return null;
-
+function EditStepsPopup({ editSteps, icon, resolvedIconUrl, onClose, isOpen, target }: EditStepsPopupProps) {
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--edit-steps">
+		<FormPopup
+			isOpen={isOpen}
+			popupId="edit-steps-popup"
+			target={target}
+			showHeader={false}
+			showFooter={false}
+			onClose={onClose}
+		>
+			{/* edit-post-action.php:23-35 — hide-d: hidden on desktop, visible on mobile */}
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
-					{renderIcon(icon)}
+					{renderIcon(icon, resolvedIconUrl)}
 					<span>Edit</span>
 				</div>
 				<ul className="flexify simplify-ul">
@@ -132,11 +242,15 @@ function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, tar
 								onClose();
 							}}
 						>
-							{renderIcon(closeIcon)}
+							{/* FormPopup provides the close SVG; replicate it here for the mobile header */}
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z" fill="currentColor" />
+							</svg>
 						</a>
 					</li>
 				</ul>
 			</div>
+			{/* edit-post-action.php:36-47 */}
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll">
 					{editSteps.map((step) => (
@@ -148,46 +262,27 @@ function EditStepsPopup({ editSteps, icon, text, closeIcon, onClose, isOpen, tar
 					))}
 				</ul>
 			</div>
-		</div>
+		</FormPopup>
 	);
 }
 
 /**
  * Share Popup Component
- * Matches share-post-action.php:18-62 structure
+ * Uses shared FormPopup for correct FSE editor positioning.
+ * Matches share-post-action.php:18-62 structure.
  */
 interface SharePopupProps {
 	title: string;
 	link: string;
 	icon: IconValue | null;
-	closeIcon: IconValue;
+	resolvedIconUrl?: string | null;
 	onClose: () => void;
 	isOpen: boolean;
-	targetRef: React.RefObject<HTMLElement>;
+	target: HTMLElement | null;
 }
 
-function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }: SharePopupProps) {
-	const popupRef = useRef<HTMLDivElement>(null);
+function SharePopup({ title, link, icon, resolvedIconUrl, onClose, isOpen, target }: SharePopupProps) {
 	const [copied, setCopied] = useState(false);
-
-	// Close popup on outside click
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				popupRef.current &&
-				!popupRef.current.contains(e.target as Node) &&
-				targetRef.current &&
-				!targetRef.current.contains(e.target as Node)
-			) {
-				onClose();
-			}
-		};
-
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onClose, targetRef]);
 
 	const handleShare = async (item: ShareItem, e: React.MouseEvent) => {
 		if (item.type === 'copy') {
@@ -196,7 +291,7 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 				await navigator.clipboard.writeText(link);
 				setCopied(true);
 				setTimeout(() => setCopied(false), 2000);
-			} catch (err) {
+			} catch (_err) {
 				// Fallback for older browsers
 				const textarea = document.createElement('textarea');
 				textarea.value = link;
@@ -212,18 +307,24 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 		// For social links, let them open normally
 	};
 
-	if (!isOpen) return null;
-
 	const shareList: ShareItem[] = DEFAULT_SHARE_LIST.map((item) => ({
 		...item,
 		link: getShareLink(item.type, title, link),
 	}));
 
 	return (
-		<div ref={popupRef} className="ts-popup ts-popup--share">
+		<FormPopup
+			isOpen={isOpen}
+			popupId="share-post-popup"
+			target={target}
+			showHeader={false}
+			showFooter={false}
+			onClose={onClose}
+		>
+			{/* share-post-action.php:21-33 — hide-d: hidden on desktop, visible on mobile */}
 			<div className="ts-popup-head ts-sticky-top flexify hide-d">
 				<div className="ts-popup-name flexify">
-					{renderIcon(icon)}
+					{renderIcon(icon, resolvedIconUrl)}
 					<span>Share post</span>
 				</div>
 				<ul className="flexify simplify-ul">
@@ -237,59 +338,77 @@ function SharePopup({ title, link, icon, closeIcon, onClose, isOpen, targetRef }
 								onClose();
 							}}
 						>
-							{renderIcon(closeIcon)}
+							<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z" fill="currentColor" />
+							</svg>
 						</a>
 					</li>
 				</ul>
 			</div>
+			{/* share-post-action.php:37-58 */}
 			<div className="ts-term-dropdown ts-md-group">
 				<ul className="simplify-ul ts-term-dropdown-list min-scroll ts-social-share">
 					{shareList.map((item) => (
-						<li key={item.type} className={`ts-share-${item.type}`}>
-							<a
-								href={item.link}
-								target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
-								className="flexify"
-								rel="nofollow"
-								onClick={(e) => handleShare(item, e)}
-							>
-								<div className="ts-term-icon">
-									<span dangerouslySetInnerHTML={{ __html: item.icon }} />
-								</div>
-								<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
-							</a>
-						</li>
+						item.type === 'ui-heading' ? (
+							/* ui-heading dividers (share-post-action.php:40-46) */
+							<li key={`heading-${item.label}`} className="ts-parent-item vx-noevent">
+								<a href="#" className="flexify">
+									<span>{item.label}</span>
+								</a>
+							</li>
+						) : (
+							<li key={item.type} className={`ts-share-${item.type}`}>
+								<a
+									href={item.link}
+									target={item.type !== 'copy' && item.type !== 'email' ? '_blank' : undefined}
+									className="flexify"
+									rel="nofollow"
+									onClick={(e) => handleShare(item, e)}
+								>
+									<div className="ts-term-icon">
+										<span dangerouslySetInnerHTML={{ __html: item.icon }} />
+									</div>
+									<span>{item.type === 'copy' && copied ? 'Copied!' : item.label}</span>
+								</a>
+							</li>
+						)
 					))}
 				</ul>
 			</div>
-		</div>
+		</FormPopup>
 	);
 }
 
 /**
  * Render icon from IconValue
+ * Uses InlineSvg for SVG URLs (matching navbar/userbar pattern)
+ * so CSS fill/color variables work correctly.
+ *
+ * @param icon - The icon value
+ * @param resolvedDynamicUrl - Pre-resolved URL for dynamic icons (from useResolvedDynamicIcon)
  */
-function renderIcon(icon: IconValue | null): React.ReactNode {
+function renderIcon(icon: IconValue | null, resolvedDynamicUrl?: string | null): React.ReactNode {
 	if (!icon || !icon.value) {
 		return null;
 	}
-
-	// Handle SVG icons (inline SVG)
-	if (icon.library === 'svg' || icon.value.startsWith('<svg')) {
-		return <span dangerouslySetInnerHTML={{ __html: icon.value }} />;
+	if (icon.library === 'svg') {
+		return <InlineSvg url={icon.value} />;
 	}
-
-	// Handle Font Awesome icons
-	if (icon.library === 'fa-solid' || icon.library === 'fa-regular' || icon.library === 'fa-brands') {
-		return <i className={icon.value} />;
+	// Dynamic icon: render the resolved URL as inline SVG
+	if (icon.library === 'dynamic') {
+		if (resolvedDynamicUrl) {
+			return <InlineSvg url={resolvedDynamicUrl} />;
+		}
+		// Not yet resolved — render nothing (loading state)
+		return null;
 	}
-
-	// Handle icon class names
-	if (icon.value) {
-		return <i className={icon.value} />;
-	}
-
-	return null;
+	// Build the full CSS class for the icon.
+	// When library is 'icon', value is already the full class (e.g. "las la-eye").
+	// When library is a pack prefix (e.g. "las", "lar", "lab"), combine with value.
+	const iconClass = icon.library && icon.library !== 'icon'
+		? `${icon.library} ${icon.value}`
+		: icon.value;
+	return <i className={iconClass} aria-hidden="true" />;
 }
 
 /**
@@ -301,7 +420,7 @@ function buildListStyles(attributes: AdvancedListAttributes): React.CSSPropertie
 	if (attributes.enableCssGrid) {
 		styles.display = 'grid';
 		if (attributes.gridColumns) {
-			styles.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(0, 1fr))`;
+			styles.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(auto, 1fr))`;
 		}
 	} else {
 		if (attributes.listJustify) {
@@ -316,71 +435,9 @@ function buildListStyles(attributes: AdvancedListAttributes): React.CSSPropertie
 	return styles;
 }
 
-/**
- * Build inline styles for action item
- */
-function buildItemStyles(attributes: AdvancedListAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	if (attributes.itemJustifyContent) {
-		styles.justifyContent = attributes.itemJustifyContent;
-	}
-
-	if (attributes.itemHeight) {
-		styles.height = `${attributes.itemHeight}${attributes.itemHeightUnit || 'px'}`;
-	}
-
-	// Padding
-	const padding = attributes.itemPadding;
-	if (padding && (padding.top || padding.right || padding.bottom || padding.left)) {
-		const unit = attributes.itemPaddingUnit || 'px';
-		styles.padding = `${padding.top || 0}${unit} ${padding.right || 0}${unit} ${padding.bottom || 0}${unit} ${padding.left || 0}${unit}`;
-	}
-
-	// Border
-	if (attributes.itemBorderType && attributes.itemBorderType !== 'none') {
-		styles.borderStyle = attributes.itemBorderType;
-		if (attributes.itemBorderColor) {
-			styles.borderColor = attributes.itemBorderColor;
-		}
-		const borderWidth = attributes.itemBorderWidth;
-		if (borderWidth) {
-			const unit = attributes.itemBorderWidthUnit || 'px';
-			styles.borderWidth = `${borderWidth.top || 1}${unit} ${borderWidth.right || 1}${unit} ${borderWidth.bottom || 1}${unit} ${borderWidth.left || 1}${unit}`;
-		}
-	}
-
-	if (attributes.itemBorderRadius) {
-		styles.borderRadius = `${attributes.itemBorderRadius}${attributes.itemBorderRadiusUnit || 'px'}`;
-	}
-
-	// Colors
-	if (attributes.itemTextColor) {
-		styles.color = attributes.itemTextColor;
-	}
-
-	if (attributes.itemBackgroundColor) {
-		styles.background = attributes.itemBackgroundColor;
-	}
-
-	// Box shadow
-	const boxShadow = attributes.itemBoxShadow;
-	if (boxShadow && (boxShadow.horizontal || boxShadow.vertical || boxShadow.blur || boxShadow.spread)) {
-		styles.boxShadow = `${boxShadow.horizontal}px ${boxShadow.vertical}px ${boxShadow.blur}px ${boxShadow.spread}px ${boxShadow.color || 'rgba(0,0,0,0.1)'}`;
-	}
-
-	// Icon/text spacing
-	if (attributes.iconTextSpacing) {
-		styles.gap = `${attributes.iconTextSpacing}${attributes.iconTextSpacingUnit || 'px'}`;
-	}
-
-	// Icon on top
-	if (attributes.iconOnTop) {
-		styles.flexDirection = 'column';
-	}
-
-	return styles;
-}
+// Note: Item styles (height, justify-content, padding, border, colors, etc.) are ALL
+// handled by the CSS style generator in styles.ts via scoped <style> tags. No inline
+// styles needed on .ts-action-con. This ensures responsive breakpoints work properly.
 
 /**
  * Build inline styles for icon container
@@ -436,9 +493,11 @@ interface ActionItemProps {
 	attributes: AdvancedListAttributes;
 	context: 'editor' | 'frontend';
 	postContext?: PostContext | null;
+	templateContext?: string;
+	templatePostType?: string;
 }
 
-function ActionItemComponent({ item, index, attributes, context, postContext }: ActionItemProps) {
+function ActionItemComponent({ item, index, attributes, context, postContext, templateContext, templatePostType }: ActionItemProps) {
 	// State for popups
 	const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
 	const [isSharePopupOpen, setIsSharePopupOpen] = useState(false);
@@ -446,44 +505,85 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isPostDependent = POST_DEPENDENT_ACTIONS.includes(item.actionType);
 	const hasActiveState = ACTIVE_STATE_ACTIONS.includes(item.actionType);
 
+	// Resolve dynamic tags for editor preview
+	// Collects all text fields that might contain @tags()...@endtags() and resolves them in parallel
+	const resolveOpts = useMemo(() => ({ templateContext, templatePostType }), [templateContext, templatePostType]);
+	const dynamicTexts = useMemo(() => ({
+		text: item.text || '',
+		activeText: item.activeText || '',
+		tooltipText: item.tooltipText || '',
+		activeTooltipText: item.activeTooltipText || '',
+		cartOptsText: item.cartOptsText || '',
+		cartOptsTooltipText: item.cartOptsTooltipText || '',
+		calTitle: item.calTitle || '',
+		calDescription: item.calDescription || '',
+		calLocation: item.calLocation || '',
+		calUrl: item.calUrl || '',
+	}), [item.text, item.activeText, item.tooltipText, item.activeTooltipText,
+		item.cartOptsText, item.cartOptsTooltipText, item.calTitle, item.calDescription,
+		item.calLocation, item.calUrl]);
+	const resolved = useResolvedDynamicTexts(
+		context === 'editor' ? dynamicTexts : {},
+		resolveOpts,
+	);
+	// Use resolved values in editor, raw values on frontend (PHP handles resolution)
+	// When the API resolves to empty (no post context in template editor),
+	// fall back to showing the raw VoxelScript expression as a dimmed preview.
+	const txt = useMemo(() => {
+		if (context !== 'editor') return dynamicTexts;
+		const result = { ...resolved };
+		const rawTexts = dynamicTexts as Record<string, string>;
+		for (const key of Object.keys(result)) {
+			const raw = rawTexts[key] || '';
+			if (!result[key] && raw.includes('@tags()')) {
+				// Strip @tags()/@endtags() wrapper and show the raw expression
+				result[key] = raw.replace(/@tags\(\)/g, '').replace(/@endtags\(\)/g, '').trim();
+			}
+		}
+		return result;
+	}, [context, resolved, dynamicTexts]);
+
+	// Resolve dynamic icon tags for editor preview
+	// Each icon field (icon, activeIcon, cartOptsIcon) can have library: 'dynamic'
+	// with a @tags() wrapped VoxelScript expression that needs two-step resolution
+	const iconDynamicValue = context === 'editor' && item.icon?.library === 'dynamic'
+		? item.icon.value : undefined;
+	const activeIconDynamicValue = context === 'editor' && item.activeIcon?.library === 'dynamic'
+		? item.activeIcon.value : undefined;
+	const cartOptsIconDynamicValue = context === 'editor' && item.cartOptsIcon?.library === 'dynamic'
+		? item.cartOptsIcon.value : undefined;
+
+	const resolvedIcon = useResolvedDynamicIcon(iconDynamicValue, resolveOpts);
+	const resolvedActiveIcon = useResolvedDynamicIcon(activeIconDynamicValue, resolveOpts);
+	const resolvedCartOptsIcon = useResolvedDynamicIcon(cartOptsIconDynamicValue, resolveOpts);
+
 	// Determine if action should be rendered based on context and per-item visibility
-	// 
-	// ARCHITECTURE NOTE:
-	// Per-item visibility rules (rowVisibility, visibilityRules) are evaluated here.
-	// However, full Voxel visibility rule evaluation requires server-side context
-	// (post data, user data, etc.). For client-side:
-	// - rowVisibility='hide' with empty rules = always hide
-	// - rowVisibility='show' with empty rules = always show
-	// - Rules with conditions require server-side evaluation or dedicated API
-	// 
-	// For headless (Next.js), the raw visibility data is in vxconfig for custom evaluation.
+	//
+	// VISIBILITY ARCHITECTURE:
+	// - Editor: Always show all items (matches Voxel Elementor repeater-control.php
+	//   _voxel_should_render() which returns true in edit mode).
+	// - Frontend: render.php filters items via Visibility_Evaluator before React
+	//   hydrates. Items that fail are removed from vxconfig JSON.
 	const shouldRender = useMemo(() => {
-		// In editor, always show all items for preview
+		// Editor always shows all items (1:1 Voxel Elementor parity)
 		if (context === 'editor') {
 			return true;
 		}
 
-		// Per-item rowVisibility: Basic client-side evaluation
-		// (Full rule evaluation requires server-side Voxel context)
+		// Frontend: items with failing visibility rules were already removed by
+		// render.php. If the item is still in vxconfig, it passed evaluation.
+		// Only check simple rowVisibility toggle (no rules = direct toggle).
 		const hasVisibilityRules = item.visibilityRules && item.visibilityRules.length > 0;
-
-		if (!hasVisibilityRules) {
-			// No rules configured - rowVisibility is the simple toggle
-			// 'hide' with no rules = always hide (unusual but supported)
-			if (item.rowVisibility === 'hide') {
-				return false;
-			}
+		if (!hasVisibilityRules && item.rowVisibility === 'hide') {
+			return false;
 		}
-		// Note: When rules ARE present, they would need server-side evaluation
-		// For now, we default to showing (frontend can't evaluate dynamic rules)
-		// TODO: Implement rule evaluation API for client-side consumption
 
 		// For post-dependent actions in frontend, check if we have post context
 		if (isPostDependent && !postContext) {
 			return false;
 		}
 
-		// edit_post requires editability
+		// edit_post requires editability (frontend only)
 		if (item.actionType === 'edit_post' && postContext && !postContext.isEditable) {
 			return false;
 		}
@@ -493,59 +593,69 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 
 	// Check visibility based on permissions
 	// (Replaces PHP early returns in each action template)
+	// Runs in BOTH editor and frontend when postContext is available.
+	// In editor: postContext comes from useEditorPostContext (preview post).
+	// In frontend: postContext comes from fetchPostContext (current post).
 	const canRender = useMemo(() => {
-		if (context === 'editor') return true;
 		if (!shouldRender) return false;
+
+		// When postContext is not yet loaded, show all items (loading state)
+		if (!postContext) {
+			// In editor without postContext, show non-post-dependent actions
+			// but hide post-dependent ones that have no context to evaluate
+			if (context === 'editor' && isPostDependent) return true;
+			return true;
+		}
 
 		// delete-post-action.php:3 - is_deletable_by_current_user()
 		if (item.actionType === 'delete_post') {
-			return postContext?.permissions?.delete ?? false;
+			return postContext.permissions?.delete ?? false;
 		}
 
 		// publish-post-action.php - requires editable + unpublished status
 		if (item.actionType === 'publish_post') {
-			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'unpublished';
+			return (postContext.permissions?.publish ?? false) && postContext.status === 'unpublished';
 		}
 
 		// unpublish-post-action.php - requires editable + publish status
 		if (item.actionType === 'unpublish_post') {
-			return (postContext?.permissions?.publish ?? false) && postContext?.status === 'publish';
+			return (postContext.permissions?.publish ?? false) && postContext.status === 'publish';
 		}
 
 		// add-to-cart-action.php:16-20 - requires valid product
 		if (item.actionType === 'add_to_cart') {
-			return postContext?.product?.isEnabled ?? false;
+			return postContext.product?.isEnabled ?? false;
 		}
 
 		// show-post-on-map.php:7-11 - requires location with lat/lng
 		if (item.actionType === 'show_post_on_map') {
-			return postContext?.location?.mapLink != null;
+			return postContext.location?.mapLink != null;
 		}
 
 		// view-post-stats-action.php:3-8 - requires editable + tracking enabled
 		if (item.actionType === 'view_post_stats') {
-			return postContext?.postStatsLink != null;
+			return postContext.postStatsLink != null;
 		}
 
 		// promote-post-action.php:6-9 - requires is_promotable_by_user()
 		if (item.actionType === 'promote_post') {
-			return postContext?.promote?.isPromotable ?? false;
+			return postContext.promote?.isPromotable ?? false;
+		}
+
+		// follow-post-action.php:6-8, follow-user-action.php:6-8 - requires timeline enabled
+		if (['action_follow_post', 'action_follow'].includes(item.actionType)) {
+			if (postContext.timelineEnabled === false) return false;
 		}
 
 		// follow-user-action.php:10-12 - requires author exists
 		if (item.actionType === 'action_follow') {
-			return postContext?.authorId != null;
+			return postContext.authorId != null;
 		}
 
 		return true;
-	}, [context, shouldRender, item.actionType, postContext]);
+	}, [context, shouldRender, isPostDependent, item.actionType, postContext]);
 
-	if (!canRender) {
-		return null;
-	}
-
-	// Build item styles
-	const itemStyles = buildItemStyles(attributes);
+	// Build icon styles (per-item customIconColor requires inline styles)
 	const iconStyles = buildIconStyles(attributes);
 	const itemWidthStyle = buildItemWidthStyle(attributes);
 
@@ -554,8 +664,8 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		(iconStyles as Record<string, string>)['--ts-icon-color'] = item.customIconColor;
 	}
 
-	// Get tooltip data
-	const tooltipText = item.enableTooltip ? item.tooltipText : undefined;
+	// Get tooltip data (use resolved text in editor)
+	const tooltipText = item.enableTooltip ? txt.tooltipText : undefined;
 
 	// Determine active state for follow/save actions (follow-post-action.php:21, promote-post-action.php:12)
 	const isActive = useMemo(() => {
@@ -630,6 +740,8 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					href: item.link?.url || '#',
 					target: item.link?.isExternal ? '_blank' : undefined,
 					rel: item.link?.nofollow ? 'nofollow' : undefined,
+					// Prevent navigation in editor (Elementor preview also blocks link clicks)
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'delete_post':
@@ -642,6 +754,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					'vx-action': '', // Voxel directive (empty string = boolean attr)
 					rel: 'nofollow',
 					'data-confirm': postContext.confirmMessages?.delete || 'Are you sure?',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'publish_post':
@@ -653,6 +766,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					className: 'ts-action-con',
 					'vx-action': '',
 					rel: 'nofollow',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'unpublish_post':
@@ -664,6 +778,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					className: 'ts-action-con',
 					'vx-action': '',
 					rel: 'nofollow',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'add_to_cart':
@@ -685,10 +800,12 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						}
 					};
 				}
-				// Default to linking to the post
+				// Select options variant (add-to-cart-action.php:33-43) — links to post with cart opts icon/text
 				return {
 					tag: 'a',
 					href: postContext.postLink,
+					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'select_addition':
@@ -712,6 +829,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					href: getVoxelActionUrl('user.follow_post', { post_id: postContext.postId }),
 					rel: 'nofollow',
 					role: 'button',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'action_follow':
@@ -722,6 +840,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					href: getVoxelActionUrl('user.follow_user', { user_id: postContext.authorId || 0 }),
 					rel: 'nofollow',
 					role: 'button',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 				};
 
 			case 'show_post_on_map':
@@ -733,6 +852,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						rel: 'nofollow',
 						className: 'ts-action-con ts-action-show-on-map',
 						'data-post-id': postContext.postId,
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -744,6 +864,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 						tag: 'a',
 						href: postContext.postStatsLink,
 						rel: 'nofollow',
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -751,11 +872,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			case 'promote_post':
 				// promote-post-action.php:12-40 - Promote or view active promotion
 				if (postContext?.promote?.isPromotable) {
+					const editorBlock = context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {};
 					if (postContext.promote.isActive && postContext.promote.orderLink) {
 						return {
 							tag: 'a',
 							href: postContext.promote.orderLink,
 							rel: 'nofollow',
+							...editorBlock,
 						};
 					} else if (postContext.promote.promoteLink) {
 						return {
@@ -763,6 +886,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 							href: postContext.promote.promoteLink,
 							rel: 'nofollow',
 							role: 'button',
+							...editorBlock,
 						};
 					}
 				}
@@ -783,7 +907,13 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			case 'go_back':
 				return {
 					tag: 'a',
-					href: 'javascript:history.back();',
+					href: '#',
+					onClick: (e: React.MouseEvent) => {
+						e.preventDefault();
+						if (context !== 'editor') {
+							window.history.back();
+						}
+					},
 				};
 
 			case 'scroll_to_section':
@@ -821,6 +951,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					return {
 						tag: 'a',
 						href: postContext.editLink,
+						...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
 					};
 				}
 				return { tag: 'div' };
@@ -838,6 +969,55 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 					},
 				};
 
+			case 'action_gcal': {
+				// add-to-gcal-action.php:7-23 - Google Calendar link
+				// Uses \Voxel\Utils\Sharer::get_google_calendar_link()
+				const gcalUrl = getGoogleCalendarUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					// Note: timezone would need to come from post context if available
+				});
+				if (!gcalUrl) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: gcalUrl,
+					target: '_blank',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
+				};
+			}
+
+			case 'action_ical': {
+				// add-to-ical-action.php:6-24 - iCalendar download link
+				// Uses \Voxel\Utils\Sharer::get_icalendar_data()
+				const icalData = getICalendarDataUrl({
+					start: item.calStartDate,
+					end: item.calEndDate,
+					title: item.calTitle,
+					description: item.calDescription,
+					location: item.calLocation,
+					url: item.calUrl,
+				});
+				if (!icalData) {
+					return { tag: 'div' };
+				}
+				return {
+					tag: 'a',
+					href: icalData.dataUrl,
+					download: icalData.filename,
+					role: 'button',
+					rel: 'nofollow',
+					className: 'ts-action-con',
+					...(context === 'editor' ? { onClick: (e: React.MouseEvent) => e.preventDefault() } : {}),
+				};
+			}
+
 			default:
 				return { tag: 'div' };
 		}
@@ -846,35 +1026,53 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const actionProps = getActionProps();
 	const Tag = actionProps.tag as keyof JSX.IntrinsicElements;
 
+	// All hooks called above — safe to return null now
+	if (!canRender) {
+		return null;
+	}
+
+	// Cart "Select Options" variant (add-to-cart-action.php:33-43):
+	// Uses cartOptsIcon/cartOptsText instead of normal icon/text
+	const isCartSelectOptions = item.actionType === 'add_to_cart' && postContext?.product && !postContext.product.oneClick;
+
 	// Render content based on active state
+	// Voxel ALWAYS renders both .ts-initial and .ts-reveal spans for active-state actions
+	// (follow-post-action.php:33-40, follow-user-action.php:33-40, select-addon.php:15-20)
+	// CSS handles visibility via .active class on parent — no inline display:none needed
 	const renderContent = () => {
-		if (hasActiveState && isActive && item.activeText) {
-			// Active state content
+		if (hasActiveState) {
 			return (
 				<>
-					<span className="ts-initial" style={{ display: 'none' }}>
+					<span className="ts-initial">
 						<div className="ts-action-icon" style={iconStyles}>
-							{renderIcon(item.icon)}
+							{renderIcon(item.icon, resolvedIcon.url)}
 						</div>
-						{item.text}
+						{txt.text}
 					</span>
 					<span className="ts-reveal">
 						<div className="ts-action-icon" style={iconStyles}>
-							{renderIcon(item.activeIcon)}
+							{renderIcon(item.activeIcon, resolvedActiveIcon.url)}
 						</div>
-						{item.activeText}
+						{txt.activeText}
 					</span>
 				</>
 			);
 		}
 
-		// Normal state content
+		// Cart "Select Options" variant uses different icon/text (add-to-cart-action.php:39-41)
+		const displayIcon = isCartSelectOptions ? (item.cartOptsIcon || item.icon) : item.icon;
+		const displayText = isCartSelectOptions ? txt.cartOptsText : txt.text;
+		// Pick the matching resolved URL for the displayed icon
+		const displayResolvedUrl = isCartSelectOptions
+			? (resolvedCartOptsIcon.url || resolvedIcon.url)
+			: resolvedIcon.url;
+
 		return (
 			<>
 				<div className="ts-action-icon" style={iconStyles}>
-					{renderIcon(item.icon)}
+					{renderIcon(displayIcon, displayResolvedUrl)}
 				</div>
-				{item.text}
+				{displayText}
 			</>
 		);
 	};
@@ -896,19 +1094,36 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 		isIntermediate ? 'intermediate' : '',
 	].filter(Boolean).join(' ');
 
-	// Tooltip attributes (follow-post-action.php:25-30)
-	// For follow actions, use tooltip-inactive and tooltip-active attributes
-	// For other actions, use data-tooltip
+	// Tooltip attributes
+	// Different actions use different tooltip attribute patterns:
+	// - Follow actions (follow-post-action.php:25-30): tooltip-inactive, tooltip-active
+	// - Select addition (select-addon.php:6-12): data-tooltip, data-tooltip-default, data-tooltip-active
+	// - Other actions: data-tooltip
 	const isFollowAction = ['action_follow_post', 'action_follow'].includes(item.actionType);
+	const isSelectAddition = item.actionType === 'select_addition';
 	const tooltipAttrs: Record<string, string | undefined> = {};
 
 	if (isFollowAction) {
 		// Use tooltip-inactive for normal state and tooltip-active for active state
-		if (item.enableTooltip && item.tooltipText) {
-			tooltipAttrs['tooltip-inactive'] = item.tooltipText;
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['tooltip-inactive'] = txt.tooltipText;
 		}
-		if (item.activeEnableTooltip && item.activeTooltipText) {
-			tooltipAttrs['tooltip-active'] = item.activeTooltipText;
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['tooltip-active'] = txt.activeTooltipText;
+		}
+	} else if (isSelectAddition) {
+		// select-addon.php:6-12 - Uses data-tooltip + data-tooltip-default for normal, data-tooltip-active for active
+		if (item.enableTooltip && txt.tooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.tooltipText;
+			tooltipAttrs['data-tooltip-default'] = txt.tooltipText;
+		}
+		if (item.activeEnableTooltip && txt.activeTooltipText) {
+			tooltipAttrs['data-tooltip-active'] = txt.activeTooltipText;
+		}
+	} else if (isCartSelectOptions) {
+		// Cart select options variant (add-to-cart-action.php:35-36) uses its own tooltip
+		if (item.cartOptsEnableTooltip && txt.cartOptsTooltipText) {
+			tooltipAttrs['data-tooltip'] = txt.cartOptsTooltipText;
 		}
 	} else {
 		// Regular data-tooltip for non-follow actions
@@ -922,6 +1137,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 	const isShareAction = item.actionType === 'share_post';
 	const needsWrapper = isEditAction || isShareAction;
 
+	const TagEl = Tag as any;
 	if (needsWrapper) {
 		// Wrapper class varies by action type (edit-post-action.php:17, share-post-action.php:10)
 		const wrapperClass = isShareAction
@@ -935,25 +1151,23 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 				{...tooltipAttrs}
 			>
 				<div className={wrapperClass}>
-					<Tag
+					<TagEl
 						{...actionProps}
 						className={actionClasses}
-						style={itemStyles}
-						aria-label={item.text || tooltipText}
+						aria-label={txt.text || tooltipText}
 						role={Tag === 'a' ? undefined : 'button'}
 					>
 						{renderContent()}
-					</Tag>
+					</TagEl>
 					{/* Edit steps popup (edit-post-action.php:22-49) */}
 					{isEditAction && postContext && (
 						<EditStepsPopup
 							editSteps={postContext.editSteps}
 							icon={item.icon}
-							text={item.text}
-							closeIcon={attributes.closeIcon}
+							resolvedIconUrl={resolvedIcon.url}
 							isOpen={isEditPopupOpen}
 							onClose={() => setIsEditPopupOpen(false)}
-							targetRef={targetRef as React.RefObject<HTMLElement>}
+							target={targetRef.current}
 						/>
 					)}
 					{/* Share popup (share-post-action.php:18-62) */}
@@ -962,10 +1176,10 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 							title={postContext.postTitle}
 							link={postContext.postLink}
 							icon={item.icon}
-							closeIcon={attributes.closeIcon}
+							resolvedIconUrl={resolvedIcon.url}
 							isOpen={isSharePopupOpen}
 							onClose={() => setIsSharePopupOpen(false)}
-							targetRef={targetRef as React.RefObject<HTMLElement>}
+							target={targetRef.current}
 						/>
 					)}
 				</div>
@@ -979,15 +1193,14 @@ function ActionItemComponent({ item, index, attributes, context, postContext }: 
 			style={itemWidthStyle}
 			{...tooltipAttrs}
 		>
-			<Tag
+			<TagEl
 				{...actionProps}
 				className={actionClasses}
-				style={itemStyles}
-				aria-label={item.text || tooltipText}
+				aria-label={txt.text || tooltipText}
 				role={Tag === 'a' ? undefined : 'button'}
 			>
 				{renderContent()}
-			</Tag>
+			</TagEl>
 		</li>
 	);
 }
@@ -999,6 +1212,8 @@ export function AdvancedListComponent({
 	attributes,
 	context,
 	postContext,
+	templateContext,
+	templatePostType,
 }: AdvancedListComponentProps) {
 	const listStyles = buildListStyles(attributes);
 
@@ -1088,6 +1303,10 @@ export function AdvancedListComponent({
 
 	// Empty state
 	if (!attributes.items || attributes.items.length === 0) {
+		if (context === 'frontend') {
+			// Frontend: render directly into the outer <ul> container (no wrapper)
+			return null;
+		}
 		return (
 			<ul className="flexify simplify-ul ts-advanced-list voxel-fse-empty">
 				{/* Re-render vxconfig for DevTools visibility */}
@@ -1097,21 +1316,39 @@ export function AdvancedListComponent({
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
 				<li className="flexify ts-action">
-					<div
-						className="ts-action-con"
-						style={{
-							padding: '16px 24px',
-							color: '#666',
-							background: '#f5f5f5',
-							borderRadius: '8px',
-						}}
-					>
-						{context === 'editor'
-							? 'Click "+ Add Item" in the sidebar to add actions'
-							: 'No actions configured'}
-					</div>
+					<EmptyPlaceholder />
 				</li>
 			</ul>
+		);
+	}
+
+	// Frontend context: render items directly into the outer <ul> container.
+	// The outer <ul> already has WordPress block classes + Voxel classes (flexify,
+	// simplify-ul, ts-advanced-list) and list layout styles (gap, grid, justify-content)
+	// applied by frontend.tsx. Wrapping in another <ul> would create invalid nested
+	// <ul><ul> and break the layout. Voxel parent uses a single flat <ul>.
+	if (context === 'frontend') {
+		return (
+			<>
+				{/* Re-render vxconfig for DevTools visibility (Plan C+ requirement) */}
+				<script
+					type="text/json"
+					className="vxconfig"
+					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+				/>
+				{attributes.items.map((item, index) => (
+					<ActionItemComponent
+						key={item.id || index}
+						item={item}
+						index={index}
+						attributes={attributes}
+						context={context}
+						postContext={postContext}
+						templateContext={templateContext}
+						templatePostType={templatePostType}
+					/>
+				))}
+			</>
 		);
 	}
 
@@ -1131,6 +1368,8 @@ export function AdvancedListComponent({
 					attributes={attributes}
 					context={context}
 					postContext={postContext}
+					templateContext={templateContext}
+					templatePostType={templatePostType}
 				/>
 			))}
 		</ul>

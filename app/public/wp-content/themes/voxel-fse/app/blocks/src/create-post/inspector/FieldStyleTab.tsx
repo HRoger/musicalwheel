@@ -28,7 +28,7 @@
  */
 
 import { __ } from '@wordpress/i18n';
-import { ToggleControl, SelectControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
 import {
 	AccordionPanelGroup,
 	AccordionPanel,
@@ -159,7 +159,7 @@ export function FieldStyleTab({
 
 								<BorderGroupControl
 									label={__('Border Type', 'voxel-fse')}
-									value={attributes.inputBorder}
+									value={attributes.inputBorder as any}
 									onChange={(value) => setAttributes({ inputBorder: value })}
 									hideRadius={true}
 									/>
@@ -428,7 +428,7 @@ export function FieldStyleTab({
 
 								<BorderGroupControl
 									label={__('Border Type', 'voxel-fse')}
-									value={attributes.popupBtnBorder}
+									value={attributes.popupBtnBorder as any}
 									onChange={(value) => setAttributes({ popupBtnBorder: value })}
 									hideRadius={true}
 									/>
@@ -487,7 +487,7 @@ export function FieldStyleTab({
 								<ToggleControl
 									label={__('Hide chevron', 'voxel-fse')}
 									checked={attributes.popupBtnChevronHide === true}
-									onChange={(value) => setAttributes({ popupBtnChevronHide: value })}
+									onChange={(value: any) => setAttributes({ popupBtnChevronHide: value })}
 								/>
 
 								<ResponsiveColorControl
@@ -775,7 +775,7 @@ export function FieldStyleTab({
 
 				<BorderGroupControl
 					label={__('Border Type', 'voxel-fse')}
-					value={attributes.checkboxBorder}
+					value={attributes.checkboxBorder as any}
 					onChange={(value) => setAttributes({ checkboxBorder: value })}
 					hideRadius={true}
 					/>
@@ -828,7 +828,7 @@ export function FieldStyleTab({
 
 				<BorderGroupControl
 					label={__('Border Type', 'voxel-fse')}
-					value={attributes.radioBorder}
+					value={attributes.radioBorder as any}
 					onChange={(value) => setAttributes({ radioBorder: value })}
 					hideRadius={true}
 					/>
@@ -925,7 +925,7 @@ export function FieldStyleTab({
 
 								<BorderGroupControl
 									label={__('Border Type', 'voxel-fse')}
-									value={attributes.stepperBtnBorder}
+									value={attributes.stepperBtnBorder as any}
 									onChange={(value) => setAttributes({ stepperBtnBorder: value })}
 									hideRadius={true}
 									/>
@@ -981,7 +981,7 @@ export function FieldStyleTab({
 
 				<BorderGroupControl
 					label={__('Border Type', 'voxel-fse')}
-					value={attributes.repeaterBorder}
+					value={attributes.repeaterBorder as any}
 					onChange={(value) => setAttributes({ repeaterBorder: value })}
 					hideRadius={true}
 					/>
@@ -1098,7 +1098,7 @@ export function FieldStyleTab({
 
 								<BorderGroupControl
 									label={__('Border Type', 'voxel-fse')}
-									value={attributes.repeaterIconBtnBorder}
+									value={attributes.repeaterIconBtnBorder as any}
 									onChange={(value) => setAttributes({ repeaterIconBtnBorder: value })}
 									hideRadius={true}
 									/>
@@ -1207,7 +1207,7 @@ export function FieldStyleTab({
 
 				<BorderGroupControl
 					label={__('Border Type', 'voxel-fse')}
-					value={attributes.calBorder}
+					value={attributes.calBorder as any}
 					onChange={(value) => setAttributes({ calBorder: value })}
 					hideRadius={true}
 					/>
@@ -1386,7 +1386,7 @@ export function FieldStyleTab({
 
 								<BorderGroupControl
 									label={__('Border Type', 'voxel-fse')}
-									value={attributes.calBtnBorder}
+									value={attributes.calBtnBorder as any}
 									onChange={(value) => setAttributes({ calBtnBorder: value })}
 									hideRadius={true}
 									/>

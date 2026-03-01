@@ -33,6 +33,8 @@ interface ProductPriceComponentProps {
 	error: string | null;
 	context: 'editor' | 'frontend';
 	postId?: number;
+	/** SSR price HTML from render.php — rendered on first paint to avoid FOUC */
+	ssrPriceHtml?: string;
 }
 
 /**
@@ -65,6 +67,28 @@ function buildStyles(attributes: ProductPriceAttributes): Record<string, string>
 	// Out of stock color
 	if (attributes.outOfStockColor) {
 		styles['--vx-nostock-color'] = attributes.outOfStockColor;
+	}
+
+	// Strikethrough text typography (Elementor: price_typo_discount)
+	if (attributes.strikethroughTypography) {
+		if (attributes.strikethroughTypography.fontSize) {
+			styles['--vx-strike-font-size'] = attributes.strikethroughTypography.fontSize;
+		}
+		if (attributes.strikethroughTypography.fontWeight) {
+			styles['--vx-strike-font-weight'] = attributes.strikethroughTypography.fontWeight;
+		}
+		if (attributes.strikethroughTypography.fontFamily) {
+			styles['--vx-strike-font-family'] = attributes.strikethroughTypography.fontFamily;
+		}
+		if (attributes.strikethroughTypography.lineHeight) {
+			styles['--vx-strike-line-height'] = attributes.strikethroughTypography.lineHeight;
+		}
+		if (attributes.strikethroughTypography.letterSpacing) {
+			styles['--vx-strike-letter-spacing'] = attributes.strikethroughTypography.letterSpacing;
+		}
+		if (attributes.strikethroughTypography.textTransform) {
+			styles['--vx-strike-text-transform'] = attributes.strikethroughTypography.textTransform;
+		}
 	}
 
 	// Typography
@@ -107,6 +131,7 @@ function buildVxConfig(
 		strikethroughWidthUnit: attributes.strikethroughWidthUnit,
 		outOfStockColor: attributes.outOfStockColor,
 		typography: attributes.typography,
+		strikethroughTypography: attributes.strikethroughTypography,
 		postId,
 	};
 }
@@ -118,6 +143,7 @@ export default function ProductPriceComponent({
 	error,
 	context,
 	postId,
+	ssrPriceHtml,
 }: ProductPriceComponentProps) {
 	// Build CSS variables from attributes
 	const containerStyles = useMemo(
@@ -145,22 +171,20 @@ export default function ProductPriceComponent({
 		.filter(Boolean)
 		.join(' ');
 
-	// Loading state
+	// Frontend context: render content directly (no wrapper div).
+	// The outer wrapper already exists from save.tsx / render.php output.
+	// Adding another .vxfse-product-price div would create duplicates
+	// that get re-hydrated by voxel:markup-update.
+	if (context === 'frontend') {
+		return <FrontendContent priceData={priceData} isLoading={isLoading} error={error} vxconfig={vxconfig} ssrPriceHtml={ssrPriceHtml} />;
+	}
+
+	// Editor context: render with wrapper div for proper styling
+	// Loading state — render nothing (invisible) to avoid grey-box FOUC.
+	// The block wrapper in edit.tsx already occupies space, so nothing → price
+	// is less jarring than EmptyPlaceholder → price.
 	if (isLoading) {
-		return (
-			<div
-				className={`vxfse-product-price ${visibilityClasses}`.trim()}
-				style={containerStyles as React.CSSProperties}
-			>
-				{/* Vxconfig for frontend re-renders */}
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-				/>
-				<EmptyPlaceholder />
-			</div>
-		);
+		return null;
 	}
 
 	// Error state
@@ -199,43 +223,8 @@ export default function ProductPriceComponent({
 
 	// Product not available (out of stock / unavailable / no product configured)
 	if (!priceData.isAvailable) {
-		// "No product configured" - show EmptyPlaceholder in editor, nothing in frontend
 		const isNoProductConfigured = priceData.errorMessage === 'No product configured';
 
-		if (isNoProductConfigured) {
-			// Frontend: render nothing (empty wrapper for hydration)
-			if (context === 'frontend') {
-				return (
-					<div
-						className={`vxfse-product-price ${visibilityClasses}`.trim()}
-						style={containerStyles as React.CSSProperties}
-					>
-						<script
-							type="text/json"
-							className="vxconfig"
-							dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-						/>
-					</div>
-				);
-			}
-
-			// Editor: show EmptyPlaceholder
-			return (
-				<div
-					className={`vxfse-product-price ${visibilityClasses}`.trim()}
-					style={containerStyles as React.CSSProperties}
-				>
-					<script
-						type="text/json"
-						className="vxconfig"
-						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-					/>
-					<EmptyPlaceholder />
-				</div>
-			);
-		}
-
-		// Out of stock / Unavailable - show error message
 		return (
 			<div
 				className={`vxfse-product-price ${visibilityClasses}`.trim()}
@@ -246,10 +235,13 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{/* Voxel HTML: <span class="vx-price no-stock">Out of stock</span> */}
-				<span className="vx-price no-stock">
-					{priceData.errorMessage || 'Unavailable'}
-				</span>
+				{isNoProductConfigured ? (
+					<EmptyPlaceholder />
+				) : (
+					<span className="vx-price no-stock">
+						{priceData.errorMessage || 'Unavailable'}
+					</span>
+				)}
 			</div>
 		);
 	}
@@ -266,12 +258,10 @@ export default function ProductPriceComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 				/>
-				{/* Voxel HTML: <span class="vx-price">$discount_price / suffix</span> */}
 				<span className="vx-price">
 					{priceData.formattedDiscountPrice}
 					{priceData.suffix}
 				</span>
-				{/* Voxel HTML: <span class="vx-price"><s>$regular_price / suffix</s></span> */}
 				<span className="vx-price">
 					<s>
 						{priceData.formattedRegularPrice}
@@ -293,11 +283,100 @@ export default function ProductPriceComponent({
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 			/>
-			{/* Voxel HTML: <span class="vx-price">$regular_price / suffix</span> */}
 			<span className="vx-price">
 				{priceData.formattedRegularPrice}
 				{priceData.suffix}
 			</span>
 		</div>
+	);
+}
+
+/**
+ * Frontend-only content renderer.
+ * Renders content without a wrapper div since the outer container
+ * (from save.tsx) already provides the .vxfse-product-price wrapper.
+ */
+function FrontendContent({
+	priceData,
+	isLoading,
+	error,
+	vxconfig,
+	ssrPriceHtml,
+}: {
+	priceData: ProductPriceData | null;
+	isLoading: boolean;
+	error: string | null;
+	vxconfig: ProductPriceVxConfig;
+	ssrPriceHtml?: string;
+}) {
+	const vxconfigScript = (
+		<script
+			type="text/json"
+			className="vxconfig"
+			dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
+		/>
+	);
+
+	// SSR path: render.php already rendered the price spans.
+	// Render the captured SSR HTML directly to avoid a blank flash while
+	// React initialises. This is the first-paint state — no fetch needed.
+	if (ssrPriceHtml) {
+		return (
+			<>
+				{vxconfigScript}
+				{/* eslint-disable-next-line react/no-danger */}
+				<span
+					className="vx-ssr-price"
+					style={{ display: 'contents' }}
+					dangerouslySetInnerHTML={{ __html: ssrPriceHtml }}
+				/>
+			</>
+		);
+	}
+
+	if (isLoading || error || !priceData) {
+		return vxconfigScript;
+	}
+
+	if (!priceData.isAvailable) {
+		if (priceData.errorMessage === 'No product configured') {
+			return vxconfigScript;
+		}
+		return (
+			<>
+				{vxconfigScript}
+				<span className="vx-price no-stock">
+					{priceData.errorMessage || 'Unavailable'}
+				</span>
+			</>
+		);
+	}
+
+	if (priceData.hasDiscount) {
+		return (
+			<>
+				{vxconfigScript}
+				<span className="vx-price">
+					{priceData.formattedDiscountPrice}
+					{priceData.suffix}
+				</span>
+				<span className="vx-price">
+					<s>
+						{priceData.formattedRegularPrice}
+						{priceData.suffix}
+					</s>
+				</span>
+			</>
+		);
+	}
+
+	return (
+		<>
+			{vxconfigScript}
+			<span className="vx-price">
+				{priceData.formattedRegularPrice}
+				{priceData.suffix}
+			</span>
+		</>
 	);
 }

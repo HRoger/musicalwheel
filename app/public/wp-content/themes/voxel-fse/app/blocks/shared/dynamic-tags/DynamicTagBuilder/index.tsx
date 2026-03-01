@@ -7,24 +7,118 @@
  * @package MusicalWheel
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TagTree } from './TagTree';
 import { TagSearch } from './TagSearch';
 import { CodeEditor } from './CodeEditor';
 import { ModifierEditor } from './ModifierEditor';
-import { DynamicTagBuilderProps, DataGroup, Modifier, AppliedModifier } from './types';
+import { DynamicTagBuilderProps, DataGroup, Modifier, AppliedModifier, TagExport } from './types';
 import apiFetch from '@wordpress/api-fetch';
+import { useTemplateContext, useTemplatePostType } from '@shared/utils/useTemplateContext';
 import './styles.scss';
 import './line-awesome-icons.css';
+
+/**
+ * Build a fully-resolved tree by embedding children from the flat cache into TagExports.
+ * Mirrors Voxel's approach where all data is pre-loaded in memory.
+ *
+ * @param exports  Flat list of tag exports at this level
+ * @param groupType  The group type (e.g., 'post', 'site')
+ * @param parentPath  The parent path prefix for cache key lookup (e.g., 'post.amenities')
+ * @param allChildren  The flat children cache (keys like 'post', 'post:post.amenities', etc.)
+ * @param depth  Current recursion depth (prevent infinite loops)
+ */
+function resolveChildren(
+	exports: TagExport[],
+	groupType: string,
+	parentPath: string | null,
+	allChildren: Record<string, any[]>,
+	depth: number = 0,
+): TagExport[] {
+	if (depth > 5) return exports; // Safety limit matching PHP's max_depth
+
+	return exports.map(tag => {
+		if (!tag.hasChildren && !(tag.children && tag.children.length > 0)) {
+			return tag;
+		}
+
+		// Build cache key for this tag's children
+		const tagPath = parentPath ? `${parentPath}.${tag.key}` : `${groupType}.${tag.key}`;
+		const cacheKey = `${groupType}:${tagPath}`;
+
+		// Look up children from the flat cache
+		const cachedChildren = allChildren[cacheKey];
+		const resolvedChildren = cachedChildren && cachedChildren.length > 0
+			? resolveChildren(cachedChildren, groupType, tagPath, allChildren, depth + 1)
+			: (tag.children || []);
+
+		return {
+			...tag,
+			children: resolvedChildren,
+			isLoaded: resolvedChildren.length > 0,
+		};
+	});
+}
+
+/**
+ * Recursively filter exports, keeping only leaf nodes that match the query.
+ * Mirrors Voxel's _searchProperty() behavior exactly:
+ *
+ * - Leaf nodes: kept only if their label/key matches the query
+ * - Object/group nodes: kept only if they have matching descendants,
+ *   and only with those matching descendants (not all children)
+ * - Parent label matching does NOT cause all children to show
+ *
+ * @param exports  The exports at this tree level
+ * @param query    Lowercase search query
+ * @param labelChain  Accumulated label path for matching (Voxel matches "Post Amenities Icon")
+ */
+function filterExports(exports: TagExport[], query: string, labelChain: string[] = []): TagExport[] {
+	const result: TagExport[] = [];
+
+	for (const tag of exports) {
+		const currentChain = [...labelChain, tag.label];
+
+		if (tag.children && tag.children.length > 0) {
+			// Object/group node: only include if descendants match
+			const filteredChildren = filterExports(tag.children, query, currentChain);
+			if (filteredChildren.length > 0) {
+				result.push({
+					...tag,
+					children: filteredChildren,
+				});
+			}
+		} else {
+			// Leaf node: check label, key, AND label chain (Voxel behavior)
+			const leafMatches =
+				tag.label.toLowerCase().includes(query) ||
+				tag.key.toLowerCase().includes(query) ||
+				currentChain.join(' ').toLowerCase().includes(query);
+
+			if (leafMatches) {
+				result.push(tag);
+			}
+		}
+	}
+
+	return result;
+}
 
 export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 	value,
 	onChange,
 	label = 'Dynamic Content',
-	context = 'post',
+	context: contextProp = 'post',
 	onClose,
 	autoOpen = false,
 }) => {
+	// Auto-detect context from template slug (term_card → 'term', user_card → 'user')
+	// Only override when the prop is the default 'post' (i.e., no explicit context was passed)
+	const detectedContext = useTemplateContext();
+	const context = contextProp === 'post' ? detectedContext : contextProp;
+	// Extract post type from template slug (e.g., "voxel-place-card" → "place")
+	// Used to fetch post-type-specific custom fields from Voxel's Exporter
+	const postType = useTemplatePostType();
 	const [isOpen, setIsOpen] = useState(autoOpen);
 	const [content, setContent] = useState(value);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -36,23 +130,97 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [childrenCache, setChildrenCache] = useState<Record<string, any[]>>({});
+	const [childrenReady, setChildrenReady] = useState(false);
 	const insertTagRef = React.useRef<((tag: string) => void) | null>(null);
 
+	/**
+	 * Build filtered groups for search (mirrors Voxel's getGroups() + _searchProperty()).
+	 *
+	 * When the user types a search query, we:
+	 * 1. Gather ALL children from both the React childrenCache and the global store's groupChildren
+	 * 2. Resolve the full nested tree from the flat cache
+	 * 3. Recursively filter it, keeping only matching items with hierarchy preserved
+	 *
+	 * This produces pre-resolved DataGroup[] with children embedded — TagTree renders them
+	 * without any lazy loading.
+	 */
+	const filteredGroups = useMemo((): DataGroup[] => {
+		if (!searchQuery.trim()) return [];
+		// Don't filter until eager loading is complete (prevents flash of wrong results)
+		if (!childrenReady) return [];
+
+		const query = searchQuery.trim().toLowerCase();
+		const globalStore = (window as any).VoxelFSE_Dynamic_Data_Store;
+
+		// Merge all known children: React cache + global store
+		const allChildren: Record<string, any[]> = {};
+		if (globalStore?.groupChildren) {
+			Object.assign(allChildren, globalStore.groupChildren);
+		}
+		// React childrenCache may have fresher data (e.g., post-type-specific fields)
+		Object.assign(allChildren, childrenCache);
+
+		const result: DataGroup[] = [];
+
+		for (const group of dataGroups) {
+			// Get top-level exports from cache
+			const topLevelExports: TagExport[] = allChildren[group.type] || group.exports || [];
+			if (topLevelExports.length === 0) continue;
+
+			// Build fully nested tree from flat cache
+			const resolvedExports = resolveChildren(topLevelExports, group.type, null, allChildren, 0);
+
+			// Filter the resolved tree recursively (pass group label for chain matching)
+			const filtered = filterExports(resolvedExports, query, [group.label]);
+
+			if (filtered.length === 0) continue;
+
+			result.push({
+				...group,
+				exports: filtered,
+				isLoaded: true,
+			});
+		}
+
+		return result;
+	}, [searchQuery, dataGroups, childrenCache, childrenReady]);
+
 	// Load data from pre-loaded global store (Voxel pattern for <100ms performance)
+	// Re-load when context or post type changes (e.g., template type detected after initial mount)
 	useEffect(() => {
-		if (isOpen && dataGroups.length === 0) {
+		if (isOpen) {
 			loadDataFromGlobalStore();
 		}
-	}, [isOpen]);
+	}, [isOpen, context, postType]);
 
 	const loadDataFromGlobalStore = () => {
+		// Clear cache when reloading (post type may have changed)
+		setChildrenCache({});
+		setChildrenReady(false);
+
 		// Read from window.VoxelFSE_Dynamic_Data_Store (pre-loaded on page load)
 		const globalStore = (window as any).VoxelFSE_Dynamic_Data_Store;
 
-		if (globalStore && globalStore.groups) {
-			// Instant load - no API call needed!
-			setDataGroups(globalStore.groups || []);
+		// When postType is detected, always fetch from API because the global store
+		// was pre-loaded at admin_head time without post type context (it only has
+		// generic fields, not post-type-specific custom fields like Gallery, Amenities, etc.)
+		if (postType) {
+			// Use modifiers from global store if available (they don't depend on post type)
+			if (globalStore?.modifiers) {
+				setAvailableModifiers(globalStore.modifiers);
+			}
+			fetchDataGroupsFromAPI();
+			return;
+		}
+
+		if (globalStore) {
+			// Use context-specific groups if available, fall back to default groups
+			const contextGroups = globalStore.groupsByContext?.[context];
+			const groups = contextGroups || globalStore.groups || [];
+			setDataGroups(groups);
 			setAvailableModifiers(globalStore.modifiers || []);
+			// Global store has all children pre-loaded — ready immediately
+			setChildrenReady(true);
 		} else {
 			// Fallback to API if global store not available
 			fetchDataGroupsFromAPI();
@@ -67,8 +235,9 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 		setError(null);
 
 		try {
+			const postTypeParam = postType ? `&post_type=${postType}` : '';
 			const groups = await apiFetch<DataGroup[]>({
-				path: `/voxel-fse/v1/dynamic-data/groups?context=${context}`,
+				path: `/voxel-fse/v1/dynamic-data/groups?context=${context}${postTypeParam}`,
 			});
 			setDataGroups(groups || []);
 
@@ -76,11 +245,75 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 				path: '/voxel-fse/v1/dynamic-data/modifiers',
 			});
 			setAvailableModifiers(modifiers || []);
+
+			// Show the tree immediately — don't block on eager loading
+			setIsLoading(false);
+
+			// Eagerly load all children in the background so search can find
+			// post-type-specific fields (e.g., "Type of rental", "Amenities").
+			// childrenReady gate prevents search from running with incomplete data.
+			if (postType && groups) {
+				eagerLoadGroupChildren(groups).then(() => {
+					setChildrenReady(true);
+				});
+			} else {
+				setChildrenReady(true);
+			}
 		} catch (err) {
 			setError('Failed to load data groups. Please try again.');
 			console.error('Failed to fetch data groups:', err);
-		} finally {
 			setIsLoading(false);
+		}
+	};
+
+	/**
+	 * Eagerly load all children for groups (recursively up to 3 levels).
+	 * Runs in the background after initial load so search can work on full data.
+	 */
+	const eagerLoadGroupChildren = async (groups: DataGroup[]) => {
+		const postTypeParam = postType ? `&post_type=${postType}` : '';
+		const newCache: Record<string, any[]> = {};
+
+		const loadRecursive = async (groupType: string, parent: string | null, depth: number) => {
+			if (depth > 3) return; // Don't go too deep
+
+			const cacheKey = parent ? `${groupType}:${parent}` : groupType;
+
+			// Skip if already in cache
+			if (newCache[cacheKey] || childrenCache[cacheKey]) return;
+
+			const path = parent
+				? `/voxel-fse/v1/dynamic-data/groups?group=${groupType}&parent=${parent}${postTypeParam}`
+				: `/voxel-fse/v1/dynamic-data/groups?group=${groupType}${postTypeParam}`;
+
+			try {
+				const children = await apiFetch<any[]>({ path });
+				if (!children || children.length === 0) return;
+				newCache[cacheKey] = children;
+
+				// Recursively load children that have hasChildren flag
+				const childPromises: Promise<void>[] = [];
+				for (const child of children) {
+					if (child.hasChildren && child.key) {
+						const nextParent = parent
+							? `${parent}.${child.key}`
+							: `${groupType}.${child.key}`;
+						childPromises.push(loadRecursive(groupType, nextParent, depth + 1));
+					}
+				}
+				await Promise.all(childPromises);
+			} catch {
+				// Silently skip failures in background loading
+			}
+		};
+
+		// Load children for all groups in parallel
+		const promises = groups.map(g => loadRecursive(g.type, null, 0));
+		await Promise.all(promises);
+
+		// Batch update the cache with all fetched data
+		if (Object.keys(newCache).length > 0) {
+			setChildrenCache(prev => ({ ...prev, ...newCache }));
 		}
 	};
 
@@ -98,8 +331,11 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 		}
 
 		// Check global store for pre-loaded children (instant for ALL levels!)
+		// Skip global store for "post" group when postType is set, because the store
+		// was pre-loaded without post type context (missing custom fields)
 		const globalStore = (window as any).VoxelFSE_Dynamic_Data_Store;
-		if (globalStore?.groupChildren?.[cacheKey]) {
+		const isPostGroup = groupType === 'post' || (parent && parent.startsWith('post.'));
+		if (globalStore?.groupChildren?.[cacheKey] && !(postType && isPostGroup)) {
 			console.log(`[fetchGroupChildren] Loading children from global store for ${cacheKey} (instant!)`);
 			const children = globalStore.groupChildren[cacheKey];
 
@@ -131,9 +367,10 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 		console.log(`[fetchGroupChildren] Fetching children from API for ${cacheKey}...`);
 
 		try {
+			const postTypeParam = postType ? `&post_type=${postType}` : '';
 			const path = parent
-				? `/voxel-fse/v1/dynamic-data/groups?group=${groupType}&parent=${parent}`
-				: `/voxel-fse/v1/dynamic-data/groups?group=${groupType}`;
+				? `/voxel-fse/v1/dynamic-data/groups?group=${groupType}&parent=${parent}${postTypeParam}`
+				: `/voxel-fse/v1/dynamic-data/groups?group=${groupType}${postTypeParam}`;
 
 			const children = await apiFetch<any[]>({ path });
 
@@ -218,8 +455,12 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 					modifiers.push({ key, args });
 				}
 
-				// Format breadcrumb
-				const breadcrumb = `${group.charAt(0).toUpperCase() + group.slice(1)} / ${property.charAt(0).toUpperCase() + property.slice(1)}`;
+				// Format breadcrumb — strip colon prefix from aliases (e.g., ":image" → "Image")
+				const formatLabel = (str: string) => {
+					const clean = str.startsWith(':') ? str.slice(1) : str;
+					return clean.charAt(0).toUpperCase() + clean.slice(1).replace(/_/g, ' ');
+				};
+				const breadcrumb = `${formatLabel(group)} / ${formatLabel(property)}`;
 
 				return {
 					group,
@@ -399,7 +640,7 @@ export const DynamicTagBuilder: React.FC<DynamicTagBuilderProps> = ({
 								onChange={setSearchQuery}
 							/>
 							<TagTree
-								groups={dataGroups}
+								groups={searchQuery.trim() ? filteredGroups : dataGroups}
 								searchQuery={searchQuery}
 								onSelectTag={handleSelectTag}
 								onLoadChildren={fetchGroupChildren}

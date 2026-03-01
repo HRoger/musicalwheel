@@ -21,28 +21,13 @@ import type {
 	PriceGroup,
 	PlanConfig,
 	PriceData,
-	IconValue,
+	PackageData,
 } from '../types';
 import { defaultIconValue, defaultPlanConfig } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
 
-/**
- * Declare global types for Voxel
- */
-declare global {
-	interface Window {
-		jQuery?: JQueryStatic;
-		Voxel?: {
-			alert: (message: string, type: 'error' | 'success' | 'info') => void;
-		};
-		Voxel_Config?: {
-			l10n: {
-				ajaxError: string;
-			};
-		};
-	}
-}
+// Use (window as any) to access Voxel and Voxel_Config to avoid type conflicts
 
 /**
  * Handle plan button click - matches Voxel listing-plans-widget.js exactly
@@ -77,7 +62,7 @@ function handlePlanClick(
 	const href = buttonElement.href;
 
 	// Use jQuery for AJAX request to match Voxel's pattern
-	const jQuery = window.jQuery;
+	const jQuery = (window as any).jQuery;
 	if (!jQuery) {
 		console.error('[ListingPlans] jQuery not available');
 		planContainer.classList.remove('vx-pending');
@@ -122,11 +107,11 @@ function handlePlanClick(
 			// Show error using Voxel alert system
 			const errorMessage =
 				response.message ||
-				window.Voxel_Config?.l10n?.ajaxError ||
+				(window as any).Voxel_Config?.l10n?.ajaxError ||
 				'An error occurred';
 
-			if (window.Voxel?.alert) {
-				window.Voxel.alert(errorMessage, 'error');
+			if ((window as any).Voxel?.alert) {
+				(window as any).Voxel.alert(errorMessage, 'error');
 			} else {
 				console.error('[ListingPlans] Error:', errorMessage);
 			}
@@ -167,6 +152,9 @@ interface PlanCardProps {
 	apiData: ListingPlansApiResponse | null;
 	context: 'editor' | 'frontend';
 	arrowIconElement: React.ReactNode;
+	planConfig?: PlanConfig;
+	packageData?: PackageData;
+	isCurrentPlan?: boolean;
 }
 
 function PlanCard({
@@ -177,18 +165,41 @@ function PlanCard({
 	apiData,
 	context,
 	arrowIconElement,
+	planConfig,
+	packageData,
+	isCurrentPlan,
 }: PlanCardProps): JSX.Element {
 	const planContainerRef = useRef<HTMLDivElement>(null);
 
-	// Determine plan state classes
+	const isFeatured = planConfig?.featured === true;
+	const featuredText = planConfig?.featuredText || '';
+
+	// Evidence: listing-plans-widget.php:17
+	// plan-purchase-disabled: already_purchased && no available package
+	const isPurchaseDisabled =
+		price.alreadyPurchased && !packageData;
+
+	// Determine plan state classes — matches Voxel template line 17
 	const planClasses = [
 		'ts-plan-container',
 		!isActiveGroup ? 'hidden' : '',
+		isFeatured ? 'plan-featured' : '',
+		isPurchaseDisabled ? 'plan-purchase-disabled' : '',
 	]
 		.filter(Boolean)
 		.join(' ');
 
-	// Determine button state and text
+	/**
+	 * Determine button state and text
+	 *
+	 * Evidence: listing-plans-widget.php:65-95
+	 * Priority order:
+	 * 1. Not logged in → Buy/Pick plan (ts-btn-2)
+	 * 2. Switch process + current plan → "Current plan" (ts-btn-1, vx-disabled)
+	 * 3. Has available package → "Use available plan" (ts-btn-1, use-available-plan)
+	 * 4. Already purchased (no package) → "Not available" (ts-btn-1, cross icon)
+	 * 5. Default → Buy/Pick plan (ts-btn-2)
+	 */
 	const buttonInfo = (() => {
 		if (!apiData?.isLoggedIn) {
 			return {
@@ -197,22 +208,68 @@ function PlanCard({
 					: __('Buy plan', 'voxel-fse'),
 				className: 'ts-btn ts-btn-2 ts-btn-large vx-pick-plan',
 				showArrow: true,
+				showCrossIcon: false,
+				disabled: false,
+				href: price.link || '#',
 			};
 		}
 
+		// Switch process + current plan
+		if (isCurrentPlan) {
+			return {
+				text: __('Current plan', 'voxel-fse'),
+				className: 'ts-btn ts-btn-1 ts-btn-large vx-disabled',
+				showArrow: false,
+				showCrossIcon: false,
+				disabled: true,
+				href: 'javascript:void(0)',
+			};
+		}
+
+		// Has available package
+		if (packageData) {
+			const linkWithPackage = price.link
+				? `${price.link}${price.link.includes('?') ? '&' : '?'}package_id=${packageData.packageId}`
+				: '#';
+			return {
+				text: __('Use available plan', 'voxel-fse'),
+				className: 'ts-btn ts-btn-1 ts-btn-large vx-pick-plan use-available-plan',
+				showArrow: true,
+				showCrossIcon: false,
+				disabled: false,
+				href: linkWithPackage,
+			};
+		}
+
+		// Already purchased (no available package)
+		if (price.alreadyPurchased) {
+			return {
+				text: __('Not available', 'voxel-fse'),
+				className: 'ts-btn ts-btn-1 ts-btn-large vx-pick-plan',
+				showArrow: false,
+				showCrossIcon: true,
+				disabled: false,
+				href: price.link || '#',
+			};
+		}
+
+		// Default: Buy/Pick plan
 		return {
 			text: price.isFree
 				? __('Pick plan', 'voxel-fse')
 				: __('Buy plan', 'voxel-fse'),
 			className: 'ts-btn ts-btn-2 ts-btn-large vx-pick-plan',
 			showArrow: true,
+			showCrossIcon: false,
+			disabled: false,
+			href: price.link || '#',
 		};
 	})();
 
 	// Click handler - only active on frontend
 	const handleClick = useCallback(
 		(e: React.MouseEvent<HTMLAnchorElement>) => {
-			if (context === 'editor') {
+			if (context === 'editor' || buttonInfo.disabled) {
 				e.preventDefault();
 				return;
 			}
@@ -220,7 +277,7 @@ function PlanCard({
 			// Frontend: use the full AJAX flow
 			handlePlanClick(e, planContainerRef);
 		},
-		[context]
+		[context, buttonInfo.disabled]
 	);
 
 	return (
@@ -230,6 +287,13 @@ function PlanCard({
 			className={planClasses}
 			data-group={groupId}
 		>
+			{/* Featured badge — Evidence: listing-plans-widget.php:18-20 */}
+			{isFeatured && featuredText && (
+				<span className="ts-plan-featured-text">
+					{featuredText}
+				</span>
+			)}
+
 			{/* Plan Body */}
 			<div className="ts-plan-body">
 				{/* Plan Details */}
@@ -321,15 +385,25 @@ function PlanCard({
 				{/* Plan Footer */}
 				<div className="ts-plan-footer">
 					<a
-						href={price.link || '#'}
+						href={buttonInfo.href}
 						className={buttonInfo.className}
 						rel="nofollow"
 						data-redirect={attributes.directPurchaseRedirect}
 						onClick={handleClick}
 					>
+						{buttonInfo.showCrossIcon && renderIcon(
+							defaultIconValue,
+							VoxelIcons.crossCircle
+						)}
 						{buttonInfo.text}
 						{buttonInfo.showArrow && arrowIconElement}
 					</a>
+					{/* Package usage dialog — Evidence: listing-plans-widget.php:75-78 */}
+					{packageData && (
+						<div className="vx-dialog-content min-scroll">
+							{__('You have used', 'voxel-fse')} {packageData.used} {__('out of', 'voxel-fse')} {packageData.total} {__('allowed submissions', 'voxel-fse')}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
@@ -369,6 +443,7 @@ export default function ListingPlansComponent({
 		priceGroups: attributes.priceGroups ?? [],
 		planConfigs: attributes.planConfigs ?? {},
 		arrowIcon: attributes.arrowIcon ?? defaultIconValue,
+		directPurchaseRedirect: attributes.directPurchaseRedirect ?? 'order',
 		style: {
 			plansColumns: attributes.plansColumns ?? 3,
 			plansColumns_tablet: attributes.plansColumns_tablet,
@@ -389,18 +464,9 @@ export default function ListingPlansComponent({
 		VoxelIcons.chevronRightSmall
 	);
 
-	// Loading state
+	// Loading state — return null to avoid FOUC (grey box → content).
 	if (isLoading) {
-		return (
-			<>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				<EmptyPlaceholder />
-			</>
-		);
+		return null;
 	}
 
 	// Error state
@@ -412,7 +478,7 @@ export default function ListingPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -426,7 +492,7 @@ export default function ListingPlansComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
@@ -499,18 +565,29 @@ export default function ListingPlansComponent({
 					const groupPrices = getPricesForGroup(group);
 					const isActiveGroup = group.id === currentGroupId;
 
-					return groupPrices.map((price) => (
-						<PlanCard
-							key={`${group.id}-${price.key}`}
-							price={price}
-							groupId={group.id}
-							isActiveGroup={isActiveGroup}
-							attributes={attributes}
-							apiData={apiData}
-							context={context}
-							arrowIconElement={arrowIconElement}
-						/>
-					));
+					return groupPrices.map((price) => {
+						const planConfig = attributes.planConfigs[price.planKey];
+						const packageData = apiData?.packagesByPlan?.[price.planKey];
+						const isCurrentPlan =
+							apiData?.process === 'switch' &&
+							apiData?.currentPlanKey === price.planKey;
+
+						return (
+							<PlanCard
+								key={`${group.id}-${price.key}`}
+								price={price}
+								groupId={group.id}
+								isActiveGroup={isActiveGroup}
+								attributes={attributes}
+								apiData={apiData}
+								context={context}
+								arrowIconElement={arrowIconElement}
+								planConfig={planConfig}
+								packageData={packageData}
+								isCurrentPlan={isCurrentPlan}
+							/>
+						);
+					});
 				})}
 			</div>
 		</>

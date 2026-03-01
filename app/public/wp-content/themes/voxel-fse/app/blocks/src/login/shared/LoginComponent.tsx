@@ -298,7 +298,8 @@ function conditionsPass(
 /**
  * Format date to YYYY-MM-DD
  */
-function dateFormatYmd(date: Date): string {
+// @ts-ignore -- unused but kept for future use
+function _dateFormatYmd(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');
 	const day = String(date.getDate()).padStart(2, '0');
@@ -603,7 +604,7 @@ export default function LoginComponent({
 							}
 						} else {
 							// Need to confirm account
-							setScreen('login_confirm_account' as AuthScreen);
+							setScreen('login_confirm_account');
 						}
 					} else {
 						showAlert(response.message || getL10n('ajaxError', 'An error occurred'), 'error');
@@ -1394,7 +1395,7 @@ export default function LoginComponent({
 							className="ts-btn ts-google-btn ts-btn-large ts-btn-1"
 							onClick={(e) => context === 'editor' && e.preventDefault()}
 						>
-							{renderIcon(attributes.googleIcon)}
+							{renderIcon(attributes.googleIcon, 'google')}
 							{__('Sign in with Google', 'voxel-fse')}
 						</a>
 					</div>
@@ -1411,7 +1412,7 @@ export default function LoginComponent({
 				{/* Username Field */}
 				<div className="ts-form-group">
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.usernameIcon)}
+						{renderIcon(attributes.usernameIcon, 'user')}
 						<input
 							className="ts-filter autofocus"
 							type="text"
@@ -1427,7 +1428,7 @@ export default function LoginComponent({
 				{/* Password Field */}
 				<div className="ts-form-group ts-password-field">
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.passwordIcon)}
+						{renderIcon(attributes.passwordIcon, 'lock')}
 						<input
 							className="ts-filter autofocus"
 							type={login.showPassword ? 'text' : 'password'}
@@ -1442,7 +1443,7 @@ export default function LoginComponent({
 							className={`view-password ${login.showPassword ? 'active' : ''}`}
 							onClick={() => setLogin((prev) => ({ ...prev, showPassword: !prev.showPassword }))}
 						>
-							{renderIcon(attributes.eyeIcon)}
+							{renderIcon(attributes.eyeIcon, 'eye')}
 						</div>
 					</div>
 				</div>
@@ -1470,7 +1471,7 @@ export default function LoginComponent({
 						className={`ts-btn ts-btn-2 ts-btn-large ${pending ? 'vx-pending' : ''}`}
 						disabled={context === 'editor' || pending}
 					>
-						{renderIcon(attributes.usernameIcon)}
+						{renderIcon(attributes.usernameIcon, 'user')}
 						{__('Log in', 'voxel-fse')}
 					</button>
 				</div>
@@ -1508,7 +1509,7 @@ export default function LoginComponent({
 								setScreen('register');
 							}}
 						>
-							{renderIcon(attributes.signUpIcon)}
+							{renderIcon(attributes.signUpIcon, 'user')}
 							{__('Sign up', 'voxel-fse')}
 						</a>
 					</div>
@@ -1574,7 +1575,7 @@ export default function LoginComponent({
 										className="ts-btn ts-google-btn ts-btn-large ts-btn-1"
 										onClick={(e) => context === 'editor' && e.preventDefault()}
 									>
-										{renderIcon(attributes.googleIcon)}
+										{renderIcon(attributes.googleIcon, 'google')}
 										{__('Sign in with Google', 'voxel-fse')}
 									</a>
 								</div>
@@ -1652,7 +1653,7 @@ export default function LoginComponent({
 									className={`ts-btn ts-btn-2 ts-btn-large ${pending ? 'vx-pending' : ''}`}
 									disabled={context === 'editor' || pending}
 								>
-									{renderIcon(attributes.usernameIcon)}
+									{renderIcon(attributes.usernameIcon, 'user')}
 									{__('Sign up', 'voxel-fse')}
 								</button>
 							</div>
@@ -1702,7 +1703,7 @@ export default function LoginComponent({
 							)}
 						</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.usernameIcon)}
+							{renderIcon(attributes.usernameIcon, 'user')}
 							<input
 								className="ts-filter"
 								type="text"
@@ -1736,7 +1737,7 @@ export default function LoginComponent({
 							)}
 						</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.emailIcon)}
+							{renderIcon(attributes.emailIcon, 'envelope')}
 							<input
 								className="ts-filter"
 								type="email"
@@ -1771,7 +1772,7 @@ export default function LoginComponent({
 							)}
 						</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.passwordIcon)}
+							{renderIcon(attributes.passwordIcon, 'lock')}
 							<input
 								className="ts-filter"
 								type={register.showPassword ? 'text' : 'password'}
@@ -1792,7 +1793,7 @@ export default function LoginComponent({
 									setRegister((prev) => ({ ...prev, showPassword: !prev.showPassword }))
 								}
 							>
-								{renderIcon(attributes.eyeIcon)}
+								{renderIcon(attributes.eyeIcon, 'eye')}
 							</div>
 						</div>
 					</div>
@@ -1846,7 +1847,7 @@ export default function LoginComponent({
 						{!field.required && <span className="is-required">{__('Optional', 'voxel-fse')}</span>}
 					</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.phoneIcon)}
+						{renderIcon(attributes.phoneIcon, 'phone')}
 						<input
 							className="ts-filter"
 							type="tel"
@@ -1874,7 +1875,7 @@ export default function LoginComponent({
 						{!field.required && <span className="is-required">{__('Optional', 'voxel-fse')}</span>}
 					</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.linkIcon)}
+						{renderIcon(attributes.linkIcon, 'link')}
 						<input
 							className="ts-filter"
 							type="url"
@@ -1902,7 +1903,7 @@ export default function LoginComponent({
 						{!field.required && <span className="is-required">{__('Optional', 'voxel-fse')}</span>}
 					</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.emailIcon)}
+						{renderIcon(attributes.emailIcon, 'envelope')}
 						<input
 							className="ts-filter"
 							type="email"
@@ -2005,7 +2006,7 @@ export default function LoginComponent({
 		if (field.type === 'date') {
 			const dateValue = (fieldValue as DateValue) || { date: null, time: null };
 			const displayValue = dateValue.date ? dateFormat(new Date(dateValue.date + 'T00:00:00')) : '';
-			const enableTimepicker = field.props?.enable_timepicker as boolean;
+			const enableTimepicker = field.props?.['enable_timepicker'] as boolean;
 
 			return (
 				<div key={field.key} className="ts-form-group ts-date-field">
@@ -2024,7 +2025,7 @@ export default function LoginComponent({
 					<div className="ts-filter ts-popup-target" tabIndex={0}>
 						<div className="ts-filter-text">
 							<div className="ts-input-icon flexify">
-								{renderIcon(attributes.calendarIcon)}
+								{renderIcon(attributes.calendarIcon, 'calendar')}
 								<input
 									className="ts-filter"
 									type="date"
@@ -2086,11 +2087,11 @@ export default function LoginComponent({
 		// Taxonomy field - Hierarchical term selection with search
 		// Reference: voxel-login.beautified.js lines 486-678
 		if (field.type === 'taxonomy') {
-			const terms = (field.props?.terms || []) as TaxonomyTerm[];
-			const selected = (field.props?.selected || {}) as Record<string, TaxonomyTerm>;
+			const terms = (field.props?.['terms'] || []) as TaxonomyTerm[];
+			const selected = (field.props?.['selected'] || {}) as Record<string, TaxonomyTerm>;
 			const selectedValues = (fieldValue as string[] | null) || Object.keys(selected);
-			const multiple = field.props?.multiple as boolean;
-			const displayAs = field.props?.display_as as string;
+			const multiple = field.props?.['multiple'] as boolean;
+			const displayAs = field.props?.['display_as'] as string;
 			const [taxonomySearch, setTaxonomySearch] = useState('');
 			const [taxonomyOpen, setTaxonomyOpen] = useState(false);
 
@@ -2170,7 +2171,7 @@ export default function LoginComponent({
 								}}
 								style={{ paddingLeft: `${depth * 16 + 12}px` }}
 							>
-								{renderIcon(attributes.taxonomyIcon)}
+								{renderIcon(attributes.taxonomyIcon, 'info')}
 								<span>{term.label}</span>
 								{selectedValues.includes(term.slug) && (
 									<span className="ts-term-checkmark">
@@ -2220,7 +2221,7 @@ export default function LoginComponent({
 						tabIndex={0}
 					>
 						<div className="ts-filter-text">
-							{renderIcon(attributes.taxonomyIcon)}
+							{renderIcon(attributes.taxonomyIcon, 'info')}
 							<span className={getDisplayValue() ? '' : 'ts-placeholder'}>
 								{getDisplayValue() || field.placeholder || __('Select...', 'voxel-fse')}
 							</span>
@@ -2284,8 +2285,8 @@ export default function LoginComponent({
 		// Reference: voxel-login.beautified.js lines 683-877
 		if (['file', 'image', 'profile-avatar'].includes(field.type)) {
 			const files = (fieldValue as FileValue[]) || [];
-			const maxCount = (field.props?.maxCount as number) || 1;
-			const allowedTypes = (field.props?.allowedTypes as string[]) || [];
+			const maxCount = (field.props?.['maxCount'] as number) || 1;
+			const allowedTypes = (field.props?.['allowedTypes'] as string[]) || [];
 			const accepts = allowedTypes.join(', ');
 			const [dragActive, setDragActive] = useState(false);
 
@@ -2386,7 +2387,7 @@ export default function LoginComponent({
 							onDrop={handleDrop}
 						>
 							<div className="ts-upload-area">
-								{renderIcon(attributes.uploadIcon)}
+								{renderIcon(attributes.uploadIcon, 'upload')}
 								<span>{__('Drag files here or', 'voxel-fse')}</span>
 								<label className="ts-upload-btn ts-btn ts-btn-1">
 									<input
@@ -2418,9 +2419,11 @@ export default function LoginComponent({
 		// Select field - Single-select dropdown
 		// Reference: voxel-login.beautified.js lines 882-932
 		if (field.type === 'select') {
-			const choices = (field.props?.choices || []) as FieldChoice[];
+			const choices = (field.props?.['choices'] || []) as FieldChoice[];
+			// @ts-ignore -- unused but kept for future use
 			const currentValue = fieldValue as string | null;
-			const selectedChoice = choices.find((c) => c.value === currentValue);
+			// @ts-ignore -- unused but kept for future use
+			const _selectedChoice = choices.find((c) => c.value === currentValue);
 
 			return (
 				<div key={field.key} className="ts-form-group ts-select-field">
@@ -2462,10 +2465,10 @@ export default function LoginComponent({
 		// Multiselect field - Multi-select with search
 		// Reference: voxel-login.beautified.js lines 937-1021
 		if (field.type === 'multiselect') {
-			const choices = (field.props?.choices || []) as FieldChoice[];
-			const selected = (field.props?.selected || {}) as Record<string, FieldChoice>;
+			const choices = (field.props?.['choices'] || []) as FieldChoice[];
+			const selected = (field.props?.['selected'] || {}) as Record<string, FieldChoice>;
 			const selectedValues = (fieldValue as string[] | null) || Object.keys(selected);
-			const displayAs = field.props?.display_as as string;
+			const displayAs = field.props?.['display_as'] as string;
 			const [multiselectSearch, setMultiselectSearch] = useState('');
 			const [multiselectOpen, setMultiselectOpen] = useState(false);
 
@@ -2663,7 +2666,7 @@ export default function LoginComponent({
 						</div>
 					</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.emailIcon)}
+						{renderIcon(attributes.emailIcon, 'envelope')}
 						<input
 							className="ts-filter autofocus"
 							type="text"
@@ -2715,7 +2718,7 @@ export default function LoginComponent({
 				<div className="ts-form-group">
 					<label>{__('Your email', 'voxel-fse')}</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.emailIcon)}
+						{renderIcon(attributes.emailIcon, 'envelope')}
 						<input
 							className="ts-filter autofocus"
 							type="email"
@@ -2733,7 +2736,7 @@ export default function LoginComponent({
 						className={`ts-btn ts-btn-2 ts-btn-large ${pending ? 'vx-pending' : ''}`}
 						disabled={context === 'editor' || pending}
 					>
-						{renderIcon(attributes.emailIcon)}
+						{renderIcon(attributes.emailIcon, 'envelope')}
 						{__('Reset password', 'voxel-fse')}
 					</button>
 				</div>
@@ -2748,7 +2751,7 @@ export default function LoginComponent({
 							setScreen('login');
 						}}
 					>
-						{renderIcon(attributes.leftChevronIcon)}
+						{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 						{__('Go back', 'voxel-fse')}
 					</a>
 				</div>
@@ -2766,7 +2769,7 @@ export default function LoginComponent({
 				<div className="ts-form-group">
 					<label>{__('Confirmation code', 'voxel-fse')}</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.emailIcon)}
+						{renderIcon(attributes.emailIcon, 'envelope')}
 						<input
 							className="ts-filter autofocus"
 							type="text"
@@ -2803,7 +2806,7 @@ export default function LoginComponent({
 				<div className="ts-form-group ts-password-field">
 					<label>{__('New password', 'voxel-fse')}</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.passwordIcon)}
+						{renderIcon(attributes.passwordIcon, 'lock')}
 						<input
 							className="ts-filter autofocus"
 							type="password"
@@ -2817,7 +2820,7 @@ export default function LoginComponent({
 				<div className="ts-form-group ts-password-field">
 					<label>{__('Confirm password', 'voxel-fse')}</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.passwordIcon)}
+						{renderIcon(attributes.passwordIcon, 'lock')}
 						<input
 							className="ts-filter"
 							type="password"
@@ -2845,7 +2848,7 @@ export default function LoginComponent({
 	const renderWelcomeScreen = () => (
 		<div className="login-section">
 			<div className="ts-welcome-message ts-form-group">
-				{renderIcon(attributes.welcomeIcon)}
+				{renderIcon(attributes.welcomeIcon, 'happy')}
 				<h2>{getScreenTitle('welcome', attributes)}</h2>
 			</div>
 			<div className="ts-form-group">
@@ -2854,7 +2857,7 @@ export default function LoginComponent({
 					className="ts-btn ts-btn-2 ts-btn-large"
 					onClick={(e) => context === 'editor' && e.preventDefault()}
 				>
-					{renderIcon(attributes.usernameIcon)}
+					{renderIcon(attributes.usernameIcon, 'user')}
 					{__('Complete profile', 'voxel-fse')}
 				</a>
 			</div>
@@ -2882,7 +2885,7 @@ export default function LoginComponent({
 						setScreen('security_update_email');
 					}}
 				>
-					{renderIcon(attributes.emailIcon)}
+					{renderIcon(attributes.emailIcon, 'envelope')}
 					{__('Update email address', 'voxel-fse')}
 				</a>
 			</div>
@@ -2895,7 +2898,7 @@ export default function LoginComponent({
 						setScreen('security_update_password');
 					}}
 				>
-					{renderIcon(attributes.passwordIcon)}
+					{renderIcon(attributes.passwordIcon, 'lock')}
 					{__('Update password', 'voxel-fse')}
 				</a>
 			</div>
@@ -2912,7 +2915,7 @@ export default function LoginComponent({
 						}
 					}}
 				>
-					{renderIcon(attributes.shieldIcon)}
+					{renderIcon(attributes.shieldIcon, 'shield')}
 					{__('Authenticator', 'voxel-fse')}
 				</a>
 			</div>
@@ -2925,7 +2928,7 @@ export default function LoginComponent({
 						setScreen('security_privacy');
 					}}
 				>
-					{renderIcon(attributes.privacyIcon)}
+					{renderIcon(attributes.privacyIcon, 'privacy')}
 					{__('Privacy', 'voxel-fse')}
 				</a>
 			</div>
@@ -2935,7 +2938,7 @@ export default function LoginComponent({
 					className="ts-btn ts-btn-1 ts-btn-large"
 					onClick={(e) => context === 'editor' && e.preventDefault()}
 				>
-					{renderIcon(attributes.logoutIcon)}
+					{renderIcon(attributes.logoutIcon, 'logout')}
 					{__('Log out', 'voxel-fse')}
 				</a>
 			</div>
@@ -2960,7 +2963,7 @@ export default function LoginComponent({
 								setScreen('security');
 							}}
 						>
-							{renderIcon(attributes.leftChevronIcon)}
+							{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 							{__('Go back', 'voxel-fse')}
 						</a>
 					</div>
@@ -2979,7 +2982,7 @@ export default function LoginComponent({
 					<div className="ts-form-group">
 						<label>{__('Current password', 'voxel-fse')}</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.passwordIcon)}
+							{renderIcon(attributes.passwordIcon, 'lock')}
 							<input
 								className="ts-filter"
 								type="password"
@@ -2993,7 +2996,7 @@ export default function LoginComponent({
 					<div className="ts-form-group">
 						<label>{__('New password', 'voxel-fse')}</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.passwordIcon)}
+							{renderIcon(attributes.passwordIcon, 'lock')}
 							<input
 								className="ts-filter"
 								type="password"
@@ -3007,7 +3010,7 @@ export default function LoginComponent({
 					<div className="ts-form-group">
 						<label>{__('Confirm new password', 'voxel-fse')}</label>
 						<div className="ts-input-icon flexify">
-							{renderIcon(attributes.passwordIcon)}
+							{renderIcon(attributes.passwordIcon, 'lock')}
 							<input
 								className="ts-filter"
 								type="password"
@@ -3038,7 +3041,7 @@ export default function LoginComponent({
 								setScreen('security');
 							}}
 						>
-							{renderIcon(attributes.leftChevronIcon)}
+							{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 							{__('Go back', 'voxel-fse')}
 						</a>
 					</div>
@@ -3061,7 +3064,7 @@ export default function LoginComponent({
 						<div className="ts-form-group">
 							<label>{__('New email address', 'voxel-fse')}</label>
 							<div className="ts-input-icon flexify">
-								{renderIcon(attributes.emailIcon)}
+								{renderIcon(attributes.emailIcon, 'envelope')}
 								<input
 									className="ts-filter"
 									type="email"
@@ -3088,7 +3091,7 @@ export default function LoginComponent({
 						<div className="ts-form-group">
 							<label>{__('Verification code', 'voxel-fse')}</label>
 							<div className="ts-input-icon flexify">
-								{renderIcon(attributes.emailIcon)}
+								{renderIcon(attributes.emailIcon, 'envelope')}
 								<input
 									className="ts-filter"
 									type="text"
@@ -3128,7 +3131,7 @@ export default function LoginComponent({
 							setScreen('security');
 						}}
 					>
-						{renderIcon(attributes.leftChevronIcon)}
+						{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 						{__('Go back', 'voxel-fse')}
 					</a>
 				</div>
@@ -3156,7 +3159,7 @@ export default function LoginComponent({
 				<div className="ts-form-group">
 					<label>{__('Verification code', 'voxel-fse')}</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.shieldIcon)}
+						{renderIcon(attributes.shieldIcon, 'shield')}
 						<input
 							className="ts-filter"
 							type="text"
@@ -3188,7 +3191,7 @@ export default function LoginComponent({
 							setScreen('security');
 						}}
 					>
-						{renderIcon(attributes.leftChevronIcon)}
+						{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 						{__('Go back', 'voxel-fse')}
 					</a>
 				</div>
@@ -3220,7 +3223,7 @@ export default function LoginComponent({
 					className="ts-btn ts-btn-1 ts-btn-large"
 					onClick={copyBackupCodes}
 				>
-					{renderIcon(attributes.copyIcon)}
+					{renderIcon(attributes.copyIcon, 'copy')}
 					{__('Copy codes', 'voxel-fse')}
 				</button>
 			</div>
@@ -3240,64 +3243,110 @@ export default function LoginComponent({
 	);
 
 	// Render 2FA Manage Screen
+	// Voxel: security/2fa-manage-screen.php — shows 2FA status, backup codes, trusted devices
 	const render2faManageScreen = () => (
 		<div className="login-section">
 			<div className="ts-login-head">
-				<span className="vx-step-title">{__('Two-Factor Authentication', 'voxel-fse')}</span>
+				<span className="vx-step-title">{__('Authenticator is enabled!', 'voxel-fse')}</span>
 			</div>
 			<div className="ts-form-group">
-				<p className="field-info">
-					{__('Two-factor authentication is enabled on your account.', 'voxel-fse')}
-				</p>
+				<label>{__('Two factor authentication is enabled when logging in to your account.', 'voxel-fse')}</label>
 			</div>
 			<div className="ts-form-group">
-				<button
-					type="button"
-					className="ts-btn ts-btn-1 ts-btn-large"
-					onClick={regenerateBackupCodes}
-					disabled={pending}
+				<label>{__('Trusted devices:', 'voxel-fse')} {config?.twofa?.trusted_devices_count ?? 0}</label>
+				<label>{__('Backup codes remaining:', 'voxel-fse')} {config?.twofa?.backup_codes_count ?? 0}</label>
+			</div>
+			<div className="ts-form-group">
+				<a
+					href="#"
+					className={`ts-btn ts-btn-1 ts-btn-large ${pending ? 'vx-pending' : ''}`}
+					onClick={(e) => {
+						e.preventDefault();
+						regenerateBackupCodes();
+					}}
 				>
-					{renderIcon(attributes.copyIcon)}
-					{__('Regenerate backup codes', 'voxel-fse')}
-				</button>
+					{renderIcon(attributes.cloudIcon, 'cloud')}
+					{__('Generate new backup codes', 'voxel-fse')}
+				</a>
 			</div>
 			{(config?.twofa?.trusted_devices_count ?? 0) > 0 && (
 				<div className="ts-form-group">
-					<button
-						type="button"
-						className="ts-btn ts-btn-1 ts-btn-large"
-						onClick={removeAllTrustedDevices}
-						disabled={pending}
+					<a
+						href="#"
+						className={`ts-btn ts-btn-1 ts-btn-large ${pending ? 'vx-pending' : ''}`}
+						onClick={(e) => {
+							e.preventDefault();
+							removeAllTrustedDevices();
+						}}
 					>
-						{renderIcon(attributes.deviceIcon)}
-						{__('Remove trusted devices', 'voxel-fse')} ({config?.twofa?.trusted_devices_count})
-					</button>
+						{renderIcon(attributes.deviceIcon, 'device')}
+						{__('Remove all trusted devices', 'voxel-fse')}
+					</a>
 				</div>
 			)}
 			<div className="ts-form-group">
-				<label>{__('Enter password to disable 2FA', 'voxel-fse')}</label>
+				<a
+					href="#"
+					className="ts-btn ts-btn-1 ts-btn-large"
+					onClick={(e) => {
+						e.preventDefault();
+						setScreen('security_2fa_disable');
+					}}
+				>
+					{renderIcon(attributes.trashIcon, 'trash')}
+					{__('Disable 2FA', 'voxel-fse')}
+				</a>
+			</div>
+			<div className="login-section">
+				<div className="ts-form-group">
+					<a
+						href="#"
+						className="ts-btn ts-btn-1 ts-btn-large"
+						onClick={(e) => {
+							e.preventDefault();
+							setScreen('security');
+						}}
+					>
+						{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
+						{__('Go back', 'voxel-fse')}
+					</a>
+				</div>
+			</div>
+		</div>
+	);
+
+	// Voxel: security/2fa-disable-screen.php — password confirmation to disable 2FA
+	const render2faDisableScreen = () => (
+		<div className="login-section">
+			<div className="ts-login-head">
+				<span className="vx-step-title">{__('Disable Two-Factor Authentication', 'voxel-fse')}</span>
+			</div>
+			<div className="ts-form-group">
+				<label>{__('Confirm your password', 'voxel-fse')}</label>
 				<div className="ts-input-icon flexify">
-					{renderIcon(attributes.passwordIcon)}
+					{renderIcon(attributes.passwordIcon, 'lock')}
 					<input
 						className="ts-filter"
 						type="password"
 						value={twofa.disable_password}
 						onChange={(e) => setTwofa((prev) => ({ ...prev, disable_password: e.target.value }))}
-						placeholder={__('Your password', 'voxel-fse')}
+						placeholder={__('Enter your password', 'voxel-fse')}
 						disabled={context === 'editor'}
 					/>
 				</div>
 			</div>
 			<div className="ts-form-group">
-				<button
-					type="button"
-					className="ts-btn ts-btn-1 ts-btn-large"
-					onClick={disable2fa}
-					disabled={context === 'editor' || pending || !twofa.disable_password}
+				<a
+					href="#"
+					className={`ts-btn ts-btn-2 ts-btn-large ${pending ? 'vx-pending' : ''}`}
+					onClick={(e) => {
+						e.preventDefault();
+						disable2fa();
+					}}
 				>
-					{renderIcon(attributes.trashIcon)}
+					{renderIcon(attributes.trashIcon, 'trash')}
 					{__('Disable 2FA', 'voxel-fse')}
-				</button>
+				</a>
 			</div>
 			<div className="ts-form-group">
 				<a
@@ -3305,10 +3354,10 @@ export default function LoginComponent({
 					className="ts-btn ts-btn-1 ts-btn-large"
 					onClick={(e) => {
 						e.preventDefault();
-						setScreen('security');
+						setScreen('security_2fa_manage');
 					}}
 				>
-					{renderIcon(attributes.leftChevronIcon)}
+					{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 					{__('Go back', 'voxel-fse')}
 				</a>
 			</div>
@@ -3329,7 +3378,7 @@ export default function LoginComponent({
 							: __('Authentication code', 'voxel-fse')}
 					</label>
 					<div className="ts-input-icon flexify">
-						{renderIcon(attributes.shieldIcon)}
+						{renderIcon(attributes.shieldIcon, 'shield')}
 						<input
 							className="ts-filter autofocus"
 							type="text"
@@ -3394,7 +3443,7 @@ export default function LoginComponent({
 							setScreen('login');
 						}}
 					>
-						{renderIcon(attributes.leftChevronIcon)}
+						{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 						{__('Go back', 'voxel-fse')}
 					</a>
 				</div>
@@ -3415,7 +3464,7 @@ export default function LoginComponent({
 					onClick={requestPersonalData}
 					disabled={context === 'editor' || privacy.export_data.pending}
 				>
-					{renderIcon(attributes.cloudIcon)}
+					{renderIcon(attributes.cloudIcon, 'cloud')}
 					{__('Export my data', 'voxel-fse')}
 				</button>
 			</div>
@@ -3428,7 +3477,7 @@ export default function LoginComponent({
 						setScreen('security_delete_account');
 					}}
 				>
-					{renderIcon(attributes.trashIcon)}
+					{renderIcon(attributes.trashIcon, 'trash')}
 					{__('Delete my account', 'voxel-fse')}
 				</a>
 			</div>
@@ -3441,7 +3490,7 @@ export default function LoginComponent({
 						setScreen('security');
 					}}
 				>
-					{renderIcon(attributes.leftChevronIcon)}
+					{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 					{__('Go back', 'voxel-fse')}
 				</a>
 			</div>
@@ -3462,7 +3511,7 @@ export default function LoginComponent({
 			<div className="ts-form-group">
 				<label>{__('Enter your password to confirm', 'voxel-fse')}</label>
 				<div className="ts-input-icon flexify">
-					{renderIcon(attributes.passwordIcon)}
+					{renderIcon(attributes.passwordIcon, 'lock')}
 					<input
 						className="ts-filter"
 						type="password"
@@ -3486,7 +3535,7 @@ export default function LoginComponent({
 					disabled={context === 'editor' || privacy.delete_account.pending || !privacy.delete_account.password}
 					style={{ backgroundColor: 'var(--vx-danger-color, #dc3545)' }}
 				>
-					{renderIcon(attributes.trashIcon)}
+					{renderIcon(attributes.trashIcon, 'trash')}
 					{__('Delete my account', 'voxel-fse')}
 				</button>
 			</div>
@@ -3503,7 +3552,7 @@ export default function LoginComponent({
 						setScreen('security_privacy');
 					}}
 				>
-					{renderIcon(attributes.leftChevronIcon)}
+					{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 					{__('Go back', 'voxel-fse')}
 				</a>
 			</div>
@@ -3524,7 +3573,7 @@ export default function LoginComponent({
 			<div className="ts-form-group">
 				<label>{__('Confirmation code', 'voxel-fse')}</label>
 				<div className="ts-input-icon flexify">
-					{renderIcon(attributes.emailIcon)}
+					{renderIcon(attributes.emailIcon, 'envelope')}
 					<input
 						className="ts-filter"
 						type="text"
@@ -3542,7 +3591,7 @@ export default function LoginComponent({
 					disabled={context === 'editor' || privacy.delete_account.pending}
 					style={{ backgroundColor: 'var(--vx-danger-color, #dc3545)' }}
 				>
-					{renderIcon(attributes.trashIcon)}
+					{renderIcon(attributes.trashIcon, 'trash')}
 					{__('Confirm deletion', 'voxel-fse')}
 				</button>
 			</div>
@@ -3559,7 +3608,7 @@ export default function LoginComponent({
 						setScreen('security_privacy');
 					}}
 				>
-					{renderIcon(attributes.leftChevronIcon)}
+					{renderIcon(attributes.leftChevronIcon, 'chevronLeft')}
 					{__('Cancel', 'voxel-fse')}
 				</a>
 			</div>
@@ -3574,6 +3623,7 @@ export default function LoginComponent({
 			case 'register':
 				return renderRegisterScreen();
 			case 'confirm_account':
+			case 'login_confirm_account':
 				return renderConfirmAccountScreen();
 			case 'recover':
 				return renderRecoverScreen();
@@ -3595,6 +3645,8 @@ export default function LoginComponent({
 				return render2faBackupCodesScreen();
 			case 'security_2fa_manage':
 				return render2faManageScreen();
+			case 'security_2fa_disable':
+				return render2faDisableScreen();
 			case 'login_2fa_verify':
 				return renderLogin2faVerifyScreen();
 			case 'security_privacy':

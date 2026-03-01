@@ -17,14 +17,34 @@ interface UsePostFeedConfigReturn {
 }
 
 /**
+ * Read inline editor config (injected by Block_Loader::inject_editor_config_data).
+ * Eliminates REST API round-trip for post-feed config in the editor.
+ */
+function getInlineConfig(): PostFeedConfig | null {
+	try {
+		const data = (window as any).__voxelFseEditorConfig?.postFeed;
+		if (data && Array.isArray(data.postTypes) && data.postTypes.length > 0) {
+			return data as PostFeedConfig;
+		}
+	} catch {
+		// Ignore
+	}
+	return null;
+}
+
+/**
  * Hook to fetch post feed configuration
  */
 export function usePostFeedConfig(): UsePostFeedConfigReturn {
-	const [config, setConfig] = useState<PostFeedConfig | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const inlineConfig = getInlineConfig();
+	const [config, setConfig] = useState<PostFeedConfig | null>(inlineConfig);
+	const [isLoading, setIsLoading] = useState(!inlineConfig);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		// Skip REST fetch if inline config is available
+		if (inlineConfig) return;
+
 		let isMounted = true;
 
 		async function fetchConfig(): Promise<void> {
@@ -51,6 +71,7 @@ export function usePostFeedConfig(): UsePostFeedConfigReturn {
 		return () => {
 			isMounted = false;
 		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return { config, isLoading, error };

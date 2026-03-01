@@ -14,7 +14,7 @@
  * - Gutenberg Popover: @wordpress/components
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, RangeControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import UndoIcon from '../icons/UndoIcon';

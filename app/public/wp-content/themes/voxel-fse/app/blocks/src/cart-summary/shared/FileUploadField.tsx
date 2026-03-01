@@ -56,13 +56,9 @@ function randomId(length: number = 8): string {
 }
 
 /**
- * Global file upload cache (matches window._vx_file_upload_cache)
+ * Global file upload cache (matches (window as any)._vx_file_upload_cache)
+ * Uses (window as any) to avoid type conflict with voxelShim.ts declaration.
  */
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: UploadedFile[];
-	}
-}
 
 export default function FileUploadField({
 	field,
@@ -114,12 +110,12 @@ export default function FileUploadField({
 
 			// Check global cache for duplicate
 			if (typeof window !== 'undefined') {
-				if (!window._vx_file_upload_cache) {
-					window._vx_file_upload_cache = [];
+				if (!(window as any)._vx_file_upload_cache) {
+					(window as any)._vx_file_upload_cache = [];
 				}
 
-				const cached = window._vx_file_upload_cache.find(
-					(f) =>
+				const cached = (window as any)._vx_file_upload_cache.find(
+					(f: any) =>
 						f.item?.name === file.name &&
 						f.item?.type === file.type &&
 						f.item?.size === file.size &&
@@ -130,7 +126,7 @@ export default function FileUploadField({
 					newValue.push(cached);
 				} else {
 					newValue.push(uploadedFile);
-					window._vx_file_upload_cache.unshift(uploadedFile);
+					(window as any)._vx_file_upload_cache.unshift(uploadedFile);
 				}
 			} else {
 				newValue.push(uploadedFile);

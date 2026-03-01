@@ -19,18 +19,7 @@ import React, { useState } from 'react';
 import type { AddonConfig, SelectAddonValue, AddonPresetChoice } from '../../../types';
 import { AddonWrapper } from './AddonWrapper';
 
-/**
- * Voxel config interface for window global
- */
-interface VoxelConfig {
-	currency?: string;
-}
-
-declare global {
-	interface Window {
-		Voxel_Config?: VoxelConfig;
-	}
-}
+// Voxel_Config is declared globally in voxelShim.ts
 
 /**
  * Component props interface
@@ -79,7 +68,7 @@ export const SelectAddon: React.FC<SelectAddonProps> = ({
 	onChange,
 }) => {
 	// Get currency from global config (default to USD if not set)
-	const currency = window.Voxel_Config?.currency || 'USD';
+	const currency = (window as any).Voxel_Config?.currency || 'USD';
 	// Get predefined choices from addon config
 	// Ensure it's actually an array (backend might return object)
 	const rawChoices = addon.props?.choices;

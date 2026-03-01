@@ -84,7 +84,7 @@ const ModifierItem: React.FC<ModifierItemProps> = ({
 			{isOpen && (
 				<div className="nvx-mod-content">
 					{hasArgs ? (
-						modifierDef.args.map((arg, argIndex) => (
+						modifierDef.args!.map((arg, argIndex) => (
 							<div key={argIndex} className="ts-form-group">
 								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
 									<label style={{ margin: 0 }}>{arg.label}</label>
@@ -208,7 +208,7 @@ export const ModifierEditor: React.FC<ModifierEditorPropsExtended> = ({
 		setDraggedIndex(index);
 	};
 
-	const handleDragOver = (e: React.DragEvent, index: number) => {
+	const handleDragOver = (e: React.DragEvent, _index: number) => {
 		e.preventDefault(); // Required to allow drop
 	};
 
@@ -329,7 +329,13 @@ export const ModifierEditor: React.FC<ModifierEditorPropsExtended> = ({
 		<>
 			{/* Tag header - Voxel structure */}
 			<div className="mod-head">
-				<h3>{currentTag?.property || 'Select a tag'}</h3>
+				<h3>{currentTag?.property
+					? (() => {
+						const p = currentTag.property.startsWith(':') ? currentTag.property.slice(1) : currentTag.property;
+						return p.charAt(0).toUpperCase() + p.slice(1).replace(/_/g, ' ');
+					})()
+					: 'Select a tag'
+				}</h3>
 				<div className="nvx-placeholder nvx-tag-path">
 					{renderBreadcrumb()}
 				</div>

@@ -16,14 +16,13 @@
  */
 
 import { TextControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
 import { useState } from 'react';
 import { __ } from '@wordpress/i18n';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
 
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { useDeviceType, type DeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveTextControlProps {
 	/** Control label */
@@ -68,7 +67,7 @@ export default function ResponsiveTextControl({
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const activeDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const activeDevice = useDeviceType();
 
 	// Get attribute name for current device
 	const attributeName = getAttributeName(attributeBaseName, activeDevice);
@@ -218,7 +217,7 @@ export default function ResponsiveTextControl({
 				<TextControl
 					__nextHasNoMarginBottom
 					value={currentValue}
-					onChange={(value) => setAttributes({ [attributeName]: value })}
+					onChange={(value: string) => setAttributes({ [attributeName]: value })}
 					placeholder={cascadePlaceholder}
 					help={help}
 				/>

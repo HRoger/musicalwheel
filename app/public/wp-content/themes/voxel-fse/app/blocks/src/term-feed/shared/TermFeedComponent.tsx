@@ -10,9 +10,9 @@
  *
  * HTML Structure (from Voxel):
  * <div class="post-feed-grid {layoutMode} min-scroll min-scroll-h" data-auto-slide="0">
- *   <div class="ts-preview" data-term-id="{id}" style="--e-global-color-accent: {color};">
+ *   <a href="{term.link}" class="ts-preview" data-term-id="{id}" style="--e-global-color-accent: {color};">
  *     <!-- card template HTML -->
- *   </div>
+ *   </a>
  * </div>
  * <ul class="simplify-ul flexify post-feed-nav">
  *   <li><a href="#" class="ts-icon-btn ts-prev-page">...</a></li>
@@ -22,15 +22,15 @@
  * @package VoxelFSE
  */
 
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import type {
 	TermFeedAttributes,
 	TermFeedVxConfig,
-	TermData,
-	TermFeedComponentProps,
+		TermFeedComponentProps,
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
 import { VoxelIcons, renderIcon } from '@shared/utils';
+import { generateTermFeedResponsiveCSS } from '../styles';
 
 /**
  * Build inline styles for the feed container
@@ -77,98 +77,118 @@ export default function TermFeedComponent({
 	isLoading,
 	error,
 	context,
+	cssSelector,
 }: TermFeedComponentProps) {
 	const feedRef = useRef<HTMLDivElement>(null);
-	const [canScrollLeft, setCanScrollLeft] = useState(false);
-	const [canScrollRight, setCanScrollRight] = useState(true);
+	const prevBtnRef = useRef<HTMLAnchorElement>(null);
+	const nextBtnRef = useRef<HTMLAnchorElement>(null);
 
-	// Check scroll state for carousel navigation
-	const checkScrollState = useCallback(() => {
-		if (!feedRef.current || attributes.layoutMode !== 'ts-feed-nowrap') {
-			return;
-		}
-
-		const el = feedRef.current;
-		const scrollLeft = el.scrollLeft;
-		const scrollWidth = el.scrollWidth;
-		const clientWidth = el.clientWidth;
-
-		setCanScrollLeft(scrollLeft > 0);
-		setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
-	}, [attributes.layoutMode]);
-
-	// Update scroll state on mount and resize
+	// Manage 'disabled' class on nav buttons entirely via refs.
+	// Matches Voxel carousel-nav.php: frontend starts with 'disabled' (opacity:0),
+	// commons.js removes it if scrollWidth > clientWidth.
+	//
+	// CRITICAL: We CANNOT put 'disabled' in JSX className because React
+	// re-renders (e.g. after voxel:markup-update) would overwrite any
+	// ref-based removal. Instead, we add/remove 'disabled' entirely via
+	// DOM manipulation so React's render cycle never touches it.
 	useEffect(() => {
-		checkScrollState();
+		if (context === 'editor') return; // Editor never has disabled class
+		const prev = prevBtnRef.current;
+		const next = nextBtnRef.current;
+		if (!prev || !next) return;
+
+		// Add disabled initially (matches carousel-nav.php: !is_admin)
+		prev.classList.add('disabled');
+		next.classList.add('disabled');
 
 		const el = feedRef.current;
-		if (el) {
-			el.addEventListener('scroll', checkScrollState);
-			window.addEventListener('resize', checkScrollState);
+		if (!el || attributes.layoutMode !== 'ts-feed-nowrap') return;
+
+		const checkOverflow = () => {
+			requestAnimationFrame(() => {
+				if (el && el.scrollWidth > el.clientWidth) {
+					prev.classList.remove('disabled');
+					next.classList.remove('disabled');
+				}
+			});
+		};
+
+		checkOverflow();
+		window.addEventListener('resize', checkOverflow);
+		return () => window.removeEventListener('resize', checkOverflow);
+	}, [terms, context, attributes.layoutMode, attributes.carouselItemWidth, attributes.itemGap, attributes.scrollPadding]);
+
+	// Handle carousel navigation — wrapping scroll (matches Voxel commons.js)
+	// Voxel wraps: at the end, prev scrolls to end; at the start, next scrolls to start
+	const handlePrev = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const el = feedRef.current;
+		if (!el) return;
+		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+		const itemWidth = firstItem?.scrollWidth || 300;
+		// If at or near the start, wrap to the end (matches Voxel's circular logic)
+		if (Math.abs(el.scrollLeft) <= 10) {
+			el.scrollBy({ left: el.scrollWidth - el.clientWidth - el.scrollLeft, behavior: 'smooth' });
+		} else {
+			el.scrollBy({ left: -itemWidth, behavior: 'smooth' });
 		}
+	}, []);
+
+	const handleNext = useCallback((e: React.MouseEvent) => {
+		e.preventDefault();
+		const el = feedRef.current;
+		if (!el) return;
+		const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+		const itemWidth = firstItem?.scrollWidth || 300;
+		// If at or near the end, wrap to the start (matches Voxel's circular logic)
+		if (el.clientWidth + Math.abs(el.scrollLeft) + 10 >= el.scrollWidth) {
+			el.scrollBy({ left: -el.scrollLeft, behavior: 'smooth' });
+		} else {
+			el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+		}
+	}, []);
+
+	// Autoplay with hover-pause (matches Voxel's setInterval approach)
+	useEffect(() => {
+		if (attributes.layoutMode !== 'ts-feed-nowrap' || !attributes.carouselAutoplay || !feedRef.current) return;
+		if (context === 'editor') return;
+
+		const interval = attributes.carouselAutoplayInterval || 3000;
+		if (interval < 20) return;
+
+		let isHovered = false;
+		const container = feedRef.current.closest('.voxel-fse-term-feed') || feedRef.current;
+		const onEnter = () => { isHovered = true; };
+		const onLeave = () => { isHovered = false; };
+		container?.addEventListener('mouseenter', onEnter);
+		container?.addEventListener('mouseleave', onLeave);
+
+		const timer = setInterval(() => {
+			if (!isHovered && feedRef.current) {
+				const el = feedRef.current;
+				const firstItem = el.querySelector<HTMLElement>('.ts-preview');
+				const itemWidth = firstItem?.scrollWidth || 300;
+				el.scrollBy({ left: itemWidth, behavior: 'smooth' });
+			}
+		}, interval);
 
 		return () => {
-			if (el) {
-				el.removeEventListener('scroll', checkScrollState);
-			}
-			window.removeEventListener('resize', checkScrollState);
+			clearInterval(timer);
+			container?.removeEventListener('mouseenter', onEnter);
+			container?.removeEventListener('mouseleave', onLeave);
 		};
-	}, [checkScrollState, terms]);
+	}, [attributes.layoutMode, attributes.carouselAutoplay, attributes.carouselAutoplayInterval, context]);
 
-	// Handle carousel navigation
-	const handlePrev = (e: React.MouseEvent) => {
-		e.preventDefault();
-		if (!feedRef.current) return;
-
-		const el = feedRef.current;
-		const scrollAmount = el.clientWidth * 0.8;
-		el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-	};
-
-	const handleNext = (e: React.MouseEvent) => {
-		e.preventDefault();
-		if (!feedRef.current) return;
-
-		const el = feedRef.current;
-		const scrollAmount = el.clientWidth * 0.8;
-		el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-	};
-
-	// Auto-slide for carousel
-	useEffect(() => {
-		if (
-			attributes.layoutMode !== 'ts-feed-nowrap' ||
-			!attributes.carouselAutoplay ||
-			!feedRef.current ||
-			context === 'editor'
-		) {
-			return;
+	// Prevent link navigation in editor (matches Elementor's onLinkClick behavior)
+	// Skip carousel nav buttons (.ts-icon-btn) so arrows still work
+	const handleEditorClick = useCallback((e: React.MouseEvent) => {
+		if (context !== 'editor') return;
+		const target = (e.target as HTMLElement).closest('a');
+		if (target && !target.closest('.post-feed-nav')) {
+			e.preventDefault();
+			e.stopPropagation();
 		}
-
-		const interval = setInterval(() => {
-			if (!feedRef.current) return;
-
-			const el = feedRef.current;
-			const scrollLeft = el.scrollLeft;
-			const scrollWidth = el.scrollWidth;
-			const clientWidth = el.clientWidth;
-
-			if (scrollLeft + clientWidth >= scrollWidth - 1) {
-				// At the end, scroll back to start
-				el.scrollTo({ left: 0, behavior: 'smooth' });
-			} else {
-				// Scroll to next
-				el.scrollBy({ left: clientWidth * 0.8, behavior: 'smooth' });
-			}
-		}, attributes.carouselAutoplayInterval);
-
-		return () => clearInterval(interval);
-	}, [
-		attributes.layoutMode,
-		attributes.carouselAutoplay,
-		attributes.carouselAutoplayInterval,
-		context,
-	]);
+	}, [context]);
 
 	// Build vxconfig for re-rendering
 	const vxConfig: TermFeedVxConfig = {
@@ -227,6 +247,9 @@ export default function TermFeedComponent({
 		.filter(Boolean)
 		.join(' ');
 
+	// Generate responsive CSS (carousel item width, gap, nav styles, etc.)
+	const responsiveCSS = cssSelector ? generateTermFeedResponsiveCSS(attributes, cssSelector) : '';
+
 	// Loading state - matches Voxel's ts-no-posts pattern
 	if (isLoading) {
 		return (
@@ -278,20 +301,25 @@ export default function TermFeedComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
 
 	// Render term feed - matches Voxel's term-feed.php structure exactly
 	return (
-		<div className="term-feed-content">
+		<div className="term-feed-content" onClickCapture={handleEditorClick}>
 			{/* vxconfig for DevTools visibility */}
 			<script
 				type="text/json"
 				className="vxconfig"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 			/>
+
+			{/* Responsive layout CSS (carousel widths, gap, nav styles) */}
+			{responsiveCSS && (
+				<style dangerouslySetInnerHTML={{ __html: responsiveCSS }} />
+			)}
 
 			{/* Term feed grid/carousel - matches Voxel */}
 			<div
@@ -304,22 +332,26 @@ export default function TermFeedComponent({
 						: 0
 				}
 			>
-				{terms.map((term) => (
-					<div
-						key={term.id}
-						className="ts-preview"
-						data-term-id={term.id}
-						style={buildItemStyles(attributes, term.color)}
-					>
-						{/* Render term card HTML from API */}
-						{term.cardHtml ? (
-							<div
-								dangerouslySetInnerHTML={{
-									__html: term.cardHtml,
-								}}
-							/>
-						) : (
-							// Fallback simple card if no template HTML
+				{terms.map((term) =>
+					term.cardHtml ? (
+						// Render card HTML directly on the <a> — no extra wrapper div
+						<a
+							key={term.id}
+							href={term.link}
+							className="ts-preview"
+							data-term-id={term.id}
+							style={buildItemStyles(attributes, term.color)}
+							dangerouslySetInnerHTML={{ __html: term.cardHtml }}
+						/>
+					) : (
+						// Fallback simple card if no template HTML
+						<a
+							key={term.id}
+							href={term.link}
+							className="ts-preview"
+							data-term-id={term.id}
+							style={buildItemStyles(attributes, term.color)}
+						>
 							<div className="ts-term-card">
 								{term.icon && (
 									<div
@@ -336,18 +368,23 @@ export default function TermFeedComponent({
 									</div>
 								)}
 							</div>
-						)}
-					</div>
-				))}
+						</a>
+					)
+				)}
 			</div>
 
 			{/* Carousel navigation - matches Voxel's carousel-nav.php */}
+			{/* Voxel behavior (carousel-nav.php lines 4,9):
+			    - Frontend (!is_admin): arrows start with 'disabled' class (opacity:0),
+			      commons.js removes it if scrollWidth > clientWidth
+			    - Editor (is_admin): no 'disabled' class, arrows always visible */}
 			{attributes.layoutMode === 'ts-feed-nowrap' && (
 				<ul className="simplify-ul flexify post-feed-nav">
 					<li style={navListItemStyle}>
 						<a
+							ref={prevBtnRef}
 							href="#"
-							className={`ts-icon-btn ts-prev-page ${!canScrollLeft ? 'disabled' : ''}`}
+							className="ts-icon-btn ts-prev-page"
 							aria-label="Previous"
 							onClick={handlePrev}
 							style={navButtonStyle}
@@ -360,8 +397,9 @@ export default function TermFeedComponent({
 					</li>
 					<li style={navListItemStyle}>
 						<a
+							ref={nextBtnRef}
 							href="#"
-							className={`ts-icon-btn ts-next-page ${!canScrollRight ? 'disabled' : ''}`}
+							className="ts-icon-btn ts-next-page"
 							aria-label="Next"
 							onClick={handleNext}
 							style={navButtonStyle}

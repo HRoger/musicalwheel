@@ -3,9 +3,10 @@
  *
  * Renders a single attribute selector (e.g., Size or Color).
  * Filters available choices based on other attribute selections.
- * Supports multiple display types: dropdown, buttons, images, colors.
+ * Supports all 6 display types: buttons, radio, dropdown, cards, colors, images.
  *
  * Evidence: voxel-product-form.beautified.js lines 1274-1394
+ * Evidence: themes/voxel/templates/widgets/product-form/form-variations.php lines 32-123
  *
  * @package VoxelFSE
  */
@@ -40,7 +41,7 @@ export default function VariationAttribute( {
 	stockEnabled,
 	onSelect,
 }: VariationAttributeProps ) {
-	const [ isOpen, setIsOpen ] = useState( false );
+	const [ _isOpen, setIsOpen ] = useState( false );
 	const choices = Object.values( attribute.props.choices );
 
 	/**
@@ -150,147 +151,248 @@ export default function VariationAttribute( {
 	}, [ selections, attribute.key, choices ] );
 
 	/**
-	 * Render dropdown display type
-	 */
-	const renderDropdown = () => (
-		<div className="ts-form-group ts-variation-attribute ts-variation-dropdown">
-			<label>{ attribute.label }</label>
-			<div
-				className={ `ts-filter ts-popup-target${ selections[ attribute.key ] ? ' ts-filled' : '' }` }
-				onClick={ () => setIsOpen( ! isOpen ) }
-				role="button"
-				tabIndex={ 0 }
-				onKeyDown={ ( e ) => e.key === 'Enter' && setIsOpen( ! isOpen ) }
-			>
-				<span className="ts-filter-text">{ selectionLabel }</span>
-				<div className="ts-down-icon"></div>
-			</div>
-
-			{ isOpen && (
-				<div className="ts-popup-list">
-					<ul className="simplify-ul ts-form-options">
-						{ choices.map( ( choice ) => {
-							const status = getChoiceStatus( choice );
-							const selected = isSelected( choice );
-
-							return (
-								<li
-									key={ choice.value }
-									className={ `ts-option${ selected ? ' ts-selected' : '' }${ status === 'inactive' ? ' ts-inactive' : '' }${ status === 'out_of_stock' ? ' ts-out-of-stock' : '' }` }
-									onClick={ () => handleSelectChoice( choice ) }
-									role="option"
-									aria-selected={ selected }
-									aria-disabled={ status === 'inactive' }
-								>
-									<span className="option-label">{ choice.label }</span>
-									{ status === 'out_of_stock' && (
-										<span className="option-status">Out of stock</span>
-									) }
-								</li>
-							);
-						} ) }
-					</ul>
-				</div>
-			) }
-		</div>
-	);
-
-	/**
 	 * Render buttons display type
+	 *
+	 * Evidence: form-variations.php:33-48
+	 * Voxel classes: .addon-buttons, .adb-selected, .vx-disabled
 	 */
 	const renderButtons = () => (
-		<div className="ts-form-group ts-variation-attribute ts-variation-buttons">
-			<label>{ attribute.label }</label>
-			<div className="ts-variation-options ts-buttons-list">
-				{ choices.map( ( choice ) => {
+		<div className="ts-form-group">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<ul className="simplify-ul addon-buttons flexify">
+				{ activeChoices.map( ( choice ) => {
 					const status = getChoiceStatus( choice );
 					const selected = isSelected( choice );
 
 					return (
-						<button
+						<li
 							key={ choice.value }
-							type="button"
-							className={ `ts-btn ts-btn-4${ selected ? ' ts-selected' : '' }${ status === 'inactive' ? ' ts-inactive' : '' }${ status === 'out_of_stock' ? ' ts-out-of-stock' : '' }` }
-							onClick={ () => handleSelectChoice( choice ) }
-							disabled={ status === 'inactive' }
+							className={ `flexify${ selected ? ' adb-selected' : '' }${ status !== 'active' ? ' vx-disabled' : '' }` }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								handleSelectChoice( choice );
+							} }
 						>
 							{ choice.label }
-						</button>
+						</li>
 					);
 				} ) }
+			</ul>
+		</div>
+	);
+
+	/**
+	 * Render radio display type
+	 *
+	 * Evidence: form-variations.php:49-64
+	 * Voxel classes: .ts-custom-additions, .ts-addition-list, .ts-checked,
+	 *   .addition-body, .container-radio, .checkmark, .vx-disabled
+	 */
+	const renderRadio = () => (
+		<div className="ts-form-group ts-custom-additions">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<ul className="simplify-ul ts-addition-list flexify">
+				{ activeChoices.map( ( choice ) => {
+					const status = getChoiceStatus( choice );
+					const selected = isSelected( choice );
+
+					return (
+						<li
+							key={ choice.value }
+							className={ `flexify${ selected ? ' ts-checked' : '' }${ status !== 'active' ? ' vx-disabled' : '' }` }
+						>
+							<div
+								className="addition-body"
+								onClick={ ( e ) => {
+									e.preventDefault();
+									handleSelectChoice( choice );
+								} }
+							>
+								<label className="container-radio">
+									<input
+										type="radio"
+										checked={ selected }
+										className="onoffswitch-checkbox"
+										disabled
+										hidden
+										readOnly
+									/>
+									<span className="checkmark" />
+								</label>
+								<span>{ choice.label }</span>
+							</div>
+						</li>
+					);
+				} ) }
+			</ul>
+		</div>
+	);
+
+	/**
+	 * Render dropdown display type
+	 *
+	 * Evidence: form-variations.php:65-77
+	 * Voxel classes: .ts-filter, .ts-down-icon
+	 */
+	const renderDropdown = () => (
+		<div className="ts-form-group">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<div className="ts-filter">
+				<select
+					value={ `choice_${ selections[ attribute.key ] }` }
+					onChange={ ( e ) => {
+						const choiceKey = e.target.value;
+						const choice = attribute.props.choices[ choiceKey ];
+						if ( choice ) {
+							handleSelectChoice( choice );
+						}
+					} }
+				>
+					{ activeChoices.map( ( choice ) => {
+						const status = getChoiceStatus( choice );
+
+						return (
+							<option
+								key={ choice.value }
+								value={ `choice_${ choice.value }` }
+								disabled={ status !== 'active' }
+							>
+								{ choice.label }
+							</option>
+						);
+					} ) }
+				</select>
+				<div className="ts-down-icon" />
 			</div>
 		</div>
 	);
 
 	/**
-	 * Render images display type
+	 * Render cards display type
+	 *
+	 * Evidence: form-variations.php:78-98
+	 * Voxel classes: .addon-cards, .adc-selected, .adc-title, .adc-subtitle,
+	 *   .addon-details, .vx-disabled
 	 */
-	const renderImages = () => (
-		<div className="ts-form-group ts-variation-attribute ts-variation-images">
-			<label>{ attribute.label }</label>
-			<div className="ts-variation-options ts-images-list">
-				{ choices.map( ( choice ) => {
+	const renderCards = () => (
+		<div className="ts-form-group">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<ul className="simplify-ul addon-cards flexify">
+				{ activeChoices.map( ( choice ) => {
 					const status = getChoiceStatus( choice );
 					const selected = isSelected( choice );
 
 					return (
-						<div
+						<li
 							key={ choice.value }
-							className={ `ts-variation-image${ selected ? ' ts-selected' : '' }${ status === 'inactive' ? ' ts-inactive' : '' }${ status === 'out_of_stock' ? ' ts-out-of-stock' : '' }` }
-							onClick={ () => handleSelectChoice( choice ) }
-							role="button"
-							tabIndex={ status === 'inactive' ? -1 : 0 }
-							title={ choice.label }
+							className={ `flexify${ selected ? ' adc-selected' : '' }${ status !== 'active' ? ' vx-disabled' : '' }` }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								handleSelectChoice( choice );
+							} }
 						>
-							{ choice.image ? (
-								<img src={ choice.image } alt={ choice.label } />
-							) : (
-								<span className="ts-image-placeholder">{ choice.label.charAt( 0 ) }</span>
+							{ choice.image && (
+								<img
+									src={ typeof choice.image === 'string' ? choice.image : choice.image.url }
+									alt={ typeof choice.image === 'string' ? choice.label : ( choice.image.alt || choice.label ) }
+									title={ typeof choice.image === 'string' ? choice.label : ( choice.image.alt || choice.label ) }
+								/>
 							) }
-						</div>
+							<div className="addon-details">
+								<span className="adc-title">{ choice.label }</span>
+								{ choice.subheading && (
+									<span className="adc-subtitle">{ choice.subheading }</span>
+								) }
+							</div>
+						</li>
 					);
 				} ) }
-			</div>
+			</ul>
 		</div>
 	);
 
 	/**
 	 * Render colors display type
+	 *
+	 * Evidence: form-variations.php:99-109
+	 * Voxel classes: .addon-colors, color-selected, .vx-disabled
+	 * Voxel uses --vx-var-color CSS variable for the color swatch
 	 */
 	const renderColors = () => (
-		<div className="ts-form-group ts-variation-attribute ts-variation-colors">
-			<label>{ attribute.label }</label>
-			<div className="ts-variation-options ts-colors-list">
-				{ choices.map( ( choice ) => {
+		<div className="ts-form-group">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<ul className="simplify-ul addon-colors flexify">
+				{ activeChoices.map( ( choice ) => {
 					const status = getChoiceStatus( choice );
 					const selected = isSelected( choice );
 
 					return (
-						<div
+						<li
 							key={ choice.value }
-							className={ `ts-variation-color${ selected ? ' ts-selected' : '' }${ status === 'inactive' ? ' ts-inactive' : '' }${ status === 'out_of_stock' ? ' ts-out-of-stock' : '' }` }
-							onClick={ () => handleSelectChoice( choice ) }
-							role="button"
-							tabIndex={ status === 'inactive' ? -1 : 0 }
+							className={ `flexify${ selected ? ' color-selected' : '' }${ status !== 'active' ? ' vx-disabled' : '' }` }
+							style={ { '--vx-var-color': choice.color || '#ccc' } as React.CSSProperties }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								handleSelectChoice( choice );
+							} }
 							title={ choice.label }
-							style={ { backgroundColor: choice.color || '#ccc' } }
-						>
-							{ selected && <span className="ts-color-check">✓</span> }
-						</div>
+						/>
 					);
 				} ) }
-			</div>
+			</ul>
+		</div>
+	);
+
+	/**
+	 * Render images display type
+	 *
+	 * Evidence: form-variations.php:110-122
+	 * Voxel classes: .addon-images, .adm-selected, .vx-disabled
+	 */
+	const renderImages = () => (
+		<div className="ts-form-group">
+			<label>{ attribute.label }: { selectionLabel }</label>
+			<ul className="simplify-ul addon-images flexify">
+				{ activeChoices.map( ( choice ) => {
+					const status = getChoiceStatus( choice );
+					const selected = isSelected( choice );
+
+					return (
+						<li
+							key={ choice.value }
+							className={ `flexify${ selected ? ' adm-selected' : '' }${ status !== 'active' ? ' vx-disabled' : '' }` }
+							onClick={ ( e ) => {
+								e.preventDefault();
+								handleSelectChoice( choice );
+							} }
+						>
+							{ choice.image && (
+								<img
+									src={ typeof choice.image === 'string' ? choice.image : choice.image.url }
+									alt={ typeof choice.image === 'string' ? choice.label : ( choice.image.alt || choice.label ) }
+									title={ typeof choice.image === 'string' ? choice.label : ( choice.image.alt || choice.label ) }
+								/>
+							) }
+						</li>
+					);
+				} ) }
+			</ul>
 		</div>
 	);
 
 	// Render based on display type
-	switch ( attribute.display_type ) {
+	// Evidence: form-variations.php:33-122 — 6 display modes
+	switch ( attribute.props?.display_mode || attribute.display_type ) {
 		case 'buttons':
 			return renderButtons();
-		case 'images':
-			return renderImages();
+		case 'radio':
+			return renderRadio();
+		case 'cards':
+			return renderCards();
 		case 'colors':
 			return renderColors();
+		case 'images':
+			return renderImages();
 		case 'dropdown':
 		default:
 			return renderDropdown();

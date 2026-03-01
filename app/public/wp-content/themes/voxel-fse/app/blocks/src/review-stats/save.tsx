@@ -24,7 +24,7 @@ export default function save({ attributes }: SaveProps) {
 	const blockId = attributes.blockId || 'review-stats';
 
 	// Use shared utility for AdvancedTab + VoxelTab wiring
-	const advancedProps = getAdvancedVoxelTabProps(attributes, {
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
 		blockId,
 		baseClass: 'vxfse-review-stats',
 	});
@@ -39,7 +39,7 @@ export default function save({ attributes }: SaveProps) {
 		.join('\n');
 
 	// Build wrapper props with Voxel-compatible classes
-	const blockProps = useBlockProps.save({
+	const blockProps = (useBlockProps as any).save({
 		id: advancedProps.elementId,
 		className: advancedProps.className,
 		// Note: style will be merged with styleVars below

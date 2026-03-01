@@ -186,16 +186,16 @@ export default function GalleryUploadControl({
 							onClick={handleEditTags}
 							style={{
 								flex: 1,
-								fontSize: '11px',
+								fontSize: '10px',
 								fontWeight: 600,
 								textTransform: 'uppercase',
-								letterSpacing: '0.3px',
-								color: '#fff',
+								letterSpacing: '0.5px',
+								color: 'rgba(255, 255, 255, 0.8)',
 								background: 'transparent',
 								border: 'none',
 								cursor: 'pointer',
-								padding: '4px 0',
-								textAlign: 'center',
+								padding: '6px 0',
+								textAlign: 'left',
 							}}
 						>
 							{__('EDIT TAGS', 'voxel-fse')}
@@ -205,16 +205,16 @@ export default function GalleryUploadControl({
 							onClick={handleDisableTags}
 							style={{
 								flex: 1,
-								fontSize: '11px',
+								fontSize: '10px',
 								fontWeight: 600,
 								textTransform: 'uppercase',
-								letterSpacing: '0.3px',
-								color: '#fff',
+								letterSpacing: '0.5px',
+								color: 'rgba(255, 255, 255, 0.5)',
 								background: 'transparent',
 								border: 'none',
 								cursor: 'pointer',
-								padding: '4px 0',
-								textAlign: 'center',
+								padding: '6px 0',
+								textAlign: 'right',
 							}}
 						>
 							{__('DISABLE TAGS', 'voxel-fse')}
@@ -288,7 +288,7 @@ export default function GalleryUploadControl({
 										multiple
 										gallery
 										value={value.map((img) => img.id).filter(Boolean) as number[]}
-										render={({ open }) => (
+										render={({ open }: { open: () => void }) => (
 											<div
 												style={{
 													position: 'relative',
@@ -391,7 +391,7 @@ export default function GalleryUploadControl({
 									multiple
 									gallery
 									value={[]}
-									render={({ open }) => (
+									render={({ open }: { open: () => void }) => (
 										<div
 											style={{
 												backgroundColor: '#f0f0f0',

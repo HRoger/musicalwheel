@@ -20,6 +20,8 @@ import {
 	AccordionPanelGroup,
 	AccordionPanel,
 	DimensionsControl,
+	BorderGroupControl,
+	BackgroundControl,
 } from '@shared/controls';
 
 import type { PostFeedAttributes } from '../types';
@@ -114,6 +116,56 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 						step={0.1}
 					/>
 				)}
+
+				{attributes.loadingStyle === 'skeleton' && (
+					<BackgroundControl
+						attributes={{
+							...attributes,
+							backgroundType: attributes.skeletonBackgroundType,
+							backgroundColor: attributes.skeletonBackgroundColor,
+							backgroundImage: attributes.skeletonBackgroundImage,
+							bgImagePosition: attributes.skeletonBgImagePosition,
+							bgImageAttachment: attributes.skeletonBgImageAttachment,
+							bgImageRepeat: attributes.skeletonBgImageRepeat,
+							bgImageSize: attributes.skeletonBgImageSize,
+							gradientColor: attributes.skeletonGradientColor,
+							gradientLocation: attributes.skeletonGradientLocation,
+							gradientSecondColor: attributes.skeletonGradientSecondColor,
+							gradientSecondLocation: attributes.skeletonGradientSecondLocation,
+							gradientType: attributes.skeletonGradientType,
+							gradientAngle: attributes.skeletonGradientAngle,
+							gradientPosition: attributes.skeletonGradientPosition,
+						}}
+						setAttributes={ ( attrs: Record<string, unknown> ) => {
+							const keyMap: Record<string, string> = {
+								backgroundType: 'skeletonBackgroundType',
+								backgroundColor: 'skeletonBackgroundColor',
+								backgroundImage: 'skeletonBackgroundImage',
+								bgImagePosition: 'skeletonBgImagePosition',
+								bgImageAttachment: 'skeletonBgImageAttachment',
+								bgImageRepeat: 'skeletonBgImageRepeat',
+								bgImageSize: 'skeletonBgImageSize',
+								gradientColor: 'skeletonGradientColor',
+								gradientLocation: 'skeletonGradientLocation',
+								gradientSecondColor: 'skeletonGradientSecondColor',
+								gradientSecondLocation: 'skeletonGradientSecondLocation',
+								gradientType: 'skeletonGradientType',
+								gradientAngle: 'skeletonGradientAngle',
+								gradientPosition: 'skeletonGradientPosition',
+							};
+							const mapped: Record<string, unknown> = {};
+							for ( const [ k, v ] of Object.entries( attrs ) ) {
+								mapped[ keyMap[ k ] ?? k ] = v;
+							}
+							setAttributes( mapped as Partial<PostFeedAttributes> );
+						} }
+						showHoverState={false}
+						showVideoBackground={false}
+						showSlideshowBackground={false}
+						showImageControls={true}
+						showGradientMode={true}
+					/>
+				)}
 			</AccordionPanel>
 
 			{/* NO RESULTS ACCORDION */}
@@ -200,6 +252,8 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 										{ label: __('Start', 'voxel-fse'), value: 'flex-start' },
 										{ label: __('Center', 'voxel-fse'), value: 'center' },
 										{ label: __('End', 'voxel-fse'), value: 'flex-end' },
+										{ label: __('Space between', 'voxel-fse'), value: 'space-between' },
+										{ label: __('Space around', 'voxel-fse'), value: 'space-around' },
 									]}
 
 									onChange={(value: string) => setAttributes({ paginationJustify: value })}
@@ -326,18 +380,11 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 					max={50}
 				/>
 
-				<SelectControl
-					label={__('Border type', 'voxel-fse')}
-					value={attributes.paginationBorderType}
-					options={[
-						{ label: __('None', 'voxel-fse'), value: '' },
-						{ label: __('Solid', 'voxel-fse'), value: 'solid' },
-						{ label: __('Double', 'voxel-fse'), value: 'double' },
-						{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
-						{ label: __('Dashed', 'voxel-fse'), value: 'dashed' },
-						{ label: __('Groove', 'voxel-fse'), value: 'groove' },
-					]}
-					onChange={(value: string) => setAttributes({ paginationBorderType: value })}
+				<BorderGroupControl
+					label={__('Border', 'voxel-fse')}
+					value={attributes.paginationBorder || {}}
+					onChange={(value) => setAttributes({ paginationBorder: value })}
+					hideRadius={true}
 				/>
 			</AccordionPanel>
 
@@ -467,18 +514,11 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps): JSX.Elem
 					}
 				</StyleTabPanel>
 
-				<SelectControl
-					label={__('Border type', 'voxel-fse')}
-					value={attributes.carouselNavBorderType}
-					options={[
-						{ label: __('None', 'voxel-fse'), value: '' },
-						{ label: __('Solid', 'voxel-fse'), value: 'solid' },
-						{ label: __('Double', 'voxel-fse'), value: 'double' },
-						{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
-						{ label: __('Dashed', 'voxel-fse'), value: 'dashed' },
-						{ label: __('Groove', 'voxel-fse'), value: 'groove' },
-					]}
-					onChange={(value: string) => setAttributes({ carouselNavBorderType: value })}
+				<BorderGroupControl
+					label={__('Border', 'voxel-fse')}
+					value={attributes.carouselNavBorder || {}}
+					onChange={(value) => setAttributes({ carouselNavBorder: value })}
+					hideRadius={true}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

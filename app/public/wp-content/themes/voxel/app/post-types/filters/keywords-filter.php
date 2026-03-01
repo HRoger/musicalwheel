@@ -18,6 +18,9 @@ class Keywords_Filter extends Base_Filter {
 		'location',
 		'taxonomy',
 		'profile-name',
+		'profile-first-name',
+		'profile-last-name',
+		'profile-bio',
 	];
 
 	protected $props = [

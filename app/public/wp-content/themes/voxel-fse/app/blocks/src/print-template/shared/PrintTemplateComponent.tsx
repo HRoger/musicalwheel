@@ -280,15 +280,6 @@ export default function PrintTemplateComponent({
 	// Build class list
 	const classList = ['ts-print-template-content'];
 
-	if (attributes.hideDesktop) {
-		classList.push('hide-desktop');
-	}
-	if (attributes.hideTablet) {
-		classList.push('hide-tablet');
-	}
-	if (attributes.hideMobile) {
-		classList.push('hide-mobile');
-	}
 	if (attributes.customClasses) {
 		classList.push(attributes.customClasses);
 	}
@@ -296,9 +287,6 @@ export default function PrintTemplateComponent({
 	// Build vxconfig for re-rendering (required for DevTools visibility)
 	const vxConfig: PrintTemplateVxConfig = {
 		templateId: attributes.templateId || '',
-		hideDesktop: attributes.hideDesktop ?? false,
-		hideTablet: attributes.hideTablet ?? false,
-		hideMobile: attributes.hideMobile ?? false,
 		customClasses: attributes.customClasses || '',
 	};
 
@@ -319,18 +307,9 @@ export default function PrintTemplateComponent({
 		};
 	}, [templateContent]);
 
-	// Loading state
+	// Loading state — return null to avoid FOUC (grey box → content).
 	if (isLoading) {
-		return (
-			<div className={classList.join(' ')}>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				<EmptyPlaceholder />
-			</div>
-		);
+		return null;
 	}
 
 	// Error state
@@ -342,7 +321,7 @@ export default function PrintTemplateComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
@@ -356,7 +335,7 @@ export default function PrintTemplateComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</div>
 		);
 	}
@@ -392,9 +371,9 @@ export default function PrintTemplateComponent({
 					className="ts-print-template-rendered"
 					dangerouslySetInnerHTML={{ __html: templateContent }}
 				/>
-			) : (
+			) : context === 'editor' ? (
 				<EmptyPlaceholder />
-			)}
+			) : null}
 		</div>
 	);
 }

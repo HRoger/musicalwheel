@@ -158,7 +158,15 @@ async function fetchFieldsConfig(
 
 	try {
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Sending fetch request...');
-		const response = await fetch(endpoint);
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+		const response = await fetch(endpoint, {
+			credentials: 'same-origin',
+			headers,
+		});
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response status:', response.status);
 		//console.log('[Create Post DEBUG] fetchFieldsConfig - Response ok:', response.ok);
 		if (!response.ok) {
@@ -198,8 +206,14 @@ async function fetchPostContext(
 	const endpoint = `${restUrl}voxel-fse/v1/create-post/post-context?${params.toString()}`;
 
 	try {
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
 		const response = await fetch(endpoint, {
-			credentials: 'same-origin', // Include cookies for authentication
+			credentials: 'same-origin',
+			headers,
 		});
 
 		if (!response.ok) {
@@ -406,17 +420,27 @@ function getPostIdFromUrl(): number | null {
  * Fetches fieldsConfig from REST API (Plan C+ pattern - headless-ready)
  * Matching search-form pattern: accepts attributes directly
  */
+interface InlineCreatePostData {
+	fieldsConfig: FieldsConfigResponse;
+	postContext: PostContext;
+}
+
 interface FrontendWrapperProps {
 	attributes: CreatePostAttributes;
 	isAdminMetabox?: boolean;
+	inlineData?: InlineCreatePostData | null;
 }
 
-function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapperProps) {
+function FrontendWrapper({ attributes, isAdminMetabox = false, inlineData }: FrontendWrapperProps) {
 	//console.log('[Create Post DEBUG] FrontendWrapper rendered with:', { attributes, isAdminMetabox });
 
-	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>([]);
-	const [postContext, setPostContext] = useState<PostContext | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [fieldsConfig, setFieldsConfig] = useState<VoxelField[]>(
+		inlineData?.fieldsConfig?.fieldsConfig || []
+	);
+	const [postContext, setPostContext] = useState<PostContext | null>(
+		inlineData?.postContext || null
+	);
+	const [isLoading, setIsLoading] = useState(!inlineData);
 	const [error, setError] = useState<string | null>(null);
 
 	// Get post ID from URL or data attribute
@@ -424,6 +448,12 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 	//console.log('[Create Post DEBUG] urlPostId:', urlPostId);
 
 	useEffect(() => {
+		// Skip REST fetch if we have inline data from server-side config injection
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		if (inlineData) {
+			return;
+		}
+
 		//console.log('[Create Post DEBUG] useEffect triggered, postTypeKey:', attributes.postTypeKey);
 		let cancelled = false;
 
@@ -469,7 +499,7 @@ function FrontendWrapper({ attributes, isAdminMetabox = false }: FrontendWrapper
 		return () => {
 			cancelled = true;
 		};
-	}, [attributes.postTypeKey, urlPostId, isAdminMetabox]);
+	}, [inlineData, attributes.postTypeKey, urlPostId, isAdminMetabox]);
 
 	// Loading state - matches Voxel's spinner pattern
 	// Reference: Voxel uses .ts-no-posts > .ts-loader for loading states
@@ -532,8 +562,10 @@ function initCreatePostForms() {
 	//console.log('[Create Post DEBUG] initCreatePostForms called');
 
 	// Find all create post blocks by the class
+	// NOTE: save.tsx outputs 'voxel-fse-create-post' (no -frontend suffix)
+	// The -frontend suffix is only used in admin-render.php for the metabox context
 	const containers = document.querySelectorAll<HTMLElement>(
-		'.voxel-fse-create-post-frontend:not([data-react-mounted])'
+		'.voxel-fse-create-post:not([data-react-mounted])'
 	);
 	//console.log('[Create Post DEBUG] Found containers:', containers.length);
 
@@ -559,6 +591,18 @@ function initCreatePostForms() {
 		const isAdminMetabox = (container.dataset as any)['adminMode'] === '1';
 		//console.log(`[Create Post DEBUG] Container ${index} isAdminMetabox:`, isAdminMetabox);
 
+		// Read inline config data injected by PHP render_block filter (eliminates REST API spinner)
+		// See: docs/headless-architecture/17-server-side-config-injection.md
+		const hydrateScript = container.querySelector<HTMLScriptElement>('script.vxconfig-hydrate');
+		let inlineData: InlineCreatePostData | null = null;
+		if (hydrateScript?.textContent) {
+			try {
+				inlineData = JSON.parse(hydrateScript.textContent);
+			} catch {
+				// Fall back to REST API if inline data is malformed
+			}
+		}
+
 		// Clear placeholder content and create React root
 		container.innerHTML = '';
 
@@ -568,6 +612,7 @@ function initCreatePostForms() {
 			<FrontendWrapper
 				attributes={attributes}
 				isAdminMetabox={isAdminMetabox}
+				inlineData={inlineData}
 			/>
 		);
 	});

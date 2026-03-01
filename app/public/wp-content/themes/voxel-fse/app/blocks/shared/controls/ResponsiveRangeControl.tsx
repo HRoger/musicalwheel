@@ -15,16 +15,15 @@
  * This ensures all responsive controls stay in sync when any one is changed.
  */
 
-import { RangeControl, Button, TextControl } from '@wordpress/components';
+import { RangeControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
-import UndoIcon from '../icons/UndoIcon';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
 import EnableTagsButton from './EnableTagsButton';
-import { getCurrentDeviceType, type DeviceType } from '@shared/utils/deviceType';
+import { getCurrentDeviceType } from '@shared/utils/deviceType';
 
 interface ResponsiveRangeControlProps {
 	label: string;
@@ -38,12 +37,14 @@ interface ResponsiveRangeControlProps {
 	availableUnits?: UnitType[];
 	units?: UnitType[]; // Alias for availableUnits for backward compatibility
 	unitAttributeName?: string;
-	showResetButton?: boolean;
 	/** When false, hides the header row (label + responsive button). Useful when header is rendered externally. */
 	showHeader?: boolean;
 	/** Attribute name for storing custom CSS value (e.g., 'calc(100vh - 80px)'). Only used when unit is 'custom'. */
 	customValueAttributeName?: string;
 	enableDynamicTags?: boolean;
+	dynamicTagValue?: string;
+	onDynamicTagChange?: (value: string | undefined) => void;
+	dynamicTagContext?: string;
 	/** Optional prefix for the control key used in popup state persistence. Useful when the same attributeBaseName is used in multiple instances (e.g., inside repeater items). */
 	controlKeyPrefix?: string;
 }
@@ -60,7 +61,6 @@ export default function ResponsiveRangeControl({
 	availableUnits,
 	units,
 	unitAttributeName,
-	showResetButton = true,
 	showHeader = true,
 	customValueAttributeName,
 	enableDynamicTags = false,
@@ -73,7 +73,7 @@ export default function ResponsiveRangeControl({
 	const [isDynamicModalOpen, setIsDynamicModalOpen] = useState(false);
 
 	// Get WordPress's current device type from the store - this is the source of truth
-	const currentDevice = useSelect((select) => getCurrentDeviceType(select), []);
+	const currentDevice = useSelect((select: any) => getCurrentDeviceType(select));
 
 	// Get attribute name for current device
 	const getAttributeName = () => {
@@ -107,11 +107,38 @@ export default function ResponsiveRangeControl({
 		return value === undefined || value === null;
 	};
 
+	// Get the inherited value from parent device (desktop → tablet → mobile cascade)
+	const getInheritedValue = (): number | undefined => {
+		if (currentDevice === 'tablet') {
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		} else if (currentDevice === 'mobile') {
+			// Mobile inherits from tablet first, then desktop
+			const tabletValue = attributes[`${attributeBaseName}_tablet`];
+			if (typeof tabletValue === 'number') return tabletValue;
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		}
+		return undefined;
+	};
+
 	// Set value for current device
 	const setValue = (newValue: any) => {
 		const attrName = getAttributeName();
 		setAttributes({ [attrName]: newValue });
 	};
+
+	// WordPress RangeControl never fires onChange when input is emptied (parseFloat('') = NaN).
+	// Detect empty input on blur and explicitly set null so CSS rules are removed.
+	// null works because block.json uses type: ["number", "null"] — WordPress stores null
+	// as a real value (distinct from the numeric default), enabling styles.ts to skip emission.
+	const handleRangeWrapperBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+		const input = e.target;
+		if (input instanceof HTMLInputElement && input.type === 'number' && input.value === '') {
+			const attrName = getAttributeName();
+			setAttributes({ [attrName]: null });
+		}
+	}, [getAttributeName, setAttributes]);
 
 	const currentUnit = unitAttributeName
 		? (attributes[unitAttributeName] || 'px') as UnitType
@@ -182,8 +209,13 @@ export default function ResponsiveRangeControl({
 	const percentMax = 100;
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
-	// When unit is % and no value is set, use max as the initial position
-	const initialPosition = isPercentUnit ? effectiveMax : undefined;
+	// Determine initialPosition: controls both slider handle position and displayed number
+	// when no explicit value is set. Priority:
+	// 1. % unit → max (100%)
+	// 2. Inherited value from parent device (desktop/tablet) → show inherited value
+	// 3. Fallback to min (slider at left edge)
+	const inherited = isInherited() ? getInheritedValue() : undefined;
+	const initialPosition = isPercentUnit ? effectiveMax : (inherited ?? min);
 
 	// Check if we should show the placeholder (no value set and unit is %)
 	const showPercentPlaceholder = isPercentUnit && (currentValue === undefined || currentValue === null) && !isTagsActive;
@@ -306,7 +338,7 @@ export default function ResponsiveRangeControl({
 					style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
 					data-placeholder={showPercentPlaceholder ? effectiveMax.toString() : undefined}
 				>
-					<div style={{ flex: 1, position: 'relative' }}>
+					<div style={{ flex: 1, position: 'relative' }} onBlur={handleRangeWrapperBlur}>
 						<RangeControl
 							value={currentValue as number | undefined}
 							onChange={setValue}
@@ -343,27 +375,6 @@ export default function ResponsiveRangeControl({
 							</div>
 						)}
 					</div>
-					{showResetButton && (
-						<Button
-							icon={<UndoIcon />}
-							label={__('Reset to default', 'voxel-fse')}
-							onClick={() => setValue(undefined)}
-							variant="tertiary"
-							size="small"
-							style={{
-								marginTop: '0',
-								color: '#0073aa',
-								padding: '4px',
-								minWidth: 'auto',
-								width: '32px',
-								height: '32px',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								flexShrink: 0,
-							}}
-						/>
-					)}
 				</div>
 			)}
 

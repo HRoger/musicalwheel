@@ -30,7 +30,7 @@ export const DescriptionField: React.FC<DescriptionFieldProps> = ({ field, value
 
 	// Character count
 	const contentLength = value ? value.length : 0;
-	const maxLength = field.props?.['maxlength'];
+	const maxLength = field.props?.['maxlength'] !== undefined ? Number(field.props['maxlength']) : undefined;
 
 	// Auto-resize textarea to fit content
 	const resizeTextarea = () => {
@@ -105,7 +105,7 @@ export const DescriptionField: React.FC<DescriptionFieldProps> = ({ field, value
 				value={value || ''}
 				onChange={handleChange}
 				onBlur={onBlur}
-				placeholder={field.props?.['placeholder'] || field.placeholder}
+				placeholder={String(field.props?.['placeholder'] ?? field.placeholder ?? '')}
 				className="ts-filter"
 				required={field.required}
 			/>

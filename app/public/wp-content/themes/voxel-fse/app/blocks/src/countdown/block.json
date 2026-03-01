@@ -1,6 +1,6 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
-	"apiVersion": 2,
+	"apiVersion": 3,
 	"name": "voxel-fse/countdown",
 	"title": "Countdown (VX)",
 	"category": "voxel-fse",
@@ -164,7 +164,6 @@
 			"type": "number"
 		}
 	},
-	"editorScript": "file:./index.tsx",
 	"viewScript": "file:./frontend.js",
 	"render": "file:./render.php"
 }

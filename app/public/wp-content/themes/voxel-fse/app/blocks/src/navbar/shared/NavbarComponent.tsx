@@ -19,9 +19,128 @@ import type {
 	NavbarAttributes,
 	NavbarMenuApiResponse,
 	NavbarMenuItem,
-	NavbarVxConfig,
+		LinkedTabData,
+	LinkedPostTypeData,
 } from '../types';
 import { EmptyPlaceholder } from '@shared/controls/EmptyPlaceholder';
+import { InlineSvg } from '@shared/InlineSvg';
+
+/**
+ * Collect all submenu screens from a menu item tree.
+ * Voxel uses screen-based navigation: each parent with children gets a screen
+ * that shows/hides via v-show="screen === 'screenId'".
+ *
+ * Evidence: themes/voxel/app/utils/nav-menu-walker.php lines 30-90
+ */
+interface SubmenuScreen {
+	id: string;
+	parentScreenId: string;
+	parentItem: NavbarMenuItem;
+	children: NavbarMenuItem[];
+}
+
+function collectSubmenuScreens(
+	items: NavbarMenuItem[],
+	parentScreenId: string = 'main'
+): SubmenuScreen[] {
+	const screens: SubmenuScreen[] = [];
+	for (const item of items) {
+		if (item.hasChildren && item.children.length > 0) {
+			const screenId = `submenu-${item.id}`;
+			screens.push({
+				id: screenId,
+				parentScreenId,
+				parentItem: item,
+				children: item.children,
+			});
+			// Recurse into deeper levels
+			screens.push(...collectSubmenuScreens(item.children, screenId));
+		}
+	}
+	return screens;
+}
+
+/**
+ * Hook for screen-based navigation with Voxel slide transitions.
+ *
+ * Voxel uses Vue <transition-group> with CSS classes:
+ * - slide-from-right-enter-active / leave-active (transition running)
+ * - slide-from-right-enter-from (start: translateX(100%))
+ * - slide-from-left-enter-from / slide-from-right-leave-to (translateX(-100%))
+ *
+ * CSS source: themes/voxel/assets/dist/popup-kit.css
+ * Grid layout: .ts-multilevel-dropdown { display: grid; grid-template-columns: 1fr }
+ *              .ts-multilevel-dropdown ul { grid-row-start: 1; grid-column-start: 1 }
+ *
+ * This hook replicates Vue's transition lifecycle in React:
+ * 1. Set entering screen to *-enter-from (off-screen position)
+ * 2. Next frame: switch to *-enter-active (triggers CSS transition)
+ * 3. After transition: remove classes
+ */
+function useScreenNav(initialScreen: string = 'main') {
+	const [activeScreen, setActiveScreen] = useState(initialScreen);
+	const [transitionClasses, setTransitionClasses] = useState<Record<string, string>>({});
+	const prevScreenRef = useRef(initialScreen);
+
+	const navigateTo = useCallback((targetScreen: string) => {
+		const prevScreen = prevScreenRef.current;
+		if (targetScreen === prevScreen) return;
+
+		// Determine direction: navigating "deeper" = slide from right, "back" = slide from left
+		const isGoingBack = targetScreen === 'main' || targetScreen.split('-').length < prevScreen.split('-').length;
+		const direction = isGoingBack ? 'left' : 'right';
+
+		// Step 1: Set initial positions (enter-from / leave classes)
+		setTransitionClasses({
+			[targetScreen]: `slide-from-${direction}-enter-from`,
+			[prevScreen]: `slide-from-${direction}-leave-active`,
+		});
+
+		setActiveScreen(targetScreen);
+		prevScreenRef.current = targetScreen;
+
+		// Step 2: Next frame — trigger enter transition
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				setTransitionClasses({
+					[targetScreen]: `slide-from-${direction}-enter-active`,
+					[prevScreen]: `slide-from-${direction}-leave-active slide-from-${direction}-leave-to`,
+				});
+
+				// Step 3: After transition completes, clean up
+				setTimeout(() => {
+					setTransitionClasses({});
+				}, 350); // Slightly longer than .3s transition
+			});
+		});
+	}, []);
+
+	const reset = useCallback(() => {
+		setActiveScreen(initialScreen);
+		prevScreenRef.current = initialScreen;
+		setTransitionClasses({});
+	}, [initialScreen]);
+
+	const getScreenStyle = useCallback((screenId: string): React.CSSProperties => {
+		const isActive = screenId === activeScreen;
+		const hasTransition = !!transitionClasses[screenId];
+
+		if (hasTransition) {
+			// During transition: show both screens (grid stacks them)
+			return {};
+		}
+		if (!isActive) {
+			return { display: 'none' };
+		}
+		return {};
+	}, [activeScreen, transitionClasses]);
+
+	const getScreenClassName = useCallback((screenId: string): string => {
+		return transitionClasses[screenId] || '';
+	}, [transitionClasses]);
+
+	return { activeScreen, navigateTo, reset, getScreenStyle, getScreenClassName };
+}
 
 interface NavbarComponentProps {
 	attributes: NavbarAttributes;
@@ -30,6 +149,10 @@ interface NavbarComponentProps {
 	isLoading: boolean;
 	error: string | null;
 	context: 'editor' | 'frontend';
+	// Linked block data for template_tabs and search_form sources
+	linkedTabs?: LinkedTabData[];
+	linkedPostTypes?: LinkedPostTypeData[];
+	linkedBlockId?: string;
 }
 
 /**
@@ -59,7 +182,7 @@ function renderIcon(icon: { library: string; value: string } | null): JSX.Elemen
 	if (!icon || !icon.value) return null;
 
 	if (icon.library === 'svg') {
-		return <img src={icon.value} alt="" className="ts-svg-icon" />;
+		return <InlineSvg url={icon.value} className="ts-svg-icon" />;
 	}
 
 	// Icon library (Line Awesome, etc.)
@@ -67,17 +190,23 @@ function renderIcon(icon: { library: string; value: string } | null): JSX.Elemen
 }
 
 /**
- * Menu Item Component - recursive for submenus
+ * Menu Item Component - top-level items in the nav bar
+ * Only depth=0 items use this component directly.
+ * Submenus use screen-based multi-level navigation inside FormPopup.
+ *
+ * Evidence: themes/voxel/app/utils/nav-menu-walker.php lines 30-90
  */
 interface MenuItemProps {
 	item: NavbarMenuItem;
-	depth: number;
 	attributes: NavbarAttributes;
 	onSubmenuToggle?: (itemId: number, isOpen: boolean) => void;
+	popupScopeClass?: string;
+	context?: 'editor' | 'frontend';
 }
 
-function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
+function MenuItem({ item, attributes: _attributes, onSubmenuToggle, popupScopeClass, context }: MenuItemProps) {
 	const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
+	const screenNav = useScreenNav('main');
 	const itemRef = useRef<HTMLLIElement>(null);
 	const triggerRef = useRef<HTMLAnchorElement | null>(null);
 
@@ -87,54 +216,74 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 		`menu-item-${item.id}`,
 		...item.classes,
 		item.isCurrent ? 'current-menu-item' : '',
-		item.hasChildren && depth === 0 ? 'ts-popup-component ts-trigger-on-hover' : '',
+		item.hasChildren ? 'ts-popup-component ts-trigger-on-hover' : '',
 	]
 		.filter(Boolean)
 		.join(' ');
 
-	// Handle click for items with children
+	// Handle click — prevent navigation in editor, toggle submenu for parents
 	const handleItemClick = useCallback(
 		(e: React.MouseEvent) => {
+			if (context === 'editor') {
+				e.preventDefault();
+			}
 			if (item.hasChildren) {
 				e.preventDefault();
-				setIsSubmenuOpen(!isSubmenuOpen);
-				onSubmenuToggle?.(item.id, !isSubmenuOpen);
+				const newState = !isSubmenuOpen;
+				setIsSubmenuOpen(newState);
+				if (newState) screenNav.reset(); // Reset to main screen on open
+				onSubmenuToggle?.(item.id, newState);
 			}
 		},
-		[item.hasChildren, item.id, isSubmenuOpen, onSubmenuToggle]
+		[context, item.hasChildren, item.id, isSubmenuOpen, onSubmenuToggle, screenNav]
 	);
 
 	// Close submenu when clicking outside
+	// Editor-aware: respect portaled popups and sidebar clicks
 	useEffect(() => {
 		if (!isSubmenuOpen) return;
 
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+
 		const handleClickOutside = (e: MouseEvent) => {
-			if (itemRef.current && !itemRef.current.contains(e.target as Node)) {
-				setIsSubmenuOpen(false);
+			const clickTarget = e.target as HTMLElement;
+
+			if (itemRef.current && itemRef.current.contains(clickTarget)) {
+				return;
 			}
+
+			// Click inside a portaled popup — don't close
+			if (clickTarget.closest('.ts-field-popup') || clickTarget.closest('.ts-field-popup-container')) {
+				return;
+			}
+
+			// In editor: don't close when clicking sidebar/toolbar
+			if (editorIframe) {
+				const gutenbergSelectors = [
+					'.interface-interface-skeleton__sidebar',
+					'.block-editor-block-inspector',
+					'.components-popover',
+					'.components-modal__screen-overlay',
+					'.edit-post-sidebar',
+					'.interface-interface-skeleton__header',
+					'.interface-interface-skeleton__secondary-sidebar',
+				];
+				for (const selector of gutenbergSelectors) {
+					if (clickTarget.closest(selector)) {
+						return;
+					}
+				}
+			}
+
+			setIsSubmenuOpen(false);
 		};
 
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [isSubmenuOpen]);
 
-	// Render link content
-	const linkContent = (
-		<>
-			{depth === 0 && (
-				<div className="ts-item-icon flexify">
-					{item.icon ? <span dangerouslySetInnerHTML={{ __html: item.icon }} /> : null}
-				</div>
-			)}
-			{depth > 0 && item.icon && (
-				<div className="ts-term-icon">
-					<span dangerouslySetInnerHTML={{ __html: item.icon }} />
-				</div>
-			)}
-			<span>{item.title}</span>
-			{item.hasChildren && <div className={depth === 0 ? 'ts-down-icon' : 'ts-right-icon'} />}
-		</>
-	);
+	// Collect all submenu screens for multi-level navigation
+	const submenuScreens = item.hasChildren ? collectSubmenuScreens(item.children) : [];
 
 	return (
 		<li ref={itemRef} className={itemClasses}>
@@ -142,14 +291,21 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 				ref={triggerRef}
 				href={item.url}
 				target={item.target || undefined}
-				className={depth === 0 ? 'ts-item-link' : 'flexify'}
+				rel={item.rel || undefined}
+				title={item.attrTitle || undefined}
+				aria-current={item.isCurrent ? 'page' : undefined}
+				className="ts-item-link"
 				onClick={handleItemClick}
 			>
-				{linkContent}
+				<div className="ts-item-icon flexify">
+					{item.icon ? <span dangerouslySetInnerHTML={{ __html: item.icon }} /> : null}
+				</div>
+				<span>{item.title}</span>
+				{item.hasChildren && <div className="ts-down-icon" />}
 			</a>
 
-			{/* Submenu popup for top-level items with children (vx-popup portal via FormPopup) */}
-			{item.hasChildren && depth === 0 && (
+			{/* Submenu popup with screen-based multi-level navigation */}
+			{item.hasChildren && (
 				<FormPopup
 					isOpen={isSubmenuOpen}
 					popupId={`navbar-submenu-${item.id}`}
@@ -159,28 +315,130 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 					showHeader={false}
 					showFooter={false}
 					clearButton={false}
+					popupClass={popupScopeClass}
 					onClose={() => {
 						setIsSubmenuOpen(false);
 						onSubmenuToggle?.(item.id, false);
 					}}
 				>
 					<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
-						<ul className="simplify-ul ts-term-dropdown-list sub-menu">
+						{/* Main screen: direct children */}
+						<ul
+							className={`simplify-ul ts-term-dropdown-list sub-menu ${screenNav.getScreenClassName('main')}`}
+							style={screenNav.getScreenStyle('main')}
+						>
 							{/* Parent item link */}
 							<li className="ts-parent-menu">
-								<a href={item.url} className="flexify">
+								<a
+									href={item.url}
+									rel={item.rel || undefined}
+									title={item.attrTitle || undefined}
+									className="flexify"
+									onClick={context === 'editor' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+								>
 									{item.icon && <span dangerouslySetInnerHTML={{ __html: item.icon }} />}
 									<span>{item.title}</span>
 								</a>
 							</li>
 							{/* Child items */}
 							{item.children.map((child) => (
-								<MenuItem key={child.id} item={child} depth={depth + 1} attributes={attributes} />
+								<SubmenuItem
+									key={child.id}
+									item={child}
+									context={context}
+									onNavigate={(screenId) => screenNav.navigateTo(screenId)}
+								/>
 							))}
 						</ul>
+
+						{/* Nested submenu screens */}
+						{submenuScreens.map((screen) => (
+							<ul
+								key={screen.id}
+								className={`simplify-ul ts-term-dropdown-list sub-menu ${screenNav.getScreenClassName(screen.id)}`}
+								style={screenNav.getScreenStyle(screen.id)}
+							>
+								{/* Go back button */}
+								<li className="ts-term-centered">
+									<a
+										href="#"
+										className="flexify"
+										onClick={(e) => {
+											e.preventDefault();
+											screenNav.navigateTo(screen.parentScreenId);
+										}}
+									>
+										<div className="ts-left-icon" />
+										<span>Go back</span>
+									</a>
+								</li>
+								{/* Parent item */}
+								<li className="ts-parent-menu">
+									<a
+										href={screen.parentItem.url}
+										className="flexify"
+										onClick={context === 'editor' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+									>
+										{screen.parentItem.icon && <span dangerouslySetInnerHTML={{ __html: screen.parentItem.icon }} />}
+										<span>{screen.parentItem.title}</span>
+									</a>
+								</li>
+								{/* Children */}
+								{screen.children.map((child) => (
+									<SubmenuItem
+										key={child.id}
+										item={child}
+										context={context}
+										onNavigate={(screenId) => screenNav.navigateTo(screenId)}
+									/>
+								))}
+							</ul>
+						))}
 					</div>
 				</FormPopup>
 			)}
+		</li>
+	);
+}
+
+/**
+ * Submenu Item - rendered inside popup screens (both desktop and mobile)
+ * Handles navigation to deeper levels when item has children.
+ */
+interface SubmenuItemProps {
+	item: NavbarMenuItem;
+	context?: 'editor' | 'frontend';
+	onNavigate: (screenId: string) => void;
+}
+
+function SubmenuItem({ item, context, onNavigate }: SubmenuItemProps) {
+	return (
+		<li className={`menu-item menu-item-${item.id} ${item.isCurrent ? 'current-menu-item' : ''}`}>
+			<a
+				href={item.hasChildren ? '#' : item.url}
+				target={item.hasChildren ? undefined : item.target || undefined}
+				rel={item.hasChildren ? undefined : item.rel || undefined}
+				title={item.attrTitle || undefined}
+				aria-current={item.isCurrent ? 'page' : undefined}
+				className="flexify"
+				onClick={(e) => {
+					if (context === 'editor') {
+						e.preventDefault();
+					}
+					if (item.hasChildren) {
+						e.preventDefault();
+						onNavigate(`submenu-${item.id}`);
+					}
+				}}
+			>
+				{item.icon && (
+					<div className="ts-term-icon">
+						<span dangerouslySetInnerHTML={{ __html: item.icon }} />
+					</div>
+				)}
+				<span>{item.title}</span>
+				{item.hasChildren && <div className="ts-right-icon" />}
+			</a>
 		</li>
 	);
 }
@@ -191,34 +449,62 @@ function MenuItem({ item, depth, attributes, onSubmenuToggle }: MenuItemProps) {
 interface MobileMenuProps {
 	attributes: NavbarAttributes;
 	menuData: NavbarMenuApiResponse | null;
+	popupScopeClass?: string;
 }
 
-function MobileMenu({ attributes, menuData }: MobileMenuProps) {
+function MobileMenu({ attributes, menuData, popupScopeClass }: MobileMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
-	const [activeScreen, setActiveScreen] = useState('main');
-	const [, setSlideFrom] = useState<'left' | 'right'>('right');
+	const screenNav = useScreenNav('main');
 	const menuRef = useRef<HTMLLIElement>(null);
 	const triggerRef = useRef<HTMLButtonElement | null>(null);
 
 	// Close menu when clicking outside
+	// Same editor-aware logic as MenuItem: respect portaled popups and sidebar clicks
 	useEffect(() => {
 		if (!isOpen) return;
 
+		const editorIframe = document.querySelector<HTMLIFrameElement>('iframe[name="editor-canvas"]');
+
 		const handleClickOutside = (e: MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				setIsOpen(false);
+			const clickTarget = e.target as HTMLElement;
+
+			// Click inside the mobile menu container — don't close
+			if (menuRef.current && menuRef.current.contains(clickTarget)) {
+				return;
 			}
+
+			// Click inside a portaled popup (FormPopup renders outside menuRef) — don't close
+			if (clickTarget.closest('.ts-field-popup') || clickTarget.closest('.ts-field-popup-container')) {
+				return;
+			}
+
+			// In editor: don't close when clicking sidebar/toolbar
+			if (editorIframe) {
+				const gutenbergSelectors = [
+					'.interface-interface-skeleton__sidebar',
+					'.block-editor-block-inspector',
+					'.components-popover',
+					'.components-modal__screen-overlay',
+					'.edit-post-sidebar',
+					'.interface-interface-skeleton__header',
+					'.interface-interface-skeleton__secondary-sidebar',
+				];
+				for (const selector of gutenbergSelectors) {
+					if (clickTarget.closest(selector)) {
+						return;
+					}
+				}
+			}
+
+			setIsOpen(false);
 		};
 
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [isOpen]);
 
-	// Handle submenu navigation
-	const handleSubmenuNav = useCallback((targetScreen: string, direction: 'left' | 'right') => {
-		setSlideFrom(direction);
-		setActiveScreen(targetScreen);
-	}, []);
+	// Collect all submenu screens for mobile multi-level navigation
+	const mobileSubmenuScreens = menuData?.items ? collectSubmenuScreens(menuData.items) : [];
 
 	return (
 		<li ref={menuRef} className="ts-popup-component ts-mobile-menu">
@@ -226,7 +512,11 @@ function MobileMenu({ attributes, menuData }: MobileMenuProps) {
 				ref={triggerRef}
 				type="button"
 				className="ts-item-link"
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={() => {
+					const newState = !isOpen;
+					setIsOpen(newState);
+					if (newState) screenNav.reset(); // Reset on open
+				}}
 				aria-haspopup="true"
 				aria-expanded={isOpen}
 				aria-label={attributes.hamburgerTitle || 'Menu'}
@@ -245,6 +535,7 @@ function MobileMenu({ attributes, menuData }: MobileMenuProps) {
 				showHeader={true}
 				showFooter={false}
 				clearButton={false}
+				popupClass={popupScopeClass}
 				onClose={() => setIsOpen(false)}
 			>
 				{/* Popup header (mobile only) */}
@@ -262,58 +553,62 @@ function MobileMenu({ attributes, menuData }: MobileMenuProps) {
 					</ul>
 				</div>
 
-				{/* Menu items */}
+				{/* Screen-based multi-level navigation (matches Voxel's popup-menu-walker.php) */}
 				<div className="ts-term-dropdown ts-md-group ts-multilevel-dropdown">
-					<ul className="simplify-ul ts-term-dropdown-list">
+					{/* Main screen: top-level items */}
+					<ul
+						className={`simplify-ul ts-term-dropdown-list ${screenNav.getScreenClassName('main')}`}
+						style={screenNav.getScreenStyle('main')}
+					>
 						{menuData?.items.map((item) => (
-							<MobileMenuItem
+							<SubmenuItem
 								key={item.id}
 								item={item}
-								attributes={attributes}
-								activeScreen={activeScreen}
-								onNavigate={handleSubmenuNav}
+								onNavigate={(screenId) => screenNav.navigateTo(screenId)}
 							/>
 						))}
 					</ul>
+
+					{/* Nested submenu screens */}
+					{mobileSubmenuScreens.map((screen) => (
+						<ul
+							key={screen.id}
+							className={`simplify-ul ts-term-dropdown-list sub-menu ${screenNav.getScreenClassName(screen.id)}`}
+							style={screenNav.getScreenStyle(screen.id)}
+						>
+							{/* Go back button */}
+							<li className="ts-term-centered">
+								<a
+									href="#"
+									className="flexify"
+									onClick={(e) => {
+										e.preventDefault();
+										screenNav.navigateTo(screen.parentScreenId);
+									}}
+								>
+									<div className="ts-left-icon" />
+									<span>Go back</span>
+								</a>
+							</li>
+							{/* Parent item */}
+							<li className="ts-parent-menu">
+								<a href={screen.parentItem.url} className="flexify">
+									{screen.parentItem.icon && <span dangerouslySetInnerHTML={{ __html: screen.parentItem.icon }} />}
+									<span>{screen.parentItem.title}</span>
+								</a>
+							</li>
+							{/* Children */}
+							{screen.children.map((child) => (
+								<SubmenuItem
+									key={child.id}
+									item={child}
+									onNavigate={(screenId) => screenNav.navigateTo(screenId)}
+								/>
+							))}
+						</ul>
+					))}
 				</div>
 			</FormPopup>
-		</li>
-	);
-}
-
-/**
- * Mobile Menu Item - handles multi-level navigation
- */
-interface MobileMenuItemProps {
-	item: NavbarMenuItem;
-	attributes: NavbarAttributes;
-	activeScreen: string;
-	onNavigate: (screen: string, direction: 'left' | 'right') => void;
-}
-
-function MobileMenuItem({ item, attributes: _attributes, activeScreen: _activeScreen, onNavigate }: MobileMenuItemProps) {
-	const screenId = `submenu-${item.id}`;
-
-	return (
-		<li className={`menu-item ${item.isCurrent ? 'current-menu-item' : ''}`}>
-			<a
-				href={item.hasChildren ? '#' : item.url}
-				className="flexify"
-				onClick={(e) => {
-					if (item.hasChildren) {
-						e.preventDefault();
-						onNavigate(screenId, 'right');
-					}
-				}}
-			>
-				{item.icon && (
-					<div className="ts-term-icon">
-						<span dangerouslySetInnerHTML={{ __html: item.icon }} />
-					</div>
-				)}
-				<span>{item.title}</span>
-				{item.hasChildren && <div className="ts-right-icon" />}
-			</a>
 		</li>
 	);
 }
@@ -327,10 +622,37 @@ export default function NavbarComponent({
 	mobileMenuData,
 	isLoading,
 	error,
-	context: _context,
+	context,
+	linkedTabs,
+	linkedPostTypes,
+	linkedBlockId,
 }: NavbarComponentProps) {
+	// Track active post type for search_form source (bidirectional sync with search-form block)
+	// Evidence: voxel-search-form.beautified.js:2367-2373 $watch('post_type') updates navbar active state
+	const [activePostType, setActivePostType] = useState<string | null>(
+		linkedPostTypes?.find(pt => pt.isActive)?.key || linkedPostTypes?.[0]?.key || null
+	);
+
+	useEffect(() => {
+		if (attributes.source !== 'search_form' || context !== 'frontend' || !linkedBlockId) return;
+
+		const handlePostTypeChanged = (event: Event) => {
+			const { searchFormId, postType } = (event as CustomEvent).detail || {};
+			if (searchFormId !== linkedBlockId) return;
+			if (postType) setActivePostType(postType);
+		};
+
+		window.addEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+		return () => window.removeEventListener('voxel-search-form-post-type-changed', handlePostTypeChanged);
+	}, [attributes.source, context, linkedBlockId]);
+
+	// Compute popup scope class for custom popup styling (portaled popups)
+	const popupScopeClass = attributes.customPopupEnabled
+		? `voxel-popup-navbar-${attributes.blockId || 'default'}`
+		: undefined;
+
 	// Build vxconfig for re-render (required for DevTools visibility)
-	const vxConfig: NavbarVxConfig = {
+	const vxConfig: any = {
 		source: attributes.source,
 		menuLocation: attributes.menuLocation,
 		mobileMenuLocation: attributes.mobileMenuLocation,
@@ -365,18 +687,9 @@ export default function NavbarComponent({
 		.filter(Boolean)
 		.join(' ');
 
-	// Loading state
+	// Loading state — return null to avoid FOUC (grey box → content).
 	if (isLoading) {
-		return (
-			<>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				<EmptyPlaceholder />
-			</>
-		);
+		return null;
 	}
 
 	// Error state
@@ -388,13 +701,27 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<EmptyPlaceholder />
+				{context === 'editor' && <EmptyPlaceholder />}
 			</>
 		);
 	}
 
 	// Render based on source
 	if (attributes.source === 'add_links_manually') {
+		// Show EmptyPlaceholder when no manual items (editor only)
+		if ((!attributes.manualItems || attributes.manualItems.length === 0) && context === 'editor') {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<EmptyPlaceholder />
+				</>
+			);
+		}
+
 		// Manual links mode
 		return (
 			<>
@@ -405,19 +732,31 @@ export default function NavbarComponent({
 				/>
 				<nav className="ts-nav-menu ts-custom-links flexify">
 					<ul className={navClasses}>
-						{attributes.manualItems.map((item) => (
+						{attributes.manualItems.map((item) => {
+							// Parse custom attributes (key|value format, comma-separated)
+							const customAttrs: Record<string, string> = {};
+							if (item.customAttributes) {
+								item.customAttributes.split(',').forEach((pair) => {
+									const [key, val] = pair.split('|').map((s) => s.trim());
+									if (key) customAttrs[key] = val || '';
+								});
+							}
+							return (
 							<li key={item.id} className={`menu-item ${item.isActive ? 'current-menu-item' : ''}`}>
 								<a
 									href={item.url}
 									target={item.isExternal ? '_blank' : undefined}
 									rel={item.nofollow ? 'nofollow noopener' : undefined}
 									className="ts-item-link"
+									onClick={context === 'editor' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+									{...customAttrs}
 								>
 									<div className="ts-item-icon flexify">{renderIcon(item.icon)}</div>
 									<span>{item.text}</span>
 								</a>
 							</li>
-						))}
+							);
+						})}
 					</ul>
 				</nav>
 			</>
@@ -427,6 +766,21 @@ export default function NavbarComponent({
 	if (attributes.source === 'select_wp_menu') {
 		// WordPress menu mode
 		const effectiveMenuData = mobileMenuData || menuData;
+		const hasMenuItems = menuData?.items && menuData.items.length > 0;
+
+		// Show EmptyPlaceholder when menu has no items (e.g. menu doesn't exist)
+		if (!hasMenuItems && context === 'editor') {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<EmptyPlaceholder />
+				</>
+			);
+		}
 
 		return (
 			<>
@@ -441,12 +795,12 @@ export default function NavbarComponent({
 					<ul className={navClasses}>
 						{/* Mobile menu trigger */}
 						{(attributes.showBurgerDesktop || attributes.showBurgerTablet) && (
-							<MobileMenu attributes={attributes} menuData={effectiveMenuData} />
+							<MobileMenu attributes={attributes} menuData={effectiveMenuData} popupScopeClass={popupScopeClass} />
 						)}
 
 						{/* Desktop menu items */}
 						{menuData?.items.map((item) => (
-							<MenuItem key={item.id} item={item} depth={0} attributes={attributes} />
+							<MenuItem key={item.id} item={item} attributes={attributes} popupScopeClass={popupScopeClass} context={context} />
 						))}
 					</ul>
 				</nav>
@@ -454,8 +808,31 @@ export default function NavbarComponent({
 		);
 	}
 
-	// Template tabs / Search form modes (placeholder for now)
+	// Template tabs mode - render linked tabs or placeholder
 	if (attributes.source === 'template_tabs') {
+		// No linked tabs yet - show placeholder
+		if (!linkedTabs || linkedTabs.length === 0) {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<nav className="ts-nav-menu ts-tab-triggers flexify">
+						<ul className={navClasses}>
+							<li className="menu-item">
+								<span className="ts-item-link">
+									<span>Template Tabs (link widget to use)</span>
+								</span>
+							</li>
+						</ul>
+					</nav>
+				</>
+			);
+		}
+
+		// Render linked tabs (1:1 with Voxel navbar.php lines 27-43)
 		return (
 			<>
 				<script
@@ -463,20 +840,67 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<nav className="ts-nav-menu ts-tab-triggers flexify">
+				<nav className={`ts-nav-menu ts-tab-triggers ts-tab-triggers-${linkedBlockId || ''} flexify`}>
 					<ul className={navClasses}>
-						<li className="menu-item">
-							<span className="ts-item-link">
-								<span>Template Tabs (link widget to use)</span>
-							</span>
-						</li>
+						{linkedTabs.map((tab) => (
+							<li
+								key={tab.id}
+								className={`menu-item ${tab.isActive ? 'current-menu-item' : ''}`}
+								data-tab={tab.urlKey}
+							>
+								<a
+									href={`#${tab.urlKey}`}
+									className="ts-item-link"
+									onClick={(e) => {
+										e.preventDefault();
+										// Dispatch event for linked tabs block to handle
+										// Matches Voxel's Voxel.loadTab(event, id, urlKey)
+										window.dispatchEvent(new CustomEvent('voxel-load-tab', {
+											detail: {
+												tabsId: linkedBlockId,
+												urlKey: tab.urlKey,
+											}
+										}));
+									}}
+								>
+									<div className="ts-item-icon flexify">
+										{tab.icon && <span dangerouslySetInnerHTML={{ __html: tab.icon }} />}
+									</div>
+									<span>{tab.title}</span>
+								</a>
+							</li>
+						))}
 					</ul>
 				</nav>
 			</>
 		);
 	}
 
+	// Search form mode - render linked post types or placeholder
 	if (attributes.source === 'search_form') {
+		// No linked post types yet - show placeholder
+		if (!linkedPostTypes || linkedPostTypes.length === 0) {
+			return (
+				<>
+					<script
+						type="text/json"
+						className="vxconfig"
+						dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+					/>
+					<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
+						<ul className={navClasses}>
+							<li className="menu-item">
+								<span className="ts-item-link">
+									<span>Search Form (link widget to use)</span>
+								</span>
+							</li>
+						</ul>
+					</nav>
+				</>
+			);
+		}
+
+		// Render linked post types (1:1 with Voxel navbar.php lines 46-75)
 		return (
 			<>
 				<script
@@ -484,13 +908,37 @@ export default function NavbarComponent({
 					className="vxconfig"
 					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
 				/>
-				<nav className="ts-nav-menu ts-nav-sf flexify">
+				<nav className={`ts-nav-menu ts-nav-sf flexify${linkedBlockId ? ` ts-nav-sf-${linkedBlockId}` : ''}`}>
 					<ul className={navClasses}>
-						<li className="menu-item">
-							<span className="ts-item-link">
-								<span>Search Form (link widget to use)</span>
-							</span>
-						</li>
+						{linkedPostTypes.map((postType) => (
+							<li
+								key={postType.key}
+								className={`menu-item ${(activePostType ? postType.key === activePostType : postType.isActive) ? 'current-menu-item' : ''}`}
+								data-post-type={postType.key}
+							>
+								<a
+									href="#"
+									className="ts-item-link"
+									onClick={(e) => {
+										e.preventDefault();
+										// Update local active state immediately
+										setActivePostType(postType.key);
+										// Dispatch event for linked search form to handle post type switch
+										window.dispatchEvent(new CustomEvent('voxel-switch-post-type', {
+											detail: {
+												searchFormId: linkedBlockId,
+												postType: postType.key,
+											}
+										}));
+									}}
+								>
+									<div className="ts-item-icon flexify">
+										{postType.icon && <span dangerouslySetInnerHTML={{ __html: postType.icon }} />}
+									</div>
+									<span>{postType.label}</span>
+								</a>
+							</li>
+						))}
 					</ul>
 				</nav>
 			</>

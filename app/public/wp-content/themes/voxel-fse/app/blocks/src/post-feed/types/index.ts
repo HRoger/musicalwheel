@@ -6,6 +6,7 @@
 
 import type { IconValue } from '@shared/controls/IconPickerControl';
 import type { TypographyValue } from '@shared/controls/TypographyPopup';
+import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 
 export interface DimensionsConfig {
 	top?: string | number;
@@ -81,6 +82,9 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	carouselItemWidth_mobile?: number;
 	carouselItemWidthUnit: string;
 	carouselAutoSlide: boolean;
+	carouselAutoSlideInterval?: number;
+	carouselAutoSlideInterval_tablet?: number;
+	carouselAutoSlideInterval_mobile?: number;
 	scrollPadding?: number;
 	scrollPadding_tablet?: number;
 	scrollPadding_mobile?: number;
@@ -112,6 +116,21 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	// Loading Style
 	loadingStyle: LoadingStyle;
 	loadingOpacity: number;
+	// Skeleton background (prefixed to avoid conflict with AdvancedTab background)
+	skeletonBackgroundColor: string;
+	skeletonBackgroundType?: string;
+	skeletonBackgroundImage?: { id?: number; url?: string };
+	skeletonBgImagePosition?: string;
+	skeletonBgImageAttachment?: string;
+	skeletonBgImageRepeat?: string;
+	skeletonBgImageSize?: string;
+	skeletonGradientColor?: string;
+	skeletonGradientLocation?: number;
+	skeletonGradientSecondColor?: string;
+	skeletonGradientSecondLocation?: number;
+	skeletonGradientType?: string;
+	skeletonGradientAngle?: number;
+	skeletonGradientPosition?: string;
 
 	// No Results Style
 	noResultsHideScreen: boolean;
@@ -141,7 +160,7 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	paginationSpacing?: number;
 	paginationSpacing_tablet?: number;
 	paginationSpacing_mobile?: number;
-	paginationBorderType: string;
+	paginationBorder: BorderGroupValue;
 	paginationBorderRadius?: number;
 	paginationBorderRadius_tablet?: number;
 	paginationBorderRadius_mobile?: number;
@@ -175,7 +194,7 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	carouselNavIconSize_mobile?: number;
 	carouselNavBackground: string;
 	carouselNavBackdropBlur?: number;
-	carouselNavBorderType: string;
+	carouselNavBorder: BorderGroupValue;
 	carouselNavBorderRadius?: number;
 	carouselNavBorderRadius_tablet?: number;
 	carouselNavBorderRadius_mobile?: number;
@@ -201,6 +220,9 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 
 	// Tab persistence
 	postFeedActiveTab?: string;
+
+	// Allow extension with block-specific attributes
+	[key: string]: any;
 }
 
 /**
@@ -236,6 +258,7 @@ export interface PostFeedVxConfig {
 	carouselItemWidth_mobile?: number;
 	carouselItemWidthUnit: string;
 	carouselAutoSlide: boolean;
+	carouselAutoSlideInterval?: number;
 	scrollPadding?: number;
 	scrollPadding_tablet?: number;
 	scrollPadding_mobile?: number;
@@ -244,6 +267,20 @@ export interface PostFeedVxConfig {
 	itemPadding_mobile?: number;
 	loadingStyle: LoadingStyle;
 	loadingOpacity: number;
+	skeletonBackgroundColor?: string;
+	skeletonBackgroundType?: string;
+	skeletonBackgroundImage?: { id?: number; url?: string };
+	skeletonBgImagePosition?: string;
+	skeletonBgImageAttachment?: string;
+	skeletonBgImageRepeat?: string;
+	skeletonBgImageSize?: string;
+	skeletonGradientColor?: string;
+	skeletonGradientLocation?: number;
+	skeletonGradientSecondColor?: string;
+	skeletonGradientSecondLocation?: number;
+	skeletonGradientType?: string;
+	skeletonGradientAngle?: number;
+	skeletonGradientPosition?: string;
 	icons: {
 		loadMore: IconValue;
 		noResults: IconValue;
@@ -359,6 +396,23 @@ export interface PostFeedComponentProps {
 	 * Container element for scrolling and asset injection (frontend)
 	 */
 	containerElement?: HTMLElement;
+
+	/**
+	 * Server-side hydrated HTML (injected by Block_Loader at PHP render time).
+	 * When present, the component renders immediately without AJAX fetch.
+	 */
+	initialHtml?: string | null;
+
+	/**
+	 * Metadata from server-side hydration (pagination, counts).
+	 */
+	initialMeta?: {
+		hasResults: boolean;
+		hasPrev: boolean;
+		hasNext: boolean;
+		totalCount: number;
+		displayCount: string;
+	} | null;
 }
 
 /**

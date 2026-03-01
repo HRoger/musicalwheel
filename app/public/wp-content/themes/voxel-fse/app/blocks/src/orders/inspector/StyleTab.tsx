@@ -16,7 +16,6 @@ import {
 	TypographyControl,
 	ResponsiveRangeControl,
 	DimensionsControl,
-	BorderGroupControl,
 	BoxShadowPopup,
 	StateTabPanel,
 } from '@shared/controls';
@@ -37,6 +36,7 @@ interface DimensionsConfig {
 }
 
 interface TypographyConfig {
+	[key: string]: unknown;
 	fontFamily?: string;
 	fontSize?: number;
 	fontSizeUnit?: string;
@@ -47,20 +47,7 @@ interface TypographyConfig {
 	letterSpacing?: number;
 }
 
-interface BoxShadowConfig {
-	horizontal?: number;
-	vertical?: number;
-	blur?: number;
-	spread?: number;
-	color?: string;
-	position?: 'outset' | 'inset';
-}
 
-interface BorderConfig {
-	width?: number;
-	style?: 'none' | 'solid' | 'dashed' | 'dotted';
-	color?: string;
-}
 
 export function StyleTab({
 	attributes,
@@ -78,25 +65,25 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Title typography', 'voxel-fse')}
 					value={attributes.generalTitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ generalTitleTypography: value })}
+					onChange={(value: any) => setAttributes({ generalTitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.generalTitleColor}
-					onChange={(value) => setAttributes({ generalTitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ generalTitleColor: value })}
 				/>
 
 				<TypographyControl
 					label={__('Title typography', 'voxel-fse')}
 					value={attributes.generalSubtitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ generalSubtitleTypography: value })}
+					onChange={(value: any) => setAttributes({ generalSubtitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.generalSubtitleColor}
-					onChange={(value) => setAttributes({ generalSubtitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ generalSubtitleColor: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -128,7 +115,7 @@ export function StyleTab({
 							<TypographyControl
 								label={__('Typography', 'voxel-fse')}
 								value={attributes.primaryBtnTypography as TypographyConfig}
-								onChange={(value) => setAttributes({ primaryBtnTypography: value })}
+								onChange={(value: any) => setAttributes({ primaryBtnTypography: value })}
 							/>
 
 							<SelectControl
@@ -143,7 +130,7 @@ export function StyleTab({
 									{ label: __('Dashed', 'voxel-fse'), value: 'Dashed' },
 									{ label: __('Groove', 'voxel-fse'), value: 'Groove' },
 								]}
-								onChange={(value) => setAttributes({ primaryBtnBorderType: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnBorderType: value })}
 							/>
 
 							<ResponsiveRangeControl
@@ -157,6 +144,7 @@ export function StyleTab({
 							/>
 
 							<BoxShadowPopup
+								label={__("Box Shadow", "voxel-fse")}
 								shadowAttributeName="primaryBtnBoxShadow"
 								attributes={attributes as Record<string, any>}
 								setAttributes={setAttributes as (attrs: Record<string, any>) => void}
@@ -165,13 +153,13 @@ export function StyleTab({
 							<ColorControl
 								label={__('Text color', 'voxel-fse')}
 								value={attributes.primaryBtnTextColor}
-								onChange={(value) => setAttributes({ primaryBtnTextColor: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnTextColor: value })}
 							/>
 
 							<ColorControl
 								label={__('Background color', 'voxel-fse')}
 								value={attributes.primaryBtnBackground}
-								onChange={(value) => setAttributes({ primaryBtnBackground: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnBackground: value })}
 							/>
 
 							<ResponsiveRangeControl
@@ -187,7 +175,7 @@ export function StyleTab({
 							<ColorControl
 								label={__('Icon color', 'voxel-fse')}
 								value={attributes.primaryBtnIconColor}
-								onChange={(value) => setAttributes({ primaryBtnIconColor: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnIconColor: value })}
 							/>
 
 							<ResponsiveRangeControl
@@ -205,22 +193,23 @@ export function StyleTab({
 							<ColorControl
 								label={__('Text color', 'voxel-fse')}
 								value={attributes.primaryBtnTextColorHover}
-								onChange={(value) => setAttributes({ primaryBtnTextColorHover: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnTextColorHover: value })}
 							/>
 
 							<ColorControl
 								label={__('Background color', 'voxel-fse')}
 								value={attributes.primaryBtnBackgroundHover}
-								onChange={(value) => setAttributes({ primaryBtnBackgroundHover: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnBackgroundHover: value })}
 							/>
 
 							<ColorControl
 								label={__('Border color', 'voxel-fse')}
 								value={attributes.primaryBtnBorderColorHover}
-								onChange={(value) => setAttributes({ primaryBtnBorderColorHover: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnBorderColorHover: value })}
 							/>
 
 							<BoxShadowPopup
+								label={__("Box Shadow", "voxel-fse")}
 								shadowAttributeName="primaryBtnBoxShadowHover"
 								attributes={attributes as Record<string, any>}
 								setAttributes={setAttributes as (attrs: Record<string, any>) => void}
@@ -229,7 +218,7 @@ export function StyleTab({
 							<ColorControl
 								label={__('Icon color', 'voxel-fse')}
 								value={attributes.primaryBtnIconColorHover}
-								onChange={(value) => setAttributes({ primaryBtnIconColorHover: value })}
+								onChange={(value: string | undefined) => setAttributes({ primaryBtnIconColorHover: value })}
 							/>
 						</>
 					)
@@ -254,7 +243,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Button icon color', 'voxel-fse')}
 									value={attributes.secondaryBtnIconColor}
-									onChange={(value) => setAttributes({ secondaryBtnIconColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnIconColor: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -280,7 +269,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Button background', 'voxel-fse')}
 									value={attributes.secondaryBtnBackground}
-									onChange={(value) => setAttributes({ secondaryBtnBackground: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnBackground: value })}
 								/>
 
 								<SelectControl
@@ -294,7 +283,7 @@ export function StyleTab({
 										{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
 										{ label: __('Double', 'voxel-fse'), value: 'double' },
 									]}
-									onChange={(value) => setAttributes({ secondaryBtnBorderType: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnBorderType: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -310,13 +299,13 @@ export function StyleTab({
 								<TypographyControl
 									label={__('Typography', 'voxel-fse')}
 									value={attributes.secondaryBtnTypography as TypographyConfig}
-									onChange={(value) => setAttributes({ secondaryBtnTypography: value })}
+									onChange={(value: any) => setAttributes({ secondaryBtnTypography: value })}
 								/>
 
 								<ColorControl
 									label={__('Text color', 'voxel-fse')}
 									value={attributes.secondaryBtnTextColor}
-									onChange={(value) => setAttributes({ secondaryBtnTextColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnTextColor: value })}
 								/>
 							</>
 						) : (
@@ -324,25 +313,25 @@ export function StyleTab({
 								<ColorControl
 									label={__('Button icon color', 'voxel-fse')}
 									value={attributes.secondaryBtnIconColorHover}
-									onChange={(value) => setAttributes({ secondaryBtnIconColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnIconColorHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Button background', 'voxel-fse')}
 									value={attributes.secondaryBtnBackgroundHover}
-									onChange={(value) => setAttributes({ secondaryBtnBackgroundHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnBackgroundHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Border color', 'voxel-fse')}
 									value={attributes.secondaryBtnBorderColorHover}
-									onChange={(value) => setAttributes({ secondaryBtnBorderColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnBorderColorHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Text color', 'voxel-fse')}
 									value={attributes.secondaryBtnTextColorHover}
-									onChange={(value) => setAttributes({ secondaryBtnTextColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ secondaryBtnTextColorHover: value })}
 								/>
 							</>
 						)
@@ -367,7 +356,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Background', 'voxel-fse')}
 									value={attributes.cardBackground}
-									onChange={(value) => setAttributes({ cardBackground: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardBackground: value })}
 								/>
 
 								<SelectControl
@@ -381,7 +370,7 @@ export function StyleTab({
 										{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
 										{ label: __('Double', 'voxel-fse'), value: 'double' },
 									]}
-									onChange={(value) => setAttributes({ cardBorderType: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardBorderType: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -431,19 +420,19 @@ export function StyleTab({
 								<TypographyControl
 									label={__('Typography', 'voxel-fse')}
 									value={attributes.cardOrderIdTypography as TypographyConfig}
-									onChange={(value) => setAttributes({ cardOrderIdTypography: value })}
+									onChange={(value: any) => setAttributes({ cardOrderIdTypography: value })}
 								/>
 
 								<ColorControl
 									label={__('Color', 'voxel-fse')}
 									value={attributes.cardOrderIdColor}
-									onChange={(value) => setAttributes({ cardOrderIdColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardOrderIdColor: value })}
 								/>
 
 								<ColorControl
 									label={__('Background color', 'voxel-fse')}
 									value={attributes.cardOrderIdBackground}
-									onChange={(value) => setAttributes({ cardOrderIdBackground: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardOrderIdBackground: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -466,19 +455,19 @@ export function StyleTab({
 								<TypographyControl
 									label={__('Typography', 'voxel-fse')}
 									value={attributes.cardOrderTitleTypography as TypographyConfig}
-									onChange={(value) => setAttributes({ cardOrderTitleTypography: value })}
+									onChange={(value: any) => setAttributes({ cardOrderTitleTypography: value })}
 								/>
 
 								<TypographyControl
 									label={__('Typography (Pending)', 'voxel-fse')}
 									value={attributes.cardOrderTitleTypographyPending as TypographyConfig}
-									onChange={(value) => setAttributes({ cardOrderTitleTypographyPending: value })}
+									onChange={(value: any) => setAttributes({ cardOrderTitleTypographyPending: value })}
 								/>
 
 								<ColorControl
 									label={__('Color', 'voxel-fse')}
 									value={attributes.cardOrderTitleColor}
-									onChange={(value) => setAttributes({ cardOrderTitleColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardOrderTitleColor: value })}
 								/>
 
 								{/* Order details */}
@@ -491,13 +480,13 @@ export function StyleTab({
 								<TypographyControl
 									label={__('Typography', 'voxel-fse')}
 									value={attributes.cardOrderDetailsTypography as TypographyConfig}
-									onChange={(value) => setAttributes({ cardOrderDetailsTypography: value })}
+									onChange={(value: any) => setAttributes({ cardOrderDetailsTypography: value })}
 								/>
 
 								<ColorControl
 									label={__('Color', 'voxel-fse')}
 									value={attributes.cardOrderDetailsColor}
-									onChange={(value) => setAttributes({ cardOrderDetailsColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardOrderDetailsColor: value })}
 								/>
 							</>
 						) : (
@@ -505,13 +494,13 @@ export function StyleTab({
 								<ColorControl
 									label={__('Card background', 'voxel-fse')}
 									value={attributes.cardBackgroundHover}
-									onChange={(value) => setAttributes({ cardBackgroundHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardBackgroundHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Card border color', 'voxel-fse')}
 									value={attributes.cardBorderColorHover}
-									onChange={(value) => setAttributes({ cardBorderColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ cardBorderColorHover: value })}
 								/>
 							</>
 						)
@@ -546,7 +535,7 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.statusTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ statusTypography: value })}
+					onChange={(value: any) => setAttributes({ statusTypography: value })}
 				/>
 
 				<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -558,37 +547,37 @@ export function StyleTab({
 				<ColorControl
 					label={__('Orange', 'voxel-fse')}
 					value={attributes.statusOrangeColor}
-					onChange={(value) => setAttributes({ statusOrangeColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusOrangeColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Green', 'voxel-fse')}
 					value={attributes.statusGreenColor}
-					onChange={(value) => setAttributes({ statusGreenColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusGreenColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Neutral', 'voxel-fse')}
 					value={attributes.statusNeutralColor}
-					onChange={(value) => setAttributes({ statusNeutralColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusNeutralColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Red', 'voxel-fse')}
 					value={attributes.statusRedColor}
-					onChange={(value) => setAttributes({ statusRedColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusRedColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Grey', 'voxel-fse')}
 					value={attributes.statusGreyColor}
-					onChange={(value) => setAttributes({ statusGreyColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusGreyColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Blue', 'voxel-fse')}
 					value={attributes.statusBlueColor}
-					onChange={(value) => setAttributes({ statusBlueColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ statusBlueColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -650,25 +639,25 @@ export function StyleTab({
 										{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
 										{ label: __('Double', 'voxel-fse'), value: 'double' },
 									]}
-									onChange={(value) => setAttributes({ filterBorderType: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterBorderType: value })}
 								/>
 
 								<ColorControl
 									label={__('Background color', 'voxel-fse')}
 									value={attributes.filterBackground}
-									onChange={(value) => setAttributes({ filterBackground: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterBackground: value })}
 								/>
 
 								<ColorControl
 									label={__('Text color', 'voxel-fse')}
 									value={attributes.filterTextColor}
-									onChange={(value) => setAttributes({ filterTextColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterTextColor: value })}
 								/>
 
 								<TypographyControl
 									label={__('Typography', 'voxel-fse')}
 									value={attributes.filterTypography as TypographyConfig}
-									onChange={(value) => setAttributes({ filterTypography: value })}
+									onChange={(value: any) => setAttributes({ filterTypography: value })}
 								/>
 
 								<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -680,7 +669,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Chevron color', 'voxel-fse')}
 									value={attributes.filterChevronColor}
-									onChange={(value) => setAttributes({ filterChevronColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterChevronColor: value })}
 								/>
 							</>
 						) : (
@@ -695,25 +684,25 @@ export function StyleTab({
 								<ColorControl
 									label={__('Border color', 'voxel-fse')}
 									value={attributes.filterBorderColorHover}
-									onChange={(value) => setAttributes({ filterBorderColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterBorderColorHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Background color', 'voxel-fse')}
 									value={attributes.filterBackgroundHover}
-									onChange={(value) => setAttributes({ filterBackgroundHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterBackgroundHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Text color', 'voxel-fse')}
 									value={attributes.filterTextColorHover}
-									onChange={(value) => setAttributes({ filterTextColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterTextColorHover: value })}
 								/>
 
 								<ColorControl
 									label={__('Chevron color', 'voxel-fse')}
 									value={attributes.filterChevronColorHover}
-									onChange={(value) => setAttributes({ filterChevronColorHover: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterChevronColorHover: value })}
 								/>
 							</>
 						)
@@ -734,25 +723,25 @@ export function StyleTab({
 							<TypographyControl
 								label={__('Typography', 'voxel-fse')}
 								value={attributes.filterDropdownTypography as TypographyConfig}
-								onChange={(value) => setAttributes({ filterDropdownTypography: value })}
+								onChange={(value: any) => setAttributes({ filterDropdownTypography: value })}
 							/>
 
 							<ColorControl
 								label={__('Background', 'voxel-fse')}
 								value={attributes.filterDropdownBackground}
-								onChange={(value) => setAttributes({ filterDropdownBackground: value })}
+								onChange={(value: string | undefined) => setAttributes({ filterDropdownBackground: value })}
 							/>
 
 							<ColorControl
 								label={__('Text color', 'voxel-fse')}
 								value={attributes.filterDropdownTextColor}
-								onChange={(value) => setAttributes({ filterDropdownTextColor: value })}
+								onChange={(value: string | undefined) => setAttributes({ filterDropdownTextColor: value })}
 							/>
 
 							<ColorControl
 								label={__('Border color', 'voxel-fse')}
 								value={attributes.filterDropdownBorderColor}
-								onChange={(value) => setAttributes({ filterDropdownBorderColor: value })}
+								onChange={(value: string | undefined) => setAttributes({ filterDropdownBorderColor: value })}
 							/>
 
 							<ResponsiveRangeControl
@@ -775,7 +764,7 @@ export function StyleTab({
 							<ColorControl
 								label={__('Chevron color', 'voxel-fse')}
 								value={attributes.filterDropdownChevronColor}
-								onChange={(value) => setAttributes({ filterDropdownChevronColor: value })}
+								onChange={(value: string | undefined) => setAttributes({ filterDropdownChevronColor: value })}
 							/>
 						</>
 					)}
@@ -799,7 +788,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Input placeholder color', 'voxel-fse')}
 									value={attributes.filterInputPlaceholderColor}
-									onChange={(value) => setAttributes({ filterInputPlaceholderColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterInputPlaceholderColor: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -815,7 +804,7 @@ export function StyleTab({
 								<ColorControl
 									label={__('Icon color', 'voxel-fse')}
 									value={attributes.filterInputIconColor}
-									onChange={(value) => setAttributes({ filterInputIconColor: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterInputIconColor: value })}
 								/>
 
 								<ResponsiveRangeControl
@@ -833,13 +822,13 @@ export function StyleTab({
 								<ColorControl
 									label={__('Background color', 'voxel-fse')}
 									value={attributes.filterInputBackgroundFocus}
-									onChange={(value) => setAttributes({ filterInputBackgroundFocus: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterInputBackgroundFocus: value })}
 								/>
 
 								<ColorControl
 									label={__('Border color', 'voxel-fse')}
 									value={attributes.filterInputBorderColorFocus}
-									onChange={(value) => setAttributes({ filterInputBorderColorFocus: value })}
+									onChange={(value: string | undefined) => setAttributes({ filterInputBorderColorFocus: value })}
 								/>
 							</>
 						)
@@ -884,13 +873,13 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleEventOrderTitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleEventOrderTitleTypography: value })}
+					onChange={(value: any) => setAttributes({ singleEventOrderTitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleEventOrderTitleColor}
-					onChange={(value) => setAttributes({ singleEventOrderTitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventOrderTitleColor: value })}
 				/>
 
 				<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -902,13 +891,13 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleEventTitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleEventTitleTypography: value })}
+					onChange={(value: any) => setAttributes({ singleEventTitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleEventTitleColor}
-					onChange={(value) => setAttributes({ singleEventTitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventTitleColor: value })}
 				/>
 
 				<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -920,13 +909,13 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleEventDetailsTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleEventDetailsTypography: value })}
+					onChange={(value: any) => setAttributes({ singleEventDetailsTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleEventDetailsColor}
-					onChange={(value) => setAttributes({ singleEventDetailsColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventDetailsColor: value })}
 				/>
 
 				<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -938,7 +927,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.singleEventDividerColor}
-					onChange={(value) => setAttributes({ singleEventDividerColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventDividerColor: value })}
 				/>
 
 				<div style={{ marginTop: '16px', paddingTop: '8px', borderTop: '1px solid #ddd' }}>
@@ -950,13 +939,13 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleEventFilesTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleEventFilesTypography: value })}
+					onChange={(value: any) => setAttributes({ singleEventFilesTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleEventFilesColor}
-					onChange={(value) => setAttributes({ singleEventFilesColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventFilesColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -979,7 +968,7 @@ export function StyleTab({
 						{ label: __('Dotted', 'voxel-fse'), value: 'dotted' },
 						{ label: __('Double', 'voxel-fse'), value: 'double' },
 					]}
-					onChange={(value) => setAttributes({ singleEventBoxBorderType: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventBoxBorderType: value })}
 				/>
 
 				<ResponsiveRangeControl
@@ -995,7 +984,7 @@ export function StyleTab({
 				<ColorControl
 					label={__('Background color', 'voxel-fse')}
 					value={attributes.singleEventBoxBackground}
-					onChange={(value) => setAttributes({ singleEventBoxBackground: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleEventBoxBackground: value })}
 				/>
 			</AccordionPanel>
 
@@ -1044,25 +1033,25 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Title typography', 'voxel-fse')}
 					value={attributes.singleItemTitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleItemTitleTypography: value })}
+					onChange={(value: any) => setAttributes({ singleItemTitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Color', 'voxel-fse')}
 					value={attributes.singleItemTitleColor}
-					onChange={(value) => setAttributes({ singleItemTitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleItemTitleColor: value })}
 				/>
 
 				<TypographyControl
 					label={__('Subtitle typography', 'voxel-fse')}
 					value={attributes.singleItemSubtitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleItemSubtitleTypography: value })}
+					onChange={(value: any) => setAttributes({ singleItemSubtitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Subtitle color', 'voxel-fse')}
 					value={attributes.singleItemSubtitleColor}
-					onChange={(value) => setAttributes({ singleItemSubtitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleItemSubtitleColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -1081,25 +1070,25 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleTableTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleTableTypography: value })}
+					onChange={(value: any) => setAttributes({ singleTableTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleTableTextColor}
-					onChange={(value) => setAttributes({ singleTableTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleTableTextColor: value })}
 				/>
 
 				<TypographyControl
 					label={__('Typography (Total)', 'voxel-fse')}
 					value={attributes.singleTableTypographyTotal as TypographyConfig}
-					onChange={(value) => setAttributes({ singleTableTypographyTotal: value })}
+					onChange={(value: any) => setAttributes({ singleTableTypographyTotal: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color (Total)', 'voxel-fse')}
 					value={attributes.singleTableTextColorTotal}
-					onChange={(value) => setAttributes({ singleTableTextColorTotal: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleTableTextColorTotal: value })}
 				/>
 			</AccordionPanel>
 
@@ -1108,25 +1097,25 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleAccordionTitleTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleAccordionTitleTypography: value })}
+					onChange={(value: any) => setAttributes({ singleAccordionTitleTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleAccordionTitleColor}
-					onChange={(value) => setAttributes({ singleAccordionTitleColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleAccordionTitleColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.singleAccordionIconColor}
-					onChange={(value) => setAttributes({ singleAccordionIconColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleAccordionIconColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Divider color', 'voxel-fse')}
 					value={attributes.singleAccordionDividerColor}
-					onChange={(value) => setAttributes({ singleAccordionDividerColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleAccordionDividerColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -1135,19 +1124,19 @@ export function StyleTab({
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.singleNotesTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ singleNotesTypography: value })}
+					onChange={(value: any) => setAttributes({ singleNotesTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.singleNotesTextColor}
-					onChange={(value) => setAttributes({ singleNotesTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleNotesTextColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Link color', 'voxel-fse')}
 					value={attributes.singleNotesLinkColor}
-					onChange={(value) => setAttributes({ singleNotesLinkColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ singleNotesLinkColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -1176,25 +1165,25 @@ export function StyleTab({
 				<ColorControl
 					label={__('Icon color', 'voxel-fse')}
 					value={attributes.noResultsIconColor}
-					onChange={(value) => setAttributes({ noResultsIconColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ noResultsIconColor: value })}
 				/>
 
 				<TypographyControl
 					label={__('Typography', 'voxel-fse')}
 					value={attributes.noResultsTypography as TypographyConfig}
-					onChange={(value) => setAttributes({ noResultsTypography: value })}
+					onChange={(value: any) => setAttributes({ noResultsTypography: value })}
 				/>
 
 				<ColorControl
 					label={__('Text color', 'voxel-fse')}
 					value={attributes.noResultsTextColor}
-					onChange={(value) => setAttributes({ noResultsTextColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ noResultsTextColor: value })}
 				/>
 
 				<ColorControl
 					label={__('Link color', 'voxel-fse')}
 					value={attributes.noResultsLinkColor}
-					onChange={(value) => setAttributes({ noResultsLinkColor: value })}
+					onChange={(value: string | undefined) => setAttributes({ noResultsLinkColor: value })}
 				/>
 			</AccordionPanel>
 
@@ -1203,13 +1192,13 @@ export function StyleTab({
 				<ColorControl
 					label={__('Color 1', 'voxel-fse')}
 					value={attributes.loadingSpinnerColor1}
-					onChange={(value) => setAttributes({ loadingSpinnerColor1: value })}
+					onChange={(value: string | undefined) => setAttributes({ loadingSpinnerColor1: value })}
 				/>
 
 				<ColorControl
 					label={__('Color 2', 'voxel-fse')}
 					value={attributes.loadingSpinnerColor2}
-					onChange={(value) => setAttributes({ loadingSpinnerColor2: value })}
+					onChange={(value: string | undefined) => setAttributes({ loadingSpinnerColor2: value })}
 				/>
 			</AccordionPanel>
 		</AccordionPanelGroup>

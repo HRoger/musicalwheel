@@ -53,7 +53,7 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
 	className = '',
 }) => {
 	const valueIsEmpty = isEmpty(value);
-	const hasMaxLength = field.props?.maxlength;
+	const hasMaxLength = field.props?.['maxlength'];
 
 	return (
 		<label className={className}>
@@ -72,7 +72,7 @@ export const FieldLabel: React.FC<FieldLabelProps> = ({
 					{/* Character Counter (only when has maxlength AND has content) */}
 					{hasMaxLength && !valueIsEmpty && contentLength !== undefined && (
 						<span className="is-required ts-char-counter">
-							{contentLength}/{field.props.maxlength}
+							{contentLength}/{String(field.props?.['maxlength'] ?? '')}
 						</span>
 					)}
 				</>

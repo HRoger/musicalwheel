@@ -238,8 +238,8 @@
 			]
 		},
 		"layout": {
-			"contentSize": "800px",
-			"wideSize": "1200px"
+			"contentSize": "1200px",
+			"wideSize": "1500px"
 		},
 		"custom": {
 			"borderRadius": {
@@ -264,6 +264,7 @@
 			"lineHeight": "1.6"
 		},
 		"spacing": {
+			"blockGap": "0",
 			"padding": {
 				"top": "0",
 				"right": "var(--wp--preset--spacing--4)",

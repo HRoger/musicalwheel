@@ -61,7 +61,6 @@
  * ============================================================================
  */
 
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RingChartComponent } from './RingChartComponent';
 import type { RingChartAttributes } from './types';
@@ -94,65 +93,65 @@ function normalizeConfig(raw: Record<string, unknown>): RingChartAttributes {
 	return {
 		// Content attributes
 		ts_chart_position: normalizeString(
-			raw.ts_chart_position ?? raw.chartPosition ?? raw.position,
+			raw['ts_chart_position'] ?? raw['chartPosition'] ?? raw['position'],
 			'flex-start'
 		) as RingChartAttributes['ts_chart_position'],
 		ts_chart_value: normalizeNumber(
-			raw.ts_chart_value ?? raw.chartValue ?? raw.value,
+			raw['ts_chart_value'] ?? raw['chartValue'] ?? raw['value'],
 			0
 		),
 		ts_chart_value_suffix: normalizeString(
-			raw.ts_chart_value_suffix ?? raw.chartValueSuffix ?? raw.valueSuffix ?? raw.suffix,
+			raw['ts_chart_value_suffix'] ?? raw['chartValueSuffix'] ?? raw['valueSuffix'] ?? raw['suffix'],
 			''
 		),
 		ts_chart_size: normalizeNumber(
-			raw.ts_chart_size ?? raw.chartSize ?? raw.size,
+			raw['ts_chart_size'] ?? raw['chartSize'] ?? raw['size'],
 			100
 		),
 		ts_chart_stroke_width: normalizeNumber(
-			raw.ts_chart_stroke_width ?? raw.chartStrokeWidth ?? raw.strokeWidth,
+			raw['ts_chart_stroke_width'] ?? raw['chartStrokeWidth'] ?? raw['strokeWidth'],
 			2
 		),
 		// Animation (responsive)
 		ts_chart_animation_duration: normalizeNumber(
-			raw.ts_chart_animation_duration ?? raw.chartAnimationDuration ?? raw.animationDuration,
+			raw['ts_chart_animation_duration'] ?? raw['chartAnimationDuration'] ?? raw['animationDuration'],
 			3
 		),
-		ts_chart_animation_duration_tablet: raw.ts_chart_animation_duration_tablet !== undefined
-			? normalizeNumber(raw.ts_chart_animation_duration_tablet, undefined as unknown as number)
+		ts_chart_animation_duration_tablet: raw['ts_chart_animation_duration_tablet'] !== undefined
+			? normalizeNumber(raw['ts_chart_animation_duration_tablet'], undefined as unknown as number)
 			: undefined,
-		ts_chart_animation_duration_mobile: raw.ts_chart_animation_duration_mobile !== undefined
-			? normalizeNumber(raw.ts_chart_animation_duration_mobile, undefined as unknown as number)
+		ts_chart_animation_duration_mobile: raw['ts_chart_animation_duration_mobile'] !== undefined
+			? normalizeNumber(raw['ts_chart_animation_duration_mobile'], undefined as unknown as number)
 			: undefined,
 		// Circle style
 		ts_chart_cirle_color: normalizeString(
-			raw.ts_chart_cirle_color ?? raw.chartCircleColor ?? raw.circleColor,
+			raw['ts_chart_cirle_color'] ?? raw['chartCircleColor'] ?? raw['circleColor'],
 			'#efefef'
 		),
 		ts_chart_fill_color: normalizeString(
-			raw.ts_chart_fill_color ?? raw.chartFillColor ?? raw.fillColor,
+			raw['ts_chart_fill_color'] ?? raw['chartFillColor'] ?? raw['fillColor'],
 			'#00acc1'
 		),
 		// Value style
-		ts_chart_value_color: raw.ts_chart_value_color !== undefined
-			? normalizeString(raw.ts_chart_value_color, '')
-			: raw.chartValueColor !== undefined
-				? normalizeString(raw.chartValueColor, '')
+		ts_chart_value_color: raw['ts_chart_value_color'] !== undefined
+			? normalizeString(raw['ts_chart_value_color'], '')
+			: raw['chartValueColor'] !== undefined
+				? normalizeString(raw['chartValueColor'], '')
 				: undefined,
 		// Typography (pass through as-is for complex group control)
-		chart_value_typography_font_family: raw.chart_value_typography_font_family as string | undefined,
-		chart_value_typography_font_size: raw.chart_value_typography_font_size as string | undefined,
-		chart_value_typography_font_size_tablet: raw.chart_value_typography_font_size_tablet as string | undefined,
-		chart_value_typography_font_size_mobile: raw.chart_value_typography_font_size_mobile as string | undefined,
-		chart_value_typography_font_weight: raw.chart_value_typography_font_weight as string | undefined,
-		chart_value_typography_line_height: raw.chart_value_typography_line_height as string | undefined,
-		chart_value_typography_line_height_tablet: raw.chart_value_typography_line_height_tablet as string | undefined,
-		chart_value_typography_line_height_mobile: raw.chart_value_typography_line_height_mobile as string | undefined,
-		chart_value_typography_letter_spacing: raw.chart_value_typography_letter_spacing as string | undefined,
-		chart_value_typography_letter_spacing_tablet: raw.chart_value_typography_letter_spacing_tablet as string | undefined,
-		chart_value_typography_letter_spacing_mobile: raw.chart_value_typography_letter_spacing_mobile as string | undefined,
-		chart_value_typography_text_transform: raw.chart_value_typography_text_transform as string | undefined,
-		chart_value_typography_text_decoration: raw.chart_value_typography_text_decoration as string | undefined,
+		chart_value_typography_font_family: raw['chart_value_typography_font_family'] as string | undefined,
+		chart_value_typography_font_size: raw['chart_value_typography_font_size'] as string | undefined,
+		chart_value_typography_font_size_tablet: raw['chart_value_typography_font_size_tablet'] as string | undefined,
+		chart_value_typography_font_size_mobile: raw['chart_value_typography_font_size_mobile'] as string | undefined,
+		chart_value_typography_font_weight: raw['chart_value_typography_font_weight'] as string | undefined,
+		chart_value_typography_line_height: raw['chart_value_typography_line_height'] as string | undefined,
+		chart_value_typography_line_height_tablet: raw['chart_value_typography_line_height_tablet'] as string | undefined,
+		chart_value_typography_line_height_mobile: raw['chart_value_typography_line_height_mobile'] as string | undefined,
+		chart_value_typography_letter_spacing: raw['chart_value_typography_letter_spacing'] as string | undefined,
+		chart_value_typography_letter_spacing_tablet: raw['chart_value_typography_letter_spacing_tablet'] as string | undefined,
+		chart_value_typography_letter_spacing_mobile: raw['chart_value_typography_letter_spacing_mobile'] as string | undefined,
+		chart_value_typography_text_transform: raw['chart_value_typography_text_transform'] as string | undefined,
+		chart_value_typography_text_decoration: raw['chart_value_typography_text_decoration'] as string | undefined,
 	};
 }
 

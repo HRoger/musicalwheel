@@ -19,7 +19,7 @@ import {
 	SectionHeading,
 	getImageSizeOptions,
 } from '@shared/controls';
-import type { GalleryBlockAttributes, MosaicItemConfig } from '../types';
+import type { GalleryBlockAttributes } from '../types';
 import type { ImageUploadValue } from '@shared/controls/ImageUploadControl';
 
 interface ContentTabProps {
@@ -43,7 +43,8 @@ export function ContentTab({ attributes, setAttributes }: ContentTabProps): JSX.
 	/**
 	 * Update mosaic config for specific item and field (with responsive support)
 	 */
-	const updateMosaicItem = (
+	// @ts-ignore -- unused but kept for future use
+	const _updateMosaicItem = (
 		itemKey: string,
 		field: string, // e.g., 'colSpan', 'colSpan_tablet', 'colSpan_mobile'
 		value: number | null
@@ -264,14 +265,14 @@ export function ContentTab({ attributes, setAttributes }: ContentTabProps): JSX.
 				{/* Number of images to load */}
 				<ResponsiveRangeControl
 					label={__('Number of images to load', 'voxel-fse')}
-					attributes={attributes}
-					setAttributes={setAttributes}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
 					attributeBaseName="visibleCount"
 					min={1}
 					max={20}
 					enableDynamicTags={true}
 					dynamicTagValue={attributes.visibleCountDynamicTag}
-					onDynamicTagChange={(value) => setAttributes({ visibleCountDynamicTag: value })}
+					onDynamicTagChange={(value: string | undefined) => setAttributes({ visibleCountDynamicTag: value })}
 					dynamicTagContext="post"
 				/>
 
@@ -320,14 +321,14 @@ export function ContentTab({ attributes, setAttributes }: ContentTabProps): JSX.
 				{/* Number of columns */}
 				<ResponsiveRangeControl
 					label={__('Number of columns', 'voxel-fse')}
-					attributes={attributes}
-					setAttributes={setAttributes}
+					attributes={attributes as Record<string, any>}
+					setAttributes={setAttributes as (attrs: Record<string, any>) => void}
 					attributeBaseName="columnCount"
 					min={1}
 					max={6}
 					enableDynamicTags={true}
 					dynamicTagValue={attributes.columnCountDynamicTag}
-					onDynamicTagChange={(value) => setAttributes({ columnCountDynamicTag: value })}
+					onDynamicTagChange={(value: string | undefined) => setAttributes({ columnCountDynamicTag: value })}
 					dynamicTagContext="post"
 				/>
 

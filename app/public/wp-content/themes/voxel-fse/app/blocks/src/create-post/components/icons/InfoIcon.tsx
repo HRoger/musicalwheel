@@ -13,7 +13,6 @@
  * </div>
  */
 import React from 'react';
-import { VOXEL_INFO_ICON } from '../../utils/voxelDefaultIcons';
 
 /**
  * InfoIcon component - renders the exact Voxel info.svg

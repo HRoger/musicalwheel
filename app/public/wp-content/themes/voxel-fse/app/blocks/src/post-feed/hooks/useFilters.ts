@@ -78,7 +78,7 @@ export function useFilters(postType: string | null): UseFiltersReturn {
 		async function fetchFilters(): Promise<void> {
 			try {
 				const response = await apiFetch<FiltersResponse>({
-					path: `/voxel-fse/v1/post-feed/filters?post_type=${encodeURIComponent(postType)}`,
+					path: `/voxel-fse/v1/post-feed/filters?post_type=${encodeURIComponent(postType as string)}`,
 				});
 
 				if (isMounted) {

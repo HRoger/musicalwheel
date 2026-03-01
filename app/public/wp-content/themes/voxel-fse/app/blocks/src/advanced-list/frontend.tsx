@@ -147,23 +147,8 @@ import type {
 import type { VisibilityRule } from '@shared/controls/ElementVisibilityModal';
 import { DEFAULT_ACTION_ITEM } from './types';
 
-/**
- * Window extension for WordPress API settings
- */
 declare global {
 	interface Window {
-		wp: {
-			element: {
-				createRoot: (container: Element) => {
-					render: (element: React.ReactNode) => void;
-					unmount: () => void;
-				};
-			};
-		};
-		wpApiSettings?: {
-			root: string;
-			nonce: string;
-		};
 		voxelFseAdvancedList?: {
 			restUrl?: string;
 		};
@@ -550,15 +535,15 @@ function normalizeConfig(raw: Record<string, unknown>): VxConfig {
 	};
 
 	return {
-		items: normalizeItems(raw.items ?? raw.ts_actions),
-		icons: normalizeIcons(raw.icons),
-		list: normalizeList(raw.list),
-		itemStyle: normalizeItemStyle(raw.itemStyle ?? raw.item_style),
-		iconContainer: normalizeIconContainer(raw.iconContainer ?? raw.icon_container),
-		icon: normalizeIconSettings(raw.icon),
-		hoverStyle: normalizeHoverStyle(raw.hoverStyle ?? raw.hover_style),
-		activeStyle: normalizeActiveStyle(raw.activeStyle ?? raw.active_style),
-		tooltip: normalizeTooltip(raw.tooltip),
+		items: normalizeItems(raw['items'] ?? raw['ts_actions']),
+		icons: normalizeIcons(raw['icons']),
+		list: normalizeList(raw['list']),
+		itemStyle: normalizeItemStyle(raw['itemStyle'] ?? raw['item_style']),
+		iconContainer: normalizeIconContainer(raw['iconContainer'] ?? raw['icon_container']),
+		icon: normalizeIconSettings(raw['icon']),
+		hoverStyle: normalizeHoverStyle(raw['hoverStyle'] ?? raw['hover_style']),
+		activeStyle: normalizeActiveStyle(raw['activeStyle'] ?? raw['active_style']),
+		tooltip: normalizeTooltip(raw['tooltip']),
 	};
 }
 
@@ -603,20 +588,20 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		customItemWidth: config.list?.customItemWidth || 100,
 		customItemWidthUnit: config.list?.customItemWidthUnit || 'px',
 		listJustify: config.list?.listJustify || 'left',
-		itemGap: config.list?.itemGap || 10,
+		itemGap: config.list?.itemGap,
 		itemGapUnit: config.list?.itemGapUnit || 'px',
 
 		// Item style - normal
-		itemJustifyContent: config.itemStyle?.justifyContent || 'flex-start',
+		itemJustifyContent: config.itemStyle?.justifyContent,
 		itemPadding: config.itemStyle?.padding || DEFAULT_BOX_VALUES,
 		itemPaddingUnit: config.itemStyle?.paddingUnit || 'px',
-		itemHeight: config.itemStyle?.height || 48,
+		itemHeight: config.itemStyle?.height,
 		itemHeightUnit: config.itemStyle?.heightUnit || 'px',
 		itemBorderType: config.itemStyle?.borderType || 'none',
 		itemBorderWidth: config.itemStyle?.borderWidth || DEFAULT_BOX_VALUES,
 		itemBorderWidthUnit: config.itemStyle?.borderWidthUnit || 'px',
 		itemBorderColor: config.itemStyle?.borderColor || '',
-		itemBorderRadius: config.itemStyle?.borderRadius || 0,
+		itemBorderRadius: config.itemStyle?.borderRadius,
 		itemBorderRadiusUnit: config.itemStyle?.borderRadiusUnit || 'px',
 		itemBoxShadow: config.itemStyle?.boxShadow || DEFAULT_BOX_SHADOW,
 		itemTypography: config.itemStyle?.typography || DEFAULT_TYPOGRAPHY,
@@ -627,7 +612,7 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		iconContainerBackground: config.iconContainer?.background || '',
 		iconContainerSize: config.iconContainer?.size || 36,
 		iconContainerSizeUnit: config.iconContainer?.sizeUnit || 'px',
-		iconContainerBorderType: config.iconContainer?.borderType || 'solid',
+		iconContainerBorderType: config.iconContainer?.borderType ?? 'solid',
 		iconContainerBorderWidth: config.iconContainer?.borderWidth || DEFAULT_BOX_VALUES,
 		iconContainerBorderWidthUnit: config.iconContainer?.borderWidthUnit || 'px',
 		iconContainerBorderColor: config.iconContainer?.borderColor || '',
@@ -668,6 +653,10 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		tooltipBackgroundColor: config.tooltip?.backgroundColor || '',
 		tooltipBorderRadius: config.tooltip?.borderRadius || 0,
 		tooltipBorderRadiusUnit: config.tooltip?.borderRadiusUnit || 'px',
+
+		// Item margin (deprecated - kept for attribute type compliance)
+		itemMargin: {} as any,
+		itemMarginUnit: 'px',
 	};
 }
 
@@ -683,28 +672,35 @@ function getRestUrl(): string {
 }
 
 /**
- * Fetch post context from REST API (if needed)
- * This provides data for post-dependent actions
+ * Fetch post context from REST API for a specific post ID.
+ *
+ * Post ID source: render.php injects `data-post-id` on each block container
+ * using \Voxel\get_current_post() (mirrors parent theme's server-side context).
  */
-async function fetchPostContext(): Promise<PostContext | null> {
-	// Try to get post ID from page context
-	// This would need to be enhanced based on how Voxel provides post context
-	const postIdMeta = document.querySelector<HTMLMetaElement>('meta[name="vx-post-id"]');
-	const postId = postIdMeta?.content ? parseInt(postIdMeta.content, 10) : null;
-
+async function fetchPostContext(postId: number): Promise<PostContext | null> {
 	if (!postId) {
-		// No post context available - post-dependent actions won't work
 		return null;
 	}
 
 	try {
 		const restUrl = getRestUrl();
+
+		const headers: HeadersInit = {};
+		const nonce = (window as unknown as { wpApiSettings?: { nonce?: string } }).wpApiSettings?.nonce;
+		if (nonce) {
+			headers['X-WP-Nonce'] = nonce;
+		}
+
 		const response = await fetch(
-			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`
+			`${restUrl}voxel-fse/v1/advanced-list/post-context?post_id=${postId}`,
+			{
+				credentials: 'same-origin',
+				headers,
+			}
 		);
 
 		if (!response.ok) {
-			console.warn('[Advanced List] Failed to fetch post context');
+			console.warn('[Advanced List] Failed to fetch post context for post', postId);
 			return null;
 		}
 
@@ -769,36 +765,82 @@ async function initBlocks() {
 		return;
 	}
 
-	// Fetch post context once for all blocks
-	let postContext: PostContext | null = null;
-
-	// Check if any block needs post context
-	const configs: Array<{ container: HTMLElement; config: VxConfig }> = [];
+	// Parse configs and collect post IDs from data-post-id attributes
+	// (injected by render.php using \Voxel\get_current_post())
+	const configs: Array<{ container: HTMLElement; config: VxConfig; postId: number | null }> = [];
 
 	containers.forEach((container) => {
 		const config = parseVxConfig(container);
 		if (config) {
-			configs.push({ container, config });
+			const rawPostId = container.getAttribute('data-post-id');
+			const postId = rawPostId ? parseInt(rawPostId, 10) : null;
+			configs.push({ container, config, postId: postId && !isNaN(postId) ? postId : null });
 		}
 	});
 
-	// Check if we need to fetch post context
-	const needsContext = configs.some(({ config }) =>
-		needsPostContext(config.items)
-	);
+	// Fetch post contexts, deduplicating by post ID
+	// (multiple blocks on same page/card share the same post context)
+	const postContextCache = new Map<number, PostContext | null>();
+	const postIdsToFetch = new Set<number>();
 
-	if (needsContext) {
-		postContext = await fetchPostContext();
+	for (const { config, postId } of configs) {
+		if (postId && needsPostContext(config.items)) {
+			postIdsToFetch.add(postId);
+		}
 	}
 
+	// Fetch all needed post contexts in parallel
+	await Promise.all(
+		Array.from(postIdsToFetch).map(async (postId) => {
+			const ctx = await fetchPostContext(postId);
+			postContextCache.set(postId, ctx);
+		})
+	);
+
 	// Mount React components
-	for (const { container, config } of configs) {
+	for (const { container, config, postId } of configs) {
 		// Mark as mounted to prevent double initialization
 		container.setAttribute('data-react-mounted', 'true');
 
 		const attributes = buildAttributes(config);
+		const postContext = postId ? (postContextCache.get(postId) ?? null) : null;
 
-		// Clear placeholder content
+		// Add Voxel's list classes to the outer <ul> container.
+		// Voxel parent renders a single flat <ul class="flexify simplify-ul ts-advanced-list">
+		// with <li> items directly inside. Our AdvancedListComponent renders items as a
+		// Fragment (no wrapper <ul>) in frontend context, so the outer container needs
+		// these classes to match Voxel's structure exactly.
+		container.classList.add('flexify', 'simplify-ul', 'ts-advanced-list');
+
+		// Apply list layout inline styles to the outer <ul> container.
+		// These mirror buildListStyles() in AdvancedListComponent.tsx and are
+		// also injected by render.php for SSR. Applying them here ensures they
+		// persist after React replaces the SSR content.
+		if (attributes.enableCssGrid) {
+			container.style.display = 'grid';
+			if (attributes.gridColumns) {
+				container.style.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(auto, 1fr))`;
+			}
+		} else if (attributes.listJustify) {
+			container.style.justifyContent = attributes.listJustify;
+		}
+		if (attributes.itemGap !== undefined) {
+			container.style.gap = `${attributes.itemGap}${attributes.itemGapUnit || 'px'}`;
+		}
+
+		// Preserve the scoped <style> tag from save.tsx output.
+		// React's createRoot().render() replaces all container children,
+		// which would destroy the <style> tag containing block-specific CSS
+		// (hover, active, responsive, layout styles). Move it before the
+		// container so it survives React's DOM replacement.
+		const styleTag = container.querySelector(':scope > style');
+		if (styleTag) {
+			container.parentElement?.insertBefore(styleTag, container);
+		}
+
+		// Clear placeholder/SSR content before mounting React.
+		// React's createRoot replaces children anyway, so clearing first
+		// avoids a brief moment where both SSR and React content coexist.
 		container.innerHTML = '';
 
 		// Mount React component
@@ -822,3 +864,26 @@ if (document.readyState === 'loading') {
 // Support Turbo/PJAX navigation
 window.addEventListener('turbo:load', initBlocks);
 window.addEventListener('pjax:complete', initBlocks);
+
+// Listen for Voxel markup updates (e.g., Post Feed/Term Feed AJAX card loading)
+document.addEventListener('voxel:markup-update', initBlocks);
+
+// MutationObserver: detect advanced-list containers injected via dangerouslySetInnerHTML
+// (e.g., post-feed card templates in the Gutenberg page editor).
+// In the editor, post-feed injects card HTML via dangerouslySetInnerHTML which bypasses
+// all event-based initialization. The observer watches for new .voxel-fse-advanced-list-frontend
+// nodes and triggers hydration so EditStepsPopup/FormPopup work in the editor too.
+let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+const observer = new MutationObserver(() => {
+	// Debounce: post-feed may inject many cards at once
+	if (mutationTimer) clearTimeout(mutationTimer);
+	mutationTimer = setTimeout(() => {
+		const unmounted = document.querySelectorAll(
+			'.voxel-fse-advanced-list-frontend:not([data-react-mounted])'
+		);
+		if (unmounted.length > 0) {
+			initBlocks();
+		}
+	}, 100);
+});
+observer.observe(document.body, { childList: true, subtree: true });

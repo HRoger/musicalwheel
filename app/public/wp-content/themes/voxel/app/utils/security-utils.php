@@ -126,3 +126,13 @@ function generate_username_from_email( string $email ): ?string {
 
 	return $username;
 }
+
+function get_2fa_totp_issuer(): string {
+	$issuer = apply_filters(
+		'voxel/2fa_totp_issuer',
+		parse_url( home_url(), PHP_URL_HOST )
+	);
+
+	// colons not supported in issuer name
+	return str_replace( ':', ' ', $issuer );
+}

@@ -12,12 +12,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { FileUploadProps, UploadedFile } from '../types';
 
-// Extend window for global file cache
-declare global {
-	interface Window {
-		_vx_file_upload_cache?: UploadedFile[];
-	}
-}
+// Global file cache accessed via (window as any) to avoid type conflict with voxelShim.ts
 
 // Voxel helpers type
 declare const Voxel: {
@@ -25,6 +20,11 @@ declare const Voxel: {
 		sequentialId: () => number;
 		randomId: (length: number) => string;
 	};
+};
+
+// WordPress media modal type
+declare const wp: {
+	media: (config: any) => any;
 };
 
 /**
@@ -65,7 +65,7 @@ export default function FileUpload({
 	field,
 	value,
 	onChange,
-	context,
+	context: _context,
 }: FileUploadProps) {
 	const [dragActive, setDragActive] = useState(false);
 	const [files, setFiles] = useState<UploadedFile[]>(value || []);
@@ -114,13 +114,13 @@ export default function FileUpload({
 			};
 
 			// Initialize global file cache if needed
-			if (window._vx_file_upload_cache === undefined) {
-				window._vx_file_upload_cache = [];
+			if ((window as any)._vx_file_upload_cache === undefined) {
+				(window as any)._vx_file_upload_cache = [];
 			}
 
 			// Check for duplicate file in cache
-			const existingFile = window._vx_file_upload_cache.find(
-				(cached) =>
+			const existingFile = (window as any)._vx_file_upload_cache.find(
+				(cached: any) =>
 					cached.item?.name === file.name &&
 					cached.item?.type === file.type &&
 					cached.item?.size === file.size &&
@@ -132,7 +132,7 @@ export default function FileUpload({
 				newFiles = [...files, existingFile];
 			} else {
 				newFiles = [...files, fileData];
-				window._vx_file_upload_cache.unshift(fileData);
+				(window as any)._vx_file_upload_cache.unshift(fileData);
 			}
 
 			// Respect max file count
@@ -242,6 +242,46 @@ export default function FileUpload({
 	);
 
 	/**
+	 * Handle media library popup selection
+	 * Reference: voxel-orders.beautified.js lines 672-701 (onMediaPopupSave)
+	 */
+	const handleMediaLibrary = useCallback(() => {
+		if (typeof wp === 'undefined' || !wp.media) return;
+
+		const mediaFrame = wp.media({
+			title: field.label || 'Select Files',
+			multiple: field.maxFileCount !== 1,
+			library: {
+				type: field.allowedFileTypes || undefined,
+			},
+		});
+
+		mediaFrame.on('select', () => {
+			const selection = mediaFrame.state().get('selection');
+			const selected = selection.toJSON();
+
+			const mediaFiles: UploadedFile[] = selected.map((attachment: any) => ({
+				source: 'existing' as const,
+				id: attachment.id,
+				name: attachment.filename || attachment.title,
+				type: attachment.mime || attachment.type,
+				size: attachment.filesizeInBytes || 0,
+				preview: attachment.url,
+			}));
+
+			let newFiles = [...files, ...mediaFiles];
+			if (field.maxFileCount > 0 && newFiles.length > field.maxFileCount) {
+				newFiles = newFiles.slice(-field.maxFileCount);
+			}
+
+			setFiles(newFiles);
+			onChange(newFiles);
+		});
+
+		mediaFrame.open();
+	}, [files, field, onChange]);
+
+	/**
 	 * Get background style for file preview
 	 * Reference: voxel-orders.beautified.js lines 596-600
 	 */
@@ -295,6 +335,19 @@ export default function FileUpload({
 							<label htmlFor={inputId.current} className="vx-file-upload-browse">
 								browse
 							</label>
+							{typeof wp !== 'undefined' && (wp as any).media && (
+								<>
+									{' or '}
+									<button
+										type="button"
+										className="vx-file-upload-browse"
+										onClick={handleMediaLibrary}
+										style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline', color: 'inherit', font: 'inherit' }}
+									>
+										media library
+									</button>
+								</>
+							)}
 						</span>
 						{field.allowedFileTypes && (
 							<span className="vx-file-upload-types">

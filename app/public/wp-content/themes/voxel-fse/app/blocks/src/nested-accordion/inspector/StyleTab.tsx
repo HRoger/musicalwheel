@@ -308,7 +308,7 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 				{/* Background Type (Classic/Gradient) */}
 				<ChooseControl
 					label={__('Background Type', 'voxel-fse')}
-					value={(attributes as Record<string, any>).contentBgType || 'classic'}
+					value={(attributes as Record<string, any>)['contentBgType'] || 'classic'}
 					onChange={(value) => setAttributes({ contentBgType: value } as any)}
 					options={[
 						{
@@ -326,8 +326,8 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 				/>
 
 				{/* Background Color (only for classic mode) */}
-				{((attributes as Record<string, any>).contentBgType === 'classic' ||
-					!(attributes as Record<string, any>).contentBgType) && (
+				{((attributes as Record<string, any>)['contentBgType'] === 'classic' ||
+					!(attributes as Record<string, any>)['contentBgType']) && (
 					<ColorControl
 						label={__('Color', 'voxel-fse')}
 						value={attributes.contentBg || ''}
@@ -346,13 +346,13 @@ export function StyleTab({ attributes, setAttributes }: StyleTabProps) {
 					onChange={(value) => {
 						const updates: Record<string, any> = {};
 						if (value.borderType !== undefined) {
-							updates.contentBorderType = value.borderType;
+							updates['contentBorderType'] = value.borderType;
 						}
 						if (value.borderWidth !== undefined) {
-							updates.contentBorderWidth = value.borderWidth;
+							updates['contentBorderWidth'] = value.borderWidth;
 						}
 						if (value.borderColor !== undefined) {
-							updates.contentBorderColor = value.borderColor;
+							updates['contentBorderColor'] = value.borderColor;
 						}
 						setAttributes(updates as Partial<NestedAccordionAttributes>);
 					}}

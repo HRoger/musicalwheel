@@ -13,9 +13,7 @@
 
 import { __ } from '@wordpress/i18n';
 import type {
-	CurrentPlanAttributes,
-	CurrentPlanApiResponse,
-	CurrentPlanComponentProps,
+			CurrentPlanComponentProps,
 	CurrentPlanVxConfig,
 	IconValue,
 } from '../types';
@@ -238,7 +236,7 @@ export default function CurrentPlanComponent({
 								{/* Manage subscription button */}
 								<li>
 									<a
-										href={planData.orderLink}
+										href={planData.orderLink ?? undefined}
 										className="ts-btn ts-btn-1"
 										onClick={
 											context === 'editor'

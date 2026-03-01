@@ -427,12 +427,12 @@ function initVoxelCommons(): void {
 				return;
 			}
 
-			const $alert = $(templateHtml).hide();
+			const $alert = ($ as any)(templateHtml).hide();
 
 			// Add action buttons (reverse order for prepend)
 			if (actions.length) {
 				[...actions].reverse().forEach((action) => {
-					const $button = $('<a href="javascript:void(0);" class="ts-btn ts-btn-4">')
+					const $button = ($ as any)('<a href="javascript:void(0);" class="ts-btn ts-btn-4">')
 						.attr({ href: action.link || '#' })
 						.html(action.label);
 
@@ -469,7 +469,7 @@ function initVoxelCommons(): void {
 			}
 
 			// Show the dialog
-			$('#vx-alert').html($alert as unknown as string);
+			($ as any)('#vx-alert').html($alert as unknown as string);
 			$alert.fadeIn(100);
 		},
 
@@ -622,7 +622,7 @@ function initVoxelCommons(): void {
 				cartTrigger.dispatchEvent(new Event('vx:open'));
 			}
 		},
-	} as unknown as VoxelNamespace;
+	} as any;
 
 	// Dispatch init event (matches original commons.js behavior)
 	document.dispatchEvent(new CustomEvent('voxel/commons/init'));

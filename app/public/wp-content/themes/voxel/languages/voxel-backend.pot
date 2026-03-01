@@ -6,7 +6,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-01-23 15:02+0000\n"
+"POT-Creation-Date: 2026-02-24 01:49+0000\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
 "X-Poedit-SearchPath-0: .\n"
@@ -95,7 +95,7 @@ msgctxt "unknown revision author"
 msgid "(unknown)"
 msgstr ""
 
-#: app/controllers/post-type-controller.php:477, app/controllers/post-type-controller.php:512, app/controllers/post-type-controller.php:545, app/controllers/post-type-controller.php:576, app/modules/elementor/controllers/elementor-controller.php:400
+#: app/controllers/post-type-controller.php:477, app/controllers/post-type-controller.php:512, app/controllers/post-type-controller.php:545, app/controllers/post-type-controller.php:576, app/modules/elementor/controllers/elementor-controller.php:396
 msgid "Permission denied."
 msgstr ""
 
@@ -276,11 +276,11 @@ msgstr ""
 msgid "Timeline styles"
 msgstr ""
 
-#: app/widgets/gallery.php:181, app/modules/elementor/controllers/elementor-controller.php:698
+#: app/widgets/gallery.php:181, app/modules/elementor/controllers/elementor-controller.php:694
 msgid "Aspect ratio"
 msgstr ""
 
-#: app/widgets/gallery.php:182, app/widgets/slider.php:188, app/modules/elementor/controllers/elementor-controller.php:699
+#: app/widgets/gallery.php:182, app/widgets/slider.php:188, app/modules/elementor/controllers/elementor-controller.php:695
 msgid "Set image aspect ratio e.g 16/9"
 msgstr ""
 
@@ -505,7 +505,7 @@ msgstr ""
 msgid "Voxel settings"
 msgstr ""
 
-#: app/controllers/settings/settings-controller.php:22, app/modules/elementor/controllers/elementor-controller.php:436
+#: app/controllers/settings/settings-controller.php:22, app/modules/elementor/controllers/elementor-controller.php:432
 msgid "Voxel"
 msgstr ""
 
@@ -1199,7 +1199,7 @@ msgctxt "field conditions"
 msgid "Contains"
 msgstr ""
 
-#: app/post-types/filters/availability-filter.php:307, app/post-types/filters/availability-filter.php:316, app/post-types/filters/keywords-filter.php:285, app/post-types/filters/traits/date-filter-helpers.php:91, app/post-types/filters/traits/date-filter-helpers.php:100
+#: app/post-types/filters/availability-filter.php:307, app/post-types/filters/availability-filter.php:316, app/post-types/filters/keywords-filter.php:288, app/post-types/filters/traits/date-filter-helpers.php:91, app/post-types/filters/traits/date-filter-helpers.php:100
 msgctxt "date filter"
 msgid "Default value"
 msgstr ""
@@ -1219,17 +1219,17 @@ msgctxt "following filter"
 msgid "Default value"
 msgstr ""
 
-#: app/post-types/filters/keywords-filter.php:290, app/post-types/filters/location-filter.php:536, app/post-types/filters/range-filter.php:268, app/post-types/filters/range-filter.php:293, app/post-types/filters/stepper-filter.php:174
+#: app/post-types/filters/keywords-filter.php:293, app/post-types/filters/location-filter.php:536, app/post-types/filters/range-filter.php:268, app/post-types/filters/range-filter.php:293, app/post-types/filters/stepper-filter.php:174
 msgctxt "keywords_filter"
 msgid "Display as"
 msgstr ""
 
-#: app/post-types/filters/keywords-filter.php:293, app/post-types/filters/location-filter.php:539, app/post-types/filters/location-filter.php:549, app/post-types/filters/range-filter.php:296, app/post-types/filters/stepper-filter.php:177
+#: app/post-types/filters/keywords-filter.php:296, app/post-types/filters/location-filter.php:539, app/post-types/filters/location-filter.php:549, app/post-types/filters/range-filter.php:296, app/post-types/filters/stepper-filter.php:177
 msgctxt "keywords_filter"
 msgid "Popup"
 msgstr ""
 
-#: app/post-types/filters/keywords-filter.php:294, app/post-types/filters/location-filter.php:540, app/post-types/filters/location-filter.php:550, app/post-types/filters/range-filter.php:297, app/post-types/filters/stepper-filter.php:178
+#: app/post-types/filters/keywords-filter.php:297, app/post-types/filters/location-filter.php:540, app/post-types/filters/location-filter.php:550, app/post-types/filters/range-filter.php:297, app/post-types/filters/stepper-filter.php:178
 msgctxt "keywords_filter"
 msgid "Inline"
 msgstr ""
@@ -1838,51 +1838,51 @@ msgstr ""
 msgid "Z-index"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:260
+#: app/modules/elementor/controllers/elementor-controller.php:256
 msgid "Line Awesome - Regular"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:273
+#: app/modules/elementor/controllers/elementor-controller.php:269
 msgid "Line Awesome - Solid"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:286
+#: app/modules/elementor/controllers/elementor-controller.php:282
 msgid "Line Awesome - Brands"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:405
+#: app/modules/elementor/controllers/elementor-controller.php:401
 msgid "Invalid request"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:710
+#: app/modules/elementor/controllers/elementor-controller.php:706
 msgid "Disable wrapping"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:711
+#: app/modules/elementor/controllers/elementor-controller.php:707
 msgid "Disable text wrap and enable ellipsis for overflowing text"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:735
+#: app/modules/elementor/controllers/elementor-controller.php:731
 msgid "Line clamp"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:736
+#: app/modules/elementor/controllers/elementor-controller.php:732
 msgid "Truncate text at a specific number of lines. Please set columns to default to use Line clamp"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:750
+#: app/modules/elementor/controllers/elementor-controller.php:746
 msgid "Retain internal colors"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:751
+#: app/modules/elementor/controllers/elementor-controller.php:747
 msgid "Retain the original colors of the SVG defined in the code"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:762
+#: app/modules/elementor/controllers/elementor-controller.php:758
 msgid "Icon Color"
 msgstr ""
 
-#: app/modules/elementor/controllers/elementor-controller.php:770
+#: app/modules/elementor/controllers/elementor-controller.php:766
 msgid "Icon Hover Color"
 msgstr ""
 
