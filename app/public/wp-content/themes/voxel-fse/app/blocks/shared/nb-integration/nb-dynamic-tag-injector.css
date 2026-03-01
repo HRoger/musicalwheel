@@ -29,6 +29,10 @@ body .nectar-control-row--align-horizontal .nectar-control-row__label {
     width: 65px;
 }
 
+body .nectar-component__icon-select__popover .nectar-control-row--label-top{
+    margin-top: 20px;
+}
+
 /* Corner placement — absolutely positioned in the top-right of the component area */
 body .voxel-nb-tag-portal--corner {
     position: absolute;

@@ -123,7 +123,7 @@
 			"type": "string"
 		},
 		"itemGap": {
-			"type": "number",
+			"type": ["number", "null"],
 			"default": 10
 		},
 		"itemGap_tablet": {
@@ -137,7 +137,7 @@
 			"default": "px"
 		},
 		"itemJustifyContent": {
-			"type": "string",
+			"type": ["string", "null"],
 			"default": "flex-start"
 		},
 		"itemJustifyContent_tablet": {
@@ -166,7 +166,7 @@
 			"default": "px"
 		},
 		"itemHeight": {
-			"type": "number",
+			"type": ["number", "null"],
 			"default": 48
 		},
 		"itemHeight_tablet": {
@@ -201,8 +201,14 @@
 			"default": ""
 		},
 		"itemBorderRadius": {
-			"type": "number",
+			"type": ["number", "null"],
 			"default": 0
+		},
+		"itemBorderRadius_tablet": {
+			"type": "number"
+		},
+		"itemBorderRadius_mobile": {
+			"type": "number"
 		},
 		"itemBorderRadiusUnit": {
 			"type": "string",
@@ -281,6 +287,12 @@
 		"iconContainerBorderRadius": {
 			"type": "number",
 			"default": 50
+		},
+		"iconContainerBorderRadius_tablet": {
+			"type": "number"
+		},
+		"iconContainerBorderRadius_mobile": {
+			"type": "number"
 		},
 		"iconContainerBorderRadiusUnit": {
 			"type": "string",

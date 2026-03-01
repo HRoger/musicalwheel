@@ -10773,12 +10773,13 @@ class Style_Generator {
         $tablet_rules = [];
         $mobile_rules = [];
 
-        // Helper: Parse dimension (convert empty/null to 0)
+        // Helper: Parse dimension (extract numeric value, strip units like "px")
         $parse_dimension = function( $val ) {
             if ( $val === null || $val === '' ) {
                 return 0;
             }
-            return is_numeric( $val ) ? (int) $val : $val;
+            $num = floatval( $val );
+            return ( $num == (int) $num ) ? (int) $num : $num;
         };
 
         // Helper: Check if box shadow has values
@@ -10880,6 +10881,20 @@ class Style_Generator {
                 $unit = $attributes['itemGapUnit'] ?? 'px';
                 $mobile_rules[] = "{$selector} { gap: {$attributes['itemGap_mobile']}{$unit}; }";
             }
+        }
+
+        // Item gap (responsive) — applies to all layouts (flex and grid)
+        if ( isset( $attributes['itemGap'] ) && $attributes['itemGap'] !== '' ) {
+            $unit = $attributes['itemGapUnit'] ?? 'px';
+            $css_rules[] = "{$selector} { gap: {$attributes['itemGap']}{$unit}; }";
+        }
+        if ( isset( $attributes['itemGap_tablet'] ) && $attributes['itemGap_tablet'] !== '' ) {
+            $unit = $attributes['itemGapUnit'] ?? 'px';
+            $tablet_rules[] = "{$selector} { gap: {$attributes['itemGap_tablet']}{$unit}; }";
+        }
+        if ( isset( $attributes['itemGap_mobile'] ) && $attributes['itemGap_mobile'] !== '' ) {
+            $unit = $attributes['itemGapUnit'] ?? 'px';
+            $mobile_rules[] = "{$selector} { gap: {$attributes['itemGap_mobile']}{$unit}; }";
         }
 
         // Custom item width (responsive)

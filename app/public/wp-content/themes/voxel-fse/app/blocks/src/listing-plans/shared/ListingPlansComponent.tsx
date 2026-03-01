@@ -464,18 +464,9 @@ export default function ListingPlansComponent({
 		VoxelIcons.chevronRightSmall
 	);
 
-	// Loading state
+	// Loading state — return null to avoid FOUC (grey box → content).
 	if (isLoading) {
-		return (
-			<>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				{context === 'editor' && <EmptyPlaceholder />}
-			</>
-		);
+		return null;
 	}
 
 	// Error state

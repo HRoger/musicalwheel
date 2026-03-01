@@ -132,7 +132,6 @@
 
 import { createRoot } from 'react-dom/client';
 import { AdvancedListComponent } from './shared/AdvancedListComponent';
-import { generateAdvancedListStyles } from './styles';
 import type {
 	AdvancedListAttributes,
 	VxConfig,
@@ -589,20 +588,20 @@ function buildAttributes(config: VxConfig): AdvancedListAttributes {
 		customItemWidth: config.list?.customItemWidth || 100,
 		customItemWidthUnit: config.list?.customItemWidthUnit || 'px',
 		listJustify: config.list?.listJustify || 'left',
-		itemGap: config.list?.itemGap || 10,
+		itemGap: config.list?.itemGap,
 		itemGapUnit: config.list?.itemGapUnit || 'px',
 
 		// Item style - normal
-		itemJustifyContent: config.itemStyle?.justifyContent || 'flex-start',
+		itemJustifyContent: config.itemStyle?.justifyContent,
 		itemPadding: config.itemStyle?.padding || DEFAULT_BOX_VALUES,
 		itemPaddingUnit: config.itemStyle?.paddingUnit || 'px',
-		itemHeight: config.itemStyle?.height || 48,
+		itemHeight: config.itemStyle?.height,
 		itemHeightUnit: config.itemStyle?.heightUnit || 'px',
 		itemBorderType: config.itemStyle?.borderType || 'none',
 		itemBorderWidth: config.itemStyle?.borderWidth || DEFAULT_BOX_VALUES,
 		itemBorderWidthUnit: config.itemStyle?.borderWidthUnit || 'px',
 		itemBorderColor: config.itemStyle?.borderColor || '',
-		itemBorderRadius: config.itemStyle?.borderRadius || 0,
+		itemBorderRadius: config.itemStyle?.borderRadius,
 		itemBorderRadiusUnit: config.itemStyle?.borderRadiusUnit || 'px',
 		itemBoxShadow: config.itemStyle?.boxShadow || DEFAULT_BOX_SHADOW,
 		itemTypography: config.itemStyle?.typography || DEFAULT_TYPOGRAPHY,
@@ -806,17 +805,42 @@ async function initBlocks() {
 		const attributes = buildAttributes(config);
 		const postContext = postId ? (postContextCache.get(postId) ?? null) : null;
 
-		// Generate and inject block-specific CSS (tooltip, hover, active, etc.)
-		const blockId = container.className.match(/voxel-fse-advanced-list-(advanced-list-\w+)/)?.[1] || 'advanced-list';
-		const blockCSS = generateAdvancedListStyles(attributes, blockId);
-		if (blockCSS) {
-			const styleEl = document.createElement('style');
-			styleEl.setAttribute('data-block-styles', `advanced-list-${blockId}`);
-			styleEl.textContent = blockCSS;
-			container.parentNode?.insertBefore(styleEl, container);
+		// Add Voxel's list classes to the outer <ul> container.
+		// Voxel parent renders a single flat <ul class="flexify simplify-ul ts-advanced-list">
+		// with <li> items directly inside. Our AdvancedListComponent renders items as a
+		// Fragment (no wrapper <ul>) in frontend context, so the outer container needs
+		// these classes to match Voxel's structure exactly.
+		container.classList.add('flexify', 'simplify-ul', 'ts-advanced-list');
+
+		// Apply list layout inline styles to the outer <ul> container.
+		// These mirror buildListStyles() in AdvancedListComponent.tsx and are
+		// also injected by render.php for SSR. Applying them here ensures they
+		// persist after React replaces the SSR content.
+		if (attributes.enableCssGrid) {
+			container.style.display = 'grid';
+			if (attributes.gridColumns) {
+				container.style.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(auto, 1fr))`;
+			}
+		} else if (attributes.listJustify) {
+			container.style.justifyContent = attributes.listJustify;
+		}
+		if (attributes.itemGap !== undefined) {
+			container.style.gap = `${attributes.itemGap}${attributes.itemGapUnit || 'px'}`;
 		}
 
-		// Clear placeholder content
+		// Preserve the scoped <style> tag from save.tsx output.
+		// React's createRoot().render() replaces all container children,
+		// which would destroy the <style> tag containing block-specific CSS
+		// (hover, active, responsive, layout styles). Move it before the
+		// container so it survives React's DOM replacement.
+		const styleTag = container.querySelector(':scope > style');
+		if (styleTag) {
+			container.parentElement?.insertBefore(styleTag, container);
+		}
+
+		// Clear placeholder/SSR content before mounting React.
+		// React's createRoot replaces children anyway, so clearing first
+		// avoids a brief moment where both SSR and React content coexist.
 		container.innerHTML = '';
 
 		// Mount React component
@@ -843,3 +867,23 @@ window.addEventListener('pjax:complete', initBlocks);
 
 // Listen for Voxel markup updates (e.g., Post Feed/Term Feed AJAX card loading)
 document.addEventListener('voxel:markup-update', initBlocks);
+
+// MutationObserver: detect advanced-list containers injected via dangerouslySetInnerHTML
+// (e.g., post-feed card templates in the Gutenberg page editor).
+// In the editor, post-feed injects card HTML via dangerouslySetInnerHTML which bypasses
+// all event-based initialization. The observer watches for new .voxel-fse-advanced-list-frontend
+// nodes and triggers hydration so EditStepsPopup/FormPopup work in the editor too.
+let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+const observer = new MutationObserver(() => {
+	// Debounce: post-feed may inject many cards at once
+	if (mutationTimer) clearTimeout(mutationTimer);
+	mutationTimer = setTimeout(() => {
+		const unmounted = document.querySelectorAll(
+			'.voxel-fse-advanced-list-frontend:not([data-react-mounted])'
+		);
+		if (unmounted.length > 0) {
+			initBlocks();
+		}
+	}, 100);
+});
+observer.observe(document.body, { childList: true, subtree: true });

@@ -33,6 +33,8 @@ interface ProductPriceComponentProps {
 	error: string | null;
 	context: 'editor' | 'frontend';
 	postId?: number;
+	/** SSR price HTML from render.php — rendered on first paint to avoid FOUC */
+	ssrPriceHtml?: string;
 }
 
 /**
@@ -141,6 +143,7 @@ export default function ProductPriceComponent({
 	error,
 	context,
 	postId,
+	ssrPriceHtml,
 }: ProductPriceComponentProps) {
 	// Build CSS variables from attributes
 	const containerStyles = useMemo(
@@ -173,25 +176,15 @@ export default function ProductPriceComponent({
 	// Adding another .vxfse-product-price div would create duplicates
 	// that get re-hydrated by voxel:markup-update.
 	if (context === 'frontend') {
-		return <FrontendContent priceData={priceData} isLoading={isLoading} error={error} vxconfig={vxconfig} />;
+		return <FrontendContent priceData={priceData} isLoading={isLoading} error={error} vxconfig={vxconfig} ssrPriceHtml={ssrPriceHtml} />;
 	}
 
 	// Editor context: render with wrapper div for proper styling
-	// Loading state
+	// Loading state — render nothing (invisible) to avoid grey-box FOUC.
+	// The block wrapper in edit.tsx already occupies space, so nothing → price
+	// is less jarring than EmptyPlaceholder → price.
 	if (isLoading) {
-		return (
-			<div
-				className={`vxfse-product-price ${visibilityClasses}`.trim()}
-				style={containerStyles as React.CSSProperties}
-			>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
-				/>
-				<EmptyPlaceholder />
-			</div>
-		);
+		return null;
 	}
 
 	// Error state
@@ -308,11 +301,13 @@ function FrontendContent({
 	isLoading,
 	error,
 	vxconfig,
+	ssrPriceHtml,
 }: {
 	priceData: ProductPriceData | null;
 	isLoading: boolean;
 	error: string | null;
 	vxconfig: ProductPriceVxConfig;
+	ssrPriceHtml?: string;
 }) {
 	const vxconfigScript = (
 		<script
@@ -321,6 +316,23 @@ function FrontendContent({
 			dangerouslySetInnerHTML={{ __html: JSON.stringify(vxconfig) }}
 		/>
 	);
+
+	// SSR path: render.php already rendered the price spans.
+	// Render the captured SSR HTML directly to avoid a blank flash while
+	// React initialises. This is the first-paint state — no fetch needed.
+	if (ssrPriceHtml) {
+		return (
+			<>
+				{vxconfigScript}
+				{/* eslint-disable-next-line react/no-danger */}
+				<span
+					className="vx-ssr-price"
+					style={{ display: 'contents' }}
+					dangerouslySetInnerHTML={{ __html: ssrPriceHtml }}
+				/>
+			</>
+		);
+	}
 
 	if (isLoading || error || !priceData) {
 		return vxconfigScript;

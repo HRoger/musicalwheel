@@ -308,19 +308,32 @@ async function fetchProductPrice(postId: number): Promise<ProductPriceData> {
 }
 
 /**
- * Wrapper component that handles data fetching
+ * Wrapper component that handles data fetching.
+ * When `hasSsr` is true, the container already has SSR price HTML from
+ * render.php — React renders immediately without an async fetch, eliminating
+ * the blank → price flicker (FOUC).
  */
 interface ProductPriceWrapperProps {
 	attributes: ProductPriceAttributes;
 	postId: number;
+	hasSsr: boolean;
+	ssrPriceHtml: string;
 }
 
-function ProductPriceWrapper({ attributes, postId }: ProductPriceWrapperProps) {
+function ProductPriceWrapper({ attributes, postId, hasSsr, ssrPriceHtml }: ProductPriceWrapperProps) {
 	const [priceData, setPriceData] = useState<ProductPriceData | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
+	// If SSR price HTML was present, start as not-loading — React re-renders
+	// with the same content the server already showed, so there's no flicker.
+	const [isLoading, setIsLoading] = useState(!hasSsr);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		// SSR content already shown — no need to fetch on first render.
+		// Skip the async call to avoid a redundant re-render.
+		if (hasSsr) {
+			return;
+		}
+
 		let cancelled = false;
 
 		async function loadPriceData() {
@@ -348,7 +361,7 @@ function ProductPriceWrapper({ attributes, postId }: ProductPriceWrapperProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [postId]);
+	}, [postId, hasSsr]);
 
 	return (
 		<ProductPriceComponent
@@ -358,6 +371,7 @@ function ProductPriceWrapper({ attributes, postId }: ProductPriceWrapperProps) {
 			error={error}
 			context="frontend"
 			postId={postId}
+			ssrPriceHtml={hasSsr && !priceData && !error ? ssrPriceHtml : undefined}
 		/>
 	);
 }
@@ -394,6 +408,17 @@ function initProductPriceBlocks() {
 		const blockId = container.dataset['blockId'] || '';
 		const attributes = buildAttributesFromVxConfig(vxconfig, blockId);
 
+		// Capture SSR price spans before clearing innerHTML.
+		// render.php sets data-ssr="true" and outputs <span class="vx-price"> when
+		// a product is found — we pass this HTML to React so it renders immediately
+		// without an async fetch, eliminating the blank → price FOUC.
+		const hasSsr = container.dataset['ssr'] === 'true';
+		const ssrPriceHtml = hasSsr
+			? Array.from(container.querySelectorAll<HTMLElement>('.vx-price'))
+				.map((el) => el.outerHTML)
+				.join('')
+			: '';
+
 		// Mark as hydrated to prevent double-initialization
 		container.dataset['hydrated'] = 'true';
 
@@ -406,6 +431,8 @@ function initProductPriceBlocks() {
 			<ProductPriceWrapper
 				attributes={attributes}
 				postId={postId}
+				hasSsr={hasSsr}
+				ssrPriceHtml={ssrPriceHtml}
 			/>
 		);
 	});

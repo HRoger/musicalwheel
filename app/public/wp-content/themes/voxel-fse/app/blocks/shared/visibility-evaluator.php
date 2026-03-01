@@ -37,9 +37,17 @@ class Visibility_Evaluator
             // (wp_template, wp_template_part), there's no real post context for
             // dtag rules like @post(:status.key). Show all items, matching Elementor.
             // This applies both to Site Editor REST requests and iframe previews.
-            $current_post = get_post();
-            if ( $current_post && in_array( $current_post->post_type, [ 'wp_template', 'wp_template_part' ], true ) ) {
-                return true;
+            // EXCEPTION: In feed context (do_blocks() inside Post Feed/Term Feed),
+            // get_post() returns the wp_template (card template) even though
+            // \Voxel\set_current_post() has set the real post. Skip the bypass
+            // so visibility rules evaluate against the actual post via Voxel's evaluator.
+            $in_feed_context = class_exists( '\VoxelFSE\Controllers\FSE_NB_SSR_Controller' )
+                && \VoxelFSE\Controllers\FSE_NB_SSR_Controller::is_feed_context();
+            if ( ! $in_feed_context ) {
+                $current_post = get_post();
+                if ( $current_post && in_array( $current_post->post_type, [ 'wp_template', 'wp_template_part' ], true ) ) {
+                    return true;
+                }
             }
         }
 

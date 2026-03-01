@@ -12,7 +12,7 @@
  */
 
 import { InspectorControls, BlockControls } from '@wordpress/block-editor';
-import { ToolbarGroup } from '@wordpress/components';
+import { ToolbarGroup, PanelBody } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import NBDynamicTagInjector from './NBDynamicTagInjector';
@@ -31,6 +31,7 @@ import DynamicTagTextControl from '@shared/controls/DynamicTagTextControl';
 import EnableTagsToolbarButton from '@shared/controls/EnableTagsToolbarButton';
 import ColorPickerControl from '@shared/controls/ColorPickerControl';
 import ResponsiveRangeControlWithDropdown from '@shared/controls/ResponsiveRangeControlWithDropdown';
+import ResponsiveRangeControl from '@shared/controls/ResponsiveRangeControl';
 
 /**
  * Typed wrapper for InspectorControls with group="advanced".
@@ -60,6 +61,12 @@ const rowSettingsAttributes = {
 	voxelIconSizeUnit: { type: 'string' as const, default: 'px' },
 	voxelIconColor: { type: 'string' as const, default: '' },
 };
+
+/** NB container blocks that get editor preview width (matches Voxel container-controller.php) */
+const NB_EDITOR_PREVIEW_WIDTH_BLOCKS = new Set([
+	'nectar-blocks/row',
+	'nectar-blocks/flex-box',
+]);
 
 export function registerNBDynamicTagIntegration(): void {
 	if (isRegistered) return;
@@ -143,6 +150,11 @@ export function registerNBDynamicTagIntegration(): void {
 				// Child: RowSettings attributes
 				if (isChild) {
 					Object.assign(mergedAttrs, rowSettingsAttributes);
+				}
+
+				// Container blocks: editor preview width
+				if (NB_EDITOR_PREVIEW_WIDTH_BLOCKS.has(name)) {
+					mergedAttrs['editorPreviewWidth'] = { type: 'number' as const };
 				}
 
 				return { ...settings, attributes: mergedAttrs };
@@ -353,6 +365,83 @@ export function registerNBDynamicTagIntegration(): void {
 	);
 
 	addFilter('editor.BlockEdit', 'voxel-fse/nb-row-settings', withNBRowSettings);
+
+	// ========================================================================
+	// EDITOR PREVIEW WIDTH: RangeControl in Advanced panel for Row/Flex-Box
+	// Matches Voxel container-controller.php "Editor preview width" section
+	// ========================================================================
+
+	const withNBEditorPreviewWidth = createHigherOrderComponent(
+		(BlockEdit: any) => {
+			return (props: any) => {
+				const { name, attributes, setAttributes } = props;
+
+				if (!NB_EDITOR_PREVIEW_WIDTH_BLOCKS.has(name)) {
+					return <BlockEdit {...props} />;
+				}
+
+				return (
+					<>
+						<BlockEdit {...props} />
+						<InspectorControls>
+							<PanelBody
+								title={__('Editor preview width', 'voxel-fse')}
+								initialOpen={false}
+							>
+								<ResponsiveRangeControl
+									label={__('Width', 'voxel-fse')}
+									attributes={attributes}
+									setAttributes={setAttributes}
+									attributeBaseName="editorPreviewWidth"
+									min={0}
+									max={1200}
+									step={1}
+									showHeader={false}
+								/>
+								<p style={{ marginTop: '4px', color: '#757575', fontSize: '12px' }}>
+									{__('Change the width of the canvas, useful when designing preview cards', 'voxel-fse')}
+								</p>
+							</PanelBody>
+						</InspectorControls>
+					</>
+				);
+			};
+		},
+		'withNBEditorPreviewWidth'
+	);
+
+	addFilter('editor.BlockEdit', 'voxel-fse/nb-editor-preview-width', withNBEditorPreviewWidth);
+
+	// ========================================================================
+	// EDITOR PREVIEW WIDTH: Apply max-width to block wrapper (editor only)
+	// ========================================================================
+
+	const withNBEditorPreviewWidthStyle = createHigherOrderComponent(
+		(BlockListBlock: any) => {
+			return (props: any) => {
+				const { name, attributes, wrapperProps } = props;
+
+				if (!NB_EDITOR_PREVIEW_WIDTH_BLOCKS.has(name)) {
+					return <BlockListBlock {...props} />;
+				}
+
+				const previewWidth = attributes?.['editorPreviewWidth'] as number | null | undefined;
+
+				const newWrapperProps = {
+					...wrapperProps,
+					style: {
+						...(wrapperProps?.style || {}),
+						maxWidth: previewWidth ? `${previewWidth}px` : undefined,
+					},
+				};
+
+				return <BlockListBlock {...props} wrapperProps={newWrapperProps} />;
+			};
+		},
+		'withNBEditorPreviewWidthStyle'
+	);
+
+	addFilter('editor.BlockListBlock', 'voxel-fse/nb-editor-preview-width-style', withNBEditorPreviewWidthStyle);
 
 	isRegistered = true;
 }

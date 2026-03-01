@@ -100,6 +100,21 @@ export default function ResponsiveRangeControlWithDropdown({
 		return value === undefined || value === null;
 	};
 
+	// Get the inherited value from parent device (desktop → tablet → mobile cascade)
+	const getInheritedValue = (): number | undefined => {
+		if (currentDevice === 'tablet') {
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		} else if (currentDevice === 'mobile') {
+			// Mobile inherits from tablet first, then desktop
+			const tabletValue = attributes[`${attributeBaseName}_tablet`];
+			if (typeof tabletValue === 'number') return tabletValue;
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		}
+		return undefined;
+	};
+
 	// Set value for current device
 	const setValue = (newValue: number | undefined) => {
 		const attrName = getAttributeName();
@@ -137,9 +152,13 @@ export default function ResponsiveRangeControlWithDropdown({
 	const percentMax = 100;
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
-	// When unit is % and no value is set, use max as the initial position
-	// Otherwise, use min so the handle starts at the beginning of the bar (not the middle)
-	const initialPosition = isPercentUnit ? effectiveMax : min;
+	// Determine initialPosition: controls both slider handle position and displayed number
+	// when no explicit value is set. Priority:
+	// 1. % unit → max (100%)
+	// 2. Inherited value from parent device (desktop/tablet) → show inherited value
+	// 3. Fallback to min (slider at left edge)
+	const inherited = isInherited() ? getInheritedValue() : undefined;
+	const initialPosition = isPercentUnit ? effectiveMax : (inherited ?? min);
 
 	return (
 		<div className="elementor-control elementor-control-type-slider" style={{ marginBottom: '16px' }}>

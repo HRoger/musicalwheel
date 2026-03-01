@@ -953,6 +953,40 @@ add_filter( 'get_block_templates', function ( array $query_result ): array {
 }, 10, 1 );
 
 /**
+ * NectarBlocks: seed missing nectar_blocks_options before editor assets run.
+ *
+ * Blocks.php line 726 does `Nectar_Blocks_Options::get_options()['token']` without
+ * a null check. When the DB option row doesn't exist yet, get_options() returns false
+ * and PHP throws "Undefined array key 'token'". The plugin's own initialize_defaults()
+ * only runs when Nectar_Blocks_Options is instantiated, which may not have happened yet
+ * at enqueue_block_editor_assets time.
+ *
+ * Fix: seed the option early (priority 1) so the row exists before NB reads it.
+ */
+add_filter( 'option_nectar_blocks_options', function ( $value ) {
+	// Blocks.php line 726 reads get_options()['token'] without a null/key check.
+	// The option may be missing (false) OR an old array without the 'token' key.
+	// Intercept the option value in-memory so the warning never fires, without
+	// touching the DB (avoids cache-miss issues and multisite complexity).
+	if ( $value === false ) {
+		return [
+			'currentNBVersion' => defined( 'NECTAR_BLOCKS_VERSION' ) ? NECTAR_BLOCKS_VERSION : '',
+			'migrationVersion' => defined( 'NECTAR_BLOCKS_VERSION' ) ? NECTAR_BLOCKS_VERSION : '',
+			'licenseKey'       => '',
+			'isLicenseActive'  => false,
+			'token'            => '',
+			'autoUpdate'       => false,
+			'analytics'        => false,
+			'bugReports'       => true,
+		];
+	}
+	if ( is_array( $value ) && ! array_key_exists( 'token', $value ) ) {
+		$value['token'] = '';
+	}
+	return $value;
+} );
+
+/**
  * NectarBlocks null-safety workaround for taxonomy/archive/404 pages.
  *
  * NectarBlocks' frontend_render_styles() (priority 99) has two null-safety issues:

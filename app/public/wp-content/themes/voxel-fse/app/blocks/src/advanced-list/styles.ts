@@ -193,15 +193,19 @@ export function generateAdvancedListStyles(
 
 	// CSS Grid columns (responsive)
 	if (a.enableCssGrid && a.gridColumns) {
-		cssRules.push(`${selector} .ts-advanced-list { display: grid; grid-template-columns: repeat(${a.gridColumns}, minmax(0, 1fr)); }`);
+		cssRules.push(`${selector} .ts-advanced-list { display: grid; grid-template-columns: repeat(${a.gridColumns}, minmax(auto, 1fr)); }`);
+		// In grid layout, the cell width may be narrower than the explicit height,
+		// creating oval shapes with border-radius. Force square aspect ratio so
+		// items stay circular (width matches height via aspect-ratio).
+		cssRules.push(`${selector} .ts-action-con { aspect-ratio: 1; }`);
 	}
 	if (attributes.enableCssGrid_tablet && attributes.gridColumns_tablet) {
-		tabletRules.push(`${selector} .ts-advanced-list { grid-template-columns: repeat(${attributes.gridColumns_tablet}, minmax(0, 1fr)); }`);
+		tabletRules.push(`${selector} .ts-advanced-list { grid-template-columns: repeat(${attributes.gridColumns_tablet}, minmax(auto, 1fr)); }`);
 	} else if (attributes.enableCssGrid_tablet === false) {
 		tabletRules.push(`${selector} .ts-advanced-list { display: flex; grid-template-columns: unset; }`);
 	}
 	if (attributes.enableCssGrid_mobile && attributes.gridColumns_mobile) {
-		mobileRules.push(`${selector} .ts-advanced-list { grid-template-columns: repeat(${attributes.gridColumns_mobile}, minmax(0, 1fr)); }`);
+		mobileRules.push(`${selector} .ts-advanced-list { grid-template-columns: repeat(${attributes.gridColumns_mobile}, minmax(auto, 1fr)); }`);
 	} else if (attributes.enableCssGrid_mobile === false) {
 		mobileRules.push(`${selector} .ts-advanced-list { display: flex; grid-template-columns: unset; }`);
 	}
@@ -230,8 +234,8 @@ export function generateAdvancedListStyles(
 		}
 	}
 
-	// Item gap (responsive) — always emit desktop (defaulted via `a`)
-	{
+	// Item gap (responsive) — only emit if user has set a value
+	if (attributes.itemGap != null) {
 		const unit = a.itemGapUnit || 'px';
 		cssRules.push(`${selector} .ts-advanced-list { gap: ${a.itemGap}${unit}; }`);
 	}
@@ -265,8 +269,8 @@ export function generateAdvancedListStyles(
 	// Source: advanced-list.php - List item accordion
 	// ============================================
 
-	// Justify content (responsive)
-	if (a.itemJustifyContent) {
+	// Justify content (responsive) — only emit if user has set a value
+	if (attributes.itemJustifyContent) {
 		cssRules.push(`${selector} .ts-action-con { justify-content: ${a.itemJustifyContent}; }`);
 	}
 	if (attributes.itemJustifyContent_tablet) {
@@ -305,9 +309,9 @@ export function generateAdvancedListStyles(
 		mobileRules.push(`${selector} .ts-action-con { padding: ${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit}; }`);
 	}
 
-	// Item height (responsive) — always emit desktop (defaulted via `a`)
+	// Item height (responsive) — only emit if user has set a value
 	// Voxel uses `height:` not `min-height:` (advanced-list.php:590)
-	{
+	if (attributes.itemHeight != null) {
 		const unit = a.itemHeightUnit || 'px';
 		cssRules.push(`${selector} .ts-action-con { height: ${a.itemHeight}${unit}; }`);
 	}
@@ -341,8 +345,8 @@ export function generateAdvancedListStyles(
 		}
 	}
 
-	// Border radius (responsive) — always emit desktop (defaulted via `a`)
-	{
+	// Border radius (responsive) — only emit if user has set a value
+	if (attributes.itemBorderRadius != null) {
 		const unit = a.itemBorderRadiusUnit || 'px';
 		cssRules.push(`${selector} .ts-action-con { border-radius: ${a.itemBorderRadius}${unit}; }`);
 	}

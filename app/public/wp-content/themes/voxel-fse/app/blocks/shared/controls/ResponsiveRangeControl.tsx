@@ -18,7 +18,7 @@
 import { RangeControl, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import ResponsiveDropdownButton from './ResponsiveDropdownButton';
 import UnitDropdownButton, { type UnitType } from './UnitDropdownButton';
 import { DynamicTagBuilder } from '../../shared/dynamic-tags';
@@ -107,11 +107,38 @@ export default function ResponsiveRangeControl({
 		return value === undefined || value === null;
 	};
 
+	// Get the inherited value from parent device (desktop → tablet → mobile cascade)
+	const getInheritedValue = (): number | undefined => {
+		if (currentDevice === 'tablet') {
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		} else if (currentDevice === 'mobile') {
+			// Mobile inherits from tablet first, then desktop
+			const tabletValue = attributes[`${attributeBaseName}_tablet`];
+			if (typeof tabletValue === 'number') return tabletValue;
+			const desktopValue = attributes[attributeBaseName];
+			if (typeof desktopValue === 'number') return desktopValue;
+		}
+		return undefined;
+	};
+
 	// Set value for current device
 	const setValue = (newValue: any) => {
 		const attrName = getAttributeName();
 		setAttributes({ [attrName]: newValue });
 	};
+
+	// WordPress RangeControl never fires onChange when input is emptied (parseFloat('') = NaN).
+	// Detect empty input on blur and explicitly set null so CSS rules are removed.
+	// null works because block.json uses type: ["number", "null"] — WordPress stores null
+	// as a real value (distinct from the numeric default), enabling styles.ts to skip emission.
+	const handleRangeWrapperBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+		const input = e.target;
+		if (input instanceof HTMLInputElement && input.type === 'number' && input.value === '') {
+			const attrName = getAttributeName();
+			setAttributes({ [attrName]: null });
+		}
+	}, [getAttributeName, setAttributes]);
 
 	const currentUnit = unitAttributeName
 		? (attributes[unitAttributeName] || 'px') as UnitType
@@ -182,9 +209,13 @@ export default function ResponsiveRangeControl({
 	const percentMax = 100;
 	const effectiveMax = isPercentUnit ? percentMax : max;
 
-	// When unit is % and no value is set, use max as the initial position
-	// Otherwise, use min so the handle starts at the beginning of the bar (not the middle)
-	const initialPosition = isPercentUnit ? effectiveMax : min;
+	// Determine initialPosition: controls both slider handle position and displayed number
+	// when no explicit value is set. Priority:
+	// 1. % unit → max (100%)
+	// 2. Inherited value from parent device (desktop/tablet) → show inherited value
+	// 3. Fallback to min (slider at left edge)
+	const inherited = isInherited() ? getInheritedValue() : undefined;
+	const initialPosition = isPercentUnit ? effectiveMax : (inherited ?? min);
 
 	// Check if we should show the placeholder (no value set and unit is %)
 	const showPercentPlaceholder = isPercentUnit && (currentValue === undefined || currentValue === null) && !isTagsActive;
@@ -307,7 +338,7 @@ export default function ResponsiveRangeControl({
 					style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}
 					data-placeholder={showPercentPlaceholder ? effectiveMax.toString() : undefined}
 				>
-					<div style={{ flex: 1, position: 'relative' }}>
+					<div style={{ flex: 1, position: 'relative' }} onBlur={handleRangeWrapperBlur}>
 						<RangeControl
 							value={currentValue as number | undefined}
 							onChange={setValue}

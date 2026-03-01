@@ -2445,7 +2445,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			img.className = 'voxel-nb-icon-indicator-preview';
 				img.src = dynamicImageUrl;
 				img.alt = '';
-				img.style.cssText = 'width:20px;height:20px;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;';
+				img.style.cssText = 'width:20px;height:20px;object-fit:contain;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;pointer-events:none;';
 
 				indicatorBox.appendChild(img);
 			});
@@ -2517,9 +2517,23 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon {
 					color: var(--voxel-icon-color) !important;
 				}
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon svg,
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon svg path,
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon svg circle,
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon svg rect,
+				[data-voxel-icon-color] .nectar-blocks-accordion-section__title .nectar-blocks-icon__inner .nectar-component__icon svg polygon {
+					fill: var(--voxel-icon-color) !important;
+				}
 				/* NB icon block: icon inside .nectar-blocks-icon__inner */
 				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon {
 					color: var(--voxel-icon-color) !important;
+				}
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon svg,
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon svg path,
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon svg circle,
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon svg rect,
+				[data-voxel-icon-color].wp-block-nectar-blocks-icon .nectar-blocks-icon__inner .nectar-component__icon svg polygon {
+					fill: var(--voxel-icon-color) !important;
 				}
 				/* Button block: dynamic icon image inside <a> tag
 				 * No space — in editor, [data-voxel-icon-size] and .nectar-blocks-button are the same element */
@@ -2542,6 +2556,7 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 		}
 
 		// Icon color (accordion-section, button, icon block)
+		// Apply via data attribute for CSS rules
 		if (iconColor) {
 			blockEl.style.setProperty('--voxel-icon-color', iconColor);
 			blockEl.setAttribute('data-voxel-icon-color', iconColor);
@@ -2550,21 +2565,35 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 			blockEl.removeAttribute('data-voxel-icon-color');
 		}
 
-		// Apply color to SVG <img> via CSS mask technique.
-		// CSS `color` doesn't work on <img> elements. Instead, use the img src
-		// as a mask-image and apply background-color for recoloring.
-		const iconImgSelector = isAccordionSection
-			? '.nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview'
-			: isButtonBlock
-				? '.nectar-blocks-button a > .voxel-nb-icon-image-preview'
-				: isIconBlock
-					? '.nectar-blocks-icon__inner > .voxel-nb-icon-image-preview'
-					: null;
-		if (iconImgSelector) {
-			const iconImg = blockEl.querySelector(iconImgSelector) as HTMLImageElement | null;
-			if (iconImg) {
-				if (iconColor) {
-					// Use CSS mask to recolor the SVG image
+		// Apply icon color directly via inline styles on the icon element.
+		// NB generates CSS with ID-based selectors (#nb-xxx .nectar-blocks-icon__inner { color: ... })
+		// which have higher specificity than our attribute-based CSS rules. Inline styles override everything.
+		// We also need a MutationObserver because NB re-renders inner DOM on click/selection.
+		const applyIconColor = () => {
+			if (!iconColor) return;
+
+			// Apply to native NB icon (.nectar-component__icon) and its SVG children
+			const iconEl = blockEl.querySelector('.nectar-component__icon') as HTMLElement | null;
+			if (iconEl) {
+				iconEl.style.setProperty('color', iconColor, 'important');
+				// Also apply fill to SVG paths since they use fill: currentcolor
+				const svgPaths = iconEl.querySelectorAll('svg, svg path, svg circle, svg rect, svg polygon');
+				svgPaths.forEach((path) => {
+					(path as HTMLElement).style.setProperty('fill', iconColor, 'important');
+				});
+			}
+
+			// Apply to dynamic icon image (.voxel-nb-icon-image-preview) via CSS mask
+			const iconImgSelector = isAccordionSection
+				? '.nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview'
+				: isButtonBlock
+					? '.nectar-blocks-button a > .voxel-nb-icon-image-preview'
+					: isIconBlock
+						? '.nectar-blocks-icon__inner > .voxel-nb-icon-image-preview'
+						: null;
+			if (iconImgSelector) {
+				const iconImg = blockEl.querySelector(iconImgSelector) as HTMLImageElement | null;
+				if (iconImg) {
 					iconImg.style.setProperty('-webkit-mask-image', `url(${iconImg.src})`);
 					iconImg.style.setProperty('mask-image', `url(${iconImg.src})`);
 					iconImg.style.setProperty('-webkit-mask-size', 'contain');
@@ -2574,9 +2603,30 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 					iconImg.style.setProperty('-webkit-mask-position', 'center');
 					iconImg.style.setProperty('mask-position', 'center');
 					iconImg.style.setProperty('background-color', iconColor);
-					// Make the original image invisible but keep layout
 					iconImg.style.setProperty('object-position', '-9999px');
-				} else {
+				}
+			}
+		};
+
+		const removeIconColor = () => {
+			const iconEl = blockEl.querySelector('.nectar-component__icon') as HTMLElement | null;
+			if (iconEl) {
+				iconEl.style.removeProperty('color');
+				const svgPaths = iconEl.querySelectorAll('svg, svg path, svg circle, svg rect, svg polygon');
+				svgPaths.forEach((path) => {
+					(path as HTMLElement).style.removeProperty('fill');
+				});
+			}
+			const iconImgSelector = isAccordionSection
+				? '.nectar-blocks-accordion-section__title > .voxel-nb-icon-image-preview'
+				: isButtonBlock
+					? '.nectar-blocks-button a > .voxel-nb-icon-image-preview'
+					: isIconBlock
+						? '.nectar-blocks-icon__inner > .voxel-nb-icon-image-preview'
+						: null;
+			if (iconImgSelector) {
+				const iconImg = blockEl.querySelector(iconImgSelector) as HTMLImageElement | null;
+				if (iconImg) {
 					iconImg.style.removeProperty('-webkit-mask-image');
 					iconImg.style.removeProperty('mask-image');
 					iconImg.style.removeProperty('-webkit-mask-size');
@@ -2589,9 +2639,44 @@ export default function NBDynamicTagInjector({ blockConfig, clientId, attributes
 					iconImg.style.removeProperty('object-position');
 				}
 			}
+		};
+
+		if (iconColor) {
+			applyIconColor();
+		} else {
+			removeIconColor();
+		}
+
+		// MutationObserver: NB re-renders icon inner DOM on click/selection,
+		// which replaces the .nectar-component__icon element and loses our inline styles.
+		// Only observe the specific icon container (not the whole block subtree) to avoid
+		// infinite loops where our style changes trigger more mutations.
+		let iconColorObserver: MutationObserver | null = null;
+		if (iconColor) {
+			// Find the narrow container that NB replaces icon content in
+			const observeTarget = isIconBlock
+				? blockEl.querySelector('.nectar-blocks-icon__inner')
+				: isAccordionSection
+					? blockEl.querySelector('.nectar-blocks-accordion-section__title')
+					: isButtonBlock
+						? blockEl.querySelector('.nectar-blocks-button a, a')
+						: null;
+			if (observeTarget) {
+				let applying = false;
+				iconColorObserver = new MutationObserver(() => {
+					if (applying) return;
+					applying = true;
+					applyIconColor();
+					applying = false;
+				});
+				// Only watch for child element additions/removals (NB replacing the icon),
+				// not attribute changes (which our style modifications would trigger)
+				iconColorObserver.observe(observeTarget, { childList: true });
+			}
 		}
 
 		return () => {
+			iconColorObserver?.disconnect();
 			blockEl.style.removeProperty('--voxel-icon-size');
 			blockEl.removeAttribute('data-voxel-icon-size');
 			blockEl.style.removeProperty('--voxel-icon-color');
@@ -3105,7 +3190,10 @@ function BodyFieldResolver({
 					overlay.style.textTransform = computed.textTransform;
 					overlay.style.textAlign = computed.textAlign;
 					overlay.style.padding = computed.padding;
-					overlay.style.margin = computed.margin;
+					overlay.style.marginTop = computed.marginTop;
+					overlay.style.marginRight = computed.marginRight;
+					overlay.style.marginLeft = computed.marginLeft;
+					overlay.style.marginBottom = '0';
 					overlay.style.whiteSpace = computed.whiteSpace;
 				}
 

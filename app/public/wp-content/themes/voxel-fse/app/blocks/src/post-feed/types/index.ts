@@ -6,6 +6,7 @@
 
 import type { IconValue } from '@shared/controls/IconPickerControl';
 import type { TypographyValue } from '@shared/controls/TypographyPopup';
+import type { BorderGroupValue } from '@shared/controls/BorderGroupControl';
 
 export interface DimensionsConfig {
 	top?: string | number;
@@ -115,7 +116,21 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	// Loading Style
 	loadingStyle: LoadingStyle;
 	loadingOpacity: number;
+	// Skeleton background (prefixed to avoid conflict with AdvancedTab background)
 	skeletonBackgroundColor: string;
+	skeletonBackgroundType?: string;
+	skeletonBackgroundImage?: { id?: number; url?: string };
+	skeletonBgImagePosition?: string;
+	skeletonBgImageAttachment?: string;
+	skeletonBgImageRepeat?: string;
+	skeletonBgImageSize?: string;
+	skeletonGradientColor?: string;
+	skeletonGradientLocation?: number;
+	skeletonGradientSecondColor?: string;
+	skeletonGradientSecondLocation?: number;
+	skeletonGradientType?: string;
+	skeletonGradientAngle?: number;
+	skeletonGradientPosition?: string;
 
 	// No Results Style
 	noResultsHideScreen: boolean;
@@ -145,9 +160,7 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	paginationSpacing?: number;
 	paginationSpacing_tablet?: number;
 	paginationSpacing_mobile?: number;
-	paginationBorderType: string;
-	paginationBorderWidth?: number;
-	paginationBorderColor: string;
+	paginationBorder: BorderGroupValue;
 	paginationBorderRadius?: number;
 	paginationBorderRadius_tablet?: number;
 	paginationBorderRadius_mobile?: number;
@@ -181,9 +194,7 @@ export interface PostFeedAttributes extends CombinedStyleAttributes {
 	carouselNavIconSize_mobile?: number;
 	carouselNavBackground: string;
 	carouselNavBackdropBlur?: number;
-	carouselNavBorderType: string;
-	carouselNavBorderWidth?: number;
-	carouselNavBorderColor: string;
+	carouselNavBorder: BorderGroupValue;
 	carouselNavBorderRadius?: number;
 	carouselNavBorderRadius_tablet?: number;
 	carouselNavBorderRadius_mobile?: number;
@@ -256,6 +267,20 @@ export interface PostFeedVxConfig {
 	itemPadding_mobile?: number;
 	loadingStyle: LoadingStyle;
 	loadingOpacity: number;
+	skeletonBackgroundColor?: string;
+	skeletonBackgroundType?: string;
+	skeletonBackgroundImage?: { id?: number; url?: string };
+	skeletonBgImagePosition?: string;
+	skeletonBgImageAttachment?: string;
+	skeletonBgImageRepeat?: string;
+	skeletonBgImageSize?: string;
+	skeletonGradientColor?: string;
+	skeletonGradientLocation?: number;
+	skeletonGradientSecondColor?: string;
+	skeletonGradientSecondLocation?: number;
+	skeletonGradientType?: string;
+	skeletonGradientAngle?: number;
+	skeletonGradientPosition?: string;
 	icons: {
 		loadMore: IconValue;
 		noResults: IconValue;

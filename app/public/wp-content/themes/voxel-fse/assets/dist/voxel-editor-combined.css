@@ -267,6 +267,15 @@ body .components-number-control .components-input-control__container [id^="inspe
  *FIX VOXEL BLOCKS STYLING
  * ============================================ */
 
+/* advanced-list: commons.css sets .flexify { flex-wrap: wrap } but the
+ * action list must never wrap — items should stay on one row.
+ * Evidence: voxel/assets/dist/commons.css → .flexify{display:flex;flex-wrap:wrap}
+ * The frontend works because the viewport is wide enough; in the editor
+ * the card preview is narrow, causing items to wrap to a second row. */
+.ts-advanced-list.flexify {
+    flex-wrap: nowrap;
+}
+
 body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus,
 body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus .media-icon img,
 body.block-editor-page .block-editor-block-list__layout a.ts-btn-2:focus .plugin-icon {
@@ -811,6 +820,17 @@ body .nectar-blocks-flex-box__inner .components-dropdown .components-button svg:
 /* ============================================
  * THIRD-PARTY BLOCKS: Specific fixes for known conflicts
  * ============================================ */
+
+/* Fix NectarBlocks appender "+" button being clipped & scrollbar appearing.
+ * NectarBlocks uses translateY(50%) on the inserter to center it on the
+ * container's bottom edge. On small templates (e.g. preview cards), this pushes
+ * the button below the iframe body height, causing it to be cut off and
+ * triggering an unwanted scrollbar (overflow-y: auto on body). Adding
+ * padding-bottom on the root container gives the button room to render. */
+.is-root-container.block-editor-block-list__layout {
+    padding-bottom: 24px;
+}
+
 /*fix plus icon insert block button*/
 .wp-block-nectar-blocks-column .nectar-blocks-column__content-wrap .block-list-appender:only-child>.block-editor-inserter>button svg {
     background-color: #3452ff;

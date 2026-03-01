@@ -123,79 +123,74 @@ $wrapper_attrs = get_block_wrapper_attributes( [
 	'class' => $extra_classes,
 ] );
 
-$extra_attrs_str = implode( ' ', $extra_attr_parts );
-
 // ============================================================================
-// FEED CONTEXT: Server-side price rendering for Post Feed / Term Feed cards
+// SERVER-SIDE PRICE RENDERING (all contexts: single post + feed cards)
+// Eliminates FOUC by rendering price HTML immediately on first paint.
+// frontend.tsx reads the SSR spans and skips the async REST API fetch.
 // ============================================================================
 $price_html = '';
 
-$is_feed = class_exists( '\\VoxelFSE\\Controllers\\FSE_NB_SSR_Controller' )
-	&& \VoxelFSE\Controllers\FSE_NB_SSR_Controller::is_feed_context();
-
-if ( $is_feed ) {
-	$post = \Voxel\get_current_post();
-	if ( $post ) {
-		$field = $post->get_field( 'product' );
-		if ( $field && $field->get_type() === 'product' ) {
-			// Check availability (mirrors Voxel widget logic exactly)
-			$is_available = false;
-			$error_message = '';
-			try {
-				$field->check_product_form_validity();
-				$is_available = true;
-			} catch ( \Exception $e ) {
-				if ( $e->getCode() === \Voxel\PRODUCT_ERR_OUT_OF_STOCK ) {
-					$error_message = _x( 'Out of stock', 'product price widget', 'voxel' );
-				} else {
-					$error_message = _x( 'Unavailable', 'product price widget', 'voxel' );
-				}
-			}
-
-			if ( $is_available ) {
-				$reference_date = $GLOBALS['_availability_start_date'] ?? \Voxel\now();
-				$regular_price = $field->get_minimum_price_for_date( $reference_date, [
-					'with_discounts' => false,
-					'addons'         => $GLOBALS['_addon_filters'] ?? null,
-				] );
-				$discount_price = $field->get_minimum_price_for_date( $reference_date, [
-					'with_discounts' => true,
-					'addons'         => $GLOBALS['_addon_filters'] ?? null,
-				] );
-				$currency = \Voxel\get_primary_currency();
-
-				// Calculate suffix
-				$suffix = '';
-				$product_type = $field->get_product_type();
-
-				if ( $booking = $field->get_product_field( 'booking' ) ) {
-					if ( $booking->get_booking_type() === 'days' && ( $field->get_value()['booking']['booking_mode'] ?? null ) === 'date_range' ) {
-						if ( $product_type->config( 'modules.booking.date_ranges.count_mode' ) === 'nights' ) {
-							$suffix = _x( ' / night', 'product price', 'voxel' );
-						} else {
-							$suffix = _x( ' / day', 'product price', 'voxel' );
-						}
-					}
-				}
-
-				if ( $subscription_interval = $field->get_product_field( 'subscription-interval' ) ) {
-					$interval = $field->get_value()['subscription'];
-					$suffix = '';
-					if ( $formatted_interval = \Voxel\interval_format( $interval['unit'], $interval['frequency'] ) ) {
-						$suffix = sprintf( ' / %s', $formatted_interval );
-					}
-				}
-
-				// Build HTML (matches templates/widgets/product-price.php exactly)
-				if ( $discount_price < $regular_price ) {
-					$price_html = '<span class="vx-price">' . \Voxel\currency_format( $discount_price, $currency, false ) . $suffix . '</span>';
-					$price_html .= '<span class="vx-price"><s>' . \Voxel\currency_format( $regular_price, $currency, false ) . $suffix . '</s></span>';
-				} else {
-					$price_html = '<span class="vx-price">' . \Voxel\currency_format( $regular_price, $currency, false ) . $suffix . '</span>';
-				}
+$post = \Voxel\get_current_post();
+if ( $post ) {
+	$field = $post->get_field( 'product' );
+	if ( $field && $field->get_type() === 'product' ) {
+		// Check availability (mirrors Voxel widget logic exactly)
+		$is_available = false;
+		$error_message = '';
+		try {
+			$field->check_product_form_validity();
+			$is_available = true;
+		} catch ( \Exception $e ) {
+			if ( $e->getCode() === \Voxel\PRODUCT_ERR_OUT_OF_STOCK ) {
+				$error_message = _x( 'Out of stock', 'product price widget', 'voxel' );
 			} else {
-				$price_html = '<span class="vx-price no-stock">' . esc_html( $error_message ) . '</span>';
+				$error_message = _x( 'Unavailable', 'product price widget', 'voxel' );
 			}
+		}
+
+		if ( $is_available ) {
+			$reference_date = $GLOBALS['_availability_start_date'] ?? \Voxel\now();
+			$regular_price = $field->get_minimum_price_for_date( $reference_date, [
+				'with_discounts' => false,
+				'addons'         => $GLOBALS['_addon_filters'] ?? null,
+			] );
+			$discount_price = $field->get_minimum_price_for_date( $reference_date, [
+				'with_discounts' => true,
+				'addons'         => $GLOBALS['_addon_filters'] ?? null,
+			] );
+			$currency = \Voxel\get_primary_currency();
+
+			// Calculate suffix
+			$suffix = '';
+			$product_type = $field->get_product_type();
+
+			if ( $booking = $field->get_product_field( 'booking' ) ) {
+				if ( $booking->get_booking_type() === 'days' && ( $field->get_value()['booking']['booking_mode'] ?? null ) === 'date_range' ) {
+					if ( $product_type->config( 'modules.booking.date_ranges.count_mode' ) === 'nights' ) {
+						$suffix = _x( ' / night', 'product price', 'voxel' );
+					} else {
+						$suffix = _x( ' / day', 'product price', 'voxel' );
+					}
+				}
+			}
+
+			if ( $subscription_interval = $field->get_product_field( 'subscription-interval' ) ) {
+				$interval = $field->get_value()['subscription'];
+				$suffix = '';
+				if ( $formatted_interval = \Voxel\interval_format( $interval['unit'], $interval['frequency'] ) ) {
+					$suffix = sprintf( ' / %s', $formatted_interval );
+				}
+			}
+
+			// Build HTML (matches templates/widgets/product-price.php exactly)
+			if ( $discount_price < $regular_price ) {
+				$price_html = '<span class="vx-price">' . \Voxel\currency_format( $discount_price, $currency, false ) . $suffix . '</span>';
+				$price_html .= '<span class="vx-price"><s>' . \Voxel\currency_format( $regular_price, $currency, false ) . $suffix . '</s></span>';
+			} else {
+				$price_html = '<span class="vx-price">' . \Voxel\currency_format( $regular_price, $currency, false ) . $suffix . '</span>';
+			}
+		} else {
+			$price_html = '<span class="vx-price no-stock">' . esc_html( $error_message ) . '</span>';
 		}
 	}
 }
@@ -203,6 +198,14 @@ if ( $is_feed ) {
 // ============================================================================
 // OUTPUT
 // ============================================================================
+
+// Signal to frontend.tsx that SSR price HTML is present — skip async fetch.
+if ( $price_html ) {
+	$extra_attr_parts[] = 'data-ssr="true"';
+}
+
+$extra_attrs_str = implode( ' ', $extra_attr_parts );
+
 $output = '<div ' . $wrapper_attrs . ' ' . $extra_attrs_str . '>';
 $output .= '<script type="text/json" class="vxconfig">' . $vxconfig_json . '</script>';
 $output .= $price_html;

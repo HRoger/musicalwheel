@@ -307,18 +307,9 @@ export default function PrintTemplateComponent({
 		};
 	}, [templateContent]);
 
-	// Loading state
+	// Loading state — return null to avoid FOUC (grey box → content).
 	if (isLoading) {
-		return (
-			<div className={classList.join(' ')}>
-				<script
-					type="text/json"
-					className="vxconfig"
-					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
-				/>
-				{context === 'editor' && <EmptyPlaceholder />}
-			</div>
-		);
+		return null;
 	}
 
 	// Error state

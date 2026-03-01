@@ -232,6 +232,12 @@ class Block_Loader
         // Using is_admin() gate to prevent loading on frontend (frontend has its own per-block deps).
         add_action('enqueue_block_assets', [__CLASS__, 'enqueue_voxel_styles_for_iframe']);
 
+        // Load advanced-list frontend.js in the editor iframe so React hydration works
+        // for edit_post dropdown (EditStepsPopup + FormPopup) inside post-feed card templates.
+        // On the frontend, viewScript handles this automatically; in the editor, post-feed
+        // injects card HTML via dangerouslySetInnerHTML which bypasses viewScript loading.
+        add_action('enqueue_block_assets', [__CLASS__, 'enqueue_advanced_list_in_editor']);
+
         // Disable REST API caching for block render requests
         // This ensures ServerSideRender always fetches fresh content on viewport change
         add_filter('rest_post_dispatch', [__CLASS__, 'disable_block_render_cache'], 10, 3);
@@ -355,6 +361,21 @@ class Block_Loader
             wp_register_style('voxel-fse-editor', $build_url . '/editor.css', ['wp-components'], $version);
             wp_enqueue_style('voxel-fse-editor');
         }
+
+        // Also enqueue voxel-fse-combined here (enqueue_block_editor_assets) to guarantee
+        // Voxel CSS (commons, action, forms, etc.) loads on post.php page editor.
+        // enqueue_block_assets may not fire on post.php if no blocks are server-side rendered.
+        // enqueue_block_editor_assets fires on ALL block editor admin pages (post.php, site-editor).
+        // Note: this does NOT cause getCompatibilityStyles() duplication — that only clones
+        // editor_style_handles registered in block.json, not wp_enqueue_style() calls here.
+        $combined_css_path = $build_dir . '/voxel-editor-combined.css';
+        if (file_exists($combined_css_path) && !wp_style_is('voxel-fse-combined', 'enqueued')) {
+            if (!wp_style_is('voxel-fse-combined', 'registered')) {
+                $combined_version = defined('VOXEL_FSE_VERSION') ? VOXEL_FSE_VERSION : filemtime($combined_css_path);
+                wp_register_style('voxel-fse-combined', $build_url . '/voxel-editor-combined.css', [], $combined_version);
+            }
+            wp_enqueue_style('voxel-fse-combined');
+        }
     }
 
     /**
@@ -447,6 +468,31 @@ class Block_Loader
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Load advanced-list frontend.js in the editor so React hydration works
+     * for edit_post dropdown inside post-feed card templates.
+     *
+     * In the editor, post-feed injects card HTML via dangerouslySetInnerHTML.
+     * The advanced-list SSR content includes .voxel-fse-advanced-list-frontend
+     * containers with vxconfig. frontend.tsx's MutationObserver detects these
+     * and hydrates them with React (including EditStepsPopup + FormPopup).
+     *
+     * On the frontend, WordPress auto-enqueues viewScript when the block is
+     * in post content (+ enqueue_card_template_scripts for card templates).
+     * This method handles the editor case only.
+     */
+    public static function enqueue_advanced_list_in_editor()
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        $handle = 'mw-block-advanced-list-view';
+        if (wp_script_is($handle, 'registered') && !wp_script_is($handle, 'enqueued')) {
+            wp_enqueue_script($handle);
         }
     }
 
@@ -2649,7 +2695,7 @@ CSS;
             \Voxel\enqueue_maps();
 
             // Debug: Log what we're doing
-            error_log('[VoxelFSE] Enqueued maps scripts for FSE blocks');
+            //error_log('[VoxelFSE] Enqueued maps scripts for FSE blocks');
         }
 
 
@@ -2695,7 +2741,7 @@ CSS;
                 // Only google-maps.js (the wrapper) has that code at the end, but it looks for 'google-maps-js' ID
                 // The wrapper script has ID 'vx:google-maps.js-js', not 'google-maps-js'
 
-                error_log("[VoxelFSE] Bypassed soft-loading for wrapper: {$handle}");
+                //error_log("[VoxelFSE] Bypassed soft-loading for wrapper: {$handle}");
                 return "<!-- VoxelFSE: Immediate Load for {$handle} -->\n" . $tag;
             }
 
@@ -4548,7 +4594,7 @@ JAVASCRIPT;
                     $render_path = $block_dir . '/' . $render_file;
 
                     if (file_exists($render_path)) {
-                        $block_metadata['render_callback'] = function ($attributes, $content, $block) use ($render_path) {
+                        $block_metadata['render_callback'] = function ($attributes, $content, $block) use ($render_path, $block_name) {
                             // Include returns the value from render.php's return statement
                             $result = include $render_path;
                             // If result is a string, return it; otherwise return empty
@@ -5098,17 +5144,30 @@ JAVASCRIPT;
             $styles['element_id'] ?? ''
         );
 
-        // Prepend ALL CSS as style tags (desktop + responsive)
-        $all_css = '';
-        if (!empty($styles['desktop_css'])) {
-            $all_css .= '/* AdvancedTab & VoxelTab Desktop Styles */' . "\n" . $styles['desktop_css'];
-        }
-        if (!empty($styles['responsive_css'])) {
-            $all_css .= "\n" . $styles['responsive_css'];
-        }
+        // Collect CSS for footer output — only once per block_id
+        // (in feed context, same card template renders per post, producing identical CSS)
+        static $css_collected_ids = [];
 
-        if (!empty($all_css)) {
-            self::$collected_css[] = '/* Block ' . esc_attr($block_id) . ' AdvancedTab/VoxelTab */' . "\n" . $all_css;
+        if (!isset($css_collected_ids[$block_id])) {
+            $css_collected_ids[$block_id] = true;
+
+            $all_css = '';
+            if (!empty($styles['desktop_css'])) {
+                $all_css .= $styles['desktop_css'];
+            }
+            if (!empty($styles['responsive_css'])) {
+                $all_css .= "\n" . $styles['responsive_css'];
+            }
+
+            if (!empty($all_css)) {
+                if (self::should_inline_css()) {
+                    // In feed/REST/admin context, wp_footer doesn't fire.
+                    // Inject CSS directly into the block HTML so it travels with the content.
+                    $block_content = '<style>' . $all_css . '</style>' . $block_content;
+                } else {
+                    self::$collected_css[] = '/* Block ' . esc_attr($block_id) . ' AdvancedTab/VoxelTab */' . "\n" . $all_css;
+                }
+            }
         }
 
         return $block_content;
@@ -5653,14 +5712,59 @@ JAVASCRIPT;
      * @param string $block_id      Block identifier
      * @return string Modified block content with inline styles
      */
+    /**
+     * Check if we're in a rendering context where wp_footer won't fire
+     * (e.g., feed card templates rendered via ob_start/do_blocks, or REST block renderer).
+     * In these contexts, CSS must be inlined directly into block HTML.
+     */
+    private static function should_inline_css(): bool
+    {
+        // Feed context: card templates rendered inside ob_start() by post-feed/term-feed controllers
+        if (class_exists('\VoxelFSE\Controllers\FSE_NB_SSR_Controller')
+            && \VoxelFSE\Controllers\FSE_NB_SSR_Controller::is_feed_context()) {
+            return true;
+        }
+
+        // REST block renderer (e.g., Gutenberg editor previews via /wp/v2/block-renderer/)
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return true;
+        }
+
+        // Admin context (block editor iframe assembled from render_block output)
+        if (is_admin()) {
+            return true;
+        }
+
+        return false;
+    }
+
     private static function apply_advanced_list_styles($block_content, $attributes, $block_id)
     {
-        require_once __DIR__ . '/shared/style-generator.php';
+        // In feed context, the same card template renders once per post.
+        // Only collect the CSS on the first encounter of each block_id.
+        static $processed_ids = [];
 
-        $css = Style_Generator::generate_advanced_list_css($attributes, $block_id);
+        if (!isset($processed_ids[$block_id])) {
+            $processed_ids[$block_id] = true;
 
-        if (!empty($css)) {
-            self::$collected_css[] = '/* Advanced List */' . "\n" . $css;
+            require_once __DIR__ . '/shared/style-generator.php';
+            $css = Style_Generator::generate_advanced_list_css($attributes, $block_id);
+
+            // Strip the save HTML's baked <style> tag first (before we prepend new CSS).
+            $block_content = preg_replace('/<style\b[^>]*>.*?<\/style>/si', '', $block_content, 1);
+
+            if (!empty($css)) {
+                if (self::should_inline_css()) {
+                    // In feed/REST/admin context, wp_footer doesn't fire.
+                    // Inject CSS directly into the block HTML so it travels with the content.
+                    $block_content = '<style>' . $css . '</style>' . $block_content;
+                } else {
+                    self::$collected_css[] = '/* Advanced List */' . "\n" . $css;
+                }
+            }
+        } else {
+            // Already processed this block_id — still strip baked <style> tag
+            $block_content = preg_replace('/<style\b[^>]*>.*?<\/style>/si', '', $block_content, 1);
         }
 
         return $block_content;

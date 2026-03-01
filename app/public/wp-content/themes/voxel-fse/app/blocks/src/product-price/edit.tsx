@@ -19,6 +19,7 @@ import { InspectorTabs } from '@shared/controls';
 import ContentTab from './inspector/ContentTab';
 import { generateProductPriceResponsiveCSS } from './styles';
 import { useTemplatePostType } from '@shared/utils/useTemplateContext';
+import { getAdvancedVoxelTabProps } from '@shared/utils';
 import type {
 		ProductPriceData,
 	ProductPriceEditProps,
@@ -66,13 +67,47 @@ export default function Edit({
 }: ProductPriceEditProps) {
 	const blockId = attributes.blockId || clientId;
 
+	// Wire AdvancedTab + VoxelTab controls to the block wrapper
+	const advancedProps = getAdvancedVoxelTabProps(attributes as any, {
+		blockId,
+		baseClass: 'vxfse-product-price',
+		selectorPrefix: 'vxfse-product-price',
+	});
+
+	// Build CSS variables from content tab controls (colors, typography)
+	const contentStyles: Record<string, string> = {};
+	if (attributes.priceColor) contentStyles['--vx-price-color'] = attributes.priceColor;
+	if (attributes.strikethroughTextColor) contentStyles['--vx-strike-text-color'] = attributes.strikethroughTextColor;
+	if (attributes.strikethroughLineColor) contentStyles['--vx-strike-line-color'] = attributes.strikethroughLineColor;
+	if (attributes.strikethroughWidth) {
+		contentStyles['--vx-strike-width'] = `${attributes.strikethroughWidth}${attributes.strikethroughWidthUnit || 'px'}`;
+	}
+	if (attributes.outOfStockColor) contentStyles['--vx-nostock-color'] = attributes.outOfStockColor;
+	if (attributes.typography?.fontSize) contentStyles['--vx-price-font-size'] = attributes.typography.fontSize as string;
+	if (attributes.typography?.fontWeight) contentStyles['--vx-price-font-weight'] = attributes.typography.fontWeight as string;
+	if (attributes.typography?.fontFamily) contentStyles['--vx-price-font-family'] = attributes.typography.fontFamily as string;
+	if (attributes.typography?.lineHeight) contentStyles['--vx-price-line-height'] = attributes.typography.lineHeight as string;
+	if (attributes.typography?.letterSpacing) contentStyles['--vx-price-letter-spacing'] = attributes.typography.letterSpacing as string;
+	if (attributes.typography?.textTransform) contentStyles['--vx-price-text-transform'] = attributes.typography.textTransform as string;
+	if (attributes.strikethroughTypography?.fontSize) contentStyles['--vx-strike-font-size'] = attributes.strikethroughTypography.fontSize as string;
+	if (attributes.strikethroughTypography?.fontWeight) contentStyles['--vx-strike-font-weight'] = attributes.strikethroughTypography.fontWeight as string;
+	if (attributes.strikethroughTypography?.fontFamily) contentStyles['--vx-strike-font-family'] = attributes.strikethroughTypography.fontFamily as string;
+	if (attributes.strikethroughTypography?.lineHeight) contentStyles['--vx-strike-line-height'] = attributes.strikethroughTypography.lineHeight as string;
+	if (attributes.strikethroughTypography?.letterSpacing) contentStyles['--vx-strike-letter-spacing'] = attributes.strikethroughTypography.letterSpacing as string;
+	if (attributes.strikethroughTypography?.textTransform) contentStyles['--vx-strike-text-transform'] = attributes.strikethroughTypography.textTransform as string;
+
 	const blockProps = useBlockProps({
-		className: `vxfse-product-price-editor vxfse-product-price-${blockId}`,
+		id: advancedProps.elementId,
+		className: `vxfse-product-price-editor ${advancedProps.className}`,
+		style: { ...contentStyles, ...advancedProps.styles },
+		...advancedProps.customAttrs,
 	});
 
 	// State for price data
+	// Start as loading=true so the editor shows EmptyPlaceholder instead of
+	// a blank div while samplePostId resolves (eliminates editor FOUC).
 	const [priceData, setPriceData] = useState<ProductPriceData | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	// Get post context from FSE or block editor
@@ -91,18 +126,24 @@ export default function Edit({
 	const rawPostId = context.postId || editorPostId;
 	const [samplePostId, setSamplePostId] = useState<number | null>(null);
 
+	// Track whether we're still resolving the sample post ID (template context)
+	const [resolvingPostId, setResolvingPostId] = useState(!rawPostId && !!templatePostType);
+
 	// When editing a template (non-numeric postId), resolve a sample post
 	useEffect(() => {
 		if (rawPostId && typeof rawPostId === 'number' && rawPostId > 0) {
 			setSamplePostId(null);
+			setResolvingPostId(false);
 			return;
 		}
 
 		if (!templatePostType) {
 			setSamplePostId(null);
+			setResolvingPostId(false);
 			return;
 		}
 
+		setResolvingPostId(true);
 		const controller = new AbortController();
 		apiFetch<{ rendered: string }>({
 			path: '/voxel-fse/v1/dynamic-data/render',
@@ -121,6 +162,9 @@ export default function Edit({
 			})
 			.catch(() => {
 				// Silently fail — block will show placeholder
+			})
+			.finally(() => {
+				setResolvingPostId(false);
 			});
 
 		return () => { controller.abort(); };
@@ -176,10 +220,13 @@ export default function Edit({
 		};
 	}, [postId]);
 
-	// Generate responsive CSS for tablet/mobile variants
+	// Generate responsive CSS: AdvancedTab (Layer 1) + block-specific (Layer 2)
 	const responsiveCSS = useMemo(
-		() => generateProductPriceResponsiveCSS(attributes, blockId),
-		[attributes, blockId]
+		() => [
+			advancedProps.responsiveCSS,
+			generateProductPriceResponsiveCSS(attributes, blockId),
+		].filter(Boolean).join('\n'),
+		[attributes, blockId, advancedProps.responsiveCSS]
 	);
 
 	return (
@@ -220,6 +267,15 @@ export default function Edit({
 						error={error}
 						context="editor"
 						postId={postId}
+					/>
+				) : resolvingPostId ? (
+					// Still resolving sample post ID — show loading state to avoid FOUC
+					<ProductPriceComponent
+						attributes={attributes}
+						priceData={null}
+						isLoading={true}
+						error={null}
+						context="editor"
 					/>
 				) : (
 					<div className="vxfse-product-price-placeholder">

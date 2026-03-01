@@ -30,6 +30,19 @@ function extractExpression(value: string): string {
 	return match ? match[1] : value;
 }
 
+/**
+ * Strip @tags()/@endtags() wrappers from values for initial render.
+ * Prevents FOUC in the editor where raw @tags()...@endtags() expressions
+ * would flash before the REST API resolves them.
+ */
+function stripTagWrappers(values: Record<string, string>): Record<string, string> {
+	const result: Record<string, string> = {};
+	for (const [key, val] of Object.entries(values)) {
+		result[key] = hasDynamicTags(val) ? extractExpression(val) : val;
+	}
+	return result;
+}
+
 interface ResolveOptions {
 	templateContext?: string;
 	templatePostType?: string;
@@ -46,7 +59,10 @@ export function useResolvedDynamicText(
 	value: string,
 	options: ResolveOptions = {},
 ): string {
-	const [resolved, setResolved] = useState<string>(value);
+	// Initialize with stripped expression (no @tags() wrapper) to prevent FOUC
+	const [resolved, setResolved] = useState<string>(
+		() => hasDynamicTags(value) ? extractExpression(value) : value
+	);
 	const abortRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
@@ -112,7 +128,8 @@ export function useResolvedDynamicTexts(
 	values: Record<string, string>,
 	options: ResolveOptions = {},
 ): Record<string, string> {
-	const [resolved, setResolved] = useState<Record<string, string>>(values);
+	// Initialize with stripped expressions (no @tags() wrappers) to prevent FOUC
+	const [resolved, setResolved] = useState<Record<string, string>>(() => stripTagWrappers(values));
 	const abortRef = useRef<AbortController | null>(null);
 	// Serialize keys+values for dependency tracking
 	const serialized = JSON.stringify(values);

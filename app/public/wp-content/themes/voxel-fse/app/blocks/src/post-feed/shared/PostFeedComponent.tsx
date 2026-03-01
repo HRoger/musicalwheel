@@ -396,10 +396,11 @@ export default function PostFeedComponent({
 
 	// Prevent link navigation in editor (matches Elementor's onLinkClick behavior)
 	// Skip carousel nav buttons (.post-feed-nav) and pagination buttons (.feed-pagination) so they still work
+	// Skip popup triggers (.ts-action-wrap) so edit_post/share_post popups can open in the post editor
 	const handleEditorClick = useCallback((e: React.MouseEvent) => {
 		if (context !== 'editor') return;
 		const target = (e.target as HTMLElement).closest('a');
-		if (target && !target.closest('.post-feed-nav') && !target.closest('.feed-pagination')) {
+		if (target && !target.closest('.post-feed-nav') && !target.closest('.feed-pagination') && !target.closest('.ts-action-wrap')) {
 			e.preventDefault();
 			e.stopPropagation();
 		}

@@ -70,14 +70,10 @@ function renderIcon(icon: { library?: string; value?: string } | undefined, clas
 }
 
 /**
- * Loading state component
+ * Loading state — returns null to avoid FOUC (grey box → content).
  */
-function LoadingState(): React.ReactElement {
-	return (
-		<div className="ts-product-main vx-loading-screen">
-			<EmptyPlaceholder />
-		</div>
-	);
+function LoadingState(): React.ReactElement | null {
+	return null;
 }
 
 /**

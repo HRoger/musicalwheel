@@ -420,7 +420,7 @@ function buildListStyles(attributes: AdvancedListAttributes): React.CSSPropertie
 	if (attributes.enableCssGrid) {
 		styles.display = 'grid';
 		if (attributes.gridColumns) {
-			styles.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(0, 1fr))`;
+			styles.gridTemplateColumns = `repeat(${attributes.gridColumns}, minmax(auto, 1fr))`;
 		}
 	} else {
 		if (attributes.listJustify) {
@@ -435,71 +435,9 @@ function buildListStyles(attributes: AdvancedListAttributes): React.CSSPropertie
 	return styles;
 }
 
-/**
- * Build inline styles for action item
- */
-function buildItemStyles(attributes: AdvancedListAttributes): React.CSSProperties {
-	const styles: React.CSSProperties = {};
-
-	if (attributes.itemJustifyContent) {
-		styles.justifyContent = attributes.itemJustifyContent;
-	}
-
-	if (attributes.itemHeight) {
-		styles.height = `${attributes.itemHeight}${attributes.itemHeightUnit || 'px'}`;
-	}
-
-	// Padding
-	const padding = attributes.itemPadding;
-	if (padding && (padding.top || padding.right || padding.bottom || padding.left)) {
-		const unit = attributes.itemPaddingUnit || 'px';
-		styles.padding = `${padding.top || 0}${unit} ${padding.right || 0}${unit} ${padding.bottom || 0}${unit} ${padding.left || 0}${unit}`;
-	}
-
-	// Border
-	if (attributes.itemBorderType && attributes.itemBorderType !== 'none') {
-		styles.borderStyle = attributes.itemBorderType;
-		if (attributes.itemBorderColor) {
-			styles.borderColor = attributes.itemBorderColor;
-		}
-		const borderWidth = attributes.itemBorderWidth;
-		if (borderWidth) {
-			const unit = attributes.itemBorderWidthUnit || 'px';
-			styles.borderWidth = `${borderWidth.top || 1}${unit} ${borderWidth.right || 1}${unit} ${borderWidth.bottom || 1}${unit} ${borderWidth.left || 1}${unit}`;
-		}
-	}
-
-	if (attributes.itemBorderRadius) {
-		styles.borderRadius = `${attributes.itemBorderRadius}${attributes.itemBorderRadiusUnit || 'px'}`;
-	}
-
-	// Colors
-	if (attributes.itemTextColor) {
-		styles.color = attributes.itemTextColor;
-	}
-
-	if (attributes.itemBackgroundColor) {
-		styles.background = attributes.itemBackgroundColor;
-	}
-
-	// Box shadow
-	const boxShadow = attributes.itemBoxShadow;
-	if (boxShadow && (boxShadow.horizontal || boxShadow.vertical || boxShadow.blur || boxShadow.spread)) {
-		styles.boxShadow = `${boxShadow.horizontal}px ${boxShadow.vertical}px ${boxShadow.blur}px ${boxShadow.spread}px ${boxShadow.color || 'rgba(0,0,0,0.1)'}`;
-	}
-
-	// Icon/text spacing
-	if (attributes.iconTextSpacing) {
-		styles.gap = `${attributes.iconTextSpacing}${attributes.iconTextSpacingUnit || 'px'}`;
-	}
-
-	// Icon on top
-	if (attributes.iconOnTop) {
-		styles.flexDirection = 'column';
-	}
-
-	return styles;
-}
+// Note: Item styles (height, justify-content, padding, border, colors, etc.) are ALL
+// handled by the CSS style generator in styles.ts via scoped <style> tags. No inline
+// styles needed on .ts-action-con. This ensures responsive breakpoints work properly.
 
 /**
  * Build inline styles for icon container
@@ -717,8 +655,7 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 		return true;
 	}, [context, shouldRender, isPostDependent, item.actionType, postContext]);
 
-	// Build item styles
-	const itemStyles = buildItemStyles(attributes);
+	// Build icon styles (per-item customIconColor requires inline styles)
 	const iconStyles = buildIconStyles(attributes);
 	const itemWidthStyle = buildItemWidthStyle(attributes);
 
@@ -1217,7 +1154,6 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 					<TagEl
 						{...actionProps}
 						className={actionClasses}
-						style={itemStyles}
 						aria-label={txt.text || tooltipText}
 						role={Tag === 'a' ? undefined : 'button'}
 					>
@@ -1260,7 +1196,6 @@ function ActionItemComponent({ item, index, attributes, context, postContext, te
 			<TagEl
 				{...actionProps}
 				className={actionClasses}
-				style={itemStyles}
 				aria-label={txt.text || tooltipText}
 				role={Tag === 'a' ? undefined : 'button'}
 			>
@@ -1368,6 +1303,10 @@ export function AdvancedListComponent({
 
 	// Empty state
 	if (!attributes.items || attributes.items.length === 0) {
+		if (context === 'frontend') {
+			// Frontend: render directly into the outer <ul> container (no wrapper)
+			return null;
+		}
 		return (
 			<ul className="flexify simplify-ul ts-advanced-list voxel-fse-empty">
 				{/* Re-render vxconfig for DevTools visibility */}
@@ -1380,6 +1319,36 @@ export function AdvancedListComponent({
 					<EmptyPlaceholder />
 				</li>
 			</ul>
+		);
+	}
+
+	// Frontend context: render items directly into the outer <ul> container.
+	// The outer <ul> already has WordPress block classes + Voxel classes (flexify,
+	// simplify-ul, ts-advanced-list) and list layout styles (gap, grid, justify-content)
+	// applied by frontend.tsx. Wrapping in another <ul> would create invalid nested
+	// <ul><ul> and break the layout. Voxel parent uses a single flat <ul>.
+	if (context === 'frontend') {
+		return (
+			<>
+				{/* Re-render vxconfig for DevTools visibility (Plan C+ requirement) */}
+				<script
+					type="text/json"
+					className="vxconfig"
+					dangerouslySetInnerHTML={{ __html: JSON.stringify(vxConfig) }}
+				/>
+				{attributes.items.map((item, index) => (
+					<ActionItemComponent
+						key={item.id || index}
+						item={item}
+						index={index}
+						attributes={attributes}
+						context={context}
+						postContext={postContext}
+						templateContext={templateContext}
+						templatePostType={templatePostType}
+					/>
+				))}
+			</>
 		);
 	}
 

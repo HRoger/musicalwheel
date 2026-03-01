@@ -172,20 +172,20 @@ export interface AdvancedListAttributes {
 	listJustify: string;
 	listJustify_tablet?: string;
 	listJustify_mobile?: string;
-	itemGap: number;
+	itemGap: number | null;
 	itemGap_tablet?: number;
 	itemGap_mobile?: number;
 	itemGapUnit: string;
 
 	// List item normal state
-	itemJustifyContent: string;
+	itemJustifyContent: string | null;
 	itemJustifyContent_tablet?: string;
 	itemJustifyContent_mobile?: string;
 	itemPadding: BoxValues;
 	itemPadding_tablet?: BoxValues;
 	itemPadding_mobile?: BoxValues;
 	itemPaddingUnit: string;
-	itemHeight: number;
+	itemHeight: number | null;
 	itemHeight_tablet?: number;
 	itemHeight_mobile?: number;
 	itemHeightUnit: string;
@@ -193,7 +193,7 @@ export interface AdvancedListAttributes {
 	itemBorderWidth: BoxValues;
 	itemBorderWidthUnit: string;
 	itemBorderColor: string;
-	itemBorderRadius: number;
+	itemBorderRadius: number | null;
 	itemBorderRadius_tablet?: number;
 	itemBorderRadius_mobile?: number;
 	itemBorderRadiusUnit: string;
@@ -296,20 +296,20 @@ export interface VxConfig {
 		customItemWidth: number;
 		customItemWidthUnit: string;
 		listJustify: string;
-		itemGap: number;
+		itemGap: number | null;
 		itemGapUnit: string;
 	};
 	itemStyle: {
-		justifyContent: string;
+		justifyContent: string | null;
 		padding: BoxValues;
 		paddingUnit: string;
-		height: number;
+		height: number | null;
 		heightUnit: string;
 		borderType: string;
 		borderWidth: BoxValues;
 		borderWidthUnit: string;
 		borderColor: string;
-		borderRadius: number;
+		borderRadius: number | null;
 		borderRadiusUnit: string;
 		boxShadow: BoxShadowValue;
 		typography: TypographyValue;

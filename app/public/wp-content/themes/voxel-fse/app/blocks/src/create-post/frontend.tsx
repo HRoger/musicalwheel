@@ -562,8 +562,10 @@ function initCreatePostForms() {
 	//console.log('[Create Post DEBUG] initCreatePostForms called');
 
 	// Find all create post blocks by the class
+	// NOTE: save.tsx outputs 'voxel-fse-create-post' (no -frontend suffix)
+	// The -frontend suffix is only used in admin-render.php for the metabox context
 	const containers = document.querySelectorAll<HTMLElement>(
-		'.voxel-fse-create-post-frontend:not([data-react-mounted])'
+		'.voxel-fse-create-post:not([data-react-mounted])'
 	);
 	//console.log('[Create Post DEBUG] Found containers:', containers.length);
 
